@@ -17,10 +17,7 @@ module Dependabot
       end
 
       def config_file
-        @config_file ||= begin
-          cfg = files.first
-          Dependabot::Config::File.parse(cfg.content) if cfg
-        end
+        @config_file ||= files.first
       end
 
       private
@@ -43,7 +40,7 @@ module Dependabot
         end
 
         unless self.class.required_files_in?(fetched_files.map(&:name))
-          raise Dependabot::ConfigFileFileNotFound, self.class.required_files_message
+          raise Dependabot::DependencyFileNotFound, self.class.required_files_message
         end
 
         fetched_files

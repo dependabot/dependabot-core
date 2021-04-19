@@ -458,9 +458,12 @@ if $options[:clone] || always_clone
   puts "=> cloning into #{$repo_contents_path}"
 end
 
-fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-          new(source: $source, credentials: $options[:credentials],
-              repo_contents_path: $repo_contents_path)
+fetcher_args = {
+  source: $source,
+  credentials: $options[:credentials],
+  repo_contents_path: $repo_contents_path
+}
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
 $files = if $options[:clone] || always_clone
            fetcher.clone_repo_contents
            fetcher.files
@@ -470,10 +473,10 @@ $files = if $options[:clone] || always_clone
            end
          end
 
-$config_file = Dependabot::Config::FileFetcher.
-  new(source: $source, credentials: $options[:credentials],
-    repo_contents_path: $repo_contents_path).
-  config_file
+$config_file = begin
+  cfg = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+  Dependabot::Config::File.parse(cfg.content) if cfg
+end
 
 # Parse the dependency files
 puts "=> parsing dependency files"
