@@ -146,6 +146,7 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   $options[:ignore_conditions] = JSON.parse(ENV["IGNORE_CONDITIONS"])
 end
 
+# rubocop:disable Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
 
@@ -222,6 +223,7 @@ option_parse = OptionParser.new do |opts|
     $options[:pull_request] = true
   end
 end
+# rubocop:enable Metrics/BlockLength
 
 option_parse.parse!
 
@@ -352,6 +354,7 @@ end
 # rubocop:enable Metrics/MethodLength
 # rubocop:enable Metrics/AbcSize
 
+# rubocop:disable Metrics/MethodLength
 def handle_dependabot_error(error:, dependency:)
   error_details =
     case error
@@ -387,11 +390,6 @@ def handle_dependabot_error(error:, dependency:)
       {
         "error-type": "path_dependencies_not_reachable",
         "error-detail": { dependencies: error.dependencies }
-      }
-    when Dependabot::PrivateSourceAuthenticationFailure
-      {
-        "error-type": "private_source_authentication_failure",
-        "error-detail": { source: error.source }
       }
     when Dependabot::GitDependenciesNotReachable
       {
@@ -441,6 +439,7 @@ def handle_dependabot_error(error:, dependency:)
   puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
        "#{error_details.fetch(:'error-detail')}"
 end
+# rubocop:enable Metrics/MethodLength
 
 StackProf.start(raw: true) if $options[:profile]
 
@@ -682,7 +681,7 @@ dependencies.each do |dep|
   end
 
   if $options[:security_updates_only] &&
-     updated_deps.none? { |dep| security_fix?(dep) }
+     updated_deps.none? { |d| security_fix?(d) }
     puts "    (updated version is still vulnerable 🚨)"
   end
 
@@ -715,7 +714,6 @@ dependencies.each do |dep|
 
   if $options[:pull_request]
     config = $config_file.update_config($package_manager, directory: $options[:directory])
-
     msg = Dependabot::PullRequestCreator::MessageBuilder.new(
       dependencies: updated_deps,
       files: updated_files,

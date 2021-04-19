@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/config/update_config"
+
 module Dependabot
   module Config
     class File
@@ -14,7 +16,7 @@ module Dependabot
         dir = directory || "/"
         package_ecosystem = PACKAGE_MANAGER_LOOKUP.invert.fetch(package_manager)
         cfg = updates.find { |u| u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir }
-        UpdateConfig.new(cfg)
+        Dependabot::Config::UpdateConfig.new(cfg)
       end
 
       PACKAGE_MANAGER_LOOKUP = {
