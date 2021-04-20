@@ -4,12 +4,6 @@ module Dependabot
   module Config
     # Configuration for a single ecosystem
     class UpdateConfig
-      module Interval
-        DAILY = "daily"
-        WEEKLY = "weekly"
-        MONTHLY = "monthly"
-      end
-
       attr_reader :commit_message_options
 
       def initialize(config, commit_message_options: nil)
@@ -24,19 +18,6 @@ module Dependabot
           select { |ic| ic[:"dependency-name"] == dep.name }. # FIXME: wildcard support
           map { |ic| ic[:versions] }.
           flatten
-      end
-
-      def interval
-        return unless @config[:schedule]
-        return unless @config[:schedule][:interval]
-
-        interval = @config[:schedule][:interval]
-        case interval.downcase
-        when Interval::DAILY, Interval::WEEKLY, Interval::MONTHLY
-          interval.downcase
-        else
-          raise InvalidConfigError, "unknown interval: #{interval}"
-        end
       end
 
       class CommitMessageOptions

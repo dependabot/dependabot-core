@@ -9,30 +9,6 @@ RSpec.describe Dependabot::Config::UpdateConfig do
   let(:data) { nil }
   let(:config) { Dependabot::Config::UpdateConfig.new(data) }
 
-  describe "#interval" do
-    subject(:interval) { config.interval }
-
-    it "returns nil if not specified" do
-      expect(interval).to be_nil
-    end
-
-    context "with denormalized interval" do
-      let(:data) { { schedule: { interval: "WeeKLY" } } }
-
-      it "returns normalized value" do
-        expect(interval).to eq(Dependabot::Config::UpdateConfig::Interval::WEEKLY)
-      end
-    end
-
-    context "with invalid interval" do
-      let(:data) { { schedule: { interval: "gibbous moon" } } }
-      it "raises error" do
-        expect { interval }.
-          to raise_error(Dependabot::Config::InvalidConfigError)
-      end
-    end
-  end
-
   describe "#ignored_versions_for" do
     subject(:ignored_versions) { config.ignored_versions_for(dependency) }
     let(:dependency) do
