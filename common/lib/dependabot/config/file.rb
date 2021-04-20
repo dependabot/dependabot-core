@@ -60,7 +60,8 @@ module Dependabot
         ignores.map do |ic|
           Dependabot::Config::UpdateConfig::IgnoreCondition.new(
             name: ic[:"dependency-name"],
-            versions: ic[:versions]
+            versions: ic[:versions],
+            update_type: ic[:"update-type"]
           )
         end
       end

@@ -6,6 +6,12 @@ module Dependabot
     class UpdateConfig
       attr_reader :commit_message_options
 
+      module UpdateType
+        IGNORE_PATCH = "patch"
+        IGNORE_MINOR = "minor"
+        IGNORE_MAJOR = "major"
+      end
+
       def initialize(ignore_conditions: nil, commit_message_options: nil)
         @ignore_conditions = ignore_conditions || []
         @commit_message_options = commit_message_options
@@ -14,15 +20,52 @@ module Dependabot
       def ignored_versions_for(dep)
         @ignore_conditions.
           select { |ic| ic.name == dep.name }. # FIXME: wildcard support
-          map(&:versions).
+          map { |ic| ic.versions(dep) }.
           flatten
       end
 
       class IgnoreCondition
-        attr_reader :name, :versions
-        def initialize(name:, versions:)
+        attr_reader :name
+        def initialize(name:, versions: nil, update_type: nil)
           @name = name
-          @versions = versions
+          @versions = versions || []
+          @update_type = update_type
+        end
+
+        def versions(dep)
+          versions_by_type(dep) + @versions
+        end
+
+        private
+
+        def versions_by_type(dep)
+          case @update_type
+          when UpdateType::IGNORE_PATCH
+            [ignore_version(dep.version, 4)]
+          when UpdateType::IGNORE_MINOR
+            [ignore_version(dep.version, 3)]
+          when UpdateType::IGNORE_MAJOR
+            [ignore_version(dep.version, 2)]
+          else
+            []
+          end
+        end
+
+        def ignore_version(version, precision)
+          parts = version.split(".")
+          version_parts = parts.fill(0, parts.length...[3, precision].max).
+                          first(precision)
+
+          lower_bound = [
+            *version_parts.first(precision - 2),
+            "a"
+          ].join(".")
+          upper_bound = [
+            *version_parts.first(precision - 2),
+            version_parts[precision - 2].to_i + 1
+          ].join(".")
+
+          ">= #{lower_bound}, < #{upper_bound}"
         end
       end
 
