@@ -8,12 +8,11 @@ module Dependabot
   module UpdateCheckers
     class Base
       attr_reader :dependency, :dependency_files, :repo_contents_path,
-                  :credentials, :ignored_versions, :raise_on_ignored,
-                  :security_advisories, :requirements_update_strategy,
-                  :options
+                  :credentials, :raise_on_ignored, :security_advisories,
+                  :requirements_update_strategy, :options
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
-                     credentials:, ignored_versions: [],
+                     credentials:, ignore_conditions: [], ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
                      requirements_update_strategy: nil,
                      options: {})
@@ -22,6 +21,7 @@ module Dependabot
         @repo_contents_path = repo_contents_path
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
+        @ignore_conditions = ignore_conditions
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
@@ -139,6 +139,23 @@ module Dependabot
 
         version = version_class.new(dependency.version)
         security_advisories.any? { |a| a.vulnerable?(version) }
+      end
+
+      def ignore_conditions
+        @ignore_conditions.select do |ic|
+          Utils.match_wildcard?(
+            name_normaliser.call(ic[:dependency_name]),
+            name_normaliser.call(dependency.name)
+          )
+        end
+      end
+
+      def ignored_versions
+        if ignore_conditions.any?
+          ignore_conditions.flat_map { |ic| ic[:versions] }
+        else
+          @ignored_versions
+        end
       end
 
       private
@@ -295,6 +312,10 @@ module Dependabot
         return false if changed_requirements.none?
 
         changed_requirements.none? { |r| r[:requirement] == :unfixable }
+      end
+
+      def name_normaliser
+        Dependency.name_normaliser_for_package_manager(dependency.package_manager)
       end
 
       def ignore_reqs

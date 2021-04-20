@@ -10,6 +10,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
+      ignore_conditions: ignore_conditions,
+      ignored_versions: ignored_versions,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -26,6 +28,8 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       package_manager: "dummy"
     )
   end
+  let(:ignore_conditions) { [] }
+  let(:ignored_versions) { [] }
   let(:latest_version) { Gem::Version.new("1.0.0") }
   let(:original_requirements) do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
@@ -598,6 +602,85 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         ]
       end
       it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#ignored_versions" do
+    subject(:subject) { updater_instance.ignored_versions }
+
+    context "with no ignored versions" do
+      it { is_expected.to eq([]) }
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { ["~> 0.5", "~> 1.0"] }
+      it { is_expected.to eq(["~> 0.5", "~> 1.0"]) }
+    end
+
+    context "with ignore conditions" do
+      let(:ignored_versions) { ["~> 0.5", "~> 1.0"] }
+      let(:ignore_conditions) do
+        [{
+          dependency_name: "business",
+          versions: ["~> 1.5"]
+        }, {
+          dependency_name: "bus*",
+          versions: ["~> 0.5"]
+        }, {
+          dependency_name: "Business",
+          versions: ["< 2.5"]
+        }, {
+          dependency_name: "rails-business",
+          versions: ["~> 4.0"]
+        }]
+      end
+
+      it "filters relevant ignore conditions and maps versions" do
+        is_expected.to eq(["~> 1.5", "~> 0.5", "< 2.5"])
+      end
+    end
+  end
+
+  describe "#ignore_conditions" do
+    subject(:subject) { updater_instance.ignore_conditions }
+
+    context "with no ignore conditions" do
+      it { is_expected.to eq([]) }
+    end
+
+    context "with ignore conditions" do
+      let(:ignore_conditions) do
+        [{
+          dependency_name: "business",
+          versions: ["~> 1.5"]
+        }, {
+          dependency_name: "bus*",
+          versions: ["~> 0.5"]
+        }, {
+          dependency_name: "Business",
+          versions: ["< 2.5"]
+        }, {
+          dependency_name: "rails-business",
+          versions: ["~> 4.0"]
+        }]
+      end
+
+      it "filters relevant ignore conditions" do
+        is_expected.to eq(
+          [
+            {
+              dependency_name: "business",
+              versions: ["~> 1.5"]
+            }, {
+              dependency_name: "bus*",
+              versions: ["~> 0.5"]
+            }, {
+              dependency_name: "Business",
+              versions: ["< 2.5"]
+            }
+          ]
+        )
+      end
     end
   end
 end

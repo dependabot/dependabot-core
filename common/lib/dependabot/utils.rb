@@ -44,5 +44,15 @@ module Dependabot
     def self.register_always_clone(package_manager)
       @cloning_package_managers << package_manager
     end
+
+    def self.match_wildcard?(wildcard_string, candidate_string)
+      return false unless wildcard_string && candidate_string
+
+      regex_string = "a#{wildcard_string.downcase}a".split("*").
+                     map { |p| Regexp.quote(p) }.
+                     join(".*").gsub(/^a|a$/, "")
+      regex = /^#{regex_string}$/
+      regex.match?(candidate_string.downcase)
+    end
   end
 end
