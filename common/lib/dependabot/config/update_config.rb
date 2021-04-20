@@ -6,18 +6,24 @@ module Dependabot
     class UpdateConfig
       attr_reader :commit_message_options
 
-      def initialize(config, commit_message_options: nil)
-        @config = config || {}
+      def initialize(ignore_conditions: nil, commit_message_options: nil)
+        @ignore_conditions = ignore_conditions || []
         @commit_message_options = commit_message_options
       end
 
       def ignored_versions_for(dep)
-        return [] unless @config[:ignore]
-
-        @config[:ignore].
-          select { |ic| ic[:"dependency-name"] == dep.name }. # FIXME: wildcard support
-          map { |ic| ic[:versions] }.
+        @ignore_conditions.
+          select { |ic| ic.name == dep.name }. # FIXME: wildcard support
+          map(&:versions).
           flatten
+      end
+
+      class IgnoreCondition
+        attr_reader :name, :versions
+        def initialize(name:, versions:)
+          @name = name
+          @versions = versions
+        end
       end
 
       class CommitMessageOptions

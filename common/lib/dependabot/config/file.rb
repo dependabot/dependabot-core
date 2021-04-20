@@ -21,7 +21,7 @@ module Dependabot
             (target_branch.nil? || u[:"target-branch"] == target_branch)
         end
         Dependabot::Config::UpdateConfig.new(
-          cfg,
+          ignore_conditions: ignore_conditions(cfg),
           commit_message_options: commit_message_options(cfg)
         )
       end
@@ -54,6 +54,16 @@ module Dependabot
       end
 
       private
+
+      def ignore_conditions(cfg)
+        ignores = cfg&.dig(:ignore) || []
+        ignores.map do |ic|
+          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+            name: ic[:"dependency-name"],
+            versions: ic[:versions]
+          )
+        end
+      end
 
       def commit_message_options(cfg)
         commit_message = cfg&.dig(:"commit-message") || {}

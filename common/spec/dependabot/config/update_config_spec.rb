@@ -6,9 +6,6 @@ require "dependabot/config/file"
 require "dependabot/config/update_config"
 
 RSpec.describe Dependabot::Config::UpdateConfig do
-  let(:data) { nil }
-  let(:config) { Dependabot::Config::UpdateConfig.new(data) }
-
   describe "#ignored_versions_for" do
     subject(:ignored_versions) { config.ignored_versions_for(dependency) }
     let(:dependency) do
@@ -19,14 +16,16 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         package_manager: "npm_and_yarn"
       )
     end
+    let(:ignore_conditions) { [] }
+    let(:config) { Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions) }
 
     it "returns empty when not defined" do
       expect(ignored_versions).to eq([])
     end
 
     context "with ignored versions" do
-      let(:data) do
-        { ignore: [{ "dependency-name": "@types/node", versions: [">= 14.14.x, < 15"] }] }
+      let(:ignore_conditions) do
+        [Dependabot::Config::UpdateConfig::IgnoreCondition.new(name: "@types/node", versions: [">= 14.14.x, < 15"])]
       end
 
       it "returns versions" do
