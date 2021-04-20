@@ -8,16 +8,33 @@ RSpec.describe "recursive_path", :pix4d do
     it "returns the correct project_path" do
       project_data = {
         "module" => "concourse",
-        "dependency_dirs" => ["ci/pipelines"]
+        "dependency_dirs" => ["ci/pipelines/"]
       }
-      expect(recursive_path(project_data, "token")).to eq(["ci/pipelines"])
+      expect(recursive_path(project_data, "token")).to eq(["/ci/pipelines"])
     end
     it "returns the correct project_path for multiple directories" do
       project_data = {
         "module" => "concourse",
-        "dependency_dirs" => ["ci/pipelines", "extra_pipelines/"]
+        "dependency_dirs" => ["ci/pipelines", "/extra_pipelines/"]
       }
-      expect(recursive_path(project_data, "token")).to eq(["ci/pipelines", "extra_pipelines/"])
+      expect(recursive_path(project_data, "token")).to eq(["/ci/pipelines", "/extra_pipelines"])
+    end
+  end
+
+  context "using a python/pip feature_package" do
+    it "returns the correct project_path" do
+      project_data = {
+        "module" => "pip",
+        "dependency_dirs" => ["/"]
+      }
+      expect(recursive_path(project_data, "token")).to eq(["/"])
+    end
+    it "returns the correct project_path for multiple directories" do
+      project_data = {
+        "module" => "pip",
+        "dependency_dirs" => ["/python_package_1", "python_package_2/"]
+      }
+      expect(recursive_path(project_data, "token")).to eq(["/python_package_1", "/python_package_2"])
     end
   end
 
