@@ -1,0 +1,15 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/monthly"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "npm"
+    directory: "/target"
+    target-branch: "the-awesome-branch"
+    schedule:
+      interval: "daily"

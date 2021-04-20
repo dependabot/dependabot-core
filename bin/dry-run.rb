@@ -72,6 +72,7 @@ require "dependabot/file_parsers"
 require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
+require "dependabot/config/file_fetcher"
 
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -457,9 +458,24 @@ if $options[:clone] || always_clone
   puts "=> cloning into #{$repo_contents_path}"
 end
 
-fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-          new(source: $source, credentials: $options[:credentials],
-              repo_contents_path: $repo_contents_path)
+fetcher_args = {
+  source: $source,
+  credentials: $options[:credentials],
+  repo_contents_path: $repo_contents_path
+}
+$config_file = begin
+  cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+  Dependabot::Config::File.parse(cfg_file.content)
+rescue Dependabot::DependencyFileNotFound
+  Dependabot::Config::File.new(updates: [])
+end
+$update_config = $config_file.update_config(
+  $package_manager,
+  directory: $options[:directory],
+  target_branch: $options[:branch]
+)
+
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
 $files = if $options[:clone] || always_clone
            fetcher.clone_repo_contents
            fetcher.files
@@ -502,10 +518,14 @@ def update_checker_for(dependency)
 end
 
 def ignored_versions_for(dep)
-  # TODO: Parse from config file unless $options[:ignore_conditions]
-  $options[:ignore_conditions].
-    select { |ic| ic["dependency-name"] == dep.name }.
-    map { |ic| ic["version-requirement"] }
+  if $options[:ignore_conditions].any?
+    $options[:ignore_conditions].
+      select { |ic| ic["dependency-name"] == dep.name }.
+      map { |ic| ic["version-requirement"] }.
+      compact
+  else
+    $update_config.ignored_versions_for(dep)
+  end
 end
 
 def security_advisories
@@ -707,6 +727,7 @@ dependencies.each do |dep|
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
+      commit_message_options: $update_config.commit_message_options,
       github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
     ).message
     puts "Pull Request Title: #{msg.pr_name}"
