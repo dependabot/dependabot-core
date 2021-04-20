@@ -8,6 +8,15 @@ def select_path_per_directory(git_tree, directory)
   files.map { |item| item["path"] }
 end
 
+def normalize_path(path)
+  return path if path == "/"
+
+  path = path.delete_suffix("/")
+  return path if path.start_with?("/")
+
+  path.prepend("/")
+end
+
 def recursive_path(project_data, github_token)
   if project_data["module"] == "docker"
     selected_paths = []
@@ -26,6 +35,14 @@ def recursive_path(project_data, github_token)
       input_files_path << path
     end
   else
-    input_files_path = project_data["dependency_dirs"]
+    input_files_path = []
+    # normalize the path first because pip module fails if there is no '/'
+    # at the beginning of dependency_dirs paths ["/path_1/", "/path_2"]`
+    project_data["dependency_dirs"].each do |path|
+      input_files_path << normalize_path(path)
+    end
+    raise StandardError unless project_data["dependency_dirs"].length == input_files_path.length
+
+    input_files_path
   end
 end

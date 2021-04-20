@@ -133,7 +133,7 @@ def pix4_dependabot(package_manager, project_data, credentials)
 
   input_files_path = recursive_path(project_data, github_cred)
 
-  print "Working in #{project_data['repo']}\n"
+  print "Working in #{project_data['repo']} on #{project_data['branch']}\n"
   input_files_path.each do |file_path|
     print "  - Checking the files in #{file_path}\n"
     source = source_init(file_path, project_data)
