@@ -727,7 +727,7 @@ dependencies.each do |dep|
       files: updated_files,
       credentials: $options[:credentials],
       source: $source,
-      commit_message_options: $update_config.commit_message_options,
+      commit_message_options: $update_config.commit_message_options.to_h,
       github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
     ).message
     puts "Pull Request Title: #{msg.pr_name}"

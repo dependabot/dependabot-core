@@ -10,8 +10,11 @@ module Dependabot
         MONTHLY = "monthly"
       end
 
-      def initialize(config)
+      attr_reader :commit_message_options
+
+      def initialize(config, commit_message_options: nil)
         @config = config || {}
+        @commit_message_options = commit_message_options
       end
 
       def ignored_versions_for(dep)
@@ -21,15 +24,6 @@ module Dependabot
           select { |ic| ic[:"dependency-name"] == dep.name }. # FIXME: wildcard support
           map { |ic| ic[:versions] }.
           flatten
-      end
-
-      def commit_message_options
-        commit_message = @config[:"commit-message"] || {}
-        {
-          prefix: commit_message[:prefix],
-          prefix_development: commit_message[:"prefix-development"],
-          include_scope: commit_message[:include] == "scope"
-        }
       end
 
       def interval
@@ -42,6 +36,28 @@ module Dependabot
           interval.downcase
         else
           raise InvalidConfigError, "unknown interval: #{interval}"
+        end
+      end
+
+      class CommitMessageOptions
+        attr_reader :prefix, :prefix_development, :include
+
+        def initialize(prefix:, prefix_development:, include:)
+          @prefix = prefix
+          @prefix_development = prefix_development
+          @include = include
+        end
+
+        def include_scope?
+          @include == "scope"
+        end
+
+        def to_h
+          {
+            prefix: @prefix,
+            prefix_development: @prefix_development,
+            include_scope: include_scope?
+          }
         end
       end
     end

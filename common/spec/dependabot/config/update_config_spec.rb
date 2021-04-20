@@ -63,19 +63,19 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     let(:config) { Dependabot::Config::File.parse(fixture("configfile", "commit-message-options.yml")) }
 
     it "parses prefix" do
-      expect(config.update_config("npm_and_yarn").commit_message_options[:prefix]).to eq("npm")
+      expect(config.update_config("npm_and_yarn").commit_message_options.prefix).to eq("npm")
     end
 
     it "parses prefix-development" do
-      expect(config.update_config("pip").commit_message_options[:prefix_development]).to eq("pip dev")
+      expect(config.update_config("pip").commit_message_options.prefix_development).to eq("pip dev")
     end
 
     it "includes scope" do
-      expect(config.update_config("composer").commit_message_options[:include_scope]).to eq(true)
+      expect(config.update_config("composer").commit_message_options.include_scope?).to eq(true)
     end
 
     it "does not include scope" do
-      expect(config.update_config("npm_and_yarn").commit_message_options[:include_scope]).to eq(false)
+      expect(config.update_config("npm_and_yarn").commit_message_options.include_scope?).to eq(false)
     end
   end
 end
