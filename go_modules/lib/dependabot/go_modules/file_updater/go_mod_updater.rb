@@ -134,9 +134,7 @@ module Dependabot
         def run_go_mod_tidy
           return unless tidy?
 
-          # NOTE(arslan): use `go mod tidy -e` once Go 1.16 is out:
-          # https://github.com/golang/go/commit/3aa09489ab3aa13a3ac78b1ff012b148ffffe367
-          command = "go mod tidy"
+          command = "go mod tidy -e"
 
           # we explicitly don't raise an error for 'go mod tidy' and silently
           # continue here. `go mod tidy` shouldn't block updating versions
