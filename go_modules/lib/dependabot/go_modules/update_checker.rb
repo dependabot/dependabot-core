@@ -121,7 +121,7 @@ module Dependabot
       end
 
       def version_from_tag(tag)
-        # To compare with the current version we either use the commit SHA
+        # To compare with the current version we use the commit SHA
         # (if that's what the parser picked up) of the tag name.
         return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
