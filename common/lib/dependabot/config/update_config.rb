@@ -6,10 +6,10 @@ module Dependabot
     class UpdateConfig
       attr_reader :commit_message_options
 
-      module UpdateType
-        IGNORE_PATCH = "patch"
-        IGNORE_MINOR = "minor"
-        IGNORE_MAJOR = "major"
+      module IgnoredUpdateType
+        VERSION_UPDATES_MAJOR = "version-update:semver-major"
+        VERSION_UPDATES_MINOR = "version-update:semver-minor"
+        VERSION_UPDATES_PATCH = "version-update:semver-patch"
       end
 
       def initialize(ignore_conditions: nil, commit_message_options: nil)
@@ -17,35 +17,35 @@ module Dependabot
         @commit_message_options = commit_message_options
       end
 
-      def ignored_versions_for(dep)
+      def ignored_versions_for(dependency)
         @ignore_conditions.
-          select { |ic| ic.dependency_name == dep.name }. # FIXME: wildcard support
-          map(&:versions).
+          select { |ic| ic.dependency_name == dependency.name }. # FIXME: wildcard support
+          map { |ic| ic.versions(dependency) }.
           flatten.
           compact
       end
 
       class IgnoreCondition
         attr_reader :dependency_name
-        def initialize(dependency_name:, versions: nil, update_type: nil)
+        def initialize(dependency_name:, versions: nil, update_types: nil)
           @dependency_name = dependency_name
           @versions = versions || []
-          @update_type = update_type
+          @update_types = update_types || []
         end
 
-        def versions(dep)
-          versions_by_type(dep) + @versions
+        def versions(dependency)
+          versions_by_type(dependency) + @versions
         end
 
         private
 
         def versions_by_type(dep)
-          case @update_type
-          when UpdateType::IGNORE_PATCH
+          case @update_types.first # FIXME: flatmap
+          when IgnoredUpdateType::VERSION_UPDATES_PATCH
             [ignore_version(dep.version, 4)]
-          when UpdateType::IGNORE_MINOR
+          when IgnoredUpdateType::VERSION_UPDATES_MINOR
             [ignore_version(dep.version, 3)]
-          when UpdateType::IGNORE_MAJOR
+          when IgnoredUpdateType::VERSION_UPDATES_MAJOR
             [ignore_version(dep.version, 2)]
           else
             []
