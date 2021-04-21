@@ -20,7 +20,10 @@ module Dependabot
           u[:"package-ecosystem"] == package_ecosystem && u[:directory] == dir &&
             (target_branch.nil? || u[:"target-branch"] == target_branch)
         end
-        Dependabot::Config::UpdateConfig.new(cfg)
+        Dependabot::Config::UpdateConfig.new(
+          ignore_conditions: ignore_conditions(cfg),
+          commit_message_options: commit_message_options(cfg)
+        )
       end
 
       PACKAGE_MANAGER_LOOKUP = {
@@ -48,6 +51,27 @@ module Dependabot
         raise InvalidConfigError, "invalid version #{version}" if version && version != 2
 
         File.new(updates: parsed[:updates], registries: parsed[:registries])
+      end
+
+      private
+
+      def ignore_conditions(cfg)
+        ignores = cfg&.dig(:ignore) || []
+        ignores.map do |ic|
+          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+            dependency_name: ic[:"dependency-name"],
+            versions: ic[:versions]
+          )
+        end
+      end
+
+      def commit_message_options(cfg)
+        commit_message = cfg&.dig(:"commit-message") || {}
+        Dependabot::Config::UpdateConfig::CommitMessageOptions.new(
+          prefix: commit_message[:prefix],
+          prefix_development: commit_message[:"prefix-development"],
+          include: commit_message[:include]
+        )
       end
     end
   end
