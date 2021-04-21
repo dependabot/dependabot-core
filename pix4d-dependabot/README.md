@@ -47,6 +47,8 @@ Added by PCI team:
 
 - [Dockerfile](https://github.com/Pix4D/dependabot-core/blob/master/Dockerfile.pix4d) to build our own Docker image
 
+- [pix4d-dependabot module](https://github.com/Pix4D/dependabot-core/blob/master/pix4d-dependabot/) containing the main Dependabot script and helper functions.
+
 - code and tests changes only for docker package manager. List of files modified by PCI team can be found by executing:
 
 ```
@@ -67,7 +69,7 @@ contains two jobs:
     * merges upstream changes
     * creates a PR in the forked repository
        - PR title: [no-changes-to-pix4d-dependabot] - no review needed. If tests are passing, this PR will be automerged in later steps
-       - PR title: [changes-to-pix4d-dependabot] - more detailed review required. Review is necessary only for files in the `docker` folder. Suggestion: filter them in Github GUI
+       - PR title: [changes-to-pix4d-dependabot] - more detailed review required. Review is necessary only for files in the `docker` folder and the `Dockerfile`. Suggestion: filter them in Github GUI
 
 2. The depenabot-core repository is monitored by set-pipeline job in Github-automation-tools pipeline - since the new PR is opened by the merge-upstream job,, PR resource detects it, sets a new featured pipeline, writes a comment in the PR with the pipeline URL and triggers the test-dependabot job
 
@@ -95,7 +97,7 @@ Below are the pre-requisites to execute tests:
 ## Pre-requisites installation
 *NOTE*: This is a equivalent step to running `pip install -r requirements.txt`
 
-After installation of Ruby bundler, execute the below command inside `docker` package manager to install all the required packages:
+After installation of Ruby bundler, execute the below command inside `pix4d-dependabot` module to install all the required packages:
 
 ```
 bundle config set path '../../requirements'
@@ -104,7 +106,7 @@ bundle install
 
 ## Executing tests
 
-All RSpec files exist in `docker/spec`. Tests are executed inside the `docker` directory. Below is the command to execute tests:
+All RSpec files exist in `docker/spec` and `pix4d-dependabot/spec`. Tests are executed inside the `docker` or inside `pix4d-dependabot` directory. Below is the command to execute tests:
 
 Navigate to `docker` directory:
 ```shell
@@ -116,6 +118,8 @@ Run all tests:
 bundle exec rspec -f d
 ```
 
+and repeat the same for the `pix4d-dependabot` directory.
+
 To run only the tests added by PCI team, run the following command:
 ```shell
 bundle exec rspec --tag pix4d
@@ -124,9 +128,7 @@ bundle exec rspec --tag pix4d
 ## Possible improvments to Pix4D Dependabot
 
 - enable updating Docker images used in Concourse task files
-- enable using Dependabot in docker mode without auto-merging
-- in Github automation tools add support for monitoring different branches
-- use a single job instead of 13 currently user in Github automation tools for docker updater; only variable that is changing is `PROJECT_PATH`. Fetching the configuration file using Ocotkit and parse it to create a list of repos with `docker: true`. Run the job from dependabot-master pipeline (in developers team) and reduce the load on Concourse main team workers
+- enable using Dependabot in docker mode without auto-merging (partially)
 
 ## Formatting Ruby files
 
@@ -151,23 +153,28 @@ bundle exec rubocop -a <filename>
 
 ## CONFIGURATION
 
-The Pix4D Dependabot main script (bot) calling each of the Dependabot main components (file fetcher, file parser, update checker, file updater and PR creator) can be found [here](https://github.com/Pix4D/dependabot-core/blob/master/docker/dependabot-main.rb). The script is configured using the following list of environmental variables:
-
-*FEATURE_PACKAGE* i.e docker or concourse. Selecting the concourse option, we will parse the pipeline template _yml_ file. Selecting the docker option, the script will recursively find all Dockerfiles in the repository below a path set by: *DEPENDENCY_DIRECTORY* and for each file, it will propose an update of the base Docker image used in each of the Dockerfiles.
-
-We currently run dependabot in both mods:
-- `docker` (updates base image of a Dockerfile): used in [linux-image-build] repository to update the tag for the base images in all Dockerfiles that can be found in the repository. The PR that is opened, is also immediately auto-merged by the bot.
-
-- `concourse` (updates Docker image tags for each Dockerfile in Concourse pipeline template yml file): for all other repositories set in github-automation-tools [configuration file](https://github.com/Pix4D/terraform-tomato/blob/master/ci/github-automation-tools/pipeline_generator/repositories.yml). For each project that activated `docker: true` option we have one job in [github-automation-master](https://builder.ci.pix4d.com/teams/main/pipelines/github-automation-master) pipeline running a Dependabot configured in concourse mod for this exact project/repository
-
-*PROJECT_PATH* - path to the Github repository (containing the organization name) i.e. `Pix4D/test-dependabot-docker`
-
-*DEPENDENCY_DIRECTORY* - path in the Github repository where the file we want to parse can be found: i.e. `dockerfiles/` or `ci/pipelines/`
-
-*REPOSITORY_BRANCH* - Github repository branch containing the file we want to fetch (default is `master`). PR will be opened against this branch
+The Pix4D Dependabot main script (bot) calling each of the Dependabot main components (file fetcher, file parser, update checker, file updater and PR creator) can be found [here](https://github.com/Pix4D/dependabot-core/blob/master/pix4d-dependabot/pix4d-dependabot.rb). The script is configured using the following list of environmental variables:
 
 *GITHUB_ACCESS_TOKEN* - personal access token for authentication to GitHub (in the CI we use the token for the Pix4D-Janus user). The user needs to have read and write access to the repository.
 
+*REPOSITORY_DATA* list of dictionaries, where each dictionary should contain the following keys:
+   - *module* i.e `docker`, `concourse`, `pip`. Selecting the `concourse` option, we will parse the pipeline template _yml_ file. Selecting the `docker` option, the script will recursively find all Dockerfiles in the repository below a paths set by: *dependency_dirs* and for each file, it will propose an update of the base Docker image used in each of the Dockerfiles. Selecting the `pip` option will update your Python dependency files. In example `Pipfile`, `Pipfile.lock` and `requirements.txt` files.
+   - *repo* i.e. Pix4D/test-dependabot-python name of the Github repository (containing the organization name) i.e. `Pix4D/test-dependabot-docker`
+   - *branch* Github repository branch i.e master, staging
+   - *dependency_dirs* i.e. ["/"", "ci/docker", "ci/pipelines/"", "project/requirements"] list of paths in the Github repository where the files we want to parse can be found: i.e. `/dockerfiles/`,`/ci/pipelines/`, `/python_package` or Github root directory `/`.
+   - *lockfile_only* (optional) i.e. Update only lockfiles. Defaults to true in case of Pip module
+    and false in case of Docker module
+
+### REQUIRED CONFIGURATION DEPENDING ON MODULE:
+
+#### PYTHON MODULE
+*ARTIFACTORY_USERNAME* - username to use when authenticating to Pix4D Artifactory.
+
+*ARTIFACTORY_PASSWORD* - password to use when authenticating to Pix4D Artifactory.
+
+*EXTRA_INDEX_URL* - extra index url i.e https://artifactory.ci.pix4d.com/artifactory/api/pypi/pix4d-pypi-local/simple/
+
+#### DOCKER/CONCOURSE MODULE
 The following must be set when we want to update Docker images from private Docker registry, otherwise, these can be considered as optional parameters:
 
 *DOCKER_REGISTRY* - private Docker registry i.e. `docker.ci.pix4d.com`
@@ -175,6 +182,15 @@ The following must be set when we want to update Docker images from private Dock
 *DOCKER_USER* - username to use when authenticating to the private Docker registry.
 
 *DOCKER_PASS* - password to use when authenticating to the private Docker registry.
+
+
+We currently run dependabot in all three mods:
+- `docker` (updates base image of a Dockerfile): used in [linux-image-build] repository to update the tag for the base images in all Dockerfiles that can be found in the repository. The PR that is opened, is also immediately auto-merged by the bot.
+
+- `concourse` (updates Docker image tags for each Dockerfile in Concourse pipeline template yml file): for all other repositories set in github-automation-tools [configuration file](https://github.com/Pix4D/terraform-tomato/blob/master/ci/github-automation-tools/pipeline_generator/repositories.yml). For each project that activated `docker: true` option we have one job in [github-automation-master](https://builder.ci.pix4d.com/teams/main/pipelines/github-automation-master) pipeline running a Dependabot configured in concourse mode for this exact project/repository
+
+- `pip` updates Python dependency files i.e `Pipfile`, `Pipfile.lock` and `requirements.txt` files. Mostly used by the `cloud team` and it is configured in [configuration file](https://github.com/Pix4D/terraform-tomato/blob/master/ci/github-automation-tools/pipeline_generator/repositories.yml).
+
 
 ## USAGE
 
@@ -215,17 +231,19 @@ jobs:
        args:
        - -c
        - |
-         cd /home/dependabot/docker/
-         bundle exec ruby dependabot-main.rb
+         cd /home/dependabot/pix4d-dependabot/
+         bundle exec ruby pix4d-dependabot.rb
    params:
-       DEPENDENCY_DIRECTORY: ci/pipelines/
-       FEATURE_PACKAGE: concourse
-       PROJECT_PATH: Pix4D/github-automation-playground
-       REPOSITORY_BRANCH: master
-       GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
-       DOCKER_REGISTRY: docker.ci.pix4d.com
-       DOCKER_USER: ((docker_cloud_pix4d_user))
-       DOCKER_PASS: ((docker_cloud_pix4d_password))
+      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      DOCKER_REGISTRY: docker.ci.pix4d.com
+      DOCKER_USER: ((docker_cloud_pix4d_user))
+      DOCKER_PASS: ((docker_cloud_pix4d_password))
+      REPOSITORY_DATA:
+      - branch: master
+        dependency_dirs:
+        - ci/pipelines/
+        module: concourse
+        repo: Pix4D/github-automation-playground
 ```
 
 ### Example 2
@@ -266,17 +284,76 @@ jobs:
        args:
        - -c
        - |
-         cd /home/dependabot/docker/
-         bundle exec ruby dependabot-main.rb
+         cd /home/dependabot/pix4d-dependabot/
+         bundle exec ruby pix4d-dependabot.rb
    params:
-       DEPENDENCY_DIRECTORY: dockerfiles/
-       FEATURE_PACKAGE: docker
-       PROJECT_PATH: Pix4D/linux-image-build
-       REPOSITORY_BRANCH: master
-       GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
-       DOCKER_REGISTRY: docker.ci.pix4d.com
-       DOCKER_USER: ((docker_cloud_pix4d_user))
-       DOCKER_PASS: ((docker_cloud_pix4d_password))
+      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      DOCKER_REGISTRY: docker.ci.pix4d.com
+      DOCKER_USER: ((docker_cloud_pix4d_user))
+      DOCKER_PASS: ((docker_cloud_pix4d_password))
+      REPOSITORY_DATA:
+      - branch: docker
+        dependency_dirs:
+        - dockerfiles/
+        module: concourse
+        repo: Pix4D/linux-image-build
+```
+
+### Example 3
+
+Concourse job running Dependabot in pip mode for [github-automation-playground] Github repository. This configuration will:
+
+- fetch and parse any Python dependency files i.e `Pipfile` and `Pipfile.lock` in `python/pip_example` on `master` branch. Since in this case we have set `lockfile_only: false` both `Pipfile` and `Pipfile.lock` can be updated.
+
+- fetch and parse any Python dependency files i.e `Pipfile` and `Pipfile.lock` in `python/pip_example` and `python/multiple_dep_single_file` on `staging` branch
+
+- check if any of dependencies given in either `Pipfile` or `Pipfile.lock` files can be updated
+
+- if any of the files can be updated, a new PR in [github-automation-playground] repository is created, proposing the update of the dependencies. PRs are opened against the `master` and `staging` branches
+
+*IMPORTANT:* The user for which the `GITHUB_ACCESS_TOKEN` is set needs to have read and write access to the repository.
+
+```
+---
+jobs:
+- name: dependabot-linux-image-build
+ max_in_flight: 1
+ plan:
+ - task: pipeline-docker-update
+   config:
+     platform: linux
+     image_resource:
+       type: registry-image
+       source:
+         repository: docker.ci.pix4d.com/pix4d-dependabot
+         tag: latest
+         username: pix4d
+         password: ((docker_cloud_pix4d_password))
+     run:
+       path: /bin/sh
+       args:
+       - -c
+       - |
+         cd /home/dependabot/pix4d-dependabot/
+         bundle exec ruby pix4d-dependabot.rb
+   params:
+      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      ARTIFACTORY_PASSWORD: ((concourse_artifactory_password))
+      ARTIFACTORY_USERNAME: concourse
+      EXTRA_INDEX_URL: https://artifactory.ci.pix4d.com/artifactory/api/pypi/pix4d-pypi-local/simple/
+      REPOSITORY_DATA:
+      - branch: master
+        dependency_dirs:
+        - python/pip_example
+        lockfile_only: false
+        module: pip
+        repo: Pix4D/github-automation-playground
+      - branch: staging
+        dependency_dirs:
+        - python/pip_example
+        - python/multiple_dep_single_file
+        module: pip
+        repo: Pix4D/github-automation-playground
 ```
 
 [Pix4D-core-repo]: https://github.com/Pix4D/dependabot-core
