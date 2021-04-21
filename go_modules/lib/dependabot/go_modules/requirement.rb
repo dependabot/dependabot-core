@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-################################################################################
-# For more details on Go version constraints, see:                             #
-# - https://github.com/Masterminds/semver                                      #
-# - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md               #
-################################################################################
+###################################################################################
+# For details on Go version constraints, see: https://golang.org/ref/mod#versions #
+###################################################################################
 
 require "dependabot/utils"
 require "dependabot/go_modules/version"
@@ -131,13 +129,6 @@ module Dependabot
         parts << "0"
         "~> #{parts.join('.')}"
       end
-
-      # NOTE: Dep's caret notation implementation doesn't distinguish between
-      # pre and post-1.0.0 requirements (unlike in JS)
-      def convert_caret_req(req_string)
-        version = req_string.gsub(/^\^?v?/, "")
-        parts = version.split(".")
-        upper_bound = [parts.first.to_i + 1, 0, 0, "a"].map(&:to_s).join(".")
 
         [">= #{version}", "< #{upper_bound}"]
       end
