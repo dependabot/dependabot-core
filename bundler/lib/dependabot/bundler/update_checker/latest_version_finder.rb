@@ -114,6 +114,12 @@ module Dependabot
           ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
+        def requirement_class
+          Utils.requirement_class_for_package_manager(
+            dependency.package_manager
+          )
+        end
+
         def gemfile
           dependency_files.find { |f| f.name == "Gemfile" } ||
             dependency_files.find { |f| f.name == "gems.rb" }

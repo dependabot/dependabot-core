@@ -33,14 +33,7 @@ module Dependabot
 
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          # NOTE: Support ruby-style version requirements that are created from
-          # PR ignore conditions
-          version_reqs = req_string.split(",").map(&:strip)
-          if version_reqs.all? { |s| Gem::Requirement::PATTERN.match?(s) }
-            version_reqs
-          else
-            convert_java_constraint_to_ruby_constraint(req_string)
-          end
+          convert_java_constraint_to_ruby_constraint(req_string)
         end
 
         super(requirements)
@@ -72,9 +65,14 @@ module Dependabot
           raise "Can't convert multiple Java reqs to a single Ruby one"
         end
 
-        return convert_java_range_to_ruby_range(req_string) if req_string&.include?(",")
-
-        convert_java_equals_req_to_ruby(req_string)
+        # NOTE: Support ruby-style version requirements that are created from
+        # PR ignore conditions
+        version_reqs = req_string.split(",").map(&:strip)
+        if req_string.include?(",") && !version_reqs.all? { |s| PATTERN.match?(s) }
+          convert_java_range_to_ruby_range(req_string) if req_string.include?(",")
+        else
+          version_reqs.map { |r| convert_java_equals_req_to_ruby(r) }
+        end
       end
 
       def convert_java_range_to_ruby_range(req_string)
