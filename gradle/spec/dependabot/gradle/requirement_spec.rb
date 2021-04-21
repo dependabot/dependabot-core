@@ -70,6 +70,11 @@ RSpec.describe Dependabot::Gradle::Requirement do
       let(:requirement_string) { "[1.0.0]" }
       it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
     end
+
+    context "with a comma-separated ruby style version requirement" do
+      let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
+    end
   end
 
   describe ".requirements_array" do
@@ -95,6 +100,11 @@ RSpec.describe Dependabot::Gradle::Requirement do
           ]
         )
       end
+    end
+
+    context "with a comma-separated ruby style version requirement" do
+      let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq([described_class.new("~> 4.2.5", ">= 4.2.5.1")]) }
     end
   end
 

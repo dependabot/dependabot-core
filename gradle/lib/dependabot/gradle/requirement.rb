@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/maven/requirement"
 require "dependabot/gradle/version"
 
 module Dependabot
@@ -32,7 +33,14 @@ module Dependabot
 
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          convert_java_constraint_to_ruby_constraint(req_string)
+          # NOTE: Support ruby-style version requirements that are created from
+          # PR ignore conditions
+          version_reqs = req_string.split(",").map(&:strip)
+          if version_reqs.all? { |s| Gem::Requirement::PATTERN.match?(s) }
+            version_reqs
+          else
+            convert_java_constraint_to_ruby_constraint(req_string)
+          end
         end
 
         super(requirements)
@@ -46,7 +54,9 @@ module Dependabot
       private
 
       def self.split_java_requirement(req_string)
-        req_string.split(/(?<=\]|\)),/).flat_map do |str|
+        return [req_string] unless req_string.match?(Maven::Requirement::OR_SYNTAX)
+
+        req_string.split(Maven::Requirement::OR_SYNTAX).flat_map do |str|
           next str if str.start_with?("(", "[")
 
           exacts, *rest = str.split(/,(?=\[|\()/)
