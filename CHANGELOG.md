@@ -1,3 +1,11 @@
+## v0.143.1, 21 April 2021
+
+- Gradle/Maven: Handle ruby style requirements with maven version
+- Bundler: Add missing requirement_class for bundler latest veersion checker
+- Add IgnoreCondition#dependency_name
+- Dependabot::Config::File parse ignore_conditions
+- Dependabot::Config::File parse commit_message_options
+
 ## v0.143.0, 21 April 2021
 
 - Python: Add support for updating `setup.cfg` files @honnix
