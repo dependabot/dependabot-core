@@ -27,7 +27,6 @@
 # - hex
 # - composer
 # - nuget
-# - dep
 # - go_modules
 # - elm
 # - submodules
@@ -40,7 +39,6 @@ $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
-$LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -77,7 +75,6 @@ require "dependabot/config/file_fetcher"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
-require "dependabot/dep"
 require "dependabot/docker"
 require "dependabot/elm"
 require "dependabot/git_submodules"
