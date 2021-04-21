@@ -72,7 +72,6 @@ module Dependabot
                 args: {
                   gemfile_name: gemfile.name,
                   lockfile_name: lockfile.name,
-                  using_bundler2: using_bundler2?,
                   dir: tmp_dir,
                   credentials: credentials,
                   dependencies: dependencies.map(&:to_h)
@@ -298,14 +297,8 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?(".specification") }
         end
 
-        def using_bundler2?
-          return unless lockfile
-
-          lockfile.content.match?(/BUNDLED WITH\s+2/m)
-        end
-
         def bundler_version
-          @bundler_version ||= Helpers.bundler_version(lockfile, options: options)
+          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

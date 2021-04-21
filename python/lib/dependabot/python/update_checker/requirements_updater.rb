@@ -32,7 +32,7 @@ module Dependabot
         def updated_requirements
           requirements.map do |req|
             case req[:file]
-            when "setup.py" then updated_setup_requirement(req)
+            when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)
             when "pyproject.toml" then updated_pyproject_requirement(req)
             when "Pipfile" then updated_pipfile_requirement(req)
             when /\.txt$|\.in$/ then updated_requirement(req)

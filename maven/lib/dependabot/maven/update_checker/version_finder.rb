@@ -6,6 +6,7 @@ require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Maven
@@ -152,10 +153,8 @@ module Dependabot
               url = repository_details.fetch("url")
               response = Excon.head(
                 dependency_files_url(url, version),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
               )
 
               response.status < 400
@@ -173,10 +172,8 @@ module Dependabot
             begin
               response = Excon.get(
                 dependency_metadata_url(repository_details.fetch("url")),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
                 idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults
+                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
               )
               check_response(response, repository_details.fetch("url"))
 
@@ -206,10 +203,10 @@ module Dependabot
 
           @repositories =
             details.reject do |repo|
-              next if repo["password"]
+              next if repo["auth_headers"]
 
-              # Reject this entry if an identical one with a password exists
-              details.any? { |r| r["url"] == repo["url"] && r["password"] }
+              # Reject this entry if an identical one with non-empty auth_headers exists
+              details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
         end
 
@@ -219,7 +216,7 @@ module Dependabot
             new(dependency_files: dependency_files).
             repository_urls(pom: pom).
             map do |url|
-              { "url" => url, "username" => nil, "password" => nil }
+              { "url" => url, "auth_headers" => {} }
             end
         end
 
@@ -229,8 +226,7 @@ module Dependabot
             map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "username" => cred.fetch("username", nil),
-                "password" => cred.fetch("password", nil)
+                "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
               }
             end
         end
@@ -286,6 +282,14 @@ module Dependabot
             gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
+        end
+
+        def auth_headers_finder
+          @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
+        end
+
+        def auth_headers(maven_repo_url)
+          auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
     end

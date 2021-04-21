@@ -108,7 +108,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
               requirement: "0.1.x",
               groups: ["dependencies"],
               source: {
-                type: "private_registry",
+                type: "registry",
                 url: "http://registry.npm.taobao.org"
               }
             }],

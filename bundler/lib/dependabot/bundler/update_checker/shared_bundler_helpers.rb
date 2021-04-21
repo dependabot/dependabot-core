@@ -171,7 +171,6 @@ module Dependabot
                 dir: tmp_dir,
                 gemfile_name: gemfile.name,
                 credentials: credentials,
-                using_bundler2: using_bundler2?
               }
             )
             git_specs.reject do |spec|
@@ -197,7 +196,6 @@ module Dependabot
                 dir: dir,
                 gemfile_name: gemfile.name,
                 credentials: credentials,
-                using_bundler2: using_bundler2?
               }
             )
           end
@@ -232,12 +230,6 @@ module Dependabot
         def sanitized_lockfile_body
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")
-        end
-
-        def using_bundler2?
-          return unless lockfile
-
-          lockfile.content.match?(/BUNDLED WITH\s+2/m)
         end
       end
     end

@@ -19,6 +19,7 @@ module Dependabot
           /.*\.txt$/,
           /.*\.in$/,
           /^setup\.py$/,
+          /^setup\.cfg$/,
           /^pyproject\.toml$/,
           /^pyproject\.lock$/
         ]
@@ -113,8 +114,9 @@ module Dependabot
         return if pipfile
         return if pyproject
         return if get_original_file("setup.py")
+        return if get_original_file("setup.cfg")
 
-        raise "No requirements.txt or setup.py!"
+        raise "Missing required files!"
       end
 
       def pipfile
