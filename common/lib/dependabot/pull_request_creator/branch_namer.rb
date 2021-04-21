@@ -17,7 +17,6 @@ module Dependabot
         @prefix        = prefix
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def new_branch_name
         @name ||=
           begin
@@ -40,8 +39,6 @@ module Dependabot
         # Some users need branch names without slashes
         sanitize_ref(File.join(prefixes, @name).gsub("/", separator))
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 

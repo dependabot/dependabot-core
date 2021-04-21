@@ -19,15 +19,16 @@ module Dependabot
 
       def ignored_versions_for(dep)
         @ignore_conditions.
-          select { |ic| ic.name == dep.name }. # FIXME: wildcard support
-          map { |ic| ic.versions(dep) }.
-          flatten
+          select { |ic| ic.dependency_name == dep.name }. # FIXME: wildcard support
+          map(&:versions).
+          flatten.
+          compact
       end
 
       class IgnoreCondition
-        attr_reader :name
-        def initialize(name:, versions: nil, update_type: nil)
-          @name = name
+        attr_reader :dependency_name
+        def initialize(dependency_name:, versions: nil, update_type: nil)
+          @dependency_name = dependency_name
           @versions = versions || []
           @update_type = update_type
         end

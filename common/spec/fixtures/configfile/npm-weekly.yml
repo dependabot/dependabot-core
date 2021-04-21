@@ -1,4 +1,4 @@
-# NOTE: prefix: values are used by file_spec.rb
+# NOTE: prefix: values are used by common/spec/dependabot/config/file_spec.rb
 version: 2
 updates:
   - package-ecosystem: "npm"

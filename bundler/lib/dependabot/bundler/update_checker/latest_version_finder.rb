@@ -70,7 +70,7 @@ module Dependabot
 
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
-                     reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
           raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
           filtered
@@ -110,8 +110,14 @@ module Dependabot
           )
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
+        def ignore_requirements
+          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
+        end
+
+        def requirement_class
+          Utils.requirement_class_for_package_manager(
+            dependency.package_manager
+          )
         end
 
         def gemfile
