@@ -13,7 +13,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   end
 
   describe "#versions" do
-    subject(:ignored_versions) { ignore_condition.versions(dependency) }
+    subject(:ignored_versions) { ignore_condition.ignored_versions(dependency) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,

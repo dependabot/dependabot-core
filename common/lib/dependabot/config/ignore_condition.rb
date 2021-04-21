@@ -10,14 +10,14 @@ module Dependabot
         ignore_patch_versions
       ).freeze
 
-      attr_reader :dependency_name
+      attr_reader :dependency_name, :versions, :update_types
       def initialize(dependency_name:, versions: nil, update_types: nil)
         @dependency_name = dependency_name
         @versions = versions || []
         @update_types = update_types || []
       end
 
-      def versions(dependency)
+      def ignored_versions(dependency)
         versions_by_type(dependency) + @versions
       end
 

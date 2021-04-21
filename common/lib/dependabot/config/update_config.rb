@@ -6,7 +6,7 @@ module Dependabot
   module Config
     # Configuration for a single ecosystem
     class UpdateConfig
-      attr_reader :commit_message_options
+      attr_reader :commit_message_options, :ignore_conditions
       def initialize(ignore_conditions: nil, commit_message_options: nil)
         @ignore_conditions = ignore_conditions || []
         @commit_message_options = commit_message_options
@@ -15,7 +15,7 @@ module Dependabot
       def ignored_versions_for(dependency)
         @ignore_conditions.
           select { |ic| ic.dependency_name == dependency.name }. # FIXME: wildcard support
-          map { |ic| ic.versions(dependency) }.
+          map { |ic| ic.ignored_versions(dependency) }.
           flatten.
           compact
       end

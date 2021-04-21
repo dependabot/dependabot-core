@@ -26,6 +26,17 @@ module Dependabot
         )
       end
 
+      # Parse the YAML config file
+      def self.parse(config)
+        parsed = YAML.safe_load(config, symbolize_names: true)
+        version = parsed[:version]
+        raise InvalidConfigError, "invalid version #{version}" if version && version != 2
+
+        File.new(updates: parsed[:updates], registries: parsed[:registries])
+      end
+
+      private
+
       PACKAGE_MANAGER_LOOKUP = {
         "bundler" => "bundler",
         "cargo" => "cargo",
@@ -44,24 +55,22 @@ module Dependabot
         "terraform" => "terraform"
       }.freeze
 
-      # Parse the YAML config file
-      def self.parse(config)
-        parsed = YAML.safe_load(config, symbolize_names: true)
-        version = parsed[:version]
-        raise InvalidConfigError, "invalid version #{version}" if version && version != 2
-
-        File.new(updates: parsed[:updates], registries: parsed[:registries])
-      end
-
-      private
+      UPDATE_TYPE_LOOKUP = {
+        "version-update:semver-patch" => :ignore_patch_versions,
+        "version-update:semver-minor" => :ignore_minor_versions,
+        "version-update:semver-major" => :ignore_major_versions
+      }.freeze
 
       def ignore_conditions(cfg)
         ignores = cfg&.dig(:ignore) || []
         ignores.map do |ic|
-          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+          update_types = ic[:"update-types"]&.
+                         map { |t| UPDATE_TYPE_LOOKUP[t.downcase.strip] }&.
+                         compact
+          Dependabot::Config::IgnoreCondition.new(
             dependency_name: ic[:"dependency-name"],
             versions: ic[:versions],
-            update_type: ic[:"update-type"]
+            update_types: update_types
           )
         end
       end
