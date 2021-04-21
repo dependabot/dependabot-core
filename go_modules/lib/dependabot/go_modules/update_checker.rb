@@ -110,10 +110,8 @@ module Dependabot
       end
 
       # Override the base class's check for whether this is a git dependency,
-      # since not all dep git dependencies have a SHA version (sometimes their
+      # since not all go mod git dependencies have a SHA version (sometimes their
       # version is the tag)
-      #
-      # TODO should this be removed entirely? I'm not sure what it referred to originally, and this functionality doesn't ring a bell for `go mod`...
       def existing_version_is_sha?
         git_dependency?
       end
