@@ -5,6 +5,7 @@ require "dependabot/dependency"
 
 RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_name) { "test" }
+  let(:dependency_version) { "1.2.3" }
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
 
   describe "#versions" do
@@ -14,10 +15,11 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         name: dependency_name,
         requirements: [],
         package_manager: "npm_and_yarn",
-        version: "1.2.3"
+        version: dependency_version
       )
     end
 
+    # Test helpers for reasoning about specific semver versions:
     def expect_allowed(*versions)
       req = Gem::Requirement.new(ignored_versions.flat_map { |s| s.split(",").map(&:strip) })
       versions.map do |v|
@@ -34,7 +36,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
     end
 
-    context "without versions or update-types" do
+    context "without versions or update_types" do
       let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
 
       it "ignores all versions" do
@@ -56,7 +58,6 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     end
 
     context "with update_types" do
-      let(:update_types) { nil }
       let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
 
       context "with ignore_patch_versions" do
@@ -70,6 +71,14 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "returns the expected range" do
           expect(ignored_versions).to eq([">= 1.2.a, < 1.3"])
         end
+
+        context "and a non-semver dependency" do
+          let(:dependency_version) { "Finchley.SR3" }
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= Finchley.SR3.a, < Finchley.SR3.999999"])
+          end
+        end
       end
 
       context "with ignore_minor_versions" do
@@ -82,6 +91,14 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         it "returns the expected range" do
           expect(ignored_versions).to eq([">= 1.a, < 2"])
+        end
+
+        context "and a non-semver dependency" do
+          let(:dependency_version) { "Finchley.SR3" }
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= Finchley.a, < Finchley.999999"])
+          end
         end
       end
 

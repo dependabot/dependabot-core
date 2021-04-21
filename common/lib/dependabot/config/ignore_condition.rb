@@ -53,12 +53,26 @@ module Dependabot
           *version_parts.first(precision - 1),
           "a"
         ].join(".")
-        upper_bound = [
-          *version_parts.first(precision - 2),
-          version_parts[precision - 2].to_i + 1
-        ].join(".")
+        upper_bound =
+          if numeric_version?(version)
+            [
+              *version_parts.first(precision - 2),
+              version_parts[precision - 2].to_i + 1
+            ].join(".")
+          else
+            [
+              *version_parts.first(precision - 1),
+              version_parts[precision - 1].to_i + 999_999
+            ].join(".")
+          end
 
         ">= #{lower_bound}, < #{upper_bound}"
+      end
+
+      def numeric_version?(version)
+        return false if version == ""
+
+        Gem::Version.correct?(version)
       end
     end
   end
