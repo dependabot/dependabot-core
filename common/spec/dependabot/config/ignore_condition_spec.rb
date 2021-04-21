@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "dependabot/config/ignore_condition"
+require "dependabot/dependency"
+
 RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_name) { "test" }
   let(:versions) { nil }
@@ -55,8 +58,12 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       let(:update_types) { [:ignore_patch_versions] }
 
       it "ignores expected versions" do
-        expect_allowed("1.3.0", "2.0.0")
+        expect_allowed("1.3", "1.3.0", "2.0.0")
         expect_ignored("1.2.3", "1.2.4", "1.2.5")
+      end
+
+      it "ignores the expected range" do
+        expect(ignored_versions).to eq([">= 1.2.a, < 1.3"])
       end
     end
 
@@ -65,7 +72,11 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
       it "ignores expected versions" do
         expect_allowed("2.0.0")
-        expect_ignored("1.2.3", "1.2.4", "1.3.0")
+        expect_ignored("1.2.3", "1.2.4", "1.3", "1.3.0")
+      end
+
+      it "ignores the expected range" do
+        expect(ignored_versions).to eq([">= 1.a, < 2"])
       end
     end
 
@@ -74,6 +85,23 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
       it "ignores expected versions" do
         expect_ignored("1.2.3", "1.2.4", "1.3.0", "2.0.0")
+      end
+
+      it "ignores the expected range" do
+        expect(ignored_versions).to eq([">= 0"])
+      end
+    end
+
+    context "with minor and patch versions ignored" do
+      let(:update_types) { %i(ignore_minor_versions ignore_patch_versions) }
+
+      it "ignores expected versions" do
+        expect_allowed("2.0.0")
+        expect_ignored("1.2.3", "1.2.4", "1.3.0")
+      end
+
+      it "ignores the expected range" do
+        expect(ignored_versions).to eq([">= 1.a, < 2"])
       end
     end
   end

@@ -23,14 +23,18 @@ module Dependabot
 
       private
 
+      def effective_update_type
+        UPDATE_TYPES.find { |t| @update_types.include?(t) }
+      end
+
       def versions_by_type(dep)
-        case @update_types.first # FIXME: flatmap
+        case effective_update_type
         when :ignore_patch_versions
-          [ignore_version(dep.version, 4)]
-        when :ignore_minor_versions
           [ignore_version(dep.version, 3)]
-        when :ignore_major_versions
+        when :ignore_minor_versions
           [ignore_version(dep.version, 2)]
+        when :ignore_major_versions
+          [">= 0"]
         else
           []
         end
@@ -42,7 +46,7 @@ module Dependabot
                         first(precision)
 
         lower_bound = [
-          *version_parts.first(precision - 2),
+          *version_parts.first(precision - 1),
           "a"
         ].join(".")
         upper_bound = [
