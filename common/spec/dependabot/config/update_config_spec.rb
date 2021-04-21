@@ -25,8 +25,8 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     context "with ignored versions" do
       let(:ignore_conditions) do
-        [Dependabot::Config::UpdateConfig::IgnoreCondition.new(dependency_name: "@types/node",
-                                                               versions: [">= 14.14.x, < 15"])]
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "@types/node",
+                                                 versions: [">= 14.14.x, < 15"])]
       end
 
       it "returns versions" do

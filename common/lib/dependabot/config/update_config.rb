@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
+require "dependabot/config/ignore_condition"
+
 module Dependabot
   module Config
     # Configuration for a single ecosystem
     class UpdateConfig
       attr_reader :commit_message_options
-
-      module IgnoredUpdateType
-        VERSION_UPDATES_MAJOR = "version-update:semver-major"
-        VERSION_UPDATES_MINOR = "version-update:semver-minor"
-        VERSION_UPDATES_PATCH = "version-update:semver-patch"
-      end
-
       def initialize(ignore_conditions: nil, commit_message_options: nil)
         @ignore_conditions = ignore_conditions || []
         @commit_message_options = commit_message_options
@@ -23,51 +18,6 @@ module Dependabot
           map { |ic| ic.versions(dependency) }.
           flatten.
           compact
-      end
-
-      class IgnoreCondition
-        attr_reader :dependency_name
-        def initialize(dependency_name:, versions: nil, update_types: nil)
-          @dependency_name = dependency_name
-          @versions = versions || []
-          @update_types = update_types || []
-        end
-
-        def versions(dependency)
-          versions_by_type(dependency) + @versions
-        end
-
-        private
-
-        def versions_by_type(dep)
-          case @update_types.first # FIXME: flatmap
-          when IgnoredUpdateType::VERSION_UPDATES_PATCH
-            [ignore_version(dep.version, 4)]
-          when IgnoredUpdateType::VERSION_UPDATES_MINOR
-            [ignore_version(dep.version, 3)]
-          when IgnoredUpdateType::VERSION_UPDATES_MAJOR
-            [ignore_version(dep.version, 2)]
-          else
-            []
-          end
-        end
-
-        def ignore_version(version, precision)
-          parts = version.split(".")
-          version_parts = parts.fill(0, parts.length...[3, precision].max).
-                          first(precision)
-
-          lower_bound = [
-            *version_parts.first(precision - 2),
-            "a"
-          ].join(".")
-          upper_bound = [
-            *version_parts.first(precision - 2),
-            version_parts[precision - 2].to_i + 1
-          ].join(".")
-
-          ">= #{lower_bound}, < #{upper_bound}"
-        end
       end
 
       class CommitMessageOptions
