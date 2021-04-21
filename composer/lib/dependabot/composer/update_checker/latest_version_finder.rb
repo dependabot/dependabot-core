@@ -60,7 +60,7 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered =
             versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+            reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
           raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
 
@@ -178,7 +178,7 @@ module Dependabot
           dependency_files.find { |f| f.name == "auth.json" }
         end
 
-        def ignore_reqs
+        def ignore_requirements
           ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 

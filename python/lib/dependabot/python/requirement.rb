@@ -50,7 +50,7 @@ module Dependabot
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
 
-          req_string.split(",").map do |r|
+          req_string.split(",").map(&:strip).map do |r|
             convert_python_constraint_to_ruby_constraint(r)
           end
         end
