@@ -341,7 +341,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             requirement: "^1.0.0",
             groups: [],
             source: {
-              type: "private_registry",
+              type: "registry",
               url: "https://npm.fury.io/dependabot"
             }
           }],
@@ -551,7 +551,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
                 requirement: "^1.0.0",
                 groups: [],
                 source: {
-                  type: "private_registry",
+                  type: "registry",
                   url: "http://npm.fury.io/dependabot"
                 }
               }],

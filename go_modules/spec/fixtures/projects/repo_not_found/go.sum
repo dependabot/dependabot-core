@@ -1,0 +1,3 @@
+github.com/go-openapi/spec v0.19.2/go.mod h1:sCxk3jxKgioEJikev4fgkNmwS+3kuYdJtcsZsD5zxMY=
+github.com/mholt/caddy v0.0.0-20180213163048-2de495001514 h1:Wb1PlT4DAYSqOEd03MsqkdkXnTxA8v9pKjdpxbqM1kY=
+k8s.io/kubernetes v1.15.9/go.mod h1:/tEqRpV2w+ynfP0Sac5Ay150rNWRkS59Fe5Tf5ngWvw=

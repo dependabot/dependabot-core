@@ -175,8 +175,11 @@ module Dependabot
 
         return 1 if NAMED_QUALIFIERS_HIERARCHY[other_token]
 
-        token = token.to_i if token.match?(/^\d+$/)
-        other_token = other_token.to_i if other_token.match?(/^\d+$/)
+        if token.match?(/\A\d+\z/) && other_token.match?(/\A\d+\z/)
+          token = token.to_i
+          other_token = other_token.to_i
+        end
+
         token <=> other_token
       end
     end

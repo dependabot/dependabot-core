@@ -62,7 +62,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^0.0.1",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -84,7 +84,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "*",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -127,7 +127,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.1.4",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -149,7 +149,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.0.0",
                   file: "package.json",
                   groups: ["devDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -203,7 +203,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["dependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "http://registry.npm.taobao.org"
                   }
                 }]
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://npm.fury.io/dependabot"
                   }
                 }]
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://npm.pkg.github.com"
                   }
                 }]
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://gitlab.mydomain.com/api/v4/"\
                          "packages/npm"
                   }
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://artifactory01.mydomain.com/artifactory/api/"\
                          "npm/my-repo"
                   }
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["dependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://artifactory01.mydomain.com/artifactory/api/"\
                          "npm/my-repo"
                   }
@@ -335,7 +335,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     file: "package.json",
                     groups: ["dependencies"],
                     source: {
-                      type: "private_registry",
+                      type: "registry",
                       url: "https://artifactory01.mydomain.com/artifactory/"\
                            "api/npm/my-repo"
                     }
@@ -359,7 +359,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       file: "package.json",
                       groups: ["dependencies"],
                       source: {
-                        type: "private_registry",
+                        type: "registry",
                         url: "https://artifactory01.mydomain.com/artifactory/"\
                              "api/npm/my-repo"
                       }
@@ -383,7 +383,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://api.bintray.com/npm/dependabot/npm-private"
                   }
                 }]
@@ -409,7 +409,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.0.0",
                   file: "package.json",
                   groups: ["optionalDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -714,7 +714,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^0.0.1",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.npmjs.org" }
                 }]
               )
             end
@@ -766,7 +766,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^0.0.1",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -788,7 +788,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "next",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -810,7 +810,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.0.0",
                   file: "package.json",
                   groups: ["devDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -834,7 +834,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.0.0",
                   file: "package.json",
                   groups: ["optionalDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -860,7 +860,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^0.1.0",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -943,7 +943,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["dependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "http://registry.npm.taobao.org"
                   }
                 }]
@@ -964,7 +964,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   file: "package.json",
                   groups: ["devDependencies"],
                   source: {
-                    type: "private_registry",
+                    type: "registry",
                     url: "https://npm.fury.io/dependabot"
                   }
                 }]
@@ -1195,12 +1195,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "^1.1.0",
                   file: "packages/package1/package.json",
                   groups: ["devDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }, {
                   requirement: "^1.0.0",
                   file: "other_package/package.json",
                   groups: ["devDependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -1218,17 +1218,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   requirement: "1.2.0",
                   file: "package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }, {
                   requirement: "^1.2.1",
                   file: "other_package/package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }, {
                   requirement: "^1.2.1",
                   file: "packages/package1/package.json",
                   groups: ["dependencies"],
-                  source: nil
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
                 }]
               )
             end
@@ -1249,7 +1249,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 requirement: "^3.6.0",
                 file: "package.json",
                 groups: ["devDependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end
@@ -1264,12 +1264,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 requirement: "^1.1.0",
                 file: "packages/package1/package.json",
                 groups: ["devDependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }, {
                 requirement: "^1.0.0",
                 file: "packages/other_package/package.json",
                 groups: ["devDependencies"],
-                source: nil
+                source: { type: "registry", url: "https://registry.npmjs.org" }
               }]
             )
           end

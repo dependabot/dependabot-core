@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
       }],
       unlock_requirement: unlock_requirement,
       latest_allowable_version: latest_allowable_version,
-      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
+      options: {}
     )
   end
   let(:ignored_versions) { [] }
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           end
 
           let(:rubygems_versions) do
-            fixture("ruby", "rubygems_responses", "versions-public_suffix.json")
+            fixture("rubygems_responses", "versions-public_suffix.json")
           end
 
           before do
@@ -443,18 +443,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         it "takes the minimum ruby version into account" do
           expect(resolver.latest_resolvable_version_details[:version]).
             to eq(Gem::Version.new("2.0.1"))
-        end
-
-        context "that isn't satisfied by the dependencies", :bundler_v1_only do
-          let(:dependency_files) do
-            bundler_project_dependency_files("imports_gemspec_version_clash_old_required_ruby_no_lockfile")
-          end
-          let(:current_version) { "3.0.1" }
-
-          it "ignores the minimum ruby version in the gemspec" do
-            expect(resolver.latest_resolvable_version_details[:version]).
-              to eq(Gem::Version.new("7.2.0"))
-          end
         end
 
         context "that isn't satisfied by the dependencies", :bundler_v2_only do

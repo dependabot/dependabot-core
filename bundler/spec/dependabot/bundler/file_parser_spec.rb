@@ -13,8 +13,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     described_class.new(
       dependency_files: dependency_files,
       source: source,
-      reject_external_code: reject_external_code,
-      options: { bundler_2_available: PackageManagerHelper.use_bundler_2? }
+      reject_external_code: reject_external_code
     )
   end
   let(:source) do
@@ -137,7 +136,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "from a gems.rb and gems.locked" do
-      let(:dependency_files) { bundler_project_dependency_files("version_specified_bundler_2") }
+      let(:dependency_files) { bundler_project_dependency_files("version_specified_gems_rb") }
 
       its(:length) { is_expected.to eq(2) }
 

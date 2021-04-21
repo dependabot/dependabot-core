@@ -16,10 +16,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories,
-      options: {
-        bundler_2_available: PackageManagerHelper.use_bundler_2?
-      }
+      security_advisories: security_advisories
     )
   end
   let(:credentials) do
@@ -1367,15 +1364,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to_return(status: 401)
         end
 
-        it "raises a helpful error", :bundler_v1_only do
-          expect { checker.latest_resolvable_version }.
-            to raise_error do |error|
-              expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
-              expect(error.dependency_urls).
-                to eq(["git://github.com/fundingcircle/prius.git"])
-            end
-        end
-
         it "raises a helpful error", :bundler_v2_only do
           expect { checker.latest_resolvable_version }.
             to raise_error do |error|
@@ -1410,6 +1398,23 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 to eq(["git@github.com:fundingcircle/prius"])
             end
         end
+      end
+    end
+
+    context "with a gem that depends on bundler" do
+      let(:dependency_files) { bundler_project_dependency_files("guard_bundler") }
+      let(:requirements) do
+        [{ file: "Gemfile", requirement: "~> 2.2.1, <= 3.0.0", groups: [], source: nil }]
+      end
+      let(:dependency_name) { "guard-bundler" }
+      let(:current_version) { "2.2.1" }
+
+      context "using bundler v1", :bundler_v1_only do
+        it { is_expected.to eq(Gem::Version.new("2.2.1")) }
+      end
+
+      context "using bundler v2", :bundler_v2_only do
+        it { is_expected.to eq(Gem::Version.new("3.0.0")) }
       end
     end
   end

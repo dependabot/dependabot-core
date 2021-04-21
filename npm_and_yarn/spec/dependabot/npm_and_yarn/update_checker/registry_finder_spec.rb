@@ -176,7 +176,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with a private registry source" do
       let(:source) do
-        { type: "private_registry", url: "https://npm.fury.io/dependabot" }
+        { type: "registry", url: "https://npm.fury.io/dependabot" }
       end
 
       it { is_expected.to eq("npm.fury.io/dependabot") }
@@ -281,7 +281,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     context "with a private registry source" do
       let(:source) do
-        { type: "private_registry", url: "http://npm.mine.io/dependabot/" }
+        { type: "registry", url: "http://npm.mine.io/dependabot/" }
       end
 
       it { is_expected.to eq("http://npm.mine.io/dependabot/etag") }
