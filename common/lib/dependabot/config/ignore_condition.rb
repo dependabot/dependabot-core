@@ -10,6 +10,8 @@ module Dependabot
         ignore_patch_versions
       ).freeze
 
+      ALL_VERSIONS = ">= 0"
+
       attr_reader :dependency_name, :versions, :update_types
       def initialize(dependency_name:, versions: nil, update_types: nil)
         @dependency_name = dependency_name
@@ -18,6 +20,8 @@ module Dependabot
       end
 
       def ignored_versions(dependency)
+        return [ALL_VERSIONS] if @versions.empty? && @update_types.empty?
+
         versions_by_type(dependency) + @versions
       end
 
@@ -34,7 +38,7 @@ module Dependabot
         when :ignore_minor_versions
           [ignore_version(dep.version, 2)]
         when :ignore_major_versions
-          [">= 0"]
+          [ALL_VERSIONS]
         else
           []
         end

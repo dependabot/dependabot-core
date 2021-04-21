@@ -5,15 +5,7 @@ require "dependabot/dependency"
 
 RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_name) { "test" }
-  let(:versions) { nil }
-  let(:update_types) { nil }
-  let(:ignore_condition) do
-    described_class.new(
-      dependency_name: dependency_name,
-      versions: versions,
-      update_types: update_types
-    )
-  end
+  let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
 
   describe "#versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency) }
@@ -42,9 +34,18 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
     end
 
-    context "with static ignored versions" do
-      let(:versions) { [">= 2.0.0"] }
-      it "returns the versions" do
+    context "without versions or update-types" do
+      let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
+
+      it "ignores all versions" do
+        expect(ignored_versions).to eq([">= 0"])
+      end
+    end
+
+    context "with versions" do
+      let(:ignore_condition) { described_class.new(dependency_name: dependency_name, versions: [">= 2.0.0"]) }
+
+      it "returns the static versions" do
         expect(ignored_versions).to eq([">= 2.0.0"])
       end
 
@@ -54,54 +55,54 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
     end
 
-    context "with patch versions ignored" do
-      let(:update_types) { [:ignore_patch_versions] }
+    context "with update_types" do
+      let(:update_types) { nil }
+      let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
 
-      it "ignores expected versions" do
-        expect_allowed("1.3", "1.3.0", "2.0.0")
-        expect_ignored("1.2.3", "1.2.4", "1.2.5")
+      context "with ignore_patch_versions" do
+        let(:update_types) { [:ignore_patch_versions] }
+
+        it "ignores expected versions" do
+          expect_allowed("1.3", "1.3.0", "2.0.0")
+          expect_ignored("1.2.3", "1.2.4", "1.2.5")
+        end
+
+        it "returns the expected range" do
+          expect(ignored_versions).to eq([">= 1.2.a, < 1.3"])
+        end
       end
 
-      it "ignores the expected range" do
-        expect(ignored_versions).to eq([">= 1.2.a, < 1.3"])
-      end
-    end
+      context "with ignore_minor_versions" do
+        let(:update_types) { [:ignore_minor_versions] }
 
-    context "with minor versions ignored" do
-      let(:update_types) { [:ignore_minor_versions] }
+        it "ignores expected versions" do
+          expect_allowed("2.0.0")
+          expect_ignored("1.2.3", "1.2.4", "1.3", "1.3.0")
+        end
 
-      it "ignores expected versions" do
-        expect_allowed("2.0.0")
-        expect_ignored("1.2.3", "1.2.4", "1.3", "1.3.0")
-      end
-
-      it "ignores the expected range" do
-        expect(ignored_versions).to eq([">= 1.a, < 2"])
-      end
-    end
-
-    context "with major versions ignored" do
-      let(:update_types) { [:ignore_major_versions] }
-
-      it "ignores expected versions" do
-        expect_ignored("1.2.3", "1.2.4", "1.3.0", "2.0.0")
+        it "returns the expected range" do
+          expect(ignored_versions).to eq([">= 1.a, < 2"])
+        end
       end
 
-      it "ignores the expected range" do
-        expect(ignored_versions).to eq([">= 0"])
+      context "with ignore_major_versions" do
+        let(:update_types) { [:ignore_major_versions] }
+
+        it "ignores expected versions" do
+          expect_ignored("1.2.3", "1.2.4", "1.3.0", "2.0.0")
+        end
+
+        it "returns the expected range" do
+          expect(ignored_versions).to eq([">= 0"])
+        end
       end
-    end
 
-    context "with minor and patch versions ignored" do
-      let(:update_types) { %i(ignore_minor_versions ignore_patch_versions) }
+      context "with ignore_minor_versions and ignore_patch_versions" do
+        let(:update_types) { %i(ignore_minor_versions ignore_patch_versions) }
 
-      it "ignores expected versions" do
-        expect_allowed("2.0.0")
-        expect_ignored("1.2.3", "1.2.4", "1.3.0")
-      end
-
-      it "ignores the expected range" do
-        expect(ignored_versions).to eq([">= 1.a, < 2"])
+        it "behaves like ignore_minor_versions" do
+          expect(ignored_versions).to eq([">= 1.a, < 2"])
+        end
       end
     end
   end
