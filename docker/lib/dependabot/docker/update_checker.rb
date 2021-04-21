@@ -173,9 +173,8 @@ module Dependabot
         tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
           select { |tag| prefix_of(tag) == original_prefix }.
-          select { |tag| suffix_of(tag) == original_suffix }.
-          select { |tag| format_of(tag) == original_format }.
-          reject { |tag| commit_sha_suffix?(tag) }
+          select { |tag| suffix_of(tag) == original_suffix || commit_sha_suffix?(tag) }.
+          select { |tag| format_of(tag) == original_format }
       end
 
       def remove_version_downgrades(candidate_tags, version)
@@ -190,7 +189,7 @@ module Dependabot
         # can't order on those but will try to, so instead we should exclude
         # them (unless there's a `latest` version pushed to the registry, in
         # which case we'll use that to find the latest version)
-        return false unless tag.match?(/(^|\-)[0-9a-f]{7,}$/)
+        return false unless tag.match?(/(^|\-g?)[0-9a-f]{7,}$/)
 
         !tag.match?(/(^|\-)\d+$/)
       end
