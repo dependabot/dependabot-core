@@ -202,7 +202,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
             requirement: "^1.0",
             groups: [],
             source: {
-              type: "private_registry",
+              type: "registry",
               url: "https://npm.private-registry.io/dependabot"
             }
           }],
