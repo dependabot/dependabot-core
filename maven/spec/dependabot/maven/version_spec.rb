@@ -19,6 +19,11 @@ RSpec.describe Dependabot::Maven::Version do
       let(:version_string) { "Finchley" }
       it { is_expected.to eq(true) }
     end
+
+    context "with a dynamic version" do
+      let(:version_string) { "1.+" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#to_s" do

@@ -64,6 +64,11 @@ RSpec.describe Dependabot::Gradle::Requirement do
         let(:requirement_string) { "+" }
         its(:to_s) { is_expected.to eq(Gem::Requirement.new(">= 0").to_s) }
       end
+
+      context "with a comma-separated dynamic version requirements" do
+        let(:requirement_string) { "1.+, 2.+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0", "~> 2.0").to_s) }
+      end
     end
 
     context "with a hard requirement" do
@@ -105,6 +110,11 @@ RSpec.describe Dependabot::Gradle::Requirement do
     context "with a comma-separated ruby style version requirement" do
       let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
       it { is_expected.to eq([described_class.new("~> 4.2.5", ">= 4.2.5.1")]) }
+    end
+
+    context "with a comma-separated ruby style requirement with gradle versions" do
+      let(:requirement_string) { ">= Finchley.a, < Finchley.999999" }
+      it { is_expected.to eq([described_class.new(">= Finchley.a", "< Finchley.999999")]) }
     end
   end
 
