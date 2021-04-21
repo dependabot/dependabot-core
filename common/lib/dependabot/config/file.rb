@@ -59,7 +59,7 @@ module Dependabot
         ignores = cfg&.dig(:ignore) || []
         ignores.map do |ic|
           Dependabot::Config::UpdateConfig::IgnoreCondition.new(
-            name: ic[:"dependency-name"],
+            dependency_name: ic[:"dependency-name"],
             versions: ic[:versions]
           )
         end
