@@ -56,6 +56,56 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         expect(ignored_versions).to eq([">= 14.14.x, < 15", ">= 15, < 16"])
       end
     end
+
+    context "with update_types and versions" do
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "@types/node",
+                                                 versions: [">= 14.14.x, < 15"],
+                                                 update_types: [:ignore_minor_versions])]
+      end
+
+      it "returns versions" do
+        expect(ignored_versions).to eq([">= 12.13.a, < 13", ">= 14.14.x, < 15"])
+      end
+    end
+
+    context "with duplicate update_types" do
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "@types/node",
+            update_types: [:ignore_minor_versions]
+          ),
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "@types/node",
+            update_types: [:ignore_minor_versions]
+          )
+        ]
+      end
+
+      it "returns versions" do
+        expect(ignored_versions).to eq([">= 12.13.a, < 13"])
+      end
+    end
+
+    context "with multiple update_types" do
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "@types/*",
+            update_types: [:ignore_major_versions]
+          ),
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: "@types/node",
+            update_types: [:ignore_minor_versions]
+          )
+        ]
+      end
+
+      it "returns versions" do
+        expect(ignored_versions).to eq([">= 13.a, < 14", ">= 12.13.a, < 13"])
+      end
+    end
   end
 
   describe "#commit_message_options" do

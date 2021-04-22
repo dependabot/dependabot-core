@@ -19,7 +19,8 @@ module Dependabot
           select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }.
           map { |ic| ic.ignored_versions(dependency) }.
           flatten.
-          compact
+          compact.
+          uniq
       end
 
       def self.wildcard_match?(wildcard_string, candidate_string)
