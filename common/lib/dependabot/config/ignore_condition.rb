@@ -58,7 +58,7 @@ module Dependabot
         parts = version.split(".")
         return [] if parts.size < 2
 
-        if parts.size > 2
+        if Gem::Version.correct?(version)
           lower_parts = parts.first(2) + ["a"]
           upper_parts = parts.first(1)
           lower_parts[1] = lower_parts[1].to_i + 1
