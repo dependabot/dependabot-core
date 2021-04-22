@@ -1,11 +1,13 @@
 ## v0.143.2, 22 April 2021
 
+- Dependabot::Config::IgnoreCondition support dependency wildcards
 - Dependabot::Config::IgnoreCondition support `update-types`
+- go_modules: clarify comment @jeffwidman
 
 ## v0.143.1, 21 April 2021
 
 - Gradle/Maven: Handle ruby style requirements with maven version
-- Bundler: Add missing requirement_class for bundler latest veersion checker
+- Bundler: Add missing requirement_class for bundler latest version checker
 - Add IgnoreCondition#dependency_name
 - Dependabot::Config::File parse ignore_conditions
 - Dependabot::Config::File parse commit_message_options
