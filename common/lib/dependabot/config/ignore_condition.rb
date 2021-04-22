@@ -27,46 +27,60 @@ module Dependabot
 
       private
 
-      def effective_update_type
-        UPDATE_TYPES.find { |t| @update_types.include?(t) }
-      end
+      def versions_by_type(dependency)
+        parts = dependency.version.split(".")
 
-      def versions_by_type(dep)
-        case effective_update_type
-        when :ignore_patch_versions
-          [ignore_version(dep.version, 3)]
-        when :ignore_minor_versions
-          [ignore_version(dep.version, 2)]
-        when :ignore_major_versions
-          [ALL_VERSIONS]
-        else
-          []
-        end
-      end
+        @update_types.flat_map do |t|
+          case t
+          when :ignore_patch_versions
+            return [] unless parts.size > 2
 
-      def ignore_version(version, precision)
-        parts = version.split(".")
-        version_parts = parts.fill(0, parts.length...[3, precision].max).
-                        first(precision)
+            lower_parts = parts.first(2) + ["a"]
+            upper_parts = parts.first(2)
+            upper_parts[1] = upper_parts[1].to_i + 1
+            lower_bound = ">= #{lower_parts.join('.')}"
+            upper_bound = "< #{upper_parts.join('.')}"
+            ["#{lower_bound}, #{upper_bound}"]
 
-        lower_bound = [
-          *version_parts.first(precision - 1),
-          "a"
-        ].join(".")
-        upper_bound =
-          if numeric_version?(version)
-            [
-              *version_parts.first(precision - 2),
-              version_parts[precision - 2].to_i + 1
-            ].join(".")
+          when :ignore_minor_versions
+            return [] if parts.size < 2
+
+            if parts.size > 2
+              lower_parts = parts.first(2) + ["a"]
+              upper_parts = parts.first(1)
+              lower_parts[1] = lower_parts[1].to_i + 1
+              upper_parts[0] = upper_parts[0].to_i + 1
+              lower_bound = ">= #{lower_parts.join('.')}"
+              upper_bound = "< #{upper_parts.join('.')}"
+            else
+              lower_parts = parts.first(1) + ["a"]
+              upper_parts = parts.first(1)
+              begin
+                upper_parts[0] = Integer(upper_parts[0]) + 1
+              rescue ArgumentError
+                upper_parts.push(999_999)
+              end
+              lower_bound = ">= #{lower_parts.join('.')}"
+              upper_bound = "< #{upper_parts.join('.')}"
+            end
+
+            ["#{lower_bound}, #{upper_bound}"]
+
+          when :ignore_major_versions
+            return [] unless parts.size > 1
+
+            lower_parts = parts.first(1) + ["a"]
+            upper_parts = parts.first(1)
+            lower_parts[0] = lower_parts[0].to_i + 1
+            upper_parts[0] = upper_parts[0].to_i + 2
+            lower_bound = ">= #{lower_parts.join('.')}"
+            upper_bound = "< #{upper_parts.join('.')}"
+
+            ["#{lower_bound}, #{upper_bound}"]
           else
-            [
-              *version_parts.first(precision - 1),
-              version_parts[precision - 1].to_i + 999_999
-            ].join(".")
+            []
           end
-
-        ">= #{lower_bound}, < #{upper_bound}"
+        end.compact
       end
 
       def numeric_version?(version)
