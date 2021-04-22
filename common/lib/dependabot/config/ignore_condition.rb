@@ -91,12 +91,6 @@ module Dependabot
 
         ["#{lower_bound}, #{upper_bound}"]
       end
-
-      def numeric_version?(version)
-        return false if version == ""
-
-        Gem::Version.correct?(version)
-      end
     end
   end
 end
