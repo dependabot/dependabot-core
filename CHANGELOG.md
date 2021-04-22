@@ -1,3 +1,7 @@
+## v0.143.2, 22 April 2021
+
+- Dependabot::Config::IgnoreCondition support `update-types`
+
 ## v0.143.1, 21 April 2021
 
 - Gradle/Maven: Handle ruby style requirements with maven version
