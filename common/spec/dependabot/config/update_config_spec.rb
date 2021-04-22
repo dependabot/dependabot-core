@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       )
     end
     let(:ignore_conditions) { [] }
-    let(:config) { Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions) }
+    let(:config) { described_class.new(ignore_conditions: ignore_conditions) }
 
     it "returns empty when not defined" do
       expect(ignored_versions).to eq([])
@@ -31,6 +31,29 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
       it "returns versions" do
         expect(ignored_versions).to eq([">= 14.14.x, < 15"])
+      end
+    end
+
+    context "with a wildcard dependency name" do
+      let(:ignore_conditions) do
+        [
+          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+            dependency_name: "@types/*",
+            versions: [">= 14.14.x, < 15"]
+          ),
+          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+            dependency_name: "@types/node",
+            versions: [">= 15, < 16"]
+          ),
+          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+            dependency_name: "eslint",
+            versions: [">= 2.9.0, < 3"]
+          )
+        ]
+      end
+
+      it "returns matched versions" do
+        expect(ignored_versions).to eq([">= 14.14.x, < 15", ">= 15, < 16"])
       end
     end
   end
@@ -52,6 +75,124 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
     it "does not include scope" do
       expect(config.update_config("npm_and_yarn").commit_message_options.include_scope?).to eq(false)
+    end
+  end
+
+  describe ".wildcard_match?" do
+    def wildcard_match?(wildcard_string, candidate_string)
+      described_class.wildcard_match?(wildcard_string, candidate_string)
+    end
+
+    context "without a wildcard" do
+      it "with a matching string" do
+        expect(wildcard_match?("bus", "bus")).to eq(true)
+      end
+
+      it "with different capitalisation" do
+        expect(wildcard_match?("bus", "Bus")).to eq(true)
+      end
+
+      it "with a superstring" do
+        expect(wildcard_match?("bus", "Business")).to eq(false)
+      end
+
+      it "with a substring" do
+        expect(wildcard_match?("bus", "bu")).to eq(false)
+      end
+
+      it "with a string that ends in the same way" do
+        expect(wildcard_match?("bus", "blunderbus")).to eq(false)
+      end
+
+      it "with a regex character and matching string" do
+        expect(wildcard_match?("bus.", "bus.")).to eq(true)
+      end
+
+      it "with a regex character and superstring" do
+        expect(wildcard_match?("bus.", "bus.iness")).to eq(false)
+      end
+    end
+
+    context "with a wildcard" do
+      it "at the start with a matching string" do
+        expect(wildcard_match?("*bus", "*bus")).to eq(true)
+      end
+
+      it "at the start with a matching string (except the wildcard)" do
+        expect(wildcard_match?("*bus", "bus")).to eq(true)
+      end
+
+      it "at the start with a string that ends in the same way" do
+        expect(wildcard_match?("*bus", "blunderbus")).to eq(true)
+      end
+
+      it "at the start with a superstring" do
+        expect(wildcard_match?("*bus", "*business")).to eq(false)
+      end
+
+      it "at the start with a substring" do
+        expect(wildcard_match?("*bus", "bu")).to eq(false)
+      end
+
+      it "at the end with a matching string" do
+        expect(wildcard_match?("bus*", "bus*")).to eq(true)
+      end
+
+      it "at the end with a matching string (except the wildcard)" do
+        expect(wildcard_match?("bus*", "bus")).to eq(true)
+      end
+
+      it "at the end with a string that ends in the same way" do
+        expect(wildcard_match?("bus*", "blunderbus")).to eq(false)
+      end
+
+      it "at the end with a superstring" do
+        expect(wildcard_match?("bus*", "bus*iness")).to eq(true)
+      end
+
+      it "at the end with a substring" do
+        expect(wildcard_match?("bus*", "bu")).to eq(false)
+      end
+
+      it "in the middle with a matching string" do
+        expect(wildcard_match?("bu*s", "bu*s")).to eq(true)
+      end
+
+      it "in the middle with a matching string (except the wildcard)" do
+        expect(wildcard_match?("bu*s", "bus")).to eq(true)
+      end
+
+      it "in the middle with a string that ends in the same way" do
+        expect(wildcard_match?("bu*s", "blunderbus")).to eq(false)
+      end
+
+      it "in the middle with a superstring" do
+        expect(wildcard_match?("bu*s", "bu*sy")).to eq(false)
+      end
+
+      it "in the middle with a substring" do
+        expect(wildcard_match?("bu*s", "bu")).to eq(false)
+      end
+
+      it "in the middle with a string that starts and ends in the right way" do
+        expect(wildcard_match?("bu*s", "business")).to eq(true)
+      end
+
+      it "as the only character with a matching string" do
+        expect(wildcard_match?("*", "*")).to eq(true)
+      end
+
+      it "as the only character with any string" do
+        expect(wildcard_match?("*", "bus")).to eq(true)
+      end
+
+      it "with multiple wildcards and a string that fits" do
+        expect(wildcard_match?("bu*in*ss", "business")).to eq(true)
+      end
+
+      it "with multiple wildcards and a string that doesn't" do
+        expect(wildcard_match?("bu*in*ss", "buspass")).to eq(false)
+      end
     end
   end
 end
