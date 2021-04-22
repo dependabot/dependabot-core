@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     end
 
     # Test helpers for reasoning about specific semver versions:
-    def expect_allowed(*versions)
+    def expect_allowed(versions)
       req = Gem::Requirement.new(ignored_versions.flat_map { |s| s.split(",").map(&:strip) })
       versions.map do |v|
         expect(req.satisfied_by?(Gem::Version.new(v))).
@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
     end
 
-    def expect_ignored(*versions)
+    def expect_ignored(versions)
       req = Gem::Requirement.new(ignored_versions.flat_map { |s| s.split(",").map(&:strip) })
       versions.map do |v|
         expect(req.satisfied_by?(Gem::Version.new(v))).
@@ -52,20 +52,24 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
 
       it "ignores expected versions" do
-        expect_allowed("1.0.0", "1.1.0", "1.1.1")
-        expect_ignored("2.0", "2.0.0")
+        expect_allowed(["1.0.0", "1.1.0", "1.1.1"])
+        expect_ignored(["2.0", "2.0.0"])
       end
     end
 
     context "with update_types" do
       let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
+      let(:dependency_version) { "1.2.3" }
+      PATCH_UPGRADES = ["1.2.3", "1.2.4", "1.2.5"]
+      MINOR_UPGRADES = ["1.3", "1.3.0", "1.4"]
+      MAJOR_UPGRADES = ["2.0", "2.0.0"]
 
       context "with ignore_patch_versions" do
         let(:update_types) { [:ignore_patch_versions] }
 
         it "ignores expected versions" do
-          expect_allowed("1.3", "1.3.0", "2.0.0")
-          expect_ignored("1.2.3", "1.2.4", "1.2.5")
+          expect_allowed(MINOR_UPGRADES + MAJOR_UPGRADES)
+          expect_ignored(PATCH_UPGRADES)
         end
 
         it "returns the expected range" do
@@ -76,6 +80,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:dependency_version) { "Finchley.SR3" }
 
           it "returns the expected range" do
+            # FIXME: prefer nothing to this meaningless range
             expect(ignored_versions).to eq([">= Finchley.SR3.a, < Finchley.SR3.999999"])
           end
         end
@@ -85,8 +90,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:update_types) { [:ignore_minor_versions] }
 
         it "ignores expected versions" do
-          expect_allowed("2.0.0")
-          expect_ignored("1.2.3", "1.2.4", "1.3", "1.3.0")
+          expect_allowed(PATCH_UPGRADES + MAJOR_UPGRADES)
+          expect_ignored(MINOR_UPGRADES)
         end
 
         it "returns the expected range" do
@@ -106,7 +111,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:update_types) { [:ignore_major_versions] }
 
         it "ignores expected versions" do
-          expect_ignored("1.2.3", "1.2.4", "1.3.0", "2.0.0")
+          expect_allowed(PATCH_UPGRADES + MINOR_UPGRADES)
+          expect_ignored(MAJOR_UPGRADES)
         end
 
         it "returns the expected range" do
@@ -114,11 +120,12 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
 
-      context "with ignore_minor_versions and ignore_patch_versions" do
-        let(:update_types) { %i(ignore_minor_versions ignore_patch_versions) }
+      context "with ignore_major_versions and ignore_patch_versions" do
+        let(:update_types) { %i(ignore_major_versions ignore_patch_versions) }
 
-        it "behaves like ignore_minor_versions" do
-          expect(ignored_versions).to eq([">= 1.a, < 2"])
+        it "ignores expected versions" do
+          expect_allowed(MINOR_UPGRADES)
+          expect_ignored(PATCH_UPGRADES + MAJOR_UPGRADES)
         end
       end
     end
