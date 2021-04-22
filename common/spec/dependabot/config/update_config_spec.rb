@@ -37,15 +37,15 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     context "with a wildcard dependency name" do
       let(:ignore_conditions) do
         [
-          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+          Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/*",
             versions: [">= 14.14.x, < 15"]
           ),
-          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+          Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/node",
             versions: [">= 15, < 16"]
           ),
-          Dependabot::Config::UpdateConfig::IgnoreCondition.new(
+          Dependabot::Config::IgnoreCondition.new(
             dependency_name: "eslint",
             versions: [">= 2.9.0, < 3"]
           )

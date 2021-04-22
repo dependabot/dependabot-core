@@ -13,13 +13,10 @@ module Dependabot
       end
 
       def ignored_versions_for(dependency)
+        normalizer = name_normaliser_for(dependency)
+        dep_name = name_normaliser_for(dependency).call(dependency.name)
         @ignore_conditions.
-          select do |ic|
-            self.class.wildcard_match?(
-              name_normaliser_for(dependency).call(ic.dependency_name),
-              name_normaliser_for(dependency).call(dependency.name)
-            )
-          end.
+          select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }.
           map { |ic| ic.ignored_versions(dependency) }.
           flatten.
           compact

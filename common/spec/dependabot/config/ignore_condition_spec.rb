@@ -63,16 +63,16 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     context "with update_types" do
       let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
       let(:dependency_version) { "1.2.3" }
-      PATCH_UPGRADES = ["1.2.3", "1.2.4", "1.2.5", "1.2.4-rc0"].freeze
-      MINOR_UPGRADES = ["1.3", "1.3.0", "1.4", "1.4.0"].freeze
-      MAJOR_UPGRADES = ["2", "2.0", "2.0.0"].freeze
+      let(:patch_upgrades) { %w(1.2.3 1.2.4 1.2.5 1.2.4-rc0) }
+      let(:minor_upgrades) { %w(1.3 1.3.0 1.4 1.4.0) }
+      let(:major_upgrades) { %w(2 2.0 2.0.0) }
 
       context "with ignore_patch_versions" do
         let(:update_types) { [:ignore_patch_versions] }
 
         it "ignores expected versions" do
-          expect_allowed(MINOR_UPGRADES + MAJOR_UPGRADES)
-          expect_ignored(PATCH_UPGRADES)
+          expect_allowed(minor_upgrades + major_upgrades)
+          expect_ignored(patch_upgrades)
         end
 
         it "returns the expected range" do
@@ -84,8 +84,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:update_types) { [:ignore_minor_versions] }
 
         it "ignores expected versions" do
-          expect_allowed(PATCH_UPGRADES + MAJOR_UPGRADES)
-          expect_ignored(MINOR_UPGRADES)
+          expect_allowed(patch_upgrades + major_upgrades)
+          expect_ignored(minor_upgrades)
         end
 
         it "returns the expected range" do
@@ -97,8 +97,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:update_types) { [:ignore_major_versions] }
 
         it "ignores expected versions" do
-          expect_allowed(PATCH_UPGRADES + MINOR_UPGRADES)
-          expect_ignored(MAJOR_UPGRADES)
+          expect_allowed(patch_upgrades + minor_upgrades)
+          expect_ignored(major_upgrades)
         end
 
         it "returns the expected range" do
@@ -110,8 +110,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         let(:update_types) { %i(ignore_major_versions ignore_patch_versions) }
 
         it "ignores expected versions" do
-          expect_allowed(MINOR_UPGRADES)
-          expect_ignored(PATCH_UPGRADES + MAJOR_UPGRADES)
+          expect_allowed(minor_upgrades)
+          expect_ignored(patch_upgrades + major_upgrades)
         end
       end
 
