@@ -4,15 +4,14 @@ module Dependabot
   module Config
     # Filters versions that should not be considered for dependency updates
     class IgnoreCondition
-      UPDATE_TYPES = %i(
-        ignore_major_versions
-        ignore_minor_versions
-        ignore_patch_versions
-      ).freeze
+      PATCH_VERSION_TYPE = "version-update:semver-patch"
+      MINOR_VERSION_TYPE = "version-update:semver-minor"
+      MAJOR_VERSION_TYPE = "version-update:semver-major"
 
       ALL_VERSIONS = ">= 0"
 
       attr_reader :dependency_name, :versions, :update_types
+
       def initialize(dependency_name:, versions: nil, update_types: nil)
         @dependency_name = dependency_name
         @versions = versions || []
@@ -20,21 +19,25 @@ module Dependabot
       end
 
       def ignored_versions(dependency)
-        return [ALL_VERSIONS] if @versions.empty? && @update_types.empty?
+        return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
 
-        versions_by_type(dependency) + @versions
+        versions_by_type(dependency) + versions
       end
 
       private
 
+      def transformed_update_types
+        update_types.map(&:downcase).map(&:strip).compact
+      end
+
       def versions_by_type(dependency)
-        @update_types.flat_map do |t|
+        transformed_update_types.flat_map do |t|
           case t
-          when :ignore_patch_versions
+          when PATCH_VERSION_TYPE
             ignore_patch(dependency.version)
-          when :ignore_minor_versions
+          when MINOR_VERSION_TYPE
             ignore_minor(dependency.version)
-          when :ignore_major_versions
+          when MAJOR_VERSION_TYPE
             ignore_major(dependency.version)
           else
             []
