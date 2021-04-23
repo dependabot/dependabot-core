@@ -106,6 +106,40 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         expect(ignored_versions).to eq([">= 13.a, < 14", ">= 12.13.a, < 13"])
       end
     end
+
+    context "with an dependency that must be name normalized" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "VERY_COOL_PACKAGE",
+          requirements: [],
+          version: "1.2.3",
+          package_manager: "fake-package-manager"
+        )
+      end
+      before do
+        Dependabot::Dependency.register_name_normaliser("fake-package-manager", lambda { |name|
+                                                                                  name.downcase.gsub(/[_=]/, "-")
+                                                                                })
+      end
+
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "very-cool-package", versions: [">= 0"])]
+      end
+
+      it "normalizes the dependency name to match" do
+        expect(ignored_versions).to eq([">= 0"])
+      end
+
+      context "and ignore condition that must be normalized" do
+        let(:ignore_conditions) do
+          [Dependabot::Config::IgnoreCondition.new(dependency_name: "very=cool=package", versions: [">= 1"])]
+        end
+
+        it "normalizes the condition dependency_name to match" do
+          expect(ignored_versions).to eq([">= 1"])
+        end
+      end
+    end
   end
 
   describe "#commit_message_options" do
