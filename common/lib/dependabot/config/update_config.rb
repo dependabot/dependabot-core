@@ -12,12 +12,12 @@ module Dependabot
         @commit_message_options = commit_message_options
       end
 
-      def ignored_versions_for(dependency)
+      def ignored_versions_for(dependency, security_severity: nil)
         normalizer = name_normaliser_for(dependency)
         dep_name = name_normaliser_for(dependency).call(dependency.name)
         @ignore_conditions.
           select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }.
-          map { |ic| ic.ignored_versions(dependency) }.
+          map { |ic| ic.ignored_versions(dependency, security_severity) }.
           flatten.
           compact.
           uniq

@@ -18,10 +18,10 @@ module Dependabot
         @update_types = update_types || []
       end
 
-      def ignored_versions(dependency)
+      def ignored_versions(dependency, security_severity)
         return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
 
-        versions_by_type(dependency) + versions
+        versions_by_type(dependency, security_severity) + versions
       end
 
       private
@@ -30,8 +30,10 @@ module Dependabot
         update_types.map(&:downcase).map(&:strip).compact
       end
 
-      def versions_by_type(dependency)
+      def versions_by_type(dependency, security_severity)
         transformed_update_types.flat_map do |t|
+          return [] if t.start_with?("version-update:") && !security_severity.nil?
+
           case t
           when PATCH_VERSION_TYPE
             ignore_patch(dependency.version)

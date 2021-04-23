@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
 
   describe "#versions" do
-    subject(:ignored_versions) { ignore_condition.ignored_versions(dependency) }
+    subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_severity) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
@@ -19,6 +19,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         version: dependency_version
       )
     end
+    let(:security_severity) { nil }
 
     # Test helpers for reasoning about specific semver versions:
     def expect_allowed(versions)
@@ -200,6 +201,15 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           it "returns the expected range" do
             expect(ignored_versions).to eq([">= Finchley.a, < Finchley.999999"])
           end
+        end
+      end
+
+      context "with a security update" do
+        let(:security_severity) { "low" }
+        let(:update_types) { ["version-update:semver-patch"] }
+
+        it "ignores ignores update-types" do
+          expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end
     end
