@@ -55,9 +55,9 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config.ignore_conditions.length).to eq(3)
       end
 
-      it "maps update-types string" do
+      it "passes update-types" do
         types_ignore = update_config.ignore_conditions.find { |ic| ic.dependency_name == "@types/node" }
-        expect(types_ignore.update_types).to eq([:ignore_patch_versions])
+        expect(types_ignore.update_types).to eq(["version-update:semver-patch"])
       end
     end
   end

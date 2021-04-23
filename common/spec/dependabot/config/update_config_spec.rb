@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       let(:ignore_conditions) do
         [Dependabot::Config::IgnoreCondition.new(dependency_name: "@types/node",
                                                  versions: [">= 14.14.x, < 15"],
-                                                 update_types: [:ignore_minor_versions])]
+                                                 update_types: ["version-update:semver-minor"])]
       end
 
       it "returns versions" do
@@ -74,11 +74,11 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         [
           Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/node",
-            update_types: [:ignore_minor_versions]
+            update_types: ["version-update:semver-minor"]
           ),
           Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/node",
-            update_types: [:ignore_minor_versions]
+            update_types: ["version-update:semver-minor"]
           )
         ]
       end
@@ -93,11 +93,11 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         [
           Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/*",
-            update_types: [:ignore_major_versions]
+            update_types: ["version-update:semver-major"]
           ),
           Dependabot::Config::IgnoreCondition.new(
             dependency_name: "@types/node",
-            update_types: [:ignore_minor_versions]
+            update_types: ["version-update:semver-minor"]
           )
         ]
       end

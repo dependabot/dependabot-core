@@ -55,22 +55,13 @@ module Dependabot
         "terraform" => "terraform"
       }.freeze
 
-      UPDATE_TYPE_LOOKUP = {
-        "version-update:semver-patch" => :ignore_patch_versions,
-        "version-update:semver-minor" => :ignore_minor_versions,
-        "version-update:semver-major" => :ignore_major_versions
-      }.freeze
-
       def ignore_conditions(cfg)
         ignores = cfg&.dig(:ignore) || []
         ignores.map do |ic|
-          update_types = ic[:"update-types"]&.
-                         map { |t| UPDATE_TYPE_LOOKUP[t.downcase.strip] }&.
-                         compact
           Dependabot::Config::IgnoreCondition.new(
             dependency_name: ic[:"dependency-name"],
             versions: ic[:versions],
-            update_types: update_types
+            update_types: ic[:"update-types"]
           )
         end
       end
