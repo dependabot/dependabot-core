@@ -1,6 +1,6 @@
 ## v0.143.3, 23 April 2021
 
-- Common: Transform update_types in IgnoreCondition
+- Common: Do not transform update_types in IgnoreCondition
 - build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
 
 ## v0.143.2, 22 April 2021
