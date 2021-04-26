@@ -7,7 +7,7 @@ require "dependabot/config/update_config"
 
 RSpec.describe Dependabot::Config::UpdateConfig do
   describe "#ignored_versions_for" do
-    subject(:ignored_versions) { config.ignored_versions_for(dependency) }
+    subject(:ignored_versions) { config.ignored_versions_for(dependency, security_updates_only: security_updates_only) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "@types/node",
@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
     let(:ignore_conditions) { [] }
     let(:config) { described_class.new(ignore_conditions: ignore_conditions) }
+    let(:security_updates_only) { false }
 
     it "returns empty when not defined" do
       expect(ignored_versions).to eq([])
@@ -104,6 +105,13 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
       it "returns versions" do
         expect(ignored_versions).to eq([">= 13.a, < 14", ">= 12.13.a, < 13"])
+      end
+
+      context "with security_updates_only" do
+        let(:security_updates_only) { true }
+        it "does not expand versions" do
+          expect(ignored_versions).to eq([])
+        end
       end
     end
 
