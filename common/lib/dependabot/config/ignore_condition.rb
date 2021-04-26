@@ -20,7 +20,8 @@ module Dependabot
 
       # Returns array of requirement strings for versions that should be ignored
       def ignored_versions(dependency, security_updates_only)
-        ignored_ranges(dependency, security_updates_only)
+        ignored_ranges(dependency, security_updates_only).
+          reject { |v| Dependabot::Config::IgnoreCondition.sha_ignore?(v) }
       end
 
       # Returns true if the target version of a dependency is ignored by this condition
@@ -34,12 +35,25 @@ module Dependabot
 
         req_class = Dependabot::Utils.requirement_class_for_package_manager(dependency.package_manager)
         parsed_reqs = ignored_ranges(dependency, security_updates_only).
-                      map { |r| req_class.new(r) }
-
+                      map do |r|
+                        if Dependabot::Config::IgnoreCondition.sha_ignore?(r)
+                          ShaRequirement.new(r)
+                        else
+                          req_class.new(r)
+                        end
+                      end
         parsed_reqs.any? { |r| r.satisfied_by?(parsed_version) }
       end
 
+      # Returns true if this ignore condition is for a specific version, typically a git commit.
+      def self.sha_ignore?(version_requirements)
+        GIT_SHA_IGNORE_REGEX.match?(version_requirements)
+      end
+
       private
+
+      GIT_SHA_IGNORE_PREFIX = "!!"
+      GIT_SHA_IGNORE_REGEX = /\A#{GIT_SHA_IGNORE_PREFIX}/.freeze
 
       def transformed_update_types
         update_types.map(&:downcase).map(&:strip).compact
@@ -120,6 +134,33 @@ module Dependabot
                                 else
                                   versions_by_type(dependency) + versions
                                 end
+      end
+
+      # Custom requirement for ignoring specific git commit SHAs
+      class ShaRequirement < Gem::Requirement
+        def initialize(*requirements)
+          requirements = requirements.flatten.flat_map do |req_string|
+            req_string.split(",").map(&:strip)
+          end
+
+          super(requirements)
+        end
+
+        def self.parse(obj)
+          if obj.is_a?(String) && obj.strip.match?(GIT_SHA_IGNORE_REGEX)
+            return [GIT_SHA_IGNORE_PREFIX, obj.gsub(GIT_SHA_IGNORE_REGEX, "").strip]
+          end
+
+          super
+        end
+
+        def satisfied_by?(version)
+          if requirements.any? { |op, _| op == GIT_SHA_IGNORE_PREFIX }
+            rv = requirements.find { |op, _| op == GIT_SHA_IGNORE_PREFIX }.last
+            return rv == version.to_s
+          end
+          super
+        end
       end
     end
   end

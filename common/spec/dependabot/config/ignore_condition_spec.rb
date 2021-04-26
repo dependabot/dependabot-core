@@ -68,6 +68,14 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           expect(ignored_versions).to eq([">= 2.0.0"])
         end
       end
+
+      context "and a sha requirement" do
+        let(:ignore_condition) { described_class.new(dependency_name: dependency_name, versions: ["!! abcdef"]) }
+
+        it "does not include in ignored_versions" do
+          expect(ignored_versions).to eq([])
+        end
+      end
     end
 
     context "with update_types" do
@@ -253,6 +261,17 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       expect { ignore_condition.ignored?(dependency, false, "foo") }.
         to raise_error(ArgumentError)
       expect(DummyPackageManager::Version).to have_received(:new)
+    end
+
+    context "and a sha requirement" do
+      let(:ignore_condition) do
+        described_class.new(dependency_name: dependency_name, versions: ["!! 0000000000000000000000000000000000000001"])
+      end
+
+      it "ignores specific shas" do
+        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000001")).to eq(true)
+        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000002")).to eq(false)
+      end
     end
   end
 end
