@@ -1,6 +1,0 @@
-[[constraint]]
-  name = "github.com/caarlos0/env"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/ericaro/frontmatter"

@@ -164,20 +164,15 @@ USER root
 
 ### GO
 
-# Install Go and dep
+# Install Go
 ARG GOLANG_VERSION=1.16.2
 ARG GOLANG_CHECKSUM=542e936b19542e62679766194364f45141fde55169db2d8d01046555ca9eb4b8
-ENV PATH=/opt/go/bin:$PATH \
-  GOPATH=/opt/go/gopath
+ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
-  && rm go.tar.gz \
-  && mkdir "$GOPATH" \
-  && chown dependabot:dependabot "$GOPATH" \
-  && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep
+  && rm go.tar.gz
 
 
 ### ELIXIR
@@ -212,7 +207,6 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 USER root
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
@@ -221,7 +215,7 @@ COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
+  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
@@ -229,7 +223,6 @@ RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2 \
   && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
   && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
-  && bash /opt/dep/helpers/build /opt/dep \
   && bash /opt/go_modules/helpers/build /opt/go_modules \
   && bash /opt/hex/helpers/build /opt/hex \
   && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \

@@ -8,7 +8,6 @@ WORKDIR ${CODE_DIR}
 
 COPY --chown=dependabot:dependabot .rubocop.yml ${CODE_DIR}/.rubocop.yml
 COPY --chown=dependabot:dependabot omnibus ${CODE_DIR}/omnibus
-COPY --chown=dependabot:dependabot dep ${CODE_DIR}/dep
 COPY --chown=dependabot:dependabot git_submodules ${CODE_DIR}/git_submodules
 COPY --chown=dependabot:dependabot terraform ${CODE_DIR}/terraform
 COPY --chown=dependabot:dependabot github_actions ${CODE_DIR}/github_actions
