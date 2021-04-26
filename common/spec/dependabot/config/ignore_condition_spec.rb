@@ -8,9 +8,10 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_name) { "test" }
   let(:dependency_version) { "1.2.3" }
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
+  let(:security_updates_only) { false }
 
   describe "#versions" do
-    subject(:ignored_versions) { ignore_condition.ignored_versions(dependency) }
+    subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: dependency_name,
@@ -57,6 +58,14 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       it "ignores expected versions" do
         expect_allowed(["1.0.0", "1.1.0", "1.1.1"])
         expect_ignored(["2.0", "2.0.0"])
+      end
+
+      context "with security_updates_only" do
+        let(:security_updates_only) { true }
+
+        it "returns the static versions" do
+          expect(ignored_versions).to eq([">= 2.0.0"])
+        end
       end
     end
 
@@ -200,6 +209,15 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           it "returns the expected range" do
             expect(ignored_versions).to eq([">= Finchley.a, < Finchley.999999"])
           end
+        end
+      end
+
+      context "with security_updates_only" do
+        let(:security_updates_only) { true }
+        let(:update_types) { %w(version-update:semver-major version-update:semver-patch) }
+
+        it "allows all " do
+          expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end
     end

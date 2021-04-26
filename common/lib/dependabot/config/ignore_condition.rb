@@ -18,7 +18,8 @@ module Dependabot
         @update_types = update_types || []
       end
 
-      def ignored_versions(dependency)
+      def ignored_versions(dependency, security_updates_only)
+        return versions if security_updates_only
         return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
 
         versions_by_type(dependency) + versions
