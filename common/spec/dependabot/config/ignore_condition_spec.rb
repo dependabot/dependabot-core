@@ -269,8 +269,8 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       end
 
       it "ignores specific shas" do
-        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000001")).to eq(true)
-        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000002")).to eq(false)
+        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000001")).to eq(false)
+        expect(ignore_condition.ignored?(dependency, false, "0000000000000000000000000000000000000002")).to eq(true)
       end
     end
   end

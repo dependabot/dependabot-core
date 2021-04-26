@@ -136,7 +136,7 @@ module Dependabot
                                 end
       end
 
-      # Custom requirement for ignoring specific git commit SHAs
+      # Custom requirement for ignoring all versions expect a specific SHA
       class ShaRequirement < Gem::Requirement
         def initialize(*requirements)
           requirements = requirements.flatten.flat_map do |req_string|
@@ -155,9 +155,11 @@ module Dependabot
         end
 
         def satisfied_by?(version)
+          return super if version.nil?
+
           if requirements.any? { |op, _| op == GIT_SHA_IGNORE_PREFIX }
             rv = requirements.find { |op, _| op == GIT_SHA_IGNORE_PREFIX }.last
-            return rv == version.to_s
+            return rv != version.to_s
           end
           super
         end
