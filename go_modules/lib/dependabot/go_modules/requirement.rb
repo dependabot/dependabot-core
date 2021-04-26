@@ -6,12 +6,13 @@
 # - https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md               #
 ################################################################################
 
-require "dependabot/utils"
 require "dependabot/go_modules/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module GoModules
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       WILDCARD_REGEX = /(?:\.|^)[xX*]/.freeze
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/.freeze
 

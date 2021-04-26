@@ -6,12 +6,13 @@
 # - https://steveklabnik.github.io/semver/semver/index.html                    #
 ################################################################################
 
-require "dependabot/utils"
 require "dependabot/cargo/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module Cargo
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = Cargo::Version::VERSION_PATTERN
 

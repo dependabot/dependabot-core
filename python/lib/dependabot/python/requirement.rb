@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/python/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module Python
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 
       # Add equality and arbitrary-equality matchers

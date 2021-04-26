@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module NpmAndYarn
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/.freeze
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
 

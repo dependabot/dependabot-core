@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/elm/version"
-
+require "dependabot/requirement"
+require "dependabot/utils"
 module Dependabot
   module Elm
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
         "(#{Elm::Version::VERSION_PATTERN})"

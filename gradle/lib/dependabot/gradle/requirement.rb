@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
-require "dependabot/maven/requirement"
 require "dependabot/gradle/version"
+require "dependabot/maven/requirement"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module Gradle
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       PATTERN_RAW =
         "\\s*(#{quoted})?\\s*(#{Gradle::Version::VERSION_PATTERN})\\s*"

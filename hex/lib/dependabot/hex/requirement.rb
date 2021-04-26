@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/hex/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module Hex
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       AND_SEPARATOR = /\s+and\s+/.freeze
       OR_SEPARATOR = /\s+or\s+/.freeze
 

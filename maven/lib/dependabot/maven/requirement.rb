@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/maven/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 module Dependabot
   module Maven
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
       OR_SYNTAX = /(?<=\]|\)),/.freeze
       PATTERN_RAW =

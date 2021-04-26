@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
+require "dependabot/requirement"
 
 module Dependabot
   module Docker
     # Lifted from the bundler package manager
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       # For consistency with other langauges, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.

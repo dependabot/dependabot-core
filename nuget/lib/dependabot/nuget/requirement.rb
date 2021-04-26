@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
 require "dependabot/nuget/version"
+require "dependabot/requirement"
+require "dependabot/utils"
 
 # For details on .NET version constraints see:
 # https://docs.microsoft.com/en-us/nuget/reference/package-versioning
 module Dependabot
   module Nuget
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       def self.parse(obj)
         return ["=", Nuget::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 

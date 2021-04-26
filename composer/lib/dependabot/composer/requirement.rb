@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "dependabot/utils"
-
+require "dependabot/requirement"
 module Dependabot
   module Composer
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       AND_SEPARATOR =
         /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
       OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze

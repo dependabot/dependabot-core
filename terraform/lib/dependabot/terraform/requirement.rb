@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "dependabot/utils"
+require "dependabot/requirement"
 require "dependabot/terraform/version"
+require "dependabot/utils"
 
 # Just ensures that Terraform requirements use Terraform versions
 module Dependabot
   module Terraform
-    class Requirement < Gem::Requirement
+    class Requirement < Dependabot::Requirement
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
