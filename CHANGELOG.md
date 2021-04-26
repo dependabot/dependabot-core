@@ -1,3 +1,38 @@
+## v0.143.3, 23 April 2021
+
+- Common: Do not transform update_types in IgnoreCondition
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.143.2, 22 April 2021
+
+- Dependabot::Config::IgnoreCondition support dependency wildcards
+- Dependabot::Config::IgnoreCondition support `update-types`
+- go_modules: clarify comment @jeffwidman
+
+## v0.143.1, 21 April 2021
+
+- Gradle/Maven: Handle ruby style requirements with maven version
+- Bundler: Add missing requirement_class for bundler latest version checker
+- Add IgnoreCondition#dependency_name
+- Dependabot::Config::File parse ignore_conditions
+- Dependabot::Config::File parse commit_message_options
+
+## v0.143.0, 21 April 2021
+
+- Python: Add support for updating `setup.cfg` files @honnix
+- Gomod: Run `go mod tidy` with flag to allow errors
+- Handle ruby and package manager specific version requirements from ignore conditions
+- build(deps): bump poetry from 1.1.4 to 1.1.6 in /python/helpers
+- build(deps-dev): update rubocop requirement from ~> 1.12.0 to ~> 1.13.0
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v2
+- dry-run: fetch ignore conditions and commit_message_options from `dependabot.yml` config file
+- dry-run: set ignore conditions from `IGNORE_CONDITIONS` env
+- Chore: Refactor `new_branch_name` function in branch_namer @milind009
+- Bundler: Remove unused `using_bundler2` arg from v1 helpers
+
 ## v0.142.1, 16 April 2021
 
 - Update npm from 7.7.4 to 7.10.0

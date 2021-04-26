@@ -218,7 +218,7 @@ module Dependabot
             versions.reject!(&:prerelease?) unless wants_prerelease?
 
             filtered = versions.reject do |v|
-              ignore_reqs.any? { |r| r.satisfied_by?(v) }
+              ignore_requirements.any? { |r| r.satisfied_by?(v) }
             end
 
             raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions.any?

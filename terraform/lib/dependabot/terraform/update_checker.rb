@@ -67,7 +67,7 @@ module Dependabot
 
         versions = all_registry_versions
         versions.reject!(&:prerelease?) unless wants_prerelease?
-        versions.reject! { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+        versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
         @latest_version_for_registry_dependency = versions.max
       end

@@ -45,9 +45,9 @@ module Dependabot
       end
 
       def initialize(*requirements)
-        requirements = requirements.flatten.flat_map do |req_string|
-          convert_js_constraint_to_ruby_constraint(req_string)
-        end
+        requirements = requirements.flatten.
+                       flat_map { |req_string| req_string.split(",").map(&:strip) }.
+                       flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
 
         super(requirements)
       end
