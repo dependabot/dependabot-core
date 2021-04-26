@@ -41,7 +41,6 @@ module Dependabot
                 target_version: target_version,
                 credentials: credentials,
                 lockfile_name: lockfile.name,
-                using_bundler2: using_bundler2?
               }
             )
           end

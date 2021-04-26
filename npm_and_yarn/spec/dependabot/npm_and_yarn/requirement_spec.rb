@@ -11,6 +11,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
   describe ".new" do
     it { is_expected.to be_a(described_class) }
 
+    context "with a comma-separated string" do
+      let(:requirement_string) { "^ 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq(described_class.new([">= 4.2.5", "< 5.0.0.a", ">= 4.2.5.1"])) }
+    end
+
     context "with an exact version specified" do
       let(:requirement_string) { "1.0.0" }
       it { is_expected.to eq(described_class.new("1.0.0")) }

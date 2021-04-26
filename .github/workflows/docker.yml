@@ -5,7 +5,8 @@ on:
       - main
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
-
+permissions:
+  contents: read
 jobs:
   push-core-image:
     name: Push dependabot-core image to docker hub

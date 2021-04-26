@@ -17,7 +17,6 @@ module Dependabot
         @prefix        = prefix
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def new_branch_name
         @name ||=
           begin
@@ -34,22 +33,12 @@ module Dependabot
                   tr("@", "")
               end
 
-            dep = dependencies.first
-
-            if library? && ref_changed?(dep) && new_ref(dep)
-              "#{dependency_name_part}-#{new_ref(dep)}"
-            elsif library?
-              "#{dependency_name_part}-#{sanitized_requirement(dep)}"
-            else
-              "#{dependency_name_part}-#{new_version(dep)}"
-            end
+            "#{dependency_name_part}-#{branch_version_suffix}"
           end
 
         # Some users need branch names without slashes
         sanitize_ref(File.join(prefixes, @name).gsub("/", separator))
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       private
 
@@ -96,6 +85,18 @@ module Dependabot
         raise "No dependency set!" unless @dependency_set
 
         @dependency_set
+      end
+
+      def branch_version_suffix
+        dep = dependencies.first
+
+        if library? && ref_changed?(dep) && new_ref(dep)
+          new_ref(dep)
+        elsif library?
+          sanitized_requirement(dep)
+        else
+          new_version(dep)
+        end
       end
 
       def sanitized_requirement(dependency)

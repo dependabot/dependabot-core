@@ -378,17 +378,11 @@ module Dependabot
           candidate_tags.
           reject do |tag|
             version = version_class.new(numeric_version_from(tag))
-            ignore_reqs.any? { |r| r.satisfied_by?(version) }
+            ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
         raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && candidate_tags.any?
 
         filtered
-      end
-
-      def ignore_reqs
-        # NOTE: we use Gem::Requirement here because ignore conditions will
-        # be passed as Ruby ranges
-        ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
       end
     end
   end

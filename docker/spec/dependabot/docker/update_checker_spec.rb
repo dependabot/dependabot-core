@@ -190,6 +190,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when ignoring multiple versions" do
+      let(:ignored_versions) { [">= 17.10, < 17.2"] }
+      it { is_expected.to eq("17.10") }
+    end
+
     context "when all versions are being ignored" do
       let(:ignored_versions) { [">= 0"] }
       it { is_expected.to eq("17.04") }

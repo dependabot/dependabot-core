@@ -1,0 +1,18 @@
+{
+  "name": "dependabot.yaml",
+  "path": ".github/dependabot.yaml",
+  "sha": "8b6507c75f83070ce08ee5adde5028f304a9084e",
+  "size": 110,
+  "url": "https://api.github.com/repos/gocardless/bump/contents/.github/dependabot.yaml?ref=master",
+  "html_url": "https://github.com/gocardless/bump/blob/master/.github/dependabot.yaml",
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/8b6507c75f83070ce08ee5adde5028f304a9084e",
+  "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.github/dependabot.yaml?token=ABF4KfGg6a7sE1n1i2rrhUvqAKRhIkPiks5WD8X5wA%3D%3D",
+  "type": "file",
+  "content": "dmVyc2lvbjogMgp1cGRhdGVzOgogIC0gcGFja2FnZS1lY29zeXN0ZW06ICJidW5kbGVyIgogICAgZGly\nZWN0b3J5OiAiLyIKICAgIHNjaGVkdWxlOgogICAgICBpbnRlcnZhbDogImRhaWx5Igo=\n",
+  "encoding": "base64",
+  "_links": {
+      "self": "https://api.github.com/repos/gocardless/bump/contents/.github/dependabot.yaml?ref=master",
+      "git": "https://api.github.com/repos/gocardless/bump/git/blobs/8b6507c75f83070ce08ee5adde5028f304a9084e",
+      "html": "https://github.com/gocardless/bump/blob/master/.github/dependabot.yaml"
+  }
+}

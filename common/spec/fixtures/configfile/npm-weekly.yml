@@ -1,0 +1,22 @@
+# NOTE: prefix: values are used by common/spec/dependabot/config/file_spec.rb
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "no directory"
+  - package-ecosystem: "npm"
+    directory: "/target"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "with directory"
+  - package-ecosystem: "npm"
+    directory: "/target"
+    schedule:
+      interval: "weekly"
+    target-branch: "the-awesome-branch"
+    commit-message:
+      prefix: "with directory and branch"

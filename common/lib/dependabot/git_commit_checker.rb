@@ -92,7 +92,7 @@ module Dependabot
         local_tags.
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
-                 reject { |t| tag_included_in_ignore_reqs?(t) }
+                 reject { |t| tag_included_in_ignore_requirements?(t) }
       raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
 
       tag = filtered.
@@ -317,8 +317,8 @@ module Dependabot
       listing_repo_git_metadata_fetcher.upload_pack
     end
 
-    def ignore_reqs
-      ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+    def ignore_requirements
+      ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
     end
 
     def wants_prerelease?
@@ -330,9 +330,9 @@ module Dependabot
       version_class.new(version).prerelease?
     end
 
-    def tag_included_in_ignore_reqs?(tag)
+    def tag_included_in_ignore_requirements?(tag)
       version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
-      ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
+      ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
     end
 
     def tag_is_prerelease?(tag)

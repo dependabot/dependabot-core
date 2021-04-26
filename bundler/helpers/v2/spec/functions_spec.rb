@@ -15,7 +15,6 @@ RSpec.describe Functions do
           dir: tmp_path,
           gemfile_name: "Gemfile",
           credentials: {},
-          using_bundler2: true
         )
 
         expect(jfrog_source).to eq("test.jfrog.io")
