@@ -18,11 +18,25 @@ module Dependabot
         @update_types = update_types || []
       end
 
+      # Returns array of requirement strings for versions that should be ignored
       def ignored_versions(dependency, security_updates_only)
-        return versions if security_updates_only
-        return [ALL_VERSIONS] if versions.empty? && transformed_update_types.empty?
+        ignored_ranges(dependency, security_updates_only)
+      end
 
-        versions_by_type(dependency) + versions
+      # Returns true if the target version of a dependency is ignored by this condition
+      def ignored?(dependency, security_updates_only, version)
+        version_class = Dependabot::Utils.version_class_for_package_manager(dependency.package_manager)
+        parsed_version = if version.is_a?(version_class) || version.is_a?(Gem::Version)
+                           version
+                         else
+                           version_class.new(version)
+                         end
+
+        req_class = Dependabot::Utils.requirement_class_for_package_manager(dependency.package_manager)
+        parsed_reqs = ignored_ranges(dependency, security_updates_only).
+                      map { |r| req_class.new(r) }
+
+        parsed_reqs.any? { |r| r.satisfied_by?(parsed_version) }
       end
 
       private
@@ -94,6 +108,18 @@ module Dependabot
         upper_bound = "< #{upper_parts.join('.')}"
 
         ["#{lower_bound}, #{upper_bound}"]
+      end
+
+      def ignored_ranges(dependency, security_updates_only)
+        ignored_ranges ||= {}
+        key = "#{dependency.name}-#{dependency.version}-#{security_updates_only}"
+        ignored_ranges[key] ||= if security_updates_only
+                                  versions
+                                elsif versions.empty? && transformed_update_types.empty?
+                                  [ALL_VERSIONS]
+                                else
+                                  versions_by_type(dependency) + versions
+                                end
       end
     end
   end

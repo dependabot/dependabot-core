@@ -7,19 +7,20 @@ require "spec_helper"
 RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_name) { "test" }
   let(:dependency_version) { "1.2.3" }
+  let(:dependency) do
+    Dependabot::Dependency.new(
+      name: dependency_name,
+      requirements: [],
+      package_manager: "npm_and_yarn",
+      version: dependency_version
+    )
+  end
+
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
   let(:security_updates_only) { false }
 
-  describe "#versions" do
+  describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: dependency_name,
-        requirements: [],
-        package_manager: "npm_and_yarn",
-        version: dependency_version
-      )
-    end
 
     # Test helpers for reasoning about specific semver versions:
     def expect_allowed(versions)
@@ -220,6 +221,38 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           expect_allowed(patch_upgrades + minor_upgrades + major_upgrades)
         end
       end
+    end
+  end
+
+  describe "#ignored?" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        requirements: [],
+        package_manager: "dummy",
+        version: dependency_version
+      )
+    end
+    let(:ignore_condition) { described_class.new(dependency_name: dependency_name, versions: [">= 2.0.0"]) }
+
+    before { allow(DummyPackageManager::Version).to receive(:new).and_call_original }
+
+    it "should ignore matching versions" do
+      expect(ignore_condition.ignored?(dependency, false, "1.0.0")).to eq(false)
+      expect(ignore_condition.ignored?(dependency, false, "2.0.0")).to eq(true)
+      expect(ignore_condition.ignored?(dependency, false, "2.0.1")).to eq(true)
+    end
+
+    it "should use package manager's version class" do
+      ignore_condition.ignored?(dependency, false, "1.0.0")
+
+      expect(DummyPackageManager::Version).to have_received(:new)
+    end
+
+    it "should raise on unparseable versions" do
+      expect { ignore_condition.ignored?(dependency, false, "foo") }.
+        to raise_error(ArgumentError)
+      expect(DummyPackageManager::Version).to have_received(:new)
     end
   end
 end
