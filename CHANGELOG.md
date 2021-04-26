@@ -1,3 +1,9 @@
+## v0.143.4, 26 April 2021
+
+- Common: Add IgnoreCondition.security_updates_only, which disables version updates filtering
+- build(deps-dev): bump eslint-config-prettier in /npm_and_yarn/helpers
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+
 ## v0.143.3, 23 April 2021
 
 - Common: Do not transform update_types in IgnoreCondition

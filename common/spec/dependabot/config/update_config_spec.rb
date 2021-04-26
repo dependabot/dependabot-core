@@ -7,7 +7,7 @@ require "dependabot/config/update_config"
 
 RSpec.describe Dependabot::Config::UpdateConfig do
   describe "#ignored_versions_for" do
-    subject(:ignored_versions) { config.ignored_versions_for(dependency) }
+    subject(:ignored_versions) { config.ignored_versions_for(dependency, security_updates_only: security_updates_only) }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "@types/node",
@@ -18,6 +18,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
     end
     let(:ignore_conditions) { [] }
     let(:config) { described_class.new(ignore_conditions: ignore_conditions) }
+    let(:security_updates_only) { false }
 
     it "returns empty when not defined" do
       expect(ignored_versions).to eq([])
@@ -104,6 +105,47 @@ RSpec.describe Dependabot::Config::UpdateConfig do
 
       it "returns versions" do
         expect(ignored_versions).to eq([">= 13.a, < 14", ">= 12.13.a, < 13"])
+      end
+
+      context "with security_updates_only" do
+        let(:security_updates_only) { true }
+        it "does not expand versions" do
+          expect(ignored_versions).to eq([])
+        end
+      end
+    end
+
+    context "with an dependency that must be name normalized" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "VERY_COOL_PACKAGE",
+          requirements: [],
+          version: "1.2.3",
+          package_manager: "fake-package-manager"
+        )
+      end
+      before do
+        Dependabot::Dependency.register_name_normaliser("fake-package-manager", lambda { |name|
+                                                                                  name.downcase.gsub(/[_=]/, "-")
+                                                                                })
+      end
+
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "very-cool-package", versions: [">= 0"])]
+      end
+
+      it "normalizes the dependency name to match" do
+        expect(ignored_versions).to eq([">= 0"])
+      end
+
+      context "and ignore condition that must be normalized" do
+        let(:ignore_conditions) do
+          [Dependabot::Config::IgnoreCondition.new(dependency_name: "very=cool=package", versions: [">= 1"])]
+        end
+
+        it "normalizes the condition dependency_name to match" do
+          expect(ignored_versions).to eq([">= 1"])
+        end
       end
     end
   end
