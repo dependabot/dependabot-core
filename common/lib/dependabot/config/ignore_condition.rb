@@ -50,10 +50,10 @@ module Dependabot
         parts = version.split(".")
         return [] unless parts.size > 2
 
-        lower_parts = parts.first(2) + ["a"]
+        lower_parts = parts.first(3)
         upper_parts = parts.first(2)
         upper_parts[1] = upper_parts[1].to_i + 1
-        lower_bound = ">= #{lower_parts.join('.')}"
+        lower_bound = "> #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
         ["#{lower_bound}, #{upper_bound}"]
       end

@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     context "with update_types" do
       let(:ignore_condition) { described_class.new(dependency_name: dependency_name, update_types: update_types) }
       let(:dependency_version) { "1.2.3" }
-      let(:patch_upgrades) { %w(1.2.3 1.2.4 1.2.5 1.2.4-rc0) }
+      let(:patch_upgrades) { %w(1.2.3.1 1.2.4 1.2.5 1.2.4-rc0) }
       let(:minor_upgrades) { %w(1.3 1.3.0 1.4 1.4.0) }
       let(:major_upgrades) { %w(2 2.0 2.0.0) }
 
@@ -82,10 +82,11 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "ignores expected versions" do
           expect_allowed(minor_upgrades + major_upgrades)
           expect_ignored(patch_upgrades)
+          expect_allowed([dependency_version])
         end
 
         it "returns the expected range" do
-          expect(ignored_versions).to eq([">= 1.2.a, < 1.3"])
+          expect(ignored_versions).to eq(["> 1.2.3, < 1.3"])
         end
       end
 
@@ -95,6 +96,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "ignores expected versions" do
           expect_allowed(patch_upgrades + major_upgrades)
           expect_ignored(minor_upgrades)
+          expect_allowed([dependency_version])
         end
 
         it "returns the expected range" do
@@ -108,6 +110,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "ignores expected versions" do
           expect_allowed(patch_upgrades + minor_upgrades)
           expect_ignored(major_upgrades)
+          expect_allowed([dependency_version])
         end
 
         it "returns the expected range" do
@@ -121,6 +124,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "ignores expected versions" do
           expect_allowed(minor_upgrades)
           expect_ignored(patch_upgrades + major_upgrades)
+          expect_allowed([dependency_version])
         end
       end
 
@@ -133,6 +137,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           it "ignores expected versions" do
             expect_allowed(patch_upgrades + minor_upgrades)
             expect_ignored(major_upgrades)
+            expect_allowed([dependency_version])
           end
 
           it "returns the expected range" do
@@ -146,6 +151,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           it "ignores expected versions" do
             expect_allowed(patch_upgrades + major_upgrades)
             expect_ignored(minor_upgrades)
+            expect_allowed([dependency_version])
           end
 
           it "returns the expected range" do
@@ -158,6 +164,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
           it "ignores expected versions" do
             expect_allowed(patch_upgrades + major_upgrades + minor_upgrades)
+            expect_allowed([dependency_version])
           end
 
           it "returns the expected range" do
