@@ -10,6 +10,8 @@ import (
 // Last synced: 4/28/2021 from:
 // https://github.com/golang/mod/blob/858fdbee9c245c8109c359106e89c6b8d321f19c/modfile/rule.go
 
+var slashSlash = []byte("//")
+
 // setIndirect sets line to have (or not have) a "// indirect" comment.
 func setIndirect(line *modfile.Line, indirect bool) {
 	if isIndirect(line) == indirect {
