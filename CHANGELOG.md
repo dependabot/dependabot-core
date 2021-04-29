@@ -1,3 +1,14 @@
+## v0.143.5, 29 April 2021
+
+- gradle: only treat commit-like versions as git repositories
+- dry-run: change SECURITY_ADVISORIES to kebab-case
+- go_modules: helper improvements @jeffwidman
+- go_modules: require go.16 for helpers @jeffwidman
+- go_modules: use go1.16.3 @jeffwidman
+- docker: handle versions generated with `git describe --tags --long` @kd7lxl
+- build(deps): bump composer/composer in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers
+
 ## v0.143.4, 26 April 2021
 
 - Common: Add IgnoreCondition.security_updates_only, which disables version updates filtering
