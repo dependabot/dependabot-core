@@ -123,6 +123,30 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
+      describe "the non-git github.com dependency" do
+        subject(:dependency) do
+          dependencies.find do |dep|
+            dep.name == "com.github.salomonbrys.kotson:kotson"
+          end
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("com.github.salomonbrys.kotson:kotson")
+          expect(dependency.version).to eq("2.5.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.5.0",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+
       context "when the name uses a property" do
         let(:buildfile_fixture_name) { "name_property.gradle" }
 
@@ -497,6 +521,30 @@ RSpec.describe Dependabot::Gradle::FileParser do
                   branch: nil,
                   ref: "be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
                 },
+                metadata: nil
+              }]
+            )
+          end
+        end
+
+        describe "the non-git github.com dependency" do
+          subject(:dependency) do
+            dependencies.find do |dep|
+              dep.name == "com.github.salomonbrys.kotson:kotson"
+            end
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).
+              to eq("com.github.salomonbrys.kotson:kotson")
+            expect(dependency.version).to eq("2.5.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "2.5.0",
+                file: "build.gradle.kts",
+                groups: [],
+                source: nil,
                 metadata: nil
               }]
             )
