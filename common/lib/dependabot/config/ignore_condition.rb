@@ -48,35 +48,35 @@ module Dependabot
 
       def ignore_patch(version)
         parts = version.split(".")
-        return [] unless parts.size > 2
-
-        lower_parts = parts.first(3)
-        upper_parts = parts.first(2)
-        upper_parts[1] = upper_parts[1].to_i + 1
-        lower_bound = "> #{lower_parts.join('.')}"
+        version_parts = parts.fill(0, parts.length...4)
+        lower_parts = if numeric_version?(version)
+                        version_parts.first(3) + [version_parts[3].to_i + 1] + ["a"]
+                      else
+                        version_parts.first(2) + [version_parts[2].to_i + 1] + ["a"]
+                      end
+        upper_parts = if numeric_version?(version)
+                        version_parts.first(1) + [version_parts[1].to_i + 1]
+                      else
+                        version_parts.first(2) + [999_999]
+                      end
+        lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
         ["#{lower_bound}, #{upper_bound}"]
       end
 
       def ignore_minor(version)
         parts = version.split(".")
-        return [] if parts.size < 2
-
-        if Gem::Version.correct?(version)
-          lower_parts = parts.first(2) + ["a"]
-          upper_parts = parts.first(1)
-          lower_parts[1] = lower_parts[1].to_i + 1
-          upper_parts[0] = upper_parts[0].to_i + 1
-        else
-          lower_parts = parts.first(1) + ["a"]
-          upper_parts = parts.first(1)
-          begin
-            upper_parts[0] = Integer(upper_parts[0]) + 1
-          rescue ArgumentError
-            upper_parts.push(999_999)
-          end
-        end
-
+        version_parts = parts.fill(0, parts.length...3)
+        lower_parts = if numeric_version?(version)
+                        version_parts.first(1) + [version_parts[1].to_i + 1] + ["a"]
+                      else
+                        version_parts.first(1) + ["a"]
+                      end
+        upper_parts = if numeric_version?(version)
+                        version_parts.first(0) + [version_parts[0].to_i + 1]
+                      else
+                        version_parts.first(1) + [999_999]
+                      end
         lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
         ["#{lower_bound}, #{upper_bound}"]
@@ -84,16 +84,26 @@ module Dependabot
 
       def ignore_major(version)
         parts = version.split(".")
-        return [] unless parts.size > 1
-
-        lower_parts = parts.first(1) + ["a"]
-        upper_parts = parts.first(1)
-        lower_parts[0] = lower_parts[0].to_i + 1
-        upper_parts[0] = upper_parts[0].to_i + 2
+        version_parts = parts.fill(0, parts.length...2)
+        lower_parts = if numeric_version?(version)
+                        [version_parts[0].to_i + 1] + ["a"]
+                      else
+                        version_parts.first(1) + [999_999]
+                      end
+        upper_parts = if numeric_version?(version)
+                        [version_parts[0].to_i + 2]
+                      else
+                        [999_999]
+                      end
         lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
-
         ["#{lower_bound}, #{upper_bound}"]
+      end
+
+      def numeric_version?(version)
+        return false if version.nil? || version.empty?
+
+        Gem::Version.correct?(version)
       end
     end
   end
