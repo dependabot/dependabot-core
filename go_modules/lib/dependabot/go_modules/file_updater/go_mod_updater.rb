@@ -91,11 +91,8 @@ module Dependabot
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
 
-            # TODO as far as I can tell, this array will only ever have one value, but we should assert that somehow
-            # and blow up if it's ever not true... I'm not a rubyist, so not sure how best to handle?
-            dep = dependencies.first
-            # `go get` will generate the required go.mod/go.sum updates for the new dep version
-            run_go_get(dep)
+            # `go get` will generate the required go.mod/go.sum updates for the updated deps
+            run_go_get(dependencies)
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
@@ -152,7 +149,7 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def run_go_get(dep)
+        def run_go_get(dependencies)
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
@@ -161,11 +158,15 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          # Use version pinning rather than `latest` just in case
-          # a new version gets released in the middle of our run.
-          version = "v" + dep.version.sub(/^v/i, "")
           # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
-          command = "go get -d #{dep.name}@#{version}"
+          command = "go get -d"
+          # `go get` accepts multiple packages, each separated by a space
+          dependencies.each do |dep|
+            # Use version pinning rather than `latest` just in case
+            # a new version gets released in the middle of our run.
+            version = "v" + dep.version.sub(/^v/i, "")
+            command << " #{dep.name}@#{version}"
+          end
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
