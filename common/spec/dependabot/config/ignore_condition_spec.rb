@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
 
-      context "with a `major.minor.patch.patch` semver version" do
+      context "with a `major.minor.patch.extra` version" do
         let(:dependency_version) { "1.2.3.1" }
 
         context "with ignore_major_versions" do
