@@ -28,8 +28,7 @@ func UpdateDependencyFile(args *Args) (interface{}, error) {
 	}
 
 	for _, dep := range args.Dependencies {
-		err := f.AddRequire(dep.Name, dep.Version)
-		if err != nil {
+		if err := f.AddRequire(dep.Name, dep.Version); err != nil {
 			return nil, err
 		}
 	}
