@@ -57,7 +57,7 @@ module Dependabot
         upper_parts = if numeric_version?(version)
                         version_parts.first(1) + [version_parts[1].to_i + 1]
                       else
-                        version_parts.first(2) + [version_parts[2].to_i + 999_999]
+                        version_parts.first(2) + [999_999]
                       end
         lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"
@@ -75,7 +75,7 @@ module Dependabot
         upper_parts = if numeric_version?(version)
                         version_parts.first(0) + [version_parts[0].to_i + 1]
                       else
-                        version_parts.first(1) + [version_parts[1].to_i + 999_999]
+                        version_parts.first(1) + [999_999]
                       end
         lower_bound = ">= #{lower_parts.join('.')}"
         upper_bound = "< #{upper_parts.join('.')}"

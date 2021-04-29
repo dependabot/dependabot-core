@@ -88,38 +88,6 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "returns the expected range" do
           expect(ignored_versions).to eq([">= 1.2.3.1.a, < 1.3"])
         end
-
-        context "with a minor dependency version" do
-          let(:dependency_version) { "1.2" }
-
-          it "ignores expected updates" do
-            expect_ignored(["1.2.1.a", "1.2.1.1"])
-            expect_allowed(minor_upgrades + major_upgrades)
-            expect_allowed([dependency_version, "1.2.0"])
-          end
-        end
-
-        context "with a single major dependency version" do
-          let(:dependency_version) { "1" }
-          let(:patch_upgrades) { %w(1.0.0.1 1.0.2 1.0.5 1.0.4-rc0) }
-          let(:minor_upgrades) { %w(1.1 1.2.0 1.3 1.4.0) }
-
-          it "does not attempt to ignore any versions" do
-            expect_ignored(patch_upgrades)
-            expect_allowed(minor_upgrades + major_upgrades)
-            expect_allowed([dependency_version])
-          end
-        end
-
-        context "with a patched patch dependency version" do
-          let(:dependency_version) { "1.2.3.1" }
-
-          it "ignores expected updates" do
-            expect_ignored(["1.2.3.2", "1.2.4.0"])
-            expect_allowed(minor_upgrades + major_upgrades)
-            expect_allowed([dependency_version])
-          end
-        end
       end
 
       context "with ignore_minor_versions" do
@@ -169,6 +137,52 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
 
+      context "with a `major.minor.patch.patch` semver version" do
+        let(:dependency_version) { "1.2.3.1" }
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "ignores expected versions" do
+            expect_allowed(patch_upgrades + minor_upgrades)
+            expect_ignored(major_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 2.a, < 3"])
+          end
+        end
+
+        context "with ignore_minor_versions" do
+          let(:update_types) { ["version-update:semver-minor"] }
+
+          it "ignores expected versions" do
+            expect_allowed(patch_upgrades + major_upgrades)
+            expect_ignored(minor_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 1.3.a, < 2"])
+          end
+        end
+
+        context "with ignore_patch_versions" do
+          let(:update_types) { ["version-update:semver-patch"] }
+
+          it "ignores expected updates" do
+            expect_ignored(["1.2.3.2", "1.2.4.0"])
+            expect_allowed(minor_upgrades + major_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 1.2.3.2.a, < 1.3"])
+          end
+        end
+      end
+
       context "with a 'major.minor' semver dependency" do
         let(:dependency_version) { "1.2" }
 
@@ -204,9 +218,10 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:update_types) { ["version-update:semver-patch"] }
 
           it "ignores expected versions" do
+            expect_ignored(["1.2.1.a", "1.2.1.1"])
             expect_allowed(major_upgrades + minor_upgrades)
             expect_ignored(patch_upgrades)
-            expect_allowed([dependency_version])
+            expect_allowed([dependency_version, "1.2.0"])
           end
 
           it "returns the expected range" do
@@ -236,9 +251,45 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
+          let(:patch_upgrades) { %w(1.0.0.1 1.0.2 1.0.5 1.0.4-rc0) }
+          let(:minor_upgrades) { %w(1.1 1.2.0 1.3 1.4.0) }
+
+          it "does not attempt to ignore any versions" do
+            expect_ignored(patch_upgrades)
+            expect_allowed(minor_upgrades + major_upgrades)
+            expect_allowed([dependency_version])
+          end
 
           it "returns the expected range" do
             expect(ignored_versions).to eq([">= 1.0.0.1.a, < 1.1"])
+          end
+        end
+      end
+
+      context "with a `major.minor.patch` semver-compatible git tag version" do
+        let(:dependency_version) { "v1.2.3" }
+
+        context "with ignore_patch_versions" do
+          let(:update_types) { ["version-update:semver-patch"] }
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= v1.2.4.a, < v1.2.999999"])
+          end
+        end
+
+        context "with ignore_minor_versions" do
+          let(:update_types) { ["version-update:semver-minor"] }
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= v1.a, < v1.999999"])
+          end
+        end
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= v1.999999, < 999999"])
           end
         end
       end
