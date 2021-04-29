@@ -159,7 +159,7 @@ module Dependabot
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
           # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
-          command = "go get -d"
+          command = +"go get -d"
           # `go get` accepts multiple packages, each separated by a space
           dependencies.each do |dep|
             # Use version pinning rather than `latest` just in case
