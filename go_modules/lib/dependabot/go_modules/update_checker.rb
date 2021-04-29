@@ -24,7 +24,7 @@ module Dependabot
         #
         # To update indirect dependencies we'll need to promote the indirect
         # dependency to the go.mod file forcing the resolver to pick this
-        # version (possibly as # indirect)
+        # version (possibly as `// indirect`)
         unless dependency.top_level?
           return unless dependency.version
 
