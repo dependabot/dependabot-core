@@ -91,16 +91,17 @@ module Dependabot
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
 
-            # Set the stubbed replace directives
-            update_go_mod(dependencies)
-
-            # Then run `go get` to pick up other changes to the file caused by
-            # the upgrade
-            run_go_get
+            # TODO as far as I can tell, this array will only ever have one value, but we should assert that somehow
+            # and blow up if it's ever not true... I'm not a rubyist, so not sure how best to handle?
+            dep = dependencies.first
+            # `go get` will generate the required go.mod/go.sum updates for the new dep version
+            run_go_get(dep)
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
             if substitutions.empty?
+              # go mod tidy should run before go mod vendor to ensure any
+              # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
               run_go_vendor
             else
@@ -151,26 +152,7 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def update_go_mod(dependencies)
-          deps = dependencies.map do |dep|
-            {
-              name: dep.name,
-              version: "v" + dep.version.sub(/^v/i, ""),
-              indirect: dep.requirements.empty?
-            }
-          end
-
-          body = SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            env: ENVIRONMENT,
-            function: "updateDependencyFile",
-            args: { dependencies: deps }
-          )
-
-          write_go_mod(body)
-        end
-
-        def run_go_get
+        def run_go_get(dep)
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
@@ -179,7 +161,12 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
+          # Use version pinning rather than `latest` just in case
+          # a new version gets released in the middle of our run.
+          version = "v" + dep.version.sub(/^v/i, "")
+          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
+          command = "go get -d #{dep.name}@#{version}"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
           File.delete(tmp_go_file) if File.exist?(tmp_go_file)
