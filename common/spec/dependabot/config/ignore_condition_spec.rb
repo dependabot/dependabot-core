@@ -116,15 +116,6 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         it "returns the expected range" do
           expect(ignored_versions).to eq([">= 2.a, < 3"])
         end
-
-        context "with a single major dependency version" do
-          let(:dependency_version) { "1" }
-
-          it "ignores patch updates" do
-            expect_ignored(["2.0.0", "2.0.0.a"])
-            expect_allowed([dependency_version, "1.2.2", "1.2.0.a", "3.0.0"])
-          end
-        end
       end
 
       context "with ignore_major_versions and ignore_patch_versions" do
