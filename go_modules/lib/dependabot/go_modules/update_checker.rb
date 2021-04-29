@@ -64,18 +64,6 @@ module Dependabot
             # private git dependencies
             env = { "GOPRIVATE" => "*" }
 
-            # Note: rather than leveraging our custom getUpdatedVersion
-            # and then passing that into `go get` within go_mod_updater
-            # we could invert this and run `go get dep@latest` and then
-            # inspect the go.mod/go.sum file to see what it was bumped
-            # to, and then flow from there. It would remove the need for
-            # https://github.com/dependabot/gomodules-extracted.
-            # But currently `go get` is a bit slower than our fast
-            # version checker. That may change in go 1.17 with
-            # lazy-loading: https://github.com/golang/go/issues/36460
-            # Also it's unclear if this would work with the pipeline
-            # approach of dependabot which naturally leads to splitting
-            # the finding of updates from actually updating to them.
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               env: env,
