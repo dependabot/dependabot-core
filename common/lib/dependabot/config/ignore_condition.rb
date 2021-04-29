@@ -76,11 +76,9 @@ module Dependabot
 
         version_parts = version.split(".")
         lower_parts = [version_parts[0].to_i + 1] + ["a"]
-        upper_parts = [version_parts[0].to_i + 2]
         lower_bound = ">= #{lower_parts.join('.')}"
-        upper_bound = "< #{upper_parts.join('.')}"
 
-        ["#{lower_bound}, #{upper_bound}"]
+        ["#{lower_bound}"]
       end
 
       def rubygems_compatible?(version)
