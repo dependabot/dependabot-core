@@ -227,6 +227,12 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
 
+          # TODO: We probably want to ignore all major version, e.g. v2, v3 etc
+          it "ignores expected versions" do
+            expect_ignored(["2.0.0", "2.0.0.a", "2.9.9"])
+            expect_allowed([dependency_version, "1.2.2", "1.2.0.a", "3.0.0"])
+          end
+
           it "returns the expected range" do
             expect(ignored_versions).to eq([">= 2.a, < 3"])
           end
