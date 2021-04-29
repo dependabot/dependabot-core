@@ -163,7 +163,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:update_types) { ["version-update:semver-patch"] }
 
           it "ignores expected updates" do
-            expect_ignored(["1.2.3.2", "1.2.4.0"])
+            expect_ignored(patch_upgrades + ["1.2.3.2", "1.2.4.0"])
             expect_allowed(minor_upgrades + major_upgrades)
             expect_allowed([dependency_version])
           end
