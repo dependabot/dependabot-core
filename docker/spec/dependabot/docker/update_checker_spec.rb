@@ -279,6 +279,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the dependency version is generated with git describe --tags --long" do
+      let(:tags_fixture_name) { "git_describe.json" }
+      let(:version) { "v3.9.0-177-ged5bcde" }
+      it { is_expected.to eq("v3.10.0-169-gfe040d3") }
+    end
+
     context "when the docker registry times out" do
       before do
         stub_request(:get, repo_url + "tags/list").
