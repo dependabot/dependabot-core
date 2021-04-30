@@ -180,7 +180,6 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
 
-          # TODO: We probably want to ignore all major version, e.g. v2, v3 etc
           it "ignores expected versions" do
             expect_allowed(patch_upgrades + minor_upgrades)
             expect_ignored(major_upgrades)
