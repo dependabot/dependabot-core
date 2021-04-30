@@ -243,6 +243,13 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
 
             it "updates the go.mod" do
+              # this is failing, but I'm not sure why.
+              # The code runs `go get -d github.com/googleapis/gnostic@v0.5.1`
+              # and then later runs `go mod tidy -e`.
+              # So I manually ran those in the test fixture, and it resulted in
+              # this line appearing. But when the test executes, this line is missing.
+              # I'm not sure why, and not sure how to run the Ruby debugger
+              # to step through it.
               expect(updater.updated_go_mod_content).to include(
                 %(github.com/googleapis/gnostic v0.5.1\n)
               )
