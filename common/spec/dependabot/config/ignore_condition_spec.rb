@@ -263,6 +263,52 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
 
+      context "with a pre-release semver version" do
+        let(:dependency_version) { "1.2.3-alpha" }
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "ignores expected versions" do
+            expect_allowed(patch_upgrades + minor_upgrades)
+            expect_ignored(major_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 2.a, < 3"])
+          end
+        end
+
+        context "with ignore_minor_versions" do
+          let(:update_types) { ["version-update:semver-minor"] }
+
+          it "ignores expected versions" do
+            expect_allowed(patch_upgrades + major_upgrades)
+            expect_ignored(minor_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 1.3.a, < 2"])
+          end
+        end
+
+        context "with ignore_patch_versions" do
+          let(:update_types) { ["version-update:semver-patch"] }
+
+          it "ignores expected updates" do
+            expect_ignored(patch_upgrades + ["1.2.3-alpha.2", "1.2.3-beta"])
+            expect_allowed(minor_upgrades + major_upgrades)
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 1.2.3-alpha.1.a, < 1.3"])
+          end
+        end
+      end
+
       context "with a non-semver dependency" do
         let(:dependency_version) { "Finchley.SR3" }
 
