@@ -20,7 +20,7 @@ resources:
     source:
       owner: pix4d
       repo: dependabot-core
-      access_token: ((concourse_janus_access_token_repo_status))
+      access_token: ((github_repo_status_token))
 
   - name: google-chat
     type: google-chat-resource-type
