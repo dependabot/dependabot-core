@@ -62,7 +62,7 @@ module Dependabot
         return [] unless rubygems_compatible?(version)
 
         parts = version.split(".")
-        version_parts = parts.fill(0, parts.length...3)
+        version_parts = parts.fill(0, parts.length...2)
         lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + ["a"]
         upper_parts = version_parts.first(0) + [version_parts[0].to_i + 1]
         lower_bound = ">= #{lower_parts.join('.')}"
@@ -74,8 +74,7 @@ module Dependabot
       def ignore_major(version)
         return [] unless rubygems_compatible?(version)
 
-        parts = version.split(".")
-        version_parts = parts.fill(0, parts.length...2)
+        version_parts = version.split(".")
         lower_parts = [version_parts[0].to_i + 1] + ["a"]
         upper_parts = [version_parts[0].to_i + 2]
         lower_bound = ">= #{lower_parts.join('.')}"
