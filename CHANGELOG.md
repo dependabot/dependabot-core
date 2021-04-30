@@ -1,3 +1,12 @@
+## v0.143.6, 30 April 2021
+
+- Common: version-update:semver-major ignores all major version updates
+- Document how to run tests within the dev docker container
+- go_modules: Make error output more idiomatic
+- Create CODE_OF_CONDUCT.md
+- Common: IgnoreCondition: handle multi-length semver ranges
+- Common: IgnoreCondition: don't ignore current version when ignoring patches
+
 ## v0.143.5, 29 April 2021
 
 - gradle: only treat commit-like versions as git repositories
