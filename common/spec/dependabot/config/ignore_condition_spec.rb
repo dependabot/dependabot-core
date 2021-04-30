@@ -182,8 +182,9 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
           # TODO: We probably want to ignore all major version, e.g. v2, v3 etc
           it "ignores expected versions" do
-            expect_ignored(["2.0.0", "2.0.0.a", "2.9.9"])
-            expect_allowed([dependency_version, "1.2.2", "1.2.0.a", "3.0.0"])
+            expect_allowed(patch_upgrades + minor_upgrades)
+            expect_ignored(major_upgrades)
+            expect_allowed([dependency_version])
           end
 
           it "returns the expected range" do
@@ -204,10 +205,10 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:patch_upgrades) { %w(1.0.2 1.0.5 1.0.4-rc0) }
           let(:minor_upgrades) { %w(1.1 1.2.0 1.3 1.4.0) }
 
-          it "does not attempt to ignore any versions" do
+          it "ignores expected versions" do
+            expect_allowed(major_upgrades + minor_upgrades)
             expect_ignored(patch_upgrades)
-            expect_allowed(minor_upgrades + major_upgrades)
-            expect_allowed([dependency_version])
+            expect_allowed([dependency_version, "1.0.0"])
           end
 
           it "returns the expected range" do
