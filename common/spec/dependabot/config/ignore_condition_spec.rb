@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
-          let(:patch_upgrades) { %w(1.0.0.1 1.0.2 1.0.5 1.0.4-rc0) }
+          let(:patch_upgrades) { %w(1.0.2 1.0.5 1.0.4-rc0) }
           let(:minor_upgrades) { %w(1.1 1.2.0 1.3 1.4.0) }
 
           it "does not attempt to ignore any versions" do
