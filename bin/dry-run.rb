@@ -133,10 +133,10 @@ end
 
 unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
   # For example:
-  # [{"dependency_name":"name",
-  #   "patched_versions":[],
-  #   "unaffected_versions":[],
-  #   "affected_versions":["< 0.10.0"]}]
+  # [{"dependency-name":"name",
+  #   "patched-versions":[],
+  #   "unaffected-versions":[],
+  #   "affected-versions":["< 0.10.0"]}]
   $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
 end
 
@@ -519,10 +519,15 @@ end
 
 def ignored_versions_for(dep)
   if $options[:ignore_conditions].any?
-    $options[:ignore_conditions].
-      select { |ic| ic["dependency-name"] == dep.name }.
-      map { |ic| ic["version-requirement"] }.
-      compact
+    ignore_conditions = $options[:ignore_conditions].map do |ic|
+      Dependabot::Config::IgnoreCondition.new(
+        dependency_name: ic["dependency-name"],
+        versions: [ic["version-requirement"]].compact,
+        update_types: ic["update-types"]
+      )
+    end
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
+    ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
@@ -530,12 +535,12 @@ end
 
 def security_advisories
   $options[:security_advisories].map do |adv|
-    vulnerable_versions = adv["affected_versions"] || []
-    safe_versions = (adv["patched_versions"] || []) +
-                    (adv["unaffected_versions"] || [])
+    vulnerable_versions = adv["affected-versions"] || []
+    safe_versions = (adv["patched-versions"] || []) +
+                    (adv["unaffected-versions"] || [])
 
     # Handle case mismatches between advisory name and parsed dependency name
-    dependency_name = adv["dependency_name"].downcase
+    dependency_name = adv["dependency-name"].downcase
     Dependabot::SecurityAdvisory.new(
       dependency_name: dependency_name,
       package_manager: $package_manager,

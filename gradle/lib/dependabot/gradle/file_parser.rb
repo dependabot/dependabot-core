@@ -211,7 +211,7 @@ module Dependabot
       end
 
       def source_from(group, name, version)
-        return nil unless group&.start_with?("com.github")
+        return nil unless group&.start_with?("com.github") && version.match?(/\A[0-9a-f]{40}\Z/)
 
         account = group.sub("com.github.", "")
 
