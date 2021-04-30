@@ -50,10 +50,9 @@ module Dependabot
         return [] unless rubygems_compatible?(version)
 
         parts = version.split(".")
-        version_parts = parts.fill(0, parts.length...4)
-        lower_parts = version_parts.first(3) + [version_parts[3].to_i + 1] + ["a"]
+        version_parts = parts.fill(0, parts.length...2)
         upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1]
-        lower_bound = ">= #{lower_parts.join('.')}"
+        lower_bound = "> #{version}"
         upper_bound = "< #{upper_parts.join('.')}"
 
         ["#{lower_bound}, #{upper_bound}"]

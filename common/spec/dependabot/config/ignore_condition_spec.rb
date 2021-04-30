@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
 
         it "returns the expected range" do
-          expect(ignored_versions).to eq([">= 1.2.3.1.a, < 1.3"])
+          expect(ignored_versions).to eq(["> 1.2.3, < 1.3"])
         end
       end
 
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           end
 
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= 1.2.3.2.a, < 1.3"])
+            expect(ignored_versions).to eq(["> 1.2.3.1, < 1.3"])
           end
         end
       end
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           end
 
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= 1.2.0.1.a, < 1.3"])
+            expect(ignored_versions).to eq(["> 1.2, < 1.3"])
           end
         end
       end
@@ -258,13 +258,13 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           end
 
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= 1.0.0.1.a, < 1.1"])
+            expect(ignored_versions).to eq(["> 1, < 1.1"])
           end
         end
       end
 
       context "with a pre-release semver version" do
-        let(:dependency_version) { "1.2.3-alpha" }
+        let(:dependency_version) { "1.2.3-alpha.1" }
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
@@ -298,13 +298,13 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:update_types) { ["version-update:semver-patch"] }
 
           it "ignores expected updates" do
-            expect_ignored(patch_upgrades + ["1.2.3-alpha.2", "1.2.3-beta"])
+            expect_ignored(patch_upgrades + ["1.2.3-alpha.2", "1.2.3-alpha.1.1", "1.2.3-beta"])
             expect_allowed(minor_upgrades + major_upgrades)
             expect_allowed([dependency_version])
           end
 
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= 1.2.3-alpha.1.a, < 1.3"])
+            expect(ignored_versions).to eq(["> 1.2.3-alpha.1, < 1.3"])
           end
         end
       end
