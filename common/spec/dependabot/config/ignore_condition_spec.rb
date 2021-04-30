@@ -263,55 +263,27 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
         end
       end
 
-      context "with a `major.minor.patch` semver-compatible git tag version" do
-        let(:dependency_version) { "v1.2.3" }
-
-        context "with ignore_patch_versions" do
-          let(:update_types) { ["version-update:semver-patch"] }
-
-          it "returns the expected range" do
-            expect(ignored_versions).to eq([">= v1.2.4.a, < v1.2.999999"])
-          end
-        end
-
-        context "with ignore_minor_versions" do
-          let(:update_types) { ["version-update:semver-minor"] }
-
-          it "returns the expected range" do
-            expect(ignored_versions).to eq([">= v1.a, < v1.999999"])
-          end
-        end
-
-        context "with ignore_major_versions" do
-          let(:update_types) { ["version-update:semver-major"] }
-
-          it "returns the expected range" do
-            expect(ignored_versions).to eq([">= v1.999999, < 999999"])
-          end
-        end
-      end
-
       context "with a non-semver dependency" do
         let(:dependency_version) { "Finchley.SR3" }
 
         context "with ignore_patch_versions" do
           let(:update_types) { ["version-update:semver-patch"] }
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= Finchley.SR3.1.a, < Finchley.SR3.999999"])
+            expect(ignored_versions).to eq([])
           end
         end
 
         context "with ignore_minor_versions" do
           let(:update_types) { ["version-update:semver-minor"] }
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= Finchley.a, < Finchley.999999"])
+            expect(ignored_versions).to eq([])
           end
         end
 
         context "with ignore_major_versions" do
           let(:update_types) { ["version-update:semver-major"] }
           it "returns the expected range" do
-            expect(ignored_versions).to eq([">= Finchley.999999, < 999999"])
+            expect(ignored_versions).to eq([])
           end
         end
       end
