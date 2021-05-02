@@ -46,7 +46,7 @@ func main() {
 		parseArgs(helperParams.Args, &args)
 		funcOut, funcErr = importresolver.VCSRemoteForImport(&args)
 	default:
-		abort(fmt.Errorf("Unrecognised function '%s'", helperParams.Function))
+		abort(fmt.Errorf("unrecognised function '%s'", helperParams.Function))
 	}
 
 	if funcErr != nil {
