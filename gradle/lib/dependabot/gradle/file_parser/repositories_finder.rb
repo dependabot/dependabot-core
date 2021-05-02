@@ -16,7 +16,7 @@ module Dependabot
         REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
 
         GROOVY_MAVEN_REPO_REGEX =
-          /maven\s*\{[^\}]*\surl[\s\(]=?\s*['"](?<url>[^'"]+)['"]/.freeze
+          /maven\s*\{[^\}]*\surl[\s\(]=?[^'"]*['"](?<url>[^'"]+)['"]/.freeze
 
         KOTLIN_MAVEN_REPO_REGEX =
           /maven\((url\s?\=\s?)?["](?<url>[^"]+)["]\)/.freeze

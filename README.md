@@ -63,7 +63,7 @@ To install the helpers for each language:
 5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
 6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
 
-## Local development
+## Local development & Running tests
 
 Run the tests by running `rspec spec` inside each of the packages. Style is
 enforced by RuboCop. To check for style violations, simply run `rubocop` in
@@ -96,6 +96,7 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Dry run script
