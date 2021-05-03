@@ -289,7 +289,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
           to raise_error do |err|
             expect(err).to be_a(Dependabot::DependencyFileNotResolvable)
             expect(err.message).
-              to start_with("Cannot detect VCS for unknown/vcs")
+              to start_with("Cannot detect VCS for unknown.doesnotexist/vcs")
           end
       end
     end
