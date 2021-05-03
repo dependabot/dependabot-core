@@ -55,35 +55,34 @@ module Dependabot
 
       private
 
+      # TODO: Consider whether to retry failures
       def find_latest_resolvable_version
+        pseudo_version_regex = /\b\d{14}-[0-9a-f]{12}$/
+        return dependency.version if dependency.version =~ pseudo_version_regex
+
         SharedHelpers.in_a_temporary_directory do
           SharedHelpers.with_git_configured(credentials: credentials) do
             File.write("go.mod", go_mod.content)
 
-            # Turn off the module proxy for now, as it's causing issues with
-            # private git dependencies
+            # Turn off the module proxy for now, as it's causing issues with private git dependencies
             env = { "GOPRIVATE" => "*" }
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              env: env,
-              function: "getUpdatedVersion",
-              args: {
-                dependency: {
-                  name: dependency.name,
-                  version: "v" + dependency.version,
-                  indirect: dependency.requirements.empty?
-                }
-              }
-            )
+            json, stderr, status = Open3.capture3(env, SharedHelpers.escape_command("go list -m -versions --json #{dependency.name}"))
+            if !status.success?
+              # TODO: Should we populate an error_context here?
+              handle_subprocess_error(SharedHelpers::HelperSubprocessFailed.new(message: stderr, error_context: {}))
+            end
+
+            version_strings = JSON.parse(json)["Versions"].select { |v| version_class.correct?(v) }
+
+            # TODO Refactor
+            current_version = version_class.new(dependency.version)
+            candidate_versions = version_strings.map { |v| version_class.new(v) }
+            prereleases, stable_releases = candidate_versions.partition { |v| v.prerelease? }
+            latest = current_version.prerelease? ? prereleases.max : stable_releases.max
+            "v#{latest}"
           end
         end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        retry_count ||= 0
-        retry_count += 1
-        retry if transitory_failure?(e) && retry_count < 2
-
-        handle_subprocess_error(e)
       end
 
       def handle_subprocess_error(error)
