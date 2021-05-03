@@ -4,6 +4,7 @@ require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/go_modules/path_converter"
+require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -109,11 +110,8 @@ module Dependabot
             # we can use in their place. Using generated paths is safer as it
             # means we don't need to worry about references to parent
             # directories, etc.
-            (JSON.parse(stdout)["Replace"] || []).
-              map { |r| r["New"]["Path"] }.
-              compact.
-              select { |p| p.start_with?(".") || p.start_with?("/") }.
-              map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
+            manifest = JSON.parse(stdout)
+            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod.directory)
           end
       end
 
