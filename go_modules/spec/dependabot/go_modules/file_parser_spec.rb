@@ -10,12 +10,13 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::GoModules::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) { described_class.new(dependency_files: files, source: source, repo_contents_path: repo_contents_path) }
   let(:files) { [go_mod] }
   let(:go_mod) do
     Dependabot::DependencyFile.new(
       name: "go.mod",
-      content: go_mod_content
+      content: go_mod_content,
+      directory: directory
     )
   end
   let(:go_mod_content) { fixture("go_mods", go_mod_fixture_name) }
@@ -24,9 +25,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
     Dependabot::Source.new(
       provider: "github",
       repo: "gocardless/bump",
-      directory: "/"
+      directory: directory
     )
   end
+  let(:repo_contents_path) { nil }
+  let(:directory) { "/" }
 
   it "requires a go.mod to be present" do
     expect do
@@ -288,6 +291,31 @@ RSpec.describe Dependabot::GoModules::FileParser do
             expect(err.message).
               to start_with("Cannot detect VCS for unknown/vcs")
           end
+      end
+    end
+
+    context "a monorepo" do
+      let(:project_name) { "monorepo" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+      let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+
+      it "parses root file" do
+        expect(dependencies.map(&:name)).to eq(%w(
+                                                 github.com/dependabot/vgotest/common
+                                                 rsc.io/qr
+                                               ))
+      end
+
+      context "nested file" do
+        let(:directory) { "/cmd" }
+        let(:go_mod_content) { fixture("projects", project_name, "cmd", "go.mod") }
+
+        it "parses nested file" do
+          expect(dependencies.map(&:name)).to eq(%w(
+                                                   github.com/dependabot/vgotest/common
+                                                   rsc.io/qr
+                                                 ))
+        end
       end
     end
   end
