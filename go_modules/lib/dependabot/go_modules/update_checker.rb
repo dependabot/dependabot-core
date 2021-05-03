@@ -67,8 +67,9 @@ module Dependabot
             # Turn off the module proxy for now, as it's causing issues with private git dependencies
             env = { "GOPRIVATE" => "*" }
 
-            json, stderr, status = Open3.capture3(env, SharedHelpers.escape_command("go list -m -versions --json #{dependency.name}"))
+            json, stderr, status = Open3.capture3(env, SharedHelpers.escape_command("go list -m -mod=mod -versions --json #{dependency.name}"))
             if !status.success?
+
               # TODO: Should we populate an error_context here?
               handle_subprocess_error(SharedHelpers::HelperSubprocessFailed.new(message: stderr, error_context: {}))
             end
