@@ -18,7 +18,7 @@ module Dependabot
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
         required_packages.each do |dep|
-          dependency_set << dependency_from_details(dep) unless dep["Indirect"]
+          dependency_set << dependency_from_details(dep) unless skip_dependency?(dep)
         end
 
         dependency_set.dependencies
@@ -160,6 +160,17 @@ module Dependabot
         return raw_version unless raw_version.match?(GIT_VERSION_REGEX)
 
         raw_version.match(GIT_VERSION_REGEX).named_captures.fetch("sha")
+      end
+
+      def skip_dependency?(dep)
+        return true if dep["Indirect"]
+
+        begin
+          path_uri = URI.parse("https://#{dep['Path']}")
+          !path_uri.host.include?(".")
+        rescue URI::InvalidURIError
+          false
+        end
       end
     end
   end

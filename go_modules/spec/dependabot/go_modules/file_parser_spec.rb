@@ -300,10 +300,11 @@ RSpec.describe Dependabot::GoModules::FileParser do
       let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
 
       it "parses root file" do
-        expect(dependencies.map(&:name)).to eq(%w(
-                                                 github.com/dependabot/vgotest/common
-                                                 rsc.io/qr
-                                               ))
+        expect(dependencies.map(&:name)).
+          to eq(%w(
+                  github.com/dependabot/vgotest/common
+                  rsc.io/qr
+                ))
       end
 
       context "nested file" do
@@ -311,11 +312,22 @@ RSpec.describe Dependabot::GoModules::FileParser do
         let(:go_mod_content) { fixture("projects", project_name, "cmd", "go.mod") }
 
         it "parses nested file" do
-          expect(dependencies.map(&:name)).to eq(%w(
-                                                   github.com/dependabot/vgotest/common
-                                                   rsc.io/qr
-                                                 ))
+          expect(dependencies.map(&:name)).
+            to eq(%w(
+                    github.com/dependabot/vgotest/common
+                    rsc.io/qr
+                  ))
         end
+      end
+    end
+
+    context "dependency without hostname" do
+      let(:project_name) { "unrecognized_import" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+      let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
+
+      it "parses ignores invalid dependency" do
+        expect(dependencies.map(&:name)).to eq([])
       end
     end
   end
