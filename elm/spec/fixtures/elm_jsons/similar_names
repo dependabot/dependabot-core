@@ -1,4 +1,5 @@
 {
+  "type": "package",
   "version": "1.0.0",
   "summary": "helpful summary of your project, less than 80 characters",
   "repository": "https://github.com/user/project.git",
@@ -8,8 +9,8 @@
   ],
   "exposed-modules": [],
   "dependencies": {
-    "rtfeldman/elm-css": "13.1.1 <= v <= 13.1.1",
-    "NoRedInk/datetimepicker": "3.0.1 <= v <= 3.0.1"
-  },
-  "elm-version": "0.18.0 <= v < 0.19.0"
+    "some/awesome-package": "13.1.1 <= v <= 13.1.1",
+    "ome/awesome-package": "3.0.1 <= v <= 3.0.1",
+    "some/awesome-pack": "2.0.1 <= v <= 2.0.1"
+  }
 }
