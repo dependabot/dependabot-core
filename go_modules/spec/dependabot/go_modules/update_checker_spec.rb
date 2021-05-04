@@ -80,8 +80,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    it "doesn't update to (Dependabot) ignored versions" do
-      # TODO: let(:ignored_versions) { ["..."] }
+    context "with Dependabot ignored versions" do
+      let(:ignored_versions) { ["> 1.0.1"] }
+
+      it "doesn't update to (Dependabot) ignored versions" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.1"))
+      end
     end
 
     context "when on a pre-release" do

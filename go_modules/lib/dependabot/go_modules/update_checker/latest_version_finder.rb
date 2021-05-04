@@ -4,6 +4,7 @@ require "excon"
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/go_modules/requirement"
 require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
@@ -45,6 +46,7 @@ module Dependabot
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_lower_versions(candidate_versions)
+          candidate_versions = filter_ignored_versions(candidate_versions)
 
           candidate_versions.max
         end
