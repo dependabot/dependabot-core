@@ -41,8 +41,6 @@ module Dependabot
           pseudo_version_regex = /\b\d{14}-[0-9a-f]{12}$/
           return dependency.version if dependency.version =~ pseudo_version_regex
 
-          current_version = version_class.new(dependency.version)
-
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_lower_versions(candidate_versions)
