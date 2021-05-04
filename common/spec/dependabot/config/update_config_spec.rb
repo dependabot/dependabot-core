@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
           name: "actions/checkout",
           requirements: [],
           version: nil,
-          package_manager: "go_modules"
+          package_manager: "github_actions"
         )
       end
 
