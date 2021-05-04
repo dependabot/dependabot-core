@@ -33,10 +33,10 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
-	case "getUpdatedVersion":
+	case "getVersions":
 		var args updatechecker.Args
 		parseArgs(helperParams.Args, &args)
-		funcOut, funcErr = updatechecker.GetUpdatedVersion(&args)
+		funcOut, funcErr = updatechecker.GetVersions(&args)
 	case "updateDependencyFile":
 		var args updater.Args
 		parseArgs(helperParams.Args, &args)

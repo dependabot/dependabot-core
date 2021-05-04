@@ -56,6 +56,9 @@ module Dependabot
       private
 
       def find_latest_resolvable_version
+        pseudo_version_regex = /\b\d{14}-[0-9a-f]{12}$/
+        return dependency.version if dependency.version =~ pseudo_version_regex
+
         SharedHelpers.in_a_temporary_directory do
           SharedHelpers.with_git_configured(credentials: credentials) do
             File.write("go.mod", go_mod.content)
@@ -64,18 +67,25 @@ module Dependabot
             # private git dependencies
             env = { "GOPRIVATE" => "*" }
 
-            SharedHelpers.run_helper_subprocess(
+            version_strings = SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
               env: env,
-              function: "getUpdatedVersion",
+              function: "getVersions",
               args: {
                 dependency: {
                   name: dependency.name,
                   version: "v" + dependency.version,
-                  indirect: dependency.requirements.empty?
                 }
               }
             )
+
+            # TODO: Refactor
+            current_version = version_class.new(dependency.version)
+            candidate_versions = version_strings.select { |v| version_class.correct?(v) }
+                                                .map { |v| version_class.new(v) }
+            prereleases, stable_releases = candidate_versions.partition { |v| v.prerelease? }
+            latest = current_version.prerelease? ? prereleases.max : stable_releases.max
+            "v#{latest}"
           end
         end
       rescue SharedHelpers::HelperSubprocessFailed => e
