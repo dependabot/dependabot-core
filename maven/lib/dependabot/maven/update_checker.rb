@@ -31,8 +31,6 @@ module Dependabot
       end
 
       def lowest_resolvable_security_fix_version
-        return nil if version_comes_from_multi_dependency_property?
-
         lowest_security_fix_version
       end
 
