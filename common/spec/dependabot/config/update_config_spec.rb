@@ -148,6 +148,26 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         end
       end
     end
+
+    context "when the dependency version isn't known" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          requirements: [],
+          version: nil,
+          package_manager: "go_modules"
+        )
+      end
+
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "actions/checkout",
+                                                 versions: [], update_types: ["version-update:semver-major"])]
+      end
+
+      it "returns no ignored versions" do
+        expect(ignored_versions).to eq([])
+      end
+    end
   end
 
   describe "#commit_message_options" do
