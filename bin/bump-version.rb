@@ -49,12 +49,20 @@ merge_subjects = commit_subjects.select { |s| s.start_with?("Merge pull request 
 pr_numbers = merge_subjects.map { |s| s.match(/#(\d+)/)[1].to_i }
 puts "⏳ fetching pull request details"
 pr_details = pr_numbers.map do |pr_number|
-  `gh pr view #{pr_number} --json title,author --jq ".title,.author.login"`
-end.map { |s| s.split("\n") }
+  pr_details = `gh pr view #{pr_number} --json title,author --jq ".title,.author.login"`
+  title, author = pr_details.split("\n").map(&:strip)
+  {
+    title: title,
+    author: author,
+    number: pr_number,
+    link: "https://github.com/dependabot/dependabot-core/pull/#{pr_number}"
+  }
+end
 
-proposed_changes = pr_details.map do |title, author|
-  line = "- #{title}"
-  line += " (@#{author})" unless dependabot_team.include?(author)
+proposed_changes = pr_details.map do |details|
+  line = "- #{details[:title]}"
+  line += " (@#{details[:author]})" unless dependabot_team.include?(details[:author])
+  line += " [##{details[:number]}](#{details[:link]})"
   line
 end
 
