@@ -37,7 +37,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
   let(:dependency_version) { "2.2.0" }
   let(:requirements) do
     [{
-      file: "elm-package.json",
+      file: "elm.json",
       requirement: string_req,
       groups: [],
       source: nil
@@ -47,8 +47,8 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
   let(:elm_package) do
     Dependabot::DependencyFile.new(
-      content: fixture("elm_packages", fixture_name),
-      name: "elm-package.json",
+      content: fixture("elm_jsons", fixture_name),
+      name: "elm.json",
       directory: directory
     )
   end
@@ -59,15 +59,15 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
     context "with a requirement that is out of date, but needs a full unlock" do
       let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
-      let(:dependency_name) { "NoRedInk/datetimepicker" }
+      let(:dependency_name) { "mercurymedia/elm-datetime-picker" }
       let(:string_req) { "3.0.0 <= v <= 3.0.1" }
       let(:dependency_version) { nil }
       let(:elm_package_url) do
-        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
+        "https://package.elm-lang.org/packages/mercurymedia/elm-datetime-picker/"\
         "releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "mercurymedia-elm-datetime-picker.json")
       end
 
       before do
@@ -85,15 +85,14 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
     context "with a version that is out of date, but needs a full unlock" do
       let(:fixture_name) { "elm_css_and_datetimepicker" }
-      let(:dependency_name) { "NoRedInk/datetimepicker" }
-      let(:string_req) { "3.0.1 <= v <= 3.0.1" }
-      let(:dependency_version) { "3.0.1" }
+      let(:dependency_name) { "mercurymedia/elm-datetime-picker" }
+      let(:string_req) { "4.0.0 <= v <= 5.0.0" }
+      let(:dependency_version) { "4.0.1" }
       let(:elm_package_url) do
-        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
-        "releases.json"
+        "https://package.elm-lang.org/packages/mercurymedia/elm-datetime-picker/releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "mercurymedia-elm-datetime-picker.json")
       end
       let(:unlock_level) { :all }
 
@@ -107,15 +106,14 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
 
     context "with a requirement that is out of date, but needs a full unlock" do
       let(:fixture_name) { "elm_css_and_datetimepicker_ranges" }
-      let(:dependency_name) { "NoRedInk/datetimepicker" }
-      let(:string_req) { "3.0.0 <= v <= 3.0.1" }
+      let(:dependency_name) { "mercurymedia/elm-datetime-picker" }
+      let(:string_req) { "3.0.0 <= v <= 4.0.0" }
       let(:dependency_version) { nil }
       let(:elm_package_url) do
-        "https://package.elm-lang.org/packages/NoRedInk/datetimepicker/"\
-        "releases.json"
+        "https://package.elm-lang.org/packages/mercurymedia/elm-datetime-picker/releases.json"
       end
       let(:elm_package_response) do
-        fixture("elm_package_responses", "NoRedInk-datetimepicker.json")
+        fixture("elm_package_responses", "mercurymedia-elm-datetime-picker.json")
       end
       let(:unlock_level) { :all }
 

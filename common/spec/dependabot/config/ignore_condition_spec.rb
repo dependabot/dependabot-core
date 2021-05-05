@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
   let(:security_updates_only) { false }
 
-  describe "#versions" do
+  describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -284,6 +284,25 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
           end
+        end
+      end
+
+      context "when the dependency version isn't known" do
+        let(:dependency_version) { nil }
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+          it { is_expected.to eq([]) }
+        end
+
+        context "with ignore_minor_versions" do
+          let(:update_types) { ["version-update:semver-minor"] }
+          it { is_expected.to eq([]) }
+        end
+
+        context "with ignore_patch_versions" do
+          let(:update_types) { ["version-update:semver-patch"] }
+          it { is_expected.to eq([]) }
         end
       end
 
