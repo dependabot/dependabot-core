@@ -19,6 +19,7 @@ module Dependabot
           /Repository not found/,
           /unrecognized import path/
         ].freeze
+        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false)
@@ -38,8 +39,7 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions
 
         def fetch_latest_version
-          pseudo_version_regex = /\b\d{14}-[0-9a-f]{12}$/
-          return dependency.version if dependency.version =~ pseudo_version_regex
+          return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
 
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
