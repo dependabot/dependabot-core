@@ -80,8 +80,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    it "doesn't update to (Dependabot) ignored versions" do
-      # TODO: let(:ignored_versions) { ["..."] }
+    context "with Dependabot ignored versions" do
+      let(:ignored_versions) { ["> 1.0.1"] }
+
+      it "doesn't update to (Dependabot) ignored versions" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.1"))
+      end
     end
 
     context "when on a pre-release" do
@@ -176,6 +181,16 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
           to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/web/dependabot.com")
         end
+      end
+    end
+
+    context "with a retracted update version" do
+      # latest release v1.0.1 is retracted
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-retracted" }
+
+      pending "doesn't update to the retracted version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
 
