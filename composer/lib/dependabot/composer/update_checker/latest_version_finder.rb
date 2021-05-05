@@ -4,8 +4,9 @@ require "excon"
 require "json"
 
 require "dependabot/composer/update_checker"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/logger"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Composer
@@ -46,8 +47,8 @@ module Dependabot
           versions = available_versions
           versions = filter_prerelease_versions(versions)
           versions = filter_vulnerable_versions(versions)
-          versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions.min
         end
 
@@ -62,7 +63,10 @@ module Dependabot
             versions_array.
             reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if filtered.empty? && versions_array.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

@@ -2,15 +2,18 @@
 
 require "excon"
 require "gitlab"
+
+require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
-require "dependabot/clients/bitbucket_with_retries"
-require "dependabot/metadata_finders"
-require "dependabot/errors"
-require "dependabot/utils"
-require "dependabot/source"
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/git_metadata_fetcher"
+require "dependabot/logger"
+require "dependabot/metadata_finders"
+require "dependabot/source"
+require "dependabot/utils"
+
 module Dependabot
   class GitCommitChecker
     VERSION_REGEX = /
@@ -86,14 +89,17 @@ module Dependabot
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
-    def local_tag_for_latest_version
+    def local_tag_for_latest_version # rubocop:disable Metrics/PerceivedComplexity, Metrics/AbcSize
       tags =
         local_tags.
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
                  reject { |t| tag_included_in_ignore_requirements?(t) }
-      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
+      # TODO: Filter out the current version/lower versions
+      if tags.any? && filtered.empty?
+        Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+        raise AllVersionsIgnored if @raise_on_ignored
+      end
 
       tag = filtered.
             reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
@@ -113,7 +119,6 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def git_repo_reachable?
       local_upload_pack

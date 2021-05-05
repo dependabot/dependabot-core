@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require "nokogiri"
-require "dependabot/shared_helpers"
+
 require "dependabot/gradle/file_parser/repositories_finder"
+require "dependabot/gradle/requirement"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
-require "dependabot/gradle/requirement"
+require "dependabot/logger"
 require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Gradle
@@ -35,6 +37,7 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
+          # TODO: Filter out the current version/lower versions
           possible_versions = filter_ignored_versions(possible_versions)
 
           possible_versions.last
@@ -47,8 +50,8 @@ module Dependabot
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
           possible_versions = filter_vulnerable_versions(possible_versions)
-          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
 
           possible_versions.first
         end
@@ -103,7 +106,10 @@ module Dependabot
               reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
+          if filtered.empty? && possible_versions.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

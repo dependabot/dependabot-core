@@ -5,10 +5,11 @@ require "excon"
 require "nokogiri"
 
 require "dependabot/dependency"
-require "dependabot/python/update_checker"
-require "dependabot/shared_helpers"
+require "dependabot/logger"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
+require "dependabot/python/update_checker"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Python
@@ -52,6 +53,7 @@ module Dependabot
           versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
+          # TODO: Filter out the current version/lower versions
           versions = filter_ignored_versions(versions)
           versions.max
         end
@@ -61,6 +63,7 @@ module Dependabot
           versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
+          # TODO: Filter out the current version/lower versions
           versions = filter_ignored_versions(versions)
           versions = filter_out_of_range_versions(versions)
           versions.max
@@ -101,7 +104,10 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-          raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if filtered.empty? && versions_array.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

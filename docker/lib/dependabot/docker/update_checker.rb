@@ -2,12 +2,13 @@
 
 require "docker_registry2"
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
-require "dependabot/errors"
-require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
+require "dependabot/docker/version"
+require "dependabot/errors"
+require "dependabot/logger"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
 
 module DockerRegistry2
   class Registry
@@ -354,12 +355,17 @@ module Dependabot
 
       def filter_ignored(candidate_tags)
         filtered =
-          candidate_tags.
-          reject do |tag|
-            version = version_class.new(numeric_version_from(tag))
-            ignore_requirements.any? { |r| r.satisfied_by?(version) }
-          end
-        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && candidate_tags.any?
+        candidate_tags.
+        reject do |tag|
+          version = version_class.new(numeric_version_from(tag))
+          ignore_requirements.any? { |r| r.satisfied_by?(version) }
+        end
+
+        # TODO: Filter out the current version/lower versions
+        if filtered.empty? && versions_array.any?
+          Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+          raise AllVersionsIgnored if @raise_on_ignored
+        end
 
         filtered
       end

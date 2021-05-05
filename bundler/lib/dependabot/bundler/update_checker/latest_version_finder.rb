@@ -2,12 +2,12 @@
 
 require "excon"
 
-require "dependabot/bundler/update_checker"
 require "dependabot/bundler/requirement"
-require "dependabot/shared_helpers"
+require "dependabot/bundler/update_checker"
+require "dependabot/bundler/update_checker/latest_version_finder/dependency_source"
 require "dependabot/errors"
-require "dependabot/bundler/update_checker/latest_version_finder/" \
-        "dependency_source"
+require "dependabot/logger"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Bundler
@@ -56,8 +56,8 @@ module Dependabot
           relevant_versions = dependency_source.versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_vulnerable_versions(relevant_versions)
-          relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
+          relevant_versions = filter_ignored_versions(relevant_versions)
 
           relevant_versions.min
         end
@@ -71,7 +71,10 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if filtered.empty? && versions_array.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

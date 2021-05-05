@@ -3,9 +3,10 @@
 require "excon"
 require "nokogiri"
 
-require "dependabot/nuget/version"
+require "dependabot/logger"
 require "dependabot/nuget/requirement"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -32,6 +33,7 @@ module Dependabot
             begin
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
+              # TODO: Filter out the current version/lower versions
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions.max_by { |hash| hash.fetch(:version) }
             end
@@ -75,7 +77,10 @@ module Dependabot
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
+          if filtered.empty? && possible_versions.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

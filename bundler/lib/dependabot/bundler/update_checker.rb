@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers"
-require "dependabot/update_checkers/base"
 require "dependabot/bundler/file_updater/requirement_replacer"
 require "dependabot/bundler/version"
 require "dependabot/git_commit_checker"
+require "dependabot/logger"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
 module Dependabot
   module Bundler
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -17,6 +18,8 @@ module Dependabot
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
+
+        Dependabot.logger.info("Checking for latest version")
 
         latest_version_details&.fetch(:version)
       end

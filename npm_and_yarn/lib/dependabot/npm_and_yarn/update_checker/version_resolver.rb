@@ -2,7 +2,6 @@
 
 require "dependabot/errors"
 require "dependabot/git_commit_checker"
-require "dependabot/logger"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"

@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require "excon"
+
+require "dependabot/errors"
+require "dependabot/logger"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-require "dependabot/errors"
 
 module Dependabot
   module Elm
@@ -77,9 +79,13 @@ module Dependabot
 
       def candidate_versions
         filtered = all_versions.
-                   reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+        reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && all_versions.any?
+        # TODO: Filter out the current version/lower versions
+        if filtered.empty? && all_versions.any?
+          Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+          raise AllVersionsIgnored if @raise_on_ignored
+        end
 
         filtered
       end

@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "excon"
+
 require "dependabot/cargo/update_checker"
+require "dependabot/logger"
 
 module Dependabot
   module Cargo
@@ -42,8 +44,8 @@ module Dependabot
           versions = available_versions
           versions = filter_prerelease_versions(versions)
           versions = filter_vulnerable_versions(versions)
-          versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions.min
         end
 
@@ -56,7 +58,10 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.
                      reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
-          raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if filtered.empty? && versions_array.any?
+            Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+            raise AllVersionsIgnored if @raise_on_ignored
+          end
 
           filtered
         end

@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require "excon"
+require "json"
+
 require "dependabot/git_commit_checker"
+require "dependabot/logger"
+require "dependabot/shared_helpers"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
-
-require "json"
 
 module Dependabot
   module Hex
@@ -221,7 +222,11 @@ module Dependabot
               ignore_requirements.any? { |r| r.satisfied_by?(v) }
             end
 
-            raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions.any?
+            # TODO: Filter out the current version/lower versions
+            if filtered.empty? && versions.any?
+              Dependabot.logger.info("All versions for #{dependency.name} were ignored")
+              raise AllVersionsIgnored if @raise_on_ignored
+            end
 
             filtered.max
           end
