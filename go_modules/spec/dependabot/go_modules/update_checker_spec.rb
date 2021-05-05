@@ -215,5 +215,15 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
         end
       end
     end
+
+    context "when already on the latest version for the major" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
+      let(:dependency_version) { "2.0.0" }
+
+      it "returns the current version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("2.0.0"))
+      end
+    end
   end
 end
