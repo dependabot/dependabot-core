@@ -20,6 +20,8 @@ module Dependabot
         return latest_version_for_git_dependency if git_dependency?
 
         # TODO: Remove me, used for testing
+        puts "Checking set log level"
+        puts Dependabot.logger.instance_variable_get("@logdev")
         Dependabot.logger.info("Checking for latest version")
 
         latest_version_details&.fetch(:version)
