@@ -355,14 +355,14 @@ module Dependabot
 
       def filter_ignored(candidate_tags)
         filtered =
-        candidate_tags.
-        reject do |tag|
-          version = version_class.new(numeric_version_from(tag))
-          ignore_requirements.any? { |r| r.satisfied_by?(version) }
-        end
+          candidate_tags.
+          reject do |tag|
+            version = version_class.new(numeric_version_from(tag))
+            ignore_requirements.any? { |r| r.satisfied_by?(version) }
+          end
 
         # TODO: Filter out the current version/lower versions
-        if filtered.empty? && versions_array.any?
+        if filtered.empty? && candidate_tags.any?
           Dependabot.logger.info("All versions for #{dependency.name} were ignored")
           raise AllVersionsIgnored if @raise_on_ignored
         end
