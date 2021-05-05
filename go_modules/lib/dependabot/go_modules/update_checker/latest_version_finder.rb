@@ -108,7 +108,7 @@ module Dependabot
 
         def filter_lower_versions(versions_array)
           versions_array.
-            select { |version| version > Gem::Version.new(dependency.version) }
+            select { |version| version > version_class.new(dependency.version) }
         end
 
         def filter_ignored_versions(versions_array)
@@ -123,8 +123,8 @@ module Dependabot
           @wants_prerelease ||=
             begin
               current_version = dependency.version
-              current_version && Gem::Version.correct?(current_version) &&
-                Gem::Version.new(current_version).prerelease?
+              current_version && version_class.correct?(current_version) &&
+                version_class.new(current_version).prerelease?
             end
         end
 
