@@ -7,6 +7,8 @@ require "dependabot/errors"
 module Dependabot
   module Terraform
     class FileUpdater < Dependabot::FileUpdaters::Base
+      LOCK_FILE_NAME = ".terraform.lock.hcl"
+
       def self.updated_files_regex
         [/\.tf$/, /\.tfvars$/]
       end
@@ -22,6 +24,8 @@ module Dependabot
 
           updated_files << updated_file(file: file, content: updated_content)
         end
+        updated_files << updated_lock_file
+        updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
 
@@ -121,6 +125,33 @@ module Dependabot
           module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
           (?:(?!^\}).)*
         /mx
+      end
+
+      def lock_file?
+        dependency_files.find { |file| file.name == LOCK_FILE_NAME }
+      end
+
+      def lock_file
+        dependency_files.find { |file| file.name == LOCK_FILE_NAME }
+      end
+
+      def updated_lock_file
+        return unless lock_file?
+
+        within_repo do
+          system "terraform init -upgrade"
+
+          return updated_file(file: lock_file, content: IO.read(LOCK_FILE_NAME))
+        end
+      end
+
+      def within_repo
+        SharedHelpers.in_a_temporary_directory do
+          dependency_files.each do |file|
+            IO.write(file.name, file.content)
+          end
+          yield
+        end
       end
     end
   end
