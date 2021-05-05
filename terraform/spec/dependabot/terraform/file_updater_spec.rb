@@ -23,14 +23,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     subject { updater.updated_dependency_files }
 
     context "with a valid dependency file" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "git_tags", "main.tf")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("git_tags") }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -103,14 +96,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a git dependency" do
-        let(:files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "main.tf",
-              content: fixture("projects", "git_tags", "main.tf")
-            )
-          ]
-        end
+        let(:files) { project_dependency_files("git_tags") }
 
         it "updates the requirement" do
           updated_file = subject.find { |file| file.name == "main.tf" }
@@ -134,15 +120,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a registry dependency" do
-        let(:files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "main.tf",
-              content: fixture("projects", "registry", "main.tf")
-            )
-          ]
-        end
-
+        let(:files) { project_dependency_files("registry") }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -187,18 +165,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a terragrunt file" do
-        let(:files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "main.tfvars",
-              content: fixture("projects", "terragrunt", "main.tfvars")
-            ),
-            Dependabot::DependencyFile.new(
-              name: "other.tf",
-              content: fixture("projects", "registry", "main.tf")
-            )
-          ]
-        end
+        let(:files) { project_dependency_files("terragrunt") }
 
         let(:dependencies) do
           [

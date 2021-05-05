@@ -18,14 +18,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     subject { parser.parse }
 
     context "with an invalid registry source" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "invalid_registry", "main.tf")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("invalid_registry") }
 
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |boom|
@@ -35,14 +28,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with an unparseable source" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "unparseable", "main.tf")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("unparseable") }
 
       it "raises an error" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
@@ -53,14 +39,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with valid registry sources" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "registry", "main.tf")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("registry") }
 
       specify { expect(subject.length).to eq(5) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
@@ -142,14 +121,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with git sources" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "git_tags", "main.tf")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("git_tags") }
 
       specify { expect(subject.length).to eq(6) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
@@ -252,14 +224,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with a terragrunt file" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tfvars",
-            content: fixture("projects", "terragrunt", "main.tfvars")
-          )
-        ]
-      end
+      let(:files) { project_dependency_files("terragrunt") }
 
       specify { expect(subject.length).to eq(1) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
