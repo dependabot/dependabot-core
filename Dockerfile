@@ -96,21 +96,20 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y nodejs
 
+# NOTE: This was a hack to get around the fact that elm 18 failed to install with
+# npm 7, we should look into installing the latest version of node + npm
+RUN npm install -g npm@v7.10.0
+
 
 ### ELM
 
-# Install Elm 0.18 and Elm 0.19
+# Install Elm 0.19
 ENV PATH="$PATH:/node_modules/.bin"
-RUN npm install elm@0.18.0 \
-  && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz \
   && rm -rf ~/.npm
-
-# NOTE: This is a hack to get around the fact that elm 18 fails to install with
-# npm 7, we should look into deprecating elm 18
-RUN npm install -g npm@v7.10.0
 
 
 ### PHP
