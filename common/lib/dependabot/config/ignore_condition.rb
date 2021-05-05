@@ -32,6 +32,8 @@ module Dependabot
       end
 
       def versions_by_type(dependency)
+        return [] unless dependency.version
+
         transformed_update_types.flat_map do |t|
           case t
           when PATCH_VERSION_TYPE

@@ -1,3 +1,13 @@
+## v0.144.0, 5 May 2021
+
+- Elm: Drop support for Elm 0.18
+- Commom: Handle nil dependency version when generating ignored versions
+- Python: allow comments when parsing setup.cfg
+- go_modules: stub consistently and ignore invalid modules
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
 ## v0.143.6, 30 April 2021
 
 - Common: version-update:semver-major ignores all major version updates
