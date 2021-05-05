@@ -4,6 +4,6 @@ go 1.16
 
 require (
 	github.com/Masterminds/vcs v1.13.1
-	github.com/dependabot/gomodules-extracted v1.2.0
+	github.com/dependabot/gomodules-extracted v1.3.0
 	golang.org/x/mod v0.4.2
 )

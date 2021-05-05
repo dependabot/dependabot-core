@@ -1,6 +1,7 @@
 package updatechecker
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"regexp"
@@ -42,13 +43,9 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 		return currentVersion, nil
 	}
 
-	modload.InitMod()
+	modload.LoadModFile(context.Background())
 
-	repo, err := modfetch.Lookup("direct", args.Dependency.Name)
-	if err != nil {
-		return nil, err
-	}
-
+	repo := modfetch.Lookup("direct", args.Dependency.Name)
 	versions, err := repo.Versions("")
 	if err != nil {
 		return nil, err
