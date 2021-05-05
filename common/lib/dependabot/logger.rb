@@ -3,10 +3,8 @@
 require "logger"
 
 module Dependabot
-  @logger = Logger.new(nil)
-
   def self.logger
-    @logger
+    @logger ||= Logger.new(nil)
   end
 
   def self.logger=(logger)
