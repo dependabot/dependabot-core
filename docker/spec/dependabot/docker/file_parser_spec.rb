@@ -471,6 +471,88 @@ RSpec.describe Dependabot::Docker::FileParser do
           end
         end
       end
+
+      context "that are different versions of the same image variant" do
+        let(:dockerfile_fixture_name) { "multi_stage_different_tags" }
+
+        its(:length) { is_expected.to eq(1) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "10.9.2-alpine"
+              }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "10.9.3-alpine"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("node")
+            expect(dependency.version).to eq("10.9.2-alpine")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+      end
+
+      context "that are different image suffixes" do
+        let(:dockerfile_fixture_name) { "multi_stage_different_tag_suffixes" }
+
+        its(:length) { is_expected.to eq(2) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "10.9.2-alpine"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("node")
+            expect(dependency.version).to eq("10.9.2-alpine")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        describe "the second dependency" do
+          subject(:dependency) { dependencies.last }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: {
+                tag: "10.9.2"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("node")
+            expect(dependency.version).to eq("10.9.2")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+      end
     end
 
     context "with a v1 dockerhub reference and a tag" do
