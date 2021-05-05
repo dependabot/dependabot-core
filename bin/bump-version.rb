@@ -7,6 +7,19 @@ unless %w(minor patch).include?(ARGV[0])
 end
 component = ARGV[0].to_sym
 
+unless `which gh` && $?.success?
+  puts "Please install the gh cli: brew install gh"
+  exut 1
+end
+
+unless `gh auth status > /dev/null 2>&1` && $?.success?
+  puts "Please login to GitHub first: gh auth login"
+  exit 1
+end
+
+dependabot_team = `gh api -X GET 'orgs/dependabot/teams/reviewers/members' --jq '.[].login'`
+dependabot_team = dependabot_team.split("\n").map(&:strip) + ["dependabot"]
+
 # Update version file
 version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
                          "version.rb")
@@ -25,25 +38,34 @@ new_version =
 new_version_contents = version_contents.gsub(version, new_version)
 File.open(version_path, "w") { |f| f.write(new_version_contents) }
 
-puts "✓ common/lib/dependabot/version.rb updated"
+puts "☑️  common/lib/dependabot/version.rb updated"
 
 # Update CHANGELOG
-
 changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
 changelog_contents = File.read(changelog_path)
 
 commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
-commit_subjects = commit_subjects.reject { |s| s.start_with?("Merge pull request #") }
-proposed_changes = commit_subjects.map { |line| "- #{line}" }.join("")
+merge_subjects = commit_subjects.select { |s| s.start_with?("Merge pull request #") }
+pr_numbers = merge_subjects.map { |s| s.match(/#(\d+)/)[1].to_i }
+puts "⏳ fetching pull request details"
+pr_details = pr_numbers.map do |pr_number|
+  `gh pr view #{pr_number} --json title,author --jq ".title,.author.login"`
+end.map { |s| s.split("\n") }
+
+proposed_changes = pr_details.map do |title, author|
+  line = "- #{title}"
+  line += " (@#{author})" unless dependabot_team.include?(author)
+  line
+end
 
 new_changelog_contents = [
   "## v#{new_version}, #{Time.now.strftime('%e %B %Y').strip}\n",
-  proposed_changes,
+  proposed_changes.join("\n") + "\n",
   changelog_contents
 ].join("\n")
 File.open(changelog_path, "w") { |f| f.write(new_changelog_contents) }
 
-puts "✓ CHANGELOG.md updated"
+puts "☑️  CHANGELOG.md updated"
 puts
 puts "Double check the changes (editing CHANGELOG.md where necessary), then"
 puts "commit, tag, and push the release:"
