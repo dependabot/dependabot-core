@@ -3,13 +3,13 @@
 require "logger"
 
 module Dependabot
-  @@logger = Logger.new(nil) # rubocop:disable Style/ClassVars
+  @logger = Logger.new(nil)
 
   def self.logger
-    @@logger
+    @logger
   end
 
   def self.logger=(logger)
-    @@logger = logger # rubocop:disable Style/ClassVars
+    @logger = logger
   end
 end
