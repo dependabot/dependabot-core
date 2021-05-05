@@ -19,6 +19,7 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
 
+        # TODO: Remove me, used for testing
         Dependabot.logger.info("Checking for latest version")
 
         latest_version_details&.fetch(:version)
