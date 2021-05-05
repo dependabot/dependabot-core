@@ -260,6 +260,25 @@ RSpec.describe Dependabot::Python::FileParser::SetupFileParser do
             end
         end
       end
+
+      context "with comments in the setup.cfg file" do
+        let(:setup_cfg_file_fixture_name) { "with_comments.cfg" }
+        subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("boto3")
+          expect(dependency.version).to eq("1.3.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.1",
+              file: "setup.cfg",
+              groups: ["install_requires"],
+              source: nil
+            }]
+          )
+        end
+      end
     end
   end
 end
