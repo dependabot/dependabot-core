@@ -960,6 +960,63 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_tag_for_pinned_version" do
+    subject { checker.local_tag_for_pinned_version }
+
+    context "with a git commit pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "d16496318c3e08e3bccfc3866e104e49cf25488a"
+        }
+      end
+
+      let(:repo_url) { "https://github.com/gocardless/business.git" }
+      let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "monolog" }
+
+      it { is_expected.to eq("1.2.1") }
+
+      context "that is not a sha" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "aaaaaaaa"
+          }
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not a tag" do
+        let(:source) do
+          {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            branch: "master",
+            ref: "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329"
+          }
+        end
+
+        it { is_expected.to be_nil }
+      end
+    end
+  end
+
   describe "#git_repo_reachable?" do
     subject { checker.git_repo_reachable? }
 
