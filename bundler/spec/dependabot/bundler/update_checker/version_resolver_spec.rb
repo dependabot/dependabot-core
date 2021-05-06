@@ -253,10 +253,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             allow(Dependabot::Bundler::NativeHelpers).
               to receive(:run_bundler_subprocess).
               with({
-                     bundler_version: PackageManagerHelper.bundler_version,
-                     function: "resolve_version",
-                     args: anything
-                   }).
+                bundler_version: PackageManagerHelper.bundler_version,
+                function: "resolve_version",
+                args: anything
+              }).
               and_return(
                 {
                   version: "3.0.2",
@@ -274,7 +274,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           context "and the dependency doesn't have a required Ruby version" do
             let(:rubygems_versions) do
               fixture(
-                "ruby",
                 "rubygems_responses",
                 "versions-public_suffix.json"
               ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')

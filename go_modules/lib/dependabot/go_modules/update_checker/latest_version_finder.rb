@@ -64,13 +64,13 @@ module Dependabot
                 args: {
                   dependency: {
                     name: dependency.name,
-                    version: "v" + dependency.version,
+                    version: "v" + dependency.version
                   }
                 }
               )
 
-              version_strings.select { |v| version_class.correct?(v) }
-                             .map { |v| version_class.new(v) }
+              version_strings.select { |v| version_class.correct?(v) }.
+                map { |v| version_class.new(v) }
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e

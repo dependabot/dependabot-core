@@ -156,18 +156,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "dependency_source_type",
-                 args: anything
-               }).and_call_original
+            bundler_version: bundler_version,
+            function: "dependency_source_type",
+            args: anything
+          }).and_call_original
 
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "private_registry_versions",
-                 args: anything
-               }).
+            bundler_version: bundler_version,
+            function: "private_registry_versions",
+            args: anything
+          }).
           and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
