@@ -44,7 +44,7 @@ module Dependabot
           case new_req[:source][:type]
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
-          when "registry"
+          when "registry", "provider"
             update_registry_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\

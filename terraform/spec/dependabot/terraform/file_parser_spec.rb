@@ -359,5 +359,16 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
+
+    context "with a provider block" do
+      let(:terraform_fixture_name) { "provider.tf" }
+
+      it "has the right details" do
+        dependency = dependencies.first
+
+        expect(dependency.name).to eq("aws")
+        expect(dependency.version).to eq("0.1.0")
+      end
+    end
   end
 end

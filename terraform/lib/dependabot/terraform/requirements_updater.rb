@@ -31,7 +31,7 @@ module Dependabot
         requirements.map do |req|
           case req.dig(:source, :type)
           when "git" then update_git_requirement(req)
-          when "registry" then update_registry_requirement(req)
+          when "registry", "provider" then update_registry_requirement(req)
           else req
           end
         end

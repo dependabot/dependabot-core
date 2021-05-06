@@ -22,10 +22,18 @@ module Dependabot
         dependency_set = DependencySet.new
 
         terraform_files.each do |file|
-
-          modules=  parsed_file(file).fetch("module",[])
+          modules = parsed_file(file).fetch("module", [])
           modules.each do |name, details|
             dependency_set << build_terraform_dependency(file, name, details)
+          end
+
+          parsed_file(file).fetch("terraform", []).each do |terraform|
+            required_providers = terraform.fetch("required_providers", {})
+            required_providers.each do |provider|
+              provider.each do |name, details|
+                dependency_set << build_terraform_dependency(file, name, details)
+              end
+            end
           end
         end
 
@@ -45,11 +53,14 @@ module Dependabot
       private
 
       def build_terraform_dependency(file, name, details)
-        details = details.first
+        details = details.is_a?(Array) ? details.first : details
 
         source = source_from(details)
-        dep_name =
-          source[:type] == "registry" ? source[:module_identifier] : name
+        dep_name = case source[:type]
+                   when "registry" then source[:module_identifier]
+                   when "provider" then details["source"]
+                   else name
+                   end
         version_req = details["version"]&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
@@ -115,7 +126,13 @@ module Dependabot
       def registry_source_details_from(source_string)
         parts = source_string.split("//").first.split("/")
 
-        if parts.count == 3
+        if parts.count == 2
+          {
+            "type": "provider",
+            "registry_hostname": "registry.terraform.io",
+            "module_identifier": source_string
+          }
+        elsif parts.count == 3
           {
             type: "registry",
             registry_hostname: "registry.terraform.io",
