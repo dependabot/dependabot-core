@@ -44,7 +44,7 @@ func GetVersions(args *Args) (interface{}, error) {
 
 	currentMajor := semver.Major(currentVersion)
 
-	var candidateVersions []string
+	candidateVersions := make([]string, 0)
 
 Outer:
 	for _, v := range versions {
