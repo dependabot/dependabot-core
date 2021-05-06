@@ -127,14 +127,14 @@ module Dependabot
     end
 
     def filter_lower_versions(tags)
+      return tags unless current_version
+
       versions = tags.map do |t|
         version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
         version_class.new(version)
       end
 
       versions.select do |version|
-        next unless current_version
-
         version > current_version
       end
     end
