@@ -221,7 +221,9 @@ module Dependabot
               ignore_requirements.any? { |r| r.satisfied_by?(v) }
             end
 
-            raise AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && versions.any?
+            if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
+              raise AllVersionsIgnored
+            end
 
             filtered.max
           end

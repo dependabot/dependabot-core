@@ -87,13 +87,16 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/AbcSize
     def local_tag_for_latest_version
       tags =
         local_tags.
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
                  reject { |t| tag_included_in_ignore_requirements?(t) }
-      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && tags.any?
+      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
+        raise Dependabot::AllVersionsIgnored
+      end
 
       tag = filtered.
             reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
@@ -113,6 +116,7 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
+    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
 
     def current_version
