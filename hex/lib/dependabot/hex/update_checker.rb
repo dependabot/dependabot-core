@@ -255,10 +255,9 @@ module Dependabot
       end
 
       def current_version
-        return @current_version if defined?(@current_version)
+        return unless dependency.version && version_class.correct?(dependency.version)
 
-        @current_version =
-          version_class.new(dependency.version) if dependency.version && version_class.correct?(dependency.version)
+        version_class.new(dependency.version)
       end
 
       def wants_prerelease?
