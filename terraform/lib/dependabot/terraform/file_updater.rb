@@ -128,11 +128,11 @@ module Dependabot
       end
 
       def lock_file?
-        dependency_files.find { |file| file.name == LOCK_FILE_NAME }
+        !lock_file.nil?
       end
 
       def lock_file
-        dependency_files.find { |file| file.name == LOCK_FILE_NAME }
+        @lock_file ||= dependency_files.find { |file| file.name == LOCK_FILE_NAME }
       end
 
       def updated_lock_file
