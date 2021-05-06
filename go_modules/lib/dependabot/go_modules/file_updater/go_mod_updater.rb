@@ -41,7 +41,7 @@ module Dependabot
         MODULE_PATH_MISMATCH_REGEXES = [
           /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
-          /go (get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
 
         OUT_OF_DISK_REGEXES = [
