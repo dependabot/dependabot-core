@@ -66,15 +66,15 @@ module Dependabot
                 args: {
                   dependency: {
                     name: dependency.name,
-                    version: "v" + dependency.version,
+                    version: "v" + dependency.version
                   }
                 }
               )
 
               return [version_class.new(dependency.version)] if version_strings.nil?
 
-              version_strings.select { |v| version_class.correct?(v) }
-                             .map { |v| version_class.new(v) }
+              version_strings.select { |v| version_class.correct?(v) }.
+                map { |v| version_class.new(v) }
             end
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
