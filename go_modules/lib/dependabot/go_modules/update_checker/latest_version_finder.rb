@@ -43,7 +43,6 @@ module Dependabot
 
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
-          candidate_versions = filter_lower_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
 
           candidate_versions.max
@@ -108,7 +107,7 @@ module Dependabot
 
         def filter_lower_versions(versions_array)
           versions_array.
-            select { |version| version >= version_class.new(dependency.version) }
+            select { |version| version > version_class.new(dependency.version) }
         end
 
         def filter_ignored_versions(versions_array)
