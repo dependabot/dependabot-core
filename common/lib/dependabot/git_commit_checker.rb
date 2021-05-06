@@ -93,7 +93,7 @@ module Dependabot
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
                  reject { |t| tag_included_in_ignore_requirements?(t) }
-      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
+      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && tags.any?
 
       tag = filtered.
             reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
@@ -114,6 +114,26 @@ module Dependabot
       }
     end
     # rubocop:enable Metrics/PerceivedComplexity
+
+    def current_version
+      return unless dependency.version && version_tag?(dependency.version)
+
+      version = dependency.version.match(VERSION_REGEX).named_captures.fetch("version")
+      version_class.new(version)
+    end
+
+    def filter_lower_versions(tags)
+      versions = tags.map do |t|
+        version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
+        version_class.new(version)
+      end
+
+      versions.select do |version|
+        next unless current_version
+
+        version > current_version
+      end
+    end
 
     def git_repo_reachable?
       local_upload_pack

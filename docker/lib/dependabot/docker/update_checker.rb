@@ -359,9 +359,14 @@ module Dependabot
             version = version_class.new(numeric_version_from(tag))
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
-        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && candidate_tags.any?
+        raise AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && candidate_tags.any?
 
         filtered
+      end
+
+      def filter_lower_versions(versions_array)
+        versions_array.
+          select { |version| version > version_class.new(numeric_version_from(dependency.version)) }
       end
     end
   end

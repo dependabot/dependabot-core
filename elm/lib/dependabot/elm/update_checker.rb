@@ -79,9 +79,14 @@ module Dependabot
         filtered = all_versions.
                    reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-        raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && all_versions.any?
+        raise AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && all_versions.any?
 
         filtered
+      end
+
+      def filter_lower_versions(versions_array)
+        versions_array.
+          select { |version| version > version_class.new(dependency.version) }
       end
 
       def all_versions

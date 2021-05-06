@@ -75,7 +75,7 @@ module Dependabot
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
+          raise AllVersionsIgnored if @raise_on_ignored && filter_lower_versions(filtered).empty? && possible_versions.any?
 
           filtered
         end
