@@ -2,6 +2,7 @@
 
 require "excon"
 
+require "dependabot/go_modules/update_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
