@@ -1,3 +1,8 @@
+## v0.145.1, 5 May 2021
+
+- go_modules: don't filter the current version
+- terraform: move fixtures to project folders
+
 ## v0.145.0, 5 May 2021
 
 - go_modules: support version ignores
