@@ -4,6 +4,7 @@ require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
+require "dependabot/go_modules/replace_stubber"
 require "dependabot/go_modules/resolvability_errors"
 
 module Dependabot
@@ -210,37 +211,8 @@ module Dependabot
         # process afterwards.
         def replace_directive_substitutions(manifest)
           @replace_directive_substitutions ||=
-            (manifest["Replace"] || []).
-            map { |r| r["New"]["Path"] }.
-            compact.
-            select { |p| stub_replace_path?(p) }.
-            map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
-            to_h
-        end
-
-        # returns true if the provided path should be replaced with a stub
-        def stub_replace_path?(path)
-          return true if absolute_path?(path)
-          return false unless relative_replacement_path?(path)
-
-          resolved_path = module_pathname.join(path).realpath
-          inside_repo_contents_path = resolved_path.to_s.start_with?(repo_contents_path.to_s)
-          !inside_repo_contents_path
-        rescue Errno::ENOENT
-          true
-        end
-
-        def absolute_path?(path)
-          path.start_with?("/")
-        end
-
-        def relative_replacement_path?(path)
-          # https://golang.org/ref/mod#go-mod-file-replace
-          path.start_with?("./") || path.start_with?("../")
-        end
-
-        def module_pathname
-          @module_pathname ||= Pathname.new(repo_contents_path).join(directory.sub(%r{^/}, ""))
+            Dependabot::GoModules::ReplaceStubber.new(repo_contents_path).
+            stub_paths(manifest, directory)
         end
 
         def substitute_all(substitutions)

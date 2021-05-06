@@ -1,3 +1,36 @@
+## v0.145.1, 5 May 2021
+
+- go_modules: don't filter the current version
+- terraform: move fixtures to project folders
+
+## v0.145.0, 5 May 2021
+
+- go_modules: support version ignores
+- Dev env: mount go helper source in dev shell
+- docker: FileParser unique suffixes
+- go_modules: helper updates
+- GitHub PullRequestCreator: prepend refs/
+- build(deps): bump github.com/dependabot/gomodules-extracted
+
+## v0.144.0, 5 May 2021
+
+- Elm: Drop support for Elm 0.18
+- Commom: Handle nil dependency version when generating ignored versions
+- Python: allow comments when parsing setup.cfg
+- go_modules: stub consistently and ignore invalid modules
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.143.6, 30 April 2021
+
+- Common: version-update:semver-major ignores all major version updates
+- Document how to run tests within the dev docker container
+- go_modules: Make error output more idiomatic
+- Create CODE_OF_CONDUCT.md
+- Common: IgnoreCondition: handle multi-length semver ranges
+- Common: IgnoreCondition: don't ignore current version when ignoring patches
+
 ## v0.143.5, 29 April 2021
 
 - gradle: only treat commit-like versions as git repositories

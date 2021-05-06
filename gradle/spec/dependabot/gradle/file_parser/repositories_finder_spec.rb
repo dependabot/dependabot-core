@@ -116,6 +116,20 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
         end
       end
 
+      context "that use an assignment operator and a strict URI" do
+        let(:buildfile_fixture_name) { "custom_repos_build_assignment_uri.gradle" }
+
+        it "includes the additional declarations" do
+          expect(repository_urls).to match_array(
+            %w(
+              https://maven.google.com
+              https://uri-helper.com
+              https://java-constructor.com
+            )
+          )
+        end
+      end
+
       context "with kotlin" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 

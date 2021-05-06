@@ -14,7 +14,7 @@ module Dependabot
 
       def ignored_versions_for(dependency, security_updates_only: false)
         normalizer = name_normaliser_for(dependency)
-        dep_name = name_normaliser_for(dependency).call(dependency.name)
+        dep_name = normalizer.call(dependency.name)
 
         @ignore_conditions.
           select { |ic| self.class.wildcard_match?(normalizer.call(ic.dependency_name), dep_name) }.

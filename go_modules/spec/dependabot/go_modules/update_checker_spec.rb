@@ -80,8 +80,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    it "doesn't update to (Dependabot) ignored versions" do
-      # TODO: let(:ignored_versions) { ["..."] }
+    context "with Dependabot ignored versions" do
+      let(:ignored_versions) { ["> 1.0.1"] }
+
+      it "doesn't update to (Dependabot) ignored versions" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.1"))
+      end
     end
 
     context "when on a pre-release" do
@@ -176,6 +181,48 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
           to raise_error(error_class) do |error|
           expect(error.message).to include("example.com/web/dependabot.com")
         end
+      end
+    end
+
+    context "with a retracted update version" do
+      # latest release v1.0.1 is retracted
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-retracted" }
+
+      pending "doesn't update to the retracted version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("1.0.0"))
+      end
+    end
+
+    context "when the package url is internal/invalid" do
+      let(:dependency_files) { [go_mod] }
+      let(:project_name) { "unrecognized_import" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+      let(:dependency_name) { "pkg-errors" }
+      let(:dependency_version) { "1.0.0" }
+
+      let(:go_mod) do
+        Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
+      end
+      let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { latest_resolvable_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("pkg-errors")
+        end
+      end
+    end
+
+    context "when already on the latest version for the major" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
+      let(:dependency_version) { "2.0.0" }
+
+      it "returns the current version" do
+        expect(latest_resolvable_version).
+          to eq(Dependabot::GoModules::Version.new("2.0.0"))
       end
     end
   end

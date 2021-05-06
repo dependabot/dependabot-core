@@ -104,7 +104,7 @@ RSpec.describe Dependabot::Config::UpdateConfig do
       end
 
       it "returns versions" do
-        expect(ignored_versions).to eq([">= 13.a, < 14", ">= 12.13.a, < 13"])
+        expect(ignored_versions).to eq([">= 13.a", ">= 12.13.a, < 13"])
       end
 
       context "with security_updates_only" do
@@ -146,6 +146,26 @@ RSpec.describe Dependabot::Config::UpdateConfig do
         it "normalizes the condition dependency_name to match" do
           expect(ignored_versions).to eq([">= 1"])
         end
+      end
+    end
+
+    context "when the dependency version isn't known" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          requirements: [],
+          version: nil,
+          package_manager: "github_actions"
+        )
+      end
+
+      let(:ignore_conditions) do
+        [Dependabot::Config::IgnoreCondition.new(dependency_name: "actions/checkout",
+                                                 versions: [], update_types: ["version-update:semver-major"])]
+      end
+
+      it "returns no ignored versions" do
+        expect(ignored_versions).to eq([])
       end
     end
   end
