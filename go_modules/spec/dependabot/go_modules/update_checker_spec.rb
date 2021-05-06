@@ -14,7 +14,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: github_credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raised_on_ignored
     )
   end
   let(:dependency) do
@@ -37,6 +38,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
   end
   let(:source) { { type: "default", source: dependency_name } }
   let(:ignored_versions) { [] }
+  let(:raised_on_ignored) { false }
   let(:go_mod_content) do
     <<~GOMOD
       module foobar
@@ -223,6 +225,38 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       it "returns the current version" do
         expect(latest_resolvable_version).
           to eq(Dependabot::GoModules::Version.new("2.0.0"))
+      end
+    end
+
+    context "when raised_on_ignored is true" do
+      let(:raised_on_ignored) { true }
+
+      context "when a later version is allowed" do
+        let(:dependency_version) { "1.0.0" }
+        let(:ignored_versions) { ["= 1.0.1"] }
+
+        it "doesn't raise an error" do
+          expect { latest_resolvable_version }.not_to raise_error
+        end
+      end
+
+      context "when already on the latest version" do
+        let(:dependency_version) { "1.1.0" }
+        let(:ignored_versions) { ["> 1.1.0"] }
+
+        it "doesn't raise an error" do
+          expect { latest_resolvable_version }.not_to raise_error
+        end
+      end
+
+      context "when all later versions are ignored" do
+        let(:dependency_version) { "1.0.1" }
+        let(:ignored_versions) { ["> 1.0.1"] }
+
+        it "raises AllVersionsIgnored" do
+          expect { latest_resolvable_version }.
+            to raise_error(Dependabot::AllVersionsIgnored)
+        end
       end
     end
   end
