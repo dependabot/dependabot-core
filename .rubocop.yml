@@ -15,6 +15,12 @@ Layout/DotPosition:
 Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
 
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
+
 Layout/LineLength:
   Max: 120
 
