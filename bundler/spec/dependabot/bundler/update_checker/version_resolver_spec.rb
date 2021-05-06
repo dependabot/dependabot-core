@@ -274,7 +274,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           context "and the dependency doesn't have a required Ruby version" do
             let(:rubygems_versions) do
               fixture(
-                "ruby",
                 "rubygems_responses",
                 "versions-public_suffix.json"
               ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')
