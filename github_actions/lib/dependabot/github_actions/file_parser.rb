@@ -56,9 +56,11 @@ module Dependabot
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
         url = "https://github.com/#{name}"
 
+        ref = details.fetch("ref")
+        version = version_class.new(ref).to_s if version_class.correct?(ref)
         Dependency.new(
           name: name,
-          version: nil,
+          version: version,
           requirements: [{
             requirement: nil,
             groups: [],
@@ -110,6 +112,10 @@ module Dependabot
         return if dependency_files.any?
 
         raise "No workflow files!"
+      end
+
+      def version_class
+        GithubActions::Version
       end
     end
   end
