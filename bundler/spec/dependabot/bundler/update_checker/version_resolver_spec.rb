@@ -253,10 +253,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             allow(Dependabot::Bundler::NativeHelpers).
               to receive(:run_bundler_subprocess).
               with({
-                     bundler_version: PackageManagerHelper.bundler_version,
-                     function: "resolve_version",
-                     args: anything
-                   }).
+                bundler_version: PackageManagerHelper.bundler_version,
+                function: "resolve_version",
+                args: anything
+              }).
               and_return(
                 {
                   version: "3.0.2",

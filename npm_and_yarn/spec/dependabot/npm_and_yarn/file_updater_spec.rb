@@ -1917,12 +1917,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to eq("git+https://github.com/select2/select2.git#3.4.8")
           expect(parsed_package_lock["packages"]["node_modules/Select2"]).
             to eq({
-                    "version" => "3.4.8",
-                    "resolved" =>
+              "version" => "3.4.8",
+              "resolved" =>
                       "git+ssh://git@github.com/select2/select2.git#b5f3b2839c48c53f9641d6bb1bccafc5260c7620",
-                    "integrity" =>
+              "integrity" =>
                       "sha512-9sUir8IknGcc2CWbTicYuEFvm0X8AyoMpe6DMtxtNYepRltK4dI7dqUYm5di/zy5Sm8gfC0Vwvn79SWXVNyLdg=="
-                  })
+            })
         end
       end
 
