@@ -30,6 +30,7 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
+        resolve_git_tags(dependency_set)
         dependency_set.dependencies
       end
 
@@ -67,7 +68,7 @@ module Dependabot
             source: {
               type: "git",
               url: url,
-              ref: details.fetch("ref"),
+              ref: ref,
               branch: nil
             },
             file: file.name,
@@ -82,6 +83,20 @@ module Dependabot
         when Hash then deep_fetch_uses_from_hash(json_obj)
         when Array then json_obj.flat_map { |o| deep_fetch_uses(o) }
         else []
+        end
+      end
+
+      def resolve_git_tags(dependency_set)
+        dependency_set.dependencies.each do |dep|
+          next unless dep.version.nil?
+
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          next unless git_checker.pinned_ref_looks_like_commit_sha?
+
+          resolved = git_checker.local_tag_for_pinned_version
+          next if resolved.nil? || !version_class.correct?(resolved)
+
+          dep.version = version_class.new(resolved).to_s
         end
       end
 
