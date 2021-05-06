@@ -167,7 +167,7 @@ USER root
 ARG GOLANG_VERSION=1.16.3
 ARG GOLANG_CHECKSUM=951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2
 ENV PATH=/opt/go/bin:$PATH \
-  GOPATH=/opt/go/gopath
+  GOPATH=/opt/go
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
