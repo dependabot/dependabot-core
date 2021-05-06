@@ -65,8 +65,8 @@ module Dependabot
             end
 
           secure_versions = filter_vulnerable_versions(versions_array)
-          secure_versions = filter_lower_versions(secure_versions)
           secure_versions = filter_ignored_versions(secure_versions)
+          secure_versions = filter_lower_versions(secure_versions)
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
@@ -109,7 +109,9 @@ module Dependabot
             ignore_requirements.any? { |r| r.satisfied_by?(v) }
           end
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if @raise_on_ignored && filter_ignored_versions(filtered).empty? && versions_array.any?
+            raise AllVersionsIgnored
+          end
 
           filtered
         end
