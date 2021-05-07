@@ -1,4 +1,4 @@
 module "consul" {
-  source = "consul/aws"
+  source = "consul/does_not_exist"
   version = "0.1.0"
 }

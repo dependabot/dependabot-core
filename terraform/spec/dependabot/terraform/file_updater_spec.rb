@@ -9,80 +9,112 @@ require_common_spec "file_updaters/shared_examples_for_file_updaters"
 RSpec.describe Dependabot::Terraform::FileUpdater do
   it_behaves_like "a dependency file updater"
 
-  let(:updater) do
-    described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
-      credentials: credentials
-    )
+  subject(:updater) do
+    described_class.new(dependency_files: files, dependencies: dependencies, credentials: credentials)
   end
-  let(:files) { [terraform_config, irrelevant_config] }
+
+  let(:files) { [] }
+  let(:dependencies) { [] }
   let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
-  let(:irrelevant_config) do
-    Dependabot::DependencyFile.new(
-      name: "other.tf",
-      content: fixture("config_files", "registry.tf")
-    )
-  end
-  let(:terraform_config) do
-    Dependabot::DependencyFile.new(
-      name: "main.tf",
-      content: terraform_body
-    )
-  end
-  let(:terraform_body) { fixture("config_files", "git_tags.tf") }
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "origin_label",
-      version: "0.4.1",
-      previous_version: "0.3.7",
-      requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "git",
-          url: "https://github.com/cloudposse/terraform-null-label.git",
-          branch: nil,
-          ref: "tags/0.4.1"
-        }
-      }],
-      previous_requirements: [{
-        requirement: nil,
-        groups: [],
-        file: "main.tf",
-        source: {
-          type: "git",
-          url: "https://github.com/cloudposse/terraform-null-label.git",
-          branch: nil,
-          ref: "tags/0.3.7"
-        }
-      }],
-      package_manager: "terraform"
-    )
+    [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
   end
 
   describe "#updated_dependency_files" do
-    subject(:updated_files) { updater.updated_dependency_files }
+    subject { updater.updated_dependency_files }
 
-    it "returns DependencyFile objects" do
-      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    context "with a valid dependency file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "main.tf",
+            content: fixture("projects", "git_tags", "main.tf")
+          )
+        ]
+      end
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "origin_label",
+            version: "0.4.1",
+            previous_version: "0.3.7",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.4.1"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.3.7"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
+      specify { expect(subject.length).to eq(1) }
     end
 
-    its(:length) { is_expected.to eq(1) }
-
     describe "the updated file" do
-      subject(:updated_file) { updated_files.find { |f| f.name == "main.tf" } }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "origin_label",
+            version: "0.4.1",
+            previous_version: "0.3.7",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.4.1"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.3.7"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
 
       context "with a git dependency" do
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "main.tf",
+              content: fixture("projects", "git_tags", "main.tf")
+            )
+          ]
+        end
+
         it "updates the requirement" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
           expect(updated_file.content).to include(
             "module \"origin_label\" {\n"\
             "  source     = \"git::https://github.com/cloudposse/"\
@@ -91,6 +123,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "doesn't update the duplicate" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
           expect(updated_file.content).to include(
             "module \"duplicate_label\" {\n"\
             "  source     = \"git::https://github.com/cloudposse/"\
@@ -100,39 +134,49 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a registry dependency" do
-        let(:terraform_body) do
-          fixture("config_files", "registry.tf")
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "main.tf",
+              content: fixture("projects", "registry", "main.tf")
+            )
+          ]
         end
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "hashicorp/consul/aws",
-            version: "0.3.1",
-            previous_version: "0.1.0",
-            requirements: [{
-              requirement: "0.3.1",
-              groups: [],
-              file: "main.tf",
-              source: {
-                type: "registry",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/consul/aws"
-              }
-            }],
-            previous_requirements: [{
-              requirement: "0.1.0",
-              groups: [],
-              file: "main.tf",
-              source: {
-                type: "registry",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/consul/aws"
-              }
-            }],
-            package_manager: "terraform"
-          )
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "hashicorp/consul/aws",
+              version: "0.3.1",
+              previous_version: "0.1.0",
+              requirements: [{
+                requirement: "0.3.1",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "registry",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/consul/aws"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "0.1.0",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "registry",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/consul/aws"
+                }
+              }],
+              package_manager: "terraform"
+            )
+          ]
         end
 
         it "updates the requirement" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
           expect(updated_file.content).to include(
             "module \"consul\" {\n"\
             "  source = \"hashicorp/consul/aws\"\n"\
@@ -143,50 +187,55 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a terragrunt file" do
-        subject(:updated_file) do
-          updated_files.find { |f| f.name == "main.tfvars" }
+        let(:files) do
+          [
+            Dependabot::DependencyFile.new(
+              name: "main.tfvars",
+              content: fixture("projects", "terragrunt", "main.tfvars")
+            ),
+            Dependabot::DependencyFile.new(
+              name: "other.tf",
+              content: fixture("projects", "registry", "main.tf")
+            )
+          ]
         end
 
-        let(:files) { [terragrunt_config, irrelevant_config] }
-        let(:terragrunt_config) do
-          Dependabot::DependencyFile.new(
-            name: "main.tfvars",
-            content: fixture("config_files", "terragrunt.tfvars")
-          )
-        end
-
-        let(:dependency) do
-          Dependabot::Dependency.new(
-            name: "gruntwork-io/modules-example",
-            version: "0.0.5",
-            previous_version: "0.0.2",
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "main.tfvars",
-              source: {
-                type: "git",
-                url: "git@github.com:gruntwork-io/modules-example.git",
-                branch: nil,
-                ref: "v0.0.5"
-              }
-            }],
-            previous_requirements: [{
-              requirement: nil,
-              groups: [],
-              file: "main.tfvars",
-              source: {
-                type: "git",
-                url: "git@github.com:gruntwork-io/modules-example.git",
-                branch: nil,
-                ref: "v0.0.2"
-              }
-            }],
-            package_manager: "terraform"
-          )
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "gruntwork-io/modules-example",
+              version: "0.0.5",
+              previous_version: "0.0.2",
+              requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tfvars",
+                source: {
+                  type: "git",
+                  url: "git@github.com:gruntwork-io/modules-example.git",
+                  branch: nil,
+                  ref: "v0.0.5"
+                }
+              }],
+              previous_requirements: [{
+                requirement: nil,
+                groups: [],
+                file: "main.tfvars",
+                source: {
+                  type: "git",
+                  url: "git@github.com:gruntwork-io/modules-example.git",
+                  branch: nil,
+                  ref: "v0.0.2"
+                }
+              }],
+              package_manager: "terraform"
+            )
+          ]
         end
 
         it "updates the requirement" do
+          updated_file = subject.find { |file| file.name == "main.tfvars" }
+
           expect(updated_file.content).to include(
             "source = \"git::git@github.com:gruntwork-io/modules-example.git//"\
             "consul?ref=v0.0.5\""

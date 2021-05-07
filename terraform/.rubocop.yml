@@ -1,1 +1,7 @@
 inherit_from: ../.rubocop.yml
+
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
