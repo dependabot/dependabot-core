@@ -42,7 +42,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version" do
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
-      let(:dependency_name) { "github.com/go-yaml/yaml" }
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
 
       it "returns the current version" do
