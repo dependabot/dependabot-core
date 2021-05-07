@@ -28,3 +28,7 @@ updates:
     directory: "/go_modules/helpers"
     schedule:
       interval: "daily"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
