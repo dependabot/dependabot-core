@@ -113,7 +113,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
-        let(:reference) { "v1" }
+        let(:reference) { "v2" }
         it { is_expected.to be_falsey }
       end
 
