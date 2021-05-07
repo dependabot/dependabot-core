@@ -967,13 +967,13 @@ RSpec.describe Dependabot::GitCommitChecker do
       let(:source) do
         {
           type: "git",
-          url: "https://github.com/gocardless/business",
-          branch: "master",
-          ref: "d16496318c3e08e3bccfc3866e104e49cf25488a"
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: source_commit
         }
       end
 
-      let(:repo_url) { "https://github.com/gocardless/business.git" }
+      let(:repo_url) { "https://github.com/actions/checkout.git" }
       let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
       before do
         stub_request(:get, service_pack_url).
@@ -985,34 +985,24 @@ RSpec.describe Dependabot::GitCommitChecker do
             }
           )
       end
-      let(:upload_pack_fixture) { "monolog" }
+      let(:upload_pack_fixture) { "actions-checkout" }
 
-      it { is_expected.to eq("1.2.1") }
+      context "that is a tag" do
+        let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
 
-      context "that is not a sha" do
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/gocardless/business",
-            branch: "master",
-            ref: "aaaaaaaa"
-          }
-        end
+        it { is_expected.to eq("v2.3.3") }
+      end
+
+      context "that is not a tag" do
+        let(:source_commit) { "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329" }
 
         it { is_expected.to be_nil }
       end
 
-      context "that is not a tag" do
-        let(:source) do
-          {
-            type: "git",
-            url: "https://github.com/gocardless/business",
-            branch: "master",
-            ref: "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329"
-          }
-        end
+      context "that is multiple tags" do
+        let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
 
-        it { is_expected.to be_nil }
+        it { is_expected.to eq("v2.3.4") }
       end
     end
   end

@@ -122,7 +122,9 @@ module Dependabot
       tags = local_tags.select { |t| t.commit_sha == ref }
       return if tags.empty?
 
-      tags.first.name
+      sorted_tags = tags.sort_by { |t| version_class.new(t.name.gsub(/^v/, "")) }
+
+      sorted_tags[-1].name
     end
 
     def git_repo_reachable?
