@@ -2,6 +2,7 @@
 
 require "excon"
 
+require "dependabot/go_modules/update_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
@@ -69,6 +70,8 @@ module Dependabot
                   }
                 }
               )
+
+              return [version_class.new(dependency.version)] if version_strings.nil?
 
               version_strings.select { |v| version_class.correct?(v) }.
                 map { |v| version_class.new(v) }
