@@ -211,7 +211,7 @@ module Dependabot
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
             flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
-            map do |response, url_details|
+            map do |url_details, response|
               next unless response.status == 200
 
               {
@@ -221,19 +221,17 @@ module Dependabot
             end.compact
         end
 
-        def fetch_paginated_v2_nuget_listings(url_details, results = Set.new)
+        def fetch_paginated_v2_nuget_listings(url_details, results = {})
           response = Excon.get(
             url_details[:versions_url],
             idempotent: true,
-            **SharedHelpers.excon_defaults(
-              excon_options.merge(headers: url_details[:auth_header])
-            )
+            **SharedHelpers.excon_defaults(excon_options.merge(headers: url_details[:auth_header]))
           )
-          # NOTE: Short circuit if we get a circular next link
-          result = [response, url_details]
-          return results.to_a if results.include?(result)
 
-          results << result
+          # NOTE: Short circuit if we get a circular next link
+          return results.to_a if results.key?(url_details)
+
+          results[url_details] = response
 
           if (link_href = fetch_v2_next_link_href(response.body))
             url_details = url_details.dup
