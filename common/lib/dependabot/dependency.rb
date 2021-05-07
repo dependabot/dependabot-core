@@ -35,11 +35,9 @@ module Dependabot
       @name_normalisers[package_manager] = name_builder
     end
 
-    attr_reader :name, :requirements, :package_manager,
+    attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements,
                 :subdependency_metadata
-
-    attr_accessor :version
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,

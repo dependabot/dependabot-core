@@ -87,7 +87,8 @@ module Dependabot
       end
 
       def resolve_git_tags(dependency_set)
-        dependency_set.dependencies.each do |dep|
+        # Find deps that do not have an assigned (semver) version, but pin a commit that references a semver tag
+        resolved = dependency_set.dependencies.map do |dep|
           next unless dep.version.nil?
 
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
@@ -96,8 +97,12 @@ module Dependabot
           resolved = git_checker.local_tag_for_pinned_version
           next if resolved.nil? || !version_class.correct?(resolved)
 
-          dep.version = version_class.new(resolved).to_s
+          # Build a Dependency with the resolved version, and rely on DependencySet's merge
+          Dependency.new(name: dep.name, version: version_class.new(resolved).to_s,
+                         package_manager: dep.package_manager, requirements: [])
         end
+
+        resolved.compact.each { |dep| dependency_set << dep }
       end
 
       def deep_fetch_uses_from_hash(json_object)
