@@ -119,12 +119,11 @@ module Dependabot
       return unless pinned?
 
       ref = dependency_source_details.fetch(:ref)
-      tags = local_tags.select { |t| t.commit_sha == ref }
+      tags = local_tags.select { |t| t.commit_sha == ref && version_class.correct?(t.name) }.
+             sort_by { |t| version_class.new(t.name) }
       return if tags.empty?
 
-      sorted_tags = tags.sort_by { |t| version_class.new(t.name.gsub(/^v/, "")) }
-
-      sorted_tags[-1].name
+      tags[-1].name
     end
 
     def git_repo_reachable?

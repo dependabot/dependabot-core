@@ -994,6 +994,18 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "that is not a tag" do
+        let(:source_commit) { "25a956c84d5dd820d28caab9f86b8d183aeeff3d" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is an invalid tag" do
+        let(:source_commit) { "18217bbd6de24e775799c3d99058f167ad168624" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not found" do
         let(:source_commit) { "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329" }
 
         it { is_expected.to be_nil }
