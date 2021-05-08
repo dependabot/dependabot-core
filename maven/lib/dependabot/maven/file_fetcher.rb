@@ -34,10 +34,7 @@ module Dependabot
       end
 
       def extensions
-        @extensions ||= fetch_file_from_host(".mvn/extensions.xml")
-      rescue Dependabot::DependencyFileNotFound
-        # extensions.xml is optional
-        nil
+        @extensions ||= fetch_file_if_present(".mvn/extensions.xml")
       end
 
       def child_poms
