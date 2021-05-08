@@ -25,7 +25,7 @@ module Dependabot
         fetched_files << pom
         fetched_files += child_poms
         fetched_files += relative_path_parents(fetched_files)
-        fetched_files << extensions unless extensions.nil?
+        fetched_files << extensions if extensions
         fetched_files.uniq
       end
 
