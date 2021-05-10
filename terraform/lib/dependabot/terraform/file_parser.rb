@@ -38,7 +38,7 @@ module Dependabot
           end
         end
 
-        dependency_set.dependencies
+        dependency_set.dependencies.sort_by(&:name)
       end
 
       private

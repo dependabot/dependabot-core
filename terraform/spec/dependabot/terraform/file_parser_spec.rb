@@ -64,10 +64,10 @@ V1 output:                             | V2 output:
       specify { expect(subject.length).to eq(5) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
-      it "has the right details for the first dependency (default registry with version)" do
-        expect(subject[0].name).to eq("hashicorp/consul/aws")
-        expect(subject[0].version).to eq("0.1.0")
-        expect(subject[0].requirements).to eq([{
+      it "has the right details for the dependency (default registry with version)" do
+        expect(subject[2].name).to eq("hashicorp/consul/aws")
+        expect(subject[2].version).to eq("0.1.0")
+        expect(subject[2].requirements).to eq([{
           requirement: "0.1.0",
           groups: [],
           file: "main.tf",
@@ -94,10 +94,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details for the third dependency (default registry with version req)" do
-        expect(subject[2].name).to eq("terraform-aws-modules/rds/aws")
-        expect(subject[2].version).to be_nil
-        expect(subject[2].requirements).to eq([{
+      it "has the right details for the dependency (default registry with version req)" do
+        expect(subject[4].name).to eq("terraform-aws-modules/rds/aws")
+        expect(subject[4].version).to be_nil
+        expect(subject[4].requirements).to eq([{
           requirement: "~> 1.0.0",
           groups: [],
           file: "main.tf",
@@ -109,10 +109,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details for the fourth dependency (default registry with no version)" do
-        expect(subject[3].name).to eq("devops-workflow/members/github")
-        expect(subject[3].version).to be_nil
-        expect(subject[3].requirements).to eq([{
+      it "has the right details for the dependency (default registry with no version)" do
+        expect(subject[0].name).to eq("devops-workflow/members/github")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -124,10 +124,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details for the fifth dependency (default registry with a sub-directory)" do
-        expect(subject[4].name).to eq("mongodb/ecs-task-definition/aws")
-        expect(subject[4].version).to be_nil
-        expect(subject[4].requirements).to eq([{
+      it "has the right details for the dependency (default registry with a sub-directory)" do
+        expect(subject[3].name).to eq("mongodb/ecs-task-definition/aws")
+        expect(subject[3].version).to be_nil
+        expect(subject[3].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -146,10 +146,10 @@ V1 output:                             | V2 output:
       specify { expect(subject.length).to eq(6) }
       specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
-      it "has the right details for the first dependency (which uses git:: with a tag)" do
-        expect(subject[0].name).to eq("origin_label")
-        expect(subject[0].version).to eq("0.3.7")
-        expect(subject[0].requirements).to match_array([{
+      it "has the right details for the dependency (which uses git:: with a tag)" do
+        expect(subject[5].name).to eq("origin_label")
+        expect(subject[5].version).to eq("0.3.7")
+        expect(subject[5].requirements).to match_array([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -162,10 +162,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details for the second dependency (which uses github.com with a tag)" do
-        expect(subject[1].name).to eq("logs")
-        expect(subject[1].version).to eq("0.2.2")
-        expect(subject[1].requirements).to match_array([{
+      it "has the right details for the dependency (which uses github.com with a tag)" do
+        expect(subject[4].name).to eq("logs")
+        expect(subject[4].version).to eq("0.2.2")
+        expect(subject[4].requirements).to match_array([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -178,10 +178,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details for the third dependency (which uses bitbucket.org with no tag)" do
-        expect(subject[2].name).to eq("distribution_label")
-        expect(subject[2].version).to be_nil
-        expect(subject[2].requirements).to eq([{
+      it "has the right details for the dependency (which uses bitbucket.org with no tag)" do
+        expect(subject[0].name).to eq("distribution_label")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -194,10 +194,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details the fourth dependency (which has a subdirectory and a tag)" do
-        expect(subject[3].name).to eq("dns")
-        expect(subject[3].version).to eq("0.2.5")
-        expect(subject[3].requirements).to eq([{
+      it "has the right details for the dependency (which has a subdirectory and a tag)" do
+        expect(subject[1].name).to eq("dns")
+        expect(subject[1].version).to eq("0.2.5")
+        expect(subject[1].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -210,10 +210,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-      it "has the right details the fifth dependency)" do
-        expect(subject[4].name).to eq("duplicate_label")
-        expect(subject[4].version).to eq("0.3.7")
-        expect(subject[4].requirements).to eq([{
+      it "has the right details for the dependency" do
+        expect(subject[2].name).to eq("duplicate_label")
+        expect(subject[2].version).to eq("0.3.7")
+        expect(subject[2].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -226,10 +226,10 @@ V1 output:                             | V2 output:
         }])
       end
 
-     it "has the right details for the sixth dependency (which uses git@github.com)" do
-        expect(subject[5].name).to eq("github_ssh_without_protocol")
-        expect(subject[5].version).to eq("0.4.0")
-        expect(subject[5].requirements).to eq([{
+      it "has the right details for the dependency (which uses git@github.com)" do
+        expect(subject[3].name).to eq("github_ssh_without_protocol")
+        expect(subject[3].version).to eq("0.4.0")
+        expect(subject[3].requirements).to eq([{
           requirement: nil,
           groups: [],
           file: "main.tf",
@@ -243,7 +243,7 @@ V1 output:                             | V2 output:
       end
     end
 
-    context "with a terragrunt file" do
+    context "with a terragrunt file", :hcl1_only do
       let(:files) { project_dependency_files("terragrunt") }
 
       specify { expect(subject.length).to eq(1) }
