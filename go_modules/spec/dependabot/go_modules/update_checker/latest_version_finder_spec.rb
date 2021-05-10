@@ -144,6 +144,26 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the package url doesn't include any valid meta tags" do
+      let(:dependency_files) { [go_mod] }
+      let(:dependency_name) { "example.com/web/dependabot.com" }
+      let(:dependency_version) { "1.7.0" }
+      let(:go_mod) do
+        Dependabot::DependencyFile.new(
+          name: "go.mod",
+          content: fixture("projects", "missing_meta_tag", "go.mod")
+        )
+      end
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("example.com/web/dependabot.com")
+        end
+      end
+    end
+
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
