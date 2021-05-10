@@ -85,6 +85,20 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when on a pre-release" do
+      let(:dependency_version) { "1.2.0-pre1" }
+
+      it "returns newest pre-release" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
+      end
+    end
+
+    context "when on a stable release and a newer prerelease is available" do
+      it "doesn't return pre-release" do
+        expect(finder.latest_version).to_not eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
+      end
+    end
+
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
