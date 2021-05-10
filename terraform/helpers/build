@@ -14,6 +14,6 @@ fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 github_url="https://github.com/tmccombs/hcl2json"
-url="${github_url}/releases/download/v0.3.2/hcl2json_${os}_amd64"
+url="${github_url}/releases/download/v0.3.3/hcl2json_${os}_amd64"
 wget -O "$install_dir/bin/hcl2json" "$url"
 chmod +x "$install_dir/bin/hcl2json"
