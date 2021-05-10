@@ -55,16 +55,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    it "updates minor (but not major) semver versions" do
-      expect(latest_resolvable_version).
-        to eq(Dependabot::GoModules::Version.new("1.1.0"))
-    end
-
-    it "doesn't update major semver versions" do
-      expect(latest_resolvable_version).
-        to_not eq(Dependabot::GoModules::Version.new("2.0.0"))
-    end
-
     context "with a go.mod excluded version" do
       let(:go_mod_content) do
         <<~GOMOD

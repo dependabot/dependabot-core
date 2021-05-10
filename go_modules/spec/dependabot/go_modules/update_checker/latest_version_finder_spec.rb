@@ -41,6 +41,24 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ]
     end
 
+    context "when there's a newer major version but not a new minor version" do
+      it "returns the latest minor version for the dependency's current major version" do
+        finder = described_class.new(
+          dependency: dependency,
+          dependency_files: dependency_files,
+          credentials: [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }],
+          ignored_versions: []
+        )
+
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      end
+    end
+
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
