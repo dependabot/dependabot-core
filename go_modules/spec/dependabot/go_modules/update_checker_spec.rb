@@ -53,6 +53,12 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
+    context "when a supported newer version is available" do
+      it "updates to the newer version" do
+        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      end
+    end
+
     context "doesn't update indirect dependencies (not supported)" do
       let(:requirements) { [] }
       it do
