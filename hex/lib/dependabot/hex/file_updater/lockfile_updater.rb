@@ -66,7 +66,7 @@ module Dependabot
           dependency_files.select(&:support_file).each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, file.content)
+            File.write(path, sanitize_mixfile(file.content))
           end
         end
 

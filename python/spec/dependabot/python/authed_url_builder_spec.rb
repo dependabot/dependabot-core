@@ -58,6 +58,46 @@ RSpec.describe Dependabot::Python::AuthedUrlBuilder do
             to eq("https://token:pass@pypi.weasyldev.com/weasyl/source/+simple")
         end
       end
+
+      context "that includes an @" do
+        let(:token) { "token:pass@23" }
+
+        it "builds the URL correctly" do
+          expect(authed_url). to eq(
+            "https://token:pass%4023@pypi.weasyldev.com/weasyl/source/+simple"
+          )
+        end
+      end
+
+      context "that includes an #" do
+        let(:token) { "token:pass#23" }
+
+        it "builds the URL correctly" do
+          expect(authed_url). to eq(
+            "https://token:pass%2323@pypi.weasyldev.com/weasyl/source/+simple"
+          )
+        end
+      end
+
+      context "that has multiple colons" do
+        let(:token) { "token:pass:23" }
+
+        it "builds the URL correctly" do
+          expect(authed_url). to eq(
+            "https://token:pass%3A23@pypi.weasyldev.com/weasyl/source/+simple"
+          )
+        end
+      end
+
+      context "that includes an @ and is base64 encoded" do
+        let(:token) { "dG9rZW46cGFzc0AyMw==" }
+
+        it "builds the URL correctly" do
+          expect(authed_url). to eq(
+            "https://token:pass%4023@pypi.weasyldev.com/weasyl/source/+simple"
+          )
+        end
+      end
     end
   end
 end

@@ -12,11 +12,13 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -43,8 +45,8 @@ module Dependabot
         def fetch_lowest_security_fix_version
           versions = available_versions
           versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
           versions = filter_vulnerable_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
           versions.min
         end
@@ -56,8 +58,13 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          filtered =
+            versions_array.
+            reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+
+          filtered
         end
 
         def filter_vulnerable_versions(versions_array)
@@ -72,9 +79,7 @@ module Dependabot
 
         def wants_prerelease?
           current_version = dependency.version
-          if current_version && version_class.new(current_version).prerelease?
-            return true
-          end
+          return true if current_version && version_class.new(current_version).prerelease?
 
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)
@@ -173,7 +178,7 @@ module Dependabot
           dependency_files.find { |f| f.name == "auth.json" }
         end
 
-        def ignore_reqs
+        def ignore_requirements
           ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 

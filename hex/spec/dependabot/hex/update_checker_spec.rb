@@ -15,7 +15,8 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       dependency: dependency,
       dependency_files: files,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
     )
   end
 
@@ -28,6 +29,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -96,6 +98,18 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
       it { is_expected.to eq(Gem::Version.new("1.2.6")) }
+    end
+
+    context "when the user is ignoring all versions" do
+      let(:ignored_versions) { [">= 0, < 99"] }
+      it { is_expected.to eq(Gem::Version.new("1.3.5")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the dependency doesn't have a requirement" do

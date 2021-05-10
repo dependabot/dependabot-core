@@ -21,11 +21,13 @@ module Dependabot
       )$
     /ix.freeze
 
-    def initialize(dependency:, credentials:, ignored_versions: [],
+    def initialize(dependency:, credentials:,
+                   ignored_versions: [], raise_on_ignored: false,
                    requirement_class: nil, version_class: nil)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
+      @raise_on_ignored = raise_on_ignored
       @requirement_class = requirement_class
       @version_class = version_class
     end
@@ -84,16 +86,22 @@ module Dependabot
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
+    # rubocop:disable Metrics/PerceivedComplexity
     def local_tag_for_latest_version
-      tag =
+      tags =
         local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }.
-        reject { |t| tag_included_in_ignore_reqs?(t) }.
-        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
-        max_by do |t|
-          version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-          version_class.new(version)
-        end
+        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags.
+                 reject { |t| tag_included_in_ignore_requirements?(t) }
+      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
+
+      tag = filtered.
+            reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
+            max_by do |t|
+              version = t.name.match(VERSION_REGEX).named_captures.
+                        fetch("version")
+              version_class.new(version)
+            end
 
       return unless tag
 
@@ -105,6 +113,7 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def git_repo_reachable?
       local_upload_pack
@@ -308,8 +317,8 @@ module Dependabot
       listing_repo_git_metadata_fetcher.upload_pack
     end
 
-    def ignore_reqs
-      ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+    def ignore_requirements
+      ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
     end
 
     def wants_prerelease?
@@ -321,9 +330,9 @@ module Dependabot
       version_class.new(version).prerelease?
     end
 
-    def tag_included_in_ignore_reqs?(tag)
+    def tag_included_in_ignore_requirements?(tag)
       version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
-      ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
+      ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
     end
 
     def tag_is_prerelease?(tag)

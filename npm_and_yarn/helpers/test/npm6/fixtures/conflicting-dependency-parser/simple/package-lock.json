@@ -1,0 +1,27 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "lockfileVersion": 1,
+  "requires": true,
+  "dependencies": {
+    "abind": {
+      "version": "1.0.5",
+      "resolved": "https://registry.npmjs.org/abind/-/abind-1.0.5.tgz",
+      "integrity": "sha512-dbaEZphdPje0ihqSdWg36Sb8S20TuqQomiz2593oIx+enQ9Q4vDZRjIzhnkWltGRKVKqC28kTribkgRLBexWVQ=="
+    },
+    "extend": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmjs.org/extend/-/extend-3.0.0.tgz",
+      "integrity": "sha512-5mYyg57hpD+sFaJmgNL9BidQ5C7dmJE3U5vzlRWbuqG+8dytvYEoxvKs6Tj5cm3LpMsFvRt20qz1ckezmsOUgQ=="
+    },
+    "objnest": {
+      "version": "4.1.2",
+      "resolved": "https://registry.npmjs.org/objnest/-/objnest-4.1.2.tgz",
+      "integrity": "sha512-VLMIu6RjSrHyesMnlLZBTbNlzrfBEjkcBdq5NM763AG+BLRJm27H43GUTLv3XrtlNn0Ofs+em4G84T7kkXA+1A==",
+      "requires": {
+        "abind": "^1.0.0",
+        "extend": "^3.0.0"
+      }
+    }
+  }
+}

@@ -9,11 +9,13 @@ module Dependabot
     class UpdateChecker
       class PipVersionResolver
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -42,6 +44,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            raise_on_ignored: @raise_on_ignored,
             security_advisories: security_advisories
           )
         end
@@ -54,9 +57,7 @@ module Dependabot
         end
 
         def user_specified_python_version
-          unless python_requirement_parser.user_specified_requirements.any?
-            return
-          end
+          return unless python_requirement_parser.user_specified_requirements.any?
 
           user_specified_requirements =
             python_requirement_parser.user_specified_requirements.

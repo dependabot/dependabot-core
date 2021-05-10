@@ -57,6 +57,11 @@ module Dependabot
               evaluated_value(node.at_xpath("./*/artifactId").content.strip)
             ].compact.join(":")
 
+            if node.at_xpath("./*/classifier")
+              node_name += ":#{evaluated_value(node.at_xpath('./*/classifier').
+                content.strip)}"
+            end
+
             next false unless node_name == dependency_name
             next false unless packaging_type_matches?(node)
             next false unless scope_matches?(node)
@@ -66,9 +71,7 @@ module Dependabot
         end
 
         def node_group_id(node)
-          unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
-            return
-          end
+          return unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
           return "org.apache.maven.plugins" unless node.at_xpath("./*/groupId")
 
           evaluated_value(node.at_xpath("./*/groupId").content.strip)

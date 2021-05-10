@@ -138,7 +138,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:pyproject_fixture_name) { "python_2.toml" }
       let(:lockfile_fixture_name) { "python_2.lock" }
 
-      pending "resolves version" do
+      it "resolves version" do
         is_expected.to eq(Gem::Version.new("2.18.4"))
       end
     end
@@ -230,7 +230,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to include("depends on black (^18) which doesn't match any")
+              to include("depends on black (^18) which doesn't match any versions")
           end
       end
 
@@ -243,7 +243,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to include("Package croniter (0.3.26) not found")
+                to include("depends on croniter (0.3.26) which doesn't match any versions")
             end
         end
       end
@@ -292,8 +292,9 @@ RSpec.describe namespace::PoetryVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              puts error.message
               expect(error.message).
-                to include("depends on black (^18) which doesn't match any")
+                to include("depends on black (^18) which doesn't match any versions")
             end
         end
       end

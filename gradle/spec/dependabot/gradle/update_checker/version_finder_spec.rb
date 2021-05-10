@@ -12,12 +12,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
   let(:version_class) { Dependabot::Gradle::Version }
   let(:credentials) { [] }
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
 
   let(:dependency) do
@@ -83,10 +85,67 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
     end
 
+    context "when the user has asked for a version type and it's available" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:dependency_version) { "1.4.11.1" }
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:dependency_version) { "1.4.11-java7" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
+    end
+
+    context "when a version type is available that wasn't requested" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:dependency_version) { "1.4.11.1" }
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:dependency_version) { "1.4.11.1" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
+    end
+
     context "when the user has asked to ignore a major version" do
+      let(:ignored_versions) { ["[23.0,24)"] }
+      let(:dependency_version) { "17.0" }
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when the user has asked to ignore several major versions" do
+      let(:ignored_versions) { ["[23.0,24),[22.0,23)"] }
+      let(:dependency_version) { "17.0" }
+      its([:version]) { is_expected.to eq(version_class.new("21.0")) }
+    end
+
+    context "when a version range is specified using Ruby syntax" do
       let(:ignored_versions) { [">= 23.0, < 24"] }
       let(:dependency_version) { "17.0" }
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when the user has asked to ignore all versions" do
+      let(:ignored_versions) { [">= 0"] }
+      let(:dependency_version) { "17.0" }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the current version isn't normal" do
@@ -160,6 +219,41 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
+      context "that is a gitlab maven repository" do
+        let(:credentials) do
+          [
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+            },
+            {
+              "type" => "git_source",
+              "host" => "private.registry.org",
+              "username" => "x-access-token",
+              "password" => "customToken"
+            }
+          ]
+        end
+
+        let(:private_registry_metadata_url) do
+          "https://private.registry.org/api/v4/groups/-/packages/maven/"\
+          "com/google/guava/guava/maven-metadata.xml"
+        end
+
+        before do
+          stub_request(:get, maven_central_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_registry_metadata_url).
+            with(headers: { "Private-Token" => "customToken" }).
+            to_return(status: 200, body: maven_central_releases)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
+        end
+      end
+
       context "but no auth details" do
         let(:credentials) do
           [{
@@ -192,6 +286,73 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
             end
           end
         end
+      end
+    end
+
+    context "with multiple repositories from credentials" do
+      let(:credentials) do
+        [
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "username" => "dependabot",
+            "password" => "dependabotPassword"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo2/",
+            "username" => "dependabot2",
+            "password" => "dependabotPassword2"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+          },
+          {
+            "type" => "git_source",
+            "host" => "private.registry.org",
+            "username" => "x-access-token",
+            "password" => "customToken"
+          }
+        ]
+      end
+
+      let(:private_registry_metadata_url) do
+        "https://private.registry.org/repo/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:second_repo) do
+        "https://private.registry.org/repo2/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:gitlab_maven_repo) do
+        "https://private.registry.org/api/v4/groups/-/packages/maven/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).
+          to_return(status: 404)
+        stub_request(:get, second_repo).
+          with(basic_auth: %w(dependabot2 dependabotPassword2)).
+          to_return(status: 404)
+        stub_request(:get, gitlab_maven_repo).
+          with(headers: { "Private-Token" => "customToken" }).
+          to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url).
+          with(basic_auth: %w(dependabot dependabotPassword)).
+          to_return(status: 200, body: maven_central_releases)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("https://private.registry.org/repo")
       end
     end
 
@@ -389,6 +550,59 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         its([:version]) do
           is_expected.to eq(version_class.new("2.1.4.RELEASE"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+    end
+
+    context "with a kotlin plugin" do
+      let(:dependency_requirements) do
+        [{
+          file: "build.gradle",
+          requirement: "1.4.10",
+          groups: %w(plugins kotlin),
+          source: nil
+        }]
+      end
+      let(:dependency_name) { "jvm" }
+      let(:dependency_version) { "1.4.10" }
+
+      let(:gradle_plugin_metadata_url) do
+        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+      end
+      let(:gradle_plugin_releases) do
+        fixture("gradle_plugin_metadata", "org_jetbrains_kotlin_jvm.xml")
+      end
+      let(:maven_metadata_url) do
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, gradle_plugin_metadata_url).
+          to_return(status: 200, body: gradle_plugin_releases)
+        stub_request(:get, maven_metadata_url).to_return(status: 404)
+      end
+
+      describe "the first version" do
+        subject { versions.first }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("0.0.1-test-1"))
+        end
+        its([:source_url]) do
+          is_expected.to eq("https://plugins.gradle.org/m2")
+        end
+      end
+
+      describe "the last version" do
+        subject { versions.last }
+
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.30-M1"))
         end
         its([:source_url]) do
           is_expected.to eq("https://plugins.gradle.org/m2")

@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/github_actions/file_parser"
+require "dependabot/dependency"
 require_common_spec "file_parsers/shared_examples_for_file_parsers"
 
 RSpec.describe Dependabot::GithubActions::FileParser do
@@ -98,6 +99,44 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           expect(dependency.version).to be_nil
           expect(dependency.requirements).to eq(expected_requirements)
         end
+      end
+    end
+
+    describe "with multiple sources" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "multiple_sources.yml" }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@v2.1.0" }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@master" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("actions/checkout")
+        expect(dependency.version).to be_nil
+        expect(dependency.requirements).to eq(expected_requirements)
       end
     end
 

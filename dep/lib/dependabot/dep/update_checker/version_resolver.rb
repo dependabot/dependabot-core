@@ -22,9 +22,7 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          if defined?(@latest_resolvable_version)
-            return @latest_resolvable_version
-          end
+          return @latest_resolvable_version if defined?(@latest_resolvable_version)
 
           @latest_resolvable_version = fetch_latest_resolvable_version
         end

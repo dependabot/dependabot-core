@@ -104,7 +104,7 @@ module Dependabot
           TomlRB.dump(parsed_manifest)
         end
 
-        # Note: We don't need to care about formatting in this method, since
+        # NOTE: We don't need to care about formatting in this method, since
         # we're only using the manifest to find the latest resolvable version
         def replace_version_constraint(content, filename)
           parsed_manifest = TomlRB.parse(content)
@@ -138,9 +138,7 @@ module Dependabot
             overrides << override
           end
 
-          unless override["source"]
-            override["source"] = "gopkg.in/fsnotify/fsnotify.v1"
-          end
+          override["source"] = "gopkg.in/fsnotify/fsnotify.v1" unless override["source"]
 
           parsed_manifest["override"] = overrides
           TomlRB.dump(parsed_manifest)
@@ -168,6 +166,7 @@ module Dependabot
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def lower_bound_version
           @lower_bound_version ||=
             if version_from_lockfile
@@ -185,6 +184,7 @@ module Dependabot
               version_from_requirement || 0
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def version_from_lockfile
           return unless lockfile

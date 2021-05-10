@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "dependabot/github_actions/version"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
@@ -42,9 +43,7 @@ module Dependabot
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
-          if string.match?(GITHUB_REPO_REFERENCE)
-            dependency_set << build_github_dependency(file, string)
-          end
+          dependency_set << build_github_dependency(file, string) if string.match?(GITHUB_REPO_REFERENCE)
         end
 
         dependency_set

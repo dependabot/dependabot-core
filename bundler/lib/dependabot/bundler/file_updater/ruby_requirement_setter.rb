@@ -7,8 +7,11 @@ module Dependabot
   module Bundler
     class FileUpdater
       class RubyRequirementSetter
-        RUBY_VERSIONS =
-          %w(1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.7 2.5.6 2.6.4).freeze
+        class RubyVersionNotFound < StandardError; end
+
+        RUBY_VERSIONS = %w(
+          1.8.7 1.9.3 2.0.0 2.1.10 2.2.10 2.3.8 2.4.10 2.5.8 2.6.6 2.7.2 3.0.0
+        ).freeze
 
         attr_reader :gemspec
 
@@ -53,7 +56,7 @@ module Dependabot
             map { |v| Gem::Version.new(v) }.sort.
             find { |v| requirement.satisfied_by?(v) }
 
-          raise "Couldn't find Ruby version!" unless ruby_version
+          raise RubyVersionNotFound unless ruby_version
 
           ruby_version
         end

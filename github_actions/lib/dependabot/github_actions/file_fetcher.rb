@@ -11,7 +11,7 @@ module Dependabot
       end
 
       def self.required_files_message
-        "Repo must contain a .github/workflows repo with YAML files."
+        "Repo must contain a .github/workflows directory with YAML files."
       end
 
       private

@@ -3,6 +3,7 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/github_actions/update_checker"
+require "dependabot/github_actions/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
 
 RSpec.describe Dependabot::GithubActions::UpdateChecker do
@@ -12,19 +13,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
-      credentials: credentials,
-      ignored_versions: ignored_versions
+      credentials: github_credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
     )
   end
   let(:ignored_versions) { [] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:raise_on_ignored) { false }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -65,6 +60,39 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       )
   end
   let(:upload_pack_fixture) { "setup-node" }
+
+  shared_context "with multiple git sources" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "actions/checkout",
+        version: nil,
+        package_manager: "github_actions",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          }
+        }]
+      )
+    end
+  end
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -143,6 +171,20 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:ignored_versions) { [">= 1.1.0"] }
         it { is_expected.to eq("fc9ff49b90869a686df00e922af871c12215986a") }
       end
+
+      context "and all versions are being ignored" do
+        let(:ignored_versions) { [">= 0"] }
+        it "returns nil" do
+          expect(subject).to be_nil
+        end
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "raises an error" do
+            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          end
+        end
+      end
     end
 
     context "given a git commit SHA" do
@@ -178,6 +220,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           it { is_expected.to eq(Gem::Version.new("1.0.4")) }
         end
       end
+    end
+
+    context "given a dependency with multiple git refs", :vcr do
+      include_context "with multiple git sources"
+
+      it { is_expected.to eq("aabbfeb2ce60b5bd82389903509092c4648a9713") }
     end
   end
 
@@ -229,7 +277,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: "v1.1.0",
+              ref: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
@@ -249,7 +297,28 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
               source: {
                 type: "git",
                 url: "https://github.com/actions/setup-node",
-                ref: "v1.0.4",
+                ref: "fc9ff49b90869a686df00e922af871c12215986a",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/setup-node@master" }
+            }]
+          end
+
+          it { is_expected.to eq(expected_requirements) }
+        end
+
+        context "and the previous version is a short SHA" do
+          let(:reference) { "5273d0df" }
+          let(:comparison_url) { repo_url + "/compare/v1.1.0...5273d0df" }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/setup-node",
+                ref: "5273d0df",
                 branch: nil
               },
               metadata: { declaration_string: "actions/setup-node@master" }
@@ -299,6 +368,38 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         it { is_expected.to eq(expected_requirements) }
       end
+    end
+
+    context "with multiple requirement sources", :vcr do
+      include_context "with multiple git sources"
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }]
+      end
+
+      it { is_expected.to eq(expected_requirements) }
     end
   end
 end

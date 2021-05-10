@@ -32,9 +32,7 @@ module Dependabot
         updated_files.reject! { |f| original_pomfiles.include?(f) }
 
         raise "No files changed!" if updated_files.none?
-        if updated_files.any? { |f| f.name.end_with?("pom_parent.xml") }
-          raise "Updated a supporting POM!"
-        end
+        raise "Updated a supporting POM!" if updated_files.any? { |f| f.name.end_with?("pom_parent.xml") }
 
         updated_files
       end
@@ -127,13 +125,11 @@ module Dependabot
       def declaration_finder(dependency, requirement)
         @declaration_finders ||= {}
         @declaration_finders[dependency.hash + requirement.hash] ||=
-          begin
-            DeclarationFinder.new(
-              dependency: dependency,
-              declaring_requirement: requirement,
-              dependency_files: dependency_files
-            )
-          end
+          DeclarationFinder.new(
+            dependency: dependency,
+            declaring_requirement: requirement,
+            dependency_files: dependency_files
+          )
       end
 
       def updated_pom_declaration(old_declaration, previous_req, requirement)

@@ -10,16 +10,28 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      require_relative "update_checker/latest_version_finder"
+
       def latest_resolvable_version
         # We don't yet support updating indirect dependencies for go_modules
         #
         # To update indirect dependencies we'll need to promote the indirect
         # dependency to the go.mod file forcing the resolver to pick this
-        # version (possibly as # indirect)
-        return dependency.version unless dependency.top_level?
+        # version (possibly as `// indirect`)
+        unless dependency.top_level?
+          return unless dependency.version
+
+          return version_class.new(dependency.version)
+        end
 
         @latest_resolvable_version ||=
-          version_class.new(find_latest_resolvable_version.gsub(/^v/, ""))
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored
+          ).latest_version
       end
 
       # This is currently used to short-circuit latest_resolvable_version,
@@ -41,42 +53,6 @@ module Dependabot
       end
 
       private
-
-      def find_latest_resolvable_version
-        SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            File.write("go.mod", go_mod.content)
-
-            # Turn off the module proxy for now, as it's causing issues with
-            # private git dependencies
-            env = { "GOPRIVATE" => "*" }
-
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              env: env,
-              function: "getUpdatedVersion",
-              args: {
-                dependency: {
-                  name: dependency.name,
-                  version: "v" + dependency.version,
-                  indirect: dependency.requirements.empty?
-                }
-              }
-            )
-          end
-        end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        retry_count ||= 0
-        retry_count += 1
-        retry if transitory_failure?(e) && retry_count < 2
-        raise
-      end
-
-      def transitory_failure?(error)
-        return true if error.message.include?("EOF")
-
-        error.message.include?("Internal Server Error")
-      end
 
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't implemented for Go (yet)
@@ -100,10 +76,8 @@ module Dependabot
 
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
-        # (if that's what the parser picked up) of the tag name.
-        if dependency.version&.match?(/^[0-9a-f]{40}$/)
-          return tag&.fetch(:commit_sha)
-        end
+        # (if that's what the parser picked up) or the tag name.
+        return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
         tag&.fetch(:tag)
       end
@@ -116,16 +90,13 @@ module Dependabot
         { type: "default", source: dependency.name }
       end
 
-      def go_mod
-        @go_mod ||= dependency_files.find { |f| f.name == "go.mod" }
-      end
-
       def git_commit_checker
         @git_commit_checker ||=
           GitCommitChecker.new(
             dependency: dependency,
             credentials: credentials,
-            ignored_versions: ignored_versions
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored
           )
       end
     end

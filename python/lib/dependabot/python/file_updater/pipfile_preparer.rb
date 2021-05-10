@@ -46,7 +46,6 @@ module Dependabot
           TomlRB.dump(pipfile_object)
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def freeze_dependency(dep_name, pipfile_object, keys)
           locked_version = version_from_lockfile(
             keys[:lockfile],
@@ -66,7 +65,6 @@ module Dependabot
             pipfile_object[keys[:pipfile]][dep_name] = "==#{locked_version}"
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_python_requirement(requirement)
           pipfile_object = TomlRB.parse(pipfile_content)

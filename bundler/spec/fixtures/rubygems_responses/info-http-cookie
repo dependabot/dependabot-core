@@ -1,0 +1,22 @@
+---
+0.1.0 domain_name:~> 0.5|checksum:6f8f0da287845fe8372ecfca118f3ce5688a9d2a724b7b1c7333f65a84c49121
+0.1.1 domain_name:~> 0.5|checksum:a98b42fe94f32886182d304b1dc76812b6e4cb6148a6ce86a65ee8eef827b0e1
+0.1.2 domain_name:~> 0.5|checksum:6dd80bf7a15a970464a44f3b560866ed167b8cfb6ee2e37d3809827c4fc73c81
+0.1.4 domain_name:~> 0.5|checksum:9fe283f9abd8e641a9fb6130eac6b1f4aa09a16140f9b7f6a7ad39e7f8adc650
+0.1.5 domain_name:~> 0.5|checksum:db4b4c59710f6e4b9f59e6b171948d93c6c44c546a8ca28dbc9d25332664e97b
+1.0.0.pre1 domain_name:~> 0.5|checksum:c4c793d6f00fdfb9f25bf099eee422c31d22e75754b2faa8e701306113aca89d,rubygems:> 1.3.1
+1.0.0.pre2 domain_name:~> 0.5|checksum:08751b02cb26e9282554c20930d80e736df0daf7d1f1d2d247766d0376697d0b,rubygems:> 1.3.1
+1.0.0.pre3 domain_name:~> 0.5,sqlite3:~> 1.3.3|checksum:d903874cf773fc420ac395b7be5cd531754722a835bb58f3aeb6253eaecd2bce,rubygems:> 1.3.1
+1.0.0.pre4 domain_name:~> 0.5,sqlite3:~> 1.3.3|checksum:77180dd40292b270eb3871de8dfdcd1df1f0a0c85ad6b1c21c53cc25f7b254ad,rubygems:> 1.3.1
+1.0.0.pre5 domain_name:~> 0.5|checksum:63b8c3a43e0c2e333c222509709b948908dbba7aea84423f1c8961218bffcf7d,rubygems:> 1.3.1
+1.0.0.pre6 domain_name:~> 0.5|checksum:a7c031b93a01d582ffcf1740b84d64eebc090a56949eb3b882541c0d6a1de9e3,rubygems:> 1.3.1
+1.0.0.pre7 domain_name:~> 0.5|checksum:7e7f15ff2ec67dc7f383d3c2c8bb07e828959fb92d904f9bfb69a7223261a02c,rubygems:> 1.3.1
+1.0.0.pre8 domain_name:~> 0.5|checksum:40786f3efc6b8ba2d22249f3cbc8396f57bf989e6ffb4a31d9858d054b259ded,rubygems:> 1.3.1
+1.0.0.pre9 domain_name:~> 0.5|checksum:fc1bb2d0bba5f7ef016c7bf06daa262dd94b72abe4e29bfe8c5ac9147981221d,rubygems:> 1.3.1
+1.0.0.pre10 domain_name:~> 0.5|checksum:b9539a5bc46c5d601dbf50f35ff9b760e65ce853171a83e47b3e5c2ec25b66e7,rubygems:> 1.3.1
+1.0.0.pre11 domain_name:~> 0.5|checksum:930c5a2e85daff1b2cef98c4e6b1291da6efa183599130ef1280f181fbaeb87c,rubygems:> 1.3.1
+1.0.0.pre12 domain_name:~> 0.5|checksum:e7d49c735fe1a8392c43d9e86e7412d3073e606613afcea0e94b20fbac9af41b,rubygems:> 1.3.1
+1.0.0 domain_name:~> 0.5|checksum:b2bb95fcb012ce89d0a7b75b0e91bec7e5d610f528415ba2e742d03e436a4052
+1.0.1 domain_name:~> 0.5|checksum:a91daf2f18d3fe9d38f8aca291c578eea1ad621f3807f7ce3b41d4587384ef3f
+1.0.2 domain_name:~> 0.5|checksum:bcc1b18b5bc3e9302542c9c7f68f1ac0c3100a65dd2831786172e8676773e233
+1.0.3 domain_name:~> 0.5|checksum:2f11269d817bc52ab2af2721e89a377660a961078de2a3a55fc696d7897e8c00

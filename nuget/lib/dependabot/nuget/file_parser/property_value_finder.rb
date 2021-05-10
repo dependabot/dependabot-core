@@ -38,6 +38,12 @@ module Dependabot
             )
 
           node_details ||=
+            find_property_in_directory_build_packages(
+              property: property_name,
+              callsite_file: callsite_file
+            )
+
+          node_details ||=
             find_property_in_packages_props(property: property_name)
 
           return unless node_details
@@ -53,9 +59,7 @@ module Dependabot
           callsite_file = dependency_files.
                           find { |f| f.name == node_details.fetch(:file) }
 
-          if stack.include?([property_name, callsite_file.name])
-            raise "Circular reference!"
-          end
+          raise "Circular reference!" if stack.include?([property_name, callsite_file.name])
 
           property_details(
             property_name: property_name,
@@ -74,9 +78,7 @@ module Dependabot
           node = doc.at_xpath(property_xpath(property))
 
           # If we found a value for the property, return it
-          if node
-            return node_details(file: file, node: node, property: property)
-          end
+          return node_details(file: file, node: node, property: property) if node
 
           # Otherwise, we need to look in an imported file
           import_path_finder =
@@ -107,6 +109,13 @@ module Dependabot
 
         def find_property_in_directory_build_props(property:, callsite_file:)
           file = build_props_file_for_project(callsite_file)
+          return unless file
+
+          deep_find_prop_node(property: property, file: file)
+        end
+
+        def find_property_in_directory_build_packages(property:, callsite_file:)
+          file = build_packages_file_for_project(callsite_file)
           return unless file
 
           deep_find_prop_node(property: property, file: file)
@@ -148,6 +157,22 @@ module Dependabot
           path =
             possible_paths.uniq.
             find { |p| dependency_files.find { |f| f.name.casecmp(p).zero? } }
+
+          dependency_files.find { |f| f.name == path }
+        end
+
+        def build_packages_file_for_project(project_file)
+          dir = File.dirname(project_file.name)
+
+          # Nuget walks up the directory structure looking for a
+          # Directory.Packages.props file
+          possible_paths = dir.split("/").map.with_index do |_, i|
+            base = dir.split("/").first(i + 1).join("/")
+            Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path
+          end.reverse + ["Directory.Packages.props"]
+
+          path = possible_paths.uniq.
+                 find { |p| dependency_files.find { |f| f.name == p } }
 
           dependency_files.find { |f| f.name == path }
         end

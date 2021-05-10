@@ -1,4 +1,4 @@
--i https://pypi.python.org/simple
+-i https://pypi.org/simple
 certifi==2017.11.5
 chardet==3.0.4
 idna==2.5

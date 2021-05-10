@@ -39,7 +39,7 @@ module Dependabot
         @composer_lock ||= fetch_file_if_present("composer.lock")
       end
 
-      # Note: This is fetched but currently unused
+      # NOTE: This is fetched but currently unused
       def auth_json
         @auth_json ||= fetch_file_if_present("auth.json")&.
                        tap { |f| f.support_file = true }

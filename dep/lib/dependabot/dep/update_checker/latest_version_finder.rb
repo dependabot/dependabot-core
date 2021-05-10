@@ -33,9 +33,7 @@ module Dependabot
                     :ignored_versions
 
         def latest_release_tag_version
-          if @latest_release_tag_lookup_attempted
-            return @latest_release_tag_version
-          end
+          return @latest_release_tag_version if @latest_release_tag_lookup_attempted
 
           @latest_release_tag_lookup_attempted = true
 
@@ -90,9 +88,7 @@ module Dependabot
 
           # Otherwise, if the gem isn't pinned, the latest version is just the
           # latest commit for the specified branch.
-          unless git_commit_checker.pinned?
-            return git_commit_checker.head_commit_for_current_branch
-          end
+          return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
           # If the dependency is pinned to a tag that looks like a version
           # then we want to update that tag.
@@ -113,9 +109,7 @@ module Dependabot
         def version_from_tag(tag)
           # To compare with the current version we either use the commit SHA
           # (if that's what the parser picked up) of the tag name.
-          if dependency.version&.match?(/^[0-9a-f]{40}$/)
-            return tag&.fetch(:commit_sha)
-          end
+          return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
           tag&.fetch(:tag)
         end

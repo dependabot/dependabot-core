@@ -27,8 +27,8 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
-          freeze
+          /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
+        NATIVE_COMPILATION_ERROR = "pip._internal.exceptions.InstallationError: Command errored out with exit status 1"
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -36,6 +36,7 @@ module Dependabot
           @dependency               = dependency
           @dependency_files         = dependency_files
           @credentials              = credentials
+          @build_isolation = true
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -49,20 +50,18 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+                                   true
+                                 else
+                                   false
+                                 end
         end
 
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -74,7 +73,7 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
+                    "pyenv exec pip-compile --allow-unsafe -v "\
                      "#{pip_compile_options(filename)} -P #{dependency.name} "\
                      "#{filename}"
                   )
@@ -93,11 +92,22 @@ module Dependabot
                 parse_updated_files
               end
             rescue SharedHelpers::HelperSubprocessFailed => e
+              retry_count ||= 0
+              retry_count += 1
+
+              if compilation_error?(e) && retry_count <= 1
+                @build_isolation = false
+                retry
+              end
+
               handle_pip_compile_errors(e)
             end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
+        def compilation_error?(error)
+          error.message.include?(NATIVE_COMPILATION_ERROR)
+        end
+
         # rubocop:disable Metrics/AbcSize
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
@@ -114,11 +124,14 @@ module Dependabot
             check_original_requirements_resolvable
           end
 
-          if error.message.include?('Command "python setup.py egg_info') ||
-             error.message.include?("exit status 1: python setup.py egg_info")
+          if (error.message.include?('Command "python setup.py egg_info') ||
+              error.message.include?(
+                "exit status 1: python setup.py egg_info"
+              )) &&
+             check_original_requirements_resolvable
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
-            return if check_original_requirements_resolvable
+            return
           end
 
           if error.message.include?("Could not find a version ") &&
@@ -143,7 +156,6 @@ module Dependabot
           raise
         end
 
-        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/AbcSize
 
         # Needed because pip-compile's resolver isn't perfect.
@@ -163,15 +175,16 @@ module Dependabot
 
               true
             rescue SharedHelpers::HelperSubprocessFailed => e
-              unless e.message.include?("Could not find a version") ||
-                     e.message.include?("UnsupportedConstraint")
-                raise
+              # Pick the error message that includes resolvability errors, this might be the cause from
+              # handle_pip_compile_errors (it's unclear if we should always pick the cause here)
+              error_message = [e.message, e.cause&.message].compact.find do |msg|
+                ["UnsupportedConstraint", "Could not find a version"].any? { |err| msg.include?(err) }
               end
 
-              msg = clean_error_message(e.message)
-              raise if msg.empty?
+              cleaned_message = clean_error_message(error_message || "")
+              raise if cleaned_message.empty?
 
-              raise DependencyFileNotResolvable, msg
+              raise DependencyFileNotResolvable, cleaned_message
             end
           end
         end
@@ -195,7 +208,7 @@ module Dependabot
         end
 
         def pip_compile_options(filename)
-          options = ["--build-isolation"]
+          options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
 
           if (requirements_file = compiled_file_for_filename(filename))
@@ -229,9 +242,9 @@ module Dependabot
           relevant_error = choose_relevant_error(original_err, e)
           raise relevant_error unless error_suggests_bad_python_version?(msg)
           raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.17"
+          raise relevant_error if python_version == "2.7.18"
 
-          @python_version = "2.7.17"
+          @python_version = "2.7.18"
           retry
         ensure
           @python_version = nil
@@ -243,15 +256,11 @@ module Dependabot
 
           # If the previous error was definitely due to using the wrong Python
           # version, return the new error (which can't be worse)
-          if error_certainly_bad_python_version?(previous_error.message)
-            return new_error
-          end
+          return new_error if error_certainly_bad_python_version?(previous_error.message)
 
           # Otherwise, if the new error may be due to using the wrong Python
           # version, return the old error (which can't be worse)
-          if error_suggests_bad_python_version?(new_error.message)
-            return previous_error
-          end
+          return previous_error if error_suggests_bad_python_version?(new_error.message)
 
           # Otherwise, default to the new error
           new_error
@@ -328,9 +337,7 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install -r"\
@@ -339,9 +346,7 @@ module Dependabot
 
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
-          if @sanitized_setup_file_content[file.name]
-            return @sanitized_setup_file_content[file.name]
-          end
+          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
             Python::FileUpdater::SetupFileSanitizer.
@@ -360,9 +365,7 @@ module Dependabot
 
           req = dependency.requirements.find { |r| r[:file] == file.name }
 
-          unless req&.fetch(:requirement)
-            return file.content + "\n#{dependency.name} #{updated_req}"
-          end
+          return file.content + "\n#{dependency.name} #{updated_req}" unless req&.fetch(:requirement)
 
           Python::FileUpdater::RequirementReplacer.new(
             content: file.content,
@@ -376,11 +379,21 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
+        VERBOSE_ERROR_OUTPUT_LINES = [
+          "Traceback",
+          "Using indexes:",
+          "Current constraints:",
+          "Finding the best candidates:",
+          "Finding secondary dependencies:",
+          "\n",
+          "  "
+        ].freeze
+
         def clean_error_message(message)
           msg_lines = message.lines
           msg = msg_lines.
                 take_while { |l| !l.start_with?("During handling of") }.
-                drop_while { |l| l.start_with?("Traceback", "  ") }.
+                drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
                 join.strip
 
           # Redact any URLs, as they may include credentials
@@ -491,9 +504,7 @@ module Dependabot
         end
 
         def user_specified_python_version
-          unless python_requirement_parser.user_specified_requirements.any?
-            return
-          end
+          return unless python_requirement_parser.user_specified_requirements.any?
 
           user_specified_requirements =
             python_requirement_parser.user_specified_requirements.

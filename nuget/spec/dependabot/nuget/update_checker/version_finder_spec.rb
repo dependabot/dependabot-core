@@ -12,6 +12,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     }]
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
@@ -100,8 +102,41 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     end
 
     context "when the user is ignoring the latest version" do
+      let(:ignored_versions) { ["[2.a,3.0.0)"] }
+      its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
+    end
+
+    context "when a version range is specified using Ruby syntax" do
       let(:ignored_versions) { [">= 2.a, < 3.0.0"] }
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { ["[0,)"] }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when an open version range is specified using Ruby syntax" do
+      let(:ignored_versions) { ["> 0"] }
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "with a custom repo in a nuget.config file" do
@@ -196,6 +231,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a package that returns paginated api results when using the v2 nuget api", :vcr do
+      let(:dependency_files) { project_dependency_files("paginated_package_v2_api") }
+      let(:dependency_requirements) { [{ file: "my.csproj", requirement: "4.7.1", groups: [], source: nil }] }
+      let(:dependency_name) { "FakeItEasy" }
+      let(:dependency_version) { "4.7.1" }
+
+      its([:version]) { is_expected.to eq(version_class.new("7.0.2")) }
+    end
+
     context "with a custom repo in the credentials" do
       let(:credentials) do
         [{
@@ -237,6 +281,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         stub_request(:get, custom_nuget_search_url).
           with(basic_auth: %w(my passw0rd)).
           to_return(status: 200, body: nuget_search_results)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
+    context "with a version range specified" do
+      let(:dependency_files) { project_dependency_files("version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: [], source: nil }]
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }

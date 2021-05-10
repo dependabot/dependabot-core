@@ -134,9 +134,7 @@ module Dependabot
 
       def git_source_details_from(source_string)
         git_url = source_string.strip.gsub(/^git::/, "")
-        unless git_url.start_with?("git@") || git_url.include?("://")
-          git_url = "https://" + git_url
-        end
+        git_url = "https://" + git_url unless git_url.start_with?("git@") || git_url.include?("://")
 
         bare_uri =
           if git_url.include?("git@")
@@ -163,6 +161,7 @@ module Dependabot
         ref.match(version_regex).named_captures.fetch("version")
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
       def get_proxied_source(raw_source)
@@ -180,17 +179,15 @@ module Dependabot
           **SharedHelpers.excon_defaults
         )
 
-        if response.headers["X-Terraform-Get"]
-          return response.headers["X-Terraform-Get"]
-        end
+        return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
 
         doc = Nokogiri::XML(response.body)
         doc.css("meta").find do |tag|
           tag.attributes&.fetch("name", nil)&.value == "terraform-get"
         end&.attributes&.fetch("content", nil)&.value
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
         return :path if source_string.start_with?(".")
@@ -200,9 +197,7 @@ module Dependabot
         return :mercurial if source_string.start_with?("hg::")
         return :s3 if source_string.start_with?("s3::")
 
-        if source_string.split("/").first.include?("::")
-          raise "Unknown src: #{source_string}"
-        end
+        raise "Unknown src: #{source_string}" if source_string.split("/").first.include?("::")
 
         return :registry unless source_string.start_with?("http")
 
@@ -213,7 +208,6 @@ module Dependabot
 
         raise "HTTP source, but not an archive!"
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       def parsed_file(file)

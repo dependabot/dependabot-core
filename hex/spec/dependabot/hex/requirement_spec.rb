@@ -11,6 +11,11 @@ RSpec.describe Dependabot::Hex::Requirement do
   describe ".new" do
     subject { described_class.new(requirement_string) }
 
+    context "with a comma-separated string" do
+      let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
+    end
+
     context "with an == specifier" do
       let(:requirement_string) { "== 1.0.0" }
       it { is_expected.to be_satisfied_by(Gem::Version.new("1.0.0")) }

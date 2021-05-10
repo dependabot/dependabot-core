@@ -1,0 +1,66 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "a1fc39c070f4f8ba52f278c15cd4d2121d07c8a8",
+    "size": 308,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/a1fc39c070f4f8ba52f278c15cd4d2121d07c8a8",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/a1fc39c070f4f8ba52f278c15cd4d2121d07c8a8",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": "build.gradle",
+    "path": "build.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "okhttp",
+    "path": "okhttp",
+    "sha": "5df7f650b80fef281199e7d1c6bf53c6a5280802",
+    "size": 0,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/okhttp?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/tree/main/okhttp",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/trees/5df7f650b80fef281199e7d1c6bf53c6a5280802",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/okhttp?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/trees/5df7f650b80fef281199e7d1c6bf53c6a5280802",
+      "html": "https://github.com/dependabot-fixtures/gradle/tree/main/okhttp"
+    }
+  },
+  {
+    "name": "pom.xml",
+    "path": "pom.xml",
+    "sha": "9a0a1f4bb5db4083b7f4ba9d8fee33675de8dc62",
+    "size": 15579,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/pom.xml?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/pom.xml",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/9a0a1f4bb5db4083b7f4ba9d8fee33675de8dc62",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/pom.xml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/pom.xml?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/9a0a1f4bb5db4083b7f4ba9d8fee33675de8dc62",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/pom.xml"
+    }
+  }
+]

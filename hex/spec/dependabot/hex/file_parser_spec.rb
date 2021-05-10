@@ -24,7 +24,13 @@ RSpec.describe Dependabot::Hex::FileParser do
   end
   let(:mixfile_fixture_name) { "minor_version" }
   let(:lockfile_fixture_name) { "minor_version" }
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -32,6 +38,7 @@ RSpec.describe Dependabot::Hex::FileParser do
       directory: "/"
     )
   end
+  let(:reject_external_code) { false }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
@@ -303,7 +310,6 @@ RSpec.describe Dependabot::Hex::FileParser do
         expect { parser.parse }.
           to raise_error do |error|
             expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-            expect(error.message).to include("Random error!")
           end
       end
     end
@@ -311,6 +317,21 @@ RSpec.describe Dependabot::Hex::FileParser do
     context "with a call to read a version file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
+
+      its(:length) { is_expected.to eq(2) }
+    end
+
+    context "with a call to read a version file in a support file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:lockfile_fixture_name) { "exact_version" }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
+          support_file: true
+        )
+      end
 
       its(:length) { is_expected.to eq(2) }
     end
@@ -400,6 +421,33 @@ RSpec.describe Dependabot::Hex::FileParser do
             package_manager: "hex"
           )
         )
+      end
+    end
+
+    context "with a nerves project" do
+      let(:mixfile_fixture_name) { "nerves" }
+
+      it "parses the dependencies correctly" do
+        expect(dependencies).to include(
+          Dependabot::Dependency.new(
+            name: "nerves",
+            requirements: [{
+              requirement: "~> 1.7.4",
+              file: "mix.exs",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "hex"
+          )
+        )
+      end
+    end
+
+    context "with reject_external_code" do
+      let(:reject_external_code) { true }
+
+      it "raises UnexpectedExternalCode" do
+        expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
       end
     end
   end

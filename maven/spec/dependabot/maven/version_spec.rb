@@ -19,6 +19,11 @@ RSpec.describe Dependabot::Maven::Version do
       let(:version_string) { "Finchley" }
       it { is_expected.to eq(true) }
     end
+
+    context "with a dynamic version" do
+      let(:version_string) { "1.+" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#to_s" do
@@ -91,6 +96,16 @@ RSpec.describe Dependabot::Maven::Version do
     context "with a post-release" do
       let(:version_string) { "1.0.0.sp7" }
       it { is_expected.to eq(false) }
+    end
+
+    context "with a pre-release" do
+      let(:version_string) { "2.10.0.pr3" }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a dev token" do
+      let(:version_string) { "1.2.1-dev-65" }
+      it { is_expected.to eq(true) }
     end
   end
 
@@ -296,6 +311,12 @@ RSpec.describe Dependabot::Maven::Version do
           let(:version) { described_class.new("1-a1") }
           let(:other_version) { described_class.new("1-alpha-1") }
           it { is_expected.to eq(0) }
+        end
+
+        context "comparing string versions with integer ones" do
+          let(:version) { described_class.new("181") }
+          let(:other_version) { described_class.new("dev") }
+          it { is_expected.to eq(1) }
         end
       end
     end

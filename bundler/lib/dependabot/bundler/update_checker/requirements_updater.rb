@@ -188,7 +188,7 @@ module Dependabot
               req
             end
           when "<", "<=" then [update_greatest_version(req, latest_version)]
-          when "~>" then convert_twidle_to_range(req, latest_version)
+          when "~>" then convert_twiddle_to_range(req, latest_version)
           when "!=" then []
           when ">", ">=" then raise UnfixableRequirement
           else raise "Unexpected operation for requirement: #{op}"
@@ -214,7 +214,7 @@ module Dependabot
           end
         end
 
-        def convert_twidle_to_range(requirement, version_to_be_permitted)
+        def convert_twiddle_to_range(requirement, version_to_be_permitted)
           version = requirement.requirements.first.last
           version = version.release if version.prerelease?
 
@@ -228,9 +228,7 @@ module Dependabot
           lb_segments = version.segments
           lb_segments.pop while lb_segments.any? && lb_segments.last.zero?
 
-          if lb_segments.none?
-            return [Gem::Requirement.new("< #{ub_segments.join('.')}")]
-          end
+          return [Gem::Requirement.new("< #{ub_segments.join('.')}")] if lb_segments.none?
 
           # Ensure versions have the same length as each other (cosmetic)
           length = [lb_segments.count, ub_segments.count].max
@@ -252,11 +250,8 @@ module Dependabot
 
         # Updates the version in a "<" or "<=" constraint to allow the given
         # version
-        # rubocop:disable Metrics/PerceivedComplexity
         def update_greatest_version(requirement, version_to_be_permitted)
-          if version_to_be_permitted.is_a?(String)
-            version_to_be_permitted = Gem::Version.new(version_to_be_permitted)
-          end
+          version_to_be_permitted = Gem::Version.new(version_to_be_permitted) if version_to_be_permitted.is_a?(String)
           op, version = requirement.requirements.first
           version = version.release if version.prerelease?
 
@@ -278,8 +273,6 @@ module Dependabot
 
           Gem::Requirement.new("#{op} #{new_segments.join('.')}")
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end

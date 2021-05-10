@@ -14,12 +14,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
   end
 
   let(:package_json) do
-    Dependabot::DependencyFile.new(
-      content: fixture("package_files", manifest_fixture_name),
-      name: "package.json"
-    )
+    project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
-  let(:manifest_fixture_name) { "package.json" }
+  let(:project_name) { "npm7/simple" }
+
   let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -45,8 +43,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     subject(:updated_package_json) { package_json_updater.updated_package_json }
 
     its(:content) { is_expected.to include "{{ name }}" }
-    its(:content) { is_expected.to include "\"fetch-factory\": \"^0.0.2\"" }
-    its(:content) { is_expected.to include "\"etag\" : \"^1.0.0\"" }
+    its(:content) { is_expected.to include '"fetch-factory": "^0.0.2"' }
+    its(:content) { is_expected.to include '"etag" : "^1.0.0"' }
 
     context "when the minor version is specified" do
       let(:dependency) do
@@ -68,9 +66,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "minor_version_specified.json" }
+      let(:project_name) { "npm7/minor_version_specified" }
 
-      its(:content) { is_expected.to include "\"fetch-factory\": \"0.2.x\"" }
+      its(:content) { is_expected.to include '"fetch-factory": "0.2.x"' }
     end
 
     context "when the requirement hasn't changed" do
@@ -93,10 +91,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "minor_version_specified.json" }
+      let(:project_name) { "npm7/minor_version_specified" }
 
       its(:content) do
-        is_expected.to eq(fixture("package_files", manifest_fixture_name))
+        is_expected.to eq(fixture("projects", "npm7", "minor_version_specified", "package.json"))
       end
 
       context "except for the source" do
@@ -110,7 +108,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
               requirement: "0.1.x",
               groups: ["dependencies"],
               source: {
-                type: "private_registry",
+                type: "registry",
                 url: "http://registry.npm.taobao.org"
               }
             }],
@@ -124,7 +122,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         end
 
         its(:content) do
-          is_expected.to eq(fixture("package_files", manifest_fixture_name))
+          is_expected.to eq(fixture("projects", "npm7", "minor_version_specified", "package.json"))
         end
       end
     end
@@ -149,7 +147,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "package.json" }
+      let(:project_name) { "npm7/simple" }
 
       it "updates the existing development declaration" do
         parsed_file = JSON.parse(updated_package_json.content)
@@ -159,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "updating multiple dependencies" do
-      let(:manifest_fixture_name) { "package.json" }
+      let(:project_name) { "npm7/simple" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -237,7 +235,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "duplicate.json" }
+      let(:project_name) { "npm6/duplicate" }
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)
@@ -248,7 +246,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
 
       context "with identical versions" do
-        let(:manifest_fixture_name) { "duplicate_identical.json" }
+        let(:project_name) { "npm7/duplicate_identical" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -310,7 +308,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:manifest_fixture_name) { "dev_and_peer_dependency.json" }
+      let(:project_name) { "npm7/dev_and_peer_dependency" }
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)
@@ -322,7 +320,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "with a git dependency" do
-      let(:manifest_fixture_name) { "github_dependency.json" }
+      let(:project_name) { "npm7/github_dependency" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "is-number",
@@ -356,7 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       its(:content) { is_expected.to include("jonschlinkert/is-number#4.0.0") }
 
       context "that specifies a semver requirement" do
-        let(:manifest_fixture_name) { "github_dependency_semver.json" }
+        let(:project_name) { "npm7/github_dependency_semver" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "is-number",
@@ -388,21 +386,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         end
 
         its(:content) do
-          is_expected.to include("\"jonschlinkert/is-number#semver:^4.0.0\"")
+          is_expected.to include('"jonschlinkert/is-number#semver:^4.0.0"')
         end
 
         context "without the `semver:` marker" do
-          let(:manifest_fixture_name) { "github_dependency_yarn_semver.json" }
+          let(:project_name) { "yarn/github_dependency_yarn_semver" }
 
           its(:content) do
-            is_expected.to include("\"jonschlinkert/is-number#^4.0.0\"")
+            is_expected.to include('"jonschlinkert/is-number#^4.0.0"')
           end
         end
       end
     end
 
     context "with a path-based dependency" do
-      let(:manifest_fixture_name) { "path_dependency.json" }
+      let(:project_name) { "npm7/path_dependency" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "lodash",
@@ -423,14 +421,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         )
       end
 
-      its(:content) { is_expected.to include "\"lodash\": \"^1.3.1\"" }
+      its(:content) { is_expected.to include '"lodash": "^1.3.1"' }
       its(:content) do
-        is_expected.to include "\"etag\": \"file:./deps/etag\""
+        is_expected.to include '"etag": "file:./deps/etag"'
       end
     end
 
     context "with non-standard whitespace" do
-      let(:manifest_fixture_name) { "non_standard_whitespace.json" }
+      let(:project_name) { "npm7/non_standard_whitespace" }
 
       its(:content) do
         is_expected.to include %("*.js": ["eslint --fix", "git add"])

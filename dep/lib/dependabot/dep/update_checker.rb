@@ -61,9 +61,7 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :widen_ranges : :bump_versions
@@ -93,7 +91,6 @@ module Dependabot
         dependency_files.none? { |f| f.type == "package_main" }
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def latest_resolvable_version_for_git_dependency
         return latest_version if modules_dependency?
 
@@ -110,9 +107,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag.
@@ -127,22 +122,16 @@ module Dependabot
         nil
       end
 
-      # rubocop:enable Metrics/PerceivedComplexity
-
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
         # (if that's what the parser picked up) of the tag name.
-        if dependency.version&.match?(/^[0-9a-f]{40}$/)
-          return tag&.fetch(:commit_sha)
-        end
+        return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
         tag&.fetch(:tag)
       end
 
       def latest_resolvable_commit_with_unchanged_git_source
-        if @commit_lookup_attempted
-          return @latest_resolvable_commit_with_unchanged_git_source
-        end
+        return @latest_resolvable_commit_with_unchanged_git_source if @commit_lookup_attempted
 
         @commit_lookup_attempted = true
         @latest_resolvable_commit_with_unchanged_git_source ||=
@@ -272,9 +261,7 @@ module Dependabot
       end
 
       def default_source
-        if modules_dependency?
-          return { type: "default", source: dependency.name }
-        end
+        return { type: "default", source: dependency.name } if modules_dependency?
 
         original_declaration =
           parsed_file(manifest).

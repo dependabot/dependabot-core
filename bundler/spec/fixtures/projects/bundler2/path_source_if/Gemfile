@@ -1,0 +1,11 @@
+source "https://rubygems.org"
+
+if ENV['something']
+  gem "example", path: "plugins/example"
+else
+  gem "example"
+end
+
+gem "statesman", "~> 1.2.0"
+gem "business", "~> 1.4.0"
+gem "prius", git: "https://github.com/gocardless/prius"

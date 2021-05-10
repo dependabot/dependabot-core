@@ -2,15 +2,26 @@
   <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v5" alt="Dependabot" width="336">
 </p>
 
-# Dependabot Core [![Dependabot Status][dependabot-status]][dependabot]
+# Dependabot
 
-Dependabot Core is the heart of [Dependabot][dependabot]. It handles the logic
-for updating dependencies on GitHub (including GitHub Enterprise), GitLab and
-Azure DevOps.
+Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
-If you want to host your own automated dependency update bot then this repo
-should give you the tools you need. A reference implementation is available
-[here][dependabot-script].
+1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
+2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
+
+## Got feedback?
+
+Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+
+## Contributing to Dependabot
+
+Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
+
+Please refer to the [CONTRIBUTING][contributing] guidelines for more information.
+
+### Disclosing security issues
+
+If you believe you have found a security vulnerability in Dependabot please submit the vulnerability to GitHub Security [Bug Bounty](https://bounty.github.com/) so that we can resolve the issue before it is disclosed publicly.
 
 ## What's in this repo?
 
@@ -45,14 +56,14 @@ languages.
 
 To install the helpers for each language:
 
-1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+1. `cd npm_and_yarn/helpers && npm install --production && cd -`
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd hex/helpers && mix deps.get && cd -`
 5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
 6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
 
-## Local development
+## Local development & Running tests
 
 Run the tests by running `rspec spec` inside each of the packages. Style is
 enforced by RuboCop. To check for style violations, simply run `rubocop` in
@@ -85,6 +96,7 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Dry run script
@@ -122,7 +134,7 @@ Feel free to place breakpoints on the code.
 
 Triggering the jobs that will push the new gems is done by following the steps below.
 
-- Ensure you have the latest merged changes:  `git checkout master` and `git pull`
+- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
 - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
 - Edit the `CHANGELOG` file and remove any entries that aren't needed
 - Run the commands that were output by running `bin/bump-version.rb patch`
@@ -149,13 +161,13 @@ classes:
 
 | Service          | Description                                                                                   |
 |------------------|-----------------------------------------------------------------------------------------------|
-| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_fetchers/README.md) for more details. |
-| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/master/common/lib/dependabot/file_parsers/README.md) for more details. |
-| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/update_checkers/README.md) for more details. |
-| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/file_updaters/README.md) for more details. |
-| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/master/common/lib/dependabot/metadata_finders/README.md) for more details. |
-| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/version.rb) for an example. |
-| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/master/hex/lib/dependabot/hex/requirement.rb) for an example. |
+| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_fetchers/README.md) for more details. |
+| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_parsers/README.md) for more details. |
+| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/update_checkers/README.md) for more details. |
+| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/file_updaters/README.md) for more details. |
+| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/metadata_finders/README.md) for more details. |
+| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/version.rb) for an example. |
+| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/requirement.rb) for an example. |
 
 The high-level flow looks like this:
 
@@ -168,6 +180,13 @@ The high-level flow looks like this:
 This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
+
+## Profiling
+
+You can profile a dry-run by passing the `--profile` flag when running it. This
+will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
+can generate a flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
 
 ## Why is this public?
 
@@ -210,6 +229,7 @@ recurring payments from Europe, check them out.
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
+[contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
 [api-docs]: https://github.com/dependabot/api-docs
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core

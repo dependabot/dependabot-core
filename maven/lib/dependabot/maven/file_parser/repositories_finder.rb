@@ -61,6 +61,7 @@ module Dependabot
           @evaluate_properties
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def parent_pom(pom, repo_urls)
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
@@ -73,14 +74,13 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          if internal_dependency_poms[name]
-            return internal_dependency_poms[name]
-          end
+          return internal_dependency_poms[name] if internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 
           fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def internal_dependency_poms
           return @internal_dependency_poms if @internal_dependency_poms

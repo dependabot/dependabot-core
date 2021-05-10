@@ -20,9 +20,7 @@ module Dependabot
         def updated_content
           updated_content = update_requirement(mixfile_content)
 
-          if content_should_change? && mixfile_content == updated_content
-            raise "Expected content to change!"
-          end
+          raise "Expected content to change!" if content_should_change? && mixfile_content == updated_content
 
           updated_content
         end

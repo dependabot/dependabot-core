@@ -51,9 +51,7 @@ module Dependabot
               )
           end
 
-          if lockfile && lockfile.content == updated_lockfile_content
-            raise "Expected lockfile to change!"
-          end
+          raise "Expected lockfile to change!" if lockfile && lockfile.content == updated_lockfile_content
 
           if lockfile
             updated_files <<

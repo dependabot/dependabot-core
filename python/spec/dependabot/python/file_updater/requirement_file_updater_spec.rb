@@ -201,6 +201,20 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
           end
         end
 
+        context "with markers and linebreaks" do
+          let(:requirements_fixture_name) { "markers_and_hashes_multiline.txt" }
+
+          its(:content) do
+            is_expected.to eq(
+              "pytest==3.3.1 ; python_version=='2.7' \\\n"\
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4"\
+              "2ad7331c9ad06d0efe4962 \\\n"\
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6"\
+              "4096cebe79fb51ecb2eb93\n"
+            )
+          end
+        end
+
         context "with a single hash" do
           let(:requirements_fixture_name) { "hashes_single.txt" }
           let(:dependency) do
@@ -417,6 +431,113 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         end
 
         its(:content) { is_expected.to include "'flake8 > 2.5.4, < 3.4.0',\n" }
+      end
+    end
+
+    context "with only a setup.cfg" do
+      subject(:updated_setup_cfg_file) do
+        updated_files.find { |f| f.name == "setup.cfg" }
+      end
+      let(:dependency_files) { [setup_cfg] }
+      let(:setup_cfg) do
+        Dependabot::DependencyFile.new(
+          content: fixture("setup_files", "setup_with_requires.cfg"),
+          name: "setup.cfg"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "psycopg2",
+          version: "2.8.1",
+          requirements: [{
+            file: "setup.cfg",
+            requirement: "==2.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "setup.cfg",
+            requirement: "==2.6.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+      its(:content) { is_expected.to include "pep8==1.7.0" }
+
+      context "with non-standard formatting" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "raven",
+            version: "5.34.0",
+            requirements: [{
+              file: "setup.cfg",
+              requirement: "==5.34.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "==5.32.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "raven == 5.34.0\n" }
+      end
+
+      context "with a prefix-matcher" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: nil,
+            requirements: [{
+              file: "setup.cfg",
+              requirement: "==2.13.*",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "==2.12.*",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "requests==2.13.*\n" }
+      end
+
+      context "with a range requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "flake8",
+            version: nil,
+            requirements: [{
+              file: "setup.cfg",
+              requirement: ">2.5.4,<3.4.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "<3.0.0,>2.5.4",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "flake8 > 2.5.4, < 3.4.0\n" }
       end
     end
 

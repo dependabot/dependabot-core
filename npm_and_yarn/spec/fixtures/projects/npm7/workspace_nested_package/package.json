@@ -1,0 +1,11 @@
+{
+  "name": "{{ name }}",
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "mocha": "^8.2.1"
+  },
+  "license": "MIT",
+  "private": true
+}

@@ -79,6 +79,23 @@ RSpec.describe Dependabot::Hex::UpdateChecker::VersionResolver do
       expect(latest_resolvable_version).to be < Gem::Version.new("1.4.0")
     end
 
+    context "with a call to read a version file in a support file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:original_files) { [mixfile, lockfile, support_file] }
+      let(:prepared_files) { [sanitized_mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
+          support_file: true
+        )
+      end
+
+      it "still finds a resolvable version" do
+        expect(latest_resolvable_version).not_to be_nil
+      end
+    end
+
     context "with a dependency with a bad specification" do
       let(:mixfile_fixture_name) { "bad_spec" }
 

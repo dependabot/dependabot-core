@@ -1,0 +1,6 @@
+---
+0.0.1 backports:~> 2.6,descendants_tracker:~> 0.0.1|checksum:8b84919ce6642ba605bdc336ef32b368d06f6213dcdf389f4027613be111d0c6
+0.0.2 backports:~> 2.8,descendants_tracker:~> 0.0.1|checksum:eb8d5c9495e7b051a32d2e5c76c9aaae023527fff92704e29f6094ce89f59f71
+0.1.0 backports:~> 2.8,descendants_tracker:~> 0.0.1|checksum:cadff564b1b4d11e5a78e5036ae3c4976db075f2300fe611a0377db91b8320bf
+0.2.0 backports:>= 3.1.0&~> 3.0,descendants_tracker:~> 0.0.1|checksum:9a9704c0b0acdaf2a7f17d8d50d69caac4a11aebf6a65a0b888956978fcaa117
+1.0.0 descendants_tracker:~> 0.0.1|checksum:5081ad24352cc8435ce5472bc2faa30260c7ea7f2102cc6a9f167c4d9bffaadc

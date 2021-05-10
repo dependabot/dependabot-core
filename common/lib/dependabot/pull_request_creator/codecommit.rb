@@ -109,19 +109,19 @@ module Dependabot
       def pull_requests_for_branch
         @pull_requests_for_branch ||=
           begin
-          open_prs = codecommit_client_for_source.pull_requests(
-            source.repo,
-            "open",
-            source.branch || default_branch
-          )
-          closed_prs = codecommit_client_for_source.pull_requests(
-            source.repo,
-            "closed",
-            source.branch || default_branch
-          )
+            open_prs = codecommit_client_for_source.pull_requests(
+              source.repo,
+              "open",
+              source.branch || default_branch
+            )
+            closed_prs = codecommit_client_for_source.pull_requests(
+              source.repo,
+              "closed",
+              source.branch || default_branch
+            )
 
-          [*open_prs, *closed_prs]
-        end
+            [*open_prs, *closed_prs]
+          end
       end
 
       def create_commit

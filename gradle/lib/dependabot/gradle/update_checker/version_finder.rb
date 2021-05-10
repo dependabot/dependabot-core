@@ -6,6 +6,7 @@ require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
 require "dependabot/gradle/requirement"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Gradle
@@ -13,14 +14,17 @@ module Dependabot
       class VersionFinder
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
+        KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = []
         end
@@ -42,8 +46,8 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
           possible_versions.first
@@ -61,9 +65,7 @@ module Dependabot
                 map { |version| { version: version, source_url: url } }
             end.flatten.compact
 
-          if version_details.none? && forbidden_urls.any?
-            raise PrivateSourceAuthenticationFailure, forbidden_urls.first
-          end
+          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
           version_details.sort_by { |details| details.fetch(:version) }
         end
@@ -92,16 +94,18 @@ module Dependabot
         end
 
         def filter_ignored_versions(possible_versions)
-          versions_array = possible_versions
+          filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Gradle::Requirement.new(req.split(","))
-            versions_array =
-              versions_array.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+            ignore_requirements = Gradle::Requirement.requirements_array(req)
+            filtered =
+              filtered.
+              reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
-          versions_array
+          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && possible_versions.any?
+
+          filtered
         end
 
         def filter_vulnerable_versions(possible_versions)
@@ -173,10 +177,8 @@ module Dependabot
             begin
               response = Excon.get(
                 dependency_metadata_url(repository_details.fetch("url")),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
               )
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)
@@ -215,10 +217,10 @@ module Dependabot
 
           @repositories =
             details.reject do |repo|
-              next if repo["password"]
+              next if repo["auth_headers"]
 
-              # Reject this entry if an identical one with a password exists
-              details.any? { |r| r["url"] == repo["url"] && r["password"] }
+              # Reject this entry if an identical one with non-empty auth_headers exists
+              details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
             end
         end
 
@@ -228,8 +230,7 @@ module Dependabot
             map do |cred|
             {
               "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-              "username" => cred.fetch("username", nil),
-              "password" => cred.fetch("password", nil)
+              "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
             }
           end
         end
@@ -247,7 +248,7 @@ module Dependabot
                 target_dependency_file: target_file
               ).repository_urls.
                 map do |url|
-                  { "url" => url, "username" => nil, "password" => nil }
+                  { "url" => url, "auth_headers" => {} }
                 end
             end.uniq
         end
@@ -255,21 +256,24 @@ module Dependabot
         def plugin_repository_details
           [{
             "url" => GRADLE_PLUGINS_REPO,
-            "username" => nil,
-            "password" => nil
+            "auth_headers" => {}
           }] + dependency_repository_details
         end
 
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type =
-            TYPE_SUFFICES.
-            find { |t| dependency.version.split(/[.\-]/).include?(t) }
+          current_type = dependency.version.split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.
+                             find { |s| type.include?(s) }
+                         end
 
-          version_type =
-            TYPE_SUFFICES.
-            find { |t| comparison_version.to_s.split(/[.\-]/).include?(t) }
+          version_type = comparison_version.to_s.split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.
+                             find { |s| type.include?(s) }
+                         end
 
           current_type == version_type
         end
@@ -281,6 +285,7 @@ module Dependabot
 
         def dependency_metadata_url(repository_url)
           group_id, artifact_id = group_and_artifact_ids
+          group_id = "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
 
           "#{repository_url}/"\
           "#{group_id.tr('.', '/')}/"\
@@ -289,7 +294,9 @@ module Dependabot
         end
 
         def group_and_artifact_ids
-          if plugin?
+          if kotlin_plugin?
+            [dependency.name, "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+          elsif plugin?
             [dependency.name, "#{dependency.name}.gradle.plugin"]
           else
             dependency.name.split(":")
@@ -297,7 +304,11 @@ module Dependabot
         end
 
         def plugin?
-          dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+          dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
+        end
+
+        def kotlin_plugin?
+          plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
         end
 
         def central_repo_urls
@@ -310,6 +321,14 @@ module Dependabot
 
         def version_class
           Gradle::Version
+        end
+
+        def auth_headers_finder
+          @auth_headers_finder ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials)
+        end
+
+        def auth_headers(maven_repo_url)
+          auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
     end

@@ -17,7 +17,8 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       pr_description: pr_description,
       pr_name: pr_name,
       author_details: author_details,
-      labeler: labeler
+      labeler: labeler,
+      work_item: work_item
     )
   end
 
@@ -53,6 +54,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       automerge_candidate: false
     )
   end
+  let(:work_item) { 123 }
   let(:custom_labels) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -120,6 +122,23 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         )
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
+    end
+
+    context "with e very long pr description" do
+      let(:pr_description) { ("a" * 3997) + "💣 kaboom" }
+      it "truncates the description respecting azures encoding" do
+        creator.create
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
+            with do |req|
+              description = JSON.parse(req.body).fetch("description")
+              expect(description.length).to eq 4000
+              expect(description).to end_with("\n\n_Description has been truncated_")
+            end
+          )
+      end
     end
 
     context "with author details provided" do

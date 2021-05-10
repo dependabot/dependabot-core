@@ -49,6 +49,16 @@ RSpec.describe Dependabot::Nuget::Requirement do
         let(:requirement_string) { ">= 1.0.0, < 2.0.0" }
         it { is_expected.to eq(Gem::Requirement.new(">= 1.0.0", "< 2.0.0")) }
       end
+
+      context "which includes a * in the lower bound" do
+        let(:requirement_string) { "[2.1.*,3.0.0)" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 2.1.0", "< 3.0.0")) }
+      end
+
+      context "which includes a * in the upper bound" do
+        let(:requirement_string) { "[2.1,3.0.*)" }
+        it { is_expected.to eq(Gem::Requirement.new(">= 2.1", "< 3.0.0")) }
+      end
     end
   end
 end

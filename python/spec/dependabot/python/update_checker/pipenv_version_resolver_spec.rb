@@ -5,8 +5,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pipenv_version_resolver"
 
-namespace = Dependabot::Python::UpdateChecker
-RSpec.describe namespace::PipenvVersionResolver do
+RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -141,10 +140,10 @@ RSpec.describe namespace::PipenvVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to eq(
+            expect(error.message).to start_with(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.7.6"
+              "but the running Python is 3."
             )
           end
       end
@@ -255,7 +254,7 @@ RSpec.describe namespace::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.8.1, 3.8.0, 3.7.6")
+                to include("supported in Dependabot: 3.9.4, 3.9.3, 3.9.2")
             end
         end
       end
@@ -273,9 +272,9 @@ RSpec.describe namespace::PipenvVersionResolver do
             source: nil
           }]
         end
-        let(:updated_requirement) { ">= 3.4.0, <= 3.8.1" }
+        let(:updated_requirement) { ">= 3.4.0, <= 3.8.2" }
 
-        it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+        it { is_expected.to eq(Gem::Version.new("3.8.2")) }
 
         context "when updating a python-2 only dep" do
           let(:dependency_name) { "futures" }
@@ -297,7 +296,7 @@ RSpec.describe namespace::PipenvVersionResolver do
           let(:pipfile_fixture_name) { "required_python_implicit_2" }
           let(:lockfile_fixture_name) { "required_python_implicit_2.lock" }
 
-          it { is_expected.to eq(Gem::Version.new("3.8.1")) }
+          it { is_expected.to eq(Gem::Version.new("3.8.2")) }
         end
       end
 
@@ -403,7 +402,7 @@ RSpec.describe namespace::PipenvVersionResolver do
             "password" => "token"
           }, {
             "type" => "python_index",
-            "index-url" => "https://pypi.python.org/simple"
+            "index-url" => "https://pypi.org/simple"
           }]
         end
 
@@ -465,6 +464,35 @@ RSpec.describe namespace::PipenvVersionResolver do
             expect(error.message).to include(
               "Could not find a version that matches "\
               "chardet<3.1.0,==3.0.0,>=3.0.2\n"
+            )
+          end
+      end
+    end
+
+    context "with a missing system libary" do
+      # NOTE: Attempt to update an unrelated dependency (tensorflow) to cause
+      # resolution to fail for rtree which has a system dependency on
+      # libspatialindex which isn't installed in dependabot-core's Dockerfile.
+      let(:dependency_files) do
+        project_dependency_files("pipenv/missing-system-library")
+      end
+      let(:updated_requirement) { "==2.3.1" }
+      let(:dependency_name) { "tensorflow" }
+      let(:dependency_version) { "2.1.0" }
+      let(:dependency_requirements) do
+        [{
+          file: "Pipfile",
+          requirement: "==2.1.0",
+          groups: ["default"],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include(
+              "Pipenv failed to install \"rtree\""
             )
           end
       end

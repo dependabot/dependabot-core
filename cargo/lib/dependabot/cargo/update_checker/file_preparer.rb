@@ -62,7 +62,7 @@ module Dependabot
           content
         end
 
-        # Note: We don't need to care about formatting in this method, since
+        # NOTE: We don't need to care about formatting in this method, since
         # we're only using the manifest to find the latest resolvable version
         def replace_version_constraint(content, filename)
           parsed_manifest = TomlRB.parse(content)
@@ -120,13 +120,9 @@ module Dependabot
               next unless req.is_a?(Hash)
               next unless [req["tag"], req["rev"]].compact.uniq.count == 1
 
-              if req["tag"]
-                parsed_manifest[type][name]["tag"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["tag"] = replacement_git_pin if req["tag"]
 
-              if req["rev"]
-                parsed_manifest[type][name]["rev"] = replacement_git_pin
-              end
+              parsed_manifest[type][name]["rev"] = replacement_git_pin if req["rev"]
             end
           end
 
@@ -201,6 +197,7 @@ module Dependabot
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def lower_bound_version
           @lower_bound_version ||=
             if git_dependency? && git_dependency_version
@@ -220,6 +217,7 @@ module Dependabot
               version_from_requirement || 0
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def git_dependency_version
           return unless lockfile
@@ -253,9 +251,7 @@ module Dependabot
 
         def name_from_declaration(name, declaration)
           return name if declaration.is_a?(String)
-          unless declaration.is_a?(Hash)
-            raise "Unexpected dependency declaration: #{declaration}"
-          end
+          raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
           declaration.fetch("package", name)
         end

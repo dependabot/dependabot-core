@@ -1,0 +1,7 @@
+source "http://rubygems.org"
+
+git "https://github.com/kaminari/kaminari" do
+  gem "kaminari-core"
+end
+
+gem 'kaminari-actionview'

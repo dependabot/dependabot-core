@@ -17,11 +17,13 @@ module Dependabot
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -69,8 +71,8 @@ module Dependabot
           versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
           versions = filter_vulnerable_versions(versions)
+          versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
           versions.min
         end
@@ -97,8 +99,11 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+          filtered = versions_array.
+                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          raise Dependabot::AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+
+          filtered
         end
 
         def filter_vulnerable_versions(versions_array)
@@ -159,6 +164,7 @@ module Dependabot
             end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def version_details_from_link(link)
           doc = Nokogiri::XML(link)
           filename = doc.at_css("a")&.content
@@ -174,6 +180,7 @@ module Dependabot
             yanked: link&.include?("data-yanked")
           }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def get_version_from_filename(filename)
           filename.
@@ -207,8 +214,7 @@ module Dependabot
           Excon.get(
             index_url + normalised_name + "/",
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 
@@ -216,13 +222,12 @@ module Dependabot
           Excon.get(
             index_url,
             idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
           )
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+        def ignore_requirements
+          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
         def normalised_name

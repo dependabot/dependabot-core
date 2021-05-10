@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+require_relative "config/bundler_persistent_gems"
+Bundler.settings.temporary(persistent_gems_after_clean: BUNDLER_PERSISTENT_GEMS_AFTER_CLEAN)
+
+gem "business", "~> 1.4.0"
+gem "statesman", "~> 1.2.0"

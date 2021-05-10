@@ -46,11 +46,6 @@ RSpec.describe Dependabot::Elm::FileFetcher do
       )
   end
 
-  it "fetches the elm-package.json" do
-    expect(file_fetcher_instance.files.map(&:name)).
-      to match_array(%w(elm-package.json))
-  end
-
   context "with an elm.json" do
     before do
       stub_request(:get, url + "?ref=sha").

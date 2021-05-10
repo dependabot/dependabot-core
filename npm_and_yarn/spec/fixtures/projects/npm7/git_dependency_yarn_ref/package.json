@@ -1,0 +1,9 @@
+{
+  "name": "example-dev",
+  "version": "0.0.1",
+  "contributors": [],
+  "dependencies": {
+    "@bower_components/browser-update": "Graffino/Browser-Update#2.0.0",
+    "fetch-factory": "^0.0.1"
+  }
+}

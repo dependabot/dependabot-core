@@ -6,9 +6,6 @@ module Dependabot
   module Gradle
     class FileFetcher
       class SettingsFileParser
-        INCLUDE_ARGS_REGEX =
-          /(?:^|\s)include(?:\(|\s)(\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)/.freeze
-
         def initialize(settings_file:)
           @settings_file = settings_file
         end
@@ -49,7 +46,7 @@ module Dependabot
 
         def function_regex(function_name)
           /
-            (?:^|\s)#{Regexp.quote(function_name)}(?:\(|\s)
+            (?:^|\s)#{Regexp.quote(function_name)}(?:\s*\(|\s)
             (?<args>\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)
           /mx
         end

@@ -1,0 +1,14 @@
+{
+    "value": [
+        {
+            "repositoryId": "d3d1760b-311c-4175-a726-20dfc6a7f885",
+            "name": "refs/heads/vsts-api-sample/answer-woman-flame",
+            "oldObjectId": "ggf0dcb632e11e8e71f433956183349746fec562",
+            "newObjectId": "ffe9cba521f00d7f60e322845072238635edb451",
+            "isLocked": false,
+            "updateStatus": "succeeded",
+            "success": true
+        }
+    ],
+    "count": 1
+}

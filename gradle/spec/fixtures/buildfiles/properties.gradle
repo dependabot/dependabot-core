@@ -19,4 +19,8 @@ ext {
     supportVersion = '27.1.1'
 
     // commentedVersion = '27.1.1'
+
+    findPropertyVersion = project.findProperty('findPropertyVersion') ?: '27.1.1'
+
+    hasPropertyVersion = project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'27.1.1'
 }

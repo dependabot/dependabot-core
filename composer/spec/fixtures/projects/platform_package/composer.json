@@ -1,0 +1,13 @@
+{
+  "name": "valid/name",
+  "version": "3.1.7",
+  "dist": {
+    "url": "https://www.example.net/files/3.1.7.zip",
+    "type": "zip"
+  },
+  "require": {
+    "monolog/monolog" : "1.0.1",
+    "symfony/polyfill-mbstring": "1.0.1",
+    "php": "*"
+  }
+}

@@ -63,6 +63,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
         its([:requirement]) { is_expected.to eq("[23.6-jre]") }
       end
 
+      context "and a suffixed requirement was previously specified" do
+        let(:latest_version) do
+          version_class.new("3.0.0-beta4.20210.2+38fe3493")
+        end
+        let(:csproj_req_string) { "3.0.0-beta4.20207.4+07df2f07" }
+        its([:requirement]) do
+          is_expected.to eq("3.0.0-beta4.20210.2+38fe3493")
+        end
+      end
+
       context "and a wildcard requirement was previously specified" do
         let(:csproj_req_string) { "22.*" }
         its([:requirement]) { is_expected.to eq("23.*") }

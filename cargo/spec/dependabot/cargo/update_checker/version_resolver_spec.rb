@@ -112,9 +112,15 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       it { is_expected.to be >= Gem::Version.new("0.1.41") }
     end
 
-    context "with a yanked version (for another dependency)" do
-      let(:manifest_fixture_name) { "yanked_version" }
-      let(:lockfile_fixture_name) { "yanked_version" }
+    context "with a linked dependency" do
+      let(:manifest_fixture_name) { "linked_dependency" }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
+    context "with a missing version (for another dependency)" do
+      let(:manifest_fixture_name) { "missing_version" }
+      let(:lockfile_fixture_name) { "missing_version" }
 
       let(:dependency_name) { "time" }
       let(:dependency_version) { "0.1.38" }
@@ -125,7 +131,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
             expect(error.message).
-              to include("version for the requirement `regex = \"= 99.0.0\"`")
+              to include("version for the requirement `regex = \"=99.0.0\"`")
           end
       end
 
@@ -167,7 +173,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             # Test that the temporary path isn't included in the error message
             expect(error.message).to_not include("dependabot_20")
             expect(error.message).
-              to include("feature `namespaced-features` is required")
+              to include("feature `metabuild` is required")
           end
       end
     end
@@ -214,8 +220,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               # Test that the temporary path isn't included in the error message
               expect(error.message).to_not include("dependabot_20")
-              expect(error.message).
-                to include("Invalid character `;` in package name")
+              expect(error.message.downcase).
+                to include("invalid character `;` in package name")
             end
         end
       end
@@ -526,6 +532,17 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
     context "when not unlocking" do
       let(:dependency_files) { unprepared_dependency_files }
       it { is_expected.to eq(Gem::Version.new("0.1.80")) }
+    end
+
+    context "when multiple packages have a version conflict with one another" do
+      let(:dependency_name) { "ructe" }
+      let(:dependency_version) { "0b8acfe5eea15713bc56c156f974fa05967d0353" }
+      let(:string_req) { nil }
+      let(:source) { { type: "git", url: "https://github.com/kaj/ructe" } }
+      let(:dependency_files) { project_dependency_files("version_conflict") }
+      let(:unprepared_dependency_files) { project_dependency_files("version_conflict") }
+
+      specify { expect(subject).to be_nil }
     end
   end
 end

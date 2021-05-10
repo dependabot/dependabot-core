@@ -38,14 +38,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     )
   end
   let(:files) { [gemfile, gemfile_lock] }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
@@ -102,6 +95,63 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "compare/#{base}...#{head}\">compare view</a></li>\n"\
     "</ul>\n"\
     "</details>\n"
+  end
+
+  shared_context "with multiple git sources" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "actions/checkout",
+        version: "aabbfeb2ce60b5bd82389903509092c4648a9713",
+        previous_version: nil,
+        package_manager: "dummy",
+        requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }],
+        previous_requirements: [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          }
+        }]
+      )
+    end
   end
 
   describe "#pr_name" do
@@ -354,6 +404,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
         end
+
+        context "with a vendored .gemspec" do
+          let(:files) { [gemfile, gemfile_lock, gemspec] }
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              name: "vendor/cache/dep/git.gemspec",
+              content: fixture("ruby", "gemspecs", "example")
+            )
+          end
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
       end
 
       context "that uses angular commits" do
@@ -445,6 +507,16 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { "business": [{}] } }
           it { is_expected.to start_with("⬆️🔒 Bump business") }
+        end
+      end
+
+      context "with multiple git source requirements", :vcr do
+        include_context "with multiple git sources"
+
+        it do
+          is_expected.to eq(
+            "Update actions/checkout requirement to v2.2.0"
+          )
         end
       end
     end
@@ -1122,9 +1194,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<blockquote>\n"\
                 "<h2>v1.6.0</h2>\n"\
                 "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
-                "@greysteil</a> and <a href=\"https://github.com/hmarr\">"\
-                "@hmarr</a> for the "\
-                "@angular/scope work - see <a href=\"https://github.com/"\
+                "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
+                "<code>@\u200Bhmarr</code></a> for the "\
+                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/"\
                 "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>."\
                 "</p>\n"\
                 "</blockquote>\n"\
@@ -1457,6 +1529,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
       end
+
+      context "with multiple git source requirements", :vcr do
+        include_context "with multiple git sources"
+
+        it do
+          expect(pr_message).to start_with(
+            "Updates the requirements on "\
+            "[actions/checkout](https://github.com/gocardless/actions) "\
+            "to permit the latest version."
+          )
+        end
+      end
     end
 
     context "for a library" do
@@ -1627,16 +1711,23 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
   end
 
-  describe "#commit_message" do
+  describe "#commit_message", :vcr do
     subject(:commit_message) { builder.commit_message }
 
-    before do
-      allow(builder).to receive(:pr_name).and_return("PR name")
-      allow(builder).to receive(:commit_message_intro).and_return("Message")
-      allow(builder).to receive(:metadata_links).and_return("\n\nLinks")
+    let(:expected_commit_message) do
+      <<~MSG.chomp
+        Bump business from 1.4.0 to 1.5.0
+
+        Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.
+        - [Release notes](https://github.com/gocardless/business/releases)
+        - [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)
+        - [Commits](https://github.com/gocardless/business/compare/v1.4.0...v1.5.0)
+      MSG
     end
 
-    it { is_expected.to eq("PR name\n\nMessage\n\nLinks") }
+    it "renders the expected message" do
+      is_expected.to eql(expected_commit_message)
+    end
 
     context "with a PR name that is too long" do
       before do
@@ -1720,5 +1811,25 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end
+  end
+
+  describe "#message" do
+    subject(:message) { builder.message }
+
+    pr_name = "PR title"
+    pr_message = "PR message"
+    commit_message = "Commit message"
+    before do
+      allow(builder).to receive(:pr_name).and_return(pr_name)
+      allow(builder).to receive(:pr_message).and_return(pr_message)
+      allow(builder).to receive(:commit_message).and_return(commit_message)
+    end
+
+    it "returns a Message" do
+      expect(message).to be_a(Dependabot::PullRequestCreator::Message)
+    end
+    its(:pr_name) { should eq(pr_name) }
+    its(:pr_message) { should eq(pr_message) }
+    its(:commit_message) { should eq(commit_message) }
   end
 end

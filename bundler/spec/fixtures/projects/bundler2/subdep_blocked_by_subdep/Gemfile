@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "dummy-pkg-b", "1.0.0"

@@ -9,25 +9,8 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Composer::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: composer_json_body
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: lockfile_body
-    )
-  end
-  let(:composer_json_body) do
-    fixture("composer_files", composer_json_fixture_name)
-  end
-  let(:lockfile_body) { fixture("lockfiles", lockfile_fixture_name) }
-  let(:composer_json_fixture_name) { "minor_version" }
-  let(:lockfile_fixture_name) { "minor_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:project_name) { "minor_version" }
   let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
@@ -65,14 +48,38 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
     end
 
+    context "with a version specified (composer v1)" do
+      let(:project_name) { "v1/minor_version" }
+
+      describe "the first dependency" do
+        subject { dependencies.first }
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("monolog/monolog") }
+        its(:version) { is_expected.to eq("1.0.2") }
+        its(:requirements) do
+          is_expected.to eq(
+            [{
+              requirement: "1.0.*",
+              file: "composer.json",
+              groups: ["runtime"],
+              source: {
+                type: "git",
+                url: "https://github.com/Seldaek/monolog.git"
+              }
+            }]
+          )
+        end
+      end
+    end
+
     context "with doctored entries" do
-      let(:lockfile_fixture_name) { "doctored" }
+      let(:project_name) { "doctored" }
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with an integer version" do
-      let(:composer_json_fixture_name) { "integer_version" }
-      let(:lockfile_fixture_name) { "integer_version" }
+      let(:project_name) { "integer_version" }
 
       describe "the first dependency" do
         subject { dependencies.first }
@@ -86,8 +93,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "for development dependencies" do
-      let(:composer_json_fixture_name) { "development_dependencies" }
-      let(:lockfile_fixture_name) { "development_dependencies" }
+      let(:project_name) { "development_dependencies" }
 
       it "includes development dependencies" do
         expect(dependencies.length).to eq(2)
@@ -116,8 +122,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with the PHP version specified" do
-      let(:composer_json_fixture_name) { "php_specified" }
-      let(:lockfile_fixture_name) { "php_specified" }
+      let(:project_name) { "php_specified" }
 
       its(:length) { is_expected.to eq(5) }
 
@@ -128,8 +133,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with subdependencies" do
-      let(:composer_json_fixture_name) { "development_subdependencies" }
-      let(:lockfile_fixture_name) { "development_subdependencies" }
+      let(:project_name) { "development_subdependencies" }
 
       its(:length) { is_expected.to eq(16) }
 
@@ -162,7 +166,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a version with a 'v' prefix" do
-      let(:lockfile_fixture_name) { "v_prefix" }
+      let(:project_name) { "v_prefix" }
 
       it "strips the prefix" do
         expect(dependencies.first.version).to eq("1.0.2")
@@ -170,8 +174,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a git dependency" do
-      let(:composer_json_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source" }
+      let(:project_name) { "git_source" }
 
       it "includes the dependency" do
         expect(dependencies.length).to eq(2)
@@ -202,7 +205,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         end
 
         context "specified as an alias" do
-          let(:composer_json_fixture_name) { "git_source_alias" }
+          let(:project_name) { "git_source_alias" }
 
           its(:requirements) do
             is_expected.to eq(
@@ -224,8 +227,7 @@ RSpec.describe Dependabot::Composer::FileParser do
         context "due to a stability flag" do
           subject { dependencies.last }
 
-          let(:composer_json_fixture_name) { "git_source_transitive" }
-          let(:lockfile_fixture_name) { "git_source_transitive" }
+          let(:project_name) { "git_source_transitive" }
 
           its(:requirements) do
             is_expected.to eq(
@@ -247,7 +249,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a gutted lockfile" do
-      let(:lockfile_fixture_name) { "gutted" }
+      let(:project_name) { "gutted" }
 
       it "skips the dependency" do
         expect(dependencies.length).to eq(0)
@@ -255,15 +257,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a path dependency" do
-      let(:files) { [composer_json, lockfile, path_dep] }
-      let(:composer_json_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source" }
-      let(:path_dep) do
-        Dependabot::DependencyFile.new(
-          name: "components/path_dep/composer.json",
-          content: fixture("composer_files", "path_dep")
-        )
-      end
+      let(:project_name) { "path_source" }
 
       describe "the first dependency" do
         subject { dependencies.first }
@@ -285,7 +279,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "without a lockfile" do
-      let(:files) { [composer_json] }
+      let(:project_name) { "minor_version_without_lockfile" }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -308,7 +302,7 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
 
       context "for development dependencies" do
-        let(:composer_json_fixture_name) { "development_dependencies" }
+        let(:project_name) { "development_dependencies_without_lockfile" }
 
         it "includes development dependencies" do
           expect(dependencies.length).to eq(2)
@@ -334,12 +328,12 @@ RSpec.describe Dependabot::Composer::FileParser do
       end
 
       context "with the PHP version specified" do
-        let(:composer_json_fixture_name) { "php_specified" }
+        let(:project_name) { "php_specified_without_lockfile" }
         its(:length) { is_expected.to eq(2) }
       end
 
       context "with a git dependency" do
-        let(:composer_json_fixture_name) { "git_source" }
+        let(:project_name) { "git_source_without_lockfile" }
 
         it "includes the dependency" do
           expect(dependencies.length).to eq(2)
@@ -366,7 +360,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a bad lockfile" do
-      let(:lockfile_body) { fixture("composer_files", "unparseable") }
+      let(:project_name) { "unparseable_lockfile" }
 
       it "raises a DependencyFileNotParseable error" do
         expect { dependencies.length }.
@@ -377,7 +371,7 @@ RSpec.describe Dependabot::Composer::FileParser do
     end
 
     context "with a bad composer.json" do
-      let(:composer_json_body) { fixture("composer_files", "unparseable") }
+      let(:project_name) { "unparseable_composer_json" }
 
       it "raises a DependencyFileNotParseable error" do
         expect { dependencies.length }.

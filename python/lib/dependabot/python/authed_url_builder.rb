@@ -16,6 +16,11 @@ module Dependabot
           else token
           end
 
+        if basic_auth_details.include?(":")
+          username, _, password = basic_auth_details.partition(":")
+          basic_auth_details = "#{CGI.escape(username)}:#{CGI.escape(password)}"
+        end
+
         url.sub("://", "://#{basic_auth_details}@")
       end
     end

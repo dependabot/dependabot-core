@@ -35,7 +35,6 @@ module Dependabot
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_php_constraint_to_ruby_constraint(req_string)
         req_string = req_string.strip.gsub(/v(?=\d)/, "").gsub(/\.$/, "")
 
@@ -45,15 +44,13 @@ module Dependabot
 
         if req_string.start_with?("*", "x") then ">= 0"
         elsif req_string.include?("*") then convert_wildcard_req(req_string)
-        elsif req_string.include?(".x") then convert_wildcard_req(req_string)
-        elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
+        elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
+        elsif req_string.include?(".x") then convert_wildcard_req(req_string)
         elsif req_string.match?(/\s-\s/) then convert_hyphen_req(req_string)
         else req_string
         end
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_wildcard_req(req_string)
         if req_string.start_with?(">", "<")
@@ -71,7 +68,7 @@ module Dependabot
       end
 
       def convert_caret_req(req_string)
-        version = req_string.gsub(/^\^/, "")
+        version = req_string.gsub(/^\^/, "").gsub("x-dev", "0")
         parts = version.split(".")
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
@@ -87,7 +84,6 @@ module Dependabot
       end
 
       def convert_hyphen_req(req_string)
-        req_string = req_string
         lower_bound, upper_bound = req_string.split(/\s+-\s+/)
         if upper_bound.split(".").count < 3
           upper_bound_parts = upper_bound.split(".")

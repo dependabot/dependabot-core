@@ -1,4 +1,4 @@
-flaky; python_version < '3.7'
+flaky; python_version < '2.8'
 pytest
 pytest-xdist
 mock

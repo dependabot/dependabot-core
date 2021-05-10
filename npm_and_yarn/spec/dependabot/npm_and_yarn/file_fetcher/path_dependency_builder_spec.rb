@@ -19,42 +19,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
   let(:dependency_name) { "etag" }
   let(:path) { "./deps/etag" }
   let(:directory) { "/" }
-  let(:package_lock) do
-    Dependabot::DependencyFile.new(
-      name: "package-lock.json",
-      content: fixture("npm_lockfiles", npm_lock_fixture_name)
-    )
-  end
+  let(:package_lock) { nil }
   let(:yarn_lock) { nil }
-
-  let(:npm_lock_fixture_name) { "path_dependency.json" }
 
   describe "#dependency_file" do
     subject(:dependency_file) { builder.dependency_file }
 
     context "with an npm lockfile" do
       let(:package_lock) do
-        Dependabot::DependencyFile.new(
-          name: "package-lock.json",
-          content: fixture("npm_lockfiles", npm_lock_fixture_name)
-        )
+        project_dependency_files(project_name).find { |f| f.name == "package-lock.json" }
       end
-      let(:npm_lock_fixture_name) { "path_dependency.json" }
 
       context "for a path dependency with no sub-deps" do
-        let(:npm_lock_fixture_name) { "path_dependency.json" }
+        let(:project_name) { "npm6/path_dependency" }
 
         it "builds an imitation path dependency" do
           expect(dependency_file).to be_a(Dependabot::DependencyFile)
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"0.0.1\"}")
+            to eq('{"name":"etag","version":"0.0.1"}')
         end
       end
 
       context "for a path dependency with sub-deps" do
-        let(:npm_lock_fixture_name) { "path_dependency_subdeps.json" }
+        let(:project_name) { "npm6/path_dependency_subdeps" }
         let(:dependency_name) { "other_package" }
         let(:path) { "other_package" }
 
@@ -73,35 +62,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
     end
 
     context "with a yarn lockfile" do
-      let(:package_lock) { nil }
       let(:yarn_lock) do
-        Dependabot::DependencyFile.new(
-          name: "yarn.lock",
-          content:
-            fixture("yarn_lockfiles", yarn_lock_fixture_name)
-        )
+        project_dependency_files(project_name).find { |f| f.name == "yarn.lock" }
       end
-      let(:yarn_lock_fixture_name) { "path_dependency.json" }
 
       context "for a path dependency with no sub-deps" do
-        let(:yarn_lock_fixture_name) { "path_dependency.lock" }
+        let(:project_name) { "yarn/path_dependency" }
 
         it "builds an imitation path dependency" do
           expect(dependency_file).to be_a(Dependabot::DependencyFile)
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
+            to eq('{"name":"etag","version":"1.8.0"}')
         end
       end
 
       context "that can't be parsed" do
-        let(:yarn_lock) do
-          Dependabot::DependencyFile.new(
-            name: "package-lock.json",
-            content: fixture("npm_lockfiles", "path_dependency.json")
-          )
-        end
+        let(:project_name) { "yarn/unparseable" }
 
         it "raises a PathDependenciesNotReachable error with details" do
           expect { dependency_file }.
@@ -114,7 +92,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
       end
 
       context "for a path dependency with sub-deps" do
-        let(:yarn_lock_fixture_name) { "path_dependency_subdeps.lock" }
+        let(:project_name) { "yarn/path_dependency_subdeps" }
         let(:dependency_name) { "other_package" }
         let(:path) { "other_package" }
 
@@ -136,14 +114,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
       end
 
       context "for a symlinked dependency" do
-        let(:yarn_lock_fixture_name) { "symlinked_dependency.lock" }
+        let(:project_name) { "yarn/symlinked_dependency" }
 
         it "builds an imitation path dependency" do
           expect(dependency_file).to be_a(Dependabot::DependencyFile)
           expect(dependency_file.name).to eq("deps/etag/package.json")
           expect(dependency_file.support_file?).to eq(true)
           expect(dependency_file.content).
-            to eq("{\"name\":\"etag\",\"version\":\"1.8.0\"}")
+            to eq('{"name":"etag","version":"1.8.0"}')
         end
       end
     end

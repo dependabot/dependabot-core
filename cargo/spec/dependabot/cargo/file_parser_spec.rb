@@ -773,6 +773,12 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
+      context "with resolver version 2" do
+        let(:manifest_fixture_name) { "resolver2" }
+        let(:lockfile_fixture_name) { "no_dependencies" }
+        it { is_expected.to eq([]) }
+      end
+
       context "with no dependencies" do
         let(:manifest_fixture_name) { "no_dependencies" }
         let(:lockfile_fixture_name) { "no_dependencies" }

@@ -6,6 +6,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
 require "dependabot/errors"
+
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -24,11 +25,13 @@ module Dependabot
         # If this repo is using Poetry return true
         return true if filenames.include?("pyproject.toml")
 
-        filenames.include?("setup.py")
+        return true if filenames.include?("setup.py")
+
+        filenames.include?("setup.cfg")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
+        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, "\
         "or a Pipfile."
       end
 
@@ -44,7 +47,7 @@ module Dependabot
         fetched_files += requirement_files if requirements_txt_files.any?
 
         fetched_files << setup_file if setup_file
-        fetched_files << setup_cfg if setup_cfg
+        fetched_files << setup_cfg_file if setup_cfg_file
         fetched_files += path_setup_files
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version if python_version
@@ -76,9 +79,7 @@ module Dependabot
       end
 
       def check_required_files_present
-        if requirements_txt_files.any? || setup_file || pipfile || pyproject
-          return
-        end
+        return if requirements_txt_files.any? || setup_file || setup_cfg_file || pipfile || pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -89,8 +90,8 @@ module Dependabot
         @setup_file ||= fetch_file_if_present("setup.py")
       end
 
-      def setup_cfg
-        @setup_cfg ||= fetch_file_if_present("setup.cfg")
+      def setup_cfg_file
+        @setup_cfg_file ||= fetch_file_if_present("setup.cfg")
       end
 
       def pip_conf
@@ -166,7 +167,7 @@ module Dependabot
         repo_contents.
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 200_000 }.
           map { |f| fetch_file_from_host(f.name) }.
           select { |f| requirements_file?(f) }.
           each { |f| @req_txt_and_in_files << f }
@@ -186,7 +187,7 @@ module Dependabot
         repo_contents(dir: relative_reqs_dir).
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 200_000 }.
           map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
           select { |f| requirements_file?(f) }
       end
@@ -268,9 +269,7 @@ module Dependabot
           unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
-        if unfetchable_files.any?
-          raise Dependabot::PathDependenciesNotReachable, unfetchable_files
-        end
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_files if unfetchable_files.any?
 
         path_setup_files
       end
@@ -350,14 +349,14 @@ module Dependabot
       def parse_path_setup_paths(req_file)
         uneditable_reqs =
           req_file.content.
-          scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
+          scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") }
 
         editable_reqs =
           req_file.content.
-          scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
+          scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") || p.include?("git@") }

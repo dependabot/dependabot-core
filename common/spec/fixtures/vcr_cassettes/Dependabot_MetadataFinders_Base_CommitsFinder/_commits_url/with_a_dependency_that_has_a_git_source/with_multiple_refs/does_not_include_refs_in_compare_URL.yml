@@ -1,0 +1,131 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://github.com/actions/checkout.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - excon/0.73.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Frame-Options:
+      - DENY
+      X-Github-Request-Id:
+      - D758:06DF:8DA764:CD4494:5EE0BD66
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n00000143453ee27fca95fa9e03a24c1969a92c82e1a9b15e
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        agent=git/github-g8c0f36024410\n004b3204e0bf8cc961de0423eafd557ab191aad42167
+        refs/heads/Update-description\n005c0df123bc841344c0e018d31d72ca2a29700adacd
+        refs/heads/dependabot/npm_and_yarn/acorn-5.7.4\n003f453ee27fca95fa9e03a24c1969a92c82e1a9b15e
+        refs/heads/master\n00440b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc refs/heads/releases/v1\n005dd8d55467a3a890e9c1a42ad0293d9800583e1975
+        refs/heads/revert-56-users/tihuang/checkoutV1_1\n004b82f71901cf8c021332310dcc8cdba84c4193ff5d
+        refs/heads/test-data/v2/basic\n0049c31ea53e3dcfe10e3cda3764d73db91824e12ab0
+        refs/heads/test-data/v2/lfs\n005409674d1f142cdd400fbab8ebef9da6d4e71aea5e
+        refs/heads/test-data/v2/side-by-side-1\n0054bd6c7f5302f2e72720df996c731fd07340d3dd2b
+        refs/heads/test-data/v2/side-by-side-2\n004fb7b9abb6ed6fd1853b215e685540ba0c76683e7a
+        refs/heads/test-data/v2/submodule\n00574b38027b4a366b8506eb90cfdc99c8208d3231c9
+        refs/heads/test-data/v2/submodule-level-1\n0057b0599c1de9f0f399b0e3ddcc16a13ec016b97f18
+        refs/heads/test-data/v2/submodule-level-2\n0057866cacb19d362682dffc1db961ab60d17769f9c6
+        refs/heads/test-data/v2/submodule-ssh-url\n005ffdabad6f0e41e3685419b2777b40e55536df8f4d
+        refs/heads/test-data/v2/submodule-ssh-url-level-1\n005fbff576b9eb271dd75b27ccce2966454cd24a85a7
+        refs/heads/test-data/v2/submodule-ssh-url-level-2\n0050e9fadf668a281616d6f49bda0138b1591718b56c
+        refs/heads/users/ericsciple/m162pr\n0068096b500552f8ef398fe070364e7232be81bacad5
+        refs/heads/users/ericsciple/m163tarball_efficient_download\n005a43c99f2ebc10bbca89dbf02f810243366f3a56d5
+        refs/heads/users/ericsciple/m163tarball_temp\n0057ba227f5d10114d6a99fb019e14300d48a39f5990
+        refs/heads/users/ericsciple/m164submodule\n00528c9b201842fab03dae0af014cd374d9c99dcfd56
+        refs/heads/users/ericsciple/m166refs\n00567c56228b5b5d0303be064272e2b8917465833064
+        refs/heads/users/ericsciple/m166username\n00513fcc3107dbeea0718ed1f119ce3d31b6d79739bf
+        refs/heads/users/ericsciple/m167ssh\n005195471c29b6462e0d1e07d7762cbdb57fcc277aec
+        refs/heads/users/ericsciple/m167sub\n0056c4551229371e8d29890b3b223cdf2c092af37a87
+        refs/heads/users/ericsciple/m167workflow\n00514817b449b0ed7c775a0bcecaa398041ab5d09b51
+        refs/heads/users/ericsciple/test-pr\n00535acb8ff4c9243e23e2bcca7dc4865165af2327f1
+        refs/heads/users/tihuang/proxysupport\n003ebf8f62083c41b3cb36f52c4100ad20ba98400ea6
+        refs/pull/1/head\n003fef05ed0522d13fd5abd38d9747b87756a3ca885d refs/pull/10/head\n0040a4ec47d55aedee0133ff59464da240c0ab6b0f4d
+        refs/pull/102/head\n0040590cf525af51156f89938680c30f70088b1ba822 refs/pull/103/head\n0040eac457da2f4f2cf52189af79538ac788db6da293
+        refs/pull/104/head\n0040bfd0d500eee5a628098cbca2b009a49264bf5b26 refs/pull/106/head\n00410f42a024b0e39b21abb01c18ab612d0ad6ac0196
+        refs/pull/106/merge\n0040a42f444fdcec4431f01671b6eece8696f8ad9c28 refs/pull/107/head\n0040d827903159c3c1677c60e782c9d836c35e076770
+        refs/pull/108/head\n0040e2b21857c44b7d5e0c53ea826d5e564ef6cf2368 refs/pull/109/head\n003fd2f6562b6dc37dbc1c74a0e5fd488170ca2055dc
+        refs/pull/11/head\n004055fe185d2f4e86be41e7d04f89587418b82a0757 refs/pull/110/head\n0040a867e974f5ee5b392a88f90ab41094565b22066a
+        refs/pull/111/head\n00404c4bd2f813ce364ad2f9c05b1fe6215fd6d812b3 refs/pull/112/head\n0040bacc8f6a79ed76027dcc33b2e90a0f04a92982ab
+        refs/pull/115/head\n00400bdd64ac5e5eb17bffa476abf1142e558323cd7a refs/pull/117/head\n003fc9baabb369dc6fd77877919990b2eefa2af5ca8e
+        refs/pull/12/head\n0040db41740e12847bb616a339b75eb9414e711417df refs/pull/120/head\n004052a68107b2015e76f42ea3a85478efd4b0754604
+        refs/pull/123/head\n0040ee06039bc17acfe554bb258bd50022e4802e3bfc refs/pull/127/head\n0040e5d5317cf22bba7e67bc3e29673fa469b43ebae5
+        refs/pull/128/head\n0040a5f6f5f4b0841feac4db767a7ad8a7ac771539d7 refs/pull/129/head\n00407e0cb7af1b22d7a3b968685072b41173678ac362
+        refs/pull/130/head\n004022d374327bc4a2a297910060af11bc535c9dda43 refs/pull/131/head\n0040ded7dfa9323ca1a3cf41bddd85c014edc48d90f6
+        refs/pull/134/head\n00405acb8ff4c9243e23e2bcca7dc4865165af2327f1 refs/pull/138/head\n0040dbdab78b5475bf3b7e6d2e887d41b19aea94dcc9
+        refs/pull/140/head\n004077544dd556db5e493c18f04a0017803d2538a992 refs/pull/141/head\n00403c237089185822b9e8a8d1f2729caedf89631e52
+        refs/pull/144/head\n0040a389515941877c98ff738db0bcfed277acd75437 refs/pull/152/head\n0040a538ec40fd267679568ecc971668bb33356b7631
+        refs/pull/153/head\n0040e16b168eb61ecce4ff19f1266b1daa121b3b2cd3 refs/pull/154/head\n00408c9b201842fab03dae0af014cd374d9c99dcfd56
+        refs/pull/155/head\n0041b1108534cf95275b3d45c779ae855a502b7dd630 refs/pull/155/merge\n00402db432026a671db5ef6ccc30d9aeffd3bf486fb4
+        refs/pull/156/head\n0040ce73d4f805f6434b9a335b617f22c5db80574069 refs/pull/157/head\n00407c56228b5b5d0303be064272e2b8917465833064
+        refs/pull/158/head\n00410502034c3ff964aca33cb5e0d7c8679c993346f2 refs/pull/158/merge\n0040d10a14ef3584e84bfafa2098e4d7429e9374bb62
+        refs/pull/163/head\n0040e3a3ab70d6806dbc462f1ace73daf9a869aace0f refs/pull/168/head\n00403ee0e5d57ce715355d3345ffc3fddbd8dbdf8066
+        refs/pull/169/head\n0040bc7e2aae6abaff77752e1a8b909c998d42339463 refs/pull/171/head\n0041a847e87da3040c952fc874a717ed98845d04fe07
+        refs/pull/171/merge\n00403577377a74d2736e0149d6b4fdfc73098eaf5b64 refs/pull/173/head\n00407cd17f8a8373cae454b224b40e8cec64dee35330
+        refs/pull/174/head\n0040c254c34d41093669f9f6cdf3c6a26860e45e2102 refs/pull/178/head\n004071151beedd346ee82e1d4a7cd1674e7509a248e2
+        refs/pull/179/head\n00409350fe341a620afa92ce96be9d7334dfa4046d86 refs/pull/182/head\n004095471c29b6462e0d1e07d7762cbdb57fcc277aec
+        refs/pull/184/head\n00400df123bc841344c0e018d31d72ca2a29700adacd refs/pull/186/head\n0041e02245093a1d11b2352a4c1683a3a7dec9e71306
+        refs/pull/186/merge\n00402b9e015a77bcc37030965cae966986e9a79329a7 refs/pull/189/head\n00403fcc3107dbeea0718ed1f119ce3d31b6d79739bf
+        refs/pull/190/head\n00403019b36593e375d959c3cc3e06289ba937589dab refs/pull/191/head\n0040e99a0595abd5a7b7eeb0c7c8f96ecf5f4047b8d2
+        refs/pull/192/head\n0040ee9f1aee1e96ab889c1d5e98f69b573f0786fa71 refs/pull/193/head\n00401c99e3b57578d8146009952e79f2cf0b96797048
+        refs/pull/196/head\n0040c98200392d542a35b462bd50413524277444f5c8 refs/pull/199/head\n003e2ac8d5c1b939fa3023c8c14f179dc45045b2c851
+        refs/pull/2/head\n0040a9d6251f3d60b0cf08367cf437d35204608e6738 refs/pull/200/head\n0041aa4d6def089ff71b31c968595450d45a5cc5aa1a
+        refs/pull/200/merge\n0040989593b7d3a2bf29d1eff77b413accd6e6453983 refs/pull/201/head\n0041956afe026fd0aef85c5e3c6d8e10ff13074398c3
+        refs/pull/201/merge\n0040ae24a055163dd1c7aa449114778927e0dd5e6927 refs/pull/203/head\n003f64ed9bea2063c3f150f0d045e2e4eee828d79267
+        refs/pull/21/head\n00408d25b321e9469a061d546ee35b8cf9827a7b92c4 refs/pull/213/head\n004100cbf1c204723431d5bcd210346fda390af5aaaa
+        refs/pull/213/merge\n0040ad350781d497d66e40ea1ea3b786c460a2a53097 refs/pull/215/head\n00401b42a901f11ef2b8c6d1654c6716d0e9152ab151
+        refs/pull/220/head\n00410ab8d61bf8491f3d14019d2b0ca33cddf232ecca refs/pull/220/merge\n0040023c2ca8812aca45d418e9c679d0c154648ff0a9
+        refs/pull/227/head\n0041feb15c42ce672673a174817c59ca0d7e1fc02d19 refs/pull/227/merge\n00401e328d356389c903f236412567104e56f57ec873
+        refs/pull/229/head\n004069bd7442f777c50e0d8c6ee6419f86ac3d8aa96e refs/pull/235/head\n0040c59c45c06def8c7ecef0d8000a2246609a00ed20
+        refs/pull/236/head\n00403bc77e23b7bf37e76efddba5b20c505c92274683 refs/pull/247/head\n0040e3a2e1f2a6cb449af5aa9600a7e0ab563c9c6d9a
+        refs/pull/248/head\n004005e5b94460c9a3b87f066188d19b53f5f6c7fa38 refs/pull/251/head\n0040d58a60c536678af123850c03dbaaf8e385afe032
+        refs/pull/253/head\n00409ad0123bf82cdebd19946a65b6967bd8debc16b3 refs/pull/257/head\n0040bbe3883b650b0759165342a3afcf5365aebae8a6
+        refs/pull/258/head\n0040ec00d65c65bf19020f5b6b1a359605d5ebe9f61f refs/pull/262/head\n004103b807ac468f5481180d3e4771e2494dcb8bf659
+        refs/pull/262/merge\n00405f598e1f2c7fc12bea0c48aafd094894db1b9d3b refs/pull/264/head\n0040dfaf9d305ede0228b23df4a6763ee779432b6eb9
+        refs/pull/267/head\n0041e13c7f770ea9e2098ec63ad966d291ab1ce36a3f refs/pull/267/merge\n003eb346a7ea7e5c230f2b1fa5680eac29e548a7d706
+        refs/pull/3/head\n003fec56fd2d549808708995b9aecb9788e0e4b46e63 refs/pull/31/head\n003e04a5459735a8ab07294227323dddb88b73e8dd6f
+        refs/pull/4/head\n003f77c58eb58ffc058c08cc3da7cdbdc316895ab8f9 refs/pull/44/head\n003f89e574e534621c8e6b140ec5aae3a9b949671be2
+        refs/pull/48/head\n003fe0f0f09cafd2d1756dec33249c39e07758590f0e refs/pull/56/head\n003fcc456c871780903d1e2dd6eee52279fa64439156
+        refs/pull/64/head\n003f0e9351191a025dc9b404bae48a3841630c08522f refs/pull/65/head\n003f18cc0b2b98e6cf3a9bca5c162fc2755915e65bfb
+        refs/pull/67/head\n003f65f7821af9309a281fe5f2ea01832a2bcf919b76 refs/pull/68/head\n003ffb4e2f6c0307b6ff8361376bcf1bd582e078dab7
+        refs/pull/70/head\n003fce7358e1c661ecd9152b98c45d88850de93c56a3 refs/pull/78/head\n003fab52a6e5d54e392542cac8da79f0e58efff57687
+        refs/pull/79/head\n00404753861aa377521c96ba0f6696ceb58a84aa146e refs/pull/79/merge\n003f2c94fc8b149635519f7270dc95d8d695a7adb2da
+        refs/pull/82/head\n003ff3137c9b2c5ad3481e2afc07ddb1be2e30df9c02 refs/pull/86/head\n003f994f026aa71cb3d56b48e1aeee3c43258dee0d19
+        refs/pull/87/head\n003f156570e0fa5bd67f7954ab9aef03bea9f8527e45 refs/pull/89/head\n003e4cea534897789d47fd0f8d71d9dadc1967de387f
+        refs/pull/9/head\n003f795077d3e53b20e32ccbd712dcf1807a1dbf74d3 refs/pull/90/head\n003feed9f98335e3631710ef8faab6e9ad93ff5147bd
+        refs/pull/92/head\n003f8d0a1fc65fe0a8e8771c458a0a87ec8a2fdaddc1 refs/pull/96/head\n003daf513c7a016048ae468971c52ed77d9562c7c819
+        refs/tags/1.0.0\n003a544eadc6bf3d226fd7a7a9f0dc5b5bf7ca0675b9 refs/tags/v1\n003d50fbc622fc4ef5163becd7fab6573eac35f8462e
+        refs/tags/v1^{}\n003eaf513c7a016048ae468971c52ed77d9562c7c819 refs/tags/v1.0.0\n003eec3afacf7f605c9fc12c70bc1c9e1708ddb99eca
+        refs/tags/v1.1.0\n00410b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc refs/tags/v1.1.0^{}\n003ea2ca40438991a1ab62db1b7cad0fd4e36a2ac254
+        refs/tags/v1.2.0\n004150fbc622fc4ef5163becd7fab6573eac35f8462e refs/tags/v1.2.0^{}\n003af0698e2cb784138d203b1caade48dca3d0fbdc53
+        refs/tags/v2\n003daabbfeb2ce60b5bd82389903509092c4648a9713 refs/tags/v2^{}\n003f95784fc5bbede4a44d9abcfbde7a64f16e6dbedd
+        refs/tags/v2-beta\n0042a6747255bd19d7a757dbdda8c654a9f84db19839 refs/tags/v2-beta^{}\n003e722adc63f1aa60a57ec37892e133b1d319cae598
+        refs/tags/v2.0.0\n003e01aecccf739ca6ff86c0539fbc67a7a5007bbc81 refs/tags/v2.1.0\n003e86f86b36ef15e6570752e7175f451a512eac206b
+        refs/tags/v2.1.1\n003eaabbfeb2ce60b5bd82389903509092c4648a9713 refs/tags/v2.2.0\n0000"
+    http_version: 
+  recorded_at: Wed, 10 Jun 2020 11:00:54 GMT
+recorded_with: VCR 5.0.0

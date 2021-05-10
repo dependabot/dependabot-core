@@ -24,19 +24,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored,
       security_advisories: security_advisories
     )
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
-  let(:dependency_files) { [package_json] }
-  let(:package_json) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", manifest_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "package.json" }
+  let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
 
   let(:credentials) do
     [{
@@ -178,7 +173,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           )
         end
 
-        # Note: this is the dist-tag latest version, *not* the latest prerelease
+        # NOTE: this is the dist-tag latest version, *not* the latest prerelease
         it { is_expected.to eq(Gem::Version.new("2.0.0.pre.rc1")) }
 
         context "but only says so in their requirements (with a .)" do
@@ -211,7 +206,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       before do
         body = fixture("npm_responses", "prerelease.json")
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
@@ -265,7 +260,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             to_return(status: 200, body: login_form)
         end
 
-        it "raises a to Dependabot::PrivateSourceAuthenticationFailure error" do
+        it "raises a Dependabot::PrivateSourceAuthenticationFailure error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { version_finder.latest_version_from_registry }.
+            to raise_error(error_class) do |error|
+              expect(error.source).to eq("registry.npmjs.org")
+            end
+        end
+      end
+
+      context "when the login page is rate limited" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }]
+        end
+
+        before do
+          stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
+            to_return(status: 429, body: "")
+        end
+
+        it "raises a Dependabot::PrivateSourceAuthenticationFailure error" do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
@@ -291,7 +310,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           body = fixture("npm_responses", "prerelease.json")
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             with(headers: { "Authorization" => "Bearer secret_token" }).
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
             with(headers: { "Authorization" => "Basic c2VjcmV0OnRva2Vu" }).
             to_return(status: 200, body: body)
@@ -303,9 +322,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
     context "for a dependency hosted on another registry" do
       before do
-        body = fixture("gemfury_response_etag.json")
+        body = fixture("gemfury_responses", "gemfury_response_etag.json")
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
         stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
           with(headers: { "Authorization" => "Bearer secret_token" }).
           to_return(status: 200, body: body)
@@ -322,7 +341,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             requirement: "^1.0.0",
             groups: [],
             source: {
-              type: "private_registry",
+              type: "registry",
               url: "https://npm.fury.io/dependabot"
             }
           }],
@@ -345,7 +364,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
         it "raises a to Dependabot::PrivateSourceTimedOut error" do
           expect { version_finder.latest_version_from_registry }.
             to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
@@ -400,7 +419,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(
               status: 200,
-              body: "user \"undefined\" is not a member of \"KaterTech\""
+              body: 'user "undefined" is not a member of "KaterTech"'
             )
         end
 
@@ -408,7 +427,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
       end
@@ -511,7 +530,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
 
         context "without https" do
           before do
-            body = fixture("gemfury_response_etag.json")
+            body = fixture("gemfury_responses", "gemfury_response_etag.json")
             stub_request(:get, "https://npm.fury.io/dependabot/@blep%2Fblep").
               with(headers: { "Authorization" => "Bearer secret_token" }).
               to_return(status: 404)
@@ -532,7 +551,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
                 requirement: "^1.0.0",
                 groups: [],
                 source: {
-                  type: "private_registry",
+                  type: "registry",
                   url: "http://npm.fury.io/dependabot"
                 }
               }],
@@ -558,34 +577,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           error_class = Dependabot::PrivateSourceAuthenticationFailure
           expect { version_finder.latest_version_from_registry }.
             to raise_error(error_class) do |error|
-              expect(error.source).to eq("npm.fury.io/dependabot")
+              expect(error.source).to eq("npm.fury.io/<redacted>")
             end
         end
 
         context "with credentials in the .npmrc" do
-          let(:dependency_files) { [npmrc] }
-          let(:npmrc) do
-            Dependabot::DependencyFile.new(
-              name: ".npmrc",
-              content: fixture("npmrc", "auth_token")
-            )
-          end
+          let(:dependency_files) { project_dependency_files(project_name).select { |f| f.name == ".npmrc" } }
+          let(:project_name) { "npm6/npmrc_auth_token" }
 
           it { is_expected.to eq(Gem::Version.new("1.8.1")) }
 
           context "that require an environment variable" do
-            let(:npmrc) do
-              Dependabot::DependencyFile.new(
-                name: ".npmrc",
-                content: fixture("npmrc", "env_auth_token")
-              )
-            end
+            let(:project_name) { "npm6/npmrc_env_auth_token" }
 
             it "raises a PrivateSourceAuthenticationFailure error" do
               error_class = Dependabot::PrivateSourceAuthenticationFailure
               expect { version_finder.latest_version_from_registry }.
                 to raise_error(error_class) do |error|
-                  expect(error.source).to eq("npm.fury.io/dependabot")
+                  expect(error.source).to eq("npm.fury.io/<redacted>")
                 end
             end
           end
@@ -646,7 +655,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the npm link resolves to a 403" do
       before do
         stub_request(:get, registry_listing_url).
-          to_return(status: 403, body: "{\"error\":\"Forbidden\"}")
+          to_return(status: 403, body: '{"error":"Forbidden"}')
 
         # Speed up spec by stopping any sleep logic
         allow(version_finder).to receive(:sleep).and_return(true)
@@ -661,7 +670,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
     context "when the npm link resolves to a 404" do
       before do
         stub_request(:get, registry_listing_url).
-          to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          to_return(status: 404, body: '{"error":"Not found"}')
 
         # Speed up spec by stopping any sleep logic
         allow(version_finder).to receive(:sleep).and_return(true)
@@ -699,7 +708,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       context "for a namespaced dependency" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://www.npmjs.com/package/@blep/blep").
             to_return(status: 200, body: login_form)
         end
@@ -936,6 +945,35 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
           to_return(status: 200)
       end
       it { is_expected.to eq(Gem::Version.new("1.5.1")) }
+    end
+
+    context "when the user has ignored all versions" do
+      let(:ignored_versions) { [">= 0, < 99"] }
+
+      it { is_expected.to be_nil }
+
+      context "with raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises exception" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the user has ignored all but vulnerable versions" do
+      # 1.1.0 is not ignored, but it is vulnerable
+      let(:ignored_versions) { ["> 0, < 1.1.0", "> 1.2.0, < 99"] }
+
+      it { is_expected.to be_nil }
+
+      context "with raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        it "raises exception" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
   end
 

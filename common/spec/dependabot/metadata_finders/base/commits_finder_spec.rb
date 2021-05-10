@@ -34,14 +34,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
   end
   let(:dependency_previous_version) { "1.0.0" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -351,6 +344,137 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
       end
 
+      context "with multiple git sources", :vcr do
+        let(:dependency_name) { "actions/checkout" }
+        let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency_previous_version) { nil }
+        let(:source) do
+          Dependabot::Source.new(provider: "github", repo: "actions/checkout")
+        end
+        let(:dependency_requirements) do
+          [{
+            file: ".github/workflows/workflow.yml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2.2.0"
+            },
+            metadata: { declaration_string: "actions/checkout@v2.1.0" }
+          }, {
+            file: ".github/workflows/workflow.yml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2.2.0"
+            },
+            metadata: { declaration_string: "actions/checkout@master" }
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: ".github/workflows/workflow.yml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v2.1.0"
+            },
+            metadata: { declaration_string: "actions/checkout@v2.1.0" }
+          }, {
+            file: ".github/workflows/workflow.yml",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "master"
+            },
+            metadata: { declaration_string: "actions/checkout@master" }
+          }]
+        end
+
+        it "includes the commit in the commits URL" do
+          expect(builder.commits_url).
+            to eq(
+              "https://github.com/actions/checkout/commits/"\
+              "aabbfeb2ce60b5bd82389903509092c4648a9713"
+            )
+        end
+      end
+
+      context "when going from a git ref to a version requirement", :vcr do
+        let(:dependency_name) { "business" }
+        let(:dependency_version) { "1.8.0" }
+        let(:dependency_previous_version) { nil }
+        let(:dependency_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: "v1.1.0"
+            }
+          }]
+        end
+
+        it "includes the previous ref and new version in the compare URL" do
+          expect(builder.commits_url).
+            to eq(
+              "https://github.com/gocardless/business/compare/"\
+              "v1.1.0...v1.8.0"
+            )
+        end
+      end
+
+      context "when going from a version requirement to a git ref", :vcr do
+        let(:dependency_name) { "business" }
+        let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+        let(:dependency_previous_version) { "1.1.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://github.com/gocardless/business",
+              ref: "v1.8.0"
+            }
+          }]
+        end
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: "~> 1.0.0",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "includes the previous version and new commit in the compare URL" do
+          expect(builder.commits_url).
+            to eq(
+              "https://github.com/gocardless/business/compare/"\
+              "v1.1.0...aabbfeb2ce60b5bd82389903509092c4648a9713"
+            )
+        end
+      end
+
       context "without a previous version" do
         let(:dependency_previous_version) { nil }
 
@@ -429,10 +553,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             end
 
             it "uses the reference specified" do
-              # It would be nice to pick up the previously specified reference,
-              # but we'd have to do a `pinned?` check to do so reliably
+              # TODO: Figure out if we need to do a pinend? check here
               expect(builder.commits_url).
-                to eq("https://github.com/gocardless/business/commits/v1.4.0")
+                to eq(
+                  "https://github.com/gocardless/business/compare/"\
+                  "7638417...v1.4.0"
+                )
             end
           end
         end
@@ -570,22 +696,20 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
             :get,
             "https://api.github.com/repos/gocardless/business/commits?"\
             "sha=v1.3.0"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "commits-business-1.3.0.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
+          ).to_return(
+            status: 200,
+            body: fixture("github", "commits-business-1.3.0.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
           stub_request(
             :get,
             "https://api.github.com/repos/gocardless/business/commits?"\
             "sha=v1.4.0"
-          ).with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "commits-business-1.4.0.json"),
-              headers: { "Content-Type" => "application/json" }
-            )
+          ).to_return(
+            status: 200,
+            body: fixture("github", "commits-business-1.4.0.json"),
+            headers: { "Content-Type" => "application/json" }
+          )
         end
 
         it "returns an array of commits" do
@@ -649,12 +773,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               :get,
               "https://api.github.com/repos/gocardless/business/commits?"\
               "sha=v1.3.0"
-            ).with(headers: { "Authorization" => "token token" }).
-              to_return(
-                status: 404,
-                body: response,
-                headers: { "Content-Type" => "application/json" }
-              )
+            ).to_return(
+              status: 404,
+              body: response,
+              headers: { "Content-Type" => "application/json" }
+            )
           end
 
           it { is_expected.to eq([]) }
@@ -701,23 +824,21 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               :get,
               "https://api.github.com/repos/netflix/pollyjs/commits?"\
               "path=packages/@pollyjs/ember&sha=@pollyjs/ember@0.2.0"
-            ).with(headers: { "Authorization" => "token token" }).
-              to_return(
-                status: 200,
-                body: fixture("github", "commits-pollyjs-ember-0.2.0.json"),
-                headers: { "Content-Type" => "application/json" }
-              )
+            ).to_return(
+              status: 200,
+              body: fixture("github", "commits-pollyjs-ember-0.2.0.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
 
             stub_request(
               :get,
               "https://api.github.com/repos/netflix/pollyjs/commits?"\
               "path=packages/@pollyjs/ember&sha=@pollyjs/ember@0.1.0"
-            ).with(headers: { "Authorization" => "token token" }).
-              to_return(
-                status: 200,
-                body: fixture("github", "commits-pollyjs-ember-0.1.0.json"),
-                headers: { "Content-Type" => "application/json" }
-              )
+            ).to_return(
+              status: 200,
+              body: fixture("github", "commits-pollyjs-ember-0.1.0.json"),
+              headers: { "Content-Type" => "application/json" }
+            )
           end
 
           it "returns an array of commits relevant to the given path" do

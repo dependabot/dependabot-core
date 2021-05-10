@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }
         let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib/" }
 
         let(:dependency_name) { "urllib" }
         let(:dependency_version) { "1.22" }

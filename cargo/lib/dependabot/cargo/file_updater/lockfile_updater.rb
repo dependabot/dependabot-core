@@ -38,9 +38,7 @@ module Dependabot
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
-            if updated_lockfile.include?(desired_lockfile_content)
-              next updated_lockfile
-            end
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -67,6 +65,8 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -95,7 +95,8 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
-
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def dependency_spec
@@ -169,6 +170,8 @@ module Dependabot
             File.write(file.name, prepared_manifest_content(file))
 
             next if virtual_manifest?(file)
+
+            File.write(File.join(dir, "build.rs"), dummy_app_content)
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -265,9 +268,7 @@ module Dependabot
 
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
-          if parsed_manifest.dig("package", "default-run")
-            parsed_manifest["package"].delete("default-run")
-          end
+          parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 

@@ -55,9 +55,7 @@ module Dependabot
           **SharedHelpers.excon_defaults
         )
 
-        unless response.status == 200
-          raise "Response from registry was #{response.status}"
-        end
+        raise "Response from registry was #{response.status}" unless response.status == 200
 
         source_url = JSON.parse(response.body).fetch("source")
         Source.from_url(source_url) if source_url

@@ -29,9 +29,7 @@ module Dependabot
         @version_string = version.to_s
         version = version.gsub(/^v/, "") if version.is_a?(String)
 
-        if version.to_s.include?("+")
-          version, @build_info = version.to_s.split("+")
-        end
+        version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super
       end

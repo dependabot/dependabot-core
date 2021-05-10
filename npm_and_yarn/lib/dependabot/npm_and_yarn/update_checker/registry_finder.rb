@@ -45,9 +45,10 @@ module Dependabot
               response = Excon.get(
                 "https://#{details['registry'].gsub(%r{/+$}, '')}/"\
                 "#{escaped_dependency_name}",
-                headers: auth_header_for(details["token"]),
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(
+                  headers: auth_header_for(details["token"])
+                )
               )
               response.status < 400 && JSON.parse(response.body)
             rescue Excon::Error::Timeout,
@@ -61,8 +62,8 @@ module Dependabot
 
         def registry_url
           protocol =
-            if private_registry_source_url
-              private_registry_source_url.split("://").first
+            if registry_source_url
+              registry_source_url.split("://").first
             else
               "https"
             end
@@ -91,10 +92,10 @@ module Dependabot
         end
 
         def locked_registry
-          return unless private_registry_source_url
+          return unless registry_source_url
 
           lockfile_registry =
-            private_registry_source_url.
+            registry_source_url.
             gsub("https://", "").
             gsub("http://", "")
           detailed_registry =
@@ -209,18 +210,16 @@ module Dependabot
           dependency.name.gsub("/", "%2F")
         end
 
-        def private_registry_source_url
+        def registry_source_url
           sources = dependency.requirements.
                     map { |r| r.fetch(:source) }.uniq.compact
 
           # If there are multiple source types, or multiple source URLs, then
           # it's unclear how we should proceed
-          if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
-            raise "Multiple sources! #{sources.join(', ')}"
-          end
+          raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
 
-          # Otherwise we just take the URL of the first private registry
-          sources.find { |s| s[:type] == "private_registry" }&.fetch(:url)
+          # Otherwise we just take the URL of the first registry
+          sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
       end
     end

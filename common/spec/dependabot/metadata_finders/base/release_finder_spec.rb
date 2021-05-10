@@ -19,23 +19,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: dependency_version,
-      requirements:
-        [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }],
+      requirements: requirements,
+      previous_requirements: previous_requirements,
       previous_version: dependency_previous_version,
       package_manager: "dummy"
     )
   end
+  let(:requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
+  let(:previous_requirements) do
+    [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
+  end
   let(:dependency_name) { "business" }
   let(:dependency_version) { "1.4.0" }
   let(:dependency_previous_version) { "1.0.0" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -96,7 +95,6 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
       before do
         stub_request(:get, github_url).
-          with(headers: { "Authorization" => "token token" }).
           to_return(status: github_status,
                     body: github_response,
                     headers: { "Content-Type" => "application/json" })
@@ -324,6 +322,72 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
                   "see [changelog](CHANGELOG.md)."
                 )
             end
+          end
+
+          context "updating from no previous release to new release", :vcr do
+            let(:dependency_name) { "actions/checkout" }
+            let(:dependency_version) do
+              "aabbfeb2ce60b5bd82389903509092c4648a9713"
+            end
+            let(:dependency_previous_version) { nil }
+            let(:requirements) do
+              [{
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                metadata: { declaration_string: "actions/checkout@v2.1.0" },
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "v2.2.0",
+                  branch: nil
+                }
+              }, {
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                metadata: { declaration_string: "actions/checkout@master" },
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "v2.2.0",
+                  branch: nil
+                }
+              }]
+            end
+            let(:previous_requirements) do
+              [{
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                metadata: { declaration_string: "actions/checkout@v2.1.0" },
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "v2.1.0",
+                  branch: nil
+                }
+              }, {
+                requirement: nil,
+                groups: [],
+                file: ".github/workflows/workflow.yml",
+                metadata: { declaration_string: "actions/checkout@master" },
+                source: {
+                  type: "git",
+                  url: "https://github.com/actions/checkout",
+                  ref: "master",
+                  branch: nil
+                }
+              }]
+            end
+            let(:source) do
+              Dependabot::Source.new(
+                provider: "github",
+                repo: dependency_name
+              )
+            end
+
+            it { is_expected.to start_with("## v2.2.0") }
           end
         end
 

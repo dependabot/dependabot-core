@@ -1,3 +1,5 @@
+from pip._internal.network.session import PipSession
+from pip._internal.req.req_file import parse_requirements
 from setuptools import setup, find_packages
 
 reqs = [str(r.req) for r in parse_requirements('requirements.txt', session=PipSession()) if r.req is not None]

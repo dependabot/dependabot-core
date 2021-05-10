@@ -190,6 +190,77 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    before do
+      version_files_url = "https://repo.maven.apache.org/maven2/com/google/"\
+                          "guava/guava/23.4-jre/guava-23.4-jre.jar"
+      stub_request(:head, version_files_url).
+        to_return(status: 200)
+    end
+
+    it "finds the lowest available version" do
+      is_expected.to eq(version_class.new("23.4-jre"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "maven",
+            vulnerable_versions: ["< 23.5.0"]
+          )
+        ]
+      end
+
+      before do
+        version_files_url = "https://repo.maven.apache.org/maven2/com/google/"\
+                            "guava/guava/23.5-jre/guava-23.5-jre.jar"
+        stub_request(:head, version_files_url).
+          to_return(status: 200)
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(version_class.new("23.5-jre"))
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject { checker.lowest_resolvable_security_fix_version }
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "maven",
+          vulnerable_versions: ["< 23.5.0"]
+        )
+      ]
+    end
+
+    before do
+      version_files_url = "https://repo.maven.apache.org/maven2/com/google/"\
+                          "guava/guava/23.5-jre/guava-23.5-jre.jar"
+      stub_request(:head, version_files_url).
+        to_return(status: 200)
+    end
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(version_class.new("23.5-jre"))
+    end
+
+    context "with version from multi-dependency property" do
+      before { allow(checker).to receive(:version_comes_from_multi_dependency_property?).and_return(true) }
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(version_class.new("23.5-jre"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
     it { is_expected.to eq(version_class.new("23.6-jre")) }

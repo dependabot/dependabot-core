@@ -1,0 +1,236 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/gocardless/business/contents/
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 21 Sep 2020 17:42:01 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"5374be53a6b92981e8f4533fe2240b8bb37fd4b4"
+      Last-Modified:
+      - Tue, 15 Sep 2020 10:40:02 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '46'
+      X-Ratelimit-Reset:
+      - '1600713597'
+      X-Ratelimit-Used:
+      - '14'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1111'
+      X-Github-Request-Id:
+      - E5ED:D39C:8EE5D60:ACCB04D:5F68E5EA
+    body:
+      encoding: ASCII-8BIT
+      string: '[{"name":".circleci","path":".circleci","sha":"00c836e628ed47eef3799eaafe6683d4f2457457","size":0,"url":"https://api.github.com/repos/gocardless/business/contents/.circleci?ref=master","html_url":"https://github.com/gocardless/business/tree/master/.circleci","git_url":"https://api.github.com/repos/gocardless/business/git/trees/00c836e628ed47eef3799eaafe6683d4f2457457","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/.circleci?ref=master","git":"https://api.github.com/repos/gocardless/business/git/trees/00c836e628ed47eef3799eaafe6683d4f2457457","html":"https://github.com/gocardless/business/tree/master/.circleci"}},{"name":".gitignore","path":".gitignore","sha":"d87d4be66f458acd52878902bbf1391732ad21e1","size":154,"url":"https://api.github.com/repos/gocardless/business/contents/.gitignore?ref=master","html_url":"https://github.com/gocardless/business/blob/master/.gitignore","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/d87d4be66f458acd52878902bbf1391732ad21e1","download_url":"https://raw.githubusercontent.com/gocardless/business/master/.gitignore","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/.gitignore?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/d87d4be66f458acd52878902bbf1391732ad21e1","html":"https://github.com/gocardless/business/blob/master/.gitignore"}},{"name":".rubocop.yml","path":".rubocop.yml","sha":"b29179afacb15de6c93b5925fb91fafcdbd85067","size":243,"url":"https://api.github.com/repos/gocardless/business/contents/.rubocop.yml?ref=master","html_url":"https://github.com/gocardless/business/blob/master/.rubocop.yml","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/b29179afacb15de6c93b5925fb91fafcdbd85067","download_url":"https://raw.githubusercontent.com/gocardless/business/master/.rubocop.yml","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/.rubocop.yml?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/b29179afacb15de6c93b5925fb91fafcdbd85067","html":"https://github.com/gocardless/business/blob/master/.rubocop.yml"}},{"name":".ruby-version","path":".ruby-version","sha":"860487ca19cedeaf219ae3caca5e14df61c44f18","size":6,"url":"https://api.github.com/repos/gocardless/business/contents/.ruby-version?ref=master","html_url":"https://github.com/gocardless/business/blob/master/.ruby-version","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/860487ca19cedeaf219ae3caca5e14df61c44f18","download_url":"https://raw.githubusercontent.com/gocardless/business/master/.ruby-version","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/.ruby-version?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/860487ca19cedeaf219ae3caca5e14df61c44f18","html":"https://github.com/gocardless/business/blob/master/.ruby-version"}},{"name":"CHANGELOG.md","path":"CHANGELOG.md","sha":"7adbf88243040d8e38111dd53157808a0ab9b2ea","size":2732,"url":"https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=master","html_url":"https://github.com/gocardless/business/blob/master/CHANGELOG.md","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/7adbf88243040d8e38111dd53157808a0ab9b2ea","download_url":"https://raw.githubusercontent.com/gocardless/business/master/CHANGELOG.md","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/7adbf88243040d8e38111dd53157808a0ab9b2ea","html":"https://github.com/gocardless/business/blob/master/CHANGELOG.md"}},{"name":"Gemfile","path":"Gemfile","sha":"7f4f5e950d1572e1ce5607ca237375aa2e30d662","size":70,"url":"https://api.github.com/repos/gocardless/business/contents/Gemfile?ref=master","html_url":"https://github.com/gocardless/business/blob/master/Gemfile","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/7f4f5e950d1572e1ce5607ca237375aa2e30d662","download_url":"https://raw.githubusercontent.com/gocardless/business/master/Gemfile","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/Gemfile?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/7f4f5e950d1572e1ce5607ca237375aa2e30d662","html":"https://github.com/gocardless/business/blob/master/Gemfile"}},{"name":"LICENSE","path":"LICENSE","sha":"f06f3849f61f2c6b0c0188e900548d3dc458ec5f","size":1054,"url":"https://api.github.com/repos/gocardless/business/contents/LICENSE?ref=master","html_url":"https://github.com/gocardless/business/blob/master/LICENSE","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/f06f3849f61f2c6b0c0188e900548d3dc458ec5f","download_url":"https://raw.githubusercontent.com/gocardless/business/master/LICENSE","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/LICENSE?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/f06f3849f61f2c6b0c0188e900548d3dc458ec5f","html":"https://github.com/gocardless/business/blob/master/LICENSE"}},{"name":"README.md","path":"README.md","sha":"d368d8a776caab4295857858ea2a7a007d9f4abe","size":8178,"url":"https://api.github.com/repos/gocardless/business/contents/README.md?ref=master","html_url":"https://github.com/gocardless/business/blob/master/README.md","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/d368d8a776caab4295857858ea2a7a007d9f4abe","download_url":"https://raw.githubusercontent.com/gocardless/business/master/README.md","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/README.md?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/d368d8a776caab4295857858ea2a7a007d9f4abe","html":"https://github.com/gocardless/business/blob/master/README.md"}},{"name":"business.gemspec","path":"business.gemspec","sha":"b84e4bd27817c5742a101e613149618715ec5675","size":1096,"url":"https://api.github.com/repos/gocardless/business/contents/business.gemspec?ref=master","html_url":"https://github.com/gocardless/business/blob/master/business.gemspec","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/b84e4bd27817c5742a101e613149618715ec5675","download_url":"https://raw.githubusercontent.com/gocardless/business/master/business.gemspec","type":"file","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/business.gemspec?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/b84e4bd27817c5742a101e613149618715ec5675","html":"https://github.com/gocardless/business/blob/master/business.gemspec"}},{"name":"lib","path":"lib","sha":"5b6651a774d33390e346f61d3fa02410f3205f9f","size":0,"url":"https://api.github.com/repos/gocardless/business/contents/lib?ref=master","html_url":"https://github.com/gocardless/business/tree/master/lib","git_url":"https://api.github.com/repos/gocardless/business/git/trees/5b6651a774d33390e346f61d3fa02410f3205f9f","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/lib?ref=master","git":"https://api.github.com/repos/gocardless/business/git/trees/5b6651a774d33390e346f61d3fa02410f3205f9f","html":"https://github.com/gocardless/business/tree/master/lib"}},{"name":"spec","path":"spec","sha":"c590103df027bc19bf57a3eb3142f0384687cb94","size":0,"url":"https://api.github.com/repos/gocardless/business/contents/spec?ref=master","html_url":"https://github.com/gocardless/business/tree/master/spec","git_url":"https://api.github.com/repos/gocardless/business/git/trees/c590103df027bc19bf57a3eb3142f0384687cb94","download_url":null,"type":"dir","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/spec?ref=master","git":"https://api.github.com/repos/gocardless/business/git/trees/c590103df027bc19bf57a3eb3142f0384687cb94","html":"https://github.com/gocardless/business/tree/master/spec"}}]'
+  recorded_at: Mon, 21 Sep 2020 17:42:03 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.18.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Date:
+      - Mon, 21 Sep 2020 17:42:01 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Server:
+      - GitHub.com
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With, Accept-Encoding
+      Etag:
+      - W/"7adbf88243040d8e38111dd53157808a0ab9b2ea"
+      Last-Modified:
+      - Tue, 15 Sep 2020 10:39:58 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '45'
+      X-Ratelimit-Reset:
+      - '1600713597'
+      X-Ratelimit-Used:
+      - '15'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '2271'
+      X-Github-Request-Id:
+      - E5EE:F68D:8445F8F:A035F81:5F68E5EB
+    body:
+      encoding: ASCII-8BIT
+      string: '{"name":"CHANGELOG.md","path":"CHANGELOG.md","sha":"7adbf88243040d8e38111dd53157808a0ab9b2ea","size":2732,"url":"https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=master","html_url":"https://github.com/gocardless/business/blob/master/CHANGELOG.md","git_url":"https://api.github.com/repos/gocardless/business/git/blobs/7adbf88243040d8e38111dd53157808a0ab9b2ea","download_url":"https://raw.githubusercontent.com/gocardless/business/master/CHANGELOG.md","type":"file","content":"IyMgMi4xLjAgLSBKdW5lIDgsIDIwMjAKCi0gQWRkIHNlcGVyYXRlIGB3b3Jr\naW5nX2RheT9gIGFuZCBgaG9saWRheT9gIG1ldGhvZHMgdG8gdGhlIGNhbGVu\nZGFyCgojIyAyLjAuMCAtIE1heSA0LCAyMDIwCgrwn5qoICoqQlJFQUtJTkcg\nQ0hBTkdFUyoqIPCfmqgKCkZvciBtb3JlIG9uIHRoZSBicmVha2luZyBjaGFu\nZ2VzIHRoYXQgaGF2ZSBiZWVuIGludHJvZHVjZWQgaW4gdjIuMC4wIHBsZWFz\nZSBbc2VlIHRoZSByZWFkbWVdKFJFQURNRS5tZCN2MjAwLWJyZWFraW5nLWNo\nYW5nZXMpLgoKLSBSZW1vdmUgYnVuZGxlZCBjYWxlbmRhcnMgc2VlIFt0aGlz\nIHByXShodHRwczovL2dpdGh1Yi5jb20vZ29jYXJkbGVzcy9idXNpbmVzcy9w\ndWxsLzU0KSBmb3IgbW9yZSBjb250ZXh0LiBJZiB5b3UgbmVlZCB0byB1c2Ug\nYW55IG9mIHRoZSBwcmV2aW91c2x5IGJ1bmRsZWQgY2FsZW5kYXJzLCBbc2Vl\nIGhlcmVdKGh0dHBzOi8vZ2l0aHViLmNvbS9nb2NhcmRsZXNzL2J1c2luZXNz\nL3RyZWUvYjEyYzE4NmNhNmZkNGZmZGFjODUxNzU3NDJmZjdlNGQwYTcwNWVm\nNC9saWIvYnVzaW5lc3MvZGF0YSkKLSBgQnVzaW5lc3M6OkNhbGVuZGFyLmxv\nYWRfcGF0aHM9YCBpcyBub3cgcmVxdWlyZWQKCiMjIDEuMTguMCAtIEFwcmls\nIDMwLCAyMDIwCgojIyMgTm90ZSB3ZSBoYXZlIGRyb3BwZWQgc3VwcG9ydCBm\nb3IgUnVieSA8IDIuNC54CgotIENvcnJlY3QgRGFuaXNoIHB1YmxpYyBob2xp\nZGF5cwoKIyMgMS4xNy4xIC0gTm92ZW1iZXIgMTksIDIwMTkKCi0gQ2hhbmdl\nIE1heSBCYW5rIEhvbGlkYXkgMjAyMCBmb3IgVUsgKEJhY3MpIC0gdGhpcyB3\nYXMgbW92ZWQgdG8gdGhlIDh0aC4KLSBBZGQgMjAyMCBob2xpZGF5cyBmb3Ig\nUEFELgoKIyMgMS4xNy4wIC0gT2N0b2JlciAzMCwgMjAxOQoKLSBBZGQgaG9s\naWRheSBjYWxlbmRhciBmb3IgRnJhbmNlIChUYXJnZXQoU0VQQSkgKyBGcmVu\nY2ggYmFuayBob2xpZGF5cykKCiMjIDEuMTYuMSAtIFNlcHRlbWJlciAyLCAy\nMDE5CgotIEZpeCBob2xpZGF5IGNhbGVuZGFyIGZvciBBQ0ggVS5TLgoKIyMg\nMS4xNi4wIC0gSmFudWFyeSAxNywgMjAxOQoKLSBBZGQgaG9saWRheSBjYWxl\nbmRhciBmb3IgQUNIIFUuUy4KCiMjIDEuMTUuMCAtIE9jdG9iZXIgMjQsIDIw\nMTgKCi0gQWRkIGhvbGlkYXkgY2FsZW5kYXIgZm9yIFBBRCBDYW5hZGEKCiMj\nIDEuMTQuMCAtIEp1bHkgMTgsIDIwMTgKCi0gQWRkIGhvbGlkYXkgY2FsZW5k\nYXIgZm9yIEJFQ1MgTmV3IFplYWxhbmQKCiMjIDEuMTMuMSAtIEp1bmUgMjIs\nIDIwMTgKCi0gRml4IEp1bmUncyAyMDE4IGJhbmsgaG9saWRheXMgZm9yIEJh\nbmtnaXJvdAoKIyMgMS4xMy4wIC0gQXByaWwgMTcsIDIwMTgKCi0gQWRkIHN1\ncHBvcnQgZm9yIHNwZWNpZnlpbmcgYGV4dHJhX3dvcmtpbmdfZGF0ZXNgIChz\ncGVjaWFsIGRhdGVzIHRoYXQgYXJlICJ3b3JraW5nIGRheXMiLAogIGV2ZW4g\ndGhvdWdoIHRoZXkgYXJlIG5vdCBvbmUgb2YgdGhlIHNwZWNpZmllZCBkYXlz\nLCBmb3IgZXhhbXBsZSB3ZWVrZW5kIGRhdGVzCiAgdGhhdCBhcmUgY29uc2lk\nZXJlZCB0byBiZSB3b3JraW5nIGRheXMpCgojIyAxLjEyLjAgLSBBcHJpbCAz\nLCAyMDE4CgotIEFkZCBCZXRhbGluZ3NlcnZpY2UgJiBCRUNTIGNhbGVuZGFy\ncyB1cCB1bnRpbCAyMDIwCgojIyAxLjExLjEgLSBEZWNlbWJlciAyMCwgMjAx\nNwoKLSBBZGQgMjAxNy0yMDE4IEJFQ1MgaG9saWRheSBkZWZpbml0aW9ucwoK\nIyMgMS4xMS4wIC0gRGVjZW1iZXIgMTMsIDIwMTcKCi0gSGFuZGxlIHByb3Bl\ncmx5IGNhbGVuZGFyIGluaXRpYWxpemF0aW9uIGJ5IERhdGUgb2JqZWN0cyAo\nbm90IHN0cmluZ3MpLAogIGNvbWluZyBmcm9tIGJvdGggWUFNTCBjb25maWcg\nYW5kIGluaXRpYWxpemUoKS4KCgojIyAxLjEwLjAgLSBTZXB0ZW1iZXIgMjAs\nIDIwMTcKCi0gQWRkIDIwMTgtMjAxOSBCZXRhbGluZ3NzZXJ2aWNlIGhvbGlk\nYXkgZGVmaW5pdGlvbnMKCiMjIDEuOS4wIC0gQXVndXN0IDIzLCAyMDE3Cgot\nIEFkZCAyMDE3IEJldGFsaW5nc3NlcnZpY2UgaG9saWRheSBkZWZpbml0aW9u\ncwoKIyMgMS44LjAgLSBGZWJydWFyeSAxMywgMjAxNwoKLSBBZGQgMjAxOC0y\nMDI3IFRBUkdFVCBob2xpZGF5IGRlZmludGlvbnMKLSBBZGQgMjAxOC0yMDI3\nIEJhbmtnaXJvdCBob2xpZGF5IGRlZmludGlvbnMKCiMjIDEuNy4wIC0gSmFu\ndWFyeSAxOCwgMjAxNwoKLSBBZGQgMjAxOC0yMDI3IEJBQ1MgaG9saWRheSBk\nZWZpbnRpb25zCgojIyAxLjYuMCAtIERlY2VtYmVyIDIzLCAyMDE2CgotIEFk\nZCAyMDE3IEJBQ1MgaG9saWRheSBkZWZpbml0aW9ucwotIEFkZCAyMDE3IGFu\nZCAyMDE4IFRBUkdFVCBob2xpZGF5IGRlZmluaXRpb25zCgojIyAxLjUuMCAt\nIEp1bmUgMiwgMjAxNQoKLSBBZGQgMjAxNiBob2xpZGF5IGRlZmluaXRpb25z\nCgojIyAxLjQuMCAtIERlY2VtYmVyIDI0LCAyMDE0CgotIEFkZCBzdXBwb3J0\nIGZvciBjdXN0b20gY2FsZW5kYXIgbG9hZCBwYXRocwotIFJlbW92ZSB0aGUg\nJ3NlcGEnIGNhbGVuZGFyCgoKIyMgMS4zLjAgLSBEZWNlbWJlciAyLCAyMDE0\nCgotIEFkZCBgQ2FsZW5kYXIjcHJldmlvdXNfYnVzaW5lc3NfZGF5YAoKCiMj\nIDEuMi4wIC0gTm92ZW1iZXIgMTUsIDIwMTQKCi0gQWRkIFRBUkdFVCBjYWxl\nbmRhcgoKCiMjIDEuMS4wIC0gU2VwdGVtYmVyIDMwLCAyMDE0CgotIEFkZCAy\nMDE1IGhvbGlkYXkgZGVmaW5pdGlvbnMKCgojIyAxLjAuMCAtIEp1bmUgMTEs\nIDIwMTQKCi0gSW5pdGlhbCBwdWJsaWMgcmVsZWFzZQo=\n","encoding":"base64","_links":{"self":"https://api.github.com/repos/gocardless/business/contents/CHANGELOG.md?ref=master","git":"https://api.github.com/repos/gocardless/business/git/blobs/7adbf88243040d8e38111dd53157808a0ab9b2ea","html":"https://github.com/gocardless/business/blob/master/CHANGELOG.md"}}'
+  recorded_at: Mon, 21 Sep 2020 17:42:03 GMT
+- request:
+    method: get
+    uri: https://github.com/gocardless/business.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - excon/0.76.0
+      Accept:
+      - "*/*"
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Frame-Options:
+      - DENY
+      X-Github-Request-Id:
+      - E633:F39C:4A40E80:6A7855D:5F68E63F
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n00000143ec55cd5694e94b26a9f20e06bb619ade088d6e4b
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        agent=git/github-g988ac590d6e7\n005066c6e104155ec10701d5e6a6f6f1563c05d59994
+        refs/heads/joesouthan/denmark-2021\n003fec55cd5694e94b26a9f20e06bb619ade088d6e4b
+        refs/heads/master\n0040ace90dc4d34136a5d9570e54288c505711fb93ce refs/heads/rubocop\n00412e8e26df5786a5d2a732fd37a9ae085682c1089a
+        refs/heads/try-rust\n003e180c1b0840d63e895859cfeddba83aad9ae25803 refs/pull/1/head\n003f40ce2f6050122ae8517856bcb6af9ca00f544694
+        refs/pull/10/head\n003f1aac721591a1bd7de5ac4401c86014c9a8a088c1 refs/pull/12/head\n003f7da95e8076c07c2f0cf363e6635b9f1a01454888
+        refs/pull/13/head\n003fa1b78a929dac93a52f08db4f2847d76d6cfe39bd refs/pull/14/head\n003fe496bbaabafc3a7f2b666ef923e3bef55ef80984
+        refs/pull/15/head\n003f877914a1b2c8faf1a8af0c33f4530f0bab6b1854 refs/pull/16/head\n003f22fc54e5b4a204e39af22668ff34de9ec745b7a7
+        refs/pull/17/head\n003fbeb4c78337428270f6fd0c1f34ef5cddc3870bd5 refs/pull/18/head\n003f32926163dcec5d673dfaa268bc2f15cdb0cba93a
+        refs/pull/19/head\n003e3fb4efcae92ef4fc3574f94945f532037e9cb06d refs/pull/2/head\n003f03b96a358903f471e374bd09bd105e926098992b
+        refs/pull/20/head\n003f314a9d85870e1f20e06d597c02233bb51569368b refs/pull/21/head\n003f8977e51d2e0e4c05d23b5057a661b498d47c2406
+        refs/pull/22/head\n003fc17aff76b8a2beca7b1263124125624bddca2705 refs/pull/23/head\n004095f9b49fdf250cd73d01191fb39262262e666dba
+        refs/pull/23/merge\n003f77d2eac74dcb08fef9cda1f126408e60ad992a8b refs/pull/24/head\n003ff00fe3650a97fd3380bf030028b761c9b5176c49
+        refs/pull/25/head\n003fc4b7b8b50b8fd3f9441f5f1629e56644b9116c7c refs/pull/26/head\n003f4052f6b04f941b7b8760fdef1c080aff0a732fc0
+        refs/pull/27/head\n003f48eadb9e4de12e0cba083a31b918c80118421f78 refs/pull/28/head\n003eccfeaf24dc00d494fc7d0df4694ae6466f77d096
+        refs/pull/3/head\n003f6ef9ee72a4bcaff3ddbf88846ce8d4c3267bf148 refs/pull/30/head\n003fc4c85d8c124b3ce522a73724f0c796f652204e96
+        refs/pull/31/head\n003fe4f8486f8086eebceed9761b5879a883b4e44b3b refs/pull/32/head\n003f8bacc2115e4d941d75990362ace0a7af716dff1e
+        refs/pull/33/head\n003f671f3407773f483a9ba947f3433981d1e2b19792 refs/pull/34/head\n004070ee46d0f5bbb92df5cfdab093369ffa3004a8c4
+        refs/pull/34/merge\n003fb1baf84bf3cc42e7c6b02d4cd3c6ce3140a5e4eb refs/pull/35/head\n003f1378a2b0b446d991b7567efbc7eeeed2720e4d8f
+        refs/pull/36/head\n003f56c7a7c7f5673862ce62160447f778db956798c8 refs/pull/37/head\n003f0dbf66ecefa1a809b7b13960707c740651a06538
+        refs/pull/38/head\n003e8f96ea71655dc85a6414f251b7720e3658dbadbc refs/pull/4/head\n003ffb23205989b5cfc3ea29ef6fd79eab90abae119a
+        refs/pull/40/head\n003f049fb13d32d5dbd1127648da758c89233aa8e76c refs/pull/41/head\n003f10222ccd1bb4e24c422a6c9f80bfe959d52f9430
+        refs/pull/42/head\n003f4b7247282ad411e528640e9585b4342800538ef0 refs/pull/43/head\n003f04ef48b284368d06409cee9807c304553a1edf33
+        refs/pull/45/head\n003f4b7d6499fb0f00a5b69e917611c54cfd156bc9c7 refs/pull/47/head\n003f45424b82adecfb70a4c2b1c65f8e6cf3e6f23b11
+        refs/pull/48/head\n0040923e96e3a370ab3e66e8160f698429c667507730 refs/pull/48/merge\n003fce1f28a374a913f497746a4f3ea0a45c33ec7817
+        refs/pull/49/head\n003eaee08b5bf82e16e9c6a59c3222a91b4727933352 refs/pull/5/head\n003f2e07d971843f3cd5b7c9902d676828758a120524
+        refs/pull/50/head\n003f8834549915eac40332ef00f63fb0ee0fae6c4d65 refs/pull/51/head\n003f66c6e104155ec10701d5e6a6f6f1563c05d59994
+        refs/pull/52/head\n003f909dae23b51339967213867156fa555b73179247 refs/pull/53/head\n003f5e2aaef766c96702f8b7a2b07064dba4c0fa5099
+        refs/pull/54/head\n003f2e8e26df5786a5d2a732fd37a9ae085682c1089a refs/pull/55/head\n004072ebe7f04affe9a9cae94a4d60e3fdfa8a1320da
+        refs/pull/55/merge\n003fd46c920a0b418181e8010f1a34218d9b8dedbdd0 refs/pull/56/head\n003f94ab15710cf403135ec04462035574e1ecf768e3
+        refs/pull/58/head\n003f8f2b134ce431c4584dc7ff8a986ea14ccb108c34 refs/pull/59/head\n003ee981edc1fdbaf8e1c5118d007ae340a70ebc1e3e
+        refs/pull/6/head\n003f8ac656c341481379ea4fd294ed4ece7d79a22993 refs/pull/60/head\n003ef54738311638bb1a77db383b434c12341eca0f55
+        refs/pull/7/head\n003ed2eb29beda934c14220146c82f830de2edd63a25 refs/pull/8/head\n003e1c72c35ff2aa9d7ce0403d7fd4aa010d94723076
+        refs/pull/9/head\n003ec5bf1bd47935504072ac0eba1006cf4d67af6a7a refs/tags/v1.0.0\n0041df9f605d7111b6814fe493cf8f41de3f9f0978b2
+        refs/tags/v1.0.0^{}\n003ea58ed2ef16972597b6ddf99357d1a56cf98cedb2 refs/tags/v1.1.0\n0041f6203eaf657c4e1b69315d43083804d818aafe23
+        refs/tags/v1.1.0^{}\n003fd31e445215b5af70c1604715d97dd953e868380e refs/tags/v1.10.0\n003fe39e059fe0d1632b95e5800cb8a594d49599654d
+        refs/tags/v1.11.0\n003fc170ea081c121c00ed6fe8764e3557e731454b9d refs/tags/v1.11.1\n003f37f41032a0f191507903ebbae8a5c0cb945d7585
+        refs/tags/v1.13.0\n00427bb4e41ce5164074a0920d5b5770d196b4d90104 refs/tags/v1.13.0^{}\n003f3b5a0ff1ef12081d30fb4e782e3d558262469ea8
+        refs/tags/v1.14.0\n003f71083639645603d3bc25f7f5b11c96f0d07bf252 refs/tags/v1.15.0\n003f155d9aad3daa870612c06be6316817faeb4c98a8
+        refs/tags/v1.17.1\n003fb12c186ca6fd4ffdac85175742ff7e4d0a705ef4 refs/tags/v1.18.0\n003ee540fac7b4a958612e051842aa1ace69ba95a6eb
+        refs/tags/v1.2.0\n0041b9c932dd543261c7fe6afc54f8c51a99bbc2bdd8 refs/tags/v1.2.0^{}\n003e58266f176afd655faedde8726e5bce17edd09a4a
+        refs/tags/v1.3.0\n0041469dacb70fafd72ed9571748036642df0d0857fa refs/tags/v1.3.0^{}\n003eda8b496c60593b72680454334588a753fcf2c0b6
+        refs/tags/v1.4.0\n004126f4887ec647493f044836363537e329d9d213aa refs/tags/v1.4.0^{}\n003e55d39bf3042fac0b770bca2bfb200cfdffcd0175
+        refs/tags/v1.5.0\n003e444606ddc1a6543ff37199c072c829564a9a8a65 refs/tags/v1.6.0\n003eefb29a3cab92c962629d4728400147b60d88b6eb
+        refs/tags/v1.7.0\n003e20984b51291e25782bb55ef72008bed592c4c2d7 refs/tags/v1.8.0\n003ec878eaa4dfcc38a2b95100f79dedc63f34755473
+        refs/tags/v1.9.0\n003eb7bcef49295db54092762ea4f637663c5877e2e5 refs/tags/v2.0.0\n003e624341fe34a8f103a736312831a79cd821ac79c8
+        refs/tags/v2.1.0\n0000"
+  recorded_at: Mon, 21 Sep 2020 17:43:27 GMT
+recorded_with: VCR 6.0.0

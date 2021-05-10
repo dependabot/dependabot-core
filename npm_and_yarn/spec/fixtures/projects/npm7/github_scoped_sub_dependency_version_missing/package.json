@@ -1,0 +1,15 @@
+{
+  "name": "test-missing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "@dependabot/test-missing-scoped-dep-version-npm-package": "https://github.com/dependabot-fixtures/test-missing-scoped-dep-version-npm-package#v1.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

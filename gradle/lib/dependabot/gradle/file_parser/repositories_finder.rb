@@ -6,14 +6,23 @@ module Dependabot
   module Gradle
     class FileParser
       class RepositoriesFinder
+        SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+
         # The Central Repo doesn't have special status for Gradle, but until
         # we're confident we're selecting repos correctly it's wise to include
         # it as a default.
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
 
         REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
+
+        GROOVY_MAVEN_REPO_REGEX =
+          /maven\s*\{[^\}]*\surl[\s\(]=?[^'"]*['"](?<url>[^'"]+)['"]/.freeze
+
+        KOTLIN_MAVEN_REPO_REGEX =
+          /maven\((url\s?\=\s?)?["](?<url>[^"]+)["]\)/.freeze
+
         MAVEN_REPO_REGEX =
-          /maven\s*\{[^\}]*\surl[\s\(]\s*['"](?<url>[^'"]+)['"]/.freeze
+          /(#{KOTLIN_MAVEN_REPO_REGEX}|#{GROOVY_MAVEN_REPO_REGEX})/.freeze
 
         def initialize(dependency_files:, target_dependency_file:)
           @dependency_files = dependency_files
@@ -84,17 +93,11 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            if block.match?(/\sgoogle\(/)
-              repository_urls << "https://maven.google.com/"
-            end
+            repository_urls << "https://maven.google.com/" if block.match?(/\sgoogle\(/)
 
-            if block.match?(/\smavenCentral\(/)
-              repository_urls << "https://repo.maven.apache.org/maven2/"
-            end
+            repository_urls << "https://repo.maven.apache.org/maven2/" if block.match?(/\smavenCentral\(/)
 
-            if block.match?(/\sjcenter\(/)
-              repository_urls << "https://jcenter.bintray.com/"
-            end
+            repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << Regexp.last_match.named_captures.fetch("url")
@@ -136,8 +139,9 @@ module Dependabot
         end
 
         def top_level_buildfile
-          @top_level_buildfile ||=
-            dependency_files.find { |f| f.name == "build.gradle" }
+          @top_level_buildfile ||= dependency_files.find do |f|
+            SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+          end
         end
       end
     end

@@ -17,9 +17,7 @@ module Dependabot
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
       def self.parse(obj)
-        if obj.is_a?(Gem::Version)
-          return ["=", NpmAndYarn::Version.new(obj.to_s)]
-        end
+        return ["=", NpmAndYarn::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
         unless (matches = PATTERN.match(obj.to_s))
           msg = "Illformed requirement [#{obj.inspect}]"
@@ -47,16 +45,15 @@ module Dependabot
       end
 
       def initialize(*requirements)
-        requirements = requirements.flatten.flat_map do |req_string|
-          convert_js_constraint_to_ruby_constraint(req_string)
-        end
+        requirements = requirements.flatten.
+                       flat_map { |req_string| req_string.split(",").map(&:strip) }.
+                       flat_map { |req_string| convert_js_constraint_to_ruby_constraint(req_string) }
 
         super(requirements)
       end
 
       private
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_js_constraint_to_ruby_constraint(req_string)
         return req_string if req_string.match?(/^([A-Za-uw-z]|v[^\d])/)
 
@@ -72,7 +69,6 @@ module Dependabot
         else ruby_range(req_string)
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def convert_tilde_req(req_string)
         version = req_string.gsub(/^~\>?[\s=]*/, "")
@@ -90,9 +86,7 @@ module Dependabot
         upper_bound_range =
           if upper_bound_parts.length < 3
             # When upper bound is a partial version treat these as an X-range
-            if upper_bound_parts[-1].to_i.positive?
-              upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1
-            end
+            upper_bound_parts[-1] = upper_bound_parts[-1].to_i + 1 if upper_bound_parts[-1].to_i.positive?
             upper_bound_parts.fill("0", upper_bound_parts.length...3)
             "< #{upper_bound_parts.join('.')}.a"
           else
@@ -112,11 +106,10 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^[\s=]*/, "")
         parts = version.split(".")
-        parts = parts.fill("x", parts.length...3)
+        parts.fill("x", parts.length...3)
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
@@ -133,7 +126,6 @@ module Dependabot
 
         [">= #{version}", "< #{upper_bound}"]
       end
-      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

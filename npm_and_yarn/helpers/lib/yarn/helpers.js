@@ -44,4 +44,11 @@ class LightweightInstall extends Install {
   }
 }
 
-module.exports = { isString, LightweightAdd, LightweightInstall };
+const LOCKFILE_ENTRY_REGEX = /^(.*)@([^@]*?)$/;
+
+module.exports = {
+  isString,
+  LightweightAdd,
+  LightweightInstall,
+  LOCKFILE_ENTRY_REGEX,
+};

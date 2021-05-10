@@ -5,7 +5,7 @@ function output(obj) {
 }
 
 const input = [];
-process.stdin.on("data", data => input.push(data));
+process.stdin.on("data", (data) => input.push(data));
 process.stdin.on("end", () => {
   const request = JSON.parse(input.join(""));
   const [manager, functionName] = request.function.split(":");
@@ -19,10 +19,10 @@ process.stdin.on("end", () => {
   try {
     func
       .apply(null, request.args)
-      .then(result => {
+      .then((result) => {
         output({ result: result });
       })
-      .catch(error => {
+      .catch((error) => {
         output({ error: error.message });
         process.exit(1);
       });

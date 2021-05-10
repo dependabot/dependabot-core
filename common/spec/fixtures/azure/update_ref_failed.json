@@ -1,0 +1,14 @@
+{
+    "value": [
+        {
+            "repositoryId": "d3d1760b-311c-4175-a726-20dfc6a7f885",
+            "name": "refs/heads/vsts-api-sample/answer-woman-flame",
+            "oldObjectId": "ggf0dcb632e11e8e71f433956183349746fec562",
+            "customMessage": "The user does not have force push permissions",
+            "isLocked": false,
+            "updateStatus": "failed",
+            "success": false
+        }
+    ],
+    "count": 1
+}

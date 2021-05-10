@@ -22,9 +22,7 @@ module Dependabot
 
           project_sdks = parsed_global_json.fetch("msbuild-sdks", {})
 
-          unless project_sdks.is_a?(Hash)
-            raise Dependabot::DependencyFileNotParseable, global_json.path
-          end
+          raise Dependabot::DependencyFileNotParseable, global_json.path unless project_sdks.is_a?(Hash)
 
           project_sdks.each do |dependency_name, version|
             dependency_set <<
