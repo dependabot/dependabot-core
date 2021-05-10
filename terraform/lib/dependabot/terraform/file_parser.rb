@@ -230,7 +230,7 @@ module Dependabot
             )
           end
 
-          JSON.parse(stdout)#.fetch('module', {})
+          JSON.parse(stdout)
         end
       end
 
