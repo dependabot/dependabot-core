@@ -960,6 +960,65 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_tag_for_pinned_version" do
+    subject { checker.local_tag_for_pinned_version }
+
+    context "with a git commit pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: source_commit
+        }
+      end
+
+      let(:repo_url) { "https://github.com/actions/checkout.git" }
+      let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "actions-checkout" }
+
+      context "that is a tag" do
+        let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
+
+        it { is_expected.to eq("v2.3.3") }
+      end
+
+      context "that is not a tag" do
+        let(:source_commit) { "25a956c84d5dd820d28caab9f86b8d183aeeff3d" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is an invalid tag" do
+        let(:source_commit) { "18217bbd6de24e775799c3d99058f167ad168624" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not found" do
+        let(:source_commit) { "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is multiple tags" do
+        let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
+
+        it { is_expected.to eq("v2.3.4") }
+      end
+    end
+  end
+
   describe "#git_repo_reachable?" do
     subject { checker.git_repo_reachable? }
 
