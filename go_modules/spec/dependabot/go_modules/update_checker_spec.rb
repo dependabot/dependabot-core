@@ -14,7 +14,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       dependency: dependency,
       dependency_files: dependency_files,
       credentials: github_credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: []
     )
   end
   let(:dependency) do
@@ -32,11 +32,9 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       file: "go.mod",
       requirement: dependency_version,
       groups: [],
-      source: source
+      source: { type: "default", source: dependency_name }
     }]
   end
-  let(:source) { { type: "default", source: dependency_name } }
-  let(:ignored_versions) { [] }
   let(:go_mod_content) do
     <<~GOMOD
       module foobar
