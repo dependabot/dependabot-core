@@ -55,21 +55,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
-    context "with a go.mod excluded version" do
-      let(:go_mod_content) do
-        <<~GOMOD
-          module foobar
-          require #{dependency_name} v#{dependency_version}
-          exclude #{dependency_name} v1.1.0
-        GOMOD
-      end
-
-      it "doesn't update to the excluded version" do
-        expect(latest_resolvable_version).
-          to eq(Dependabot::GoModules::Version.new("1.0.1"))
-      end
-    end
-
     context "with Dependabot ignored versions" do
       let(:ignored_versions) { ["> 1.0.1"] }
 

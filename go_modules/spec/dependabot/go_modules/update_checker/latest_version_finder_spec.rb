@@ -61,6 +61,20 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "with a go.mod excluded version" do
+      let(:go_mod_content) do
+        <<~GOMOD
+          module foobar
+          require #{dependency_name} v#{dependency_version}
+          exclude #{dependency_name} v1.1.0
+        GOMOD
+      end
+
+      it "doesn't return to the excluded version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.1"))
+      end
+    end
+
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
