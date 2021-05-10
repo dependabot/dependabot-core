@@ -9,7 +9,7 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Terraform::FileParser do
   it_behaves_like "a dependency file parser"
 
-  subject(:parser) { described_class.new(dependency_files: files, source: source) }
+  subject(:parser) { described_class.new(dependency_files: files, source: source, options: {terraform_hcl2: PackageManagerHelper.use_terraform_hcl2?} ) }
 
   let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         }])
       end
 
-      it "has the right details for the sixth dependency (which uses git@github.com)" do
+     it "has the right details for the sixth dependency (which uses git@github.com)" do
         expect(subject[5].name).to eq("github_ssh_without_protocol")
         expect(subject[5].version).to eq("0.4.0")
         expect(subject[5].requirements).to eq([{
@@ -245,5 +245,27 @@ RSpec.describe Dependabot::Terraform::FileParser do
         }])
       end
     end
+
+    context "with the hcl2 option", :hcl2_only do
+      let(:files) { project_dependency_files("hcl2") }
+      it "has the right source for the dependency" do
+        expect(subject[0].requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
+            branch: nil,
+            ref: "0.4.0"
+          }
+        }])
+      end
+    end
+
+    context "with the hcl1_only option", :hcl1_only do 
+      
+    end
+
   end
 end
