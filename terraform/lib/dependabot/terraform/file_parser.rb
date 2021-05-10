@@ -20,10 +20,9 @@ module Dependabot
 
       def parse
         dependency_set = DependencySet.new
-        
+
         terraform_files.each do |file|
-          modules = parsed_file(file).fetch("module",[])
-          
+          modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
             dependency_set << build_terraform_dependency(file, name, details)
           end
@@ -231,7 +230,7 @@ module Dependabot
             )
           end
 
-          JSON.parse(stdout)
+          JSON.parse(stdout)#.fetch('module', {})
         end
       end
 
@@ -255,16 +254,40 @@ module Dependabot
             )
           end
 
-          JSON.parse(stdout).fetch("module", [])
+          json = JSON.parse(stdout)
+          json['module'] = json.fetch("module", []).inject({}) { |memo, item| memo.merge(item) }
+          json
         end
       end
 
+      # == Returns:
+      # A Hash representing each module found in the specified file
+      #
+      # E.g.
+      # {
+      #   "module" => {
+      #     {
+      #       "consul" => [
+      #         {
+      #           "source"=>"consul/aws",
+      #           "version"=>"0.1.0"
+      #         }
+      #       ]
+      #     }
+      #   },
+      #   "terragrunt"=>[
+      #     {
+      #       "include"=>[{ "path"=>"${find_in_parent_folders()}" }],
+      #       "terraform"=>[{ "source" => "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.2" }]
+      #     }
+      #   ],
+      # }
       def parsed_file(file)
         @parsed_buildfile ||= {}
         @parsed_buildfile[file.name] ||=
           if options[:terraform_hcl2]
             parsed_file_hcl2(file)
-          else 
+          else
             parsed_file_hcl1(file)
           end
       rescue SharedHelpers::HelperSubprocessFailed => e

@@ -14,6 +14,22 @@ RSpec.describe Dependabot::Terraform::FileParser do
   let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
+=begin
+V1 output:                             | V2 output:
+=======================================|==================================
+{                                      | {
+  "module": [                          |   "module": {
+    {                                  |     "consul": [
+      "consul": [                      |       {
+        {                              |         "source": "consul/aws",
+          "source": "consul/aws",      |         "version": "0.1.0"
+          "version": "0.1.0"           |       }
+        }                              |     ]
+      ]                                |   }
+    }                                  | }
+  ]                                    |
+}                                      |
+=end
   describe "#parse" do
     subject { parser.parse }
 
@@ -33,7 +49,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "raises an error" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
           expect(boom.file_path).to eq("/main.tf")
-          expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
+          if PackageManagerHelper.use_terraform_hcl2?
+            expect(boom.message).to eq("Failed to convert file: parse config: [:18,1-1: Argument or block definition required; An argument or block definition is required here.]")
+          else
+            expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
+          end
         end
       end
     end
@@ -248,6 +268,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
     context "with the hcl2 option", :hcl2_only do
       let(:files) { project_dependency_files("hcl2") }
+
       it "has the right source for the dependency" do
         expect(subject[0].requirements).to eq([{
           requirement: nil,
@@ -264,8 +285,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with the hcl1_only option", :hcl1_only do 
-      
     end
-
   end
 end
