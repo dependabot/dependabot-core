@@ -69,17 +69,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     it "updates modules that don't live at a repository root"
     it "updates Git SHAs to releases that include them"
     it "doesn't updates Git SHAs to releases that don't include them"
-
     it "doesn't update Git SHAs not on master to newer commits to master"
-
-    context "with a retracted update version" do
-      # latest release v1.0.1 is retracted
-      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-retracted" }
-
-      pending "doesn't update to the retracted version" do
-        expect(latest_resolvable_version).
-          to eq(Dependabot::GoModules::Version.new("1.0.0"))
-      end
-    end
   end
 end
