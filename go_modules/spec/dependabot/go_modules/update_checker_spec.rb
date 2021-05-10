@@ -70,25 +70,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     it "updates Git SHAs to releases that include them"
     it "doesn't updates Git SHAs to releases that don't include them"
 
-    context "for Git pseudo-versions" do
-      context "with releases available" do
-        let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
-
-        it "doesn't update them, currently" do
-          expect(latest_resolvable_version.to_s).to eq(dependency_version)
-        end
-      end
-
-      context "with newer revisions available" do
-        let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
-
-        pending "updates to newer commits to master" do
-          expect(latest_resolvable_version.to_s).
-            to eq("1.2.0-pre2.0.20181018214848-bbed29f74d16")
-        end
-      end
-    end
-
     it "doesn't update Git SHAs not on master to newer commits to master"
 
     context "when the package url returns 404" do

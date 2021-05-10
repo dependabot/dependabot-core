@@ -108,6 +108,22 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "for a Git pseudo-version with releases available" do
+      let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
+
+      it "doesn't return the releases, currently" do
+        expect(finder.latest_version).to eq(dependency_version)
+      end
+    end
+
+    context "for a Git pseudo-version with newer revisions available" do
+      let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
+
+      pending "updates to newer commits to master" do
+        expect(finder.latest_version).to eq("1.2.0-pre2.0.20181018214848-bbed29f74d16")
+      end
+    end
+
     context "when the latest version is an '+incompatible' version" do # https://golang.org/ref/mod#incompatible-versions
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-incompatible" }
       let(:dependency_version) { "2.0.0+incompatible" }
