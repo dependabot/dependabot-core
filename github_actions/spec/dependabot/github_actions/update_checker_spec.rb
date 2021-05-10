@@ -165,11 +165,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
-      it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+      it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
       context "and the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
-        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.4")) }
       end
 
       context "and all versions are being ignored" do
