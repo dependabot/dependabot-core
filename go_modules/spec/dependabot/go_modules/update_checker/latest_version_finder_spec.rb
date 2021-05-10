@@ -41,6 +41,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ]
     end
 
+    let(:ignored_versions) { [] }
+
     let(:finder) do
       described_class.new(
         dependency: dependency,
@@ -51,7 +53,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           "username" => "x-access-token",
           "password" => "token"
         }],
-        ignored_versions: []
+        ignored_versions: ignored_versions
       )
     end
 
@@ -71,6 +73,14 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       it "doesn't return to the excluded version" do
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.1"))
+      end
+    end
+
+    context "with Dependabot-ignored versions" do
+      let(:ignored_versions) { ["> 1.0.1"] }
+
+      it "doesn't return Dependabot-ignored versions" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.1"))
       end
     end
