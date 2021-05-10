@@ -17,23 +17,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
   describe "#parse" do
     subject { parser.parse }
 
-    context "with an invalid registry source" do
-      let(:files) do
-        [
-          Dependabot::DependencyFile.new(
-            name: "main.tf",
-            content: fixture("projects", "invalid_registry", "main.tf")
-          )
-        ]
-      end
-
-      it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |boom|
-          expect(boom.message).to eq("Invalid registry source specified: 'consul/aws'")
-        end
-      end
-    end
-
     context "with an unparseable source" do
       let(:files) do
         [
@@ -45,9 +28,9 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
 
       it "raises an error" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
-          expect(boom.file_path).to eq("/main.tf")
-          expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.file_path).to eq("/main.tf")
+          expect(error.message).to match(/Failed to convert file: .* An argument or block definition is required here/)
         end
       end
     end
@@ -62,7 +45,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         ]
       end
 
-      it "gets the right dependencies" do 
+      it "gets the right dependencies" do
       end
       its(:length) { is_expected.to eq(1) }
     end
@@ -103,7 +86,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependency.name).to eq("devops-workflow/members/github")
         expect(dependency.version).to be_nil
         expect(dependency.requirements).to eq([{
-          requirement: nil, 
+          requirement: nil,
           groups: [],
           file: "main.tf",
           source: {
@@ -165,7 +148,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
         }])
       end
     end
-
 
     context "with git sources" do
       let(:files) do
@@ -283,13 +265,12 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-
     context "with a terragrunt file" do
       let(:files) do
         [
           Dependabot::DependencyFile.new(
-            name: "main.tfvars",
-            content: fixture("projects", "terragrunt", "main.tfvars")
+            name: "terragrunt.hcl",
+            content: fixture("projects", "terragrunt", "terragrunt.hcl")
           )
         ]
       end
@@ -303,7 +284,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(subject[0].requirements).to eq([{
           requirement: nil,
           groups: [],
-          file: "main.tfvars",
+          file: "terragrunt.hcl",
           source: {
             type: "git",
             url: "git@github.com:gruntwork-io/modules-example.git",
@@ -315,7 +296,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with a provider block" do
-      let (:files) do
+      let(:files) do
         [
           Dependabot::DependencyFile.new(
             name: "main.tf",
@@ -327,7 +308,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details" do
         dependency = subject.first
 
-        expect(dependency.name).to eq("aws")
+        expect(dependency.name).to eq("hashicorp/aws")
         expect(dependency.version).to eq("0.1.0")
       end
     end

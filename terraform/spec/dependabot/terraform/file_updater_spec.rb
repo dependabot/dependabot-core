@@ -190,8 +190,8 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         let(:files) do
           [
             Dependabot::DependencyFile.new(
-              name: "main.tfvars",
-              content: fixture("projects", "terragrunt", "main.tfvars")
+              name: "terragrunt.hcl",
+              content: fixture("projects", "terragrunt", "terragrunt.hcl")
             ),
             Dependabot::DependencyFile.new(
               name: "other.tf",
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               requirements: [{
                 requirement: nil,
                 groups: [],
-                file: "main.tfvars",
+                file: "terragrunt.hcl",
                 source: {
                   type: "git",
                   url: "git@github.com:gruntwork-io/modules-example.git",
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               previous_requirements: [{
                 requirement: nil,
                 groups: [],
-                file: "main.tfvars",
+                file: "terragrunt.hcl",
                 source: {
                   type: "git",
                   url: "git@github.com:gruntwork-io/modules-example.git",
@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
 
         it "updates the requirement" do
-          updated_file = subject.find { |file| file.name == "main.tfvars" }
+          updated_file = subject.find { |file| file.name == "terragrunt.hcl" }
 
           expect(updated_file.content).to include(
             "source = \"git::git@github.com:gruntwork-io/modules-example.git//"\
