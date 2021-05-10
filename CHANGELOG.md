@@ -1,3 +1,8 @@
+## v0.145.4, 10 May 2021
+
+- Actions: accept semver versions
+- Actions: detect workflow steps pinned to semver versions
+
 ## v0.145.3, 7 May 2021
 
 - go_modules: Gracefully handle +incompatible versions when checking for updates
