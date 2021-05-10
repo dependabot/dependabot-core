@@ -7,7 +7,6 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
 require "dependabot/docker/utils/credentials_finder"
-require "dependabot/docker/update_checker"
 
 module Dependabot
   module Docker
@@ -36,7 +35,7 @@ module Dependabot
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
       def parse
-        dependencies = {}
+        dependency_set = DependencySet.new
 
         dockerfiles.each do |dockerfile|
           dockerfile.content.each_line do |line|
@@ -48,29 +47,21 @@ module Dependabot
             version = version_from(parsed_from_line)
             next unless version
 
-            name = parsed_from_line.fetch("image")
-            dep_uniq_key = dep_key(name, version)
-
-            requirement = {
-              requirement: nil,
-              groups: [],
-              file: dockerfile.name,
-              source: source_from(parsed_from_line)
-            }
-            if (existing = dependencies[dep_uniq_key])
-              existing.requirements.push(requirement) unless existing.requirements.any? { |r| r == requirement }
-            else
-              dependencies[dep_uniq_key] = Dependency.new(
-                name: name,
-                version: version,
-                package_manager: "docker",
-                requirements: [requirement]
-              )
-            end
+            dependency_set << Dependency.new(
+              name: parsed_from_line.fetch("image"),
+              version: version,
+              package_manager: "docker",
+              requirements: [
+                requirement: nil,
+                groups: [],
+                file: dockerfile.name,
+                source: source_from(parsed_from_line)
+              ]
+            )
           end
         end
 
-        dependencies.values
+        dependency_set.dependencies
       end
 
       private
@@ -162,14 +153,6 @@ module Dependabot
         return if dependency_files.any?
 
         raise "No Dockerfile!"
-      end
-
-      def dep_key(name, version)
-        m = version.match(Dependabot::Docker::UpdateChecker::NAME_WITH_VERSION)
-        return name unless m
-
-        captures = m.named_captures
-        [name, captures.fetch("prefix"), captures.fetch("suffix")].compact.join(":")
       end
     end
   end
