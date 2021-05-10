@@ -81,27 +81,5 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
           to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
-
-    context "when the package url is internal/invalid" do
-      let(:dependency_files) { [go_mod] }
-      let(:project_name) { "unrecognized_import" }
-      let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-      let(:dependency_name) { "pkg-errors" }
-      let(:dependency_version) { "1.0.0" }
-
-      let(:go_mod) do
-        Dependabot::DependencyFile.new(name: "go.mod", content: go_mod_body)
-      end
-      let(:go_mod_body) { fixture("projects", project_name, "go.mod") }
-
-      it "raises a DependencyFileNotResolvable error" do
-        error_class = Dependabot::DependencyFileNotResolvable
-        expect { latest_resolvable_version }.
-          to raise_error(error_class) do |error|
-          expect(error.message).to include("pkg-errors")
-        end
-      end
-    end
   end
 end
