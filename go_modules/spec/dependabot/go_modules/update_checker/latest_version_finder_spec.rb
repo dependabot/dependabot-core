@@ -41,20 +41,22 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       ]
     end
 
+    let(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }],
+        ignored_versions: []
+      )
+    end
+
     context "when there's a newer major version but not a new minor version" do
       it "returns the latest minor version for the dependency's current major version" do
-        finder = described_class.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }],
-          ignored_versions: []
-        )
-
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
@@ -64,18 +66,6 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "2.0.0+incompatible" }
 
       it "returns the current version" do
-        finder = described_class.new(
-          dependency: dependency,
-          dependency_files: dependency_files,
-          credentials: [{
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "token"
-          }],
-          ignored_versions: []
-        )
-
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("2.0.0+incompatible"))
       end
     end
