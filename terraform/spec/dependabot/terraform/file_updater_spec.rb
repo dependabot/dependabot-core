@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         [
           Dependabot::DependencyFile.new(
             name: "main.tf",
-            content: fixture("projects", "git_tags", "main.tf")
+            content: fixture("projects", "git_tags_011", "main.tf")
           )
         ]
       end
@@ -107,7 +107,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           [
             Dependabot::DependencyFile.new(
               name: "main.tf",
-              content: fixture("projects", "git_tags", "main.tf")
+              content: fixture("projects", "git_tags_011", "main.tf")
             )
           ]
         end

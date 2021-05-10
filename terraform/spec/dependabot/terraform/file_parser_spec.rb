@@ -149,12 +149,12 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with git sources" do
+    context "with v0.11 git sources" do
       let(:files) do
         [
           Dependabot::DependencyFile.new(
             name: "main.tf",
-            content: fixture("projects", "git_tags", "main.tf")
+            content: fixture("projects", "git_tags_011", "main.tf")
           )
         ]
       end
@@ -259,6 +259,122 @@ RSpec.describe Dependabot::Terraform::FileParser do
             type: "git",
             url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
             ref: "tags/0.4.0",
+            branch: nil
+          }
+        }])
+      end
+    end
+
+    context "with v0.12+ git sources" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "main.tf",
+            content: fixture("projects", "git_tags_012", "main.tf")
+          )
+        ]
+      end
+
+      specify { expect(subject.length).to eq(6) }
+      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+      it "has the right details for the first dependency (which uses git:: with a tag)" do
+        dependency = subject.find { |x| x.name == "origin_label" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to eq("0.3.7")
+        expect(dependency.requirements).to match_array([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-null-label.git",
+            branch: nil,
+            ref: "0.3.7"
+          }
+        }])
+      end
+
+      it "has the right details for the second dependency (which uses github.com with a tag)" do
+        dependency = subject.find { |x| x.name == "logs" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to eq("0.2.2")
+        expect(dependency.requirements).to match_array([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-aws-s3-log-storage.git",
+            branch: nil,
+            ref: "0.2.2"
+          }
+        }])
+      end
+
+      it "has the right details for the third dependency (which uses bitbucket.org with no tag)" do
+        dependency = subject.find { |x| x.name == "distribution_label" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to be_nil
+        expect(dependency.requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "https://bitbucket.org/cloudposse/terraform-null-label.git",
+            branch: nil,
+            ref: nil
+          }
+        }])
+      end
+
+      it "has the right details the fourth dependency (which has a subdirectory and a tag)" do
+        dependency = subject.find { |x| x.name == "dns" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to eq("0.2.5")
+        expect(dependency.requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
+            branch: nil,
+            ref: "0.2.5"
+          }
+        }])
+      end
+
+      it "has the right details the fifth dependency)" do
+        dependency = subject.find { |x| x.name == "duplicate_label" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to eq("0.3.7")
+        expect(dependency.requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "https://github.com/cloudposse/terraform-null-label.git",
+            branch: nil,
+            ref: "0.3.7"
+          }
+        }])
+      end
+
+      it "has the right details for the sixth dependency (which uses git@github.com)" do
+        dependency = subject.find { |x| x.name == "github_ssh_without_protocol" }
+        expect(dependency).to_not be_nil
+        expect(dependency.version).to eq("0.4.0")
+        expect(dependency.requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "git",
+            url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
+            ref: "0.4.0",
             branch: nil
           }
         }])
