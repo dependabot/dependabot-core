@@ -1,3 +1,7 @@
+## v0.145.3, 7 May 2021
+
+- go_modules: Gracefully handle +incompatible versions when checking for updates
+
 ## v0.145.2, 7 May 2021
 
 - Nuget: Handle paginated v2 nuget api responses
