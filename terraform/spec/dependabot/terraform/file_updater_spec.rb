@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     subject { updater.updated_dependency_files }
 
     context "with a valid dependency file" do
-      let(:files) { project_dependency_files("git_tags") }
+      let(:files) { project_dependency_files("git_tags_011") }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a git dependency" do
-        let(:files) { project_dependency_files("git_tags") }
+        let(:files) { project_dependency_files("git_tags_011") }
 
         it "updates the requirement" do
           updated_file = subject.find { |file| file.name == "main.tf" }
