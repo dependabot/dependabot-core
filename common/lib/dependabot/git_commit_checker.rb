@@ -60,10 +60,10 @@ module Dependabot
     end
 
     def pinned_ref_looks_like_commit_sha?
-      return false unless pinned?
-
       ref = dependency_source_details.fetch(:ref)
-      return false unless ref.match?(/^[0-9a-f]{6,40}$/)
+      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
+
+      return false unless pinned?
 
       local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
@@ -137,6 +137,17 @@ module Dependabot
       versions.select do |version|
         version > current_version
       end
+    end
+
+    def local_tag_for_pinned_version
+      return unless pinned?
+
+      ref = dependency_source_details.fetch(:ref)
+      tags = local_tags.select { |t| t.commit_sha == ref && version_class.correct?(t.name) }.
+             sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
     end
 
     def git_repo_reachable?

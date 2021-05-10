@@ -213,14 +213,8 @@ module Dependabot
           @v2_nuget_listings ||=
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
-            map do |url_details|
-              response = Excon.get(
-                url_details[:versions_url],
-                idempotent: true,
-                **SharedHelpers.excon_defaults(
-                  excon_options.merge(headers: url_details[:auth_header])
-                )
-              )
+            flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
+            map do |url_details, response|
               next unless response.status == 200
 
               {
@@ -228,6 +222,39 @@ module Dependabot
                 "listing_details" => url_details
               }
             end.compact
+        end
+
+        def fetch_paginated_v2_nuget_listings(url_details, results = {})
+          response = Excon.get(
+            url_details[:versions_url],
+            idempotent: true,
+            **SharedHelpers.excon_defaults(excon_options.merge(headers: url_details[:auth_header]))
+          )
+
+          # NOTE: Short circuit if we get a circular next link
+          return results.to_a if results.key?(url_details)
+
+          results[url_details] = response
+
+          if (link_href = fetch_v2_next_link_href(response.body))
+            url_details = url_details.dup
+            url_details[:versions_url] = link_href
+            fetch_paginated_v2_nuget_listings(url_details, results)
+          end
+
+          results.to_a
+        end
+
+        def fetch_v2_next_link_href(xml_body)
+          doc = Nokogiri::XML(xml_body)
+          doc.remove_namespaces!
+          link_node = doc.xpath("/feed/link").find do |node|
+            rel = node.attribute("rel").value.strip
+            rel == "next"
+          end
+          link_node.attribute("href").value.strip if link_node
+        rescue Nokogiri::XML::XPath::SyntaxError
+          nil
         end
 
         def versions_for_v3_repository(repository_details)

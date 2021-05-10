@@ -262,6 +262,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a package that returns paginated api results when using the v2 nuget api", :vcr do
+      let(:dependency_files) { project_dependency_files("paginated_package_v2_api") }
+      let(:dependency_requirements) { [{ file: "my.csproj", requirement: "4.7.1", groups: [], source: nil }] }
+      let(:dependency_name) { "FakeItEasy" }
+      let(:dependency_version) { "4.7.1" }
+
+      its([:version]) { is_expected.to eq(version_class.new("7.0.2")) }
+    end
+
     context "with a custom repo in the credentials" do
       let(:credentials) do
         [{

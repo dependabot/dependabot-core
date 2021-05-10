@@ -1,3 +1,20 @@
+## v0.145.4, 10 May 2021
+
+- Actions: accept semver versions
+- Actions: detect workflow steps pinned to semver versions
+
+## v0.145.3, 7 May 2021
+
+- go_modules: Gracefully handle +incompatible versions when checking for updates
+
+## v0.145.2, 7 May 2021
+
+- Nuget: Handle paginated v2 nuget api responses
+- maven: allow security updates to multi-dependency properties
+- build(deps): bump lodash
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): update rubocop requirement from ~> 1.13.0 to ~> 1.14.0
+
 ## v0.145.1, 5 May 2021
 
 - go_modules: don't filter the current version
