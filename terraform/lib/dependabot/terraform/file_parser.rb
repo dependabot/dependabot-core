@@ -10,11 +10,14 @@ require "dependabot/file_parsers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/terraform/file_selector"
 
 module Dependabot
   module Terraform
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
+
+      include FileSelector
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
 
@@ -29,8 +32,10 @@ module Dependabot
         end
 
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terragrunt", []).first || {}
-          modules = modules.fetch("terraform", [])
+          # legacy terragrunt (.tfvars) files have a top-level "terragrunt" key
+          # that has since been removed.
+          legacy_modules = (parsed_file(file).fetch("terragrunt", []).first || {}).fetch("terraform", [])
+          modules = parsed_file(file).fetch("terraform", []) + legacy_modules
           modules.each do |details|
             next unless details["source"]
 
@@ -308,14 +313,6 @@ module Dependabot
       def native_helpers_root
         default_path = File.join(__dir__, "../../../helpers/install-dir")
         ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
-      end
-
-      def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") }
-      end
-
-      def terragrunt_files
-        dependency_files.select { |f| f.name.end_with?(".tfvars") }
       end
 
       def check_required_files
