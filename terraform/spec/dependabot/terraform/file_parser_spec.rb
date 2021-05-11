@@ -540,5 +540,15 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
+
+    context "terraform.lock.hcl files" do
+      let(:files) { project_dependency_files("terraform_lock_only") }
+
+      it "does not attempt to parse the lockfile" do
+        expect { dependencies.length }.to raise_error(RuntimeError) do |error|
+          expect(error.message).to eq("No Terraform configuration file!")
+        end
+      end
+    end
   end
 end
