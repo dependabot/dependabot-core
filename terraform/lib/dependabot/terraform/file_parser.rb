@@ -10,11 +10,14 @@ require "dependabot/file_parsers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/terraform/file_selector"
 
 module Dependabot
   module Terraform
     class FileParser < Dependabot::FileParsers::Base
       require "dependabot/file_parsers/base/dependency_set"
+
+      include FileSelector
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
 
@@ -310,14 +313,6 @@ module Dependabot
       def native_helpers_root
         default_path = File.join(__dir__, "../../../helpers/install-dir")
         ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", default_path)
-      end
-
-      def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") }
-      end
-
-      def terragrunt_files
-        dependency_files.select { |f| f.name.end_with?(".tfvars") || f.name.end_with?(".hcl") }
       end
 
       def check_required_files

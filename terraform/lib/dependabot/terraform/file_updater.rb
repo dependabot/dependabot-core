@@ -3,12 +3,15 @@
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
+require "dependabot/terraform/file_selector"
 
 module Dependabot
   module Terraform
     class FileUpdater < Dependabot::FileUpdaters::Base
+      include FileSelector
+
       def self.updated_files_regex
-        [/\.tf$/, /\.tfvars$/]
+        [/\.tf$/, /\.tfvars$/, /\.hcl$/]
       end
 
       def updated_dependency_files
@@ -87,14 +90,6 @@ module Dependabot
         dependency_files.select { |file| filenames.include?(file.name) }
       end
 
-      def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") }
-      end
-
-      def terragrunt_files
-        dependency_files.select { |f| f.name.end_with?(".tfvars") }
-      end
-
       def check_required_files
         return if [*terraform_files, *terragrunt_files].any?
 
@@ -113,7 +108,7 @@ module Dependabot
       def git_declaration_regex(filename)
         # For terragrunt dependencies there's not a lot we can base the
         # regex on. Just look for declarations within a `terraform` block
-        return /terraform\s*\{(?:(?!^\}).)*/m if filename.end_with?(".tfvars")
+        return /terraform\s*\{(?:(?!^\}).)*/m if terragrunt_file?(filename)
 
         # For modules we can do better - filter for module blocks that use the
         # name of the dependency

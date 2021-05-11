@@ -2,10 +2,13 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/terraform/file_selector"
 
 module Dependabot
   module Terraform
     class FileFetcher < Dependabot::FileFetchers::Base
+      include FileSelector
+
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.end_with?(".tf", ".tfvars") }
       end
@@ -39,7 +42,7 @@ module Dependabot
       def terragrunt_files
         @terragrunt_files ||=
           repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.end_with?(".tfvars") }.
+          select { |f| f.type == "file" && terragrunt_file?(f.name) }.
           map { |f| fetch_file_from_host(f.name) }
       end
     end

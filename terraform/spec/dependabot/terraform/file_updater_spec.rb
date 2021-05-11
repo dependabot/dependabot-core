@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
       end
 
-      context "with a terragrunt file" do
+      context "with a legacy terragrunt file" do
         let(:files) { project_dependency_files("terragrunt") }
 
         let(:dependencies) do
@@ -208,6 +208,53 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             "consul?ref=v0.0.5\""
           )
         end
+      end
+    end
+
+    context "with an hcl-based terragrunt file" do
+      let(:files) { project_dependency_files("terragrunt_hcl") }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "gruntwork-io/modules-example",
+            version: "0.0.5",
+            previous_version: "0.0.2",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "terragrunt.hcl",
+              source: {
+                type: "git",
+                url: "git@github.com:gruntwork-io/modules-example.git",
+                branch: nil,
+                ref: "v0.0.5"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "terragrunt.hcl",
+              source: {
+                type: "git",
+                url: "git@github.com:gruntwork-io/modules-example.git",
+                branch: nil,
+                ref: "v0.0.2"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "terragrunt.hcl" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            source = "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.5"
+          DEP
+        )
       end
     end
   end
