@@ -263,10 +263,10 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with the hcl2 option", :hcl2_only do
+    context "hcl2 files" do
       let(:files) { project_dependency_files("hcl2") }
 
-      it "has the right source for the dependency" do
+      it "has the right source for the dependency", :hcl2_only do
         expect(subject[0].requirements).to eq([{
           requirement: nil,
           groups: [],
@@ -279,9 +279,10 @@ RSpec.describe Dependabot::Terraform::FileParser do
           }
         }])
       end
-    end
 
-    context "with the hcl1_only option", :hcl1_only do
+      it "fails to parse hcl2 files without the flag set", :hcl1_only do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
     end
   end
 end
