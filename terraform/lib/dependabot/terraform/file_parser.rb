@@ -29,8 +29,10 @@ module Dependabot
         end
 
         terragrunt_files.each do |file|
-          modules = parsed_file(file).fetch("terragrunt", []).first || {}
-          modules = modules.fetch("terraform", [])
+          # legacy terragrunt (.tfvars) files have a top-level "terragrunt" key
+          # that has since been removed.
+          legacy_modules = (parsed_file(file).fetch("terragrunt", []).first || {}).fetch("terraform", [])
+          modules = parsed_file(file).fetch("terraform", []) + legacy_modules
           modules.each do |details|
             next unless details["source"]
 
@@ -315,7 +317,7 @@ module Dependabot
       end
 
       def terragrunt_files
-        dependency_files.select { |f| f.name.end_with?(".tfvars") }
+        dependency_files.select { |f| f.name.end_with?(".tfvars") || f.name.end_with?(".hcl") }
       end
 
       def check_required_files
