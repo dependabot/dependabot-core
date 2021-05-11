@@ -255,7 +255,7 @@ module Dependabot
           end
 
           json = JSON.parse(stdout)
-          json['module'] = json.fetch("module", []).inject({}) { |memo, item| memo.merge(item) }
+          json["module"] = json.fetch("module", []).inject({}) { |memo, item| memo.merge(item) }
           json
         end
       end

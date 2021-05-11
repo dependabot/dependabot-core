@@ -9,27 +9,33 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Terraform::FileParser do
   it_behaves_like "a dependency file parser"
 
-  subject(:parser) { described_class.new(dependency_files: files, source: source, options: {terraform_hcl2: PackageManagerHelper.use_terraform_hcl2?} ) }
+  subject(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      options: {
+        terraform_hcl2: PackageManagerHelper.use_terraform_hcl2?
+      }
+    )
+  end
 
   let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
-=begin
-V1 output:                             | V2 output:
-=======================================|==================================
-{                                      | {
-  "module": [                          |   "module": {
-    {                                  |     "consul": [
-      "consul": [                      |       {
-        {                              |         "source": "consul/aws",
-          "source": "consul/aws",      |         "version": "0.1.0"
-          "version": "0.1.0"           |       }
-        }                              |     ]
-      ]                                |   }
-    }                                  | }
-  ]                                    |
-}                                      |
-=end
+  # V1 output:                             | V2 output:
+  # =======================================|==================================
+  # {                                      | {
+  #   "module": [                          |   "module": {
+  #     {                                  |     "consul": [
+  #       "consul": [                      |       {
+  #         {                              |         "source": "consul/aws",
+  #           "source": "consul/aws",      |         "version": "0.1.0"
+  #           "version": "0.1.0"           |       }
+  #         }                              |     ]
+  #       ]                                |   }
+  #     }                                  | }
+  #   ]                                    |
+  # }                                      |
   describe "#parse" do
     subject { parser.parse }
 
@@ -50,7 +56,10 @@ V1 output:                             | V2 output:
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
           expect(boom.file_path).to eq("/main.tf")
           if PackageManagerHelper.use_terraform_hcl2?
-            expect(boom.message).to eq("Failed to convert file: parse config: [:18,1-1: Argument or block definition required; An argument or block definition is required here.]")
+            expect(boom.message).to eq(
+              "Failed to convert file: parse config: [:18,1-1: Argument or block definition required; " \
+              "An argument or block definition is required here.]"
+            )
           else
             expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
           end
@@ -284,7 +293,7 @@ V1 output:                             | V2 output:
       end
     end
 
-    context "with the hcl1_only option", :hcl1_only do 
+    context "with the hcl1_only option", :hcl1_only do
     end
   end
 end
