@@ -169,7 +169,7 @@ module Dependabot
 
               filenames_to_compile.each do |filename|
                 run_pip_compile_command(
-                  "pyenv exec pip-compile --allow-unsafe #{filename}"
+                  "pyenv exec pip-compile #{pip_compile_options(filename)} --allow-unsafe #{filename}"
                 )
               end
 
