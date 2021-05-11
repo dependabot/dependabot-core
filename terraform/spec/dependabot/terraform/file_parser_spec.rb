@@ -22,20 +22,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
   let(:files) { [] }
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
-  # V1 output:                             | V2 output:
-  # =======================================|==================================
-  # {                                      | {
-  #   "module": [                          |   "module": {
-  #     {                                  |     "consul": [
-  #       "consul": [                      |       {
-  #         {                              |         "source": "consul/aws",
-  #           "source": "consul/aws",      |         "version": "0.1.0"
-  #           "version": "0.1.0"           |       }
-  #         }                              |     ]
-  #       ]                                |   }
-  #     }                                  | }
-  #   ]                                    |
-  # }                                      |
   describe "#parse" do
     subject { parser.parse }
 
@@ -52,17 +38,19 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with an unparseable source" do
       let(:files) { project_dependency_files("unparseable") }
 
-      it "raises an error" do
+      it "raises an error for hcl1", :hcl1_only do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
           expect(boom.file_path).to eq("/main.tf")
-          if PackageManagerHelper.use_terraform_hcl2?
-            expect(boom.message).to eq(
-              "Failed to convert file: parse config: [:18,1-1: Argument or block definition required; " \
-              "An argument or block definition is required here.]"
-            )
-          else
-            expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
-          end
+          expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
+        end
+      end
+
+      it "raises an error for hcl2", :hcl2_only do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
+          expect(boom.message).to eq(
+            "Failed to convert file: parse config: [:18,1-1: Argument or block definition required; " \
+            "An argument or block definition is required here.]"
+          )
         end
       end
     end
