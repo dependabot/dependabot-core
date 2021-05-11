@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         }])
       end
 
-      context "with v0.12+ git sources" do
+      context "with git sources" do
         let(:files) { project_dependency_files("git_tags_012") }
 
         specify { expect(subject.length).to eq(6) }
@@ -388,7 +388,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
-      context "with registry sources for 0.12" do
+      context "with registry sources" do
         let(:files) { project_dependency_files("registry_012") }
 
         its(:length) { is_expected.to eq(5) }
@@ -508,6 +508,29 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
         end
       end
+
+      context "with terragrunt files" do
+        let(:files) { project_dependency_files("terragrunt_hcl") }
+
+        specify { expect(subject.length).to eq(1) }
+        specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+        it "has the right details for the first dependency" do
+          expect(subject[0].name).to eq("gruntwork-io/modules-example")
+          expect(subject[0].version).to eq("0.0.2")
+          expect(subject[0].requirements).to eq([{
+            requirement: nil,
+            groups: [],
+            file: "terragrunt.hcl",
+            source: {
+              type: "git",
+              url: "git@github.com:gruntwork-io/modules-example.git",
+              branch: nil,
+              ref: "v0.0.2"
+            }
+          }])
+        end
+      end
     end
 
     context "hcl2 files using the old parser", :hcl1_only do
@@ -515,6 +538,16 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       it "fails to parse hcl2 files without the flag set" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "terraform.lock.hcl files" do
+      let(:files) { project_dependency_files("terraform_lock_only") }
+
+      it "does not attempt to parse the lockfile" do
+        expect { dependencies.length }.to raise_error(RuntimeError) do |error|
+          expect(error.message).to eq("No Terraform configuration file!")
+        end
       end
     end
   end
