@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
   let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
   describe "#parse" do
-    subject { parser.parse }
+    subject(:dependencies) { parser.parse }
 
     context "with an invalid registry source" do
       let(:files) { project_dependency_files("invalid_registry") }
@@ -280,14 +280,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
 
       context "with v0.12+ git sources" do
-        let(:files) do
-          [
-            Dependabot::DependencyFile.new(
-              name: "main.tf",
-              content: fixture("projects", "git_tags_012", "main.tf")
-            )
-          ]
-        end
+        let(:files) { project_dependency_files("git_tags_012") }
 
         specify { expect(subject.length).to eq(6) }
         specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
@@ -392,6 +385,127 @@ RSpec.describe Dependabot::Terraform::FileParser do
               branch: nil
             }
           }])
+        end
+      end
+
+      context "with registry sources for 0.12" do
+        let(:files) { project_dependency_files("registry_012") }
+
+        its(:length) { is_expected.to eq(5) }
+
+        describe "default registry with version" do
+          subject(:dependency) { dependencies.find { |d| d.name == "hashicorp/consul/aws" } }
+          let(:expected_requirements) do
+            [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/consul/aws"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("hashicorp/consul/aws")
+            expect(dependency.version).to eq("0.1.0")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        describe "default registry with no version" do
+          subject(:dependency) { dependencies.find { |d| d.name == "devops-workflow/members/github" } }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "devops-workflow/members/github"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("devops-workflow/members/github")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        describe "the third dependency (default registry with a sub-directory)" do
+          subject(:dependency) { dependencies.find { |d| d.name == "mongodb/ecs-task-definition/aws" } }
+          let(:expected_requirements) do
+            [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "mongodb/ecs-task-definition/aws"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("mongodb/ecs-task-definition/aws")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        describe "the fourth dependency (default registry with version req)" do
+          subject(:dependency) { dependencies.find { |d| d.name == "terraform-aws-modules/rds/aws" } }
+          let(:expected_requirements) do
+            [{
+              requirement: "~> 1.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "terraform-aws-modules/rds/aws"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("terraform-aws-modules/rds/aws")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
+        end
+
+        describe "the fifth dependency (private registry with version)" do
+          subject(:dependency) { dependencies.find { |d| d.name == "example_corp/vpc/aws" } }
+          let(:expected_requirements) do
+            [{
+              requirement: "0.9.3",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "app.terraform.io",
+                module_identifier: "example_corp/vpc/aws"
+              }
+            }]
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("example_corp/vpc/aws")
+            expect(dependency.version).to eq("0.9.3")
+            expect(dependency.requirements).to eq(expected_requirements)
+          end
         end
       end
     end
