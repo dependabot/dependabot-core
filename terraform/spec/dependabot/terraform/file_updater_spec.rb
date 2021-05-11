@@ -102,9 +102,10 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           updated_file = subject.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
-            "module \"origin_label\" {\n"\
-            "  source     = \"git::https://github.com/cloudposse/"\
-            "terraform-null-label.git?ref=tags/0.4.1\"\n"
+            <<~DEP
+              module "origin_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1"
+            DEP
           )
         end
 
@@ -112,9 +113,10 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           updated_file = subject.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
-            "module \"duplicate_label\" {\n"\
-            "  source     = \"git::https://github.com/cloudposse/"\
-            "terraform-null-label.git?ref=tags/0.3.7\"\n"
+            <<~DEP
+              module "duplicate_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+            DEP
           )
         end
       end
@@ -156,10 +158,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           updated_file = subject.find { |file| file.name == "main.tf" }
 
           expect(updated_file.content).to include(
-            "module \"consul\" {\n"\
-            "  source = \"hashicorp/consul/aws\"\n"\
-            "  version = \"0.3.1\"\n"\
-            "}"
+            <<~DEP
+              module "consul" {
+                source = "hashicorp/consul/aws"
+                version = "0.3.1"
+            DEP
           )
         end
       end
@@ -204,8 +207,9 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           updated_file = subject.find { |file| file.name == "main.tfvars" }
 
           expect(updated_file.content).to include(
-            "source = \"git::git@github.com:gruntwork-io/modules-example.git//"\
-            "consul?ref=v0.0.5\""
+            <<~DEP
+              source = "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.5"
+            DEP
           )
         end
       end
