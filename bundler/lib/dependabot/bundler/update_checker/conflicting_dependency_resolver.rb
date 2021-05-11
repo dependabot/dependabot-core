@@ -40,7 +40,7 @@ module Dependabot
                 dependency_name: dependency.name,
                 target_version: target_version,
                 credentials: credentials,
-                lockfile_name: lockfile.name,
+                lockfile_name: lockfile.name
               }
             )
           end

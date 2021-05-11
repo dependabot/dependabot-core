@@ -302,9 +302,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "parses root file" do
         expect(dependencies.map(&:name)).
           to eq(%w(
-                  github.com/dependabot/vgotest/common
-                  rsc.io/qr
-                ))
+            github.com/dependabot/vgotest/common
+            rsc.io/qr
+          ))
       end
 
       context "nested file" do
@@ -314,9 +314,9 @@ RSpec.describe Dependabot::GoModules::FileParser do
         it "parses nested file" do
           expect(dependencies.map(&:name)).
             to eq(%w(
-                    github.com/dependabot/vgotest/common
-                    rsc.io/qr
-                  ))
+              github.com/dependabot/vgotest/common
+              rsc.io/qr
+            ))
         end
       end
     end

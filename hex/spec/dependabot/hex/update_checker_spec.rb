@@ -95,6 +95,37 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       it { is_expected.to eq(Gem::Version.new("1.8.0-rc.0")) }
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:version) { "1.7.1" }
+      it { is_expected.to eq(Gem::Version.new("1.7.1")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 1.3.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
       it { is_expected.to eq(Gem::Version.new("1.2.6")) }
