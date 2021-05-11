@@ -920,6 +920,38 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
+        context "raise_on_ignored when later versions are allowed" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+
+        context "already on the latest version" do
+          let(:version) { "1.13.0" }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "doesn't raise an error" do
+              expect { subject }.to_not raise_error
+            end
+          end
+        end
+
+        context "all later versions ignored" do
+          let(:version) { "1.0.0" }
+          let(:ignored_versions) { ["> 1.0.0"] }
+          its([:tag]) { is_expected.to eq("v1.0.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "raises an error" do
+              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            end
+          end
+        end
+
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }

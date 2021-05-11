@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/go_modules/native_helpers"
@@ -43,6 +44,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
     let(:ignored_versions) { [] }
 
+    let(:raise_on_ignored) { false }
+
     let(:finder) do
       described_class.new(
         dependency: dependency,
@@ -53,7 +56,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           "username" => "x-access-token",
           "password" => "token"
         }],
-        ignored_versions: ignored_versions
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored
       )
     end
 
@@ -199,6 +203,38 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
       it "returns the current version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("2.0.0+incompatible"))
+      end
+    end
+
+    context "when raise_on_ignored is true" do
+      let(:raise_on_ignored) { true }
+
+      context "when a later version is allowed" do
+        let(:dependency_version) { "1.0.0" }
+        let(:ignored_versions) { ["= 1.0.1"] }
+
+        it "doesn't raise an error" do
+          expect { finder.latest_version }.not_to raise_error
+        end
+      end
+
+      context "when already on the latest version" do
+        let(:dependency_version) { "1.1.0" }
+        let(:ignored_versions) { ["> 1.1.0"] }
+
+        it "doesn't raise an error" do
+          expect { finder.latest_version }.not_to raise_error
+        end
+      end
+
+      context "when all later versions are ignored" do
+        let(:dependency_version) { "1.0.1" }
+        let(:ignored_versions) { ["> 1.0.1"] }
+
+        it "raises AllVersionsIgnored" do
+          expect { finder.latest_version }.
+            to raise_error(Dependabot::AllVersionsIgnored)
+        end
       end
     end
   end

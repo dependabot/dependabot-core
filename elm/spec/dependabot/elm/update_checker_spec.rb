@@ -148,6 +148,38 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       it { is_expected.to be_nil }
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when on the latest version" do
+      let(:dependency_version) { "5.1.1" }
+      it { is_expected.to eq(Dependabot::Elm::Version.new("5.1.1")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when all later versions are being ignored" do
+      let(:dependency_version) { "2.1.0" }
+      let(:ignored_versions) { ["> 2.1.0"] }
+      it { is_expected.to eq(Dependabot::Elm::Version.new("2.1.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the latest version is being ignored" do
       let(:ignored_versions) { [">= 5.0.0"] }
       it { is_expected.to eq(Dependabot::Elm::Version.new("4.0.5")) }
