@@ -22,7 +22,7 @@ module Dependabot
         dependency_set = DependencySet.new
 
         terraform_files.each do |file|
-          modules = parsed_file(file).fetch("module", []).map(&:first)
+          modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
             dependency_set << build_terraform_dependency(file, name, details)
           end
@@ -38,7 +38,7 @@ module Dependabot
           end
         end
 
-        dependency_set.dependencies
+        dependency_set.dependencies.sort_by(&:name)
       end
 
       private
@@ -210,29 +210,85 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
+      def parsed_file_hcl2(file)
+        SharedHelpers.in_a_temporary_directory do
+          File.write("tmp.tf", file.content)
+
+          command = "#{terraform_hcl2_parser_path} < tmp.tf"
+          start = Time.now
+          stdout, stderr, process = Open3.capture3(command)
+          time_taken = Time.now - start
+
+          unless process.success?
+            raise SharedHelpers::HelperSubprocessFailed.new(
+              message: stderr,
+              error_context: {
+                command: command,
+                time_taken: time_taken,
+                process_exit_value: process.to_s
+              }
+            )
+          end
+
+          JSON.parse(stdout)
+        end
+      end
+
+      def parsed_file_hcl1(file)
+        SharedHelpers.in_a_temporary_directory do
+          File.write("tmp.tf", file.content)
+
+          command = "#{terraform_parser_path} -reverse < tmp.tf"
+          start = Time.now
+          stdout, stderr, process = Open3.capture3(command)
+          time_taken = Time.now - start
+
+          unless process.success?
+            raise SharedHelpers::HelperSubprocessFailed.new(
+              message: stderr,
+              error_context: {
+                command: command,
+                time_taken: time_taken,
+                process_exit_value: process.to_s
+              }
+            )
+          end
+
+          json = JSON.parse(stdout)
+          json["module"] = json.fetch("module", []).inject({}) { |memo, item| memo.merge(item) }
+          json
+        end
+      end
+
+      # == Returns:
+      # A Hash representing each module found in the specified file
+      #
+      # E.g.
+      # {
+      #   "module" => {
+      #     {
+      #       "consul" => [
+      #         {
+      #           "source"=>"consul/aws",
+      #           "version"=>"0.1.0"
+      #         }
+      #       ]
+      #     }
+      #   },
+      #   "terragrunt"=>[
+      #     {
+      #       "include"=>[{ "path"=>"${find_in_parent_folders()}" }],
+      #       "terraform"=>[{ "source" => "git::git@github.com:gruntwork-io/modules-example.git//consul?ref=v0.0.2" }]
+      #     }
+      #   ],
+      # }
       def parsed_file(file)
         @parsed_buildfile ||= {}
         @parsed_buildfile[file.name] ||=
-          SharedHelpers.in_a_temporary_directory do
-            File.write("tmp.tf", file.content)
-
-            command = "#{terraform_parser_path} -reverse < tmp.tf"
-            start = Time.now
-            stdout, stderr, process = Open3.capture3(command)
-            time_taken = Time.now - start
-
-            unless process.success?
-              raise SharedHelpers::HelperSubprocessFailed.new(
-                message: stderr,
-                error_context: {
-                  command: command,
-                  time_taken: time_taken,
-                  process_exit_value: process.to_s
-                }
-              )
-            end
-
-            JSON.parse(stdout)
+          if options[:terraform_hcl2]
+            parsed_file_hcl2(file)
+          else
+            parsed_file_hcl1(file)
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.message.strip
@@ -242,6 +298,11 @@ module Dependabot
       def terraform_parser_path
         helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
         Pathname.new(File.join(helper_bin_dir, "json2hcl")).cleanpath.to_path
+      end
+
+      def terraform_hcl2_parser_path
+        helper_bin_dir = File.join(native_helpers_root, "terraform/bin")
+        Pathname.new(File.join(helper_bin_dir, "hcl2json")).cleanpath.to_path
       end
 
       def native_helpers_root
