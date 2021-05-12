@@ -9,9 +9,9 @@ def pr_info(dependency)
               "https://hub.docker.com/_/",
               CGI.escape(dependency.name) + "?" +
               URI.encode_www_form([
-                                    %w(tab tags),
-                                    ["name", dependency.version]
-                                  ])
+                %w(tab tags),
+                ["name", dependency.version]
+              ])
             ).to_s
           else
             URI.join("https://github.com/Pix4D/linux-image-build/releases/tag/",
