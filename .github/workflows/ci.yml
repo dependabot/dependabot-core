@@ -40,7 +40,7 @@ jobs:
         - { path: terraform, name: terraform-hcl2 }  
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.3.4
       - name: Prepare environment variables
         run: |
           echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
