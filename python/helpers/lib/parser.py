@@ -15,6 +15,7 @@ from pip._internal.req.constructors import (
 # https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
 COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
+
 def parse_requirements(directory):
     # Parse the requirements.txt
     requirement_packages = []

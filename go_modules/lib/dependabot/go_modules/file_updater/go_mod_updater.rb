@@ -39,10 +39,9 @@ module Dependabot
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
-          /go get: \S+ updating to\n\s+\S+\sparsing\sgo.mod:\n\s+module declares its path as: \S+\n\s+but was required as: \S+/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* declares its path as: ([\S]*)/m
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
 
         OUT_OF_DISK_REGEXES = [
@@ -235,7 +234,7 @@ module Dependabot
           write_go_mod(body)
         end
 
-        def handle_subprocess_error(stderr)
+        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
           stderr = stderr.gsub(Dir.getwd, "")
 
           # Package version doesn't match the module major version

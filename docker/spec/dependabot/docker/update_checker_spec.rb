@@ -185,9 +185,35 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("2.5.0-slim") }
     end
 
-    context "when the latest version is being ignored" do
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when already on the latest version" do
+      let(:version) { "17.10" }
+      it { is_expected.to eq("17.10") }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when all later versions are being ignored" do
       let(:ignored_versions) { [">= 17.10"] }
       it { is_expected.to eq("17.04") }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when ignoring multiple versions" do
