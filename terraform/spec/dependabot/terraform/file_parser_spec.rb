@@ -274,7 +274,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             type: "git",
             url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
             branch: nil,
-            ref: "0.4.0"
+            ref: "0.4.1"
           }
         }])
       end
@@ -297,7 +297,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
               type: "git",
               url: "https://github.com/cloudposse/terraform-null-label.git",
               branch: nil,
-              ref: "0.3.7"
+              ref: "tags/0.3.7"
             }
           }])
         end
@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
               type: "git",
               url: "https://github.com/cloudposse/terraform-aws-s3-log-storage.git",
               branch: nil,
-              ref: "0.2.2"
+              ref: "tags/0.2.2"
             }
           }])
         end
@@ -348,7 +348,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
               type: "git",
               url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
               branch: nil,
-              ref: "0.2.5"
+              ref: "tags/0.2.5"
             }
           }])
         end
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
               type: "git",
               url: "https://github.com/cloudposse/terraform-null-label.git",
               branch: nil,
-              ref: "0.3.7"
+              ref: "tags/0.3.7"
             }
           }])
         end
@@ -381,7 +381,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             source: {
               type: "git",
               url: "git@github.com:cloudposse/terraform-aws-jenkins.git",
-              ref: "0.4.0",
+              ref: "tags/0.4.0",
               branch: nil
             }
           }])
