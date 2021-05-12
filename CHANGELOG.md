@@ -1,3 +1,8 @@
+## v0.146.1, 12 May 2021
+
+- Actions: skip equivalent shorter semver tags, such as `v2` and `v2.1.0`
+- Terraform (prerelease): Handle terragrunt HCL files
+
 ## v0.146.0, 10 May 2021
 
 - go_modules: Refactor go module version finder specs
