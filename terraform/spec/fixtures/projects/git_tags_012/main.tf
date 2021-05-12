@@ -1,5 +1,5 @@
 module "origin_label" {
-  source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=0.3.7"
+  source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
   namespace  = var.namespace
   stage      = var.stage
   name       = var.name
@@ -9,7 +9,7 @@ module "origin_label" {
 }
 
 module "logs" {
-  source                   = "github.com/cloudposse/terraform-aws-s3-log-storage.git?ref=0.2.2"
+  source                   = "github.com/cloudposse/terraform-aws-s3-log-storage.git?ref=tags/0.2.2"
   namespace                = var.namespace
   stage                    = var.stage
   name                     = var.name
@@ -177,7 +177,7 @@ resource "aws_cloudfront_distribution" "default" {
 }
 
 module "dns" {
-  source           = "git::https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git//some/dir?ref=0.2.5"
+  source           = "git::https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git//some/dir?ref=tags/0.2.5"
   enabled          = var.dns_aliases_enabled
   aliases          = var.aliases
   parent_zone_id   = var.parent_zone_id
@@ -187,7 +187,7 @@ module "dns" {
 }
 
 module "duplicate_label" {
-  source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=0.3.7"
+  source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
   namespace  = var.namespace
   stage      = var.stage
   name       = var.name
@@ -197,7 +197,7 @@ module "duplicate_label" {
 }
 
 module "github_ssh_without_protocol" {
-  source                       = "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=0.4.0"
+  source                       = "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=tags/0.4.0"
   namespace                    = var.namespace
   stage                        = var.stage
   name                         = var.name

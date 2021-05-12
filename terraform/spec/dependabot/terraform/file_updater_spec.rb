@@ -22,8 +22,47 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
   describe "#updated_dependency_files" do
     subject { updater.updated_dependency_files }
 
-    context "with a valid dependency file" do
+    context "with a valid legacy dependency file" do
       let(:files) { project_dependency_files("git_tags_011") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "origin_label",
+            version: "0.4.1",
+            previous_version: "0.3.7",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.4.1"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.3.7"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
+      specify { expect(subject.length).to eq(1) }
+    end
+
+    context "with a valid HCL2 dependency file" do
+      let(:files) { project_dependency_files("git_tags_012") }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -95,7 +134,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
-      context "with a git dependency" do
+      context "with a legacy git dependency" do
         let(:files) { project_dependency_files("git_tags_011") }
 
         it "updates the requirement" do
@@ -121,7 +160,43 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         end
       end
 
-      context "with a registry dependency" do
+      context "with an hcl2-based git dependency" do
+        let(:files) { project_dependency_files("git_tags_012") }
+
+        it "updates the requirement" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "origin_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1"
+            DEP
+          )
+        end
+
+        it "doesn't update the duplicate" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "duplicate_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+            DEP
+          )
+        end
+      end
+
+      context "with an up-to-date hcl2-based git dependency" do
+        let(:files) { project_dependency_files("hcl2") }
+
+        it "shows no updates" do
+          expect { subject }.to raise_error do |error|
+            expect(error.message).to eq("Content didn't change!")
+          end
+        end
+      end
+
+      context "with a legacy registry dependency" do
         let(:files) { project_dependency_files("registry") }
         let(:dependencies) do
           [
@@ -161,6 +236,52 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             <<~DEP
               module "consul" {
                 source = "hashicorp/consul/aws"
+                version = "0.3.1"
+            DEP
+          )
+        end
+      end
+
+      context "with an hcl2-based registry dependency" do
+        let(:files) { project_dependency_files("registry_012") }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "hashicorp/consul/aws",
+              version: "0.3.1",
+              previous_version: "0.1.0",
+              requirements: [{
+                requirement: "0.3.1",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "registry",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/consul/aws"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "0.1.0",
+                groups: [],
+                file: "main.tf",
+                source: {
+                  type: "registry",
+                  registry_hostname: "registry.terraform.io",
+                  module_identifier: "hashicorp/consul/aws"
+                }
+              }],
+              package_manager: "terraform"
+            )
+          ]
+        end
+
+        it "updates the requirement" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "consul" {
+                source  = "hashicorp/consul/aws"
                 version = "0.3.1"
             DEP
           )
