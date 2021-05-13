@@ -11,12 +11,12 @@ end
 require "#{common_dir}/spec/spec_helper.rb"
 
 module PackageManagerHelper
-  def self.use_terraform_hcl2?
-    ENV["SUITE_NAME"] == "terraform-hcl2"
+  def self.use_terraform_hcl1?
+    ENV["LEGACY_TERRAFORM"]
   end
 
-  def self.use_terraform_hcl1?
-    !use_terraform_hcl2?
+  def self.use_terraform_hcl2?
+    !use_terraform_hcl1?
   end
 end
 

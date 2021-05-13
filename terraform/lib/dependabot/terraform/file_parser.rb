@@ -290,10 +290,10 @@ module Dependabot
       def parsed_file(file)
         @parsed_buildfile ||= {}
         @parsed_buildfile[file.name] ||=
-          if options[:terraform_hcl2]
-            parsed_file_hcl2(file)
-          else
+          if options[:legacy_terraform]
             parsed_file_hcl1(file)
+          else
+            parsed_file_hcl2(file)
           end
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.message.strip
