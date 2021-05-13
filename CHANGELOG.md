@@ -1,3 +1,7 @@
+## v0.147.0, 13 May 2021
+
+- Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+
+
 ## v0.146.1, 12 May 2021
 
 - Actions: skip equivalent shorter semver tags, such as `v2` and `v2.1.0`
