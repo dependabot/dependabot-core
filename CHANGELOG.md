@@ -1,6 +1,6 @@
 ## v0.147.0, 13 May 2021
 
-- Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+
+- Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+ [(#3716)](https://github.com/dependabot/dependabot-core/pull/3716)
 
 ## v0.146.1, 12 May 2021
 
@@ -36,7 +36,6 @@
 
 - go_modules: don't filter the current version
 - terraform: move fixtures to project folders
-
 ## v0.145.0, 5 May 2021
 
 - go_modules: support version ignores
