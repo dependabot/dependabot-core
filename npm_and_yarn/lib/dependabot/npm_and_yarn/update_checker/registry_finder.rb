@@ -214,10 +214,6 @@ module Dependabot
           sources = dependency.requirements.
                     map { |r| r.fetch(:source) }.uniq.compact
 
-          # If there are multiple source types, or multiple source URLs, then
-          # it's unclear how we should proceed
-          raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
-
           # Otherwise we just take the URL of the first registry
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end

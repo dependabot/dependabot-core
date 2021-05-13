@@ -58,6 +58,27 @@ RSpec.describe Dependabot::GitCommitChecker do
       it { is_expected.to eq(false) }
     end
 
+    context "with a non-git dependency that has multiple sources" do
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ]
+      end
+
+      it { is_expected.to eq(false) }
+    end
+
     context "with a git dependency" do
       let(:source) do
         {

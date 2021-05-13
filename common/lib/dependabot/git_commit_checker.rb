@@ -270,6 +270,7 @@ module Dependabot
         dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
 
       return sources.first if sources.count <= 1
+      return if sources.none? { |source| source[:type] == "git" }
 
       # If there are multiple source types, or multiple source URLs, then it's
       # unclear how we should proceed
