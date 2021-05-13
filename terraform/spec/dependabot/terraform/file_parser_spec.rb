@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       dependency_files: files,
       source: source,
       options: {
-        terraform_hcl2: PackageManagerHelper.use_terraform_hcl2?
+        legacy_terraform: PackageManagerHelper.use_terraform_hcl1?
       }
     )
   end
