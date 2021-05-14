@@ -113,7 +113,6 @@ $options = {
   security_updates_only: false,
   ignore_conditions: [],
   pull_request: false,
-  legacy_terraform: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -145,10 +144,6 @@ unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   # For example:
   # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
   $options[:ignore_conditions] = JSON.parse(ENV["IGNORE_CONDITIONS"])
-end
-
-unless ENV["LEGACY_TERRAFORM"].to_s.strip.empty?
-  $options[:legacy_terraform] = true
 end
 
 # rubocop:disable Metrics/BlockLength
@@ -498,7 +493,6 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   source: $source,
   credentials: $options[:credentials],
   reject_external_code: $options[:reject_external_code],
-  options: {legacy_terraform: $options[:legacy_terraform]}
 )
 
 dependencies = cached_read("dependencies") { parser.parse }
