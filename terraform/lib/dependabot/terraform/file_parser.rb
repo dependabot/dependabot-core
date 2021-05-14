@@ -32,10 +32,7 @@ module Dependabot
         end
 
         terragrunt_files.each do |file|
-          # legacy terragrunt (.tfvars) files have a top-level "terragrunt" key
-          # that has since been removed.
-          legacy_modules = (parsed_file(file).fetch("terragrunt", []).first || {}).fetch("terraform", [])
-          modules = parsed_file(file).fetch("terraform", []) + legacy_modules
+          modules = parsed_file(file).fetch("terraform", [])
           modules.each do |details|
             next unless details["source"]
 
@@ -260,7 +257,6 @@ module Dependabot
 
           JSON.parse(stdout)
         end
-
       rescue SharedHelpers::HelperSubprocessFailed => e
         msg = e.message.strip
         raise Dependabot::DependencyFileNotParseable.new(file.path, msg)

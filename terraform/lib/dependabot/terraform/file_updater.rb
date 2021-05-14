@@ -11,7 +11,7 @@ module Dependabot
       include FileSelector
 
       def self.updated_files_regex
-        [/\.tf$/, /\.tfvars$/, /\.hcl$/]
+        [/\.tf$/, /\.hcl$/]
       end
 
       def updated_dependency_files
