@@ -14,6 +14,7 @@ module Dependabot
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
         return latest_version_for_registry_dependency if registry_dependency?
+        return latest_version_for_provider_dependency if provider_dependency?
         # Other sources (mercurial, path dependencies) just return `nil`
       end
 
@@ -74,9 +75,32 @@ module Dependabot
       end
 
       def all_module_versions
-        hostname = dependency_source_details.fetch(:registry_hostname)
         identifier = dependency_source_details.fetch(:module_identifier)
-        RegistryClient.new(hostname: hostname).all_module_versions(identifier: identifier)
+        registry_client.all_module_versions(identifier: identifier)
+      end
+
+      def all_provider_versions
+        identifier = dependency_source_details.fetch(:module_identifier)
+        registry_client.all_provider_versions(identifier: identifier)
+      end
+
+      def registry_client
+        @registry_client ||= begin
+          hostname = dependency_source_details.fetch(:registry_hostname)
+          RegistryClient.new(hostname: hostname)
+        end
+      end
+
+      def latest_version_for_provider_dependency
+        return unless provider_dependency?
+
+        return @latest_version_for_provider_dependency if @latest_version_for_provider_dependency
+
+        versions = all_provider_versions
+        versions.reject!(&:prerelease?) unless wants_prerelease?
+        versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+
+        @latest_version_for_provider_dependency = versions.max
       end
 
       def wants_prerelease?
@@ -142,6 +166,12 @@ module Dependabot
         return false if dependency_source_details.nil?
 
         dependency_source_details.fetch(:type) == "registry"
+      end
+
+      def provider_dependency?
+        return false if dependency_source_details.nil?
+
+        dependency_source_details.fetch(:type) == "provider"
       end
 
       def dependency_source_details

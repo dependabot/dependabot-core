@@ -335,5 +335,106 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    context "with a required provider" do
+      let(:files) { project_dependency_files("registry_provider") }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.40.0",
+            previous_version: "0.1.0",
+            requirements: [{
+              requirement: "3.40.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_providers {
+                aws = {
+                  source  = "hashicorp/aws"
+                  version = "3.40.0"
+          DEP
+        )
+      end
+    end
+
+    context "with a required provider block with multiple versions" do
+      let(:files) { project_dependency_files("registry_provider_compound_local_name") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/http",
+            version: "3.0",
+            previous_version: "2.0",
+            requirements: [{
+              requirement: "3.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/http"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "2.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/http"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_providers {
+                hashicorp-http = {
+                  source  = "hashicorp/http"
+                  version = "3.0"
+                }
+                mycorp-http = {
+                  source  = "mycorp/http"
+                  version = "1.0"
+          DEP
+        )
+      end
+    end
   end
 end
