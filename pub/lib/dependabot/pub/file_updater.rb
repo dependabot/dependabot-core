@@ -17,8 +17,6 @@ module Dependabot
         updated_files = []
 
         pubspec_file_pairs.each do |files|
-          next unless file_changed?(files[:yaml]) || file_changed?(files[:lock])
-
           updated_contents = updated_pubspec_file_contents(files)
           content_changed = false
 
