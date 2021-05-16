@@ -43,18 +43,22 @@ module Dependabot
       private
 
       def updated_pubspec_file_contents(files)
+        yaml_file_name = files[:yaml].name
+        lock_file_name = files[:lock].name
         yaml_content = files[:yaml].content
         lock_content = files[:lock].content if files[:lock]
 
-        reqs = dependency.requirements.zip(dependency.previous_requirements).
-               reject { |new_req, old_req| new_req == old_req }
+        # TODO: Cache this information somehow for other dependencies.
+        SharedHelpers.in_a_temporary_directory do
+          File.write(yaml_file_name, yaml_content)
+          File.write(lock_file_name, lock_content)
 
-        # Loop through each changed requirement and update the files
-        reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req[:file]
-
-          yaml_content = update_pubspec_yaml_file(new_req, yaml_content) if new_req.fetch(:file) == files[:yaml].name
-          lock_content = update_pubspec_lock_file(new_req, lock_content) if lock_content
+          # TODO: Use Flutter tool for Flutter projects
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.run_shell_command("dart pub upgrade #{dependency.name}")
+            yaml_content = File.read(yaml_file_name)
+            lock_content = File.read(lock_file_name)
+          end
         end
 
         {
