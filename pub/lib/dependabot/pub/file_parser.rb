@@ -11,7 +11,6 @@ require "dependabot/file_parsers/base"
 require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/pub/native_helpers"
 
 module Dependabot
   module Pub
