@@ -55,7 +55,7 @@ module Dependabot
 
           # TODO: Use Flutter tool for Flutter projects
           SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.run_shell_command("dart pub upgrade #{dependency.name}")
+            SharedHelpers.run_shell_command("dart pub upgrade --major-versions #{dependency.name}")
             yaml_content = File.read(yaml_file_name)
             lock_content = File.read(lock_file_name)
           end

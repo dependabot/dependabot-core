@@ -72,7 +72,7 @@ module Dependabot
       def update_hosted_requirement(req)
         return req if req.fetch(:requirement).nil?
 
-        string_req = req.fetch(:requirement).strip
+        # string_req = req.fetch(:requirement).strip
         # ruby_req = requirement_class.new(string_req)
         # return req if ruby_req.satisfied_by?(latest_version)
 
