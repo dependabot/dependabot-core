@@ -32,18 +32,19 @@ module Dependabot
       end
 
       def updated_requirements
-        return requirements unless latest_version
+        requirements
+        # return requirements unless latest_version
 
-        # NOTE: Order is important here. The FileUpdater needs the updated
-        # requirement at index `i` to correspond to the previous requirement
-        # at the same index.
-        requirements.map do |req|
-          case req.dig(:source, :type)
-          when "git" then update_git_requirement(req)
-          when "hosted" then update_hosted_requirement(req)
-          else req
-          end
-        end
+        # # NOTE: Order is important here. The FileUpdater needs the updated
+        # # requirement at index `i` to correspond to the previous requirement
+        # # at the same index.
+        # requirements.map do |req|
+        #   case req.dig(:source, :type)
+        #   when "git" then update_git_requirement(req)
+        #   when "hosted" then update_hosted_requirement(req)
+        #   else req
+        #   end
+        # end
       end
 
       private

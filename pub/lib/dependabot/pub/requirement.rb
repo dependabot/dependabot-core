@@ -24,16 +24,6 @@ module Dependabot
       def self.requirements_array(requirement_string)
         [new(requirement_string)]
       end
-
-      def satisfied_by?(version)
-        SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path.to_s,
-            function: "requirement_checker",
-            args: ["--requirement", requirements, "--version", version.to_s]
-          )
-        end
-      end
     end
   end
 end

@@ -55,7 +55,10 @@ module Dependabot
 
           # TODO: Use Flutter tool for Flutter projects
           SharedHelpers.with_git_configured(credentials: credentials) do
-            SharedHelpers.run_shell_command("dart pub upgrade --major-versions #{dependency.name}")
+            # TODO: Use --major-versions if it's a major version bump
+            # TODO: Consider falling back to `dart pub upgrade` if the command fails
+            #       This would then update all dependencies.
+            SharedHelpers.run_shell_command("dart pub upgrade #{dependency.name}")
             yaml_content = File.read(yaml_file_name)
             lock_content = File.read(lock_file_name)
           end
@@ -65,80 +68,6 @@ module Dependabot
           yaml: yaml_content,
           lock: lock_content
         }
-      end
-
-      def update_pubspec_yaml_file(new_req, updated_content)
-        updated_content = SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path.to_s,
-            function: "file_updater",
-            args: [
-              "--type",
-              "yaml",
-              "--content",
-              updated_content,
-              "--dependency",
-              dependency.name,
-              "--version",
-              dependency.version.to_s,
-              "--requirement",
-              JSON.dump(
-                {
-                  'requirement': new_req[:requirement],
-                  'file': new_req[:file],
-                  'groups': new_req[:groups],
-                  'source': {
-                    'type': new_req[:source][:type],
-                    'url': new_req[:source][:url],
-                    'path': new_req[:source][:path],
-                    'ref': new_req[:source][:ref],
-                    'resolved_ref': new_req[:source][:resolved_ref],
-                    'relative': new_req[:source][:relative]
-                  }
-                }
-              )
-            ]
-          )
-        end
-
-        updated_content
-      end
-
-      def update_pubspec_lock_file(new_req, updated_content)
-        updated_content = SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path.to_s,
-            function: "file_updater",
-            args: [
-              "--type",
-              "lock",
-              "--content",
-              updated_content,
-              "--dependency",
-              dependency.name,
-              "--version",
-              dependency.version,
-              "--requirement",
-              JSON.dump(
-                {
-                  'requirement': new_req[:requirement],
-                  'file': new_req[:file],
-                  'groups': new_req[:groups],
-                  'source': {
-                    'type': new_req[:source][:type],
-                    'url': new_req[:source][:url],
-                    'path': new_req[:source][:path],
-                    'ref': new_req[:source][:ref],
-                    'resolved_ref': new_req[:source][:resolved_ref],
-                    'relative': new_req[:source][:relative]
-                  }
-                }
-              )
-            ]
-          )
-        end
-
-        updated_content
       end
 
       # TODO: Check if we can make multi dependency updates work
