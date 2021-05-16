@@ -4,17 +4,12 @@ Pub/Dart (including Flutter) support for [`dependabot-core`][core-repo].
 
 ### Running locally
 
-1. Install native helpers
+1. Install Ruby dependencies
    ```
-   $ helpers/build helpers/install-dir/pub
-   ```
-
-2. Install Ruby dependencies
-   ```
-   $ pub install
+   $ bundle install
    ```
 
-3. Run tests
+2. Run tests
    ```
    $ bundle exec rspec spec
    ```
