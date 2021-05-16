@@ -55,6 +55,8 @@ module Dependabot
 
           # TODO: Use Flutter tool for Flutter projects
           SharedHelpers.with_git_configured(credentials: credentials) do
+            # TODO: Use Flutter tool for Flutter projects
+            # TODO: Add CI=true and PUB_ENVIRONMENT=dependabot
             # TODO: Use --major-versions if it's a major version bump
             # TODO: Consider falling back to `dart pub upgrade` if the command fails
             #       This would then update all dependencies.

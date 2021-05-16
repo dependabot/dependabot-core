@@ -96,7 +96,6 @@ module Dependabot
       end
 
       def packages_information
-        # TODO: Consider replacing with pub API call.
         # TODO: Cache this information somehow for other dependencies.
         SharedHelpers.in_a_temporary_directory do
           File.write(pubspec_files.fetch(:yaml).name, pubspec_files.fetch(:yaml).content)
@@ -104,6 +103,7 @@ module Dependabot
 
           SharedHelpers.with_git_configured(credentials: credentials) do
             # TODO: Use Flutter tool for Flutter projects
+            # TODO: Add CI=true and PUB_ENVIRONMENT=dependabot
             output = SharedHelpers.run_shell_command("dart pub outdated --show-all --json")
             result = JSON.parse(output)
             result
