@@ -76,21 +76,22 @@ module Dependabot
         # ruby_req = requirement_class.new(string_req)
         # return req if ruby_req.satisfied_by?(latest_version)
 
-        new_req =
-          SharedHelpers.in_a_temporary_directory do
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path.to_s,
-              function: "requirement_updater",
-              args: [
-                "--requirement",
-                string_req,
-                "--latest-version",
-                latest_version.to_s,
-                "--strategy",
-                update_strategy
-              ]
-            )
-          end
+        # new_req =
+        #   SharedHelpers.in_a_temporary_directory do
+        #     SharedHelpers.run_helper_subprocess(
+        #       command: NativeHelpers.helper_path.to_s,
+        #       function: "requirement_updater",
+        #       args: [
+        #         "--requirement",
+        #         string_req,
+        #         "--latest-version",
+        #         latest_version.to_s,
+        #         "--strategy",
+        #         update_strategy
+        #       ]
+        #     )
+        #   end
+        new_req = latest_version.to_s
 
         req.merge(requirement: new_req)
       end
