@@ -14,7 +14,6 @@ GEMSPECS = %w(
   common/dependabot-common.gemspec
   go_modules/dependabot-go_modules.gemspec
   terraform/dependabot-terraform.gemspec
-  pub/dependabot-pub.gemspec
   docker/dependabot-docker.gemspec
   git_submodules/dependabot-git_submodules.gemspec
   github_actions/dependabot-github_actions.gemspec

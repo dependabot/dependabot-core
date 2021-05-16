@@ -198,7 +198,6 @@ COPY bundler/helpers /opt/bundler/helpers
 COPY go_modules/helpers /opt/go_modules/helpers
 COPY hex/helpers /opt/hex/helpers
 COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY pub/helpers /opt/pub/helpers
 COPY python/helpers /opt/python/helpers
 COPY terraform/helpers /opt/terraform/helpers
 
@@ -207,7 +206,6 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 RUN bash /opt/terraform/helpers/build /opt/terraform && \
-  bash /opt/pub/helpers/build /opt/pub && \
   bash /opt/python/helpers/build /opt/python && \
   bash /opt/dep/helpers/build /opt/dep && \
   mkdir -p /opt/bundler/v1 && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 && \
