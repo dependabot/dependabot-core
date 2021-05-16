@@ -51,14 +51,14 @@ module Dependabot
           File.write(yaml_file_name, yaml_content)
           File.write(lock_file_name, lock_content)
 
-          # TODO: Use Flutter tool for Flutter projects
           SharedHelpers.with_git_configured(credentials: credentials) do
-            # TODO: Use Flutter tool for Flutter projects
             # TODO: Add CI=true and PUB_ENVIRONMENT=dependabot
             # TODO: Use --major-versions if it's a major version bump
             # TODO: Consider falling back to `dart pub upgrade` if the command fails
             #       This would then update all dependencies.
-            SharedHelpers.run_shell_command("dart pub upgrade #{dependency.name}")
+            is_flutter = ENV["PUB_IS_FLUTTER"] == "true"
+            command = is_flutter ? "flutter" : "dart"
+            SharedHelpers.run_shell_command("#{command} pub upgrade #{dependency.name}")
             yaml_content = File.read(yaml_file_name)
             lock_content = File.read(lock_file_name)
           end

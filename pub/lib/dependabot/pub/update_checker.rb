@@ -13,14 +13,14 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       def latest_version
         return latest_version_for_hosted_dependency if hosted_dependency?
-        # Other sources (git or path dependencies) just return `nil`
+        # Other sources (git, path, or sdk dependencies) just return `nil`
       end
 
       def latest_resolvable_version
         version = latest_resolvable_version_for_hosted_dependency if hosted_dependency?
 
         return version unless version == dependency.version
-        # Other sources (git, path dependencies) just return `nil`
+        # Other sources (git, path, or sdk dependencies) just return `nil`
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -101,9 +101,10 @@ module Dependabot
           File.write(pubspec_files.fetch(:lock).name, pubspec_files.fetch(:lock).content)
 
           SharedHelpers.with_git_configured(credentials: credentials) do
-            # TODO: Use Flutter tool for Flutter projects
             # TODO: Add CI=true and PUB_ENVIRONMENT=dependabot
-            output = SharedHelpers.run_shell_command("dart pub outdated --show-all --json")
+            is_flutter = ENV["PUB_IS_FLUTTER"] == "true"
+            command = is_flutter ? "flutter" : "dart"
+            output = SharedHelpers.run_shell_command("#{command} pub outdated --show-all --json")
             result = JSON.parse(output)
             result
           end

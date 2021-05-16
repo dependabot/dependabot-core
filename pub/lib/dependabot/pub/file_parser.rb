@@ -23,7 +23,13 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += pubspec_yaml_dependencies
         dependency_set += pubspec_lock_dependencies
-        dependency_set.dependencies
+        dependencies = dependency_set.dependencies
+
+        is_flutter = dependencies.any? { |dep| dep.name == "flutter" }
+
+        ENV["PUB_IS_FLUTTER"] = is_flutter ? "true" : "false"
+
+        dependencies
       end
 
       private
@@ -96,6 +102,8 @@ module Dependabot
           return url
         end
 
+        return requirement["sdk"] if requirement.is_a?(Hash) && requirement.key?("sdk")
+
         nil
       end
 
@@ -129,6 +137,11 @@ module Dependabot
             branch: nil,
             ref: description["ref"],
             resolved_ref: description["resolved-ref"]
+          }
+        end
+        if source_type == "sdk"
+          return {
+            type: source_type
           }
         end
         if source_type == "path"
