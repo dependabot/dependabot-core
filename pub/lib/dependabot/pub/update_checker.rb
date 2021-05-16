@@ -5,7 +5,6 @@ require "yaml"
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
 require "dependabot/pub/requirement"
 require "dependabot/pub/version"
 
