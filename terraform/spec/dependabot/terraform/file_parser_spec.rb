@@ -12,10 +12,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
   subject(:parser) do
     described_class.new(
       dependency_files: files,
-      source: source,
-      options: {
-        legacy_terraform: PackageManagerHelper.use_terraform_hcl1?
-      }
+      source: source
     )
   end
 
@@ -38,14 +35,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with an unparseable source" do
       let(:files) { project_dependency_files("unparseable") }
 
-      it "raises an error for hcl1", :hcl1_only do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
-          expect(boom.file_path).to eq("/main.tf")
-          expect(boom.message).to eq("unable to parse HCL: object expected closing RBRACE got: EOF")
-        end
-      end
-
-      it "raises an error for hcl2", :hcl2_only do
+      it "raises an error" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |boom|
           expect(boom.message).to eq(
             "Failed to convert file: parse config: [:18,1-1: Argument or block definition required; " \
@@ -239,30 +229,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "with a terragrunt file", :hcl1_only do
-      let(:files) { project_dependency_files("terragrunt") }
-
-      specify { expect(subject.length).to eq(1) }
-      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
-
-      it "has the right details for the first dependency" do
-        expect(subject[0].name).to eq("gruntwork-io/modules-example")
-        expect(subject[0].version).to eq("0.0.2")
-        expect(subject[0].requirements).to eq([{
-          requirement: nil,
-          groups: [],
-          file: "main.tfvars",
-          source: {
-            type: "git",
-            url: "git@github.com:gruntwork-io/modules-example.git",
-            branch: nil,
-            ref: "v0.0.2"
-          }
-        }])
-      end
-    end
-
-    context "hcl2 files", :hcl2_only do
+    context "hcl2 files" do
       let(:files) { project_dependency_files("hcl2") }
 
       it "has the right source for the dependency" do
@@ -530,14 +497,6 @@ RSpec.describe Dependabot::Terraform::FileParser do
             }
           }])
         end
-      end
-    end
-
-    context "hcl2 files using the old parser", :hcl1_only do
-      let(:files) { project_dependency_files("hcl2") }
-
-      it "fails to parse hcl2 files without the flag set" do
-        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
       end
     end
 

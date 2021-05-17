@@ -10,7 +10,7 @@ module Dependabot
       include FileSelector
 
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.end_with?(".tf", ".tfvars") }
+        filenames.any? { |f| f.end_with?(".tf", ".hcl") }
       end
 
       def self.required_files_message
