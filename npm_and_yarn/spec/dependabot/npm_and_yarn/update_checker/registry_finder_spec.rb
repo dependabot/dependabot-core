@@ -302,15 +302,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           {
             file: "package.json",
             requirement: "^1.0.0",
-            groups: ['devDependencies'],
-            source: { type: 'registry', url: 'https://registry.npmjs.org' }
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
           },
           {
             file: "yarn.lock",
             requirement: "^1.0.0",
-            groups: ['dependencies'],
-            source: { type: 'registry', url: 'https://registry.yarnpkg.com' }
-          },
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
         ]
       end
 
