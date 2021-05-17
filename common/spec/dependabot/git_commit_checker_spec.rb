@@ -128,7 +128,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "with multiple source types" do
-          let(:s2) { { type: "path" } }
+          let(:s2) { { type: "git", url: "https://github.com/dependabot/dependabot-core" } }
 
           it "raises a helpful error" do
             expect { checker.git_dependency? }.
