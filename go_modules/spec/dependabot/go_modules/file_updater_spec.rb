@@ -108,10 +108,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       # This is failing and I'm not sure why...
-      # See also discussion here where it seems the author/reviewers agreed on one solution
-      # but then (confusingly) merged a different one w/o explaining why:
-      # https://github.com/dependabot/dependabot-core/pull/3482#discussion_r612343046
-      # So I'm unclear if this needs the regex, fixture, test, or something else to be updatd.
       it "raises a helpful error" do
         expect { updated_files }.to raise_error(Dependabot::GoModulePathMismatch)
       end
