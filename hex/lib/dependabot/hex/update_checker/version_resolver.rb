@@ -101,8 +101,7 @@ module Dependabot
           result = error.message&.split("\n")&.last
           return false unless result
 
-          JSON.parse(error.message&.split("\n")&.last)["result"]
-          true
+          JSON.parse(error.message&.split("\n")&.last).key?("result")
         rescue JSON::ParserError
           false
         end
