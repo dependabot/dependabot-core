@@ -58,17 +58,17 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     end
   end
 
-  context "with a Terragrunt file" do
+  context "with a HCL based terragrunt file" do
     before do
       stub_request(:get, url + "?ref=sha").
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_terragrunt_repo.json"),
+          body: fixture("github", "contents_terragrunt_hcl_repo.json"),
           headers: { "content-type" => "application/json" }
         )
 
-      stub_request(:get, File.join(url, "terraform.tfvars?ref=sha")).
+      stub_request(:get, File.join(url, "terragrunt.hcl?ref=sha")).
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
 
     it "fetches the Terragrunt file" do
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(terraform.tfvars))
+        to match_array(%w(terragrunt.hcl))
     end
   end
 

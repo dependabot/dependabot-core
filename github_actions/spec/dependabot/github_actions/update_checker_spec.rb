@@ -24,7 +24,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
-      version: nil,
+      version: dependency_version,
       requirements: [{
         requirement: nil,
         groups: [],
@@ -36,6 +36,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     )
   end
   let(:dependency_name) { "actions/setup-node" }
+  let(:dependency_version) do
+    return unless Dependabot::GithubActions::Version.correct?(reference)
+
+    Dependabot::GithubActions::Version.new(reference).to_s
+  end
   let(:dependency_source) do
     {
       type: "git",
@@ -113,7 +118,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
-        let(:reference) { "v1" }
+        let(:reference) { "v2" }
         it { is_expected.to be_falsey }
       end
 
@@ -165,17 +170,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
     context "given a dependency with a tag reference" do
       let(:reference) { "v1.0.1" }
-      it { is_expected.to eq("5273d0df9c603edc4284ac8402cf650b4f1f6686") }
+      it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.0")) }
 
       context "and the latest version is being ignored" do
         let(:ignored_versions) { [">= 1.1.0"] }
-        it { is_expected.to eq("fc9ff49b90869a686df00e922af871c12215986a") }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.4")) }
       end
 
       context "and all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
-        it "returns nil" do
-          expect(subject).to be_nil
+        it "returns current version" do
+          expect(subject).to eq(dependency.version)
         end
 
         context "raise_on_ignored" do
@@ -184,6 +189,16 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
           end
         end
+      end
+
+      context "that is a major-only tag of the the latest version" do
+        let(:reference) { "v1" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1")) }
+      end
+
+      context "that is a major-minor tag of the the latest version" do
+        let(:reference) { "v1.1" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
     end
 
@@ -225,7 +240,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     context "given a dependency with multiple git refs", :vcr do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq("aabbfeb2ce60b5bd82389903509092c4648a9713") }
+      it { is_expected.to eq(Gem::Version.new("2.2.0")) }
     end
   end
 

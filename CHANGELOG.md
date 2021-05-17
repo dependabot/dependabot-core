@@ -1,8 +1,41 @@
+## v0.147.0, 13 May 2021
+
+- Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+ [(#3716)](https://github.com/dependabot/dependabot-core/pull/3716)
+
+## v0.146.1, 12 May 2021
+
+- Actions: skip equivalent shorter semver tags, such as `v2` and `v2.1.0`
+- Python: Run all pip-compile commands with options @JimNero009
+- Terraform (prerelease): Handle terragrunt HCL files
+
+## v0.146.0, 10 May 2021
+
+- go_modules: Refactor go module version finder specs
+- all: Filter lower versions when checking ignored versions
+- Terraform: Document and improve coverage for RequirementsUpdater
+- Revert "docker: FileParser consider image prefix/suffixes as unique"
+
+## v0.145.4, 10 May 2021
+
+- Actions: accept semver versions
+- Actions: detect workflow steps pinned to semver versions
+
+## v0.145.3, 7 May 2021
+
+- go_modules: Gracefully handle +incompatible versions when checking for updates
+
+## v0.145.2, 7 May 2021
+
+- Nuget: Handle paginated v2 nuget api responses
+- maven: allow security updates to multi-dependency properties
+- build(deps): bump lodash
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): update rubocop requirement from ~> 1.13.0 to ~> 1.14.0
+
 ## v0.145.1, 5 May 2021
 
 - go_modules: don't filter the current version
 - terraform: move fixtures to project folders
-
 ## v0.145.0, 5 May 2021
 
 - go_modules: support version ignores

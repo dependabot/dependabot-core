@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 
 bundle install
 bundle exec rubocop .

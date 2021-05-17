@@ -103,6 +103,38 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "raise_on_ignored when later versions are allowed" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+
+      context "when the user is on the latest version" do
+        let(:current_version) { "1.5.0" }
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.5.0")) }
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+      end
+
+      context "when the user has ignored all later versions" do
+        let(:ignored_versions) { ["> 1.3.0"] }
+
+        its([:version]) { is_expected.to eq(Gem::Version.new("1.3.0")) }
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "raises an error" do
+            expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+          end
+        end
+      end
+
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 1.5.0.a, < 1.6"] }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
@@ -197,18 +229,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "dependency_source_type",
-                 args: anything
-               }).and_call_original
+            bundler_version: bundler_version,
+            function: "dependency_source_type",
+            args: anything
+          }).and_call_original
 
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "private_registry_versions",
-                 args: anything
-               }).
+            bundler_version: bundler_version,
+            function: "private_registry_versions",
+            args: anything
+          }).
           and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
@@ -252,10 +284,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: bundler_version,
-                   function: "private_registry_versions",
-                   args: anything
-                 }).
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              args: anything
+            }).
             and_raise(subprocess_error)
         end
 
@@ -285,10 +317,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: bundler_version,
-                   function: "private_registry_versions",
-                   args: anything
-                 }).
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              args: anything
+            }).
             and_raise(subprocess_error)
         end
 
@@ -318,10 +350,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: bundler_version,
-                   function: "private_registry_versions",
-                   args: anything
-                 }).
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              args: anything
+            }).
             and_raise(subprocess_error)
         end
 
@@ -351,10 +383,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: bundler_version,
-                   function: "private_registry_versions",
-                   args: anything
-                 }).
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              args: anything
+            }).
             and_raise(subprocess_error)
         end
 
@@ -373,10 +405,10 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           allow(Dependabot::Bundler::NativeHelpers).
             to receive(:run_bundler_subprocess).
             with({
-                   bundler_version: bundler_version,
-                   function: "private_registry_versions",
-                   args: anything
-                 }).
+              bundler_version: bundler_version,
+              function: "private_registry_versions",
+              args: anything
+            }).
             and_return(
               []
             )
@@ -514,18 +546,18 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "dependency_source_type",
-                 args: anything
-               }).and_call_original
+            bundler_version: bundler_version,
+            function: "dependency_source_type",
+            args: anything
+          }).and_call_original
 
         allow(Dependabot::Bundler::NativeHelpers).
           to receive(:run_bundler_subprocess).
           with({
-                 bundler_version: bundler_version,
-                 function: "private_registry_versions",
-                 args: anything
-               }).
+            bundler_version: bundler_version,
+            function: "private_registry_versions",
+            args: anything
+          }).
           and_return(
             ["1.5.0", "1.9.0", "1.10.0.beta"]
           )
