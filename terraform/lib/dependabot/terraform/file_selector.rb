@@ -12,7 +12,6 @@ module FileSelector
   end
 
   def terragrunt_file?(file_name)
-    file_name != ".terraform.lock.hcl" &&
-      (file_name.end_with?(".tfvars") || file_name.end_with?(".hcl"))
+    file_name != ".terraform.lock.hcl" && file_name.end_with?(".hcl")
   end
 end
