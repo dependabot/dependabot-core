@@ -267,7 +267,8 @@ module Dependabot
 
     def dependency_source_details
       sources =
-        dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+        dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
+        select { |r| source[:type] == "git" }
 
       return sources.first if sources.count <= 1
       return if sources.none? { |source| source[:type] == "git" }
