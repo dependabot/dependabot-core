@@ -214,7 +214,6 @@ module Dependabot
           sources = dependency.requirements.
                     map { |r| r.fetch(:source) }.uniq.compact
 
-          # Otherwise we just take the URL of the first registry
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
       end
