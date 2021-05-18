@@ -236,12 +236,23 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             # OpenAPIV2 has been renamed to openapiv2 in this version
             let(:dependency_version) { "v0.5.1" }
 
-            it "raises a DependencyFileNotResolvable error" do
-              error_class = Dependabot::DependencyFileNotResolvable
+            # NOTE: We explicitly don't want to raise a resolvability error from `go mod tidy`
+            it "does not raises a DependencyFileNotResolvable error" do
               expect { updater.updated_go_sum_content }.
-                to raise_error(error_class) do |error|
-                expect(error.message).to include("googleapis/gnostic/OpenAPIv2")
-              end
+                to_not raise_error
+            end
+
+            it "updates the go.mod" do
+              # this is failing, but I'm not sure why.
+              # The code runs `go get -d github.com/googleapis/gnostic@v0.5.1`
+              # and then later runs `go mod tidy -e`.
+              # So I manually ran those in the test fixture, and it resulted in
+              # this line appearing. But when the test executes, this line is missing.
+              # I'm not sure why, and not sure how to run the Ruby debugger
+              # to step through it.
+              expect(updater.updated_go_mod_content).to include(
+                %(github.com/googleapis/gnostic v0.5.1\n)
+              )
             end
           end
         end
@@ -301,7 +312,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+        cmd = "go get -d github.com/spf13/viper@v1.7.1"
+        allow(Open3).to receive(:capture3).with(anything, cmd).and_return(["", stderr, exit_status])
       end
 
       it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
@@ -515,7 +527,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
           expect(error.message).to include(
-            "go: github.com/deislabs/oras@v0.10.0 requires\n"\
+            "go: github.com/deislabs/oras@v0.9.0 requires\n"\
             "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
             "invalid version: unknown revision"
           )

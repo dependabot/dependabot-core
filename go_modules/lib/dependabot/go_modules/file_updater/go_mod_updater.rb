@@ -18,7 +18,7 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go: .*: go.mod has post-v\d+ module path/
+          /go (?:get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
@@ -91,12 +91,8 @@ module Dependabot
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
 
-            # Set the stubbed replace directives
-            update_go_mod(dependencies)
-
-            # Then run `go get` to pick up other changes to the file caused by
-            # the upgrade
-            run_go_get
+            # `go get` will generate the required go.mod/go.sum updates for the updated deps
+            run_go_get(dependencies)
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
@@ -153,26 +149,7 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def update_go_mod(dependencies)
-          deps = dependencies.map do |dep|
-            {
-              name: dep.name,
-              version: "v" + dep.version.sub(/^v/i, ""),
-              indirect: dep.requirements.empty?
-            }
-          end
-
-          body = SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            env: ENVIRONMENT,
-            function: "updateDependencyFile",
-            args: { dependencies: deps }
-          )
-
-          write_go_mod(body)
-        end
-
-        def run_go_get
+        def run_go_get(dependencies)
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
@@ -181,7 +158,24 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
+          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
+          command = +"go get -d"
+          # `go get` accepts multiple packages, each separated by a space
+          dependencies.each do |dep|
+            # Use version pinning rather than `latest` just in case
+            # a new version gets released in the middle of our run.
+            version = "v" + dep.version.sub(/^v/i, "")
+            command << " #{dep.name}@#{version}"
+          end
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
+
+          # Hmm... I'm still unclear/digging to understand why we'd need a blank `go get -d`
+          # possibly re-jigger func defs
+          # https://github.com/dependabot/dependabot-core/pull/3590#discussion_r632456405
+          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
+          command = "go get -d"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
           File.delete(tmp_go_file) if File.exist?(tmp_go_file)
