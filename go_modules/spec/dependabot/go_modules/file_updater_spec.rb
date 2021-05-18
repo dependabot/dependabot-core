@@ -104,7 +104,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       before do
         exit_status = double(success?: false)
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d github.com/etcd-io/bbolt@v1.3.5").and_return(["", stderr, exit_status])
+        cmd = "go get -d github.com/etcd-io/bbolt@v1.3.5"
+        allow(Open3).to receive(:capture3).with(anything, cmd).and_return(["", stderr, exit_status])
       end
 
       # This is failing and I'm not sure why...

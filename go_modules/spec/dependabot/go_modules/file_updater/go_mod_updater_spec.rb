@@ -312,7 +312,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d github.com/spf13/viper@v1.7.1").and_return(["", stderr, exit_status])
+        cmd = "go get -d github.com/spf13/viper@v1.7.1"
+        allow(Open3).to receive(:capture3).with(anything, cmd).and_return(["", stderr, exit_status])
       end
 
       it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
