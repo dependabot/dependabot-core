@@ -101,6 +101,8 @@ module Dependabot
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
             if substitutions.empty?
+              # go mod tidy should run before go mod vendor to ensure any
+              # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
               run_go_vendor
             else
