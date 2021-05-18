@@ -169,6 +169,14 @@ module Dependabot
           end
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
+
+          # Hmm... I'm still unclear/digging to understand why we'd need a blank `go get -d`
+          # possibly re-jigger func defs
+          # https://github.com/dependabot/dependabot-core/pull/3590#discussion_r632456405
+          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
+          command = "go get -d"
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          handle_subprocess_error(stderr) unless status.success?
         ensure
           File.delete(tmp_go_file) if File.exist?(tmp_go_file)
         end
