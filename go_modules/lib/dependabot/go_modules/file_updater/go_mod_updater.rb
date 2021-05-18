@@ -165,8 +165,6 @@ module Dependabot
           command = +"go get -d"
           # `go get` accepts multiple packages, each separated by a space
           dependencies.each do |dep|
-            # Use version pinning rather than `latest` just in case
-            # a new version gets released in the middle of our run.
             version = "v" + dep.version.sub(/^v/i, "")
             command << " #{dep.name}@#{version}"
           end
