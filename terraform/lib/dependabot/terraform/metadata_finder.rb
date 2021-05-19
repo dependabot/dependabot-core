@@ -15,6 +15,7 @@ module Dependabot
         case new_source_type
         when "git" then find_source_from_git_url
         when "registry" then find_source_from_registry_details
+        when "provider" then find_source_from_provider_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end

@@ -509,5 +509,40 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
+
+    context "with a required provider" do
+      let(:files) { project_dependency_files("registry_provider") }
+
+      it "has the right details" do
+        dependency = dependencies.first
+
+        expect(dependency.name).to eq("hashicorp/aws")
+        expect(dependency.version).to eq("0.1.0")
+      end
+    end
+
+    context "with a required provider block with multiple versions" do
+      let(:files) { project_dependency_files("registry_provider_compound_local_name") }
+
+      it "has the right details" do
+        hashicorp = dependencies.find { |d| d.name == "hashicorp/http" }
+        mycorp = dependencies.find { |d| d.name == "mycorp/http" }
+
+        expect(hashicorp.version).to eq("2.0")
+        expect(mycorp.version).to eq("1.0")
+      end
+    end
+
+    context "with a toplevel provider" do
+      let(:files) { project_dependency_files("provider") }
+
+      it "does not find the details" do
+        # This feature is deprecated as documented here:
+        # https://www.terraform.io/docs/language/providers/configuration.html#version-an-older-way-to-manage-provider-versions
+        # So dependabot does not support it. This test is here for
+        # documentatio-sake.
+        expect(dependencies.count).to eq(0)
+      end
+    end
   end
 end

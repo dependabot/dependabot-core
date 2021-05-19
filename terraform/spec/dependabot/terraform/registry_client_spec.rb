@@ -33,6 +33,41 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     )
   end
 
+  let(:provider_dependency) do
+    Dependabot::Dependency.new(
+      name: "hashicorp/aws",
+      version: "0.9.3",
+      package_manager: "terraform",
+      previous_version: "3.19.0",
+      requirements: [{
+        requirement: "3.40.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/aws"
+        }
+      }],
+      previous_requirements: [{
+        requirement: "3.19.0",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/aws"
+        }
+      }]
+    )
+  end
+
+  it "fetches provider versions", :vcr do
+    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
+    response = client.all_provider_versions(identifier: "hashicorp/aws")
+    expect(response.max).to eq(Gem::Version.new("3.40.0"))
+  end
+
   it "fetches module versions", :vcr do
     client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
@@ -53,6 +88,14 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches the source for a module dependency", :vcr do
+    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
+    source = client.source(dependency: module_dependency)
+
+    expect(source).to be_a Dependabot::Source
+    expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
+  end
+
+  it "fetches the source for a provider dependency", :vcr do
     client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     source = client.source(dependency: module_dependency)
 

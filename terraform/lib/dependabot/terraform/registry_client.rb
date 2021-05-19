@@ -15,6 +15,24 @@ module Dependabot
         @hostname = hostname
       end
 
+      # Fetch all the versions of a provider, and return a Version
+      # representation of them.
+      #
+      # @param identifier [String] the identifier for the dependency, i.e:
+      # "hashicorp/aws"
+      # @return [Array<Dependabot::Terraform::Version>]
+      # @raise [RuntimeError] when the versions cannot be retrieved
+      def all_provider_versions(identifier:)
+        # TODO: Implement service discovery for custom registries
+        return [] unless hostname == PUBLIC_HOSTNAME
+
+        response = get(endpoint: "providers/#{identifier}/versions")
+
+        JSON.parse(response).
+          fetch("versions").
+          map { |release| version_class.new(release.fetch("version")) }
+      end
+
       # Fetch all the versions of a module, and return a Version
       # representation of them.
       #
@@ -33,7 +51,7 @@ module Dependabot
           map { |release| version_class.new(release.fetch("version")) }
       end
 
-      # Fetch the "source" for a module. We use the API to fetch
+      # Fetch the "source" for a module or provider. We use the API to fetch
       # the source for a dependency, this typically points to a source code
       # repository, and then instantiate a Dependabot::Source object that we
       # can use to fetch Metadata about a specific version of the dependency.
@@ -46,7 +64,13 @@ module Dependabot
         # TODO: Implement service discovery for custom registries
         return unless hostname == PUBLIC_HOSTNAME
 
-        endpoint = "modules/#{dependency.name}/#{dependency.version}"
+        endpoint = if dependency.requirements.first[:source][:type] == "registry"
+                     "modules/#{dependency.name}/#{dependency.version}"
+                   elsif dependency.source[:type] == "provider"
+                     "providers/#{dependency.name}/#{dependency.version}"
+                   else
+                     raise "Invalid source type"
+                   end
         response = get(endpoint: endpoint)
 
         source_url = JSON.parse(response).fetch("source")

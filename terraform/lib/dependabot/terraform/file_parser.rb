@@ -27,7 +27,16 @@ module Dependabot
         terraform_files.each do |file|
           modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
-            dependency_set << build_terraform_dependency(file, name, details)
+            dependency_set << build_terraform_dependency(file, name, details, false)
+          end
+
+          parsed_file(file).fetch("terraform", []).each do |terraform|
+            required_providers = terraform.fetch("required_providers", {})
+            required_providers.each do |provider|
+              provider.each do |name, details|
+                dependency_set << build_terraform_dependency(file, name, details, true)
+              end
+            end
           end
         end
 
@@ -45,12 +54,15 @@ module Dependabot
 
       private
 
-      def build_terraform_dependency(file, name, details)
-        details = details.first
+      def build_terraform_dependency(file, name, details, provider)
+        details = details.is_a?(Array) ? details.first : details
 
-        source = source_from(details)
-        dep_name =
-          source[:type] == "registry" ? source[:module_identifier] : name
+        source = source_from(details, provider)
+        dep_name = case source[:type]
+                   when "registry" then source[:module_identifier]
+                   when "provider" then details["source"]
+                   else name
+                   end
         version_req = details["version"]&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
@@ -71,7 +83,7 @@ module Dependabot
       end
 
       def build_terragrunt_dependency(file, details)
-        source = source_from(details)
+        source = source_from(details, false)
         dep_name =
           if Source.from_url(source[:url])
             Source.from_url(source[:url]).repo
@@ -95,7 +107,7 @@ module Dependabot
       end
 
       # Full docs at https://www.terraform.io/docs/modules/sources.html
-      def source_from(details_hash)
+      def source_from(details_hash, provider)
         raw_source = details_hash.fetch("source")
         bare_source = get_proxied_source(raw_source)
 
@@ -106,17 +118,23 @@ module Dependabot
           when :github, :bitbucket, :git
             git_source_details_from(bare_source)
           when :registry
-            registry_source_details_from(bare_source)
+            registry_source_details_from(bare_source, provider)
           end
 
         source_details[:proxy_url] = raw_source if raw_source != bare_source
         source_details
       end
 
-      def registry_source_details_from(source_string)
+      def registry_source_details_from(source_string, provider)
         parts = source_string.split("//").first.split("/")
 
-        if parts.count == 3
+        if provider && parts.count == 2
+          {
+            "type": "provider",
+            "registry_hostname": "registry.terraform.io",
+            "module_identifier": source_string
+          }
+        elsif parts.count == 3
           {
             type: "registry",
             registry_hostname: "registry.terraform.io",
