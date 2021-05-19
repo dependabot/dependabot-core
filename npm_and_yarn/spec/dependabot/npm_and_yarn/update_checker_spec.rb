@@ -225,6 +225,11 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
+      before do
+        stub_request(:get, "https://registry.npmjs.org/preact").
+          and_return(status: 200, body: JSON.pretty_generate({}))
+      end
+
       specify { expect { subject }.not_to raise_error }
     end
 
