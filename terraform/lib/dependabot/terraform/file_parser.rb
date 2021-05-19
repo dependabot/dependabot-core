@@ -64,7 +64,7 @@ module Dependabot
 
         Dependency.new(
           name: "#{namespace}/#{name}",
-          version: version,
+          version: version, # resolved version should come from `.terraform.lock.hcl`.
           package_manager: "terraform",
           requirements: [
             requirement: version,
