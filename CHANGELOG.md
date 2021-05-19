@@ -1,3 +1,7 @@
+## v0.148.2, 19 May 2021
+
+- Terraform: Fix finding metadata for providers
+
 ## v0.148.1, 19 May 2021
 
 - npm: Handle nested workspace dependencies installed in the top-level
