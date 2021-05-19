@@ -127,6 +127,28 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a private registry" do
+      let(:files) { project_dependency_files("private_registry") }
+
+      specify { expect(subject.length).to eq(1) }
+      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+      it "parses the host correctly" do
+        expect(subject[0].name).to eq("namespace/name")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.example.org",
+            module_identifier: "namespace/name"
+          }
+        }])
+      end
+    end
+
     context "with git sources" do
       let(:files) { project_dependency_files("git_tags_011") }
       specify { expect(subject.length).to eq(6) }
