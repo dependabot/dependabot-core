@@ -1,3 +1,8 @@
+## v0.148.3, 19 May 2021
+
+- fix(common): skip validation on non-git sources
+- fix(npm/yarn): prefer private registries over public ones
+
 ## v0.148.2, 19 May 2021
 
 - Terraform: Fix finding metadata for providers
