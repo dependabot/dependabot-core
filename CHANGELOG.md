@@ -1,3 +1,8 @@
+## v0.148.1, 19 May 2021
+
+- npm: Handle nested workspace dependencies installed in the top-level
+  `node_modules` folder
+
 ## v0.148.0, 19 May 2021
 
 - Terraform: Support provider updates
