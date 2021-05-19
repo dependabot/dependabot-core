@@ -6,6 +6,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/terraform/requirements_updater"
 require "dependabot/terraform/requirement"
 require "dependabot/terraform/version"
+require "dependabot/terraform/registry_client"
 
 module Dependabot
   module Terraform
@@ -65,34 +66,17 @@ module Dependabot
 
         return @latest_version_for_registry_dependency if @latest_version_for_registry_dependency
 
-        versions = all_registry_versions
+        versions = all_module_versions
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
         @latest_version_for_registry_dependency = versions.max
       end
 
-      def all_registry_versions
+      def all_module_versions
         hostname = dependency_source_details.fetch(:registry_hostname)
         identifier = dependency_source_details.fetch(:module_identifier)
-
-        # TODO: Implement service discovery for custom registries
-        return [] unless hostname == "registry.terraform.io"
-
-        url = "https://registry.terraform.io/v1/modules/"\
-              "#{identifier}/versions"
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
-        raise "Response from registry was #{response.status}" unless response.status == 200
-
-        JSON.parse(response.body).
-          fetch("modules").first.fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        RegistryClient.new(hostname: hostname).all_module_versions(identifier: identifier)
       end
 
       def wants_prerelease?

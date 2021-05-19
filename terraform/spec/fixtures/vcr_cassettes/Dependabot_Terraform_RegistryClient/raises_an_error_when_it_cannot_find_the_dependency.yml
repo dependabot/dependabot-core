@@ -1,0 +1,53 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://registry.terraform.io/v1/modules/does/not/exist/versions
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.147.0 excon/0.81.0 ruby/2.6.6 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: Not Found
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '49'
+      Server:
+      - Cowboy
+      Cache-Control:
+      - public, max-age=30, stale-if-error=31536000
+      Content-Encoding:
+      - ''
+      Content-Type:
+      - application/json
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubDomains; preload
+      Via:
+      - 1.1 vegur, 1.1 varnish, 1.1 varnish
+      Accept-Ranges:
+      - bytes
+      Date:
+      - Mon, 17 May 2021 13:44:59 GMT
+      Age:
+      - '0'
+      X-Served-By:
+      - cache-dca17749-DCA, cache-ams21073-AMS
+      X-Cache:
+      - MISS, MISS
+      X-Cache-Hits:
+      - 0, 0
+      Vary:
+      - Accept-Encoding
+    body:
+      encoding: UTF-8
+      string: '{"errors":["Not Found"]}
+
+'
+  recorded_at: Mon, 17 May 2021 13:44:59 GMT
+recorded_with: VCR 6.0.0
