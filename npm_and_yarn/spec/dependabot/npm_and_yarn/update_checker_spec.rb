@@ -225,7 +225,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
       end
 
-      specify { expect { subject }.not_to raise_error(/Multiple sources/) }
+      specify { expect { subject }.not_to raise_error }
     end
 
     context "with a git dependency" do
