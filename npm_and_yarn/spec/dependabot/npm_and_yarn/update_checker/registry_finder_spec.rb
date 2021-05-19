@@ -347,7 +347,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       end
 
       it "returns the private registry url" do
-        expect(subject).to eql('https://registry.example.org/example')
+        expect(subject).to eql("https://registry.example.org/example")
       end
     end
   end
