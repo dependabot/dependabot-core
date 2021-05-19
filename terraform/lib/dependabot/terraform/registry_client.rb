@@ -64,9 +64,10 @@ module Dependabot
         # TODO: Implement service discovery for custom registries
         return unless hostname == PUBLIC_HOSTNAME
 
-        endpoint = if dependency.requirements.first[:source][:type] == "registry"
+        type = dependency.requirements.first[:source][:type]
+        endpoint = if type == "registry"
                      "modules/#{dependency.name}/#{dependency.version}"
-                   elsif dependency.source[:type] == "provider"
+                   elsif type == "provider"
                      "providers/#{dependency.name}/#{dependency.version}"
                    else
                      raise "Invalid source type"
