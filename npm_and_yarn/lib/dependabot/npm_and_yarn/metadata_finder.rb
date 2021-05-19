@@ -7,6 +7,7 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
@@ -94,15 +95,9 @@ module Dependabot
       def new_source
         sources = dependency.requirements.
                   map { |r| r.fetch(:source) }.uniq.compact.
-                  sort_by { |source| central_registry?(source[:url]) ? 1 : 0 }
+                  sort_by { |source| UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
-      end
-
-      def central_registry?(registry)
-        NpmAndYarn::FileParser::CENTRAL_REGISTRIES.any? do |r|
-          r.include?(registry)
-        end
       end
 
       def get_source(details)

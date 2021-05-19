@@ -8,6 +8,11 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class RegistryFinder
+        CENTRAL_REGISTRIES = %w(
+          https://registry.npmjs.org
+          http://registry.npmjs.org
+          https://registry.yarnpkg.com
+        ).freeze
         NPM_AUTH_TOKEN_REGEX =
           %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
         NPM_GLOBAL_REGISTRY_REGEX =
@@ -33,6 +38,12 @@ module Dependabot
 
         def dependency_url
           "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+        end
+
+        def self.central_registry?(registry)
+          CENTRAL_REGISTRIES.any? do |r|
+            r.include?(registry)
+          end
         end
 
         private
@@ -213,15 +224,9 @@ module Dependabot
         def registry_source_url
           sources = dependency.requirements.
                     map { |r| r.fetch(:source) }.uniq.compact.
-                    sort_by { |source| central_registry?(source[:url]) ? 1 : 0 }
+                    sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
-        end
-
-        def central_registry?(registry)
-          NpmAndYarn::FileParser::CENTRAL_REGISTRIES.any? do |r|
-            r.include?(registry)
-          end
         end
       end
     end
