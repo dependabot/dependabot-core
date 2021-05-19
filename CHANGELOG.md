@@ -1,3 +1,16 @@
+## v0.147.1, 18 May 2021
+
+- Terraform: remove legacy terraform feature flag
+- Terraform: Clean up support for legacy terragrunt files
+- Hex: Fix version resolver specs
+- Update rubocop requirement from ~> 1.14.0 to ~> 1.15.0 in /common
+- Bump phpstan/phpstan from 0.12.85 to 0.12.88 in /composer/helpers/v1
+- Bump phpstan/phpstan from 0.12.85 to 0.12.88 in /composer/helpers/v2
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps-dev): bump prettier in /npm_and_yarn/helpers
+- build(deps): bump flake8 from 3.9.1 to 3.9.2 in /python/helpers
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
 ## v0.147.0, 13 May 2021
 
 - Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+ [(#3716)](https://github.com/dependabot/dependabot-core/pull/3716)
