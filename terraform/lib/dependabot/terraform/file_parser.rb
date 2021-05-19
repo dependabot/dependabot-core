@@ -20,6 +20,9 @@ module Dependabot
       include FileSelector
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
+      DEFAULT_REGISTRY = "registry.terraform.io".freeze
+      # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
+      PROVIDER_SOURCE_ADDRESS = /\A((?<hostname>.+)\/)?(?<namespace>.+)\/(?<name>.+)\z/
 
       def parse
         dependency_set = DependencySet.new
@@ -34,7 +37,11 @@ module Dependabot
             required_providers = terraform.fetch("required_providers", {})
             required_providers.each do |provider|
               provider.each do |name, details|
-                dependency_set << build_terraform_dependency(file, name, details, true)
+                dependency_set << build_provider_dependency_from(
+                  file.name,
+                  details.fetch("source"),
+                  details["version"]&.strip
+                )
               end
             end
           end
@@ -53,6 +60,26 @@ module Dependabot
       end
 
       private
+
+      def build_provider_dependency_from(file_name, source_address, version)
+        hostname, namespace, name = provider_source_from(source_address)
+
+        Dependency.new(
+          name: "#{namespace}/#{name}",
+          version: version,
+          package_manager: "terraform",
+          requirements: [
+            requirement: version,
+            groups: [],
+            file: file_name,
+            source: {
+              type: "provider",
+              registry_hostname: hostname,
+              module_identifier: "#{namespace}/#{name}"
+            }
+          ]
+        )
+      end
 
       def build_terraform_dependency(file, name, details, provider)
         details = details.is_a?(Array) ? details.first : details
@@ -150,6 +177,15 @@ module Dependabot
           msg = "Invalid registry source specified: '#{source_string}'"
           raise DependencyFileNotEvaluatable, msg
         end
+      end
+
+      def provider_source_from(source_address)
+        matches = source_address.match(PROVIDER_SOURCE_ADDRESS)
+        [
+          matches[:hostname] || DEFAULT_REGISTRY,
+          matches[:namespace],
+          matches[:name]
+        ]
       end
 
       def git_source_details_from(source_string)
