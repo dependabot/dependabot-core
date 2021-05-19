@@ -1,3 +1,9 @@
+## v0.148.0, 19 May 2021
+
+- Terraform: Support provider updates
+- Terraform: Extract RegistryClient for communicating with terraform registry
+- Go modules: Replace custom helper with `go get -d lib@version` @jeffwidman
+
 ## v0.147.1, 18 May 2021
 
 - Terraform: remove legacy terraform feature flag
