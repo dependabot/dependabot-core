@@ -212,9 +212,16 @@ module Dependabot
 
         def registry_source_url
           sources = dependency.requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact
+            map { |r| r.fetch(:source) }.uniq.compact.
+            sort_by { |source| central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
+        end
+
+        def central_registry?(registry)
+          NpmAndYarn::FileParser::CENTRAL_REGISTRIES.any? do |r|
+            r.include?(registry)
+          end
         end
       end
     end
