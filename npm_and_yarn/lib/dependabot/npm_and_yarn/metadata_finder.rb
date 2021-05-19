@@ -6,7 +6,6 @@ require "time"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
-require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 
