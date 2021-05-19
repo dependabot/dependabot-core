@@ -20,9 +20,9 @@ module Dependabot
       include FileSelector
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
-      DEFAULT_REGISTRY = "registry.terraform.io".freeze
+      DEFAULT_REGISTRY = "registry.terraform.io"
       # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
-      PROVIDER_SOURCE_ADDRESS = /\A((?<hostname>.+)\/)?(?<namespace>.+)\/(?<name>.+)\z/
+      PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}.freeze
 
       def parse
         dependency_set = DependencySet.new
@@ -36,12 +36,8 @@ module Dependabot
           parsed_file(file).fetch("terraform", []).each do |terraform|
             required_providers = terraform.fetch("required_providers", {})
             required_providers.each do |provider|
-              provider.each do |name, details|
-                dependency_set << build_provider_dependency_from(
-                  file.name,
-                  details.fetch("source"),
-                  details["version"]&.strip
-                )
+              provider.each do |_name, details|
+                dependency_set << build_provider_dependency_from(file, details)
               end
             end
           end
@@ -61,7 +57,9 @@ module Dependabot
 
       private
 
-      def build_provider_dependency_from(file_name, source_address, version)
+      def build_provider_dependency_from(file, details = {})
+        source_address = details.fetch("source")
+        version = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address)
 
         Dependency.new(
@@ -71,7 +69,7 @@ module Dependabot
           requirements: [
             requirement: version,
             groups: [],
-            file: file_name,
+            file: file.name,
             source: {
               type: "provider",
               registry_hostname: hostname,
