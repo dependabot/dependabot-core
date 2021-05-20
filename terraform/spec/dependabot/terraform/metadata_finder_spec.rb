@@ -101,5 +101,40 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
         is_expected.to eq("https://github.com/hashicorp/terraform-aws-consul")
       end
     end
+
+    context "with a provider", :vcr do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hashicorp/aws",
+          version: "3.40.0",
+          previous_version: "0.1.0",
+          requirements: [{
+            requirement: "3.40.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/aws"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/aws"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      end
+
+      it do
+        is_expected.to eq("https://github.com/hashicorp/terraform-provider-aws")
+      end
+    end
   end
 end

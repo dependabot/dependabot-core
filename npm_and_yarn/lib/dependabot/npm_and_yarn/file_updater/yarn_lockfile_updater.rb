@@ -420,13 +420,9 @@ module Dependabot
             yarnrc_file: yarnrc_file
           ).registry
 
-          return if central_registry?(reg) && !package_name.start_with?("@")
+          return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
 
           raise PrivateSourceAuthenticationFailure, reg
-        end
-
-        def central_registry?(registry)
-          FileParser::CENTRAL_REGISTRIES.any? { |r| r.include?(registry) }
         end
 
         def raise_resolvability_error(error_message, yarn_lock)

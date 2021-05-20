@@ -18,7 +18,7 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go: .*: go.mod has post-v\d+ module path/
+          /go (?:get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
@@ -91,16 +91,19 @@ module Dependabot
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
 
-            # Set the stubbed replace directives
-            update_go_mod(dependencies)
+            # Bump the deps we want to upgrade using `go get lib@version`
+            run_go_get(dependencies)
 
-            # Then run `go get` to pick up other changes to the file caused by
-            # the upgrade
+            # Run `go get`'s internal validation checks against _each_ module in `go.mod`
+            # by running `go get` w/o specifying any library. It finds problems like when a
+            # module declares itself using a different name than specified in our `go.mod` etc.
             run_go_get
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
             if substitutions.empty?
+              # go mod tidy should run before go mod vendor to ensure any
+              # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
               run_go_vendor
             else
@@ -151,26 +154,7 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def update_go_mod(dependencies)
-          deps = dependencies.map do |dep|
-            {
-              name: dep.name,
-              version: "v" + dep.version.sub(/^v/i, ""),
-              indirect: dep.requirements.empty?
-            }
-          end
-
-          body = SharedHelpers.run_helper_subprocess(
-            command: NativeHelpers.helper_path,
-            env: ENVIRONMENT,
-            function: "updateDependencyFile",
-            args: { dependencies: deps }
-          )
-
-          write_go_mod(body)
-        end
-
-        def run_go_get
+        def run_go_get(dependencies = [])
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
@@ -179,7 +163,14 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          _, stderr, status = Open3.capture3(ENVIRONMENT, "go get -d")
+          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
+          command = +"go get -d"
+          # `go get` accepts multiple packages, each separated by a space
+          dependencies.each do |dep|
+            version = "v" + dep.version.sub(/^v/i, "")
+            command << " #{dep.name}@#{version}"
+          end
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
           File.delete(tmp_go_file) if File.exist?(tmp_go_file)

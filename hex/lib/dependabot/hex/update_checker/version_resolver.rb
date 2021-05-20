@@ -74,8 +74,10 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, org if org
           end
 
-          # TODO: This isn't pretty. It would be much nicer to catch the
-          # warnings as part of the Elixir module.
+          # TODO: Catch the warnings as part of the Elixir module. This happens
+          # when elixir throws warnings from the manifest files that end up in
+          # stdout and cause run_helper_subprocess to fail parsing the result as
+          # JSON.
           return error_result(error) if includes_result?(error)
 
           # Ignore dependencies which don't resolve due to mis-matching
@@ -101,8 +103,7 @@ module Dependabot
           result = error.message&.split("\n")&.last
           return false unless result
 
-          JSON.parse(error.message&.split("\n")&.last)["result"]
-          true
+          JSON.parse(error.message&.split("\n")&.last).key?("result")
         rescue JSON::ParserError
           false
         end
@@ -122,6 +123,12 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          # TODO: Catch the warnings as part of the Elixir module. This happens
+          # when elixir throws warnings from the manifest files that end up in
+          # stdout and cause run_helper_subprocess to fail parsing the result as
+          # JSON.
+          return error_result(e) if includes_result?(e)
+
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
 

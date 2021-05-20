@@ -1,5 +1,5 @@
 module "github_ssh_without_protocol" {
-  source                       = "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=0.4.0"
+  source                       = "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=0.4.1"
   namespace                    = var.namespace
   stage                        = var.stage
   name                         = var.name

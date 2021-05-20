@@ -202,6 +202,37 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(WebMock).to have_requested(:get, registry_listing_url).once
     end
 
+    context "with multiple requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "preact",
+          version: "0.1.0",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^0.1.0",
+              file: "package-lock.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            },
+            {
+              requirement: "^0.1.0",
+              file: "yarn.lock",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }
+          ]
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/preact").
+          and_return(status: 200, body: JSON.pretty_generate({}))
+      end
+
+      specify { expect { subject }.not_to raise_error }
+    end
+
     context "with a git dependency" do
       let(:dependency) do
         Dependabot::Dependency.new(
