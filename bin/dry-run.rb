@@ -112,7 +112,7 @@ $options = {
   security_advisories: [],
   security_updates_only: false,
   ignore_conditions: [],
-  pull_request: false
+  pull_request: false,
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -492,7 +492,7 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   repo_contents_path: $repo_contents_path,
   source: $source,
   credentials: $options[:credentials],
-  reject_external_code: $options[:reject_external_code]
+  reject_external_code: $options[:reject_external_code],
 )
 
 dependencies = cached_read("dependencies") { parser.parse }

@@ -1,6 +1,6 @@
 pip==21.0.1
 pip-tools==6.0.1
-flake8==3.9.1
+flake8==3.9.2
 hashin==0.15.0
 pipenv==2020.11.15
 pipfile==0.0.2

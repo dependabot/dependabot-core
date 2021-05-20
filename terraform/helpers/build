@@ -14,13 +14,6 @@ fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
-json2hcl_checksum="d124ed13f3538c465fcab19e6015d311d3cd56f7dc2db7609b6e72fec666482d"
-json2hcl_url="https://github.com/kvz/json2hcl/releases/download/v0.0.6/json2hcl_v0.0.6_${os}_amd64"
-json2hcl_path="$install_dir/bin/json2hcl"
-wget -O "$json2hcl_path"  "$json2hcl_url"
-echo "$json2hcl_checksum  $json2hcl_path" | sha256sum -c
-chmod +x "$install_dir/bin/json2hcl"
-
 hcl2json_checksum="24068f1e25a34d8f8ca763f34fce11527472891bfa834d1504f665855021d5d4"
 hcl2json_url="https://github.com/tmccombs/hcl2json/releases/download/v0.3.3/hcl2json_${os}_amd64"
 hcl2json_path="$install_dir/bin/hcl2json"

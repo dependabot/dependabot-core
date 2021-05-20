@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
-    "@npmcli/arborist": "^2.4.2",
+    "@npmcli/arborist": "^2.6.0",
     "detect-indent": "^6.0.0",
     "npm": "6.14.13",
     "semver": "^7.3.4"
   },
   "devDependencies": {
-    "eslint": "^7.25.0",
+    "eslint": "^7.26.0",
     "eslint-config-prettier": "^8.3.0",
     "jest": "^26.6.3",
-    "prettier": "^2.2.1",
+    "prettier": "^2.3.0",
     "rimraf": "^3.0.2"
   }
 }

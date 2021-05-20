@@ -14,7 +14,7 @@ module Dependabot
       def look_up_source
         case new_source_type
         when "git" then find_source_from_git_url
-        when "registry" then find_source_from_registry_details
+        when "registry", "provider" then find_source_from_registry_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -36,29 +36,11 @@ module Dependabot
         Source.from_url(url)
       end
 
-      # Registry API docs:
-      # https://www.terraform.io/docs/registry/api.html
       def find_source_from_registry_details
         info = dependency.requirements.map { |r| r[:source] }.compact.first
-
         hostname = info[:registry_hostname] || info["registry_hostname"]
 
-        # TODO: Implement service discovery for custom registries
-        return unless hostname == "registry.terraform.io"
-
-        url = "https://registry.terraform.io/v1/modules/"\
-              "#{dependency.name}/#{dependency.version}"
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
-        raise "Response from registry was #{response.status}" unless response.status == 200
-
-        source_url = JSON.parse(response.body).fetch("source")
-        Source.from_url(source_url) if source_url
+        RegistryClient.new(hostname: hostname).source(dependency: dependency)
       end
     end
   end

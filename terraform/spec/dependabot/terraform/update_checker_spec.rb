@@ -301,6 +301,33 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         it { is_expected.to eq(requirements) }
       end
     end
+
+    context "with a provider", :vcr do
+      let(:source) do
+        {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/aws"
+        }
+      end
+      let(:requirement) { "~> 2.0" }
+
+      it "updates the requirement" do
+        expect(updated_requirements).
+          to eq(
+            [{
+              requirement: "~> 3.40",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }]
+          )
+      end
+    end
   end
 
   describe "#requirements_unlocked_or_can_be?" do
