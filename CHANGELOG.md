@@ -1,3 +1,10 @@
+## v0.148.4, 21 May 2021
+
+- Terraform: Improve updating provider requirements
+- Bundler 2: No longer bump yanked gems when updating dependency
+- Upgrade bundler to 2.2.17
+- Bump @npmcli/arborist from 2.5.0 to 2.6.0 in /npm_and_yarn/helpers
+
 ## v0.148.3, 19 May 2021
 
 - fix(common): skip validation on non-git sources
