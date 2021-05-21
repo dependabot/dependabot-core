@@ -73,7 +73,8 @@ module Dependabot
       end
 
       def update_registry_declaration(new_req, old_req, updated_content)
-        updated_content.sub!(registry_declaration_regex) do |regex_match|
+        regex = new_req[:source][:type] == "provider" ? provider_declaration_regex : registry_declaration_regex
+        updated_content.sub!(regex) do |regex_match|
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
           end
@@ -94,6 +95,14 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def provider_declaration_regex
+        /
+          (?:required_providers\s\{)*
+          (source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
+          (?:(?!^\}).)+)
+        /mx
       end
 
       def registry_declaration_regex
