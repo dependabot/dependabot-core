@@ -74,7 +74,7 @@ module Dependabot
 
       def update_registry_declaration(new_req, old_req, updated_content)
         updated_content.sub!(registry_declaration_regex) do |regex_match|
-          regex_match.sub(/version\s*=.*/) do |req_line_match|
+          regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
           end
         end
