@@ -210,6 +210,28 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
 USER root
 
+
+### SWIFT
+
+# Install Swift 5.4
+ENV SWIFT_HOME=/opt/swift \
+  PATH="$PATH:${SWIFT_HOME}/bin"
+ARG SWIFT_VERSION=5.4
+RUN apt-get update \
+  && apt-get install -y binutils libc6-dev libedit2 libgcc-9-dev libstdc++-9-dev libz3-dev pkg-config zlib1g-dev
+USER dependabot
+RUN mkdir -p "${SWIFT_HOME}" && chown dependabot:dependabot "${SWIFT_HOME}"
+RUN wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz \
+  && wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu1804/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz.sig \
+  && gpg --verify swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz{.sig,} \
+  && mkdir -p ${SWIFT_HOME}/bin \
+  && tar -xvzf swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz -C ${SWIFT_HOME}/bin \
+  && rm -f swift-${SWIFT_VERSION}-RELEASE-ubuntu18.04.tar.gz \
+  && rm -rf /var/lib/apt/lists/* \
+  && swift --version
+USER root
+
+
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
@@ -217,6 +239,7 @@ COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
+COPY --chown=dependabot:dependabot swift/helpers /opt/swift/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \

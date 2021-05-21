@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/python"
+require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"
@@ -14,5 +15,6 @@ require "dependabot/hex"
 require "dependabot/cargo"
 require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
+require "dependabot/swift"
 require "dependabot/dep"
 require "dependabot/bundler"

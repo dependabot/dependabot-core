@@ -28,6 +28,7 @@ GEMSPECS = %w(
   composer/dependabot-composer.gemspec
   hex/dependabot-hex.gemspec
   python/dependabot-python.gemspec
+  swift/dependabot-swift.gemspec
   omnibus/dependabot-omnibus.gemspec
 ).freeze
 

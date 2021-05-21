@@ -18,26 +18,27 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-        - { path: bundler, name: bundler1 }
-        - { path: bundler, name: bundler2 }
-        - { path: cargo, name: cargo }
-        - { path: common, name: common }
-        - { path: composer, name: composer }
-        - { path: dep, name: dep }
-        - { path: docker, name: docker }
-        - { path: elm, name: elm }
-        - { path: git_submodules, name: git_submodules }
-        - { path: github_actions, name: github_actions }
-        - { path: go_modules, name: go_modules }
-        - { path: gradle, name: gradle }
-        - { path: hex, name: hex }
-        - { path: maven, name: maven }
-        - { path: npm_and_yarn, name: npm_and_yarn }
-        - { path: nuget, name: nuget }
-        - { path: omnibus, name: omnibus }
-        - { path: python, name: python }
-        - { path: terraform, name: terraform }
-        - { path: terraform, name: terraform-hcl2 }  
+          - { path: bundler, name: bundler1 }
+          - { path: bundler, name: bundler2 }
+          - { path: cargo, name: cargo }
+          - { path: common, name: common }
+          - { path: composer, name: composer }
+          - { path: dep, name: dep }
+          - { path: docker, name: docker }
+          - { path: elm, name: elm }
+          - { path: git_submodules, name: git_submodules }
+          - { path: github_actions, name: github_actions }
+          - { path: go_modules, name: go_modules }
+          - { path: gradle, name: gradle }
+          - { path: hex, name: hex }
+          - { path: maven, name: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn }
+          - { path: nuget, name: nuget }
+          - { path: omnibus, name: omnibus }
+          - { path: python, name: python }
+          - { path: swift, name: swift_package_manager }
+          - { path: terraform, name: terraform }
+          - { path: terraform, name: terraform-hcl2 }
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

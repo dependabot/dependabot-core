@@ -1,0 +1,82 @@
+[
+	{
+		"name": ".gitignore",
+		"path": "examples/hosted/.gitignore",
+		"sha": "3d64647b504dc232fca213d0ce8960ca578261ae",
+		"size": 153,
+		"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/.gitignore?ref=main",
+		"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/.gitignore",
+		"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/3d64647b504dc232fca213d0ce8960ca578261ae",
+		"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/.gitignore",
+		"type": "file",
+		"_links": {
+			"self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/.gitignore?ref=main",
+			"git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/3d64647b504dc232fca213d0ce8960ca578261ae",
+			"html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/.gitignore"
+		}
+	},
+	{
+		"name": "CHANGELOG.md",
+		"path": "examples/hosted/CHANGELOG.md",
+		"sha": "687440bac9733e8c525de757e795a5701187e082",
+		"size": 50,
+		"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/CHANGELOG.md?ref=main",
+		"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/CHANGELOG.md",
+		"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/687440bac9733e8c525de757e795a5701187e082",
+		"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/CHANGELOG.md",
+		"type": "file",
+		"_links": {
+			"self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/CHANGELOG.md?ref=main",
+			"git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/687440bac9733e8c525de757e795a5701187e082",
+			"html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/CHANGELOG.md"
+		}
+	},
+	{
+		"name": "README.md",
+		"path": "examples/hosted/README.md",
+		"sha": "1a96d2541d81c07dd501ffc31d97ef1af4821bdb",
+		"size": 176,
+		"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/README.md?ref=main",
+		"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/README.md",
+		"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/1a96d2541d81c07dd501ffc31d97ef1af4821bdb",
+		"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/README.md",
+		"type": "file",
+		"_links": {
+			"self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/README.md?ref=main",
+			"git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/1a96d2541d81c07dd501ffc31d97ef1af4821bdb",
+			"html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/README.md"
+		}
+	},
+	{
+		"name": "Package.swift",
+		"path": "examples/hosted/Package.swift",
+		"sha": "2c0e60684c07e83262adce22d048758a08d55aee",
+		"size": 422,
+		"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.lock?ref=main",
+		"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.lock",
+		"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/2c0e60684c07e83262adce22d048758a08d55aee",
+		"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/pubspec.lock",
+		"type": "file",
+		"_links": {
+			"self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.lock?ref=main",
+			"git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/2c0e60684c07e83262adce22d048758a08d55aee",
+			"html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.lock"
+		}
+	},
+	{
+		"name": "Package.resolved",
+		"path": "examples/hosted/Package.resolved",
+		"sha": "bed06742a371232281bd0faf77dc3c68611baa22",
+		"size": 217,
+		"url": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.yaml?ref=main",
+		"html_url": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.yaml",
+		"git_url": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/bed06742a371232281bd0faf77dc3c68611baa22",
+		"download_url": "https://raw.githubusercontent.com/IchordeDionysos/pub_examples/main/examples/hosted/pubspec.yaml",
+		"type": "file",
+		"_links": {
+			"self": "https://api.github.com/repos/IchordeDionysos/pub_examples/contents/examples/hosted/pubspec.yaml?ref=main",
+			"git": "https://api.github.com/repos/IchordeDionysos/pub_examples/git/blobs/bed06742a371232281bd0faf77dc3c68611baa22",
+			"html": "https://github.com/IchordeDionysos/pub_examples/blob/main/examples/hosted/pubspec.yaml"
+		}
+	}
+]
