@@ -1,4 +1,4 @@
-version: 2
+reversion: 2
 updates:
   - package-ecosystem: "bundler"
     directory: "/common"

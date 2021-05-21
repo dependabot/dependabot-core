@@ -39,6 +39,7 @@ jobs:
           - { path: python, name: python }
           - { path: python, name: python_slow }
           - { path: pub, name: pub }
+          - { path: swift, name: swift_package_manager }
           - { path: terraform, name: terraform }
     steps:
       - name: Checkout code
