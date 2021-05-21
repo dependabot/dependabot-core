@@ -295,6 +295,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "and it's that gem that we're attempting to bump" do
           it "locks the updated gem to the latest version" do
             expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "does not update unrelated dependencies" do
             expect(file.content).to include("statesman (1.2.1)")
           end
         end
@@ -321,8 +324,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include("business (1.18.0)")
             expect(file.content).to include("statesman (1.3.1)")
+          end
+
+          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
+            expect(file.content).to include("business (1.18.0)")
+          end
+
+          it "does not touch the yanked gem", :bundler_v2_only do
+            expect(file.content).to include("business (1.4.1)")
           end
         end
       end
