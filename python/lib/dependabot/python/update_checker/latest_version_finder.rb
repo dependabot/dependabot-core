@@ -114,8 +114,9 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
-          versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+          return versions_array unless dependency.version
+
+          versions_array.select { |version| version > version_class.new(dependency.version) }
         end
 
         def filter_out_of_range_versions(versions_array)
