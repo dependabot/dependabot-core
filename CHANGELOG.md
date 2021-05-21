@@ -1,3 +1,8 @@
+## v0.148.5, 21 May 2021
+
+- Terraform: Fix updating multiple providers
+- Dockerfile: split up native helper build steps
+
 ## v0.148.4, 21 May 2021
 
 - Terraform: Improve updating provider requirements
