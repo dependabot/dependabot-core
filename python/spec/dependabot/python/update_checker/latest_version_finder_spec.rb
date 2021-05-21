@@ -212,6 +212,17 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
     context "when the user is ignoring all later versions" do
       let(:ignored_versions) { ["> 2.0.0"] }
       it { is_expected.to eq(Gem::Version.new("2.0.0")) }
