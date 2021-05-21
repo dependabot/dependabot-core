@@ -1,3 +1,7 @@
+## v0.148.6, 21 May 2021
+
+- Handle nil dependency version when raising AllVersionsIgnored
+
 ## v0.148.5, 21 May 2021
 
 - Terraform: Fix updating multiple providers
