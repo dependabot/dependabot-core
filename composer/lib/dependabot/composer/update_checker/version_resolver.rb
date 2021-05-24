@@ -336,6 +336,11 @@ module Dependabot
             #
             # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
             nil
+          elsif error.message.include?("does not match the expected JSON schema")
+            msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n"\
+                  "Run `composer validate` to check your composer.json and composer.lock files.\n\n"\
+                  "See https://getcomposer.org/doc/04-schema.md for details on the schema."
+            raise Dependabot::DependencyFileNotParseable, msg
           else
             raise error
           end
