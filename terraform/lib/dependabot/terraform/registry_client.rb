@@ -11,7 +11,7 @@ module Dependabot
     class RegistryClient
       PUBLIC_HOSTNAME = "registry.terraform.io"
 
-      def initialize(hostname:)
+      def initialize(hostname: PUBLIC_HOSTNAME)
         @hostname = hostname
       end
 

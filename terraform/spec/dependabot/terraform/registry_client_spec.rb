@@ -4,6 +4,8 @@ require "spec_helper"
 require "dependabot/terraform/registry_client"
 
 RSpec.describe Dependabot::Terraform::RegistryClient do
+  subject(:client) { described_class.new }
+
   let(:module_dependency) do
     Dependabot::Dependency.new(
       name: "hashicorp/consul/aws",
@@ -34,7 +36,6 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches provider versions", :vcr do
-    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     response = client.all_provider_versions(identifier: "hashicorp/aws")
     expect(response.max).to eq(Gem::Version.new("3.40.0"))
   end
@@ -57,7 +58,6 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches module versions", :vcr do
-    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response.max).to eq(Gem::Version.new("0.9.3"))
   end
@@ -82,14 +82,12 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "raises an error when it cannot find the dependency", :vcr do
-    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     expect { client.all_module_versions(identifier: "does/not/exist") }.to raise_error(RuntimeError) do |error|
       expect(error.message).to eq("Response from registry was 404")
     end
   end
 
   it "fetches the source for a module dependency", :vcr do
-    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
@@ -97,7 +95,6 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches the source for a provider dependency", :vcr do
-    client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     source = client.source(dependency: module_dependency)
 
     expect(source).to be_a Dependabot::Source
