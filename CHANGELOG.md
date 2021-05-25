@@ -1,3 +1,8 @@
+## v0.148.8, 25 May 2021
+
+- Composer: handle unreachable git vcs source
+- Terraform: handle implicit (v0.12 style) provider sources
+
 ## v0.148.7, 25 May 2021
 
 - npm: Handle multiple sources in the update checker
