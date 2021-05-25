@@ -39,6 +39,20 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(response.max).to eq(Gem::Version.new("3.40.0"))
   end
 
+  it "fetches provider versions from a custom registry" do
+    hostname = 'registry.example.org'
+    stub_request(:get, "https://#{hostname}/v1/providers/hashicorp/aws/versions").and_return(
+      status: 200,
+      body: {
+        "id": "hashicorp/aws",
+        "versions": [{ "version": "3.42.0" }]
+      }.to_json
+    )
+    client = described_class.new(hostname: hostname)
+    response = client.all_provider_versions(identifier: "hashicorp/aws")
+    expect(response.max).to eq(Gem::Version.new("3.42.0"))
+  end
+
   it "fetches module versions", :vcr do
     client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
