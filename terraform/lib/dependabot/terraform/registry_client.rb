@@ -11,8 +11,9 @@ module Dependabot
     class RegistryClient
       PUBLIC_HOSTNAME = "registry.terraform.io"
 
-      def initialize(hostname: PUBLIC_HOSTNAME)
+      def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
+        @credentials = credentials
       end
 
       # Fetch all the versions of a provider, and return a Version
