@@ -84,6 +84,8 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.version
+
           versions_array.
             select { |version| version > Gem::Version.new(dependency.version) }
         end

@@ -1062,6 +1062,55 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           to eq(dependency_requirements)
       end
     end
+
+    context "with multiple requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@org/etag",
+          version: "1.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://registry.npmjs.org"
+              }
+            },
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://npm.fury.io/dependabot"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://npm.fury.io/dependabot/@org%2Fetag").
+          and_return(status: 200, body: JSON.pretty_generate({}))
+      end
+
+      it "prefers to private registry source" do
+        expect(checker.updated_requirements.first).to eq(
+          {
+            file: "package.json",
+            groups: [],
+            requirement: "^1.0",
+            source: {
+              type: "registry",
+              url: "https://npm.fury.io/dependabot"
+            }
+          }
+        )
+      end
+    end
   end
 
   context "#updated_dependencies_after_full_unlock" do

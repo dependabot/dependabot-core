@@ -534,9 +534,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       let(:files) { project_dependency_files("registry_provider") }
 
       it "has the right details" do
-        dependency = dependencies.first
+        dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
-        expect(dependency.name).to eq("hashicorp/aws")
         expect(dependency.version).to eq("0.1.0")
       end
     end
@@ -550,6 +549,17 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         expect(hashicorp.version).to eq("2.0")
         expect(mycorp.version).to eq("1.0")
+      end
+    end
+
+    context "with a required provider that does not specify a source" do
+      let(:files) { project_dependency_files("provider_implicit_source") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "oci" }
+
+        expect(dependency.version).to eq("3.27")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/oci")
       end
     end
 

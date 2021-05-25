@@ -203,5 +203,16 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
         end
       end
     end
+
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
   end
 end

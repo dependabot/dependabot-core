@@ -1,3 +1,29 @@
+## v0.148.8, 25 May 2021
+
+- Composer: handle unreachable git vcs source
+- Terraform: handle implicit (v0.12 style) provider sources
+
+## v0.148.7, 25 May 2021
+
+- npm: Handle multiple sources in the update checker
+- Composer: Handle invalid composer.json
+
+## v0.148.6, 21 May 2021
+
+- Handle nil dependency version when raising AllVersionsIgnored
+
+## v0.148.5, 21 May 2021
+
+- Terraform: Fix updating multiple providers
+- Dockerfile: split up native helper build steps
+
+## v0.148.4, 21 May 2021
+
+- Terraform: Improve updating provider requirements
+- Bundler 2: No longer bump yanked gems when updating dependency
+- Upgrade bundler to 2.2.17
+- Bump @npmcli/arborist from 2.5.0 to 2.6.0 in /npm_and_yarn/helpers
+
 ## v0.148.3, 19 May 2021
 
 - fix(common): skip validation on non-git sources
