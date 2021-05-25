@@ -61,9 +61,6 @@ module Dependabot
       # @return Dependabot::Source
       # @raise [RuntimeError] when the source cannot be retrieved
       def source(dependency:)
-        # TODO: Implement service discovery for custom registries
-        return unless hostname == PUBLIC_HOSTNAME
-
         type = dependency.requirements.first[:source][:type]
         endpoint = if type == "registry"
                      "modules/#{dependency.name}/#{dependency.version}"
