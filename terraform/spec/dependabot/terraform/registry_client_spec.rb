@@ -57,6 +57,22 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     ])
   end
 
+  it "fetches provider versions form a custom registry secured by a token" do
+    hostname = "registry.example.org"
+    token = SecureRandom.hex(16)
+    credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
+
+    stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions").
+      and_return(body: { "id": "x/y", "versions": [{ "version": "0.1.0" }] }.to_json)
+    client = described_class.new(hostname: hostname, credentials: credentials)
+
+    expect(client.all_provider_versions(identifier: "x/y")).to match_array([
+      Gem::Version.new("0.1.0")
+    ])
+    expect(WebMock).to have_requested(:get, "https://#{hostname}/v1/providers/x/y/versions").
+      with(headers: { "Authorization" => "Bearer #{token}" })
+  end
+
   it "fetches module versions", :vcr do
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response.max).to eq(Gem::Version.new("0.9.3"))
@@ -102,7 +118,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches the source for a provider from a custom registry", :vcr do
-    client = described_class.new(hostname: "terraform.example.org")
+    hostname = "terraform.example.org"
+    client = described_class.new(hostname: hostname)
     source = client.source(dependency: Dependabot::Dependency.new(
       name: "hashicorp/ciscoasa",
       version: "1.2.0",
@@ -113,7 +130,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
         file: "main.tf",
         source: {
           type: "provider",
-          registry_hostname: "terraform.example.org",
+          registry_hostname: hostname,
           module_identifier: "hashicorp/ciscoasa"
         }
       }]

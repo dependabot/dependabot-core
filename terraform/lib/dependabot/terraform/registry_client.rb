@@ -13,7 +13,9 @@ module Dependabot
 
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
-        @credentials = credentials
+        @tokens = credentials.each_with_object({}) do |item, memo|
+          memo[item["host"]] = item["token"] if item["type"] == "terraform_registry"
+        end
       end
 
       # Fetch all the versions of a provider, and return a Version
@@ -72,7 +74,7 @@ module Dependabot
 
       private
 
-      attr_reader :hostname
+      attr_reader :hostname, :tokens
 
       def get(endpoint:)
         url = "https://#{hostname}/v1/#{endpoint}"
@@ -80,7 +82,7 @@ module Dependabot
         response = Excon.get(
           url,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: headers_for(hostname))
         )
 
         raise "Response from registry was #{response.status}" unless response.status == 200
@@ -90,6 +92,11 @@ module Dependabot
 
       def version_class
         Version
+      end
+
+      def headers_for(hostname)
+        token = tokens[hostname]
+        token ? { "Authorization" => "Bearer #{token}" } : {}
       end
     end
   end
