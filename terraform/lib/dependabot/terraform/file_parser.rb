@@ -94,7 +94,7 @@ module Dependabot
 
         Dependency.new(
           name: dependency_name,
-          version: resolve_version_from(version),
+          version: determine_version_for(hostname, namespace, name, version),
           package_manager: "terraform",
           requirements: [
             requirement: version,
@@ -333,8 +333,31 @@ module Dependabot
         raise "No Terraform configuration file!"
       end
 
-      def resolve_version_from(constraint)
-        constraint&.match?(/\A\d/) ? constraint : nil
+      def determine_version_for(hostname, namespace, name, constraint)
+        return constraint if constraint&.match?(/\A\d/)
+
+        return lock_file_content.dig(
+          'provider',
+          "#{hostname}/#{namespace}/#{name}",
+          0,
+          'version'
+        ) if lock_file?
+      end
+
+      def lock_file?
+        lock_file
+      end
+
+      def lock_file
+        return @lock_file if defined?(@lock_file)
+
+        @lock_file ||= dependency_files.find do |file|
+          file.name == '.terraform.lock.hcl'
+        end
+      end
+
+      def lock_file_content
+        @lock_file_content ||= parsed_file(lock_file)
       end
     end
   end
