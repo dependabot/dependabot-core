@@ -23,9 +23,6 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        # TODO: Implement service discovery for custom registries
-        return [] unless hostname == PUBLIC_HOSTNAME
-
         response = get(endpoint: "providers/#{identifier}/versions")
 
         JSON.parse(response).
