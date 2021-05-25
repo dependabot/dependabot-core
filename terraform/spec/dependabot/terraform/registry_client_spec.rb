@@ -102,4 +102,27 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-aws-consul")
   end
+
+  it "fetches the source for a provider from a custom registry", :vcr do
+    client = described_class.new(hostname: 'terraform.example.org')
+    source = client.source(dependency: Dependabot::Dependency.new(
+        name: "hashicorp/ciscoasa",
+        version: "1.2.0",
+        package_manager: "terraform",
+        requirements: [{
+          requirement: "~> 1.2",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "terraform.example.org",
+            module_identifier: "hashicorp/ciscoasa"
+          }
+        }]
+      )
+    )
+
+    expect(source).to be_a Dependabot::Source
+    expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+  end
 end
