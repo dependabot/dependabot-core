@@ -94,7 +94,7 @@ module Dependabot
 
         Dependency.new(
           name: dependency_name,
-          version: version, # resolved version should come from `.terraform.lock.hcl`.
+          version: resolve_version_from(version),
           package_manager: "terraform",
           requirements: [
             requirement: version,
@@ -331,6 +331,10 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def resolve_version_from(constraint)
+        constraint&.match?(/\A\d/) ? constraint : nil
       end
     end
   end
