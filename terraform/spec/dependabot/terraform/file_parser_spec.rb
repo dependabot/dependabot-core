@@ -576,7 +576,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details" do
         dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
-        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.name).to eq("hashicorp/aws")
+        expect(dependency.version).to eq("3.37.0")
       end
 
       it "handles version ranges correctly" do
