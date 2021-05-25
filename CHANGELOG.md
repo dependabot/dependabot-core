@@ -1,7 +1,7 @@
 ## v0.148.7, 25 May 2021
 
 - npm: Handle multiple sources in the update checker
-- Composer: handle invalid composer.json
+- Composer: Handle invalid composer.json
 
 ## v0.148.6, 21 May 2021
 
