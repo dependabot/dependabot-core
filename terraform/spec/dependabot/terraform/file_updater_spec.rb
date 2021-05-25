@@ -539,43 +539,18 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+    
 
-    context "with a versions.tf file" do
-      let(:files) { project_dependency_files("lockfile") }
+    context "with a versions file" do
+      let(:files) { project_dependency_files("versions_file") }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "hashicorp/aws",
-            version: "3.40.0",
-            previous_version: "3.37.0",
-            requirements: [{
-              requirement: "3.40.0",
-              groups: [],
-              file: "versions.tf",
-              source: {
-                type: "provider",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/aws"
-              }
-            }],
-            previous_requirements: [{
-              requirement: "3.37.0",
-              groups: [],
-              file: "versions.tf",
-              source: {
-                type: "provider",
-                registry_hostname: "registry.terraform.io",
-                module_identifier: "hashicorp/aws"
-              }
-            }],
-            package_manager: "terraform"
-          ),
-          Dependabot::Dependency.new(
             name: "hashicorp/random",
-            version: "3.0",
-            previous_version: "2.0",
+            version: "3.1.0",
+            previous_version: "3.0.0",
             requirements: [{
-              requirement: "3.0",
+              requirement: "3.1.0",
               groups: [],
               file: "versions.tf",
               source: {
@@ -585,7 +560,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             previous_requirements: [{
-              requirement: "2.0",
+              requirement: "3.0.0",
               groups: [],
               file: "versions.tf",
               source: {
@@ -599,12 +574,79 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         ]
       end
 
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "versions.tf" }
 
-      it "updates the `.terraform.lock.hcl` file" do
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_providers {
+                random = {
+                  source  = "hashicorp/random"
+                  version = ">= 3.1.0"
+          DEP
+        )
+      end
+    end
 
-        lock_file = subject.find { |file| file.name == ".terraform.lock.hcl" }
+    context "using versions.tf with a lockfile present" do
+      let(:files) { project_dependency_files("lockfile") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: "terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          ),
+        ]
+      end
 
-        expect(lock_file.content).to eql(fixture("projects/lockfile/.terraform.lock.hcl.expected"))
+      it "does not update requirements in the `versions.tf` file" do
+        updated_file = subject.find { |file| file.name == "versions.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              terraform {
+                required_providers {
+                    aws = {
+                      source  = "hashicorp/aws"
+                      version = ">= 3.37.0"
+                    }
+                    
+                    random = {
+                      source  = "hashicorp/random"
+                      version = ">= 3.0.0"
+            DEP
+          )
+        end
+
+
+      it "only updates the aws dependency in the `.terraform.lock.hcl` file" do
+
+        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to eql(fixture("projects/lockfile/.terraform.lock.hcl.expected"))
       end
     end
 
