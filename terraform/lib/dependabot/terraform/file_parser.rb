@@ -341,23 +341,17 @@ module Dependabot
           "#{hostname}/#{namespace}/#{name}",
           0,
           'version'
-        ) if lock_file?
-      end
-
-      def lock_file?
-        lock_file
-      end
-
-      def lock_file
-        return @lock_file if defined?(@lock_file)
-
-        @lock_file ||= dependency_files.find do |file|
-          file.name == '.terraform.lock.hcl'
-        end
+        )
       end
 
       def lock_file_content
-        @lock_file_content ||= parsed_file(lock_file)
+        @lock_file_content ||=
+          begin
+            lock_file = dependency_files.find do |file|
+              file.name == '.terraform.lock.hcl'
+            end
+            lock_file ? parsed_file(lock_file) : {}
+          end
       end
     end
   end
