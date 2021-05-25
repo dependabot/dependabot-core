@@ -122,6 +122,17 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "when the current version isn't known" do
+        let(:current_version) { nil }
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+      end
+
       context "when the user has ignored all later versions" do
         let(:ignored_versions) { ["> 1.3.0"] }
 

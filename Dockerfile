@@ -70,7 +70,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y ruby2.6 ruby2.6-dev \
   && gem update --system 3.2.14 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.15 --no-document \
+  && gem install bundler -v 2.2.17 --no-document \
   && rm -rf /var/lib/gems/2.6.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -225,17 +225,17 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 
 USER dependabot
 RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2 \
-  && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
-  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
-  && bash /opt/dep/helpers/build /opt/dep \
-  && bash /opt/go_modules/helpers/build /opt/go_modules \
-  && bash /opt/hex/helpers/build /opt/hex \
-  && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
-  && bash /opt/python/helpers/build /opt/python \
-  && bash /opt/terraform/helpers/build /opt/terraform \
-  && bash /opt/composer/helpers/v1/build /opt/composer/v1 \
-  && bash /opt/composer/helpers/v2/build /opt/composer/v2
+  && mkdir -p /opt/bundler/v2
+RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
+RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
+RUN bash /opt/dep/helpers/build /opt/dep
+RUN bash /opt/go_modules/helpers/build /opt/go_modules
+RUN bash /opt/hex/helpers/build /opt/hex
+RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
+RUN bash /opt/python/helpers/build /opt/python
+RUN bash /opt/terraform/helpers/build /opt/terraform
+RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
+RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
 
 # Allow further gem installs as the dependabot user
 ENV HOME="/home/dependabot"

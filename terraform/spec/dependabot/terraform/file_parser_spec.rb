@@ -514,9 +514,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       let(:files) { project_dependency_files("registry_provider") }
 
       it "has the right details" do
-        dependency = dependencies.first
+        dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
-        expect(dependency.name).to eq("hashicorp/aws")
         expect(dependency.version).to eq("0.1.0")
       end
     end
