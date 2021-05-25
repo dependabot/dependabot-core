@@ -45,12 +45,15 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       status: 200,
       body: {
         "id": "hashicorp/aws",
-        "versions": [{ "version": "3.42.0" }]
+        "versions": [{ "version": "3.42.0" }, { "version": "3.41.0" }]
       }.to_json
     )
     client = described_class.new(hostname: hostname)
     response = client.all_provider_versions(identifier: "hashicorp/aws")
-    expect(response.max).to eq(Gem::Version.new("3.42.0"))
+    expect(response).to match_array([
+      Gem::Version.new("3.42.0"),
+      Gem::Version.new("3.41.0")
+    ])
   end
 
   it "fetches module versions", :vcr do
@@ -59,17 +62,31 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(response.max).to eq(Gem::Version.new("0.9.3"))
   end
 
+  it "fetches module versions from a custom registry" do
+    hostname = 'registry.example.org'
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/versions")
+      .and_return(status: 200, body: {
+          "modules": [
+            {
+              "source": "hashicorp/consul/aws",
+              "versions": [{ 'version': '0.1.0' }, { 'version': '0.2.0'}]
+            }
+          ]
+        }.to_json
+      )
+    client = described_class.new(hostname: hostname)
+    response = client.all_module_versions(identifier: "hashicorp/consul/aws")
+    expect(response).to match_array([
+      Gem::Version.new("0.1.0"),
+      Gem::Version.new("0.2.0")
+    ])
+  end
+
   it "raises an error when it cannot find the dependency", :vcr do
     client = described_class.new(hostname: described_class::PUBLIC_HOSTNAME)
     expect { client.all_module_versions(identifier: "does/not/exist") }.to raise_error(RuntimeError) do |error|
       expect(error.message).to eq("Response from registry was 404")
     end
-  end
-
-  it "does not (yet) handle custom registries" do
-    client = described_class.new(hostname: "my.private-registry.io")
-    response = client.all_module_versions(identifier: "hashicorp/consul/aws")
-    expect(response).to eq([])
   end
 
   it "fetches the source for a module dependency", :vcr do
