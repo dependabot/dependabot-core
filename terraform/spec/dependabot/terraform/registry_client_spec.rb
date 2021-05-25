@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches provider versions from a custom registry" do
-    hostname = 'registry.example.org'
+    hostname = "registry.example.org"
     stub_request(:get, "https://#{hostname}/v1/providers/hashicorp/aws/versions").and_return(
       status: 200,
       body: {
@@ -63,17 +63,16 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches module versions from a custom registry" do
-    hostname = 'registry.example.org'
-    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/versions")
-      .and_return(status: 200, body: {
-          "modules": [
-            {
-              "source": "hashicorp/consul/aws",
-              "versions": [{ 'version': '0.1.0' }, { 'version': '0.2.0'}]
-            }
-          ]
-        }.to_json
-      )
+    hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/versions").
+      and_return(status: 200, body: {
+        "modules": [
+          {
+            "source": "hashicorp/consul/aws",
+            "versions": [{ 'version': "0.1.0" }, { 'version': "0.2.0" }]
+          }
+        ]
+      }.to_json)
     client = described_class.new(hostname: hostname)
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
     expect(response).to match_array([
@@ -106,23 +105,22 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches the source for a provider from a custom registry", :vcr do
-    client = described_class.new(hostname: 'terraform.example.org')
+    client = described_class.new(hostname: "terraform.example.org")
     source = client.source(dependency: Dependabot::Dependency.new(
-        name: "hashicorp/ciscoasa",
-        version: "1.2.0",
-        package_manager: "terraform",
-        requirements: [{
-          requirement: "~> 1.2",
-          groups: [],
-          file: "main.tf",
-          source: {
-            type: "provider",
-            registry_hostname: "terraform.example.org",
-            module_identifier: "hashicorp/ciscoasa"
-          }
-        }]
-      )
-    )
+      name: "hashicorp/ciscoasa",
+      version: "1.2.0",
+      package_manager: "terraform",
+      requirements: [{
+        requirement: "~> 1.2",
+        groups: [],
+        file: "main.tf",
+        source: {
+          type: "provider",
+          registry_hostname: "terraform.example.org",
+          module_identifier: "hashicorp/ciscoasa"
+        }
+      }]
+    ))
 
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
