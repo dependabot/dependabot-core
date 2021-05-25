@@ -336,11 +336,11 @@ module Dependabot
       def determine_version_for(hostname, namespace, name, constraint)
         return constraint if constraint&.match?(/\A\d/)
 
-        return lock_file_content.dig(
-          'provider',
+        lock_file_content.dig(
+          "provider",
           "#{hostname}/#{namespace}/#{name}",
           0,
-          'version'
+          "version"
         )
       end
 
@@ -348,7 +348,7 @@ module Dependabot
         @lock_file_content ||=
           begin
             lock_file = dependency_files.find do |file|
-              file.name == '.terraform.lock.hcl'
+              file.name == ".terraform.lock.hcl"
             end
             lock_file ? parsed_file(lock_file) : {}
           end
