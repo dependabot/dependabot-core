@@ -231,7 +231,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def filter_lower_versions(versions_array)
-        return versions_array unless current_version
+        return versions_array unless current_version && version_class.correct?(current_version)
 
         versions_array.select do |version|
           version > current_version
