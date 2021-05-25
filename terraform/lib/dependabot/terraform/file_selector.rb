@@ -15,11 +15,11 @@ module FileSelector
     file_name != ".terraform.lock.hcl" && file_name.end_with?(".hcl")
   end
 
-  def lock_file?
-    !lock_file.nil?
+  def lock_file?(filename)
+    filename == ".terraform.lock.hcl"
   end
 
   def lock_file
-    dependency_files.find { |f| f.name == ".terraform.lock.hcl" }
+    dependency_files.select { |f| f.name == ".terraform.lock.hcl" }
   end
 end
