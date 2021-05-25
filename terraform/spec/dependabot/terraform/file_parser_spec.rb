@@ -532,6 +532,17 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a required provider that does not specify a source" do
+      let(:files) { project_dependency_files("provider_implicit_source") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "oci" }
+
+        expect(dependency.version).to eq("3.27")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/oci")
+      end
+    end
+
     context "with a toplevel provider" do
       let(:files) { project_dependency_files("provider") }
 

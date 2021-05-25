@@ -443,5 +443,60 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    describe "for a provider with an implicit source" do
+      let(:files) { project_dependency_files("provider_implicit_source") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "oci",
+            version: "3.28",
+            previous_version: "3.27",
+            requirements: [{
+              requirement: "3.28",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/oci"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.27",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/oci"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_version = ">= 0.12"
+
+              required_providers {
+                http = {
+                  source = "hashicorp/http"
+                  version = "2.0.0"
+                }
+
+                oci = { // When no `source` is specified, use the implied `hashicorp/oci` source address
+                  version = "3.28"
+                }
+          DEP
+        )
+      end
+    end
   end
 end
