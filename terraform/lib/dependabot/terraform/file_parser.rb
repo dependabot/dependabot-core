@@ -184,15 +184,6 @@ module Dependabot
         end
       end
 
-      def provider_source_from(source_address)
-        matches = source_address.match(PROVIDER_SOURCE_ADDRESS)
-        [
-          matches[:hostname] || DEFAULT_REGISTRY,
-          matches[:namespace],
-          matches[:name]
-        ]
-      end
-
       def git_source_details_from(source_string)
         git_url = source_string.strip.gsub(/^git::/, "")
         git_url = "https://" + git_url unless git_url.start_with?("git@") || git_url.include?("://")
