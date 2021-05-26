@@ -87,7 +87,7 @@ module Dependabot
       def registry_client
         @registry_client ||= begin
           hostname = dependency_source_details.fetch(:registry_hostname)
-          RegistryClient.new(hostname: hostname)
+          RegistryClient.new(hostname: hostname, credentials: credentials)
         end
       end
 

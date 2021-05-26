@@ -11,8 +11,11 @@ module Dependabot
     class RegistryClient
       PUBLIC_HOSTNAME = "registry.terraform.io"
 
-      def initialize(hostname:)
+      def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
         @hostname = hostname
+        @tokens = credentials.each_with_object({}) do |item, memo|
+          memo[item["host"]] = item["token"] if item["type"] == "terraform_registry"
+        end
       end
 
       # Fetch all the versions of a provider, and return a Version
@@ -23,9 +26,6 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        # TODO: Implement service discovery for custom registries
-        return [] unless hostname == PUBLIC_HOSTNAME
-
         response = get(endpoint: "providers/#{identifier}/versions")
 
         JSON.parse(response).
@@ -41,9 +41,6 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        # TODO: Implement service discovery for custom registries
-        return [] unless hostname == PUBLIC_HOSTNAME
-
         response = get(endpoint: "modules/#{identifier}/versions")
 
         JSON.parse(response).
@@ -61,9 +58,6 @@ module Dependabot
       # @return Dependabot::Source
       # @raise [RuntimeError] when the source cannot be retrieved
       def source(dependency:)
-        # TODO: Implement service discovery for custom registries
-        return unless hostname == PUBLIC_HOSTNAME
-
         type = dependency.requirements.first[:source][:type]
         endpoint = if type == "registry"
                      "modules/#{dependency.name}/#{dependency.version}"
@@ -80,7 +74,7 @@ module Dependabot
 
       private
 
-      attr_reader :hostname
+      attr_reader :hostname, :tokens
 
       def get(endpoint:)
         url = "https://#{hostname}/v1/#{endpoint}"
@@ -88,7 +82,7 @@ module Dependabot
         response = Excon.get(
           url,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: headers_for(hostname))
         )
 
         raise "Response from registry was #{response.status}" unless response.status == 200
@@ -98,6 +92,11 @@ module Dependabot
 
       def version_class
         Version
+      end
+
+      def headers_for(hostname)
+        token = tokens[hostname]
+        token ? { "Authorization" => "Bearer #{token}" } : {}
       end
     end
   end
