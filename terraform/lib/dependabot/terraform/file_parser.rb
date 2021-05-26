@@ -88,16 +88,16 @@ module Dependabot
 
       def build_provider_dependency(file, name, details = {})
         source_address = details.fetch("source", nil)
-        version = details["version"]&.strip
+        version_req = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
         dependency_name = source_address ? "#{namespace}/#{name}" : name
 
         Dependency.new(
           name: dependency_name,
-          version: version, # resolved version should come from `.terraform.lock.hcl`.
+          version: determine_version_for(hostname, namespace, name, version_req),
           package_manager: "terraform",
           requirements: [
-            requirement: version,
+            requirement: version_req,
             groups: [],
             file: file.name,
             source: {
@@ -331,6 +331,23 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def determine_version_for(hostname, namespace, name, constraint)
+        return constraint if constraint&.match?(/\A\d/)
+
+        lock_file_content.
+          dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+      end
+
+      def lock_file_content
+        @lock_file_content ||=
+          begin
+            lock_file = dependency_files.find do |file|
+              file.name == ".terraform.lock.hcl"
+            end
+            lock_file ? parsed_file(lock_file) : {}
+          end
       end
     end
   end
