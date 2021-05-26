@@ -4,6 +4,7 @@ require "excon"
 require "json"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/terraform/registry_client"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -40,7 +41,9 @@ module Dependabot
         info = dependency.requirements.map { |r| r[:source] }.compact.first
         hostname = info[:registry_hostname] || info["registry_hostname"]
 
-        RegistryClient.new(hostname: hostname).source(dependency: dependency)
+        RegistryClient.
+          new(hostname: hostname, credentials: credentials).
+          source(dependency: dependency)
       end
     end
   end
