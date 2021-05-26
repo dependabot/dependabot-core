@@ -1,3 +1,8 @@
+## v0.148.9, 26 May 2021
+
+- Terraform: Do not set dependency.version for version ranges
+- Terraform: Parse lockfiles to get exact version when present
+
 ## v0.148.8, 25 May 2021
 
 - Composer: handle unreachable git vcs source
