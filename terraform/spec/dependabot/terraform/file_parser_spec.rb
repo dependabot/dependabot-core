@@ -578,6 +578,22 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         expect(dependency.version).to eq("0.1.0")
       end
+
+      it "handles version ranges correctly" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/http" }
+
+        expect(dependency.version).to be_nil
+        expect(dependency.requirements).to eq([{
+          requirement: "~> 2.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/http"
+          }
+        }])
+      end
     end
 
     context "with a required provider block with multiple versions" do
