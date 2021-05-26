@@ -56,9 +56,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "errors" do
-    subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
+  subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
 
+  describe "errors" do
     context "with a dependency version that can't be found" do
       let(:files) { project_dependency_files("yarn/yanked_version") }
 
@@ -354,6 +354,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         expect { updated_yarn_lock_content }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
+    end
+  end
+
+  context "updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
+    let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
+
+    it "keeps the default npm registry" do
+      expect(updated_yarn_lock_content).
+        to include("https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.2")
+    end
+  end
+
+  context "updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
+    let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
+
+    let(:dependency_name) { "node-fetch" }
+    let(:version) { "1.7.3" }
+    let(:previous_version) { "1.6.1" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    it "keeps the default npm registry" do
+      expect(updated_yarn_lock_content).
+        to include("https://registry.npmjs.org/node-fetch/-/node-fetch-1.7.3")
     end
   end
 end
