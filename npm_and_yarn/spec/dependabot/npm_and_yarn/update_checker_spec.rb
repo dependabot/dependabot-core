@@ -79,6 +79,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.up_to_date?).to be_falsy
       end
     end
+
+    context "with a latest version requirement" do
+      let(:dependency_files) { project_dependency_files("npm7/latest_requirement") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: nil,
+          requirements: [
+            { file: "package.json", requirement: "latest", groups: [], source: nil }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "is up to date because there's nothing to update" do
+        expect(checker.up_to_date?).to be_truthy
+      end
+    end
   end
 
   describe "#can_update?" do
