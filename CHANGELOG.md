@@ -1,3 +1,8 @@
+## v0.148.10, 26 May 2021
+
+- Yarn: use .yarnrc file if present
+- npm: handle latest version requirement
+
 ## v0.148.9, 26 May 2021
 
 - Terraform: Do not set dependency.version for version ranges
