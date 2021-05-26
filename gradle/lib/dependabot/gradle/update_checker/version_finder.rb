@@ -124,7 +124,7 @@ module Dependabot
         end
 
         def filter_lower_versions(possible_versions)
-          return possible_versions unless dependency.version
+          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
 
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)

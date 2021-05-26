@@ -127,6 +127,66 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a private registry" do
+      let(:files) { project_dependency_files("private_registry") }
+
+      it "parses the dependency correctly" do
+        expect(subject.length).to eq(1)
+        expect(subject[0].name).to eq("namespace/name")
+        expect(subject[0].version).to eq("0.1.0")
+        expect(subject[0].requirements).to eq([{
+          requirement: "0.1.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.example.org",
+            module_identifier: "namespace/name"
+          }
+        }])
+      end
+    end
+
+    context "with a private registry using a pessimistic version constraint" do
+      let(:files) { project_dependency_files("private_registry_pessimistic_constraint") }
+
+      it "parses the dependency correctly" do
+        expect(subject.length).to eq(1)
+        expect(subject[0].name).to eq("namespace/name")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
+          requirement: "~> 0.1",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.example.org",
+            module_identifier: "namespace/name"
+          }
+        }])
+      end
+    end
+
+    context "with a pessimistic constraint and a lockfile" do
+      let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
+
+      it "parses the dependency correctly" do
+        expect(subject.length).to eq(1)
+        expect(subject[0].name).to eq("hashicorp/http")
+        expect(subject[0].version).to eq("2.1.0")
+        expect(subject[0].requirements).to eq([{
+          requirement: "~> 2.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/http"
+          }
+        }])
+      end
+    end
+
     context "with git sources" do
       let(:files) { project_dependency_files("git_tags_011") }
       specify { expect(subject.length).to eq(6) }
@@ -517,6 +577,22 @@ RSpec.describe Dependabot::Terraform::FileParser do
         dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
         expect(dependency.version).to eq("0.1.0")
+      end
+
+      it "handles version ranges correctly" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/http" }
+
+        expect(dependency.version).to be_nil
+        expect(dependency.requirements).to eq([{
+          requirement: "~> 2.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/http"
+          }
+        }])
       end
     end
 

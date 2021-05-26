@@ -118,6 +118,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the dependency is a git dependency" do
+      let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
     context "when the user wants a dist tag" do
       let(:dependency) do
         Dependabot::Dependency.new(
