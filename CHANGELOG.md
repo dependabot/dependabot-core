@@ -1,3 +1,7 @@
+## v0.149.0, 26 May 2021
+
+- Terraform: Use registry credentials
+
 ## v0.148.10, 26 May 2021
 
 - Yarn: use .yarnrc file if present
