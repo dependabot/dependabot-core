@@ -88,16 +88,16 @@ module Dependabot
 
       def build_provider_dependency(file, name, details = {})
         source_address = details.fetch("source", nil)
-        version = details["version"]&.strip
+        version_req = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
         dependency_name = source_address ? "#{namespace}/#{name}" : name
 
         Dependency.new(
           name: dependency_name,
-          version: determine_version_for(hostname, namespace, name, version),
+          version: determine_version_for(hostname, namespace, name, version_req),
           package_manager: "terraform",
           requirements: [
-            requirement: version,
+            requirement: version_req,
             groups: [],
             file: file.name,
             source: {
