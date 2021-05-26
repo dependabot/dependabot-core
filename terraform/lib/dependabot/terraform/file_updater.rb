@@ -96,7 +96,7 @@ module Dependabot
         copy_dir_to_temporary_directory do
           updated_content.sub!(declaration_regex, "")
           
-          system "terraform providers lock #{provider_source}"
+          SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
           return File.read(".terraform.lock.hcl")
         end
 
