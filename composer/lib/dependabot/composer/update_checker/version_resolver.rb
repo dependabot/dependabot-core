@@ -37,7 +37,7 @@ module Dependabot
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
-        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --mirror[^']*'(?<url>.*?)'/.freeze
+        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/.freeze
         FAILED_GIT_CLONE = /Failed to clone (?<url>.*?) via/.freeze
 
         def initialize(credentials:, dependency:, dependency_files:,
@@ -233,6 +233,8 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Extract error handling and share between the lockfile updater
+        #
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
