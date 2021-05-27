@@ -20,6 +20,6 @@ module FileSelector
   end
 
   def lock_file
-    dependency_files.select { |f| f.name == ".terraform.lock.hcl" }
+    dependency_files.select { |f| lock_file?(f.name) }
   end
 end
