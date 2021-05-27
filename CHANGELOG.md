@@ -1,3 +1,7 @@
+## v0.149.2, 27 May 2021
+
+- Tests: avoid squatted repositories
+
 ## v0.149.1, 27 May 2021
 
 - Bundler: Fix ruby version patch for 2.2.18
