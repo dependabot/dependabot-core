@@ -440,7 +440,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           Dependabot::Dependency.new(
             name: "hashicorp/aws",
             version: "3.40.0",
-            previous_version: "0.1.0",
+            previous_version: "3.37.0",
             requirements: [{
               requirement: "3.40.0",
               groups: [],
@@ -452,7 +452,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             previous_requirements: [{
-              requirement: "0.1.0",
+              requirement: "3.37.0",
               groups: [],
               file: "main.tf",
               source: {
@@ -594,13 +594,13 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: "hashicorp/aws",
+            name: ".terraform.lock.hcl",
             version: "3.42.0",
             previous_version: "3.37.0",
             requirements: [{
               requirement: "3.42.0",
               groups: [],
-              file: "terraform.lock.hcl",
+              file: ".terraform.lock.hcl",
               source: {
                 type: "lockfile",
                 registry_hostname: "registry.terraform.io",
@@ -610,7 +610,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             previous_requirements: [{
               requirement: "3.37.0",
               groups: [],
-              file: "terraform.lock.hcl",
+              file: ".terraform.lock.hcl",
               source: {
                 type: "lockfile",
                 registry_hostname: "registry.terraform.io",
