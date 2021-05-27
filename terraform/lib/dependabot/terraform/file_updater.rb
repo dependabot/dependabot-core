@@ -95,10 +95,15 @@ module Dependabot
         declaration_regex = lockfile_declaration_regex(provider_source)
 
         copy_dir_to_temporary_directory do
-          updated_content.sub!(declaration_regex, "")
+          lockfile_dependency_removed = updated_content.sub(declaration_regex, "")
           
+          File.write(".terraform.lock.hcl", lockfile_dependency_removed)
           SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
-          File.read(".terraform.lock.hcl")
+
+          updated_lockfile = File.read(".terraform.lock.hcl")
+          updated_dependency = updated_lockfile.scan(declaration_regex).first
+
+          updated_content.sub!(declaration_regex, updated_dependency)
         end
 
       end
@@ -165,8 +170,8 @@ module Dependabot
       def copy_dir_to_temporary_directory
         SharedHelpers.in_a_temporary_directory do
           dependency_files.each do |file|
-            # Do not include the .terraform directory or .terraform.lock.hcl
-            next if file.name.include?(".terraform")
+            # Do not include the .terraform directory
+            next if file.name.include?(".terraform/")
             File.write(file.name, file.content)
           end
           yield
