@@ -38,6 +38,7 @@ module Dependabot
       def updated_terraform_file_content(file)
         content = file.content.dup
 
+
         reqs = dependency.requirements.zip(dependency.previous_requirements).
                reject { |new_req, old_req| new_req == old_req }
 
@@ -54,7 +55,7 @@ module Dependabot
           when "provider"
             update_registry_declaration(new_req, old_req, content)
           when "lockfile"
-            update_lockfile_declaration(new_req, old_req, content)
+            update_lockfile_declaration(new_req, old_req, content, file.name)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\
                   "declaration!"
@@ -87,7 +88,7 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration(new_req, old_req, updated_content)
+      def update_lockfile_declaration(new_req, old_req, updated_content, filename)
         return unless lock_file?(filename)
 
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
@@ -97,7 +98,7 @@ module Dependabot
           updated_content.sub!(declaration_regex, "")
           
           SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
-          return File.read(".terraform.lock.hcl")
+          File.read(".terraform.lock.hcl")
         end
 
       end
