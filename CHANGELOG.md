@@ -1,3 +1,8 @@
+## v0.149.1, 27 May 2021
+
+- Bundler: Fix ruby version patch for 2.2.18
+- Bundler: Update bundler to 2.2.18
+
 ## v0.149.0, 26 May 2021
 
 - Terraform: Use registry credentials
