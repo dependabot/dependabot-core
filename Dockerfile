@@ -184,8 +184,8 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.10.4
-ARG ELIXIR_CHECKSUM=9727ae96d187d8b64e471ff0bb5694fcd1009cdcfd8b91a6b78b7542bb71fca59869d8440bb66a2523a6fec025f1d23394e7578674b942274c52b44e19ba2d43
+ARG ELIXIR_VERSION=v1.11.4
+ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
   && apt-get update \
