@@ -144,7 +144,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
     describe "a non-existent dependency" do
       let(:go_mod_content) do
         go_mod = fixture("go_mods", go_mod_fixture_name)
-        go_mod.sub("rsc.io/quote", "example.com/not-a-repo")
+        go_mod.sub("rsc.io/quote", "dependabot.com/not-a-repo")
       end
 
       it "does not raise an error" do
