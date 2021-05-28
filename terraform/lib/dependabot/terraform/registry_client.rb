@@ -26,7 +26,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        base_url = base_url_for(hostname, 'providers.v1')
+        base_url = service_url_for(hostname, 'providers.v1')
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -42,7 +42,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        base_url = base_url_for(hostname, 'modules.v1')
+        base_url = service_url_for(hostname, 'modules.v1')
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -61,16 +61,10 @@ module Dependabot
       # @raise [RuntimeError] when the source cannot be retrieved
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
-        endpoint = if type == "registry"
-                     "modules/#{dependency.name}/#{dependency.version}"
-                   elsif type == "provider"
-                     "providers/#{dependency.name}/#{dependency.version}"
-                   else
-                     raise "Invalid source type"
-                   end
-        response = get(endpoint: endpoint)
+        base_url = service_url_for(hostname, service_key_for(type))
+        response = http_get!(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
 
-        source_url = JSON.parse(response).fetch("source")
+        source_url = JSON.parse(response.body).fetch("source")
         Source.from_url(source_url) if source_url
       end
 
@@ -101,14 +95,27 @@ module Dependabot
         token ? { "Authorization" => "Bearer #{token}" } : {}
       end
 
-      def base_url_for(hostname, key)
-        response = http_get("https://#{hostname}/.well-known/terraform.json")
-        if response.status == 200
-          json = JSON.parse(response.body)
-          "https://#{hostname}#{json.fetch(key)}"
+      def services
+        @services ||=
+          begin
+            response = http_get("https://#{hostname}/.well-known/terraform.json")
+            response.status == 200 ? JSON.parse(response.body) : {}
+          end
+      end
+
+      def service_key_for(name)
+        case name
+        when 'module', 'modules', 'registry'
+          'modules.v1'
+        when 'provider', 'providers'
+          'providers.v1'
         else
-          raise "Host does not support required Terraform-native service"
+          raise "Invalid source type"
         end
+      end
+
+      def service_url_for(hostname, service_key)
+        "https://#{hostname}#{services.fetch(service_key)}"
       rescue KeyError
         raise "Host does not support required Terraform-native service"
       end
