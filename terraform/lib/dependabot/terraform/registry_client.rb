@@ -26,7 +26,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        base_url = service_url_for(hostname, "providers.v1")
+        base_url = service_url_for("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -42,7 +42,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        base_url = service_url_for(hostname, "modules.v1")
+        base_url = service_url_for("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -61,7 +61,7 @@ module Dependabot
       # @raise [RuntimeError] when the source cannot be retrieved
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
-        base_url = service_url_for(hostname, service_key_for(type))
+        base_url = service_url_for(service_key_for(type))
         response = http_get!(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
 
         source_url = JSON.parse(response.body).fetch("source")
@@ -100,7 +100,7 @@ module Dependabot
         end
       end
 
-      def service_url_for(hostname, service_key)
+      def service_url_for(service_key)
         "https://#{hostname}#{services.fetch(service_key)}"
       rescue KeyError
         raise "Host does not support required Terraform-native service"
