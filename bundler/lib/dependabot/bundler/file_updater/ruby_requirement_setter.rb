@@ -2,6 +2,7 @@
 
 require "parser/current"
 require "dependabot/bundler/file_updater"
+require "dependabot/bundler/requirement"
 
 module Dependabot
   module Bundler
@@ -49,7 +50,11 @@ module Dependabot
         end
 
         def ruby_version
-          requirement = Gem::Requirement.new(ruby_requirement)
+          requirement = if !ruby_requirement.is_a?(Gem::Requirement)
+                          Dependabot::Bundler::Requirement.new(ruby_requirement)
+                        else
+                          ruby_requirement
+                        end
 
           ruby_version =
             RUBY_VERSIONS.
