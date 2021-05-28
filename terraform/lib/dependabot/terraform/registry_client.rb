@@ -41,9 +41,10 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        response = get(endpoint: "modules/#{identifier}/versions")
+        base_url = base_url_for(hostname, 'modules.v1')
+        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response).
+        JSON.parse(response.body).
           fetch("modules").first.fetch("versions").
           map { |release| version_class.new(release.fetch("version")) }
       end
@@ -97,6 +98,27 @@ module Dependabot
       def headers_for(hostname)
         token = tokens[hostname]
         token ? { "Authorization" => "Bearer #{token}" } : {}
+      end
+
+      def base_url_for(hostname, key)
+        response = http_get("https://#{hostname}/.well-known/terraform.json", headers_for(hostname))
+        if response.status == 200
+          json = JSON.parse(response.body)
+          "https://#{hostname}#{json[key]}"
+        else
+          "https://#{hostname}/"
+        end
+      end
+
+      def http_get(url, headers: {})
+        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers))
+      end
+
+      def http_get!(url, headers: {})
+        response = http_get(url, headers: headers)
+
+        raise "Response from registry was #{response.status}" unless response.status == 200
+        response
       end
     end
   end
