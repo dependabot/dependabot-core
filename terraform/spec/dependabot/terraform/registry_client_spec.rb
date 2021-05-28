@@ -37,11 +37,18 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
   it "fetches provider versions", :vcr do
     response = client.all_provider_versions(identifier: "hashicorp/aws")
-    expect(response.max).to eq(Gem::Version.new("3.40.0"))
+    expect(response.max).to eq(Gem::Version.new("3.42.0"))
   end
 
   it "fetches provider versions from a custom registry" do
     hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: {
+        "modules.v1": "/v1/modules/",
+        "providers.v1": "/v1/providers/"
+      }.to_json
+    )
     stub_request(:get, "https://#{hostname}/v1/providers/hashicorp/aws/versions").and_return(
       status: 200,
       body: {
@@ -57,11 +64,38 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     ])
   end
 
+  it "raises an error when the registry does not support the provider API" do
+    hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
+      status: 200,
+      body: { "modules.v1": "/v1/modules/" }.to_json
+    )
+    client = described_class.new(hostname: hostname)
+
+    expect do
+      client.all_provider_versions(identifier: "hashicorp/aws")
+    end.to raise_error(/Host does not support required Terraform-native service/)
+  end
+
+  it "raises an error when the host does not support the service discovery protocol" do
+    hostname = "registry.example.org"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 404)
+    client = described_class.new(hostname: hostname)
+
+    expect do
+      client.all_provider_versions(identifier: "hashicorp/aws")
+    end.to raise_error(/Host does not support required Terraform-native service/)
+  end
+
   it "fetches provider versions form a custom registry secured by a token" do
     hostname = "registry.example.org"
     token = SecureRandom.hex(16)
     credentials = [{ "type" => "terraform_registry", "host" => hostname, "token" => token }]
 
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(body: {
+      "modules.v1": "/v1/modules/",
+      "providers.v1": "/v1/providers/"
+    }.to_json)
     stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions").
       and_return(body: { "id": "x/y", "versions": [{ "version": "0.1.0" }] }.to_json)
     client = described_class.new(hostname: hostname, credentials: credentials)

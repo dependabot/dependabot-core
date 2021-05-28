@@ -26,9 +26,10 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        response = get(endpoint: "providers/#{identifier}/versions")
+        base_url = base_url_for(hostname, 'providers.v1')
+        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response).
+        JSON.parse(response.body).
           fetch("versions").
           map { |release| version_class.new(release.fetch("version")) }
       end
@@ -101,21 +102,23 @@ module Dependabot
       end
 
       def base_url_for(hostname, key)
-        response = http_get("https://#{hostname}/.well-known/terraform.json", headers_for(hostname))
+        response = http_get("https://#{hostname}/.well-known/terraform.json")
         if response.status == 200
           json = JSON.parse(response.body)
-          "https://#{hostname}#{json[key]}"
+          "https://#{hostname}#{json.fetch(key)}"
         else
-          "https://#{hostname}/"
+          raise "Host does not support required Terraform-native service"
         end
+      rescue KeyError
+        raise "Host does not support required Terraform-native service"
       end
 
-      def http_get(url, headers: {})
-        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers))
+      def http_get(url)
+        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers_for(hostname)))
       end
 
-      def http_get!(url, headers: {})
-        response = http_get(url, headers: headers)
+      def http_get!(url)
+        response = http_get(url)
 
         raise "Response from registry was #{response.status}" unless response.status == 200
         response
