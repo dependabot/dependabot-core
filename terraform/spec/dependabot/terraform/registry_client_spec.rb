@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
   it "fetches module versions", :vcr do
     response = client.all_module_versions(identifier: "hashicorp/consul/aws")
-    expect(response.max).to eq(Gem::Version.new("0.9.3"))
+    expect(response.max).to eq(Gem::Version.new("0.10.1"))
   end
 
   it "fetches module versions from a custom registry" do
