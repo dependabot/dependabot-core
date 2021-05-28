@@ -79,8 +79,18 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "fetches module versions from a custom registry" do
-    hostname = "registry.example.org"
-    stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/consul/aws/versions").
+    hostname = "app.terraform.io"
+    stub_request(:get, "https://#{hostname}/.well-known/terraform.json").
+      and_return(status: 200, body: {
+        "modules.v1": "/api/registry/v1/modules/",
+        "motd.v1": "/api/terraform/motd",
+        "state.v2": "/api/v2/",
+        "tfe.v2": "/api/v2/",
+        "tfe.v2.1": "/api/v2/",
+        "tfe.v2.2": "/api/v2/",
+        "versions.v1": "https://checkpoint-api.hashicorp.com/v1/versions/"
+      }.to_json)
+    stub_request(:get, "https://#{hostname}/api/registry/v1/modules/hashicorp/consul/aws/versions").
       and_return(status: 200, body: {
         "modules": [
           {
