@@ -1,3 +1,12 @@
+## v0.149.3, 28 May 2021
+
+- Bundler: handle required ruby version ranges in gemspecs
+- Bundler: Bump to latest ruby versions
+- Elixir: Bump version from 1.10.4 -> 1.11.4
+- gomod: UpdateChecker - handle invalid module path error on update
+- Composer: handle git clone error in lockfile updater
+- Bump eslint from 7.26.0 to 7.27.0 in /npm_and_yarn/helpers
+
 ## v0.149.2, 27 May 2021
 
 - Tests: avoid squatted repositories
