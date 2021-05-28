@@ -93,6 +93,8 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
         fixture("registry_responses", "hashicorp_consul_aws_0.3.8.json")
       end
       before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
         stub_request(:get, registry_url).
           to_return(status: 200, body: registry_response)
       end
@@ -130,6 +132,11 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
           }],
           package_manager: "terraform"
         )
+      end
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          to_return(status: 200, body: { "providers.v1": "/v1/providers/" }.to_json)
       end
 
       it do
