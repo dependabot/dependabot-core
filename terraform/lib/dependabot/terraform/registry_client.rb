@@ -72,20 +72,6 @@ module Dependabot
 
       attr_reader :hostname, :tokens
 
-      def get(endpoint:)
-        url = "https://#{hostname}/v1/#{endpoint}"
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: headers_for(hostname))
-        )
-
-        raise "Response from registry was #{response.status}" unless response.status == 200
-
-        response.body
-      end
-
       def version_class
         Version
       end
