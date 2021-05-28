@@ -26,7 +26,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        base_url = service_url_for(hostname, 'providers.v1')
+        base_url = service_url_for(hostname, "providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -42,7 +42,7 @@ module Dependabot
       # @return [Array<Dependabot::Terraform::Version>]
       # @raise [RuntimeError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        base_url = service_url_for(hostname, 'modules.v1')
+        base_url = service_url_for(hostname, "modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
@@ -105,10 +105,10 @@ module Dependabot
 
       def service_key_for(name)
         case name
-        when 'module', 'modules', 'registry'
-          'modules.v1'
-        when 'provider', 'providers'
-          'providers.v1'
+        when "module", "modules", "registry"
+          "modules.v1"
+        when "provider", "providers"
+          "providers.v1"
         else
           raise "Invalid source type"
         end
@@ -128,6 +128,7 @@ module Dependabot
         response = http_get(url)
 
         raise "Response from registry was #{response.status}" unless response.status == 200
+
         response
       end
     end
