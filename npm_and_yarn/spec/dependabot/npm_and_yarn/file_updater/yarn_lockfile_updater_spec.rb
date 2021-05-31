@@ -127,60 +127,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         expect { updated_yarn_lock_content }.
           to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
       end
-
-      context "that is unscoped" do
-        let(:files) { project_dependency_files("yarn/private_source_unscoped") }
-
-        let(:dependency_name) { "my-private-dep-asdlfkasdf" }
-        let(:version) { "1.0.1" }
-        let(:previous_version) { "1.0.0" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.0.0",
-            groups: ["devDependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.0.0",
-            groups: ["devDependencies"],
-            source: nil
-          }]
-        end
-
-        it "raises a helpful error" do
-          expect { updated_yarn_lock_content }.
-            to raise_error do |error|
-            expect(error).
-              to be_a(Dependabot::PrivateSourceAuthenticationFailure)
-            expect(error.source).to eq("npm-proxy.fury.io/<redacted>")
-          end
-        end
-
-        context "with bad credentials" do
-          let(:credentials) do
-            [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "npm_registry",
-              "registry" => "npm-proxy.fury.io/dependabot",
-              "token" => "bad_token"
-            }]
-          end
-
-          # TODO: Fix broken test
-          it "raises a helpful error" do
-            expect { updated_yarn_lock_content }.
-              to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
-          end
-        end
-      end
     end
 
     context "because we're updating to a nonexistent version" do
