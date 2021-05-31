@@ -185,71 +185,49 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   describe "#service_url_for" do
+    let(:well_known) { "https://registry.terraform.io/.well-known/terraform.json" }
+
     context "when the service url is an absolute path" do
-      subject { client.service_url_for("modules.v1") }
-
-      before do
-        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
-          and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
-      end
-
       it "returns the absolute url" do
-        expect(subject).to eql("https://registry.example.org/v1/modules/")
+        stub_request(:get, well_known).
+          and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
+
+        expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org/v1/modules/")
       end
     end
 
     context "when the service url is an absolute path with a custom https port" do
-      subject { client.service_url_for("modules.v1") }
-
-      before do
-        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
-          and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
-      end
-
       it "returns the absolute url" do
-        expect(subject).to eql("https://registry.example.org:4443/v1/modules/")
+        stub_request(:get, well_known).
+          and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
+
+        expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org:4443/v1/modules/")
       end
     end
 
     context "when the service url is an absolute path using plain HTTP" do
-      subject { client.service_url_for("modules.v1") }
-
-      before do
-        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
-          and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
-      end
-
       it "raises an error" do
-        expect do
-          subject
-        end.to raise_error(/Unsupported scheme provided/)
+        stub_request(:get, well_known).
+          and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
+
+        expect { client.service_url_for("modules.v1") }.to raise_error(/Unsupported scheme provided/)
       end
     end
 
     context "when the service url is a relative path" do
-      subject { client.service_url_for("modules.v1") }
-
-      before do
-        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
-          and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
-      end
-
       it "returns the absolute url" do
-        expect(subject).to eql("https://registry.terraform.io/v1/modules/")
+        stub_request(:get, well_known).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+
+        expect(client.service_url_for("modules.v1")).to eql("https://registry.terraform.io/v1/modules/")
       end
     end
 
     context "when the service url is not available" do
-      subject { client.service_url_for("providers.v1") }
-
-      before do
-        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
-          and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
-      end
-
       it "raises an error" do
+        stub_request(:get, well_known).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+
         expect do
-          subject
+          client.service_url_for("providers.v1")
         end.to raise_error(/Host does not support required Terraform-native service/)
       end
     end
