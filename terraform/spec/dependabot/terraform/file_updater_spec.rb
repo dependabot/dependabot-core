@@ -24,6 +24,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
     context "with a private module" do
       let(:files) { project_dependency_files("private_module") }
+
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -31,7 +32,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             version: "1.0.1",
             previous_version: "1.0.0",
             requirements: [{
-              requirement: nil,
+              requirement: "1.0.1",
               groups: [],
               file: "main.tf",
               source: {
@@ -41,7 +42,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             previous_requirements: [{
-              requirement: nil,
+              requirement: "1.0.0",
               groups: [],
               file: "main.tf",
               source: {

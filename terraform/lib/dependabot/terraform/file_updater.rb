@@ -109,7 +109,7 @@ module Dependabot
         /
           (?<=\{)
           (?:(?!^\}).)*
-          source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
+          source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}\/)?#{Regexp.escape(dependency.name)}["']
           (?:(?!^\}).)*
         /mx
       end
@@ -125,6 +125,10 @@ module Dependabot
           module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
           (?:(?!^\}).)*
         /mx
+      end
+
+      def registry_host_for(dependency)
+        dependency.requirements[0][:source][:registry_hostname] || "registry.terraform.io"
       end
     end
   end
