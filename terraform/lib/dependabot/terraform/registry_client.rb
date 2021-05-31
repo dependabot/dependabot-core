@@ -90,8 +90,8 @@ module Dependabot
           end
       end
 
-      def service_key_for(name)
-        case name
+      def service_key_for(type)
+        case type
         when "module", "modules", "registry"
           "modules.v1"
         when "provider", "providers"
