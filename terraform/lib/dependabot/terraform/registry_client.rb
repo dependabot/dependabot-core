@@ -84,7 +84,7 @@ module Dependabot
       def services
         @services ||=
           begin
-            response = http_get("https://#{hostname}/.well-known/terraform.json")
+            response = http_get(url_for("/.well-known/terraform.json"))
             response.status == 200 ? JSON.parse(response.body) : {}
           end
       end
@@ -101,7 +101,7 @@ module Dependabot
       end
 
       def service_url_for(service_key)
-        "https://#{hostname}#{services.fetch(service_key)}"
+        url_for(services.fetch(service_key))
       rescue KeyError
         raise "Host does not support required Terraform-native service"
       end
@@ -116,6 +116,10 @@ module Dependabot
         raise "Response from registry was #{response.status}" unless response.status == 200
 
         response
+      end
+
+      def url_for(path)
+        "https://#{hostname}#{path}"
       end
     end
   end
