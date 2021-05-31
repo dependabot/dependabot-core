@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/source"
 require "dependabot/terraform/version"
 
@@ -103,7 +104,7 @@ module Dependabot
       def service_url_for(service_key)
         url_for(services.fetch(service_key))
       rescue KeyError
-        raise "Host does not support required Terraform-native service"
+        raise Dependabot::DependabotError, "Host does not support required Terraform-native service"
       end
 
       def http_get(url)
