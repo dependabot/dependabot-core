@@ -197,5 +197,33 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
         expect(subject).to eql("https://registry.example.org/v1/modules/")
       end
     end
+
+    context "when the service url is a relative path" do
+      subject { client.service_url_for("modules.v1") }
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+      end
+
+      it "returns the absolute url" do
+        expect(subject).to eql("https://registry.terraform.io/v1/modules/")
+      end
+    end
+
+    context "when the service url is not available" do
+      subject { client.service_url_for("providers.v1") }
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+      end
+
+      it "raises an error" do
+        expect do
+          subject
+        end.to raise_error(/Host does not support required Terraform-native service/)
+      end
+    end
   end
 end
