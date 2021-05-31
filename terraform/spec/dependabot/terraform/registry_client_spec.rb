@@ -197,6 +197,18 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       end
     end
 
+    context "when the metadata endpoint redirects to another url" do
+      it "follows the redirect" do
+        stub_request(:get, metadata).
+          and_return(status: 301, headers: { "Location" => "https://example.org/terraform.json" })
+
+        stub_request(:get, "https://example.org/terraform.json").
+          and_return(body: { "modules.v1": "https://example.org/v1/modules/" }.to_json)
+
+        expect(client.service_url_for("modules.v1")).to eql("https://example.org/v1/modules/")
+      end
+    end
+
     context "when the service url is an absolute path" do
       it "returns the absolute url" do
         stub_request(:get, metadata).
