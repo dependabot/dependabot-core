@@ -185,11 +185,21 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   describe "#service_url_for" do
-    let(:well_known) { "https://registry.terraform.io/.well-known/terraform.json" }
+    let(:metadata) { "https://registry.terraform.io/.well-known/terraform.json" }
+
+    context "when the metadata endpoint is not reachable" do
+      it "raises an error" do
+        stub_request(:get, metadata).and_return(status: 404)
+
+        expect do
+          client.service_url_for("modules.v1")
+        end.to raise_error(/Host does not support required Terraform-native service/)
+      end
+    end
 
     context "when the service url is an absolute path" do
       it "returns the absolute url" do
-        stub_request(:get, well_known).
+        stub_request(:get, metadata).
           and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org/v1/modules/")
@@ -198,7 +208,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is an absolute path with a custom https port" do
       it "returns the absolute url" do
-        stub_request(:get, well_known).
+        stub_request(:get, metadata).
           and_return(body: { "modules.v1": "https://registry.example.org:4443/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://registry.example.org:4443/v1/modules/")
@@ -207,7 +217,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is an absolute path using plain HTTP" do
       it "raises an error" do
-        stub_request(:get, well_known).
+        stub_request(:get, metadata).
           and_return(body: { "modules.v1": "http://registry.example.org/v1/modules/" }.to_json)
 
         expect { client.service_url_for("modules.v1") }.to raise_error(/Unsupported scheme provided/)
@@ -216,7 +226,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is a relative path" do
       it "returns the absolute url" do
-        stub_request(:get, well_known).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+        stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
 
         expect(client.service_url_for("modules.v1")).to eql("https://registry.terraform.io/v1/modules/")
       end
@@ -224,7 +234,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     context "when the service url is not available" do
       it "raises an error" do
-        stub_request(:get, well_known).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
+        stub_request(:get, metadata).and_return(body: { "modules.v1": "/v1/modules/" }.to_json)
 
         expect do
           client.service_url_for("providers.v1")
