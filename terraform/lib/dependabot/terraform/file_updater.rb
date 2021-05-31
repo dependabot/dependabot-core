@@ -100,7 +100,7 @@ module Dependabot
       def provider_declaration_regex
         name = Regexp.escape(dependency.name)
         /
-          ((source\s*=\s*["']#{name}["']|\s*#{name}\s*=\s*\{.*)
+          ((source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}\/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
           (?:(?!^\}).)+)
         /mx
       end

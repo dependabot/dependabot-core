@@ -62,10 +62,57 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         expect(updated_file.content).to include(<<~HCL)
           module "s3-webapp" {
             source  = "app.terraform.io/example-org-5d3190/s3-webapp/aws"
-            name   = var.name
-            region = var.region
-            prefix = var.prefix
             version = "1.0.1"
+          }
+        HCL
+      end
+    end
+
+    context "with a private provider" do
+      let(:files) { project_dependency_files("private_provider") }
+
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "namespace/name",
+            version: "1.0.1",
+            previous_version: "1.0.0",
+            requirements: [{
+              requirement: "1.0.1",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.example.org",
+                module_identifier: "namespace/name"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "1.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.example.org",
+                module_identifier: "namespaces/name"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the private module version" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(<<~HCL)
+          terraform {
+            required_providers {
+              example = {
+                source  = "registry.example.org/namespace/name"
+                version = "1.0.1"
+              }
+            }
           }
         HCL
       end
