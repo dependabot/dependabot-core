@@ -121,14 +121,12 @@ module Dependabot
 
       def url_for(path)
         uri = URI.parse(path)
-        case uri
-        when URI::HTTPS
-          uri.to_s
-        when URI::Generic
-          uri.host = hostname
-          uri.scheme = "https"
-          uri.to_s
-        end
+        return uri.to_s if uri.scheme == "https"
+        raise Dependabot::DependabotError, "Unsupported scheme provided" if uri.host && uri.scheme
+
+        uri.host = hostname
+        uri.scheme = "https"
+        uri.to_s
       end
     end
   end
