@@ -25,7 +25,7 @@ module Dependabot
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/aws"
       # @return [Array<Dependabot::Terraform::Version>]
-      # @raise [RuntimeError] when the versions cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
         base_url = service_url_for("providers.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
@@ -41,7 +41,7 @@ module Dependabot
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/consul/aws"
       # @return [Array<Dependabot::Terraform::Version>]
-      # @raise [RuntimeError] when the versions cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
         base_url = service_url_for("modules.v1")
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
@@ -59,7 +59,7 @@ module Dependabot
       # @param dependency [Dependabot::Dependency] the dependency who's source
       # we're attempting to find
       # @return Dependabot::Source
-      # @raise [RuntimeError] when the source cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the source cannot be retrieved
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
         base_url = service_url_for(service_key_for(type))
@@ -69,10 +69,17 @@ module Dependabot
         Source.from_url(source_url) if source_url
       end
 
+      # Perform service discovery and return the absolute URL for
+      # the requested service.
+      # https://www.terraform.io/docs/internals/remote-service-discovery.html
+      #
+      # @param service_key [String] the service type described in https://www.terraform.io/docs/internals/remote-service-discovery.html#supported-services
+      # @param return String
+      # @raise [Dependabot::DependabotError] when the service is not available
       def service_url_for(service_key)
         url_for(services.fetch(service_key))
       rescue KeyError
-        raise Dependabot::DependabotError, "Host does not support required Terraform-native service"
+        raise error("Host does not support required Terraform-native service")
       end
 
       private
@@ -103,7 +110,7 @@ module Dependabot
         when "provider", "providers"
           "providers.v1"
         else
-          raise "Invalid source type"
+          raise error("Invalid source type")
         end
       end
 
@@ -114,7 +121,7 @@ module Dependabot
       def http_get!(url)
         response = http_get(url)
 
-        raise "Response from registry was #{response.status}" unless response.status == 200
+        raise error("Response from registry was #{response.status}") unless response.status == 200
 
         response
       end
@@ -122,11 +129,15 @@ module Dependabot
       def url_for(path)
         uri = URI.parse(path)
         return uri.to_s if uri.scheme == "https"
-        raise Dependabot::DependabotError, "Unsupported scheme provided" if uri.host && uri.scheme
+        raise error("Unsupported scheme provided") if uri.host && uri.scheme
 
         uri.host = hostname
         uri.scheme = "https"
         uri.to_s
+      end
+
+      def error(message)
+        Dependabot::DependabotError.new(message)
       end
     end
   end

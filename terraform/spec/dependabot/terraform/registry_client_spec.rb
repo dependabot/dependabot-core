@@ -142,9 +142,9 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
   end
 
   it "raises an error when it cannot find the dependency", :vcr do
-    expect { client.all_module_versions(identifier: "does/not/exist") }.to raise_error(RuntimeError) do |error|
-      expect(error.message).to eq("Response from registry was 404")
-    end
+    expect do
+      client.all_module_versions(identifier: "does/not/exist")
+    end.to raise_error(/Response from registry was 404/)
   end
 
   it "fetches the source for a module dependency", :vcr do
