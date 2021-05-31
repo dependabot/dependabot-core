@@ -22,6 +22,54 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
   describe "#updated_dependency_files" do
     subject { updater.updated_dependency_files }
 
+    context "with a private module" do
+      let(:files) { project_dependency_files("private_module") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "example-org-5d3190/s3-webapp/aws",
+            version: "1.0.1",
+            previous_version: "1.0.0",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "app.terraform.io",
+                module_identifier: "example-org-5d3190/s3-webapp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "app.terraform.io",
+                module_identifier: "example-org-5d3190/s3-webapp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the private module version" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(<<~HCL)
+          module "s3-webapp" {
+            source  = "app.terraform.io/example-org-5d3190/s3-webapp/aws"
+            name   = var.name
+            region = var.region
+            prefix = var.prefix
+            version = "1.0.1"
+          }
+        HCL
+      end
+    end
+
     context "with a valid legacy dependency file" do
       let(:files) { project_dependency_files("git_tags_011") }
       let(:dependencies) do
