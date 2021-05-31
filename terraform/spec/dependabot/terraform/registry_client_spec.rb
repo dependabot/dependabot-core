@@ -183,4 +183,19 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
   end
+
+  describe "#service_url_for" do
+    context "when the service url is an absolute path" do
+      subject { client.service_url_for("modules.v1") }
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          and_return(body: { "modules.v1": "https://registry.example.org/v1/modules/" }.to_json)
+      end
+
+      it "returns the absolute url" do
+        expect(subject).to eql("https://registry.example.org/v1/modules/")
+      end
+    end
+  end
 end

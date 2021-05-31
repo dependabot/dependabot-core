@@ -69,6 +69,12 @@ module Dependabot
         Source.from_url(source_url) if source_url
       end
 
+      def service_url_for(service_key)
+        url_for(services.fetch(service_key))
+      rescue KeyError
+        raise Dependabot::DependabotError, "Host does not support required Terraform-native service"
+      end
+
       private
 
       attr_reader :hostname, :tokens
@@ -101,12 +107,6 @@ module Dependabot
         end
       end
 
-      def service_url_for(service_key)
-        url_for(services.fetch(service_key))
-      rescue KeyError
-        raise Dependabot::DependabotError, "Host does not support required Terraform-native service"
-      end
-
       def http_get(url)
         Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers_for(hostname)))
       end
@@ -120,7 +120,15 @@ module Dependabot
       end
 
       def url_for(path)
-        "https://#{hostname}#{path}"
+        uri = URI.parse(path)
+        case uri
+        when URI::HTTPS
+          uri.to_s
+        when URI::Generic
+          uri.host = hostname
+          uri.scheme = "https"
+          uri.to_s
+        end
       end
     end
   end
