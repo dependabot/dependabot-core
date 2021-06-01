@@ -1,3 +1,10 @@
+## v0.149.4, 1 June 2021
+
+- fix(Terraform): use service discovery protocol
+- fix(Terraform): parse optional hostname from module/provider source address
+- Bump composer/composer from 2.0.12 to 2.0.14 in /composer/helpers/v2
+- poetry: support pyproject.toml indentation
+
 ## v0.149.3, 28 May 2021
 
 - Bundler: handle required ruby version ranges in gemspecs
