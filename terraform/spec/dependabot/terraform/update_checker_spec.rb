@@ -96,6 +96,12 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           "hashicorp_consul_aws_versions.json"
         )
 
+        stub_request(
+          :get, "https://registry.terraform.io/.well-known/terraform.json"
+        ).to_return(status: 200, body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json)
         stub_request(:get, url).to_return(status: 200, body: registry_response)
       end
 
@@ -303,7 +309,7 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
         expect(updated_requirements).
           to eq(
             [{
-              requirement: "~> 3.40",
+              requirement: "~> 3.42",
               groups: [],
               file: "main.tf",
               source: {
