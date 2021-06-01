@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:source) do
           {
             type: "git",
-            url: "https://github.com/gocardless/business",
+            url: "https://github.com/dependabot-fixtures/business",
             branch: "master",
             ref: "a1b78a9" # Pinned, to ensure we unpin
           }
@@ -466,7 +466,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:source) do
             {
               type: "git",
-              url: "https://github.com/gocardless/business",
+              url: "https://github.com/dependabot-fixtures/business",
               branch: "bad_branch",
               ref: "bad_branch"
             }

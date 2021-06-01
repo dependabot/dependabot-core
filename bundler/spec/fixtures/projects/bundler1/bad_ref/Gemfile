@@ -3,5 +3,5 @@
 source "https://rubygems.org"
 
 gem "business", "~> 1.4.0"
-gem "prius", git: "https://github.com/gocardless/prius"
+gem "prius", git: "https://github.com/dependabot-fixtures/prius"
 gem "statesman", "~> 1.2.0"
