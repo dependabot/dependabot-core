@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency"
+require "dependabot/errors"
 require "dependabot/source"
 require "dependabot/terraform/version"
 
@@ -24,11 +25,12 @@ module Dependabot
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/aws"
       # @return [Array<Dependabot::Terraform::Version>]
-      # @raise [RuntimeError] when the versions cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       def all_provider_versions(identifier:)
-        response = get(endpoint: "providers/#{identifier}/versions")
+        base_url = service_url_for("providers.v1")
+        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response).
+        JSON.parse(response.body).
           fetch("versions").
           map { |release| version_class.new(release.fetch("version")) }
       end
@@ -39,11 +41,12 @@ module Dependabot
       # @param identifier [String] the identifier for the dependency, i.e:
       # "hashicorp/consul/aws"
       # @return [Array<Dependabot::Terraform::Version>]
-      # @raise [RuntimeError] when the versions cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the versions cannot be retrieved
       def all_module_versions(identifier:)
-        response = get(endpoint: "modules/#{identifier}/versions")
+        base_url = service_url_for("modules.v1")
+        response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
-        JSON.parse(response).
+        JSON.parse(response.body).
           fetch("modules").first.fetch("versions").
           map { |release| version_class.new(release.fetch("version")) }
       end
@@ -56,39 +59,32 @@ module Dependabot
       # @param dependency [Dependabot::Dependency] the dependency who's source
       # we're attempting to find
       # @return Dependabot::Source
-      # @raise [RuntimeError] when the source cannot be retrieved
+      # @raise [Dependabot::DependabotError] when the source cannot be retrieved
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
-        endpoint = if type == "registry"
-                     "modules/#{dependency.name}/#{dependency.version}"
-                   elsif type == "provider"
-                     "providers/#{dependency.name}/#{dependency.version}"
-                   else
-                     raise "Invalid source type"
-                   end
-        response = get(endpoint: endpoint)
+        base_url = service_url_for(service_key_for(type))
+        response = http_get!(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
 
-        source_url = JSON.parse(response).fetch("source")
+        source_url = JSON.parse(response.body).fetch("source")
         Source.from_url(source_url) if source_url
+      end
+
+      # Perform service discovery and return the absolute URL for
+      # the requested service.
+      # https://www.terraform.io/docs/internals/remote-service-discovery.html
+      #
+      # @param service_key [String] the service type described in https://www.terraform.io/docs/internals/remote-service-discovery.html#supported-services
+      # @param return String
+      # @raise [Dependabot::DependabotError] when the service is not available
+      def service_url_for(service_key)
+        url_for(services.fetch(service_key))
+      rescue KeyError
+        raise error("Host does not support required Terraform-native service")
       end
 
       private
 
       attr_reader :hostname, :tokens
-
-      def get(endpoint:)
-        url = "https://#{hostname}/v1/#{endpoint}"
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: headers_for(hostname))
-        )
-
-        raise "Response from registry was #{response.status}" unless response.status == 200
-
-        response.body
-      end
 
       def version_class
         Version
@@ -97,6 +93,51 @@ module Dependabot
       def headers_for(hostname)
         token = tokens[hostname]
         token ? { "Authorization" => "Bearer #{token}" } : {}
+      end
+
+      def services
+        @services ||=
+          begin
+            response = http_get(url_for("/.well-known/terraform.json"))
+            response.status == 200 ? JSON.parse(response.body) : {}
+          end
+      end
+
+      def service_key_for(type)
+        case type
+        when "module", "modules", "registry"
+          "modules.v1"
+        when "provider", "providers"
+          "providers.v1"
+        else
+          raise error("Invalid source type")
+        end
+      end
+
+      def http_get(url)
+        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers_for(hostname)))
+      end
+
+      def http_get!(url)
+        response = http_get(url)
+
+        raise error("Response from registry was #{response.status}") unless response.status == 200
+
+        response
+      end
+
+      def url_for(path)
+        uri = URI.parse(path)
+        return uri.to_s if uri.scheme == "https"
+        raise error("Unsupported scheme provided") if uri.host && uri.scheme
+
+        uri.host = hostname
+        uri.scheme = "https"
+        uri.to_s
+      end
+
+      def error(message)
+        Dependabot::DependabotError.new(message)
       end
     end
   end

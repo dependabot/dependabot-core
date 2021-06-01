@@ -99,19 +99,19 @@ module Dependabot
 
       def provider_declaration_regex
         name = Regexp.escape(dependency.name)
-        /
-          ((source\s*=\s*["']#{name}["']|\s*#{name}\s*=\s*\{.*)
+        %r{
+          ((source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
           (?:(?!^\}).)+)
-        /mx
+        }mx
       end
 
       def registry_declaration_regex
-        /
+        %r{
           (?<=\{)
           (?:(?!^\}).)*
-          source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
+          source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{Regexp.escape(dependency.name)}["']
           (?:(?!^\}).)*
-        /mx
+        }mx
       end
 
       def git_declaration_regex(filename)
@@ -125,6 +125,11 @@ module Dependabot
           module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
           (?:(?!^\}).)*
         /mx
+      end
+
+      def registry_host_for(dependency)
+        source = dependency.requirements.map { |r| r[:source] }.compact.first
+        source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
       end
     end
   end

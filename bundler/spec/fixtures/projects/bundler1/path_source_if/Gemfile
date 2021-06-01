@@ -8,4 +8,4 @@ end
 
 gem "statesman", "~> 1.2.0"
 gem "business", "~> 1.4.0"
-gem "prius", git: "https://github.com/gocardless/prius"
+gem "prius", git: "https://github.com/dependabot-fixtures/prius"
