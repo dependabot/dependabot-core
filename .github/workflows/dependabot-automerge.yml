@@ -12,7 +12,7 @@ jobs:
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Verify pull request is from Dependabot
-        uses: dependabot/fetch-metadata@v1.0.0
+        uses: dependabot/fetch-metadata@v1.0.1
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Enable auto-merge for Dependabot PRs
