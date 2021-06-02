@@ -650,21 +650,21 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         expect(actual_lockfile.content).to include(
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
-              version     = "3.42.0"
+              version     = "3.43.0"
               constraints = ">= 3.37.0"
               hashes = [
-                "h1:quV6hK7ewiHWBznGWCb/gJ6JAPm6UtouBUrhAjv6oRY=",
-                "zh:126c856a6eedddd8571f161a826a407ba5655a37a6241393560a96b8c4beca1a",
-                "zh:1a4868e6ac734b5fc2e79a4a889d176286b66664aad709435aa6acee5871d5b0",
-                "zh:40fed7637ab8ddeb93bef06aded35d970f0628025b97459ae805463e8aa0a58a",
-                "zh:68def3c0a5a1aac1db6372c51daef858b707f03052626d3427ac24cba6f2014d",
-                "zh:6db7ec9c8d1803a0b6f40a664aa892e0f8894562de83061fa7ac1bc51ff5e7e5",
-                "zh:7058abaad595930b3f97dc04e45c112b2dbf37d098372a849081f7081da2fb52",
-                "zh:8c25adb15a19da301c478aa1f4a4d8647cabdf8e5dae8331d4490f80ea718c26",
-                "zh:8e129b847401e39fcbc54817726dab877f36b7f00ff5ed76f7b43470abe99ff9",
-                "zh:d268bb267a2d6b39df7ddee8efa7c1ef7a15cf335dfa5f2e64c9dae9b623a1b8",
-                "zh:d6eeb3614a0ab50f8e9ab5666ae5754ea668ce327310e5b21b7f04a18d7611a8",
-                "zh:f5d3c58055dff6e38562b75d3edc908cb2f1e45c6914f6b00f4773359ce49324",
+                "h1:mXkfjIt8kZLnCUT3ej118IMCO6aKZgHjszO/NY4Zji8=",
+                "zh:1496d971301216bfd27aada08f83315748972a50782c3c7a998212d733a8bd4f",
+                "zh:3f43fd130eaf6ff82d713add40d38a526e978975e9517defabb32fe056a32371",
+                "zh:52db549bf4d77235beb01c7bba72d577aa141a812cc1045a2808b40d2262fc3d",
+                "zh:5ebdcedc4057d65e2d5689d15534eb8b4d175d8138952a298fba1c3e881c01c5",
+                "zh:6264aacffd2caf82eabde2f3298cfed44377a2839dd88c67c860b83589c15129",
+                "zh:759a6993c6692fd19ae83add4fd11c6be4e74adb5e7a02baff278386d4a89990",
+                "zh:8a5975e90215a6c7af4eddf6fcdffb8e4aab4ff7885409728d78fff6c9e37235",
+                "zh:8dd00c37cf496487066129ed19a0f7eae090cef333251789d945bc35c1723ab6",
+                "zh:a0b615859497deeb95d09336a4a0c87e3687092188950b029434f742928fd299",
+                "zh:e7d588099ec1868fd419cce7dc54c717816d3cb2206cc9564b6ace2a82d14f79",
+                "zh:faf8443d3f87fc41d20a5867c5efecaa2c56d97b83c8f30c485c3b5dd4b7a226",
               ]
             }
           DEP
