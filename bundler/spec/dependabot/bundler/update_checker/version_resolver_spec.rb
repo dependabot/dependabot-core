@@ -238,50 +238,62 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         # or greater.
         let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
         its([:version]) { is_expected.to eq(Gem::Version.new("1.4.6")) }
+      end
 
-        context "when Bundler's compact index is down" do
-          let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
-          let(:versions_url) do
-            "https://rubygems.org/api/v1/versions/public_suffix.json"
-          end
+      context "with a legacy Ruby when Bundler's compact index is down" do
+        let(:dependency_name) { "public_suffix" }
+        let(:requirement_string) { ">= 0" }
+        let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
+        let(:versions_url) do
+          "https://rubygems.org/api/v1/versions/public_suffix.json"
+        end
+        let(:rubygems_versions) do
+          fixture("rubygems_responses", "versions-public_suffix.json")
+        end
 
+        before do
+          allow(Dependabot::Bundler::NativeHelpers).
+            to receive(:run_bundler_subprocess).
+            with({
+              bundler_version: PackageManagerHelper.bundler_version,
+              function: "resolve_version",
+              args: anything
+            }).
+            and_return(
+              {
+                version: "3.0.2",
+                ruby_version: "1.9.3",
+                fetcher: "Bundler::Fetcher::Dependency"
+              }
+            )
+
+          stub_request(:get, versions_url).
+            to_return(status: 200, body: rubygems_versions)
+        end
+
+        it { is_expected.to be_nil }
+
+        context "and the dependency doesn't have a required Ruby version" do
           let(:rubygems_versions) do
-            fixture("rubygems_responses", "versions-public_suffix.json")
+            fixture(
+              "rubygems_responses",
+              "versions-public_suffix.json"
+            ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')
           end
 
-          before do
-            allow(Dependabot::Bundler::NativeHelpers).
-              to receive(:run_bundler_subprocess).
-              with({
-                bundler_version: PackageManagerHelper.bundler_version,
-                function: "resolve_version",
-                args: anything
-              }).
-              and_return(
-                {
-                  version: "3.0.2",
-                  ruby_version: "1.9.3",
-                  fetcher: "Bundler::Fetcher::Dependency"
-                }
-              )
+          let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
+          its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
+        end
 
-            stub_request(:get, versions_url).
-              to_return(status: 200, body: rubygems_versions)
+        context "and the dependency has a required Ruby version range" do
+          let(:rubygems_versions) do
+            fixture(
+              "rubygems_responses",
+              "versions-public_suffix.json"
+            ).gsub(/"ruby_version": .*,/, '"ruby_version": ">= 2.2, < 4.0",')
           end
 
           it { is_expected.to be_nil }
-
-          context "and the dependency doesn't have a required Ruby version" do
-            let(:rubygems_versions) do
-              fixture(
-                "rubygems_responses",
-                "versions-public_suffix.json"
-              ).gsub(/"ruby_version": .*,/, '"ruby_version": null,')
-            end
-
-            let(:dependency_files) { bundler_project_dependency_files("legacy_ruby") }
-            its([:version]) { is_expected.to eq(Gem::Version.new("3.0.2")) }
-          end
         end
       end
 

@@ -197,8 +197,8 @@ module Dependabot
           # required Ruby version.
           return false unless ruby_requirement
 
-          ruby_requirement = Gem::Requirement.new(ruby_requirement)
-          current_ruby_version = Gem::Version.new(details[:ruby_version])
+          ruby_requirement = Dependabot::Bundler::Requirement.new(ruby_requirement)
+          current_ruby_version = Dependabot::Bundler::Version.new(details[:ruby_version])
 
           !ruby_requirement.satisfied_by?(current_ruby_version)
         rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout

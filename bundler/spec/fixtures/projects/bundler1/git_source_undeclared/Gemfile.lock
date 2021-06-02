@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/kaminari/kaminari
+  remote: https://github.com/dependabot-fixtures/kaminari
   revision: 62ec743dcee69e02186e5f1a309b08e59d83f647
   specs:
     kaminari-actionview (1.1.1)

@@ -8,6 +8,7 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/helpers"
+require "dependabot/composer/update_checker/version_resolver"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -125,6 +126,8 @@ module Dependabot
           error.message.start_with?("Could not authenticate against")
         end
 
+        # TODO: Extract error handling and share between the version resolver
+        #
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
@@ -167,18 +170,16 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.start_with?("Failed to execute git clone")
-            dependency_url =
-              error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).
-              named_captures.fetch("url")
-            raise GitDependenciesNotReachable, dependency_url
+          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
+            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR).
+                             named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("Failed to clone")
-            dependency_url =
-              error.message.match(/Failed to clone (?<url>.*?) via/).
-              named_captures.fetch("url")
-            raise GitDependenciesNotReachable, dependency_url
+          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
+            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE).
+                             named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
           # NOTE: This matches an error message from composer plugins used to install ACF PRO

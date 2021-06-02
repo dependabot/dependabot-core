@@ -269,7 +269,7 @@ module Dependabot
 
         def declaration_regex(dep)
           escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
-          /(?:^|["'])#{escaped_name}["']?\s*=.*$/i
+          /(?:^\s*|["'])#{escaped_name}["']?\s*=.*$/i
         end
 
         def file_changed?(file)
