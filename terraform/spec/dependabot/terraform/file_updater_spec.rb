@@ -432,7 +432,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    context "with a required provider" do
+   context "with a required provider" do
       let(:files) { project_dependency_files("registry_provider") }
 
       let(:dependencies) do
@@ -537,6 +537,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
                   version = "1.0"
           DEP
         )
+      end
 
       it "updates the `.terraform.lock.hcl` file" do
         lock_file = subject.find { |file| file.name == ".terraform.lock.hcl" }
