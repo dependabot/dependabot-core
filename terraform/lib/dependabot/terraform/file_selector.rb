@@ -14,4 +14,12 @@ module FileSelector
   def terragrunt_file?(file_name)
     file_name != ".terraform.lock.hcl" && file_name.end_with?(".hcl")
   end
+
+  def lock_file?
+    !lock_file.nil?
+  end
+
+  def lock_file
+    dependency_files.find { |f| f.name == ".terraform.lock.hcl" }
+  end
 end
