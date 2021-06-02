@@ -75,11 +75,11 @@ module Dependabot
       #
       # @param service_key [String] the service type described in https://www.terraform.io/docs/internals/remote-service-discovery.html#supported-services
       # @param return String
-      # @raise [Dependabot::DependabotError] when the service is not available
+      # @raise [Dependabot::PrivateSourceAuthenticationFailure] when the service is not available
       def service_url_for(service_key)
         url_for(services.fetch(service_key))
       rescue KeyError
-        raise error("Host does not support required Terraform-native service")
+        raise Dependabot::PrivateSourceAuthenticationFailure, "Host does not support required Terraform-native service"
       end
 
       private
