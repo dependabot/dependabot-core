@@ -537,6 +537,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
                   version = "1.0"
           DEP
         )
+
+      it "updates the `.terraform.lock.hcl` file" do
+        lock_file = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lock_file.content).to eql(fixture("projects/lockfile/.terraform.lock.hcl.expected"))
       end
     end
 
