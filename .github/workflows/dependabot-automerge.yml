@@ -1,10 +1,10 @@
 name: Dependabot auto-merge
 on: pull_request_target
 permissions:
-  contents: read
-  issues: read
-  checks: read
-  statuses: read
+  contents: write
+  issues: write
+  checks: write
+  statuses: write
   pull-requests: write
 jobs:
   dependabot:
