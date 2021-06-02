@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
-      - name: Dependabot metadata
+      - name: Verify pull request is from Dependabot
         id: metadata
         uses: dependabot/fetch-metadata@v1.0.0
         with:
