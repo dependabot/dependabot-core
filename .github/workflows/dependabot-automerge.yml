@@ -3,8 +3,6 @@ on: pull_request_target
 permissions:
   contents: write
   issues: write
-  checks: write
-  statuses: write
   pull-requests: write
 jobs:
   dependabot:
