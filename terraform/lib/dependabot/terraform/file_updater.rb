@@ -18,8 +18,8 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
         
-        [*terraform_files, *terragrunt_files, *lock_file].each do |file|
-          #next unless file_changed?(file)
+        [*terraform_files, *terragrunt_files].each do |file|
+          next unless file_changed?(file)
 
           updated_content = updated_terraform_file_content(file)
           raise "Content didn't change!" if updated_content == file.content
@@ -49,15 +49,15 @@ module Dependabot
           case new_req[:source][:type]
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
-          when "registry", "provider"
+          when "registry" 
             update_registry_declaration(new_req, old_req, content)
+          when "provider"
+            update_registry_declaration(new_req, old_req, content)
+            update_lockfile_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\
                   "declaration!"
           end
-
-          next unless lock_file?
-          update_lockfile_declaration(new_req, content)
         end
 
         content
@@ -86,13 +86,17 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration(new_req, updated_content)
-        provider_source = new_req.fetch(:source)[:url].gsub(%r{^https://}, "")
-        puts provider_source
+      def update_lockfile_declaration(new_req, old_req, updated_content)
+        return unless lock_file?
+
+        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
 
         SharedHelpers.in_a_temporary_directory do
+          debugger
+          dependency_files.each do |file|
+            IO.write(file.name, file.content)
+          end
           system "terraform providers lock #{provider_source}"
-
           return updated_file(file: lock_file, content: IO.read(".terraform.lock.hcl"))
         end
       end
