@@ -23,11 +23,14 @@ module Dependabot
           
           updated_content = updated_terraform_file_content(file)
 
-          raise "Content didn't change!" if !lockfile_changed? || updated_content == file.content
+          raise "Content didn't change!" unless lockfile_changed? || updated_content != file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        updated_files << update_lockfile_declaration(dependency)
+        
+        unless lock_file.empty?
+          updated_files << update_lockfile_declaration(dependency)
+        end
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
@@ -116,7 +119,7 @@ module Dependabot
       end
 
       def lockfile_changed?
-        return false unless dependency.requirements.first[:source][:type] == "provider"
+        return false unless dependency.requirements.first[:source][:type] == "provider" && !lock_file.empty?
 
         content = lock_file.first.content
         updated_content = update_lockfile_declaration(dependency)
