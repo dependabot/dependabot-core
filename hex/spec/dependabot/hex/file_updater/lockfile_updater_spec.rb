@@ -314,7 +314,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }
