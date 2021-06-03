@@ -258,7 +258,7 @@ RSpec.describe Dependabot::Clients::Azure do
     end
 
     context "Retries" do
-      context 'for GET' do
+      context "for GET" do
         it "with failure count <= max_retries" do
           # Request succeeds (200) on second attempt.
           stub_request(:get, base_url).
