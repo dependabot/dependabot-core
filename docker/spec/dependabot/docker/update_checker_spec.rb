@@ -70,6 +70,21 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to be_falsey }
     end
 
+    context "given an outdated requirement" do
+      let(:version) { "17.10" }
+
+      before do
+        dependency.requirements << {
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile.other",
+          source: { tag: "17.04" }
+        }
+      end
+
+      it { is_expected.to be_truthy }
+    end
+
     context "given a purely numeric version" do
       let(:version) { "1234567890" }
       it { is_expected.to be_truthy }
@@ -170,9 +185,40 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("2.5.0-slim") }
     end
 
-    context "when the latest version is being ignored" do
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when already on the latest version" do
+      let(:version) { "17.10" }
+      it { is_expected.to eq("17.10") }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when all later versions are being ignored" do
       let(:ignored_versions) { [">= 17.10"] }
       it { is_expected.to eq("17.04") }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when ignoring multiple versions" do
+      let(:ignored_versions) { [">= 17.10, < 17.2"] }
+      it { is_expected.to eq("17.10") }
     end
 
     context "when all versions are being ignored" do
@@ -257,6 +303,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "7.1-0.1" }
         it { is_expected.to eq("7.1-0.3.1") }
       end
+    end
+
+    context "when the dependency version is generated with git describe --tags --long" do
+      let(:tags_fixture_name) { "git_describe.json" }
+      let(:version) { "v3.9.0-177-ged5bcde" }
+      it { is_expected.to eq("v3.10.0-169-gfe040d3") }
     end
 
     context "when the docker registry times out" do
@@ -668,6 +720,38 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                 tag: "17.10"
               }
             }]
+          )
+      end
+    end
+
+    context "when specified with tags with different prefixes in separate files" do
+      let(:version) { "trusty-20170728" }
+      let(:source) { { tag: "trusty-20170728" } }
+
+      before do
+        dependency.requirements << {
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile.other",
+          source: { tag: "xenial-20170802" }
+        }
+      end
+
+      it "updates the tags" do
+        expect(checker.updated_requirements).
+          to eq(
+            [{
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "trusty-20170817" }
+            },
+             {
+               requirement: nil,
+               groups: [],
+               file: "Dockerfile.other",
+               source: { tag: "xenial-20170915" }
+             }]
           )
       end
     end

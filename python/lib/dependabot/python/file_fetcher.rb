@@ -6,6 +6,7 @@ require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
 require "dependabot/errors"
+
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
@@ -24,11 +25,13 @@ module Dependabot
         # If this repo is using Poetry return true
         return true if filenames.include?("pyproject.toml")
 
-        filenames.include?("setup.py")
+        return true if filenames.include?("setup.py")
+
+        filenames.include?("setup.cfg")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
+        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, "\
         "or a Pipfile."
       end
 
@@ -44,7 +47,7 @@ module Dependabot
         fetched_files += requirement_files if requirements_txt_files.any?
 
         fetched_files << setup_file if setup_file
-        fetched_files << setup_cfg if setup_cfg
+        fetched_files << setup_cfg_file if setup_cfg_file
         fetched_files += path_setup_files
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version if python_version
@@ -76,7 +79,7 @@ module Dependabot
       end
 
       def check_required_files_present
-        return if requirements_txt_files.any? || setup_file || pipfile || pyproject
+        return if requirements_txt_files.any? || setup_file || setup_cfg_file || pipfile || pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -87,8 +90,8 @@ module Dependabot
         @setup_file ||= fetch_file_if_present("setup.py")
       end
 
-      def setup_cfg
-        @setup_cfg ||= fetch_file_if_present("setup.cfg")
+      def setup_cfg_file
+        @setup_cfg_file ||= fetch_file_if_present("setup.cfg")
       end
 
       def pip_conf

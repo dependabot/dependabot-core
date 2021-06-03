@@ -80,6 +80,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
+    # TODO: Fix flaky spec caused by an issue in poetry:
+    # https://github.com/python-poetry/poetry/issues/3010)
     context "with a specified Python version" do
       let(:pyproject_fixture_name) { "python_2.toml" }
       let(:lockfile_fixture_name) { "python_2.lock" }
@@ -105,7 +107,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         )
       end
 
-      it "updates the lockfile successfully" do
+      skip "updates the lockfile successfully" do
         updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
 
         lockfile_obj = TomlRB.parse(updated_lockfile.content)
@@ -143,6 +145,38 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
 
         updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
         expect(updated_lockfile.content).to include('requests = "^2.19.1"')
+      end
+    end
+
+    context "without a lockfile and with an indented pyproject.toml" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject_fixture_name) { "indented.toml" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "2.19.1",
+          previous_version: nil,
+          package_manager: "pip",
+          requirements: [{
+            requirement: "^2.19.1",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "^1.0.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+
+      it "updates the pyproject.toml" do
+        expect(updated_files.map(&:name)).to eq(%w(pyproject.toml))
+
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.toml" }
+        expect(updated_lockfile.content).to include('  requests = "^2.19.1"')
       end
     end
 

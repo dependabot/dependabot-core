@@ -145,30 +145,30 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/git/trees").
         with(body: {
-               base_tree: "basecommitsha",
-               tree: [
-                 {
-                   path: "Gemfile",
-                   mode: "100644",
-                   type: "blob",
-                   content: fixture("ruby", "gemfiles", "Gemfile")
-                 },
-                 {
-                   path: "Gemfile.lock",
-                   mode: "100644",
-                   type: "blob",
-                   content: fixture("ruby", "gemfiles", "Gemfile")
-                 }
-               ]
-             })
+          base_tree: "basecommitsha",
+          tree: [
+            {
+              path: "Gemfile",
+              mode: "100644",
+              type: "blob",
+              content: fixture("ruby", "gemfiles", "Gemfile")
+            },
+            {
+              path: "Gemfile.lock",
+              mode: "100644",
+              type: "blob",
+              content: fixture("ruby", "gemfiles", "Gemfile")
+            }
+          ]
+        })
 
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/git/commits").
         with(body: {
-               parents: ["basecommitsha"],
-               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-               message: "Commit msg"
-             })
+          parents: ["basecommitsha"],
+          tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+          message: "Commit msg"
+        })
     end
 
     context "with a submodule" do
@@ -188,14 +188,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "manifesto",
-                   mode: "160000",
-                   type: "commit",
-                   sha: "sha1"
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "manifesto",
+              mode: "160000",
+              type: "commit",
+              sha: "sha1"
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits")
@@ -220,14 +220,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "nested/manifesto",
-                   mode: "100644",
-                   type: "blob",
-                   content: "codes"
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "nested/manifesto",
+              mode: "100644",
+              type: "blob",
+              content: "codes"
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits")
@@ -258,21 +258,21 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/blobs").
           with(body: {
-                 content: gem_content,
-                 encoding: "base64"
-               })
+            content: gem_content,
+            encoding: "base64"
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "vendor/cache/addressable-2.7.0.gem",
-                   mode: "100644",
-                   type: "blob",
-                   sha: sha
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "vendor/cache/addressable-2.7.0.gem",
+              mode: "100644",
+              type: "blob",
+              sha: sha
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits")
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             name: "addressable-2.7.0.gem",
             directory: "vendor/cache",
             content: nil,
-            deleted: true,
+            operation: Dependabot::DependencyFile::Operation::DELETE,
             content_encoding:
               Dependabot::DependencyFile::ContentEncoding::BASE64
           )
@@ -299,14 +299,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "vendor/cache/addressable-2.7.0.gem",
-                   mode: "100644",
-                   type: "blob",
-                   sha: nil
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "vendor/cache/addressable-2.7.0.gem",
+              mode: "100644",
+              type: "blob",
+              sha: nil
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits")
@@ -642,11 +642,11 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         expect(WebMock).
           to have_requested(:post, "#{repo_api_url}/git/commits").
           with(body: {
-                 parents: anything,
-                 tree: anything,
-                 message: anything,
-                 author: { email: "support@dependabot.com", name: "dependabot" }
-               })
+            parents: anything,
+            tree: anything,
+            message: anything,
+            author: { email: "support@dependabot.com", name: "dependabot" }
+          })
       end
 
       context "with a signature key" do
@@ -717,9 +717,9 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/git/refs").
         with(body: {
-               ref: "refs/heads/dependabot/bundler/business-1.5.0",
-               sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
-             })
+          ref: "refs/heads/dependabot/bundler/business-1.5.0",
+          sha: "7638417db6d59f3c431d3e1f261cc637155684cd"
+        })
     end
 
     it "creates a PR with the right details" do

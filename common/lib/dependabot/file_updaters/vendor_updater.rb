@@ -27,12 +27,20 @@ module Dependabot
           )
           changed_paths = status.split("\n").map { |l| l.split(" ") }
           changed_paths.map do |type, path|
-            deleted = type == "D"
+            # The following types are possible to be returned:
+            # M = Modified = Default for DependencyFile
+            # D = Deleted
+            # ?? = Untracked = Created
+            operation = Dependabot::DependencyFile::Operation::UPDATE
+            operation = Dependabot::DependencyFile::Operation::DELETE if type == "D"
+            operation = Dependabot::DependencyFile::Operation::CREATE if type == "??"
             encoding = ""
-            encoded_content = File.read(path) unless deleted
+            encoded_content = File.read(path) unless operation == Dependabot::DependencyFile::Operation::DELETE
             if binary_file?(path)
               encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-              encoded_content = Base64.encode64(encoded_content) unless deleted
+              if operation != Dependabot::DependencyFile::Operation::DELETE
+                encoded_content = Base64.encode64(encoded_content)
+              end
             end
 
             project_root =
@@ -44,7 +52,7 @@ module Dependabot
               name: file_path.to_s,
               content: encoded_content,
               directory: base_directory,
-              deleted: deleted,
+              operation: operation,
               content_encoding: encoding
             )
           end
@@ -53,7 +61,7 @@ module Dependabot
 
       private
 
-      BINARY_ENCODINGS = %w(application/x-tarbinary binary).freeze
+      TEXT_ENCODINGS = %w(us-ascii utf-8).freeze
 
       attr_reader :repo_contents_path, :vendor_dir
 
@@ -62,7 +70,7 @@ module Dependabot
 
         encoding = `file -b --mime-encoding #{path}`.strip
 
-        BINARY_ENCODINGS.include?(encoding)
+        !TEXT_ENCODINGS.include?(encoding)
       end
     end
   end

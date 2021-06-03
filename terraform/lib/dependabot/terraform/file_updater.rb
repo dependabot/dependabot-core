@@ -3,12 +3,15 @@
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
+require "dependabot/terraform/file_selector"
 
 module Dependabot
   module Terraform
     class FileUpdater < Dependabot::FileUpdaters::Base
+      include FileSelector
+
       def self.updated_files_regex
-        [/\.tf$/, /\.tfvars$/]
+        [/\.tf$/, /\.hcl$/]
       end
 
       def updated_dependency_files
@@ -44,7 +47,7 @@ module Dependabot
           case new_req[:source][:type]
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
-          when "registry"
+          when "registry", "provider"
             update_registry_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\
@@ -70,8 +73,9 @@ module Dependabot
       end
 
       def update_registry_declaration(new_req, old_req, updated_content)
-        updated_content.sub!(registry_declaration_regex) do |regex_match|
-          regex_match.sub(/version\s*=.*/) do |req_line_match|
+        regex = new_req[:source][:type] == "provider" ? provider_declaration_regex : registry_declaration_regex
+        updated_content.sub!(regex) do |regex_match|
+          regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
           end
         end
@@ -87,33 +91,33 @@ module Dependabot
         dependency_files.select { |file| filenames.include?(file.name) }
       end
 
-      def terraform_files
-        dependency_files.select { |f| f.name.end_with?(".tf") }
-      end
-
-      def terragrunt_files
-        dependency_files.select { |f| f.name.end_with?(".tfvars") }
-      end
-
       def check_required_files
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
       end
 
+      def provider_declaration_regex
+        name = Regexp.escape(dependency.name)
+        %r{
+          ((source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
+          (?:(?!^\}).)+)
+        }mx
+      end
+
       def registry_declaration_regex
-        /
+        %r{
           (?<=\{)
           (?:(?!^\}).)*
-          source\s*=\s*["']#{Regexp.escape(dependency.name)}["']
+          source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{Regexp.escape(dependency.name)}["']
           (?:(?!^\}).)*
-        /mx
+        }mx
       end
 
       def git_declaration_regex(filename)
         # For terragrunt dependencies there's not a lot we can base the
         # regex on. Just look for declarations within a `terraform` block
-        return /terraform\s*\{(?:(?!^\}).)*/m if filename.end_with?(".tfvars")
+        return /terraform\s*\{(?:(?!^\}).)*/m if terragrunt_file?(filename)
 
         # For modules we can do better - filter for module blocks that use the
         # name of the dependency
@@ -121,6 +125,11 @@ module Dependabot
           module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
           (?:(?!^\}).)*
         /mx
+      end
+
+      def registry_host_for(dependency)
+        source = dependency.requirements.map { |r| r[:source] }.compact.first
+        source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
       end
     end
   end

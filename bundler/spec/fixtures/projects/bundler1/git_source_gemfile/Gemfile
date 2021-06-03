@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "business", "~> 1.6.0",
+    git: "git@github.com:dependabot-fixtures/business",
+    ref: "a1b78a9"
+gem "prius", git: "https://github.com/dependabot-fixtures/prius"
+gem "que", git: "git@github.com:dependabot-fixtures/que", tag: "v0.11.6"
+gem "statesman", "~> 1.2.0"
+gem "uk_phone_numbers", git: "http://github.com/dependabot-fixtures/uk_phone_numbers"

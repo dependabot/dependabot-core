@@ -2,6 +2,7 @@
 
 require "excon"
 
+require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/requirement"
@@ -22,7 +23,8 @@ module Dependabot
                        raise_on_ignored: false,
                        replacement_git_pin: nil, remove_git_source: false,
                        unlock_requirement: true,
-                       latest_allowable_version: nil)
+                       latest_allowable_version: nil,
+                       options:)
           @dependency                  = dependency
           @unprepared_dependency_files = unprepared_dependency_files
           @credentials                 = credentials
@@ -33,6 +35,7 @@ module Dependabot
           @remove_git_source           = remove_git_source
           @unlock_requirement          = unlock_requirement
           @latest_allowable_version    = latest_allowable_version
+          @options                     = options
         end
 
         def latest_resolvable_version_details
@@ -44,7 +47,8 @@ module Dependabot
 
         attr_reader :dependency, :unprepared_dependency_files,
                     :repo_contents_path, :credentials, :ignored_versions,
-                    :replacement_git_pin, :latest_allowable_version
+                    :replacement_git_pin, :latest_allowable_version,
+                    :options
 
         def remove_git_source?
           @remove_git_source
@@ -75,15 +79,14 @@ module Dependabot
             # some errors we want to handle specifically ourselves, including
             # potentially retrying in the case of the Ruby version being locked
             in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-              details =  SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
+              details = NativeHelpers.run_bundler_subprocess(
+                bundler_version: bundler_version,
                 function: "resolve_version",
                 args: {
                   dependency_name: dependency.name,
                   dependency_requirements: dependency.requirements,
                   gemfile_name: gemfile.name,
                   lockfile_name: lockfile&.name,
-                  using_bundler2: using_bundler2?,
                   dir: tmp_dir,
                   credentials: credentials
                 }
@@ -163,7 +166,8 @@ module Dependabot
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
-              security_advisories: []
+              security_advisories: [],
+              options: options
             ).latest_version_details
         end
 
@@ -193,8 +197,8 @@ module Dependabot
           # required Ruby version.
           return false unless ruby_requirement
 
-          ruby_requirement = Gem::Requirement.new(ruby_requirement)
-          current_ruby_version = Gem::Version.new(details[:ruby_version])
+          ruby_requirement = Dependabot::Bundler::Requirement.new(ruby_requirement)
+          current_ruby_version = Dependabot::Bundler::Version.new(details[:ruby_version])
 
           !ruby_requirement.satisfied_by?(current_ruby_version)
         rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
@@ -213,10 +217,8 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.locked" }
         end
 
-        def using_bundler2?
-          return unless lockfile
-
-          lockfile.content.match?(/BUNDLED WITH\s+2/m)
+        def bundler_version
+          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

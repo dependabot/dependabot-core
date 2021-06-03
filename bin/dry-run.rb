@@ -61,12 +61,18 @@ Bundler.setup
 require "optparse"
 require "json"
 require "byebug"
+require "logger"
+require "dependabot/logger"
+require "stackprof"
+
+Dependabot.logger = Logger.new($stdout)
 
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
+require "dependabot/config/file_fetcher"
 
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -91,6 +97,7 @@ require "dependabot/terraform"
 
 $options = {
   credentials: [],
+  provider: "github",
   directory: "/",
   dependency_names: nil,
   branch: nil,
@@ -98,11 +105,14 @@ $options = {
   write: false,
   clone: false,
   lockfile_only: false,
+  reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
   updater_options: {},
   security_advisories: [],
-  security_updates_only: false
+  security_updates_only: false,
+  ignore_conditions: [],
+  pull_request: false,
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -123,15 +133,26 @@ end
 
 unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
   # For example:
-  # [{"dependency_name":"name",
-  #   "patched_versions":[],
-  #   "unaffected_versions":[],
-  #   "affected_versions":["< 0.10.0"]}]
+  # [{"dependency-name":"name",
+  #   "patched-versions":[],
+  #   "unaffected-versions":[],
+  #   "affected-versions":["< 0.10.0"]}]
   $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
 end
 
+unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
+  # For example:
+  # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
+  $options[:ignore_conditions] = JSON.parse(ENV["IGNORE_CONDITIONS"])
+end
+
+# rubocop:disable Metrics/BlockLength
 option_parse = OptionParser.new do |opts|
   opts.banner = "usage: ruby bin/dry-run.rb [OPTIONS] PACKAGE_MANAGER REPO"
+
+  opts.on("--provider PROVIDER", "SCM provider e.g. github, azure, bitbucket") do |value|
+    $options[:provider] = value
+  end
 
   opts.on("--dir DIRECTORY", "Dependency file directory") do |value|
     $options[:directory] = value
@@ -156,6 +177,10 @@ option_parse = OptionParser.new do |opts|
 
   opts.on("--lockfile-only", "Only update the lockfile") do |_value|
     $options[:lockfile_only] = true
+  end
+
+  opts.on("--reject-external-code", "Reject external code") do |_value|
+    $options[:reject_external_code] = true
   end
 
   opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
@@ -187,7 +212,18 @@ option_parse = OptionParser.new do |opts|
           "Only update vulnerable dependencies") do |_value|
     $options[:security_updates_only] = true
   end
+
+  opts.on("--profile",
+          "Profile using Stackprof. Output in `tmp/stackprof-<datetime>.dump`") do
+    $options[:profile] = true
+  end
+
+  opts.on("--pull-request",
+          "Output pull request information: title, description") do
+    $options[:pull_request] = true
+  end
 end
+# rubocop:enable Metrics/BlockLength
 
 option_parse.parse!
 
@@ -258,9 +294,7 @@ def cached_dependency_files_read
   )
   FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
 
-  if File.exist?(cache_manifest_path)
-    cached_manifest = File.read(cache_manifest_path)
-  end
+  cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
   cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
 
   all_files_cached = cached_dependency_files&.all? do |file|
@@ -307,9 +341,7 @@ def cached_dependency_files_read
     end
     # Initialize a git repo so that changed files can be diffed
     if $options[:write]
-      if File.exist?(".gitignore")
-        FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore"))
-      end
+      FileUtils.cp(".gitignore", File.join(cache_dir, ".gitignore")) if File.exist?(".gitignore")
       Dir.chdir(cache_dir) do
         system("git init . && git add . && git commit --allow-empty -m 'Init'")
       end
@@ -322,78 +354,74 @@ end
 # rubocop:enable Metrics/MethodLength
 # rubocop:enable Metrics/AbcSize
 
+# rubocop:disable Metrics/MethodLength
 def handle_dependabot_error(error:, dependency:)
   error_details =
     case error
     when Dependabot::DependencyFileNotResolvable
       {
         "error-type": "dependency_file_not_resolvable",
-        "error-detail": { message: error.message },
+        "error-detail": { message: error.message }
       }
     when Dependabot::DependencyFileNotEvaluatable
       {
         "error-type": "dependency_file_not_evaluatable",
-        "error-detail": { message: error.message },
+        "error-detail": { message: error.message }
       }
     when Dependabot::BranchNotFound
       {
         "error-type": "branch_not_found",
-        "error-detail": { "branch-name": error.branch_name },
+        "error-detail": { "branch-name": error.branch_name }
       }
     when Dependabot::DependencyFileNotParseable
       {
         "error-type": "dependency_file_not_parseable",
         "error-detail": {
           message: error.message,
-          "file-path": error.file_path,
-        },
+          "file-path": error.file_path
+        }
       }
     when Dependabot::DependencyFileNotFound
       {
         "error-type": "dependency_file_not_found",
-        "error-detail": { "file-path": error.file_path },
+        "error-detail": { "file-path": error.file_path }
       }
     when Dependabot::PathDependenciesNotReachable
       {
         "error-type": "path_dependencies_not_reachable",
-        "error-detail": { dependencies: error.dependencies },
-      }
-    when Dependabot::PrivateSourceAuthenticationFailure
-      {
-        "error-type": "private_source_authentication_failure",
-        "error-detail": { source: error.source },
+        "error-detail": { dependencies: error.dependencies }
       }
     when Dependabot::GitDependenciesNotReachable
       {
         "error-type": "git_dependencies_not_reachable",
-        "error-detail": { "dependency-urls": error.dependency_urls },
+        "error-detail": { "dependency-urls": error.dependency_urls }
       }
     when Dependabot::GitDependencyReferenceNotFound
       {
         "error-type": "git_dependency_reference_not_found",
-        "error-detail": { dependency: error.dependency },
+        "error-detail": { dependency: error.dependency }
       }
     when Dependabot::PrivateSourceAuthenticationFailure
       {
         "error-type": "private_source_authentication_failure",
-        "error-detail": { source: error.source },
+        "error-detail": { source: error.source }
       }
     when Dependabot::PrivateSourceTimedOut
       {
         "error-type": "private_source_timed_out",
-        "error-detail": { source: error.source },
+        "error-detail": { source: error.source }
       }
     when Dependabot::PrivateSourceCertificateFailure
       {
         "error-type": "private_source_certificate_failure",
-        "error-detail": { source: error.source },
+        "error-detail": { source: error.source }
       }
     when Dependabot::MissingEnvironmentVariable
       {
         "error-type": "missing_environment_variable",
         "error-detail": {
-          "environment-variable": error.environment_variable,
-        },
+          "environment-variable": error.environment_variable
+        }
       }
     when Dependabot::GoModulePathMismatch
       {
@@ -401,8 +429,8 @@ def handle_dependabot_error(error:, dependency:)
         "error-detail": {
           "declared-path": error.declared_path,
           "discovered-path": error.discovered_path,
-          "go-mod": error.go_mod,
-        },
+          "go-mod": error.go_mod
+        }
       }
     else
       raise error
@@ -411,9 +439,12 @@ def handle_dependabot_error(error:, dependency:)
   puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
        "#{error_details.fetch(:'error-detail')}"
 end
+# rubocop:enable Metrics/MethodLength
 
-source = Dependabot::Source.new(
-  provider: "github",
+StackProf.start(raw: true) if $options[:profile]
+
+$source = Dependabot::Source.new(
+  provider: $options[:provider],
   repo: $repo_name,
   directory: $options[:directory],
   branch: $options[:branch],
@@ -427,9 +458,24 @@ if $options[:clone] || always_clone
   puts "=> cloning into #{$repo_contents_path}"
 end
 
-fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).
-          new(source: source, credentials: $options[:credentials],
-              repo_contents_path: $repo_contents_path)
+fetcher_args = {
+  source: $source,
+  credentials: $options[:credentials],
+  repo_contents_path: $repo_contents_path
+}
+$config_file = begin
+  cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+  Dependabot::Config::File.parse(cfg_file.content)
+rescue Dependabot::DependencyFileNotFound
+  Dependabot::Config::File.new(updates: [])
+end
+$update_config = $config_file.update_config(
+  $package_manager,
+  directory: $options[:directory],
+  target_branch: $options[:branch]
+)
+
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
 $files = if $options[:clone] || always_clone
            fetcher.clone_repo_contents
            fetcher.files
@@ -444,8 +490,9 @@ puts "=> parsing dependency files"
 parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   dependency_files: $files,
   repo_contents_path: $repo_contents_path,
-  source: source,
-  credentials: $options[:credentials]
+  source: $source,
+  credentials: $options[:credentials],
+  reject_external_code: $options[:reject_external_code],
 )
 
 dependencies = cached_read("dependencies") { parser.parse }
@@ -465,25 +512,35 @@ def update_checker_for(dependency)
     credentials: $options[:credentials],
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
-    ignored_versions: ignore_conditions_for(dependency),
+    ignored_versions: ignored_versions_for(dependency),
     security_advisories: security_advisories
   )
 end
 
-# TODO: Parse from config file
-def ignore_conditions_for(_)
-  # Array of version requirements, e.g. ["4.x", "5.x"]
-  []
+def ignored_versions_for(dep)
+  if $options[:ignore_conditions].any?
+    ignore_conditions = $options[:ignore_conditions].map do |ic|
+      Dependabot::Config::IgnoreCondition.new(
+        dependency_name: ic["dependency-name"],
+        versions: [ic["version-requirement"]].compact,
+        update_types: ic["update-types"]
+      )
+    end
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
+    ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
+  else
+    $update_config.ignored_versions_for(dep)
+  end
 end
 
 def security_advisories
   $options[:security_advisories].map do |adv|
-    vulnerable_versions = adv["affected_versions"] || []
-    safe_versions = (adv["patched_versions"] || []) +
-                    (adv["unaffected_versions"] || [])
+    vulnerable_versions = adv["affected-versions"] || []
+    safe_versions = (adv["patched-versions"] || []) +
+                    (adv["unaffected-versions"] || [])
 
     # Handle case mismatches between advisory name and parsed dependency name
-    dependency_name = adv["dependency_name"].downcase
+    dependency_name = adv["dependency-name"].downcase
     Dependabot::SecurityAdvisory.new(
       dependency_name: dependency_name,
       package_manager: $package_manager,
@@ -509,6 +566,17 @@ def peer_dependencies_can_update?(checker, reqs_to_unlock)
 end
 
 def file_updater_for(dependencies)
+  if dependencies.count == 1
+    updated_dependency = dependencies.first
+    prev_v = updated_dependency.previous_version
+    prev_v_msg = prev_v ? "from #{prev_v} " : ""
+    puts " => updating #{updated_dependency.name} #{prev_v_msg}to " \
+         "#{updated_dependency.version}"
+  else
+    dependency_names = dependencies.map(&:name)
+    puts " => updating #{dependency_names.join(', ')}"
+  end
+
   Dependabot::FileUpdaters.for_package_manager($package_manager).new(
     dependencies: dependencies,
     dependency_files: $files,
@@ -518,29 +586,13 @@ def file_updater_for(dependencies)
   )
 end
 
-def generate_dependency_files_for(updated_dependencies)
-  if updated_dependencies.count == 1
-    updated_dependency = updated_dependencies.first
-    prev_v = updated_dependency.previous_version
-    prev_v_msg = prev_v ? "from #{prev_v} " : ""
-    puts " => updating #{updated_dependency.name} #{prev_v_msg}to " \
-         "#{updated_dependency.version}"
-  else
-    dependency_names = updated_dependencies.map(&:name)
-    puts " => updating #{dependency_names.join(', ')}"
-  end
-
-  updater = file_updater_for(updated_dependencies)
-  updater.updated_dependency_files
-end
-
 def security_fix?(dependency)
   security_advisories.any? do |advisory|
     advisory.fixed_by?(dependency)
   end
 end
 
-puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(", ")}"
+puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
 # rubocop:disable Metrics/BlockLength
 checker_count = 0
@@ -631,7 +683,8 @@ dependencies.each do |dep|
     next
   end
 
-  updated_files = generate_dependency_files_for(updated_deps)
+  updater = file_updater_for(updated_deps)
+  updated_files = updater.updated_dependency_files
 
   # Currently unused but used to create pull requests (from the updater)
   updated_deps.reject do |d|
@@ -642,7 +695,7 @@ dependencies.each do |dep|
   end
 
   if $options[:security_updates_only] &&
-     updated_deps.none? { |dep| security_fix?(dep) }
+     updated_deps.none? { |d| security_fix?(d) }
     puts "    (updated version is still vulnerable 🚨)"
   end
 
@@ -652,7 +705,7 @@ dependencies.each do |dep|
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
       FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
-      if updated_file.deleted?
+      if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
         File.delete(path) if File.exist?(path)
       else
         File.write(path, updated_file.decoded_content)
@@ -661,7 +714,7 @@ dependencies.each do |dep|
   end
 
   updated_files.each do |updated_file|
-    if updated_file.deleted?
+    if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
       puts "deleted #{updated_file.name}"
     else
       original_file = $files.find { |f| f.name == updated_file.name }
@@ -672,9 +725,27 @@ dependencies.each do |dep|
       end
     end
   end
+
+  if $options[:pull_request]
+    msg = Dependabot::PullRequestCreator::MessageBuilder.new(
+      dependencies: updated_deps,
+      files: updated_files,
+      credentials: $options[:credentials],
+      source: $source,
+      commit_message_options: $update_config.commit_message_options.to_h,
+      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
+    ).message
+    puts "Pull Request Title: #{msg.pr_name}"
+    puts "--description--\n#{msg.pr_message}\n--/description--"
+    puts "--commit--\n#{msg.commit_message}\n--/commit--"
+  end
 rescue StandardError => e
   handle_dependabot_error(error: e, dependency: dep)
 end
+
+StackProf.stop if $options[:profile]
+StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
+
 # rubocop:enable Metrics/BlockLength
 
 # rubocop:enable Style/GlobalVars

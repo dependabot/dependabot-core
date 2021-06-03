@@ -193,6 +193,48 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       it { is_expected.to eq(Gem::Version.new("2.7.0b1")) }
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:dependency_version) { "2.6.0" }
+      it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 2.0.0"] }
+      it { is_expected.to eq(Gem::Version.new("2.0.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 2.0.0.a, < 3.0"] }
       it { is_expected.to eq(Gem::Version.new("1.3.0")) }

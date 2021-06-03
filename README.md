@@ -13,7 +13,11 @@ Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
 
-Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
+## Contributing to Dependabot
+
+Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
+
+Please refer to the [CONTRIBUTING][contributing] guidelines for more information.
 
 ### Disclosing security issues
 
@@ -52,14 +56,14 @@ languages.
 
 To install the helpers for each language:
 
-1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
+1. `cd npm_and_yarn/helpers && npm install --production && cd -`
 2. `cd composer/helpers && composer install --no-dev && cd -`
 3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
 4. `cd hex/helpers && mix deps.get && cd -`
 5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
 6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
 
-## Local development
+## Local development & Running tests
 
 Run the tests by running `rspec spec` inside each of the packages. Style is
 enforced by RuboCop. To check for style violations, simply run `rubocop` in
@@ -92,6 +96,7 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Dry run script
@@ -176,6 +181,13 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
+## Profiling
+
+You can profile a dry-run by passing the `--profile` flag when running it. This
+will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
+can generate a flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
+
 ## Why is this public?
 
 As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
@@ -217,6 +229,7 @@ recurring payments from Europe, check them out.
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
+[contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
 [api-docs]: https://github.com/dependabot/api-docs
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core

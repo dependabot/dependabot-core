@@ -8,6 +8,11 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class RegistryFinder
+        CENTRAL_REGISTRIES = %w(
+          https://registry.npmjs.org
+          http://registry.npmjs.org
+          https://registry.yarnpkg.com
+        ).freeze
         NPM_AUTH_TOKEN_REGEX =
           %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
         NPM_GLOBAL_REGISTRY_REGEX =
@@ -33,6 +38,12 @@ module Dependabot
 
         def dependency_url
           "#{registry_url.gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+        end
+
+        def self.central_registry?(registry)
+          CENTRAL_REGISTRIES.any? do |r|
+            r.include?(registry)
+          end
         end
 
         private
@@ -62,8 +73,8 @@ module Dependabot
 
         def registry_url
           protocol =
-            if private_registry_source_url
-              private_registry_source_url.split("://").first
+            if registry_source_url
+              registry_source_url.split("://").first
             else
               "https"
             end
@@ -92,10 +103,10 @@ module Dependabot
         end
 
         def locked_registry
-          return unless private_registry_source_url
+          return unless registry_source_url
 
           lockfile_registry =
-            private_registry_source_url.
+            registry_source_url.
             gsub("https://", "").
             gsub("http://", "")
           detailed_registry =
@@ -210,16 +221,12 @@ module Dependabot
           dependency.name.gsub("/", "%2F")
         end
 
-        def private_registry_source_url
+        def registry_source_url
           sources = dependency.requirements.
-                    map { |r| r.fetch(:source) }.uniq.compact
+                    map { |r| r.fetch(:source) }.uniq.compact.
+                    sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
-          # If there are multiple source types, or multiple source URLs, then
-          # it's unclear how we should proceed
-          raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s[:type], s[:url]] }.uniq.count > 1
-
-          # Otherwise we just take the URL of the first private registry
-          sources.find { |s| s[:type] == "private_registry" }&.fetch(:url)
+          sources.find { |s| s[:type] == "registry" }&.fetch(:url)
         end
       end
     end

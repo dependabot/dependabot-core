@@ -5,6 +5,7 @@ require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 require "dependabot/bundler/version"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -21,10 +22,37 @@ module Dependabot
         dependency_set += gemfile_dependencies
         dependency_set += gemspec_dependencies
         dependency_set += lockfile_dependencies
+        check_external_code(dependency_set.dependencies)
+        instrument_package_manager_version
         dependency_set.dependencies
       end
 
       private
+
+      def check_external_code(dependencies)
+        return unless @reject_external_code
+        return unless git_source?(dependencies)
+
+        # A git source dependency might contain a .gemspec that is evaluated
+        raise ::Dependabot::UnexpectedExternalCode
+      end
+
+      def git_source?(dependencies)
+        dependencies.any? do |dep|
+          dep.requirements.any? { |req| req.fetch(:source)&.fetch(:type) == "git" }
+        end
+      end
+
+      def instrument_package_manager_version
+        version = Helpers.detected_bundler_version(lockfile)
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "bundler",
+          package_managers: {
+            "bundler" => version
+          }
+        )
+      end
 
       def gemfile_dependencies
         dependencies = DependencySet.new
@@ -114,8 +142,8 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "parsed_gemfile",
               args: {
                 gemfile_name: gemfile.name,
@@ -144,8 +172,8 @@ module Dependabot
                                                       repo_contents_path) do
             write_temporary_dependency_files
 
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "parsed_gemspec",
               args: {
                 gemspec_name: file.name,
@@ -282,6 +310,10 @@ module Dependabot
         dependency_files.
           select { |f| f.name.end_with?(".rb") }.
           reject { |f| f.name == "gems.rb" }
+      end
+
+      def bundler_version
+        @bundler_version ||= Helpers.bundler_version(lockfile)
       end
     end
   end

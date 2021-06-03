@@ -5,12 +5,14 @@ require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/gradle/file_parser/repositories_finder"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Gradle
     class MetadataFinder < Dependabot::MetadataFinders::Base
       DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
 
       private
 
@@ -101,7 +103,8 @@ module Dependabot
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
         artifact_id =
-          if plugin? then "#{dependency.name}.gradle.plugin"
+          if kotlin_plugin? then "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"
+          elsif plugin? then "#{dependency.name}.gradle.plugin"
           else dependency.name.split(":").last
           end
 
@@ -110,7 +113,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -133,7 +136,7 @@ module Dependabot
           "#{version}/"\
           "#{artifact_id}-#{version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         Nokogiri::XML(response.body)
@@ -150,7 +153,10 @@ module Dependabot
 
       def maven_repo_dependency_url
         group_id, artifact_id =
-          if plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
+          if kotlin_plugin?
+            ["#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}",
+             "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
+          elsif plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
           else dependency.name.split(":")
           end
 
@@ -158,24 +164,15 @@ module Dependabot
       end
 
       def plugin?
-        dependency.requirements.any? { |r| r.fetch(:groups) == ["plugins"] }
+        dependency.requirements.any? { |r| r.fetch(:groups).include? "plugins" }
       end
 
-      def auth_details
-        cred =
-          credentials.select { |c| c["type"] == "maven_repository" }.
-          find do |c|
-            cred_url = c.fetch("url").gsub(%r{/+$}, "")
-            next false unless cred_url == maven_repo_url
+      def kotlin_plugin?
+        plugin? && dependency.requirements.any? { |r| r.fetch(:groups).include? "kotlin" }
+      end
 
-            c.fetch("username", nil)
-          end
-
-        return {} unless cred
-
-        token = cred.fetch("username") + ":" + cred.fetch("password")
-        encoded_token = Base64.encode64(token).delete("\n")
-        { "Authorization" => "Basic #{encoded_token}" }
+      def auth_headers
+        @auth_headers ||= Dependabot::Maven::Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
       end
     end
   end

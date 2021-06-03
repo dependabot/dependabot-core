@@ -5,7 +5,11 @@ updates:
     schedule:
       interval: "daily"
   - package-ecosystem: "composer"
-    directory: "/composer/helpers"
+    directory: "/composer/helpers/v1"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "composer"
+    directory: "/composer/helpers/v2"
     schedule:
       interval: "daily"
   - package-ecosystem: "mix"
@@ -22,5 +26,9 @@ updates:
       interval: "daily"
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "daily"

@@ -1,10 +1,7 @@
 {
-  "plugins": [
+  "extends": [
     "prettier"
   ],
-  "rules": {
-    "prettier/prettier": "error"
-  },
   "env": {
     "node": true
   },

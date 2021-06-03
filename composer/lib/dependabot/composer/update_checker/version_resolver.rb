@@ -8,6 +8,8 @@ require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
 require "dependabot/composer/file_parser"
+require "dependabot/composer/helpers"
+
 module Dependabot
   module Composer
     class UpdateChecker
@@ -29,11 +31,14 @@ module Dependabot
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s\/]+\s.*?\s(?=->)|
-            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)
+            (?<=requires\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->)| # composer v1
+            (?<=require\s)php(?:\-[^\s\/]+)?\s.*?\s(?=->) # composer v2
           }x.freeze
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
+        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/.freeze
+        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?) via/.freeze
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -156,7 +161,7 @@ module Dependabot
           json = JSON.parse(content)
 
           composer_platform_extensions.each do |extension, requirements|
-            raise "No matching version for #{requirements}!" unless version_for_reqs(requirements)
+            next unless version_for_reqs(requirements)
 
             json["config"] ||= {}
             json["config"]["platform"] ||= {}
@@ -228,6 +233,8 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Extract error handling and share between the lockfile updater
+        #
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
@@ -241,18 +248,13 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.start_with?("Failed to execute git clone")
-            dependency_url =
-              error.message.match(/--mirror '(?<url>.*?)'/).
-              named_captures.fetch("url")
+          if error.message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
+            dependency_url = error.message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif error.message.start_with?("Failed to clone")
-            dependency_url =
-              error.message.match(/Failed to clone (?<url>.*?) via/).
-              named_captures.fetch("url")
+          elsif error.message.match?(FAILED_GIT_CLONE)
+            dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif error.message.start_with?("Could not parse version") ||
-                error.message.include?("does not allow connections to http://")
+          elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
@@ -302,13 +304,10 @@ module Dependabot
             nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")
-            source =
-              error.message.match(%r{https?://(?<source>[^/]+)/}).
-              named_captures.fetch("source")
+            source = error.message.match(%r{https?://(?<source>[^/]+)/}).named_captures.fetch("source")
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           elsif error.message.match?(SOURCE_TIMED_OUT_REGEX)
-            url = error.message.match(SOURCE_TIMED_OUT_REGEX).
-                  named_captures.fetch("url")
+            url = error.message.match(SOURCE_TIMED_OUT_REGEX).named_captures.fetch("url")
             raise if url.include?("packagist.org")
 
             source = url.gsub(%r{/packages.json$}, "")
@@ -334,6 +333,11 @@ module Dependabot
             #
             # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
             nil
+          elsif error.message.include?("does not match the expected JSON schema")
+            msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n"\
+                  "Run `composer validate` to check your composer.json and composer.lock files.\n\n"\
+                  "See https://getcomposer.org/doc/04-schema.md for details on the schema."
+            raise Dependabot::DependencyFileNotParseable, msg
           else
             raise error
           end
@@ -342,6 +346,13 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/MethodLength
+
+        def unresolvable_error?(error)
+          error.message.start_with?("Could not parse version") ||
+            error.message.include?("does not allow connections to http://") ||
+            error.message.match?(/The `url` supplied for the path .* does not exist/) ||
+            error.message.start_with?("Invalid version string")
+        end
 
         def library?
           parsed_composer_file["type"] == "library"
@@ -428,7 +439,12 @@ module Dependabot
         end
 
         def php_helper_path
-          NativeHelpers.composer_helper_path
+          NativeHelpers.composer_helper_path(composer_version: composer_version)
+        end
+
+        def composer_version
+          parsed_lockfile_or_nil = lockfile ? parsed_lockfile : nil
+          @composer_version ||= Helpers.composer_version(parsed_composer_file, parsed_lockfile_or_nil)
         end
 
         def initial_platform

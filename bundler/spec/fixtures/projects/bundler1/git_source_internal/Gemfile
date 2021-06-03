@@ -1,0 +1,5 @@
+# frozen_string_literal: true
+source "https://rubygems.org"
+
+gem "parallel", git: "git@github.com:dependabot-fixtures/parallel", ref: "v1.12.0"
+gem "statesman", "~> 1.2.0"

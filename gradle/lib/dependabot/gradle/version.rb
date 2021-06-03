@@ -21,14 +21,14 @@ module Dependabot
         "b" => 2, "beta"      => 2,
         "m" => 3, "milestone" => 3,
         "rc" => 4, "cr" => 4, "pr" => 4,
-        "snapshot" => 5,
+        "snapshot" => 5, "dev" => 5,
         "ga" => 6, "" => 6, "final" => 6,
         "sp" => 7
       }.freeze
       VERSION_PATTERN =
         "[0-9a-zA-Z]+"\
         '(?>\.[0-9a-zA-Z]*)*'\
-        '([_-][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
 
       def self.correct?(version)

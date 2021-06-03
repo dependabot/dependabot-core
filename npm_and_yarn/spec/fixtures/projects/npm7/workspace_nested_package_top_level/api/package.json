@@ -1,0 +1,9 @@
+{
+	"name": "api-test",
+	"version": "0.0.0",
+	"homepage": "https://github.com/dependabot/test",
+	"description": "Test",
+	"dependencies": {
+		"uuid": "^8.3.2"
+	}
+}

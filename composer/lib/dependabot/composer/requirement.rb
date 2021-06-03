@@ -44,9 +44,9 @@ module Dependabot
 
         if req_string.start_with?("*", "x") then ">= 0"
         elsif req_string.include?("*") then convert_wildcard_req(req_string)
-        elsif req_string.include?(".x") then convert_wildcard_req(req_string)
-        elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
+        elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
+        elsif req_string.include?(".x") then convert_wildcard_req(req_string)
         elsif req_string.match?(/\s-\s/) then convert_hyphen_req(req_string)
         else req_string
         end
@@ -68,7 +68,7 @@ module Dependabot
       end
 
       def convert_caret_req(req_string)
-        version = req_string.gsub(/^\^/, "")
+        version = req_string.gsub(/^\^/, "").gsub("x-dev", "0")
         parts = version.split(".")
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =

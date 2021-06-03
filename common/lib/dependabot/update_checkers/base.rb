@@ -9,12 +9,14 @@ module Dependabot
     class Base
       attr_reader :dependency, :dependency_files, :repo_contents_path,
                   :credentials, :ignored_versions, :raise_on_ignored,
-                  :security_advisories, :requirements_update_strategy
+                  :security_advisories, :requirements_update_strategy,
+                  :options
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                      credentials:, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil)
+                     requirements_update_strategy: nil,
+                     options: {})
         @dependency = dependency
         @dependency_files = dependency_files
         @repo_contents_path = repo_contents_path
@@ -23,6 +25,7 @@ module Dependabot
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
+        @options = options
       end
 
       def up_to_date?
@@ -35,7 +38,7 @@ module Dependabot
 
       def can_update?(requirements_to_unlock:)
         # Can't update if all versions are being ignored
-        return false if ignore_reqs.include?(requirement_class.new(">= 0"))
+        return false if ignore_requirements.include?(requirement_class.new(">= 0"))
 
         if dependency.version
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
@@ -136,6 +139,10 @@ module Dependabot
 
         version = version_class.new(dependency.version)
         security_advisories.any? { |a| a.vulnerable?(version) }
+      end
+
+      def ignore_requirements
+        ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
       end
 
       private
@@ -292,10 +299,6 @@ module Dependabot
         return false if changed_requirements.none?
 
         changed_requirements.none? { |r| r[:requirement] == :unfixable }
-      end
-
-      def ignore_reqs
-        ignored_versions.map { |req| requirement_class.new(req.split(",")) }
       end
     end
   end

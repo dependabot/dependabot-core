@@ -1,0 +1,23 @@
+GIT
+  remote: https://github.com/dependabot-fixtures/business
+  revision: d41e445215b5af70c1604715d97dd953e868380e
+  branch: bad_branch
+  specs:
+    business (1.10.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    prius (1.0.0)
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business!
+  prius (~> 1.0.0)
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   2.2.0.pre.2

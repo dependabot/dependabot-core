@@ -1,0 +1,11 @@
+{
+  "name": "dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "apollo-client": "2.3.5",
+    "graphql": "0.13.2",
+    "react": "16.6.0",
+    "react-apollo": "2.1.8"
+  }
+}

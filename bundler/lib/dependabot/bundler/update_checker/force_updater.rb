@@ -3,6 +3,7 @@
 require "dependabot/bundler/file_parser"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/native_helpers"
+require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/update_checker/requirements_updater"
 require "dependabot/errors"
@@ -18,7 +19,8 @@ module Dependabot
         def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                        credentials:, target_version:,
                        requirements_update_strategy:,
-                       update_multiple_dependencies: true)
+                       update_multiple_dependencies: true,
+                       options:)
           @dependency                   = dependency
           @dependency_files             = dependency_files
           @repo_contents_path           = repo_contents_path
@@ -26,6 +28,7 @@ module Dependabot
           @target_version               = target_version
           @requirements_update_strategy = requirements_update_strategy
           @update_multiple_dependencies = update_multiple_dependencies
+          @options                      = options
         end
 
         def updated_dependencies
@@ -35,7 +38,8 @@ module Dependabot
         private
 
         attr_reader :dependency, :dependency_files, :repo_contents_path,
-                    :credentials, :target_version, :requirements_update_strategy
+                    :credentials, :target_version, :requirements_update_strategy,
+                    :options
 
         def update_multiple_dependencies?
           @update_multiple_dependencies
@@ -43,8 +47,8 @@ module Dependabot
 
         def force_update
           in_a_native_bundler_context(error_handling: false) do |tmp_dir|
-            updated_deps, specs = SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
+            updated_deps, specs = NativeHelpers.run_bundler_subprocess(
+              bundler_version: bundler_version,
               function: "force_update",
               args: {
                 dir: tmp_dir,
@@ -53,7 +57,6 @@ module Dependabot
                 credentials: credentials,
                 gemfile_name: gemfile.name,
                 lockfile_name: lockfile.name,
-                using_bundler2: using_bundler2?,
                 update_multiple_dependencies: update_multiple_dependencies?
               }
             )
@@ -141,10 +144,8 @@ module Dependabot
           File.write(lockfile.name, sanitized_lockfile_body) if lockfile
         end
 
-        def using_bundler2?
-          return unless lockfile
-
-          lockfile.content.match?(/BUNDLED WITH\s+2/m)
+        def bundler_version
+          @bundler_version ||= Helpers.bundler_version(lockfile)
         end
       end
     end

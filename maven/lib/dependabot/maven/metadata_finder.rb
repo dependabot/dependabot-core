@@ -6,6 +6,7 @@ require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/utils/auth_headers_finder"
 
 module Dependabot
   module Maven
@@ -104,7 +105,7 @@ module Dependabot
           "#{dependency.version}/"\
           "#{dependency_artifact_id}-#{dependency.version}.pom",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -135,7 +136,7 @@ module Dependabot
         response = Excon.get(
           substitute_properties_in_source_url(url, pom),
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_details)
+          **SharedHelpers.excon_defaults(headers: auth_headers)
         )
 
         Nokogiri::XML(response.body)
@@ -156,21 +157,8 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
-      def auth_details
-        cred =
-          credentials.select { |c| c["type"] == "maven_repository" }.
-          find do |c|
-            cred_url = c.fetch("url").gsub(%r{/+$}, "")
-            next false unless cred_url == maven_repo_url
-
-            c.fetch("username", nil)
-          end
-
-        return {} unless cred
-
-        token = cred.fetch("username") + ":" + cred.fetch("password")
-        encoded_token = Base64.encode64(token).delete("\n")
-        { "Authorization" => "Basic #{encoded_token}" }
+      def auth_headers
+        @auth_headers ||= Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
       end
     end
   end

@@ -8,6 +8,14 @@ module Dependabot
     class Azure
       class NotFound < StandardError; end
 
+      class InternalServerError < StandardError; end
+
+      class ServiceNotAvailable < StandardError; end
+
+      class BadGateway < StandardError; end
+
+      RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
+
       MAX_PR_DESCRIPTION_LENGTH = 3999
 
       #######################
@@ -27,10 +35,11 @@ module Dependabot
       # Client #
       ##########
 
-      def initialize(source, credentials)
+      def initialize(source, credentials, max_retries: 3)
         @source = source
         @credentials = credentials
         @auth_header = auth_header_for(credentials&.fetch("token", nil))
+        @max_retries = max_retries || 3
       end
 
       def fetch_commit(_repo, branch)
@@ -38,6 +47,8 @@ module Dependabot
           source.organization + "/" + source.project +
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/stats/branches?name=" + branch)
+
+        raise NotFound if response.status == 400
 
         JSON.parse(response.body).fetch("commit").fetch("commitId")
       end
@@ -172,18 +183,51 @@ module Dependabot
           "/_apis/git/repositories/" + source.unscoped_repo +
           "/pullrequests?api-version=5.0", content.to_json)
       end
+
+      def pull_request(pull_request_id)
+        response = get(source.api_endpoint +
+          source.organization + "/" + source.project +
+          "/_apis/git/pullrequests/" + pull_request_id)
+
+        JSON.parse(response.body)
+      end
+
+      def update_ref(branch_name, old_commit, new_commit)
+        content = [
+          {
+            name: "refs/heads/" + branch_name,
+            oldObjectId: old_commit,
+            newObjectId: new_commit
+          }
+        ]
+
+        response = post(source.api_endpoint + source.organization + "/" + source.project +
+                        "/_apis/git/repositories/" + source.unscoped_repo +
+                        "/refs?api-version=5.0", content.to_json)
+
+        JSON.parse(response.body).fetch("value").first
+      end
       # rubocop:enable Metrics/ParameterLists
 
       def get(url)
-        response = Excon.get(
-          url,
-          user: credentials&.fetch("username", nil),
-          password: credentials&.fetch("password", nil),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(
-            headers: auth_header
+        response = nil
+
+        retry_connection_failures do
+          response = Excon.get(
+            url,
+            user: credentials&.fetch("username", nil),
+            password: credentials&.fetch("password", nil),
+            idempotent: true,
+            **SharedHelpers.excon_defaults(
+              headers: auth_header
+            )
           )
-        )
+
+          raise InternalServerError if response.status == 500
+          raise BadGateway if response.status == 502
+          raise ServiceNotAvailable if response.status == 503
+        end
+
         raise NotFound if response.status == 404
 
         response
@@ -210,6 +254,17 @@ module Dependabot
       end
 
       private
+
+      def retry_connection_failures
+        retry_attempt = 0
+
+        begin
+          yield
+        rescue *RETRYABLE_ERRORS
+          retry_attempt += 1
+          retry_attempt <= @max_retries ? retry : raise
+        end
+      end
 
       def auth_header_for(token)
         return {} unless token

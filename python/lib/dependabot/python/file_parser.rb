@@ -36,12 +36,15 @@ module Dependabot
       ).freeze
 
       def parse
+        # TODO: setup.py from external dependencies is evaluated. Provide guards before removing this.
+        raise Dependabot::UnexpectedExternalCode if @reject_external_code
+
         dependency_set = DependencySet.new
 
         dependency_set += pipenv_dependencies if pipfile
         dependency_set += poetry_dependencies if using_poetry?
         dependency_set += requirement_dependencies if requirement_files.any?
-        dependency_set += setup_file_dependencies if setup_file
+        dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
 
         dependency_set.dependencies
       end
@@ -204,8 +207,9 @@ module Dependabot
         return if pipfile
         return if pyproject
         return if setup_file
+        return if setup_cfg_file
 
-        raise "No requirements.txt or setup.py!"
+        raise "Missing required files!"
       end
 
       def pipfile
@@ -243,6 +247,10 @@ module Dependabot
 
       def setup_file
         @setup_file ||= get_original_file("setup.py")
+      end
+
+      def setup_cfg_file
+        @setup_cfg_file ||= get_original_file("setup.cfg")
       end
 
       def pip_compile_files

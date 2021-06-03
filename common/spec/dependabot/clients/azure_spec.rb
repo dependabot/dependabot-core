@@ -66,6 +66,18 @@ RSpec.describe Dependabot::Clients::Azure do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
+
+    context "when response is 400" do
+      before do
+        stub_request(:get, branch_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 400)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
   end
 
   describe "#create_commit" do
@@ -127,6 +139,77 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
+  describe "#pull_request" do
+    subject { client.pull_request(pull_request_id) }
+
+    let(:pull_request_id) { "1" }
+    let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
+
+    context "when response is 200" do
+      response_body = fixture("azure", "pull_request_details.json")
+
+      before do
+        stub_request(:get, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 200, body: response_body)
+      end
+
+      specify { expect { subject }.to_not raise_error }
+
+      it { is_expected.to eq(JSON.parse(response_body)) }
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:get, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
+  describe "#update_ref" do
+    subject(:update_ref) do
+      client.update_ref(
+        branch,
+        old_commit_id,
+        new_commit_id
+      )
+    end
+
+    let(:old_commit_id) { "oldcommitsha" }
+    let(:new_commit_id) { "newcommitsha" }
+    let(:update_ref_url) { repo_url + "/refs?api-version=5.0" }
+
+    it "sends update branch request with old and new commit id" do
+      stub_request(:post, update_ref_url).
+        with(basic_auth: [username, password]).
+        to_return(status: 200, body: fixture("azure", "update_ref.json"))
+
+      update_ref
+
+      expect(WebMock).
+        to(
+          have_requested(:post, update_ref_url).
+            with do |req|
+              json_body = JSON.parse(req.body)
+              expect(json_body.count).to eq(1)
+              ref_update_details = json_body.first
+              expect(ref_update_details.fetch("name")).
+                to eq("refs/heads/#{branch}")
+              expect(ref_update_details.fetch("oldObjectId")).
+                to eq(old_commit_id)
+              expect(ref_update_details.fetch("newObjectId")).
+                to eq(new_commit_id)
+            end
+        )
+    end
+  end
+
   describe "#get" do
     context "Using auth headers" do
       token = ":test_token"
@@ -172,6 +255,27 @@ RSpec.describe Dependabot::Clients::Azure do
       include_examples "#get using auth headers", basic_non_encoded_token_data
       include_examples "#get using auth headers", basic_encoded_token_data
       include_examples "#get using auth headers", bearer_token_data
+    end
+
+    context "Retries" do
+      it "with failure count <= max_retries" do
+        # Request succeeds (200) on second attempt.
+        stub_request(:get, base_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 502 }, { status: 200 })
+
+        response = client.get(base_url)
+        expect(response.status).to eq(200)
+      end
+
+      it "with failure count > max_retries raises error" do
+        #  Request fails (503) multiple times and exceeds max_retry limit
+        stub_request(:get, base_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 503 }, { status: 503 }, { status: 503 })
+
+        expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
+      end
     end
   end
 end

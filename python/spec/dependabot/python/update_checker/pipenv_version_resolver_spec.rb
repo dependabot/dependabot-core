@@ -5,8 +5,7 @@ require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/python/update_checker/pipenv_version_resolver"
 
-namespace = Dependabot::Python::UpdateChecker
-RSpec.describe namespace::PipenvVersionResolver do
+RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
   let(:resolver) do
     described_class.new(
       dependency: dependency,
@@ -141,10 +140,10 @@ RSpec.describe namespace::PipenvVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to eq(
+            expect(error.message).to start_with(
               "pipenv.patched.notpip._internal.exceptions."\
               "UnsupportedPythonVersion: futures requires Python '>=2.6, <3' "\
-              "but the running Python is 3.7.9"
+              "but the running Python is 3."
             )
           end
       end
@@ -255,7 +254,7 @@ RSpec.describe namespace::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.9.0, 3.8.6, 3.8.5")
+                to include("supported in Dependabot: 3.9.4, 3.9.3, 3.9.2")
             end
         end
       end

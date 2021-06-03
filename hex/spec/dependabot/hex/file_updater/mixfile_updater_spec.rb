@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: "v1.3.0"
             }
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: "v1.2.0"
             }
@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileUpdater do
       it "updates the right dependency" do
         expect(updated_mixfile_content).to include(%({:plug, "1.3.3"},))
         expect(updated_mixfile_content).to include(
-          %({:phoenix, github: "phoenixframework/phoenix", ref: "v1.3.0"})
+          %({:phoenix, github: "dependabot-fixtures/phoenix", ref: "v1.3.0"})
         )
       end
     end

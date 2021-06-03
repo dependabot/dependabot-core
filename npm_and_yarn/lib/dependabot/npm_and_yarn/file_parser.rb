@@ -20,11 +20,6 @@ module Dependabot
 
       DEPENDENCY_TYPES =
         %w(dependencies devDependencies optionalDependencies).freeze
-      CENTRAL_REGISTRIES = %w(
-        https://registry.npmjs.org
-        http://registry.npmjs.org
-        https://registry.yarnpkg.com
-      ).freeze
       GIT_URL_REGEX = %r{
         (?<git_prefix>^|^git.*?|^github:|^bitbucket:|^gitlab:|github\.com/)
         (?<username>[a-z0-9-]+)/
@@ -252,10 +247,9 @@ module Dependabot
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
-        return if CENTRAL_REGISTRIES.any? { |u| resolved_url.start_with?(u) }
         return if resolved_url.match?(/(?<!pkg\.)github/)
 
-        private_registry_source_for(resolved_url, name)
+        registry_source_for(resolved_url, name)
       end
 
       def requirement_for(requirement)
@@ -287,7 +281,7 @@ module Dependabot
         }
       end
 
-      def private_registry_source_for(resolved_url, name)
+      def registry_source_for(resolved_url, name)
         url =
           if resolved_url.include?("/~/")
             # Gemfury format
@@ -295,7 +289,9 @@ module Dependabot
           elsif resolved_url.include?("/#{name}/-/#{name}")
             # MyGet / Bintray format
             resolved_url.split("/#{name}/-/#{name}").first.
-              gsub("dl.bintray.com//", "api.bintray.com/npm/")
+              gsub("dl.bintray.com//", "api.bintray.com/npm/").
+              # GitLab format
+              gsub(%r{\/projects\/\d+}, "")
           elsif resolved_url.include?("/#{name}/-/#{name.split('/').last}")
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first
@@ -303,7 +299,7 @@ module Dependabot
           else resolved_url.split("/")[0..2].join("/")
           end
 
-        { type: "private_registry", url: url }
+        { type: "registry", url: url }
       end
 
       def url_for_relevant_cred(resolved_url)
