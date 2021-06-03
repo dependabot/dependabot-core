@@ -538,8 +538,70 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           DEP
         )
       end
+    end
+
+    context "with a versions.tf file" do
+      let(:files) { project_dependency_files("lockfile") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.40.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.40.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          ),
+          Dependabot::Dependency.new(
+            name: "hashicorp/random",
+            version: "3.0",
+            previous_version: "2.0",
+            requirements: [{
+              requirement: "3.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/random"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "2.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/random"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
 
       it "updates the `.terraform.lock.hcl` file" do
+
         lock_file = subject.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(lock_file.content).to eql(fixture("projects/lockfile/.terraform.lock.hcl.expected"))
@@ -600,5 +662,6 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
   end
 end
