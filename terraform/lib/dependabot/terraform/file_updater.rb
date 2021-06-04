@@ -18,14 +18,16 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
         
-        [*terraform_files, *terragrunt_files, *lock_file].each do |file|
+        [*terraform_files, *terragrunt_files].each do |file|
           next unless file_changed?(file)
           
           updated_content = updated_terraform_file_content(file)
-          raise "Content didn't change!" if updated_content == file.content
+
+          raise "Content didn't change!" if !lockfile_changed? || updated_content == file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
+        updated_files << update_lockfile_declaration(dependency)
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
@@ -54,8 +56,6 @@ module Dependabot
             update_registry_declaration(new_req, old_req, content)
           when "provider"
             update_registry_declaration(new_req, old_req, content)
-          when "lockfile"
-            update_lockfile_declaration(new_req, old_req, content, file.name)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\
                   "declaration!"
@@ -88,12 +88,14 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration(new_req, old_req, updated_content, filename)
-        return unless lock_file?(filename)
+      def update_lockfile_declaration(dependency)
+        new_req = dependency.requirements.first
+        lockfile = lock_file.first
+        content = lockfile.content.dup
 
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
-        lockfile_dependency_removed = updated_content.sub(declaration_regex, "")
+        lockfile_dependency_removed = content.sub(declaration_regex, "")
 
         copy_dir_to_temporary_directory do
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
@@ -102,9 +104,24 @@ module Dependabot
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
 
-          updated_content.sub!(declaration_regex, updated_dependency)
+          # Terraform will occasionally update h1 hashes without updating the version of the dependency
+          # Here we make sure the dependency's version actually changes in the lockfile
+          unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) == 
+              content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
+            content.sub!(declaration_regex, updated_dependency)
+          end
         end
 
+        updated_file(file: lockfile, content: content)
+      end
+
+      def lockfile_changed?
+        return false unless dependency.requirements.first[:source][:type] == "provider"
+
+        content = lock_file.first.content
+        updated_content = update_lockfile_declaration(dependency)
+
+        !(updated_content.content == content)
       end
 
       def dependency
