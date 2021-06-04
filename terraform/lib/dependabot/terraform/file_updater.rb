@@ -4,6 +4,7 @@ require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
+require "dependabot/shared_helpers"
 
 module Dependabot
   module Terraform
@@ -16,23 +17,22 @@ module Dependabot
 
       def updated_dependency_files
         updated_files = []
-
-        [*terraform_files, *terragrunt_files].each do |file|
-          next unless file_changed?(file)
+        
+        [*terraform_files, *terragrunt_files, *lock_file].each do |file|
+          #next unless file_changed?(file)
 
           updated_content = updated_terraform_file_content(file)
           raise "Content didn't change!" if updated_content == file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        updated_files << updated_lock_file
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
 
         updated_files
       end
-
+      
       private
 
       def updated_terraform_file_content(file)
@@ -41,7 +41,7 @@ module Dependabot
         reqs = dependency.requirements.zip(dependency.previous_requirements).
                reject { |new_req, old_req| new_req == old_req }
 
-        # Loop through each changed requirement and update the files
+        # Loop through each changed requirement and update the files and lockfile
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == old_req[:file]
           next unless new_req.fetch(:file) == file.name
@@ -55,19 +55,12 @@ module Dependabot
             raise "Don't know how to update a #{new_req[:source][:type]} "\
                   "declaration!"
           end
+
+          next unless lock_file?
+          update_lockfile_declaration(new_req, content)
         end
 
         content
-      end
-
-      def updated_lock_file
-        return unless lock_file?
-
-        within_repo do
-          system "terraform init -upgrade"
-
-          return updated_file(file: lock_file, content: IO.read(".terraform.lock.hcl"))
-        end
       end
 
       def update_git_declaration(new_req, old_req, updated_content, filename)
@@ -90,6 +83,17 @@ module Dependabot
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
           end
+        end
+      end
+
+      def update_lockfile_declaration(new_req, updated_content)
+        provider_source = new_req.fetch(:source)[:url].gsub(%r{^https://}, "")
+        puts provider_source
+
+        SharedHelpers.in_a_temporary_directory do
+          system "terraform providers lock #{provider_source}"
+
+          return updated_file(file: lock_file, content: IO.read(".terraform.lock.hcl"))
         end
       end
 
@@ -144,14 +148,6 @@ module Dependabot
         source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
       end
 
-      def within_repo
-        SharedHelpers.in_a_temporary_directory do
-          dependency_files.each do |file|
-            IO.write(file.name, file.content)
-          end
-          yield
-        end
-      end
     end
   end
 end
