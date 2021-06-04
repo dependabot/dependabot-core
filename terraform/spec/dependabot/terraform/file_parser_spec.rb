@@ -178,11 +178,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(subject[0].name).to eq("hashicorp/http")
         expect(subject[0].version).to eq("2.1.0")
         expect(subject[0].requirements).to eq([{
-          requirement: "2.1.0",
+          requirement: "~> 2.0",
           groups: [],
-          file: ".terraform.lock.hcl",
+          file: "main.tf",
           source: {
-            type: "lockfile",
+            type: "provider",
             registry_hostname: "registry.terraform.io",
             module_identifier: "hashicorp/http"
           }

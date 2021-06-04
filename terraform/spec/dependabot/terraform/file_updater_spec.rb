@@ -650,21 +650,21 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         expect(actual_lockfile.content).to include(
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
-              version     = "3.43.0"
+              version     = "3.44.0"
               constraints = ">= 3.37.0"
               hashes = [
-                "h1:mXkfjIt8kZLnCUT3ej118IMCO6aKZgHjszO/NY4Zji8=",
-                "zh:1496d971301216bfd27aada08f83315748972a50782c3c7a998212d733a8bd4f",
-                "zh:3f43fd130eaf6ff82d713add40d38a526e978975e9517defabb32fe056a32371",
-                "zh:52db549bf4d77235beb01c7bba72d577aa141a812cc1045a2808b40d2262fc3d",
-                "zh:5ebdcedc4057d65e2d5689d15534eb8b4d175d8138952a298fba1c3e881c01c5",
-                "zh:6264aacffd2caf82eabde2f3298cfed44377a2839dd88c67c860b83589c15129",
-                "zh:759a6993c6692fd19ae83add4fd11c6be4e74adb5e7a02baff278386d4a89990",
-                "zh:8a5975e90215a6c7af4eddf6fcdffb8e4aab4ff7885409728d78fff6c9e37235",
-                "zh:8dd00c37cf496487066129ed19a0f7eae090cef333251789d945bc35c1723ab6",
-                "zh:a0b615859497deeb95d09336a4a0c87e3687092188950b029434f742928fd299",
-                "zh:e7d588099ec1868fd419cce7dc54c717816d3cb2206cc9564b6ace2a82d14f79",
-                "zh:faf8443d3f87fc41d20a5867c5efecaa2c56d97b83c8f30c485c3b5dd4b7a226",
+                "h1:hxQ8n9SHHfAIXd/FtfAqxokFYWBedzZf7xqQZWJajUs=",
+                "zh:0680315b29a140e9b7e4f5aeed3f2445abdfab31fc9237f34dcad06de4f410df",
+                "zh:13811322a205fb4a0ee617f0ae51ec94176befdf569235d0c7064db911f0acc7",
+                "zh:25e427a1cfcb1d411bc12040cf0684158d094416ecf18889a41196bacc761729",
+                "zh:40cd6acd24b060823f8d116355d8f844461a11925796b1757eb2ee18abc0bc7c",
+                "zh:94e2463eef555c388cd27f6e85ad803692d6d80ffa621bdc382ab119001d4de4",
+                "zh:aadc3bc216b14839e85b463f07b8507920ace5f202a608e4a835df23711c8a0d",
+                "zh:ab50dc1242af5a8fcdb18cf89beeaf2b2146b51ecfcecdbea033913a5f4c1c14",
+                "zh:ad48bbf4af66b5d48ca07c5c558d2f5724311db4dd943c1c98a7f3f107e03311",
+                "zh:ad76796c2145a7aaec1970a5244f5c0a9d200556121e2c5b382f296597b1a03c",
+                "zh:cf0a2181356598f8a2abfeaf0cdf385bdeea7f2e52821c850a2a08b60c26b9f6",
+                "zh:f76801af6bc34fe4a5bf1c63fa0204e24b81691049efecd6baa1526593f03935",
               ]
             }
           DEP
