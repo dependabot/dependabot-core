@@ -8,7 +8,7 @@ jobs:
     if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
       - name: Check the pull request is unedited, verified and from Dependabot
-        uses: dependabot/fetch-metadata@v1.0.2
+        uses: dependabot/fetch-metadata@v1.0.3
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Enable auto-merge for Dependabot PRs
