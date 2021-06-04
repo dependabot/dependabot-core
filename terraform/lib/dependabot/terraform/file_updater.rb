@@ -53,6 +53,7 @@ module Dependabot
             update_registry_declaration(new_req, old_req, content)
           when "provider"
             update_registry_declaration(new_req, old_req, content)
+          when "lockfile"
             update_lockfile_declaration(new_req, old_req, content)
           else
             raise "Don't know how to update a #{new_req[:source][:type]} "\
@@ -87,18 +88,18 @@ module Dependabot
       end
 
       def update_lockfile_declaration(new_req, old_req, updated_content)
-        return unless lock_file?
+        return unless lock_file?(filename)
 
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        declaration_regex = lockfile_declaration_regex(provider_source)
 
-        SharedHelpers.in_a_temporary_directory do
-          debugger
-          dependency_files.each do |file|
-            IO.write(file.name, file.content)
-          end
+        copy_dir_to_temporary_directory do
+          updated_content.sub!(declaration_regex, "")
+          
           system "terraform providers lock #{provider_source}"
-          return updated_file(file: lock_file, content: IO.read(".terraform.lock.hcl"))
+          return File.read(".terraform.lock.hcl")
         end
+
       end
 
       def dependency
@@ -150,6 +151,25 @@ module Dependabot
       def registry_host_for(dependency)
         source = dependency.requirements.map { |r| r[:source] }.compact.first
         source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
+      end
+
+      def lockfile_declaration_regex(provider_source)
+        /
+          (?:(?!^\}).)*
+          provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
+          (?:(?!^\}).)*}
+        /mx
+      end
+
+      def copy_dir_to_temporary_directory
+        SharedHelpers.in_a_temporary_directory do
+          dependency_files.each do |file|
+            # Do not include the .terraform directory or .terraform.lock.hcl
+            next if file.name.include?(".terraform")
+            File.write(file.name, file.content)
+          end
+          yield
+        end
       end
 
     end
