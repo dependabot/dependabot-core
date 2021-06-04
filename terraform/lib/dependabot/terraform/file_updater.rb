@@ -17,32 +17,29 @@ module Dependabot
 
       def updated_dependency_files
         updated_files = []
-        
+
         [*terraform_files, *terragrunt_files].each do |file|
           next unless file_changed?(file)
-          
+
           updated_content = updated_terraform_file_content(file)
 
           raise "Content didn't change!" unless lockfile_changed? || updated_content != file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        
-        unless lock_file.empty?
-          updated_files << update_lockfile_declaration(dependency)
-        end
+
+        updated_files << update_lockfile_declaration(dependency) unless lock_file.empty?
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
 
         updated_files
       end
-      
+
       private
 
       def updated_terraform_file_content(file)
         content = file.content.dup
-
 
         reqs = dependency.requirements.zip(dependency.previous_requirements).
                reject { |new_req, old_req| new_req == old_req }
@@ -55,7 +52,7 @@ module Dependabot
           case new_req[:source][:type]
           when "git"
             update_git_declaration(new_req, old_req, content, file.name)
-          when "registry" 
+          when "registry"
             update_registry_declaration(new_req, old_req, content)
           when "provider"
             update_registry_declaration(new_req, old_req, content)
@@ -109,8 +106,8 @@ module Dependabot
 
           # Terraform will occasionally update h1 hashes without updating the version of the dependency
           # Here we make sure the dependency's version actually changes in the lockfile
-          unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) == 
-              content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
+          unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) ==
+                 content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
             content.sub!(declaration_regex, updated_dependency)
           end
         end
@@ -124,7 +121,7 @@ module Dependabot
         content = lock_file.first.content
         updated_content = update_lockfile_declaration(dependency)
 
-        !(updated_content.content == content)
+        updated_content.content != content
       end
 
       def dependency
@@ -191,12 +188,12 @@ module Dependabot
           dependency_files.each do |file|
             # Do not include the .terraform directory or .terraform.lock.hcl
             next if file.name.include?(".terraform")
+
             File.write(file.name, file.content)
           end
           yield
         end
       end
-
     end
   end
 end

@@ -432,7 +432,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-   context "with a required provider" do
+    context "with a required provider" do
       let(:files) { project_dependency_files("registry_provider") }
 
       let(:dependencies) do
@@ -539,7 +539,6 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
-    
 
     context "with a versions file" do
       let(:files) { project_dependency_files("versions_file") }
@@ -618,7 +617,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             package_manager: "terraform"
-          ),
+          )
         ]
       end
 
@@ -639,10 +638,9 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
                   version = ">= 3.37.0"
                 }
               }
-            DEP
-          )
+          DEP
+        )
       end
-
 
       it "updates the aws requirement in the lockfile" do
         actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
@@ -672,7 +670,6 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       it "does not update the http requirement in the lockfile" do
-
         actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
 
         expect(actual_lockfile.content).to include(
@@ -753,6 +750,5 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
-
   end
 end

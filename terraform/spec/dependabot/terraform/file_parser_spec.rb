@@ -169,7 +169,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
     context "with a pessimistic constraint and a lockfile" do
       let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
-      
+
       it "parses the lockfile" do
         expect(subject.length).to eq(1)
       end
