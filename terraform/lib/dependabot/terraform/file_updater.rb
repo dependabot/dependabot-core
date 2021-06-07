@@ -89,32 +89,37 @@ module Dependabot
       end
 
       def update_lockfile_declaration(dependency)
-        new_req = dependency.requirements.first
-        lockfile = lock_file.first
-        content = lockfile.content.dup
+        @updated_lockfile_declarations ||= {}
+        @updated_lockfile_declarations[dependency] ||= 
+          begin
+            new_req = dependency.requirements.first
+            lockfile = lock_file.first
+            content = lockfile.content.dup
 
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
-        declaration_regex = lockfile_declaration_regex(provider_source)
-        lockfile_dependency_removed = content.sub(declaration_regex, "")
+            provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+            declaration_regex = lockfile_declaration_regex(provider_source)
+            lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        SharedHelpers.in_a_temporary_directory do 
-          write_dependency_files
+            SharedHelpers.in_a_temporary_directory do 
+              write_dependency_files
 
-          File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
+              File.write(".terraform.lock.hcl", lockfile_dependency_removed)
+              SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
 
-          updated_lockfile = File.read(".terraform.lock.hcl")
-          updated_dependency = updated_lockfile.scan(declaration_regex).first
+              updated_lockfile = File.read(".terraform.lock.hcl")
+              updated_dependency = updated_lockfile.scan(declaration_regex).first
 
-          # Terraform will occasionally update h1 hashes without updating the version of the dependency
-          # Here we make sure the dependency's version actually changes in the lockfile
-          unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) ==
-                 content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
-            content.sub!(declaration_regex, updated_dependency)
+              # Terraform will occasionally update h1 hashes without updating the version of the dependency
+              # Here we make sure the dependency's version actually changes in the lockfile
+              unless updated_dependency.scan(declaration_regex).first.scan(/^\s*version\s*=.*/) ==
+                     content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
+                content.sub!(declaration_regex, updated_dependency)
+              end
+            end
+
+            @updated_lockfile_declarations[dependency] = updated_file(file: lockfile, content: content)
           end
-        end
-
-        updated_file(file: lockfile, content: content)
+        @updated_lockfile_declarations[dependency]
       end
 
       def write_dependency_files 
