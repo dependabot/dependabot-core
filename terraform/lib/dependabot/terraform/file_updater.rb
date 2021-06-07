@@ -19,7 +19,7 @@ module Dependabot
         updated_files = []
 
         [*terraform_files, *terragrunt_files].each do |file|
-          next unless file_changed?(file) || lock_file?(file.name) 
+          next unless file_changed?(file) || lock_file?(file.name)
 
           updated_content = updated_terraform_file_content(file)
 
@@ -90,7 +90,7 @@ module Dependabot
 
       def update_lockfile_declaration(dependency)
         @updated_lockfile_declarations ||= {}
-        @updated_lockfile_declarations[dependency] ||= 
+        @updated_lockfile_declarations[dependency] ||=
           begin
             new_req = dependency.requirements.first
             lockfile = lock_file.first
@@ -100,7 +100,7 @@ module Dependabot
             declaration_regex = lockfile_declaration_regex(provider_source)
             lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-            SharedHelpers.in_a_temporary_directory do 
+            SharedHelpers.in_a_temporary_directory do
               write_dependency_files
 
               File.write(".terraform.lock.hcl", lockfile_dependency_removed)
@@ -122,7 +122,7 @@ module Dependabot
         @updated_lockfile_declarations[dependency]
       end
 
-      def write_dependency_files 
+      def write_dependency_files
         dependency_files.each do |file|
           # Do not include the .terraform directory or .terraform.lock.hcl
           next if file.name.include?(".terraform")
@@ -198,7 +198,6 @@ module Dependabot
           (?:(?!^\}).)*}
         /mx
       end
-
     end
   end
 end
