@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/phoenixframework/phoenix.git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
             branch: "master",
             ref: nil
           }
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::RequirementsUpdater do
       let(:updated_source) do
         {
           type: "git",
-          url: "https://github.com/phoenixframework/phoenix.git",
+          url: "https://github.com/dependabot-fixtures/phoenix.git",
           branch: "master",
           ref: nil
         }

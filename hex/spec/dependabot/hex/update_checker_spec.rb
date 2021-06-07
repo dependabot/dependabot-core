@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/phoenixframework/phoenix.git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
             branch: "master",
             ref: "v1.2.0"
           }
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       before do
-        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_url = "https://github.com/dependabot-fixtures/phoenix.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
@@ -382,7 +382,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: ref
             }
@@ -393,7 +393,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           let(:ref) { "v1.2.0" }
 
           before do
-            git_url = "https://github.com/phoenixframework/phoenix.git"
+            git_url = "https://github.com/dependabot-fixtures/phoenix.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -552,7 +552,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: ref
             }
@@ -639,7 +639,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/phoenixframework/phoenix.git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
             branch: "master",
             ref: "v1.2.0"
           }
@@ -647,7 +647,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       before do
-        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_url = "https://github.com/dependabot-fixtures/phoenix.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
@@ -667,7 +667,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: "v1.3.2"
             },
@@ -682,7 +682,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/phoenixframework/phoenix.git",
+                url: "https://github.com/dependabot-fixtures/phoenix.git",
                 branch: "master",
                 ref: "v1.3.2"
               }
