@@ -335,7 +335,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
             to eq("github:jonschlinkert/is-number#"\
-                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                  "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
           expect(updated_yarn_lock.content).to include(
             "is-number@jonschlinkert/is-number:"
@@ -357,7 +357,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             parsed_package_lock = JSON.parse(updated_npm_lock.content)
             expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
               to eq("git+https://github.com/jonschlinkert/is-number.git#"\
-                    "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                    "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
             expect(updated_yarn_lock.content).to include("is-number")
             expect(updated_yarn_lock.content).to include("0c6b15a88b")
@@ -436,7 +436,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 parsed_package_lock["dependencies"]["slick-carousel"]["version"]
               expect(npm_lockfile_version).
                 to eq("git://github.com/brianfryer/slick.git#"\
-                      "a2aa3fec335c50aceb58f6ef6d22df8e5f3238e1")
+                      "fc6f7d860844ad562df5b94b5918b58bab067751")
 
               expect(updated_yarn_lock.content).
                 to include('slick-carousel@git://github.com/brianfryer/slick":')
@@ -457,7 +457,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 parsed_package_lock["dependencies"]["is-number"]["version"]
               expect(npm_lockfile_version).
                 to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
-                      "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                      "98e8ff1da1a89f93d1397a24d7413ed15421c139")
 
               expect(updated_yarn_lock.content).to include("is-number")
               expect(updated_yarn_lock.content).to include("0c6b15a88bc")
@@ -1264,7 +1264,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_package_lock = JSON.parse(updated_npm_lock.content)
           expect(parsed_package_lock["dependencies"]["is-number"]["version"]).
             to eq("git+https://github.com/jonschlinkert/is-number.git#"\
-                  "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
+                  "98e8ff1da1a89f93d1397a24d7413ed15421c139")
         end
       end
 
