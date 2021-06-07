@@ -40,8 +40,6 @@ module Dependabot
       end
 
       def requirement_changed?(file, dependency)
-        return true if lock_file?(file.name)
-
         changed_requirements =
           dependency.requirements - dependency.previous_requirements
 
