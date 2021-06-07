@@ -1,3 +1,12 @@
+## v0.150.0, 7 June 2021
+
+- build(deps): bump composer/composer from 2.0.14 to 2.1.1 in /composer/helpers/v2
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps-dev): bump prettier in /npm_and_yarn/helpers
+- build(deps): bump dependabot/fetch-metadata from 1.0.2 to 1.0.3
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
 ## v0.149.5, 2 June 2021
 
 - build(deps): bump detect-indent in /npm_and_yarn/helpers
