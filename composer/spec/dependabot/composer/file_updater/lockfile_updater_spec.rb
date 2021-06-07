@@ -198,8 +198,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to include("You are using Composer 2, which some of "\
-                                           "your plugins seem to be incompatible with.")
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.1.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -261,8 +261,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to include("You are using Composer 2, which some of "\
-                                           "your plugins seem to be incompatible with.")
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.1.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
