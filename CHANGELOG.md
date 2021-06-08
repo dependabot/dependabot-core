@@ -1,3 +1,12 @@
+## v0.151.1, 7 June 2021
+
+fix(npm): Prevent unnecessary hash pinning in lock file constraint
+
+## v0.151.0, 7 June 2021
+
+- Pin erlang to OTP 23 until we can resolve OTP 24 warning issues
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
 ## v0.150.0, 7 June 2021
 
 - build(deps): bump composer/composer from 2.0.14 to 2.1.1 in /composer/helpers/v2
