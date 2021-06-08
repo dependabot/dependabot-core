@@ -28,7 +28,7 @@ module Dependabot
           updated_files << updated_file(file: file, content: updated_content)
         end
 
-        updated_files << update_lockfile_declaration(dependency) unless lock_file.empty?
+        updated_files << update_lockfile_declaration unless lock_file.empty?
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
@@ -86,7 +86,7 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration(dependency)
+      def update_lockfile_declaration
         @updated_lockfile_declarations ||= {}
         @updated_lockfile_declarations[dependency] ||=
           begin
@@ -133,7 +133,7 @@ module Dependabot
         return false unless dependency.requirements.first[:source][:type] == "provider" && !lock_file.empty?
 
         content = lock_file.first.content
-        updated_content = update_lockfile_declaration(dependency)
+        updated_content = update_lockfile_declaration
 
         updated_content.content != content
       end
