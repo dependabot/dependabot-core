@@ -19,11 +19,11 @@ module Dependabot
         updated_files = []
 
         [*terraform_files, *terragrunt_files].each do |file|
-          next unless file_changed?(file) || lock_file?(file.name)
+          next unless file_changed?(file)
 
           updated_content = updated_terraform_file_content(file)
 
-          raise "Content didn't change!" unless lockfile_changed? || updated_content != file.content
+          raise "Content didn't change!" unless updated_content != file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
