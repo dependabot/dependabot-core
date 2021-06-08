@@ -28,7 +28,7 @@ module Dependabot
           updated_files << updated_file(file: file, content: updated_content)
         end
 
-        updated_files << update_lockfile_declaration unless lock_file.empty?
+        updated_files << update_lockfile_declaration 
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
@@ -87,6 +87,8 @@ module Dependabot
       end
 
       def update_lockfile_declaration
+        return if lock_file.empty?
+
         new_req = dependency.requirements.first
         lockfile = lock_file.first
         content = lockfile.content.dup
