@@ -27,7 +27,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |boom|
-          expect(boom.message).to eq("Invalid registry source specified: 'invalid/source/hashicorp/consul/aws'")
+          expect(boom.message).to eq("Invalid registry source specified: 'consul/aws'")
         end
       end
     end
