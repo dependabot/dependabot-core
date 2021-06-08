@@ -174,12 +174,6 @@ module Dependabot
         dependency_source_details.fetch(:type) == "provider"
       end
 
-      def lockfile_dependency?
-        return false if dependency_source_details.nil?
-
-        dependency_source_details.fetch(:type) == "lockfile"
-      end
-
       def dependency_source_details
         sources =
           dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
