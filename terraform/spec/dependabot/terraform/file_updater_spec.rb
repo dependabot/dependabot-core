@@ -588,6 +588,46 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    context "updating an up-to-date terraform project with a lockfile" do
+      let(:files) { project_dependency_files("up-to-date_lockfile") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: ".terraform.lock.hcl",
+            version: "3.44.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.44.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "raises an error" do
+        expect { subject }.to raise_error do |error|
+          expect(error.message).to eq("No files changed!")
+        end
+      end
+    end
+
     context "using versions.tf with a lockfile present" do
       let(:files) { project_dependency_files("lockfile") }
       let(:dependencies) do
