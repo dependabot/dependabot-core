@@ -23,7 +23,7 @@ module Dependabot
 
           updated_content = updated_terraform_file_content(file)
 
-          raise "Content didn't change!" unless updated_content != file.content
+          raise "Content didn't change!" if updated_content == file.content
 
           updated_files << updated_file(file: file, content: updated_content)
         end
