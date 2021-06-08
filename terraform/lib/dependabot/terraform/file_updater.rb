@@ -28,11 +28,11 @@ module Dependabot
           updated_files << updated_file(file: file, content: updated_content)
         end
         updated_lockfile_content = update_lockfile_declaration
-        if (updated_lockfile_content && lock_file.content != updated_lockfile_content)
+
+        if updated_lockfile_content && lock_file.content != updated_lockfile_content
           updated_files << updated_file(file: lock_file, content: updated_lockfile_content)
         end
 
-        #updated_files << update_lockfile_declaration 
         updated_files.compact!
 
         raise "No files changed!" if updated_files.none?
@@ -118,7 +118,6 @@ module Dependabot
         end
 
         content
-        #updated_file(file: lock_file, content: content)
       end
 
       def write_dependency_files
