@@ -87,11 +87,10 @@ module Dependabot
       end
 
       def update_lockfile_declaration
-        return if lock_file.empty?
+        return if lock_file.nil?
 
         new_req = dependency.requirements.first
-        lockfile = lock_file.first
-        content = lockfile.content.dup
+        content = lock_file.content.dup
 
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
@@ -114,7 +113,7 @@ module Dependabot
           end
         end
 
-        updated_file(file: lockfile, content: content)
+        updated_file(file: lock_file, content: content)
       end
 
       def write_dependency_files

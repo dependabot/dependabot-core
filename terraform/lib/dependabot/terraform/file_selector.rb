@@ -20,6 +20,6 @@ module FileSelector
   end
 
   def lock_file
-    dependency_files.select { |f| lock_file?(f.name) }
+    dependency_files.find { |f| lock_file?(f.name) }
   end
 end
