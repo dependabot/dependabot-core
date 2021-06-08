@@ -129,15 +129,6 @@ module Dependabot
         end
       end
 
-      def lockfile_changed?
-        return false unless dependency.requirements.first[:source][:type] == "provider" && !lock_file.empty?
-
-        content = lock_file.first.content
-        updated_content = update_lockfile_declaration
-
-        updated_content.content != content
-      end
-
       def dependency
         # Terraform updates will only ever be updating a single dependency
         dependencies.first
