@@ -141,19 +141,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
       let(:dependency_name) { "django" }
       let(:dependency_version) { "1.2.4" }
 
-      it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+      it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "and a python version specified" do
         subject { finder.latest_version(python_version: python_version) }
 
         context "that allows the latest version" do
           let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
-          it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+          it { is_expected.to eq(Gem::Version.new("3.2.4")) }
         end
 
         context "that forbids the latest version" do
           let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
-          it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+          it { is_expected.to eq(Gem::Version.new("1.11.29")) }
         end
       end
     end
@@ -548,7 +548,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:dependency_name) { "django" }
         let(:dependency_version) { "1.2.4" }
 
-        it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+        it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "and a python version specified" do
           subject do
@@ -557,12 +557,12 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
 
           context "that allows the latest version" do
             let(:python_version) { Dependabot::Python::Version.new("3.6.3") }
-            it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+            it { is_expected.to eq(Gem::Version.new("3.2.4")) }
           end
 
           context "that forbids the latest version" do
             let(:python_version) { Dependabot::Python::Version.new("2.7.11") }
-            it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+            it { is_expected.to eq(Gem::Version.new("1.11.29")) }
           end
         end
       end

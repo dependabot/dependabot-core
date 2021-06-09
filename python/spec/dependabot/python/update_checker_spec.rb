@@ -164,21 +164,21 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         end
         let(:pypi_url) { "https://pypi.org/simple/django/" }
         let(:dependency_name) { "django" }
-        let(:dependency_version) { "1.2.4" }
+        let(:dependency_version) { "2.2.0" }
         let(:dependency_requirements) do
           [{
             file: "requirements.txt",
-            requirement: "==1.2.4",
+            requirement: "==2.2.0",
             groups: [],
             source: nil
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+        it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "that disallows the latest version" do
-          let(:python_version_content) { "2.7.13\n" }
-          it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+          let(:python_version_content) { "3.5.3\n" }
+          it { is_expected.to eq(Gem::Version.new("2.2.24")) }
         end
       end
     end

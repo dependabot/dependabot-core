@@ -2,7 +2,7 @@ pip==20.3.3
 pip-tools==5.5.0
 flake8==3.9.2
 hashin==0.15.0
-pipenv==2018.11.26
+pipenv==2021.5.29
 pipfile==0.0.2
 poetry==1.1.6
 wheel==0.36.2
