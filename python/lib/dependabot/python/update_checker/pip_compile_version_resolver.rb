@@ -28,7 +28,8 @@ module Dependabot
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
           /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
-        NATIVE_COMPILATION_ERROR = "pip._internal.exceptions.InstallationError: Command errored out with exit status 1"
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -141,16 +142,16 @@ module Dependabot
             return nil
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
-          end
-
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
+          end
+
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
+                  named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
           end
 
           raise
