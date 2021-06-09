@@ -410,7 +410,7 @@ module Dependabot
         def pip_compile_options_from_compiled_file(requirements_file)
           options = ["--output-file=#{requirements_file.name}"]
 
-          options << "--no-index" unless requirements_file.content.include?("index-url http")
+          options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
 
           options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
 

@@ -392,22 +392,11 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
     end
 
     context "with a missing system libary" do
-      # NOTE: Attempt to update an unrelated dependency (tensorflow) to cause
+      # NOTE: Attempt to update an unrelated dependency (requests) to cause
       # resolution to fail for rtree which has a system dependency on
       # libspatialindex which isn't installed in dependabot-core's Dockerfile.
       let(:dependency_files) do
         project_dependency_files("pipenv/missing-system-library")
-      end
-      let(:updated_requirement) { "==2.3.1" }
-      let(:dependency_name) { "tensorflow" }
-      let(:dependency_version) { "2.1.0" }
-      let(:dependency_requirements) do
-        [{
-          file: "Pipfile",
-          requirement: "==2.1.0",
-          groups: ["default"],
-          source: nil
-        }]
       end
 
       it "raises a helpful error" do
