@@ -1,0 +1,8 @@
+{
+  "name": "example",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "turbo360": "latest"
+  }
+}

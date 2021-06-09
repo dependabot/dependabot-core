@@ -97,6 +97,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.up_to_date?).to be_truthy
       end
     end
+
+    context "with an indirect dependency that cannot be updated" do
+      let(:dependency_files) { project_dependency_files("npm6/indirect_constraint_conflict") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "css-what",
+          version: "2.1.3",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "is up to date because the indirect constraint cannot be satisfied by the most recent version" do
+        expect(checker).to be_up_to_date
+      end
+    end
   end
 
   describe "#can_update?" do
