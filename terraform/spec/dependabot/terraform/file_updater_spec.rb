@@ -440,7 +440,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           Dependabot::Dependency.new(
             name: "hashicorp/aws",
             version: "3.40.0",
-            previous_version: "0.1.0",
+            previous_version: "3.37.0",
             requirements: [{
               requirement: "3.40.0",
               groups: [],
@@ -452,7 +452,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             previous_requirements: [{
-              requirement: "0.1.0",
+              requirement: "3.37.0",
               groups: [],
               file: "main.tf",
               source: {
@@ -535,6 +535,202 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
                 mycorp-http = {
                   source  = "mycorp/http"
                   version = "1.0"
+          DEP
+        )
+      end
+    end
+
+    context "with a versions file" do
+      let(:files) { project_dependency_files("versions_file") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/random",
+            version: "3.1.0",
+            previous_version: "3.0.0",
+            requirements: [{
+              requirement: "3.1.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/random"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.0.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/random"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "versions.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_providers {
+                random = {
+                  source  = "hashicorp/random"
+                  version = ">= 3.1.0"
+          DEP
+        )
+      end
+    end
+
+    context "updating an up-to-date terraform project with a lockfile" do
+      let(:files) { project_dependency_files("up-to-date_lockfile") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: ".terraform.lock.hcl",
+            version: "3.44.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.44.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "raises an error" do
+        expect { subject }.to raise_error do |error|
+          expect(error.message).to eq("No files changed!")
+        end
+      end
+    end
+
+    context "using versions.tf with a lockfile present" do
+      let(:files) { project_dependency_files("lockfile") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: ".terraform.lock.hcl",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: ".terraform.lock.hcl",
+              source: {
+                type: "lockfile",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "does not update requirements in the `versions.tf` file" do
+        updated_file = files.find { |file| file.name == "versions.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            terraform {
+              required_providers {
+                random = {
+                  source  = "hashicorp/random"
+                  version = ">= 3.0.0"
+                }
+
+                aws = {
+                  source  = "hashicorp/aws"
+                  version = ">= 3.37.0"
+                }
+              }
+          DEP
+        )
+      end
+
+      it "updates the aws requirement in the lockfile" do
+        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/aws" {
+              version     = "3.44.0"
+              constraints = ">= 3.37.0"
+              hashes = [
+                "h1:hxQ8n9SHHfAIXd/FtfAqxokFYWBedzZf7xqQZWJajUs=",
+                "zh:0680315b29a140e9b7e4f5aeed3f2445abdfab31fc9237f34dcad06de4f410df",
+                "zh:13811322a205fb4a0ee617f0ae51ec94176befdf569235d0c7064db911f0acc7",
+                "zh:25e427a1cfcb1d411bc12040cf0684158d094416ecf18889a41196bacc761729",
+                "zh:40cd6acd24b060823f8d116355d8f844461a11925796b1757eb2ee18abc0bc7c",
+                "zh:94e2463eef555c388cd27f6e85ad803692d6d80ffa621bdc382ab119001d4de4",
+                "zh:aadc3bc216b14839e85b463f07b8507920ace5f202a608e4a835df23711c8a0d",
+                "zh:ab50dc1242af5a8fcdb18cf89beeaf2b2146b51ecfcecdbea033913a5f4c1c14",
+                "zh:ad48bbf4af66b5d48ca07c5c558d2f5724311db4dd943c1c98a7f3f107e03311",
+                "zh:ad76796c2145a7aaec1970a5244f5c0a9d200556121e2c5b382f296597b1a03c",
+                "zh:cf0a2181356598f8a2abfeaf0cdf385bdeea7f2e52821c850a2a08b60c26b9f6",
+                "zh:f76801af6bc34fe4a5bf1c63fa0204e24b81691049efecd6baa1526593f03935",
+              ]
+            }
+          DEP
+        )
+      end
+
+      it "does not update the http requirement in the lockfile" do
+        actual_lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(actual_lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/random" {
+              version     = "3.0.0"
+              constraints = ">= 3.0.0"
+              hashes = [
+                "h1:yhHJpb4IfQQfuio7qjUXuUFTU/s+ensuEpm23A+VWz0=",
+                "zh:0fcb00ff8b87dcac1b0ee10831e47e0203a6c46aafd76cb140ba2bab81f02c6b",
+                "zh:123c984c0e04bad910c421028d18aa2ca4af25a153264aef747521f4e7c36a17",
+                "zh:287443bc6fd7fa9a4341dec235589293cbcc6e467a042ae225fd5d161e4e68dc",
+                "zh:2c1be5596dd3cca4859466885eaedf0345c8e7628503872610629e275d71b0d2",
+                "zh:684a2ef6f415287944a3d966c4c8cee82c20e393e096e2f7cdcb4b2528407f6b",
+                "zh:7625ccbc6ff17c2d5360ff2af7f9261c3f213765642dcd84e84ae02a3768fd51",
+                "zh:9a60811ab9e6a5bfa6352fbb943bb530acb6198282a49373283a8fa3aa2b43fc",
+                "zh:c73e0eaeea6c65b1cf5098b101d51a2789b054201ce7986a6d206a9e2dacaefd",
+                "zh:e8f9ed41ac83dbe407de9f0206ef1148204a0d51ba240318af801ffb3ee5f578",
+                "zh:fbdd0684e62563d3ac33425b0ac9439d543a3942465f4b26582bcfabcb149515",
+              ]
+            }
           DEP
         )
       end

@@ -170,8 +170,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with a pessimistic constraint and a lockfile" do
       let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
 
-      it "parses the dependency correctly" do
+      it "parses the lockfile" do
         expect(subject.length).to eq(1)
+      end
+
+      it "parses the dependency correctly" do
         expect(subject[0].name).to eq("hashicorp/http")
         expect(subject[0].version).to eq("2.1.0")
         expect(subject[0].requirements).to eq([{
@@ -576,7 +579,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details" do
         dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
-        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.version).to eq("3.37.0")
       end
 
       it "handles version ranges correctly" do

@@ -208,6 +208,19 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
+
+
+### Terraform
+
+USER root
+ARG TERRAFORM_VERSION=1.0.0
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+  && apt-get update -y \
+  && apt-get install terraform=${TERRAFORM_VERSION} \
+  && terraform -help
+
+
 USER root
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
