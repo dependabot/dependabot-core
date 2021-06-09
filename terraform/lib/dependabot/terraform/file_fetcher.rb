@@ -23,7 +23,7 @@ module Dependabot
         fetched_files = []
         fetched_files += terraform_files
         fetched_files += terragrunt_files
-        fetched_files += lock_file if lock_file
+        fetched_files += [lock_file] if lock_file
 
         return fetched_files if fetched_files.any?
 
