@@ -1,3 +1,12 @@
+## v0.152.0, 10 June 2021
+
+- Python: Upgrade pip to 21.1.2
+- Python: Upgrade pip-tools to 6.1.0
+- Python: Drop python 2.x support
+- Python: Upgrade pipenv to 2021.5.29
+- Terraform: Add support for lockfiles
+- Terraform: Upgrade and pin Terraform to version 1.0.0
+
 ## v0.151.1, 7 June 2021
 
 fix(npm): Prevent unnecessary hash pinning in lock file constraint
