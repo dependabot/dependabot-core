@@ -123,7 +123,7 @@ module Dependabot
       def deprecated_provider?(details)
         # The old syntax for terraform providers v0.12- looked like
         # "tls ~> 2.1" which gets parsed as a string instead of a hash
-        !details.respond_to?(:fetch)
+        details.is_a?(String)
       end
 
       def build_terragrunt_dependency(file, details)
