@@ -183,10 +183,11 @@ and you'll get all you need.
 
 ## Profiling
 
-You can profile a dry-run by passing the `--profile` flag when running it. This
-will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
-can generate a flamegraph from this by running:
-`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
+You can profile a dry-run by passing the `--profile` flag when running it, or
+tag an rspec test with `:profile`. This will generate a
+`stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a
+flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html`.
 
 ## Why is this public?
 
