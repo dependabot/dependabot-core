@@ -597,7 +597,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             version: "3.44.0",
             previous_version: "3.37.0",
             requirements: [{
-              requirement: "3.44.0",
+              requirement: "3.45.0",
               groups: [],
               file: ".terraform.lock.hcl",
               source: {
@@ -688,21 +688,21 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         expect(actual_lockfile.content).to include(
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
-              version     = "3.44.0"
+              version     = "3.45.0"
               constraints = ">= 3.37.0"
               hashes = [
-                "h1:hxQ8n9SHHfAIXd/FtfAqxokFYWBedzZf7xqQZWJajUs=",
-                "zh:0680315b29a140e9b7e4f5aeed3f2445abdfab31fc9237f34dcad06de4f410df",
-                "zh:13811322a205fb4a0ee617f0ae51ec94176befdf569235d0c7064db911f0acc7",
-                "zh:25e427a1cfcb1d411bc12040cf0684158d094416ecf18889a41196bacc761729",
-                "zh:40cd6acd24b060823f8d116355d8f844461a11925796b1757eb2ee18abc0bc7c",
-                "zh:94e2463eef555c388cd27f6e85ad803692d6d80ffa621bdc382ab119001d4de4",
-                "zh:aadc3bc216b14839e85b463f07b8507920ace5f202a608e4a835df23711c8a0d",
-                "zh:ab50dc1242af5a8fcdb18cf89beeaf2b2146b51ecfcecdbea033913a5f4c1c14",
-                "zh:ad48bbf4af66b5d48ca07c5c558d2f5724311db4dd943c1c98a7f3f107e03311",
-                "zh:ad76796c2145a7aaec1970a5244f5c0a9d200556121e2c5b382f296597b1a03c",
-                "zh:cf0a2181356598f8a2abfeaf0cdf385bdeea7f2e52821c850a2a08b60c26b9f6",
-                "zh:f76801af6bc34fe4a5bf1c63fa0204e24b81691049efecd6baa1526593f03935",
+                "h1:LKU/xfna87/p+hl5yTTW3dvOqWJp5JEM+Dt3nnvSDvA=",
+                "zh:0fdbb3af75ff55807466533f97eb314556ec41a908a543d7cafb06546930f7c6",
+                "zh:20656895744fa0f4607096b9681c77b2385f450b1577f9151d3070818378a724",
+                "zh:390f316d00f25a5e45ef5410961fd05bf673068c1b701dc752d11df6d8e741d7",
+                "zh:3da70f9de241d5f66ea9994ef1e0beddfdb005fa2d2ef6712392f57c5d2e4844",
+                "zh:65de63cc0f97c85c28a19db560c546aa25f4f403dbf4783ac53c3918044cf180",
+                "zh:6fc52072e5a66a5d0510aaa2b373a2697895f51398613c68619d8c0c95fc75f5",
+                "zh:7c1da61092bd1206a020e3ee340ab11be8a4f9bb74e925ca1229ea5267fb3a62",
+                "zh:94e533d86ce3c08e7102dcabe34ba32ae7fd7819fd0aedef28f48d29e635eae2",
+                "zh:a3180d4826662e19e71cf20e925a2be8613a51f2f3f7b6d2643ac1418b976d58",
+                "zh:c783df364928c77fd4dec5419533b125bebe2d50212c4ad609f83b701c2d981a",
+                "zh:e1279bde388cb675d324584d965c6d22c3ec6890b13de76a50910a3bcd84ed64",
               ]
             }
           DEP
