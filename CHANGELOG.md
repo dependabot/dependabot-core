@@ -1,3 +1,9 @@
+## v0.152.1, 11 June 2021
+
+- Tests: Allow profiling tests with stackprof when tagged
+- Throw an error when using the deprecated terraform provider syntax, include upgrade instructions
+- Update `bump-version` with instructions to checkout the new branch
+
 ## v0.152.0, 10 June 2021
 
 - Python: Upgrade pip to 21.1.2
