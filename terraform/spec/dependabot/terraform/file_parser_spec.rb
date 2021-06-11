@@ -292,8 +292,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
-    context "hcl1 provider syntax" do
-      let(:files) { project_dependency_files("hcl1_provider") }
+    context "deprecated terraform provider syntax" do
+      let(:files) { project_dependency_files("deprecated_provider") }
 
       it "raises a helpful error message" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
