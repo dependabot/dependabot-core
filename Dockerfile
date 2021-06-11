@@ -64,15 +64,19 @@ RUN if ! getent group $USER_GID; then groupadd --gid $USER_GID dependabot ; \
 
 ### RUBY
 
-# Install Ruby 2.6.6, update RubyGems, and install Bundler
+# Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# Allow gem installs as the dependabot user
+ENV BUNDLE_PATH=".bundle" \
+    BUNDLE_BIN=".bundle/bin"
+ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
-  && apt-get install -y ruby2.6 ruby2.6-dev \
+  && apt-get install -y ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
   && gem install bundler -v 2.2.20 --no-document \
-  && rm -rf /var/lib/gems/2.6.0/cache/* \
+  && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
 
@@ -253,10 +257,6 @@ RUN bash /opt/terraform/helpers/build /opt/terraform
 RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
 RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
 
-# Allow further gem installs as the dependabot user
 ENV HOME="/home/dependabot"
-ENV BUNDLE_PATH="$HOME/.bundle" \
-    BUNDLE_BIN=".bundle/bin"
-ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 
 WORKDIR ${HOME}

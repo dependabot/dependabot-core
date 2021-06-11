@@ -17,7 +17,6 @@ module Dependabot
               # Bundler will pick the matching installed major version
               "BUNDLER_VERSION" => bundler_version,
               "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_version), "Gemfile"),
-              "BUNDLE_PATH" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle"),
               # Prevent the GEM_HOME from being set to a folder owned by root
               "GEM_HOME" => File.join(versioned_helper_path(bundler_version: bundler_version), ".bundle")
             }
@@ -36,7 +35,7 @@ module Dependabot
       end
 
       def self.helper_path(bundler_version:)
-        "ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
+        "bundle exec ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
       end
 
       def self.native_helpers_root
