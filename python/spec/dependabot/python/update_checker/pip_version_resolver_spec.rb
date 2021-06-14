@@ -72,18 +72,18 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
     context "with no indication of the Python version" do
       let(:dependency_files) { [requirements_file] }
 
-      it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+      it { is_expected.to eq(Gem::Version.new("3.2.4")) }
     end
 
     context "with a .python-version file" do
       let(:dependency_files) { [requirements_file, python_version_file] }
       let(:python_version_content) { "3.7.0\n" }
 
-      it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+      it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
       context "that disallows the latest version" do
-        let(:python_version_content) { "2.7.13\n" }
-        it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+        let(:python_version_content) { "3.5.3\n" }
+        it { is_expected.to eq(Gem::Version.new("2.2.24")) }
       end
     end
   end
@@ -116,7 +116,16 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.1.1")) }
 
       context "that disallows all fixed versions" do
-        let(:python_version_content) { "2.7.13\n" }
+        let(:python_version_content) { "3.5.3\n" }
+        let(:dependency_version) { "3.0.0" }
+        let(:dependency_requirements) do
+          [{
+            file: "requirements.txt",
+            requirement: "==3.0.0",
+            groups: [],
+            source: nil
+          }]
+        end
 
         it { is_expected.to be_nil }
       end

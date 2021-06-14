@@ -1,5 +1,5 @@
 GIT
-  remote: git@github.com:gocardless/business
+  remote: git@github.com:dependabot-fixtures/business
   revision: 1378a2b0b446d991b7567efbc7eeeed2720e4d8f
   specs:
     business (1.16.0)

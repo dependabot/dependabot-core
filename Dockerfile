@@ -70,7 +70,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y ruby2.6 ruby2.6-dev \
   && gem update --system 3.2.14 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.15 --no-document \
+  && gem install bundler -v 2.2.18 --no-document \
   && rm -rf /var/lib/gems/2.6.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -84,7 +84,6 @@ RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git --branch 1.2.26 --single-branch --depth=1 /usr/local/.pyenv \
   && pyenv install 3.9.4 \
-  && pyenv install 2.7.18 \
   && pyenv global 3.9.4 \
   && rm -Rf /tmp/python-build*
 USER root
@@ -96,21 +95,20 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y nodejs
 
+# NOTE: This was a hack to get around the fact that elm 18 failed to install with
+# npm 7, we should look into installing the latest version of node + npm
+RUN npm install -g npm@v7.10.0
+
 
 ### ELM
 
-# Install Elm 0.18 and Elm 0.19
+# Install Elm 0.19
 ENV PATH="$PATH:/node_modules/.bin"
-RUN npm install elm@0.18.0 \
-  && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz \
   && rm -rf ~/.npm
-
-# NOTE: This is a hack to get around the fact that elm 18 fails to install with
-# npm 7, we should look into deprecating elm 18
-RUN npm install -g npm@v7.10.0
 
 
 ### PHP
@@ -165,8 +163,8 @@ USER root
 ### GO
 
 # Install Go and dep
-ARG GOLANG_VERSION=1.16.2
-ARG GOLANG_CHECKSUM=542e936b19542e62679766194364f45141fde55169db2d8d01046555ca9eb4b8
+ARG GOLANG_VERSION=1.16.3
+ARG GOLANG_CHECKSUM=951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2
 ENV PATH=/opt/go/bin:$PATH \
   GOPATH=/opt/go/gopath
 RUN cd /tmp \
@@ -185,12 +183,13 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.10.4
-ARG ELIXIR_CHECKSUM=9727ae96d187d8b64e471ff0bb5694fcd1009cdcfd8b91a6b78b7542bb71fca59869d8440bb66a2523a6fec025f1d23394e7578674b942274c52b44e19ba2d43
+ARG ELIXIR_VERSION=v1.11.4
+ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
+ARG ERLANG_VERSION=1:23.3.1-1
 RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
   && apt-get update \
-  && apt-get install -y esl-erlang \
+  && apt-get install -y esl-erlang=${ERLANG_VERSION} \
   && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
@@ -209,6 +208,19 @@ RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
   && rustup toolchain install 1.51.0 && rustup default 1.51.0
+
+
+### Terraform
+
+USER root
+ARG TERRAFORM_VERSION=1.0.0
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+  && apt-get update -y \
+  && apt-get install terraform=${TERRAFORM_VERSION} \
+  && terraform -help
+
+
 USER root
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
@@ -226,17 +238,17 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 
 USER dependabot
 RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2 \
-  && bash /opt/bundler/helpers/v1/build /opt/bundler/v1 \
-  && bash /opt/bundler/helpers/v2/build /opt/bundler/v2 \
-  && bash /opt/dep/helpers/build /opt/dep \
-  && bash /opt/go_modules/helpers/build /opt/go_modules \
-  && bash /opt/hex/helpers/build /opt/hex \
-  && bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn \
-  && bash /opt/python/helpers/build /opt/python \
-  && bash /opt/terraform/helpers/build /opt/terraform \
-  && bash /opt/composer/helpers/v1/build /opt/composer/v1 \
-  && bash /opt/composer/helpers/v2/build /opt/composer/v2
+  && mkdir -p /opt/bundler/v2
+RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
+RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
+RUN bash /opt/dep/helpers/build /opt/dep
+RUN bash /opt/go_modules/helpers/build /opt/go_modules
+RUN bash /opt/hex/helpers/build /opt/hex
+RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
+RUN bash /opt/python/helpers/build /opt/python
+RUN bash /opt/terraform/helpers/build /opt/terraform
+RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
+RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
 
 # Allow further gem installs as the dependabot user
 ENV HOME="/home/dependabot"

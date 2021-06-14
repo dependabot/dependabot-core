@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"

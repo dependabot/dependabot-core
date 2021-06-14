@@ -60,10 +60,10 @@ module Dependabot
     end
 
     def pinned_ref_looks_like_commit_sha?
-      return false unless pinned?
-
       ref = dependency_source_details.fetch(:ref)
-      return false unless ref.match?(/^[0-9a-f]{6,40}$/)
+      return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
+
+      return false unless pinned?
 
       local_repo_git_metadata_fetcher.head_commit_for_ref(ref).nil?
     end
@@ -87,13 +87,16 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/AbcSize
     def local_tag_for_latest_version
       tags =
         local_tags.
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
       filtered = tags.
-                 reject { |t| tag_included_in_ignore_reqs?(t) }
-      raise Dependabot::AllVersionsIgnored if @raise_on_ignored && tags.any? && filtered.empty?
+                 reject { |t| tag_included_in_ignore_requirements?(t) }
+      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
+        raise Dependabot::AllVersionsIgnored
+      end
 
       tag = filtered.
             reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
@@ -113,7 +116,39 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
+    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
+
+    def current_version
+      return unless dependency.version && version_tag?(dependency.version)
+
+      version = dependency.version.match(VERSION_REGEX).named_captures.fetch("version")
+      version_class.new(version)
+    end
+
+    def filter_lower_versions(tags)
+      return tags unless current_version
+
+      versions = tags.map do |t|
+        version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
+        version_class.new(version)
+      end
+
+      versions.select do |version|
+        version > current_version
+      end
+    end
+
+    def local_tag_for_pinned_version
+      return unless pinned?
+
+      ref = dependency_source_details.fetch(:ref)
+      tags = local_tags.select { |t| t.commit_sha == ref && version_class.correct?(t.name) }.
+             sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
+    end
 
     def git_repo_reachable?
       local_upload_pack
@@ -232,7 +267,9 @@ module Dependabot
 
     def dependency_source_details
       sources =
-        dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+        dependency.requirements.
+        map { |requirement| requirement.fetch(:source) }.uniq.compact.
+        select { |source| source[:type] == "git" }
 
       return sources.first if sources.count <= 1
 
@@ -317,8 +354,8 @@ module Dependabot
       listing_repo_git_metadata_fetcher.upload_pack
     end
 
-    def ignore_reqs
-      ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+    def ignore_requirements
+      ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
     end
 
     def wants_prerelease?
@@ -330,9 +367,9 @@ module Dependabot
       version_class.new(version).prerelease?
     end
 
-    def tag_included_in_ignore_reqs?(tag)
+    def tag_included_in_ignore_requirements?(tag)
       version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
-      ignore_reqs.any? { |r| r.satisfied_by?(version_class.new(version)) }
+      ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
     end
 
     def tag_is_prerelease?(tag)

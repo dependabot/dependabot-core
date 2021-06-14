@@ -142,6 +142,7 @@ async function updateDependencyFile(
     cwd: path.join(directory, path.dirname(requirements.file)),
     nonInteractive: true,
     enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 

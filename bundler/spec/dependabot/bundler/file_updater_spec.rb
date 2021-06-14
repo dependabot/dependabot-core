@@ -295,6 +295,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "and it's that gem that we're attempting to bump" do
           it "locks the updated gem to the latest version" do
             expect(file.content).to include("business (1.5.0)")
+          end
+
+          it "does not update unrelated dependencies" do
             expect(file.content).to include("statesman (1.2.1)")
           end
         end
@@ -321,8 +324,15 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           end
 
           it "locks the updated gem to the latest version" do
-            expect(file.content).to include("business (1.18.0)")
             expect(file.content).to include("statesman (1.3.1)")
+          end
+
+          it "locks the yanked gem to the latest version allowed by the Gemfile", :bundler_v1_only do
+            expect(file.content).to include("business (1.18.0)")
+          end
+
+          it "does not touch the yanked gem", :bundler_v2_only do
+            expect(file.content).to include("business (1.4.1)")
           end
         end
       end
@@ -604,12 +614,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
           %w(business prius uk_phone_numbers).each do |dep|
             original_remote_line =
-              old_lock.find { |l| l.include?("gocardless/#{dep}") }
+              old_lock.find { |l| l.include?("dependabot-fixtures/#{dep}") }
             original_revision_line =
               old_lock[old_lock.find_index(original_remote_line) + 1]
 
             new_remote_line =
-              new_lock.find { |l| l.include?("gocardless/#{dep}") }
+              new_lock.find { |l| l.include?("dependabot-fixtures/#{dep}") }
             new_revision_line =
               new_lock[new_lock.find_index(original_remote_line) + 1]
 
@@ -628,12 +638,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             new_lock = file.content.split(/^/)
 
             original_remote_line =
-              old_lock.find { |l| l.include?("gocardless/business") }
+              old_lock.find { |l| l.include?("dependabot-fixtures/business") }
             original_revision_line =
               old_lock[old_lock.find_index(original_remote_line) + 1]
 
             new_remote_line =
-              new_lock.find { |l| l.include?("gocardless/business") }
+              new_lock.find { |l| l.include?("dependabot-fixtures/business") }
 
             new_revision_line =
               new_lock[new_lock.find_index(original_remote_line) + 1]
@@ -663,12 +673,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
 
             %w(business prius uk_phone_numbers).each do |dep|
               original_remote_line =
-                old_lock.find { |l| l.include?("gocardless/#{dep}") }
+                old_lock.find { |l| l.include?("dependabot-fixtures/#{dep}") }
               original_revision_line =
                 old_lock[old_lock.find_index(original_remote_line) + 1]
 
               new_remote_line =
-                new_lock.find { |l| l.include?("gocardless/#{dep}") }
+                new_lock.find { |l| l.include?("dependabot-fixtures/#{dep}") }
               new_revision_line =
                 new_lock[new_lock.find_index(original_remote_line) + 1]
 
@@ -692,7 +702,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           it "generates the correct lockfile" do
             expect(file.content).to include("statesman (2.0.1)")
             expect(file.content).
-              to include "remote: http://github.com/gocardless/uk_phone_numbers"
+              to include "remote: http://github.com/dependabot-fixtures/uk_phone_numbers"
           end
         end
       end
@@ -716,7 +726,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/gocardless/prius",
+              url: "https://github.com/dependabot-fixtures/prius",
               branch: "master",
               ref: "master"
             }
@@ -729,7 +739,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/gocardless/prius",
+              url: "https://github.com/dependabot-fixtures/prius",
               branch: "master",
               ref: "master"
             }
@@ -741,12 +751,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           new_lock = file.content.split(/^/)
 
           original_remote_line =
-            old_lock.find { |l| l.include?("gocardless/prius") }
+            old_lock.find { |l| l.include?("dependabot-fixtures/prius") }
           original_revision_line =
             old_lock[old_lock.find_index(original_remote_line) + 1]
 
           new_remote_line =
-            new_lock.find { |l| l.include?("gocardless/prius") }
+            new_lock.find { |l| l.include?("dependabot-fixtures/prius") }
           new_revision_line =
             new_lock[new_lock.find_index(original_remote_line) + 1]
 
@@ -776,7 +786,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/elastic/elasticsearch-ruby.git",
+                url: "https://github.com/dependabot-fixtures/elasticsearch-ruby.git",
                 branch: "5.x",
                 ref: "5.x"
               }
@@ -824,7 +834,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/elastic/elasticsearch-ruby.git",
+                url: "https://github.com/dependabot-fixtures/elasticsearch-ruby.git",
                 branch: "5.x",
                 ref: "5.x"
               }

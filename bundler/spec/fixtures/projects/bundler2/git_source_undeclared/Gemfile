@@ -1,6 +1,6 @@
 source "http://rubygems.org"
 
-git "https://github.com/kaminari/kaminari" do
+git "https://github.com/dependabot-fixtures/kaminari" do
   gem "kaminari-core"
 end
 

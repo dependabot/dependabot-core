@@ -79,6 +79,24 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.up_to_date?).to be_falsy
       end
     end
+
+    context "with a latest version requirement" do
+      let(:dependency_files) { project_dependency_files("npm7/latest_requirement") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "etag",
+          version: nil,
+          requirements: [
+            { file: "package.json", requirement: "latest", groups: [], source: nil }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "is up to date because there's nothing to update" do
+        expect(checker.up_to_date?).to be_truthy
+      end
+    end
   end
 
   describe "#can_update?" do
@@ -200,6 +218,37 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it "only hits the registry once" do
       checker.latest_version
       expect(WebMock).to have_requested(:get, registry_listing_url).once
+    end
+
+    context "with multiple requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "preact",
+          version: "0.1.0",
+          package_manager: "npm_and_yarn",
+          requirements: [
+            {
+              requirement: "^0.1.0",
+              file: "package-lock.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            },
+            {
+              requirement: "^0.1.0",
+              file: "yarn.lock",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.yarnpkg.com" }
+            }
+          ]
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.npmjs.org/preact").
+          and_return(status: 200, body: JSON.pretty_generate({}))
+      end
+
+      specify { expect { subject }.not_to raise_error }
     end
 
     context "with a git dependency" do
@@ -1029,6 +1078,55 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         # No change in updated_requirements
         expect(checker.updated_requirements).
           to eq(dependency_requirements)
+      end
+    end
+
+    context "with multiple requirements" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@org/etag",
+          version: "1.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://registry.npmjs.org"
+              }
+            },
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://npm.fury.io/dependabot"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://npm.fury.io/dependabot/@org%2Fetag").
+          and_return(status: 200, body: JSON.pretty_generate({}))
+      end
+
+      it "prefers to private registry source" do
+        expect(checker.updated_requirements.first).to eq(
+          {
+            file: "package.json",
+            groups: [],
+            requirement: "^1.0",
+            source: {
+              type: "registry",
+              url: "https://npm.fury.io/dependabot"
+            }
+          }
+        )
       end
     end
   end

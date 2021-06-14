@@ -63,7 +63,7 @@ To install the helpers for each language:
 5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
 6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
 
-## Local development
+## Local development & Running tests
 
 Run the tests by running `rspec spec` inside each of the packages. Style is
 enforced by RuboCop. To check for style violations, simply run `rubocop` in
@@ -96,6 +96,7 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
 ### Dry run script
@@ -182,10 +183,11 @@ and you'll get all you need.
 
 ## Profiling
 
-You can profile a dry-run by passing the `--profile` flag when running it. This
-will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
-can generate a flamegraph from this by running:
-`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
+You can profile a dry-run by passing the `--profile` flag when running it, or
+tag an rspec test with `:profile`. This will generate a
+`stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a
+flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html`.
 
 ## Why is this public?
 

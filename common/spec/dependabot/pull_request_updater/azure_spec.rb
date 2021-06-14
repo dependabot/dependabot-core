@@ -129,25 +129,25 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
                     headers: json_header)
         stub_request(:post, create_commit_url).
           with(body: {
-                 refUpdates: [
-                   { name: "refs/heads/#{temp_branch}", oldObjectId: base_commit }
-                 ],
-                 commits: [
-                   {
-                     comment: commit_message,
-                     changes: files.map do |file|
-                       {
-                         changeType: "edit",
-                         item: { path: file.path },
-                         newContent: {
-                           content: Base64.encode64(file.content),
-                           contentType: "base64encoded"
-                         }
-                       }
-                     end
-                   }
-                 ]
-               }).
+            refUpdates: [
+              { name: "refs/heads/#{temp_branch}", oldObjectId: base_commit }
+            ],
+            commits: [
+              {
+                comment: commit_message,
+                changes: files.map do |file|
+                  {
+                    changeType: "edit",
+                    item: { path: file.path },
+                    newContent: {
+                      content: Base64.encode64(file.content),
+                      contentType: "base64encoded"
+                    }
+                  }
+                end
+              }
+            ]
+          }).
           to_return(status: 201,
                     body: fixture("azure", "create_new_branch.json"),
                     headers: json_header)

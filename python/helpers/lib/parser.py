@@ -11,6 +11,9 @@ from pip._internal.req.constructors import (
     install_req_from_line,
     install_req_from_parsed_requirement,
 )
+# Inspired by pips internal check:
+# https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
+COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_requirements(directory):
@@ -80,6 +83,8 @@ def parse_setup(directory):
 
     def parse_requirements(requires, req_type, filename):
         for req in requires:
+            req = COMMENT_RE.sub('', req)
+            req = req.strip()
             parse_requirement(req, req_type, filename)
 
     # Parse the setup.py and setup.cfg

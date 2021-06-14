@@ -22,7 +22,7 @@ module Dependabot
         requirements = requirements.flatten.flat_map do |req_string|
           raise BadRequirementError, "Nil requirement not supported in Elm" if req_string.nil?
 
-          req_string.split(",").map do |r|
+          req_string.split(",").map(&:strip).map do |r|
             convert_elm_constraint_to_ruby_constraint(r)
           end
         end

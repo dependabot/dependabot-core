@@ -1,0 +1,31 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://registry.terraform.io/.well-known/terraform.json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: '{"modules.v1":"/v1/modules/","providers.v1":"/v1/providers/"}'
+  recorded_at: Fri, 28 May 2021 22:10:34 GMT
+- request:
+    method: get
+    uri: https://registry.terraform.io/v1/modules/does/not/exist/versions
+  response:
+    status:
+      code: 404
+      message: Not Found
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: '{"errors":["Not Found"]}'
+  recorded_at: Fri, 28 May 2021 22:10:34 GMT
+recorded_with: VCR 6.0.0

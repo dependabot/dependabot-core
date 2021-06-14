@@ -1,9 +1,9 @@
 package updatechecker
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
-	"regexp"
 
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modfetch"
 	"github.com/dependabot/gomodules-extracted/cmd/go/_internal_/modload"
@@ -11,44 +11,27 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-var (
-	pseudoVersionRegexp = regexp.MustCompile(`\b\d{14}-[0-9a-f]{12}$`)
-)
-
 type Dependency struct {
-	Name     string `json:"name"`
-	Version  string `json:"version"`
-	Indirect bool   `json:"indirect"`
-}
-
-type IgnoreRange struct {
-	MinVersionInclusive string `json:"min_version_inclusive"`
-	MaxVersionExclusive string `json:"max_version_exclusive"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 type Args struct {
-	Dependency   *Dependency    `json:"dependency"`
-	IgnoreRanges []*IgnoreRange `json:"ignore_ranges"`
+	Dependency *Dependency `json:"dependency"`
 }
 
-func GetUpdatedVersion(args *Args) (interface{}, error) {
+// GetVersions returns a list of versions for the given dependency that
+// are within the same major version.
+func GetVersions(args *Args) (interface{}, error) {
 	if args.Dependency == nil {
 		return nil, errors.New("Expected args.dependency to not be nil")
 	}
 
 	currentVersion := args.Dependency.Version
-	currentPrerelease := semver.Prerelease(currentVersion)
-	if pseudoVersionRegexp.MatchString(currentPrerelease) {
-		return currentVersion, nil
-	}
 
-	modload.InitMod()
+	modload.LoadModFile(context.Background())
 
-	repo, err := modfetch.Lookup("direct", args.Dependency.Name)
-	if err != nil {
-		return nil, err
-	}
-
+	repo := modfetch.Lookup("direct", args.Dependency.Name)
 	versions, err := repo.Versions("")
 	if err != nil {
 		return nil, err
@@ -60,19 +43,12 @@ func GetUpdatedVersion(args *Args) (interface{}, error) {
 	}
 
 	currentMajor := semver.Major(currentVersion)
-	latestVersion := args.Dependency.Version
+
+	var candidateVersions []string
 
 Outer:
 	for _, v := range versions {
 		if semver.Major(v) != currentMajor {
-			continue
-		}
-
-		if semver.Compare(v, latestVersion) < 1 {
-			continue
-		}
-
-		if currentPrerelease == "" && semver.Prerelease(v) != "" {
 			continue
 		}
 
@@ -82,10 +58,10 @@ Outer:
 			}
 		}
 
-		latestVersion = v
+		candidateVersions = append(candidateVersions, v)
 	}
 
-	return latestVersion, nil
+	return candidateVersions, nil
 }
 
 func goModExcludes(dependency string) ([]string, error) {

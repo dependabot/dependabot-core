@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "unknown/vcs/go"
+	_ "unknown.doesnotexist/vcs"
 )
 
 func main() {

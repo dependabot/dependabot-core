@@ -95,6 +95,59 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       it { is_expected.to eq(Gem::Version.new("1.8.0-rc.0")) }
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:version) { "1.7.1" }
+      it { is_expected.to eq(Gem::Version.new("1.7.1")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the current version isn't known" do
+      let(:current_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the dependency is a git dependency" do
+      let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 1.3.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.3.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { [">= 1.3.0.a, < 2.0"] }
       it { is_expected.to eq(Gem::Version.new("1.2.6")) }
@@ -138,7 +191,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/phoenixframework/phoenix.git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
             branch: "master",
             ref: "v1.2.0"
           }
@@ -146,7 +199,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       before do
-        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_url = "https://github.com/dependabot-fixtures/phoenix.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
@@ -329,7 +382,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: ref
             }
@@ -340,7 +393,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           let(:ref) { "v1.2.0" }
 
           before do
-            git_url = "https://github.com/phoenixframework/phoenix.git"
+            git_url = "https://github.com/dependabot-fixtures/phoenix.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -499,7 +552,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: ref
             }
@@ -586,7 +639,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/phoenixframework/phoenix.git",
+            url: "https://github.com/dependabot-fixtures/phoenix.git",
             branch: "master",
             ref: "v1.2.0"
           }
@@ -594,7 +647,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
 
       before do
-        git_url = "https://github.com/phoenixframework/phoenix.git"
+        git_url = "https://github.com/dependabot-fixtures/phoenix.git"
         git_header = {
           "content-type" => "application/x-git-upload-pack-advertisement"
         }
@@ -614,7 +667,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
             requirements: dependency_requirements,
             updated_source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: "v1.3.2"
             },
@@ -629,7 +682,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/phoenixframework/phoenix.git",
+                url: "https://github.com/dependabot-fixtures/phoenix.git",
                 branch: "master",
                 ref: "v1.3.2"
               }

@@ -297,9 +297,8 @@ module Dependabot
 
       def dependency_source_details
         sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
+          sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end

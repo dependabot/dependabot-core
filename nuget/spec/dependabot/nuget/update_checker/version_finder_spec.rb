@@ -101,6 +101,59 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:dependency_version) { "2.1.0" }
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the current version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the dependency is a git dependency" do
+      let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 1.1.1"] }
+      its([:version]) { is_expected.to eq(version_class.new("1.1.1")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user is ignoring the latest version" do
       let(:ignored_versions) { ["[2.a,3.0.0)"] }
       its([:version]) { is_expected.to eq(version_class.new("1.1.2")) }
@@ -229,6 +282,15 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
         its([:version]) { is_expected.to eq(version_class.new("4.8.1")) }
       end
+    end
+
+    context "with a package that returns paginated api results when using the v2 nuget api", :vcr do
+      let(:dependency_files) { project_dependency_files("paginated_package_v2_api") }
+      let(:dependency_requirements) { [{ file: "my.csproj", requirement: "4.7.1", groups: [], source: nil }] }
+      let(:dependency_name) { "FakeItEasy" }
+      let(:dependency_version) { "4.7.1" }
+
+      its([:version]) { is_expected.to eq(version_class.new("7.1.0")) }
     end
 
     context "with a custom repo in the credentials" do

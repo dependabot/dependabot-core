@@ -436,15 +436,9 @@ module Dependabot
                          find { |f| f.name.end_with?(".yarnrc") }
           ).registry
 
-          return if central_registry?(reg) && !package_name.start_with?("@")
+          return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
 
           raise Dependabot::PrivateSourceAuthenticationFailure, reg
-        end
-
-        def central_registry?(registry)
-          NpmAndYarn::FileParser::CENTRAL_REGISTRIES.any? do |r|
-            r.include?(registry)
-          end
         end
 
         def resolvable_before_update?

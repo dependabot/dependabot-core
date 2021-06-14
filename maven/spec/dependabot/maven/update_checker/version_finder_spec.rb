@@ -175,6 +175,44 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when already on the latest version" do
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user has asked to ignore all later versions" do
+      let(:ignored_versions) { ["> 22.0"] }
+      let(:dependency_version) { "22.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/22.0/guava-22.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user has asked to ignore a major version" do
       let(:ignored_versions) { ["[23.0,24)"] }
       let(:dependency_version) { "17.0" }
@@ -186,6 +224,19 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when the user has asked to ignore several major versions" do
+      let(:ignored_versions) { ["[23.0,24),[22.0,23)"] }
+      let(:dependency_version) { "17.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/21.0/guava-21.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("21.0")) }
     end
 
     context "when a version range is specified using Ruby syntax" do
@@ -508,6 +559,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
         end
       end
     end

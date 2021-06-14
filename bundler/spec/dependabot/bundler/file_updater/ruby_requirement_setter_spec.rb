@@ -38,6 +38,41 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         bundler_project_dependency_file("gemfile_old_required_ruby", filename: "example.gemspec")
       end
 
+      context "with a required ruby version range" do
+        let(:gemspec) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_range", filename: "example.gemspec")
+        end
+        let(:content) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_range", filename: "Gemfile").content
+        end
+        it { is_expected.to include("ruby '2.2.10'\n") }
+        it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
+      end
+
+      context "with a required ruby version range array" do
+        let(:gemspec) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_range_array", filename: "example.gemspec")
+        end
+        let(:content) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_range_array", filename: "Gemfile").content
+        end
+        it { is_expected.to include("ruby '2.2.10'\n") }
+        it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
+      end
+
+      context "with a required ruby version requirement class" do
+        let(:gemspec) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_requirement_class",
+                                          filename: "example.gemspec")
+        end
+        let(:content) do
+          bundler_project_dependency_file("gemspec_required_ruby_version_requirement_class",
+                                          filename: "Gemfile").content
+        end
+        it { is_expected.to include("ruby '2.1.10'\n") }
+        it { is_expected.to include(%(gem "statesman", "~> 1.2.0")) }
+      end
+
       context "without an existing ruby version" do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
@@ -64,7 +99,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
         end
-        it { is_expected.to include("ruby '3.0.0'\n") }
+        it { is_expected.to include("ruby '3.0.1'\n") }
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 

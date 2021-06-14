@@ -170,7 +170,7 @@ module Dependabot
               args: {
                 dir: tmp_dir,
                 gemfile_name: gemfile.name,
-                credentials: credentials,
+                credentials: credentials
               }
             )
             git_specs.reject do |spec|
@@ -195,7 +195,7 @@ module Dependabot
               args: {
                 dir: dir,
                 gemfile_name: gemfile.name,
-                credentials: credentials,
+                credentials: credentials
               }
             )
           end

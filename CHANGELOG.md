@@ -1,3 +1,261 @@
+## v0.152.1, 11 June 2021
+
+- Tests: Allow profiling tests with stackprof when tagged
+- Throw an error when using the deprecated terraform provider syntax, include upgrade instructions
+- Update `bump-version` with instructions to checkout the new branch
+
+## v0.152.0, 10 June 2021
+
+- Python: Upgrade pip to 21.1.2
+- Python: Upgrade pip-tools to 6.1.0
+- Python: Drop python 2.x support
+- Python: Upgrade pipenv to 2021.5.29
+- Terraform: Add support for lockfiles
+- Terraform: Upgrade and pin Terraform to version 1.0.0
+
+## v0.151.1, 7 June 2021
+
+fix(npm): Prevent unnecessary hash pinning in lock file constraint
+
+## v0.151.0, 7 June 2021
+
+- Pin erlang to OTP 23 until we can resolve OTP 24 warning issues
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.150.0, 7 June 2021
+
+- build(deps): bump composer/composer from 2.0.14 to 2.1.1 in /composer/helpers/v2
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps-dev): bump prettier in /npm_and_yarn/helpers
+- build(deps): bump dependabot/fetch-metadata from 1.0.2 to 1.0.3
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.149.5, 2 June 2021
+
+- build(deps): bump detect-indent in /npm_and_yarn/helpers
+- chore(deps): bump composer/composer in /composer/helpers/v2
+- chore(deps-dev): update rubocop requirement from ~> 1.15.0 to ~> 1.16.0
+- refactor(Terraform): raise PrivateSourceAuthenticationFailure instead of DependabotError
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.149.4, 1 June 2021
+
+- fix(Terraform): use service discovery protocol
+- fix(Terraform): parse optional hostname from module/provider source address
+- Bump composer/composer from 2.0.12 to 2.0.14 in /composer/helpers/v2
+- poetry: support pyproject.toml indentation
+
+## v0.149.3, 28 May 2021
+
+- Bundler: handle required ruby version ranges in gemspecs
+- Bundler: Bump to latest ruby versions
+- Elixir: Bump version from 1.10.4 -> 1.11.4
+- gomod: UpdateChecker - handle invalid module path error on update
+- Composer: handle git clone error in lockfile updater
+- Bump eslint from 7.26.0 to 7.27.0 in /npm_and_yarn/helpers
+
+## v0.149.2, 27 May 2021
+
+- Tests: avoid squatted repositories
+
+## v0.149.1, 27 May 2021
+
+- Bundler: Fix ruby version patch for 2.2.18
+- Bundler: Update bundler to 2.2.18
+
+## v0.149.0, 26 May 2021
+
+- Terraform: Use registry credentials
+
+## v0.148.10, 26 May 2021
+
+- Yarn: use .yarnrc file if present
+- npm: handle latest version requirement
+
+## v0.148.9, 26 May 2021
+
+- Terraform: Do not set dependency.version for version ranges
+- Terraform: Parse lockfiles to get exact version when present
+
+## v0.148.8, 25 May 2021
+
+- Composer: handle unreachable git vcs source
+- Terraform: handle implicit (v0.12 style) provider sources
+
+## v0.148.7, 25 May 2021
+
+- npm: Handle multiple sources in the update checker
+- Composer: Handle invalid composer.json
+
+## v0.148.6, 21 May 2021
+
+- Handle nil dependency version when raising AllVersionsIgnored
+
+## v0.148.5, 21 May 2021
+
+- Terraform: Fix updating multiple providers
+- Dockerfile: split up native helper build steps
+
+## v0.148.4, 21 May 2021
+
+- Terraform: Improve updating provider requirements
+- Bundler 2: No longer bump yanked gems when updating dependency
+- Upgrade bundler to 2.2.17
+- Bump @npmcli/arborist from 2.5.0 to 2.6.0 in /npm_and_yarn/helpers
+
+## v0.148.3, 19 May 2021
+
+- fix(common): skip validation on non-git sources
+- fix(npm/yarn): prefer private registries over public ones
+
+## v0.148.2, 19 May 2021
+
+- Terraform: Fix finding metadata for providers
+
+## v0.148.1, 19 May 2021
+
+- npm: Handle nested workspace dependencies installed in the top-level
+  `node_modules` folder
+
+## v0.148.0, 19 May 2021
+
+- Terraform: Support provider updates
+- Terraform: Extract RegistryClient for communicating with terraform registry
+- Go modules: Replace custom helper with `go get -d lib@version` @jeffwidman
+
+## v0.147.1, 18 May 2021
+
+- Terraform: remove legacy terraform feature flag
+- Terraform: Clean up support for legacy terragrunt files
+- Hex: Fix version resolver specs
+- Update rubocop requirement from ~> 1.14.0 to ~> 1.15.0 in /common
+- Bump phpstan/phpstan from 0.12.85 to 0.12.88 in /composer/helpers/v1
+- Bump phpstan/phpstan from 0.12.85 to 0.12.88 in /composer/helpers/v2
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps-dev): bump prettier in /npm_and_yarn/helpers
+- build(deps): bump flake8 from 3.9.1 to 3.9.2 in /python/helpers
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.147.0, 13 May 2021
+
+- Switch HCL2 parser to be the default for Terraform. Supports Terraform v0.12+ [(#3716)](https://github.com/dependabot/dependabot-core/pull/3716)
+
+## v0.146.1, 12 May 2021
+
+- Actions: skip equivalent shorter semver tags, such as `v2` and `v2.1.0`
+- Python: Run all pip-compile commands with options @JimNero009
+- Terraform (prerelease): Handle terragrunt HCL files
+
+## v0.146.0, 10 May 2021
+
+- go_modules: Refactor go module version finder specs
+- all: Filter lower versions when checking ignored versions
+- Terraform: Document and improve coverage for RequirementsUpdater
+- Revert "docker: FileParser consider image prefix/suffixes as unique"
+
+## v0.145.4, 10 May 2021
+
+- Actions: accept semver versions
+- Actions: detect workflow steps pinned to semver versions
+
+## v0.145.3, 7 May 2021
+
+- go_modules: Gracefully handle +incompatible versions when checking for updates
+
+## v0.145.2, 7 May 2021
+
+- Nuget: Handle paginated v2 nuget api responses
+- maven: allow security updates to multi-dependency properties
+- build(deps): bump lodash
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): update rubocop requirement from ~> 1.13.0 to ~> 1.14.0
+
+## v0.145.1, 5 May 2021
+
+- go_modules: don't filter the current version
+- terraform: move fixtures to project folders
+## v0.145.0, 5 May 2021
+
+- go_modules: support version ignores
+- Dev env: mount go helper source in dev shell
+- docker: FileParser unique suffixes
+- go_modules: helper updates
+- GitHub PullRequestCreator: prepend refs/
+- build(deps): bump github.com/dependabot/gomodules-extracted
+
+## v0.144.0, 5 May 2021
+
+- Elm: Drop support for Elm 0.18
+- Commom: Handle nil dependency version when generating ignored versions
+- Python: allow comments when parsing setup.cfg
+- go_modules: stub consistently and ignore invalid modules
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.143.6, 30 April 2021
+
+- Common: version-update:semver-major ignores all major version updates
+- Document how to run tests within the dev docker container
+- go_modules: Make error output more idiomatic
+- Create CODE_OF_CONDUCT.md
+- Common: IgnoreCondition: handle multi-length semver ranges
+- Common: IgnoreCondition: don't ignore current version when ignoring patches
+
+## v0.143.5, 29 April 2021
+
+- gradle: only treat commit-like versions as git repositories
+- dry-run: change SECURITY_ADVISORIES to kebab-case
+- go_modules: helper improvements @jeffwidman
+- go_modules: require go.16 for helpers @jeffwidman
+- go_modules: use go1.16.3 @jeffwidman
+- docker: handle versions generated with `git describe --tags --long` @kd7lxl
+- build(deps): bump composer/composer in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers
+
+## v0.143.4, 26 April 2021
+
+- Common: Add IgnoreCondition.security_updates_only, which disables version updates filtering
+- build(deps-dev): bump eslint-config-prettier in /npm_and_yarn/helpers
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+
+## v0.143.3, 23 April 2021
+
+- Common: Do not transform update_types in IgnoreCondition
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.143.2, 22 April 2021
+
+- Dependabot::Config::IgnoreCondition support dependency wildcards
+- Dependabot::Config::IgnoreCondition support `update-types`
+- go_modules: clarify comment @jeffwidman
+
+## v0.143.1, 21 April 2021
+
+- Gradle/Maven: Handle ruby style requirements with maven version
+- Bundler: Add missing requirement_class for bundler latest version checker
+- Add IgnoreCondition#dependency_name
+- Dependabot::Config::File parse ignore_conditions
+- Dependabot::Config::File parse commit_message_options
+
+## v0.143.0, 21 April 2021
+
+- Python: Add support for updating `setup.cfg` files @honnix
+- Gomod: Run `go mod tidy` with flag to allow errors
+- Handle ruby and package manager specific version requirements from ignore conditions
+- build(deps): bump poetry from 1.1.4 to 1.1.6 in /python/helpers
+- build(deps-dev): update rubocop requirement from ~> 1.12.0 to ~> 1.13.0
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v1
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v2
+- dry-run: fetch ignore conditions and commit_message_options from `dependabot.yml` config file
+- dry-run: set ignore conditions from `IGNORE_CONDITIONS` env
+- Chore: Refactor `new_branch_name` function in branch_namer @milind009
+- Bundler: Remove unused `using_bundler2` arg from v1 helpers
+
 ## v0.142.1, 16 April 2021
 
 - Update npm from 7.7.4 to 7.10.0

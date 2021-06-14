@@ -218,15 +218,25 @@ module Dependabot
             versions.reject!(&:prerelease?) unless wants_prerelease?
 
             filtered = versions.reject do |v|
-              ignore_reqs.any? { |r| r.satisfied_by?(v) }
+              ignore_requirements.any? { |r| r.satisfied_by?(v) }
             end
 
-            raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions.any?
+            if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
+              raise AllVersionsIgnored
+            end
 
             filtered.max
           end
       end
       # rubocop:enable Metrics/PerceivedComplexity
+
+      def filter_lower_versions(versions_array)
+        return versions_array unless current_version && version_class.correct?(current_version)
+
+        versions_array.select do |version|
+          version > current_version
+        end
+      end
 
       def hex_registry_response
         return @hex_registry_response if @hex_registry_requested
@@ -246,13 +256,14 @@ module Dependabot
         nil
       end
 
+      def current_version
+        return unless dependency.version && version_class.correct?(dependency.version)
+
+        version_class.new(dependency.version)
+      end
+
       def wants_prerelease?
-        current_version = dependency.version
-        if current_version &&
-           version_class.correct?(current_version) &&
-           version_class.new(current_version).prerelease?
-          return true
-        end
+        return true if current_version&.prerelease?
 
         dependency.requirements.any? do |req|
           req[:requirement]&.match?(/\d-[A-Za-z0-9]/)
