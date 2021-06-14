@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ### SYSTEM DEPENDENCIES
 
 ENV DEBIAN_FRONTEND="noninteractive" \
