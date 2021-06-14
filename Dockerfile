@@ -68,9 +68,9 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y ruby2.6 ruby2.6-dev \
-  && gem update --system 3.2.14 \
+  && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.18 --no-document \
+  && gem install bundler -v 2.2.20 --no-document \
   && rm -rf /var/lib/gems/2.6.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
