@@ -56,9 +56,8 @@ RUN apt-get update \
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-RUN GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}') \
-  && if [ -z $GROUP_NAME ]; then groupadd --gid $USER_GID dependabot ; \
-     else groupmod -n dependabot $GROUP_NAME ; fi \
+RUN if ! getent group $USER_GID; then groupadd --gid $USER_GID dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot $GROUP_NAME ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt
 
