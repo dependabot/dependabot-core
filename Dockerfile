@@ -93,7 +93,8 @@ USER root
 
 # Install Node 14.0 and npm (updated after elm)
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
-  && apt-get install -y nodejs
+  && apt-get install -y nodejs \
+  && rm -rf /var/lib/apt/lists/*
 
 # NOTE: This was a hack to get around the fact that elm 18 failed to install with
 # npm 7, we should look into installing the latest version of node + npm
@@ -218,7 +219,8 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
   && apt-get install terraform=${TERRAFORM_VERSION} \
-  && terraform -help
+  && terraform -help \
+  && rm -rf /var/lib/apt/lists/*
 
 
 USER root
