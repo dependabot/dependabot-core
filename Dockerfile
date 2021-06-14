@@ -218,7 +218,7 @@ ARG TERRAFORM_VERSION=1.0.0
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
-  && apt-get install terraform=${TERRAFORM_VERSION} \
+  && apt-get install -y terraform=${TERRAFORM_VERSION} \
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
 
