@@ -1,3 +1,11 @@
+## v0.153.0, 14 June 2021
+
+- Bundler: Upgrade rubygems to 3.2.20 and bundler to 2.2.20
+- Python: Upgrade pyenv to 2.0.1 to add support for Python 3.9.5
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v2
+- build(deps): bump composer/composer in /composer/helpers/v2
+
 ## v0.152.1, 11 June 2021
 
 - Tests: Allow profiling tests with stackprof when tagged
