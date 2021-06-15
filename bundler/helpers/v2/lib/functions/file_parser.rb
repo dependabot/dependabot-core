@@ -41,7 +41,7 @@ module Functions
     end
 
     def source_from_lockfile(dependency_name)
-      parsed_lockfile&.specs.find { |s| s.name == dependency_name }&.source
+      parsed_lockfile&.specs&.find { |s| s.name == dependency_name }&.source
     end
 
     def source_for(dependency)
