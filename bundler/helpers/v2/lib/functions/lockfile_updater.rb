@@ -9,7 +9,7 @@ module Functions
         not\sfind\s(?<name>[^\s]+)-\d|
         has\s(?<name>[^\s]+)\slocked\sat
       /x.freeze
-      DEPENDENCY_DROPPED = "_dependency_dropped_"
+    DEPENDENCY_DROPPED = "_dependency_dropped_"
 
     def initialize(gemfile_name:, lockfile_name:, dependencies:)
       @gemfile_name = gemfile_name
