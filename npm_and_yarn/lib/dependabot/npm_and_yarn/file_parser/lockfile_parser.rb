@@ -170,7 +170,7 @@ module Dependabot
                   [{ production: !details["dev"] }]
               end
 
-              dependency_set << Dependency.new(dependency_args)
+              dependency_set << Dependency.new(**dependency_args)
               dependency_set += recursively_fetch_npm_lock_dependencies(details)
             end
 
