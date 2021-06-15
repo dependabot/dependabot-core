@@ -6,6 +6,7 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
@@ -14,6 +15,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
+        include Dependabot::UpdateCheckers::VersionFilters
+
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -106,11 +109,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
         end
 
         def filter_lower_versions(versions_array)
