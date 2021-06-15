@@ -4,9 +4,7 @@ AllCops:
   Exclude:
     - '*/vendor/**/*'
     - '*/bin/**/*'
-    - '*/tmp/**/*'
-    - 'tmp/**/*'
-    - '*/helpers/**/*'
+    - '**/tmp/**/*'
     - '*/spec/fixtures/**/*'
 
 Layout/DotPosition:
