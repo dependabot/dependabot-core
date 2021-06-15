@@ -313,7 +313,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       it "doesn't return to the vulnerable version" do
-        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
