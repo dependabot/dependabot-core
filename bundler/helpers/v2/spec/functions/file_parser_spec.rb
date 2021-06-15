@@ -54,7 +54,7 @@ RSpec.describe Functions::FileParser do
               branch: "master",
               ref: "a1b78a9",
               type: "git",
-              url: "git@github.com:gocardless/business"
+              url: "git@github.com:dependabot-fixtures/business"
             },
             type: :runtime
           },
@@ -73,7 +73,7 @@ RSpec.describe Functions::FileParser do
               branch: "master",
               ref: "master",
               type: "git",
-              url: "https://github.com/gocardless/prius"
+              url: "https://github.com/dependabot-fixtures/prius"
             },
             type: :runtime
           },
@@ -85,7 +85,7 @@ RSpec.describe Functions::FileParser do
               branch: "master",
               ref: "v0.11.6",
               type: "git",
-              url: "git@github.com:chanks/que"
+              url: "git@github.com:dependabot-fixtures/que"
             },
             type: :runtime
           },
@@ -97,7 +97,7 @@ RSpec.describe Functions::FileParser do
               branch: "master",
               ref: "master",
               type: "git",
-              url: "http://github.com/gocardless/uk_phone_numbers"
+              url: "http://github.com/dependabot-fixtures/uk_phone_numbers"
             },
             type: :runtime
           }
