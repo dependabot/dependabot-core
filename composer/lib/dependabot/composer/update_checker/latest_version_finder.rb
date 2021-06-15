@@ -4,6 +4,7 @@ require "excon"
 require "json"
 
 require "dependabot/composer/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -11,6 +12,8 @@ module Dependabot
   module Composer
     class UpdateChecker
       class LatestVersionFinder
+        include Dependabot::UpdateCheckers::VersionFilters
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -67,11 +70,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
         end
 
         def filter_lower_versions(versions_array)

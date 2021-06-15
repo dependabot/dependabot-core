@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
@@ -12,6 +13,8 @@ module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
+        include Dependabot::UpdateCheckers::VersionFilters
+
         TYPE_SUFFICES = %w(jre android java).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -105,18 +108,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
         end
 
         def filter_lower_versions(possible_versions)

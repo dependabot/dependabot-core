@@ -5,6 +5,7 @@ require "nokogiri"
 
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
 require "dependabot/shared_helpers"
 
@@ -13,6 +14,8 @@ module Dependabot
     class UpdateChecker
       class VersionFinder
         require_relative "repository_finder"
+
+        include Dependabot::UpdateCheckers::VersionFilters
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
 
@@ -81,18 +84,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
         end
 
         def filter_lower_versions(possible_versions)

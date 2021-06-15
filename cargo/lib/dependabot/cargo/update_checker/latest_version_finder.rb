@@ -2,11 +2,14 @@
 
 require "excon"
 require "dependabot/cargo/update_checker"
+require "dependabot/update_checkers/version_filters"
 
 module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        include Dependabot::UpdateCheckers::VersionFilters
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -61,11 +64,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
         end
 
         def filter_lower_versions(versions_array)

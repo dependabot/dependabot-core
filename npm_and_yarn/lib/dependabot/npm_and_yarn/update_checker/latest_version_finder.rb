@@ -2,6 +2,7 @@
 
 require "excon"
 require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
@@ -12,6 +13,8 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder
         class RegistryError < StandardError
+        include Dependabot::UpdateCheckers::VersionFilters
+
           attr_reader :status
 
           def initialize(status, msg)
@@ -123,18 +126,6 @@ module Dependabot
 
           versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
-        end
-
-        def filter_vulnerable_versions(versions_array)
-          updated_versions_array = versions_array
-
-          security_advisories.each do |advisory|
-            updated_versions_array =
-              updated_versions_array.
-              reject { |v| advisory.vulnerable?(v) }
-          end
-
-          updated_versions_array
         end
 
         def filter_lower_versions(versions_array)
