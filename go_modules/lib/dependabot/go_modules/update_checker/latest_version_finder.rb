@@ -36,6 +36,11 @@ module Dependabot
           @latest_version ||= fetch_latest_version
         end
 
+        def lowest_security_fix_version
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        end
+
+
         private
 
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions
@@ -48,6 +53,18 @@ module Dependabot
           candidate_versions = filter_ignored_versions(candidate_versions)
 
           candidate_versions.max
+        end
+
+        def fetch_lowest_security_fix_version
+          return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
+
+          relevant_versions = available_versions.versions
+          relevant_versions = filter_prerelease_versions(relevant_versions)
+          relevant_versions = filter_vulnerable_versions(relevant_versions)
+          relevant_versions = filter_ignored_versions(relevant_versions)
+          relevant_versions = filter_lower_versions(relevant_versions)
+
+          relevant_versions.min
         end
 
         def available_versions

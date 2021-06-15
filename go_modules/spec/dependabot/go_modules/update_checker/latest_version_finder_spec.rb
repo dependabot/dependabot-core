@@ -238,4 +238,84 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
   end
+
+  describe "#lowest_security_fix_version" do
+    let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
+
+    let(:dependency_version) { "1.0.1" }
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: dependency_name,
+        version: dependency_version,
+        package_manager: "go_modules",
+        requirements: [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: { type: "default", source: dependency_name }
+        }]
+      )
+    end
+
+    let(:go_mod_content) do
+      <<~GOMOD
+        module foobar
+        require #{dependency_name} v#{dependency_version}
+      GOMOD
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "go.mod",
+          content: go_mod_content
+        )
+      ]
+    end
+
+    let(:ignored_versions) { [] }
+
+    let(:raise_on_ignored) { false }
+
+    subject(:finder) do
+      described_class.new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        security_advisories: [],
+        credentials: [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }],
+        ignored_versions: ignored_versions,
+        raise_on_ignored: raise_on_ignored
+      )
+    end
+
+    context "with a go.mod vulnerable version" do
+      let(:go_mod_content) do
+        <<~GOMOD
+          module foobar
+          require #{dependency_name} v#{dependency_version}
+        GOMOD
+      end
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["1.1.0"]
+          )
+        ]
+      end
+
+      it "doesn't return to the vulnerable version" do
+        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.3.0"))
+      end
+    end
+
+  end
 end
