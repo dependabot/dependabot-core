@@ -175,7 +175,7 @@ module Dependabot
             )
             git_specs.reject do |spec|
               uri = URI.parse(spec.fetch("auth_uri"))
-              next false if uri.scheme != "http" && uri.scheme != "https"
+              next false unless %w(http https).include?(uri.scheme)
 
               Excon.get(
                 uri.to_s,
