@@ -13,7 +13,7 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder
         class RegistryError < StandardError
-        include Dependabot::UpdateCheckers::VersionFilters
+          include Dependabot::UpdateCheckers::VersionFilters
 
           attr_reader :status
 
