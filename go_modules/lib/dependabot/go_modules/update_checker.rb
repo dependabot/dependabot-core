@@ -41,6 +41,16 @@ module Dependabot
         latest_resolvable_version
       end
 
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        return latest_resolvable_version if git_dependency?
+
+        return unless lowest_security_fix_version
+
+        resolvable?(lowest_fix) ? lowest_fix : latest_resolvable_version
+      end
+
       def latest_resolvable_version_with_no_unlock
         # Irrelevant, since Go modules uses a single dependency file
         nil
