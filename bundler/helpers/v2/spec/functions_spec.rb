@@ -51,18 +51,7 @@ RSpec.describe Functions do
       let(:project_name) { "github_source" }
 
       it "returns git specs" do
-        in_tmp_folder do
-          git_specs = Functions.git_specs(
-            dir: tmp_path,
-            gemfile_name: "Gemfile",
-            credentials: {}
-          )
-
-          expect(git_specs.size).to eq(1)
-          git_specs.each do |gs|
-            expect { URI.parse(gs[:auth_uri]) }.not_to raise_error
-          end
-        end
+        expect_specs(1)
       end
     end
   end
