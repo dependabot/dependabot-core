@@ -24,11 +24,12 @@ module Dependabot
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored: false)
+                       ignored_versions:, security_advisories:, raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
         end
 
@@ -43,7 +44,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :dependency_files, :credentials, :ignored_versions
+        attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version
           return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
@@ -58,7 +59,7 @@ module Dependabot
         def fetch_lowest_security_fix_version
           return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
 
-          relevant_versions = available_versions.versions
+          relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = filter_vulnerable_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)

@@ -242,7 +242,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
   describe "#lowest_security_fix_version" do
     let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
 
-    let(:dependency_version) { "1.0.1" }
+    let(:dependency_version) { "1.0.0" }
 
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       described_class.new(
         dependency: dependency,
         dependency_files: dependency_files,
-        security_advisories: [],
+        security_advisories: security_advisories,
         credentials: [{
           "type" => "git_source",
           "host" => "github.com",
@@ -307,13 +307,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           Dependabot::SecurityAdvisory.new(
             dependency_name: dependency_name,
             package_manager: "go_modules",
-            vulnerable_versions: ["1.1.0"]
+            vulnerable_versions: ["<= 1.0.1"]
           )
         ]
       end
 
       it "doesn't return to the vulnerable version" do
-        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.3.0"))
+        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
