@@ -68,7 +68,7 @@ RSpec.describe Functions::FileParser do
           {
             groups: [:default],
             name: "prius",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "master",
@@ -80,7 +80,7 @@ RSpec.describe Functions::FileParser do
           {
             groups: [:default],
             name: "que",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "v0.11.6",
@@ -92,7 +92,7 @@ RSpec.describe Functions::FileParser do
           {
             groups: [:default],
             name: "uk_phone_numbers",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "master",
