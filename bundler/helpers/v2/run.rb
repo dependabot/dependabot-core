@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "bundler"
 require "json"
 
@@ -36,9 +38,9 @@ begin
   args = request["args"].transform_keys(&:to_sym)
 
   output({ result: Functions.send(function, **args) })
-rescue => error
+rescue StandardError => e
   output(
-    { error: error.message, error_class: error.class, trace: error.backtrace }
+    { error: e.message, error_class: e.class, trace: e.backtrace }
   )
   exit(1)
 end

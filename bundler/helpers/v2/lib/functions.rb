@@ -128,8 +128,6 @@ module Functions
     ).conflicting_dependencies
   end
 
-  private
-
   def self.set_bundler_flags_and_credentials(dir:, credentials:)
     dir = dir ? Pathname.new(dir) : dir
     Bundler.instance_variable_set(:@root, dir)

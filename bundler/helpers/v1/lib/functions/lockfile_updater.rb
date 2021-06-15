@@ -1,12 +1,14 @@
+# frozen_string_literal: true
+
 module Functions
   class LockfileUpdater
     RETRYABLE_ERRORS = [Bundler::HTTPError].freeze
     GEM_NOT_FOUND_ERROR_REGEX =
-    /
-      locked\sto\s(?<name>[^\s]+)\s\(|
-      not\sfind\s(?<name>[^\s]+)-\d|
-      has\s(?<name>[^\s]+)\slocked\sat
-    /x.freeze
+      /
+        locked\sto\s(?<name>[^\s]+)\s\(|
+        not\sfind\s(?<name>[^\s]+)-\d|
+        has\s(?<name>[^\s]+)\slocked\sat
+      /x.freeze
 
     def initialize(gemfile_name:, lockfile_name:, dependencies:)
       @gemfile_name = gemfile_name
@@ -135,7 +137,7 @@ module Functions
       raise unless error.message.match?(GEM_NOT_FOUND_ERROR_REGEX)
 
       gem_name = error.message.match(GEM_NOT_FOUND_ERROR_REGEX).
-                named_captures["name"]
+                 named_captures["name"]
       raise if dependencies_to_unlock.include?(gem_name)
 
       dependencies_to_unlock << gem_name
@@ -161,9 +163,7 @@ module Functions
         end.compact.map(&:name)
 
       # If there are specific dependencies we can unlock, unlock them
-      if potentials_deps.any?
-        return dependencies_to_unlock.append(*potentials_deps)
-      end
+      return dependencies_to_unlock.append(*potentials_deps) if potentials_deps.any?
 
       # Fall back to unlocking *all* sub-dependencies. This is required
       # because Bundler's VersionConflict objects don't include enough
@@ -205,7 +205,7 @@ module Functions
               defn_dep.source.is_a?(Bundler::Source::Git)
           defn_dep.source.unlock!
         elsif Gem::Version.correct?(dep.fetch("version"))
-          new_req = Gem::Requirement.create("= #{dep.fetch("version")}")
+          new_req = Gem::Requirement.create("= #{dep.fetch('version')}")
           old_reqs[dep.fetch("name")] = defn_dep.requirement
           defn_dep.instance_variable_set(:@requirement, new_req)
         end

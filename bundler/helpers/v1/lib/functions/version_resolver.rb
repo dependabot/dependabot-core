@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Functions
   class VersionResolver
     GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
@@ -20,9 +22,7 @@ module Functions
       # included in a gemspec, it's because the Gemfile didn't import
       # the gemspec. This is unusual, but the correct behaviour if/when
       # it happens is to behave as if the repo was gemspec-only.
-      if dep.nil? && dependency_requirements.any?
-        return "latest"
-      end
+      return "latest" if dep.nil? && dependency_requirements.any?
 
       # Otherwise, if the dependency wasn't found it's because it is a
       # subdependency that was removed when attempting to update it.
@@ -38,9 +38,7 @@ module Functions
         ruby_version: ruby_version,
         fetcher: fetcher_class(dep)
       }
-      if dep.source.instance_of?(::Bundler::Source::Git)
-        details[:commit_sha] = dep.source.revision
-      end
+      details[:commit_sha] = dep.source.revision if dep.source.instance_of?(::Bundler::Source::Git)
       details
     end
 
@@ -92,7 +90,7 @@ module Functions
     end
 
     def build_definition(dependencies_to_unlock)
-      # Note: we lock shared dependencies to avoid any top-level
+      # NOTE: we lock shared dependencies to avoid any top-level
       # dependencies getting unlocked (which would happen if they were
       # also subdependencies of the dependency being unlocked)
       ::Bundler::Definition.build(
