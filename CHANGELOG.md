@@ -1,3 +1,13 @@
+## v0.154.0, 15 June 2021
+
+- Update ruby from 2.6 to 2.7
+- Bundler: add missing specs from bundler1 and load bundler2 fixtures
+- Dockerfile improvements @PeterDaveHello
+  - Set SHELL option for shell pipe
+  - Add missing `-y` for apt-get install
+  - Fix npm cache clean up
+  - Add missing apt lists clean up
+
 ## v0.153.0, 14 June 2021
 
 - Bundler: Upgrade rubygems to 3.2.20 and bundler to 2.2.20
