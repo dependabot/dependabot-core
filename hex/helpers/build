@@ -8,7 +8,7 @@ if [ -z "$install_dir" ]; then
   exit 1
 fi
 
-mkdir -p $install_dir
+mkdir -p "$install_dir"
 
 mix local.hex --force
 mix archive.install hex nerves_bootstrap --force
@@ -20,9 +20,9 @@ case `uname` in
   *) CP_OPTS='-r' ;;
 esac
 
-cp $CP_OPTS "$helpers_dir/lib" $install_dir
-cp $CP_OPTS "$helpers_dir/mix.exs" $install_dir
-cp $CP_OPTS "$helpers_dir/mix.lock" $install_dir
+cp $CP_OPTS "$helpers_dir/lib" "$install_dir"
+cp $CP_OPTS "$helpers_dir/mix.exs" "$install_dir"
+cp $CP_OPTS "$helpers_dir/mix.lock" "$install_dir"
 
 cd "$install_dir"
 mix deps.get
