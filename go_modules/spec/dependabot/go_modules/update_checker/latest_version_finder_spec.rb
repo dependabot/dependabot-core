@@ -241,9 +241,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
   end
 
   describe "#lowest_security_fix_version" do
-
     subject { finder.lowest_security_fix_version }
-    
+
     let(:current_version) { "1.0.0" }
 
     context "when on a stable release and a newer versions are available" do
@@ -286,7 +285,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
     context "when on a stable release and a newer prerelease is available" do
       let(:current_version) { "1.1.0" }
-      
+
       it "doesn't return pre-release" do
         expect(finder.lowest_security_fix_version).to_not eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
@@ -300,6 +299,5 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.2"))
       end
     end
-
   end
 end

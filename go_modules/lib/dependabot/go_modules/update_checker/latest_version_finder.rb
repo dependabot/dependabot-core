@@ -41,7 +41,6 @@ module Dependabot
           @lowest_security_fix_version ||= fetch_lowest_security_fix_version
         end
 
-
         private
 
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
