@@ -13,7 +13,7 @@ require "git_source_patch"
 
 require "functions"
 
-MAX_BUNDLER_VERSION="2.0.0"
+MAX_BUNDLER_VERSION = "2.0.0"
 
 def validate_bundler_version!
   return true if correct_bundler_version?
@@ -38,9 +38,9 @@ begin
   args = request["args"].transform_keys(&:to_sym)
 
   output({ result: Functions.send(function, **args) })
-rescue => error
+rescue StandardError => e
   output(
-    { error: error.message, error_class: error.class, trace: error.backtrace }
+    { error: e.message, error_class: e.class, trace: e.backtrace }
   )
   exit(1)
 end

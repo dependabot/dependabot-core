@@ -36,9 +36,7 @@ def project_dependency_files(project)
     files = files.select { |f| File.file?(f) }
     files.map do |filename|
       content = File.read(filename)
-      if filename == "Gemfile.lock"
-        content = content.gsub(LOCKFILE_ENDING, "")
-      end
+      content = content.gsub(LOCKFILE_ENDING, "") if filename == "Gemfile.lock"
       {
         name: filename,
         content: content

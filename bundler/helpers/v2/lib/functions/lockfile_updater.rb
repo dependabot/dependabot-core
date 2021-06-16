@@ -9,6 +9,7 @@ module Functions
         not\sfind\s(?<name>[^\s]+)-\d|
         has\s(?<name>[^\s]+)\slocked\sat
       /x.freeze
+    DEPENDENCY_DROPPED = "_dependency_dropped_"
 
     def initialize(gemfile_name:, lockfile_name:, dependencies:)
       @gemfile_name = gemfile_name
@@ -24,7 +25,7 @@ module Functions
 
     attr_reader :gemfile_name, :lockfile_name, :dependencies
 
-    def generate_lockfile
+    def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
 
       begin
@@ -36,7 +37,7 @@ module Functions
 
         old_reqs.each do |dep_name, old_req|
           d_dep = definition.dependencies.find { |d| d.name == dep_name }
-          if old_req == :none then definition.dependencies.delete(d_dep)
+          if old_req.to_s == DEPENDENCY_DROPPED then definition.dependencies.delete(d_dep)
           else
             d_dep.instance_variable_set(:@requirement, old_req)
           end
@@ -200,7 +201,7 @@ module Functions
         if defn_dep.nil?
           definition.dependencies <<
             Bundler::Dependency.new(dep.fetch("name"), dep.fetch("version"))
-          old_reqs[dep.fetch("name")] = :none
+          old_reqs[dep.fetch("name")] = DEPENDENCY_DROPPED
         elsif git_dependency?(dep) &&
               defn_dep.source.is_a?(Bundler::Source::Git)
           defn_dep.source.unlock!

@@ -23,6 +23,7 @@ module Dependabot
         fetched_files = []
         fetched_files += terraform_files
         fetched_files += terragrunt_files
+        fetched_files += [lock_file] if lock_file
 
         return fetched_files if fetched_files.any?
 
@@ -44,6 +45,10 @@ module Dependabot
           repo_contents(raise_errors: false).
           select { |f| f.type == "file" && terragrunt_file?(f.name) }.
           map { |f| fetch_file_from_host(f.name) }
+      end
+
+      def lock_file
+        @lock_file ||= fetch_file_if_present(".terraform.lock.hcl")
       end
     end
   end
