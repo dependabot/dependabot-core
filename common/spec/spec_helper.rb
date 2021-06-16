@@ -10,6 +10,7 @@ require "stackprof"
 
 require "dependabot/dependency_file"
 require_relative "dummy_package_manager/dummy"
+require_relative "warning_monkey_patch"
 
 if ENV["COVERAGE"]
   SimpleCov::Formatter::Console.output_style = "block"
