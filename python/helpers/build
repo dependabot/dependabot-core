@@ -12,7 +12,6 @@ helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/run.py" \
-  "$helpers_dir/requirements_py2.txt" \
   "$helpers_dir/requirements.txt" \
   "$install_dir"
 
