@@ -86,7 +86,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
 
       it "doesn't return to the excluded version" do
-        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.1"))
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.6"))
       end
     end
 
