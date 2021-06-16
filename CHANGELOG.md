@@ -1,3 +1,8 @@
+## v0.154.1, 16 June 2021
+
+- Ruby: Fix 2.7 deprecation warnings in rubygems
+- Bundler: Run native helper specs
+
 ## v0.154.0, 15 June 2021
 
 - Update ruby from 2.6 to 2.7
