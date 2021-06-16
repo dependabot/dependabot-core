@@ -157,6 +157,41 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           it { is_expected.to be_truthy }
         end
       end
+
+      context "with a dependency that has a latest requirement and a valid version", vcr: true do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "actions/create-release",
+            version: "1",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/create-release",
+                ref: "latest",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/create-release@latest" }
+            }, {
+              requirement: nil,
+              groups: [],
+              file: ".github/workflows/workflow.yml",
+              source: {
+                type: "git",
+                url: "https://github.com/actions/create-release",
+                ref: "v1",
+                branch: nil
+              },
+              metadata: { declaration_string: "actions/create-release@v1" }
+            }],
+            package_manager: "github_actions"
+          )
+        end
+
+        it { is_expected.to be_falsey }
+      end
     end
   end
 
