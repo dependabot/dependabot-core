@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "json"
-require "tmpdir"
-require "excon"
-require "English"
 require "digest"
+require "English"
+require "excon"
+require "fileutils"
+require "json"
 require "open3"
 require "shellwords"
+require "tmpdir"
 
 require "dependabot/utils"
 require "dependabot/errors"
