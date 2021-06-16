@@ -66,6 +66,8 @@ RUN if ! getent group $USER_GID; then groupadd --gid $USER_GID dependabot ; \
 
 # Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# Disable the outdated rubygems installation from being loaded
+ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
