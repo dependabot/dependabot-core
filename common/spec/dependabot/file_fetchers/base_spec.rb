@@ -1332,7 +1332,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       # `git clone` against a file:// URL that is filled by the test
       let(:repo_path) { Dir.mktmpdir }
       after { FileUtils.rm_rf(repo_path) }
-      let(:fill_repo) {}
+      let(:fill_repo) { nil }
       before do
         Dir.chdir(repo_path) do
           `git init .`
