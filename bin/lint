@@ -2,4 +2,7 @@
 
 set -e
 
-shellcheck ./bin/* ./*/helpers/build
+shellcheck \
+  ./bin/docker-dev-shell \
+  ./bin/lint \
+  ./*/helpers/build
