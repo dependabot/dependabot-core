@@ -5,4 +5,5 @@ set -e
 shellcheck \
   ./bin/docker-dev-shell \
   ./bin/lint \
-  ./*/helpers/build
+  ./*/helpers/build \
+  "$@"
