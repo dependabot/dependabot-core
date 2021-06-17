@@ -5,10 +5,10 @@ defmodule DependencyHelper do
     |> run()
     |> case do
       {output, 0} ->
-        if output =~ "No authenticated organization found" do
-          {:error, output}
-        else
-          {:ok, :erlang.binary_to_term(output)}
+        case output do
+          ~r/No authenticated organization found/ -> {:error, output}
+          ~r/GenServer Hex.Registry.Server terminating/ -> {:error, output}
+          _ -> {:ok, :erlang.binary_to_term(output)}
         end
 
       {error, 1} -> {:error, error}
@@ -36,15 +36,27 @@ defmodule DependencyHelper do
     |> IO.write()
   end
 
-  defp run(%{"function" => "parse", "args" => [dir]}) do
+  defp run(args, retry \\3)
+  defp run(%{"function" => "parse", "args" => [dir]}, _retry) do
     run_script("parse_deps.exs", dir)
   end
 
-  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name, credentials]}) do
+
+  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name, credentials]} = args, retry = 0) do
     run_script("check_update.exs", dir, [dependency_name] ++ credentials)
   end
 
-  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name, credentials]}) do
+  defp run(%{"function" => "get_latest_resolvable_version", "args" => [dir, dependency_name, credentials]} = args, retry) do
+    output = run_script("check_update.exs", dir, [dependency_name] ++ credentials)
+
+    case output do
+      ~r/GenServer Hex.Registry.Server terminating/ ->
+        run(args, retry - 1)
+      _ -> output
+    end
+  end
+
+  defp run(%{"function" => "get_updated_lockfile", "args" => [dir, dependency_name, credentials]}, _retry) do
     run_script("do_update.exs", dir, [dependency_name] ++ credentials)
   end
 

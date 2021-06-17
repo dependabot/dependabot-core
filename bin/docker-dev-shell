@@ -161,6 +161,7 @@ docker run --rm -ti \
   -v "$(pwd)/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
   -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
   -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
+  -v "$(pwd)/hex/helpers:$CODE_DIR/hex/helpers" \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
