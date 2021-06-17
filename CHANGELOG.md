@@ -1,3 +1,11 @@
+## v0.154.2, 17 June 2021
+
+- Terraform: Handle 401 registry responses
+- Github actions: Handle no latest version found
+- Python: Fix ruby 2.7 deprecations
+- Double quote variables in shellscript @PeterDaveHello
+- Add `--no-install-recommends` to all `apt-get install` in Dockerfile @PeterDaveHello
+
 ## v0.154.1, 16 June 2021
 
 - Ruby: Fix 2.7 deprecation warnings in rubygems
