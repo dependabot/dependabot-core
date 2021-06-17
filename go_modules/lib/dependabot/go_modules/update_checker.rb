@@ -42,7 +42,6 @@ module Dependabot
       end
 
       def lowest_resolvable_security_fix_version
-        raise "Dependency not vulnerable!" unless vulnerable?
 
         return latest_resolvable_version if git_dependency?
 

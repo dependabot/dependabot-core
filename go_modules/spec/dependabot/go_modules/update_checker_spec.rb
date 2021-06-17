@@ -75,4 +75,27 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
     it "doesn't updates Git SHAs to releases that don't include them"
     it "doesn't update Git SHAs not on master to newer commits to master"
   end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+    
+    let(:dependency_version) { "1.0.0" }
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "go_modules",
+          vulnerable_versions: ["= 1.0.0"]
+        )
+      ]
+    end
+    
+    context "when a supported newer version is available" do
+      it "updates to the least new supported version" do
+        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
+      end
+    end
+
+  end
 end
