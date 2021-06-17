@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "open3"
 require "dependabot/errors"
 
 module Dependabot
@@ -52,6 +53,9 @@ module Dependabot
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
 
+      response_with_git = fetch_raw_upload_pack_with_git_for(uri)
+      return response_with_git.body if response_with_git.status == 200
+
       raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
 
       raise "Unexpected response: #{response.status} - #{response.body}" if response.status < 400
@@ -83,6 +87,37 @@ module Dependabot
         url,
         idempotent: true,
         **excon_defaults
+      )
+    end
+
+    def fetch_raw_upload_pack_with_git_for(uri)
+      status = 200
+
+      service_pack_uri = uri
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+
+      command = "git ls-remote #{service_pack_uri}"
+      env = { "PATH" => ENV["PATH"] }
+
+      start = Time.now
+      stdout, stderr, process = Open3.capture3(env, command)
+      time_taken = Time.now - start
+
+      # package the command error like a HTTP response so error handling
+      # remains unchanged
+      unless process.success?
+        status = 500
+        stdout = {
+          message: stderr,
+          command: command,
+          time_taken: time_taken,
+          process_exit_value: process.to_s
+        }
+      end
+
+      OpenStruct.new(
+        body: stdout,
+        status: status
       )
     end
 
