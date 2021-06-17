@@ -98,5 +98,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: apt-get update -y && apt-get install --no-install-recommends shellcheck
+      - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
       - run: ./bin/lint
