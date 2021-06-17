@@ -15,7 +15,7 @@ mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 
-case `uname` in
+case $(uname) in
   'Darwin') CP_OPTS='-R' ;;
   *) CP_OPTS='-r' ;;
 esac
