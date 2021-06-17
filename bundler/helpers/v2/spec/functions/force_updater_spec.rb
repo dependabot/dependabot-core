@@ -31,14 +31,14 @@ RSpec.describe Functions::ForceUpdater do
       let(:project_name) { "version_conflict" }
 
       it "updates the conflicting dependencies" do
-        updated_deps, specs = force_update
+        updated_deps, _specs = force_update
         expect(updated_deps).to eq([{ name: "rspec-support" }, { name: "rspec-mocks" }])
       end
 
       context "when updating a single dependency" do
         let(:update_multiple_dependencies) { false }
 
-        it {  expect { force_update }.to raise_error(Bundler::VersionConflict) }
+        it { expect { force_update }.to raise_error(Bundler::VersionConflict) }
       end
     end
 
@@ -50,7 +50,7 @@ RSpec.describe Functions::ForceUpdater do
       let(:lockfile_name) { "gems.locked" }
 
       it "updates the conflicting dependencies" do
-        updated_deps, specs = force_update
+        updated_deps, _specs = force_update
         expect(updated_deps).to eq([{ name: "rspec-support" }, { name: "rspec-mocks" }])
       end
     end
