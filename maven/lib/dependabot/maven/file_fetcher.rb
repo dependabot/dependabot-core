@@ -42,7 +42,6 @@ module Dependabot
           rescue Dependabot::DependencyFileNotFound
             nil
           end
-
       end
 
       def child_poms
