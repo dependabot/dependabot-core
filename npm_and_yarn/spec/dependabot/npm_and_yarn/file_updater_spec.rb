@@ -3481,5 +3481,22 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
     end
+
+    context "with an indirect dependency that cannot be updated" do
+      let(:files) { project_dependency_files("npm6/indirect_constraint_conflict") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "css-what",
+          version: "2.1.3",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "does not update any of the files" do
+        expect(updated_files).to be_empty
+      end
+    end
   end
 end
