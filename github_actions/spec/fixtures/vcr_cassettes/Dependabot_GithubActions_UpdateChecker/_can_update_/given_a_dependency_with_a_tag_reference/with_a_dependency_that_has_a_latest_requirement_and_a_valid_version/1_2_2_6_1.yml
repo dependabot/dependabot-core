@@ -7,31 +7,31 @@ http_interactions:
       encoding: US-ASCII
       string: ''
     headers:
-      User-Agent:
+      user-agent:
       - dependabot-core/0.154.1 excon/0.82.0 ruby/2.7.3 (x86_64-darwin19) (+https://github.com/dependabot/dependabot-core)
   response:
     status:
       code: 200
       message: OK
     headers:
-      Server:
+      server:
       - GitHub Babel 2.0
-      Content-Type:
+      content-type:
       - application/x-git-upload-pack-advertisement
-      Content-Security-Policy:
+      content-security-policy:
       - default-src 'none'; sandbox
-      Expires:
+      expires:
       - Fri, 01 Jan 1980 00:00:00 GMT
-      Pragma:
+      pragma:
       - no-cache
-      Cache-Control:
+      cache-control:
       - no-cache, max-age=0, must-revalidate
-      Vary:
+      vary:
       - Accept-Encoding
-      X-Frame-Options:
+      x-frame-options:
       - DENY
-      X-Github-Request-Id:
-      - E63C:2E69:865F6D:89604D:60CA2B7A
+      x-github-request-id:
+      - F00A:8442:172C96A:1835C37:60CB0FAB
     body:
       encoding: ASCII-8BIT
       string: "001e# service=git-upload-pack\n000001544c11c9fe1dcd9636620a16455165783b20fc7ea0
@@ -85,5 +85,5 @@ http_interactions:
         refs/tags/v1.1.0\n0041c9ba6969f07ed90fae07e2e66100dd03f9b1a50e refs/tags/v1.1.0^{}\n003ee9dc4ac22d57910765258fb6b199b62bfe0174da
         refs/tags/v1.1.1\n003e25a1bf7b5927ddc2c8c2a67d3bb564da1d3428bf refs/tags/v1.1.2\n003e1e92f6fc665e271a5435631ba00711fdd83d9d27
         refs/tags/v1.1.3\n003e0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e refs/tags/v1.1.4\n0000"
-  recorded_at: Wed, 16 Jun 2021 16:48:59 GMT
+  recorded_at: Thu, 17 Jun 2021 09:02:36 GMT
 recorded_with: VCR 6.0.0
