@@ -35,7 +35,6 @@ module Dependabot
 
       def extensions
         return @extensions if defined?(@extensions)
-        
         @extensions =
           begin
             fetch_file_if_present(".mvn/extensions.xml")
