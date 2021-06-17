@@ -6,7 +6,7 @@ AllCops:
   - "*/bin/**/*"
   - "**/tmp/**/*"
   - "*/spec/fixtures/**/*"
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.7
   SuggestExtensions: false
 Gemspec/DateAssignment:
   Enabled: true
@@ -96,14 +96,6 @@ Lint/UnreachableLoop:
   Enabled: true
 Lint/UselessMethodDefinition:
   Enabled: true
-Metrics/AbcSize:
-  Max: 35
-Metrics/BlockLength:
-  Exclude:
-  - "*/Rakefile"
-  - "**/spec/**/*"
-  - "*/dependabot-*.gemspec"
-  Max: 35
 Metrics/ClassLength:
   Max: 350
 Metrics/CyclomaticComplexity:
@@ -208,5 +200,7 @@ Style/StringConcatenation:
   Enabled: false
 Style/StringLiterals:
   EnforcedStyle: double_quotes
+Style/ArgumentsForwarding:
+  Enabled: true
 Style/SwapValues:
   Enabled: true
