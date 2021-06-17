@@ -2,4 +2,4 @@
 
 set -e
 
-shellcheck */helpers/build bin/*
+shellcheck ./bin/* ./*/helpers/build
