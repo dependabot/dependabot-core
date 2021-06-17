@@ -184,6 +184,19 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
   end
 
+  context "with a custom hostname" do
+    let(:hostname) { "registry.example.org" }
+    subject(:client) { described_class.new(hostname: hostname) }
+
+    it "raises helpful error when request is not authenticated", :vcr do
+      stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 401)
+
+      expect do
+        client.all_module_versions(identifier: "corp/package")
+      end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
+  end
+
   describe "#service_url_for" do
     let(:metadata) { "https://registry.terraform.io/.well-known/terraform.json" }
 
