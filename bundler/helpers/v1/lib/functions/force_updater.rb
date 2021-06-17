@@ -92,7 +92,6 @@ module Functions
       # 1) caused by a new requirement introduced by our unlocking, or
       # 2) caused by an old requirement that prohibits the update.
       # Hence, we look at the beginning and end of the requirement trees
-      byebug
       error.cause.conflicts.values.
         select do |conflict|
           conflict.requirement_trees.any? do |t|

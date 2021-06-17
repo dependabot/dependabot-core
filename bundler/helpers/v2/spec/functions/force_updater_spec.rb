@@ -11,11 +11,14 @@ RSpec.describe Functions::ForceUpdater do
     described_class.new(
       dependency_name: dependency_name,
       target_version: target_version,
-      gemfile_name: "Gemfile",
-      lockfile_name: "Gemfile.lock",
+      gemfile_name: gemfile_name,
+      lockfile_name: lockfile_name,
       update_multiple_dependencies: update_multiple_dependencies
     )
   end
+  let(:gemfile_name) { "Gemfile" }
+  let(:lockfile_name) { "Gemfile.lock" }
+  let(:update_multiple_dependencies) { true }
 
   describe "#run" do
     subject(:force_update) do
@@ -27,19 +30,28 @@ RSpec.describe Functions::ForceUpdater do
       let(:dependency_name) { "rspec-support" }
       let(:project_name) { "version_conflict" }
 
+      it "updates the conflicting dependencies" do
+        updated_deps, specs = force_update
+        expect(updated_deps).to eq([{ name: "rspec-support" }, { name: "rspec-mocks" }])
+      end
+
       context "when updating a single dependency" do
         let(:update_multiple_dependencies) { false }
 
         it {  expect { force_update }.to raise_error(Bundler::VersionConflict) }
       end
+    end
 
-      context "when updating multiple dependencies" do
-        let(:update_multiple_dependencies) { true }
+    context "with a version conflict in gems rb" do
+      let(:target_version) { "3.6.0" }
+      let(:dependency_name) { "rspec-support" }
+      let(:project_name) { "version_conflict_gems_rb" }
+      let(:gemfile_name) { "gems.rb" }
+      let(:lockfile_name) { "gems.locked" }
 
-        it "updates the conflicting dependencies" do
-          updated_deps, specs = force_update
-          expect(updated_deps).to eq([{ name: "rspec-support" }, { name: "rspec-mocks" }])
-        end
+      it "updates the conflicting dependencies" do
+        updated_deps, specs = force_update
+        expect(updated_deps).to eq([{ name: "rspec-support" }, { name: "rspec-mocks" }])
       end
     end
   end
