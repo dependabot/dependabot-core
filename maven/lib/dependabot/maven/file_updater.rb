@@ -43,7 +43,7 @@ module Dependabot
       private
 
       def check_required_files
-        raise "No pom.xml!" unless get_original_file("pom.xml") || get_original_file("extensions.xml")
+        raise "No pom.xml!" unless get_original_file("pom.xml")
       end
 
       def update_files_for_dependency(original_files:, dependency:)
