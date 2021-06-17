@@ -7,6 +7,9 @@ AllCops:
   - "**/tmp/**/*"
   - "*/spec/fixtures/**/*"
   TargetRubyVersion: 2.5
+  SuggestExtensions: false
+Gemspec/DateAssignment:
+  Enabled: true
 Layout/DotPosition:
   EnforcedStyle: trailing
 Layout/EmptyLinesAroundAttributeAccessor:
@@ -21,6 +24,8 @@ Layout/RescueEnsureAlignment:
   Enabled: false
 Layout/SpaceAroundMethodCallOperator:
   Enabled: false
+Layout/SpaceBeforeBrackets:
+  Enabled: true
 Lint/AmbiguousAssignment:
   Enabled: true
 Lint/BinaryOperatorWithIdenticalOperands:
