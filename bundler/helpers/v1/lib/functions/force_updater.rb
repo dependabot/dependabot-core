@@ -66,11 +66,11 @@ module Functions
         flat_map(&:requirement_trees).
         reject do |tree|
           # If the final requirement wasn't specific, it can't be binding
-          next true if tree.last.requirement == Gem::Requirement.new(">= 0")
+          next true if tree.last&.requirement == Gem::Requirement.new(">= 0")
 
           # If the conflict wasn't for the dependency we're updating then
           # we don't have enough info to reject it
-          next false unless tree.last.name == dependency_name
+          next false unless tree.last&.name == dependency_name
 
           # If the final requirement *was* for the dependency we're updating
           # then we can ignore the tree if it permits the target version
@@ -92,10 +92,11 @@ module Functions
       # 1) caused by a new requirement introduced by our unlocking, or
       # 2) caused by an old requirement that prohibits the update.
       # Hence, we look at the beginning and end of the requirement trees
+      byebug
       error.cause.conflicts.values.
         select do |conflict|
           conflict.requirement_trees.any? do |t|
-            names.include?(t.last.name) || names.include?(t.first.name)
+            names.include?(t.last&.name) || names.include?(t.first&.name)
           end
         end
     end
