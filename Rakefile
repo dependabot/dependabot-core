@@ -9,6 +9,7 @@ require "shellwords"
 require "rubygems/package"
 require "bundler"
 require "./common/lib/dependabot/version"
+require "yaml"
 
 GEMSPECS = %w(
   common/dependabot-common.gemspec
@@ -83,6 +84,25 @@ namespace :gems do
 
   task :clean do
     FileUtils.rm(Dir["pkg/*.gem"])
+  end
+end
+
+class Hash
+  def sort_by_key(recursive = false, &block)
+    keys.sort(&block).each_with_object({}) do |key, seed|
+      seed[key] = self[key]
+      seed[key] = seed[key].sort_by_key(true, &block) if recursive && seed[key].is_a?(Hash)
+      seed
+    end
+  end
+end
+
+namespace :rubocop do
+  task :sort do
+    File.write(
+      ".rubocop.yml",
+      YAML.load_file(".rubocop.yml").sort_by_key(true).to_yaml
+    )
   end
 end
 
