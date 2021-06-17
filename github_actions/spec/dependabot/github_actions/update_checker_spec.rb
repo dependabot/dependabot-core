@@ -215,7 +215,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "and all versions are being ignored" do
         let(:ignored_versions) { [">= 0"] }
         it "returns current version" do
-          expect(subject).to eq(dependency.version)
+          expect(subject).to be_nil
         end
 
         context "raise_on_ignored" do
