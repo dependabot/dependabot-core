@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
         "modules": [
           {
             "source": "hashicorp/consul/aws",
-            "versions": [{ 'version': "0.1.0" }, { 'version': "0.2.0" }]
+            "versions": [{ "version": "0.1.0" }, { "version": "0.2.0" }]
           }
         ]
       }.to_json)

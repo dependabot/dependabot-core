@@ -81,16 +81,24 @@ Naming/FileName:
   Enabled: false
 Style/AccessorGrouping:
   Enabled: false
+Style/ArgumentsForwarding:
+  Enabled: true
 Style/ArrayCoercion:
   Enabled: false
 Style/BisectedAttrAccessor:
   Enabled: false
 Style/CaseLikeIf:
   Enabled: false
+Style/CollectionCompact:
+  Enabled: true
 Style/CombinableLoops:
+  Enabled: true
+Style/DocumentDynamicEvalDefinition:
   Enabled: true
 Style/Documentation:
   Enabled: false
+Style/EndlessMethod:
+  Enabled: true
 Style/ExplicitBlockArgument:
   Enabled: true
 Style/ExponentialNotation:
@@ -99,16 +107,30 @@ Style/GlobalStdStream:
   Enabled: true
 Style/HashAsLastArrayItem:
   Enabled: false
+Style/HashConversion:
+  Enabled: true
 Style/HashEachMethods:
   Enabled: false
+Style/HashExcept:
+  Enabled: true
 Style/HashLikeCase:
   Enabled: false
 Style/HashTransformKeys:
   Enabled: false
 Style/HashTransformValues:
   Enabled: false
+Style/IfWithBooleanLiteralBranches:
+  Enabled: true
+Style/InPatternThen:
+  Enabled: true
 Style/KeywordParametersOrder:
   Enabled: false
+Style/MultilineInPatternThen:
+  Enabled: true
+Style/NegatedIfElseCondition:
+  Enabled: true
+Style/NilLambda:
+  Enabled: true
 Style/OptionalBooleanParameter:
   Enabled: false
 Style/PercentLiteralDelimiters:
@@ -117,6 +139,10 @@ Style/PercentLiteralDelimiters:
     "%W": "()"
     "%i": "()"
     "%w": "()"
+Style/QuotedSymbols:
+  Enabled: true
+Style/RedundantArgument:
+  Enabled: true
 Style/RedundantAssignment:
   Enabled: false
 Style/RedundantFetchBlock:
@@ -137,7 +163,11 @@ Style/SlicingWithRange:
   Enabled: false
 Style/SoleNestedConditional:
   Enabled: true
+Style/StringChars:
+  Enabled: true
 Style/StringConcatenation:
   Enabled: false
 Style/StringLiterals:
   EnforcedStyle: double_quotes
+Style/SwapValues:
+  Enabled: true

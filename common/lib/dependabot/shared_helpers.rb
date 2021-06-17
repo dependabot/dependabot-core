@@ -65,7 +65,7 @@ module Dependabot
 
     # Escapes all special characters, e.g. = & | <>
     def self.escape_command(command)
-      command_parts = command.split(" ").map(&:strip).reject(&:empty?)
+      command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
 
