@@ -24,7 +24,7 @@ module Dependabot
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories: [], raise_on_ignored: false)
+                       ignored_versions:, security_advisories:, raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
