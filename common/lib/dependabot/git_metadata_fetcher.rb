@@ -91,34 +91,20 @@ module Dependabot
     end
 
     def fetch_raw_upload_pack_with_git_for(uri)
-      status = 200
-
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
 
       command = "git ls-remote #{service_pack_uri}"
       env = { "PATH" => ENV["PATH"] }
 
-      start = Time.now
       stdout, stderr, process = Open3.capture3(env, command)
-      time_taken = Time.now - start
-
-      # package the command error like a HTTP response so error handling
+      # package the command response like a HTTP response so error handling
       # remains unchanged
-      unless process.success?
-        status = 500
-        stdout = {
-          message: stderr,
-          command: command,
-          time_taken: time_taken,
-          process_exit_value: process.to_s
-        }
+      if process.success?
+        OpenStruct.new(body: stdout, status: 200)
+      else
+        OpenStruct.new(body: stderr, status: 500)
       end
-
-      OpenStruct.new(
-        body: stdout,
-        status: status
-      )
     end
 
     def tags_for_upload_pack
