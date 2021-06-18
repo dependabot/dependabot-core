@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "fileutils"
+
 module Functions
   class LockfileUpdater
     RETRYABLE_ERRORS = [Bundler::HTTPError].freeze

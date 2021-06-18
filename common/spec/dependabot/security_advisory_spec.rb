@@ -16,7 +16,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
   let(:vulnerable_versions) { [Gem::Requirement.new(">= 1")] }
 
   describe ".new" do
-    subject(:security_advisory) { described_class.new(args) }
+    subject(:security_advisory) { described_class.new(**args) }
 
     let(:args) do
       {

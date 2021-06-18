@@ -12,9 +12,9 @@ RSpec.describe Functions::FileParser do
     )
   end
 
-  let(:project_name) { "gemfile" }
-
   describe "#parsed_gemfile" do
+    let(:project_name) { "gemfile" }
+
     subject(:parsed_gemfile) do
       in_tmp_folder do
         dependency_source.parsed_gemfile(gemfile_name: "Gemfile")
@@ -43,14 +43,11 @@ RSpec.describe Functions::FileParser do
   end
 
   describe "#parsed_gemspec" do
-    let!(:gemspec_fixture) do
-      fixture("ruby", "gemspecs", "exact")
-    end
+    let(:project_name) { "gemfile_exact" }
 
     subject(:parsed_gemspec) do
-      in_tmp_folder do |tmp_path|
-        File.write(File.join(tmp_path, "test.gemspec"), gemspec_fixture)
-        dependency_source.parsed_gemspec(gemspec_name: "test.gemspec")
+      in_tmp_folder do |_tmp_path|
+        dependency_source.parsed_gemspec(gemspec_name: "example.gemspec")
       end
     end
 

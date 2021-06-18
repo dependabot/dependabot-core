@@ -92,5 +92,13 @@ RSpec.describe Functions::VersionResolver do
       its([:version]) { is_expected.to eq(Gem::Version.new("1.4.0")) }
       its([:fetcher]) { is_expected.to eq("Bundler::Fetcher::Dependency") }
     end
+
+    context "with no update possible due to a version conflict" do
+      let(:project_name) { "version_conflict_with_listed_subdep" }
+      let(:dependency_name) { "rspec-mocks" }
+      let(:requirement_string) { ">= 0" }
+
+      its([:version]) { is_expected.to eq(Gem::Version.new("3.6.0")) }
+    end
   end
 end
