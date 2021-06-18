@@ -40,6 +40,8 @@ RUN apt-get update \
 ### RUBY
 # Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# Disable the outdated rubygems installation from being loaded
+ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
