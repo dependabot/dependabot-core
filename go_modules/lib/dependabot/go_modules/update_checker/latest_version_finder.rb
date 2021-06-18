@@ -60,9 +60,9 @@ module Dependabot
 
           relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
-          relevant_versions = filter_vulnerable_versions(relevant_versions)
           relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
+          Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions, security_advisories)
 
           relevant_versions.min
         end
