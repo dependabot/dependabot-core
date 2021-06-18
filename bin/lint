@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+shellcheck \
+  ./bin/docker-dev-shell \
+  ./bin/lint \
+  ./*/helpers/build \
+  ./*/script/* \
+  "$@"

@@ -647,5 +647,16 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependencies.count).to eq(0)
       end
     end
+
+    context "with a provider that doesn't have a namespace provider" do
+      let(:files) { project_dependency_files("provider_no_namespace") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/random" }
+
+        expect(dependency.version).to eq("2.2.1")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
+      end
+    end
   end
 end
