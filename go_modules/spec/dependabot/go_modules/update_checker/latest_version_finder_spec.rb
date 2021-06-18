@@ -11,6 +11,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:dependency_version) { "1.0.0" }
 
+  let(:security_advisories) { [] }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -291,13 +293,5 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "with a retracted update version" do
-      # latest release v1.0.1 is retracted
-      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-retracted" }
-
-      pending "doesn't return the retracted version" do
-        expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.2"))
-      end
-    end
   end
 end
