@@ -134,7 +134,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
             exit_status = double(success?: true)
             allow(Open3).to receive(:capture3).and_call_original
-            allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return([stdout, "", exit_status])
+            allow(Open3).to receive(:capture3).
+              with(anything, "git ls-remote #{uri}").
+              and_return([stdout, "", exit_status])
           end
 
           its(:count) { is_expected.to eq(14) }
@@ -234,7 +236,9 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
           exit_status = double(success?: true)
           allow(Open3).to receive(:capture3).and_call_original
-          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return([stdout, "", exit_status])
+          allow(Open3).to receive(:capture3).
+            with(anything, "git ls-remote #{uri}").
+            and_return([stdout, "", exit_status])
         end
 
         it { is_expected.to eq(%w(master rails5)) }
