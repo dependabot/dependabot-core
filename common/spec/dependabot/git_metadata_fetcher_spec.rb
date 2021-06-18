@@ -61,7 +61,15 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 404" do
-        before { stub_request(:get, service_pack_url).to_return(status: 404) }
+        let(:uri) { "https://github.com/gocardless/business.git" }
+
+        before do
+          stub_request(:get, service_pack_url).to_return(status: 404)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return(["", "", exit_status])
+        end
 
         it "raises a helpful error" do
           expect { tags }.
@@ -70,7 +78,15 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 401" do
-        before { stub_request(:get, service_pack_url).to_return(status: 401) }
+        let(:uri) { "https://github.com/gocardless/business.git" }
+
+        before do
+          stub_request(:get, service_pack_url).to_return(status: 401)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return(["", "", exit_status])
+        end
 
         it "raises a helpful error" do
           expect { tags }.
@@ -79,7 +95,15 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 500" do
-        before { stub_request(:get, service_pack_url).to_return(status: 500) }
+        let(:uri) { "https://github.com/gocardless/business.git" }
+
+        before do
+          stub_request(:get, service_pack_url).to_return(status: 500)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return(["", "", exit_status])
+        end
 
         it "raises a helpful error" do
           expect { tags }.to raise_error(Octokit::InternalServerError)
@@ -197,7 +221,15 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       end
 
       context "but GitHub returns a 404" do
-        before { stub_request(:get, service_pack_url).to_return(status: 404) }
+        let(:uri) { "https://github.com/gocardless/business.git" }
+
+        before do
+          stub_request(:get, service_pack_url).to_return(status: 404)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{uri}").and_return(["", "", exit_status])
+        end
 
         it "raises a helpful error" do
           expect { ref_names }.
