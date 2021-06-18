@@ -3,7 +3,7 @@ FROM dependabot/dependabot-core
 # Temporarily switch to root user in order to install packages
 USER root
 RUN apt-get update \
-  && apt-get install -y vim strace ltrace gdb \
+  && apt-get install -y vim strace ltrace gdb shellcheck \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 
