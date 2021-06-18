@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 as build
 
-ARG PYTHON_VERSIONS="2.7.18 3.6.13 3.7.10 3.8.8 3.9.4"
+ARG PYTHON_VERSIONS="3.6.13 3.7.10 3.8.8 3.9.5"
 
 LABEL "maintainer"="platform_ci_team@pix4d.com"
 LABEL "description"="Pix4D Dependabot for updating your dependencies."
@@ -38,22 +38,22 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 ### RUBY
-# Install Ruby 2.6.6, update RubyGems, and install Bundler
+# Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
-  && apt-get install -y ruby2.6 ruby2.6-dev \
-  && gem update --system 3.2.14 \
-  && gem install bundler -v 2.2.18 --no-document \
-  && rm -rf /var/lib/gems/2.6.0/cache/* \
+  && apt-get install -y ruby2.7 ruby2.7-dev \
+  && gem update --system 3.2.20 \
+  && gem install bundler -v 1.17.3 --no-document \
+  && gem install bundler -v 2.2.20 --no-document \
+  && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
 ### PYTHON
 # Install Python 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout 1.2.26 && cd -
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.1 --single-branch --depth=1 /usr/local/.pyenv
 
 RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* } \
   && rm -Rf /tmp/python-build*

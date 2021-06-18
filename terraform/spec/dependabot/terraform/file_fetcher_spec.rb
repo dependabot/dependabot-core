@@ -83,6 +83,31 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     end
   end
 
+  context "with a lockfile" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_lockfile_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".terraform.lock.hcl?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_terraform_file.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the lockfile" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(.terraform.lock.hcl))
+    end
+  end
+
   context "with a directory that doesn't exist" do
     let(:directory) { "/nonexistent" }
 

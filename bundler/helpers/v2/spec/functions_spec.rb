@@ -14,7 +14,7 @@ RSpec.describe Functions do
         jfrog_source = Functions.jfrog_source(
           dir: tmp_path,
           gemfile_name: "Gemfile",
-          credentials: {},
+          credentials: {}
         )
 
         expect(jfrog_source).to eq("test.jfrog.io")

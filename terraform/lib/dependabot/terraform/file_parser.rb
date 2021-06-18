@@ -87,6 +87,8 @@ module Dependabot
       end
 
       def build_provider_dependency(file, name, details = {})
+        deprecated_provider_error(file) if deprecated_provider?(details)
+
         source_address = details.fetch("source", nil)
         version_req = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
@@ -107,6 +109,21 @@ module Dependabot
             }
           ]
         )
+      end
+
+      def deprecated_provider_error(file)
+        raise Dependabot::DependencyFileNotParseable.new(
+          file.path,
+          "This terraform provider syntax is now deprecated.\n"\
+          "See https://www.terraform.io/docs/language/providers/requirements.html "\
+          "for the new Terraform v0.13+ provider syntax."
+        )
+      end
+
+      def deprecated_provider?(details)
+        # The old syntax for terraform providers v0.12- looked like
+        # "tls ~> 2.1" which gets parsed as a string instead of a hash
+        details.is_a?(String)
       end
 
       def build_terragrunt_dependency(file, details)

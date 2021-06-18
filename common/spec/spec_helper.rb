@@ -6,6 +6,7 @@ require "vcr"
 require "byebug"
 require "simplecov"
 require "simplecov-console"
+require "stackprof"
 
 require "dependabot/dependency_file"
 require_relative "dummy_package_manager/dummy"
@@ -34,6 +35,18 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+
+  config.around do |example|
+    if example.metadata[:profile]
+      example_name = example.metadata[:full_description].strip.gsub(/[\s#\.-]/, "_").gsub("::", "_").downcase
+      name = "../tmp/stackprof_#{example_name}.dump"
+      StackProf.run(mode: :wall, interval: 100, raw: true, out: name) do
+        example.run
+      end
+    else
+      example.run
+    end
+  end
 end
 
 VCR.configure do |config|

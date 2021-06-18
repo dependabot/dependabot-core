@@ -258,23 +258,49 @@ RSpec.describe Dependabot::Clients::Azure do
     end
 
     context "Retries" do
-      it "with failure count <= max_retries" do
-        # Request succeeds (200) on second attempt.
-        stub_request(:get, base_url).
-          with(basic_auth: [username, password]).
-          to_return({ status: 502 }, { status: 200 })
+      context "for GET" do
+        it "with failure count <= max_retries" do
+          # Request succeeds (200) on second attempt.
+          stub_request(:get, base_url).
+            with(basic_auth: [username, password]).
+            to_return({ status: 502 }, { status: 200 })
 
-        response = client.get(base_url)
-        expect(response.status).to eq(200)
+          response = client.get(base_url)
+          expect(response.status).to eq(200)
+        end
+
+        it "with failure count > max_retries raises error" do
+          #  Request fails (503) multiple times and exceeds max_retry limit
+          stub_request(:get, base_url).
+            with(basic_auth: [username, password]).
+            to_return({ status: 503 }, { status: 503 }, { status: 503 })
+
+          expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
+        end
       end
 
-      it "with failure count > max_retries raises error" do
-        #  Request fails (503) multiple times and exceeds max_retry limit
-        stub_request(:get, base_url).
-          with(basic_auth: [username, password]).
-          to_return({ status: 503 }, { status: 503 }, { status: 503 })
+      context "for POST" do
+        before :each do
+          @request_body = "request body"
+        end
+        it "with failure count <= max_retries" do
+          # Request succeeds on thrid attempt
+          stub_request(:post, base_url).
+            with(basic_auth: [username, password], body: @request_body).
+            to_return({ status: 503 }, { status: 503 }, { status: 200 })
 
-        expect { client.get(base_url) }.to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
+          response = client.post(base_url, @request_body)
+          expect(response.status).to eq(200)
+        end
+
+        it "with failure count > max_retries raises an error" do
+          stub_request(:post, base_url).
+            with(basic_auth: [username, password], body: @request_body).
+            to_return({ status: 503 }, { status: 503 }, { status: 503 }, { status: 503 })
+
+          expect { client.post(base_url, @request_body) }.
+            to raise_error(Dependabot::Clients::Azure::ServiceNotAvailable)
+        end
       end
     end
   end

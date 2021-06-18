@@ -30,7 +30,7 @@ run:
 
       cd dependabot-core.git/pix4d-dependabot
       bundle install
-      bundle exec rubocop -c ../.rubocop.yml ../ -a
+      bundle exec rubocop -c ../.rubocop.yml ../ci ../docker ../python .
       cd ..
 
       cd docker

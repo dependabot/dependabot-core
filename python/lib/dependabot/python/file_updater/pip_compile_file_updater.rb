@@ -170,24 +170,6 @@ module Dependabot
             command,
             allow_unsafe_shell_command: allow_unsafe_shell_command
           )
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          original_error ||= e
-          msg = e.message
-
-          relevant_error =
-            if error_suggests_bad_python_version?(msg) then original_error
-            else e
-            end
-
-          raise relevant_error unless error_suggests_bad_python_version?(msg)
-          raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.18"
-
-          @python_version = "2.7.18"
-          retry
-        ensure
-          @python_version = nil
-          FileUtils.remove_entry(".python-version", true)
         end
 
         def python_env
@@ -203,14 +185,6 @@ module Dependabot
           end
 
           env
-        end
-
-        def error_suggests_bad_python_version?(message)
-          return true if message.include?("UnsupportedPythonVersion")
-          return true if message.include?("not find a version that satisfies")
-
-          message.include?('Command "python setup.py egg_info" failed') ||
-            message.include?("exit status 1: python setup.py egg_info")
         end
 
         def write_updated_dependency_files
@@ -436,7 +410,7 @@ module Dependabot
         def pip_compile_options_from_compiled_file(requirements_file)
           options = ["--output-file=#{requirements_file.name}"]
 
-          options << "--no-index" unless requirements_file.content.include?("index-url http")
+          options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
 
           options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
 

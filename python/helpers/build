@@ -12,20 +12,17 @@ helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/lib" \
   "$helpers_dir/run.py" \
-  "$helpers_dir/requirements_py2.txt" \
   "$helpers_dir/requirements.txt" \
   "$install_dir"
 
 cd "$install_dir"
-# With PYENV_VERSION=2.7.18 we use different requirements because pip>21.0.0 do not support Python2 anymore
-PYENV_VERSION=2.7.18 pyenv exec pip install -r "requirements_py2.txt"
 # CRYPTOGRAPHY_DONT_BUILD_RUST=1 is used to avoid the need for a Rust compiler while installing cryptography subdependency
 PYENV_VERSION=3.6.13  CRYPTOGRAPHY_DONT_BUILD_RUST=1 pyenv exec pip install -r "requirements.txt"
 PYENV_VERSION=3.7.10  pyenv exec pip install -r "requirements.txt"
 PYENV_VERSION=3.8.8  pyenv exec pip install -r "requirements.txt"
-PYENV_VERSION=3.9.4  pyenv exec pip install -r "requirements.txt"
+PYENV_VERSION=3.9.5  pyenv exec pip install -r "requirements.txt"
 
 # Workaround of https://github.com/python-poetry/poetry/issues/3010
 # By default poetry config file is stored under ~/.config/pypoetry
 # and is not bound to any specific Python version
-PYENV_VERSION=3.9.4 pyenv exec poetry config experimental.new-installer false
+PYENV_VERSION=3.9.5 pyenv exec poetry config experimental.new-installer false
