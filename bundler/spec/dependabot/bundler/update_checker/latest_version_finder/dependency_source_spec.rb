@@ -21,7 +21,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder::Dependen
       it "includes inaccessible dependency" do
         expect(inaccessible_git_dependencies.size).to eq(1)
         expect(inaccessible_git_dependencies.first).to eq({
-          "auth_uri" => "https://github.com/no-exist-sorry/prius.git/info/refs?service=git-upload-pack",
+          "auth_uri" => "https://x-access-token:token@github.com/no-exist-sorry/prius.git/info/refs?service=git-upload-pack",
           "uri" => "git@github.com:no-exist-sorry/prius"
         })
       end

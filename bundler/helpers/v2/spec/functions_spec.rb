@@ -37,9 +37,8 @@ RSpec.describe Functions do
     def expect_specs(count)
       expect(git_specs.size).to eq(count)
       git_specs.each do |gs|
-        auth_uri = gs[:auth_uri]
-        expect { URI.parse(auth_uri) }.not_to raise_error
-        expect(auth_uri).to start_with("https://")
+        uri = URI.parse(gs[:auth_uri])
+        expect(uri.scheme).to(satisfy { |s| %w(http https).include?(s) })
       end
     end
 
