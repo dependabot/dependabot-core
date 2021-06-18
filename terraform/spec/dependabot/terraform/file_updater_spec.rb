@@ -689,7 +689,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
               version     = "3.45.0"
-              constraints = ">= 3.37.0"
+              constraints = ">= 3.37.0, < 3.46.0"
               hashes = [
                 "h1:LKU/xfna87/p+hl5yTTW3dvOqWJp5JEM+Dt3nnvSDvA=",
                 "zh:0fdbb3af75ff55807466533f97eb314556ec41a908a543d7cafb06546930f7c6",
@@ -716,7 +716,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/random" {
               version     = "3.0.0"
-              constraints = ">= 3.0.0"
+              constraints = "3.0.0"
               hashes = [
                 "h1:yhHJpb4IfQQfuio7qjUXuUFTU/s+ensuEpm23A+VWz0=",
                 "zh:0fcb00ff8b87dcac1b0ee10831e47e0203a6c46aafd76cb140ba2bab81f02c6b",
