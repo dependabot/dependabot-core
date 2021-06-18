@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
-require "json"
-require "tmpdir"
-require "excon"
-require "English"
 require "digest"
+require "English"
+require "excon"
+require "fileutils"
+require "json"
 require "open3"
 require "shellwords"
+require "tmpdir"
 
 require "dependabot/utils"
 require "dependabot/errors"
@@ -64,7 +65,7 @@ module Dependabot
 
     # Escapes all special characters, e.g. = & | <>
     def self.escape_command(command)
-      command_parts = command.split(" ").map(&:strip).reject(&:empty?)
+      command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
 

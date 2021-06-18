@@ -106,7 +106,7 @@ module Dependabot
       peeled_lines = []
 
       result = upload_pack.lines.each_with_object({}) do |line, res|
-        full_ref_name = line.split(" ").last
+        full_ref_name = line.split.last
         next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
         peeled_lines << line && next if line.strip.end_with?("^{}")
@@ -174,7 +174,7 @@ module Dependabot
     end
 
     def sha_for_update_pack_line(line)
-      line.split(" ").first.chars.last(40).join
+      line.split.first.chars.last(40).join
     end
 
     def excon_defaults

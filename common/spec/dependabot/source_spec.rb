@@ -5,7 +5,7 @@ require "dependabot/source"
 
 RSpec.describe Dependabot::Source do
   describe ".new" do
-    subject { described_class.new(attrs) }
+    subject { described_class.new(**attrs) }
 
     context "without a hostname or api_endpoint" do
       let(:attrs) { { provider: "github", repo: "my/repo" } }
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Source do
   end
 
   describe "#url_with_directory" do
-    let(:source) { described_class.new(attrs) }
+    let(:source) { described_class.new(**attrs) }
     subject { source.url_with_directory }
 
     let(:attrs) do

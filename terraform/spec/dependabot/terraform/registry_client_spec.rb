@@ -52,8 +52,8 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     stub_request(:get, "https://#{hostname}/v1/providers/hashicorp/aws/versions").and_return(
       status: 200,
       body: {
-        "id": "hashicorp/aws",
-        "versions": [{ "version": "3.42.0" }, { "version": "3.41.0" }]
+        id: "hashicorp/aws",
+        versions: [{ version: "3.42.0" }, { version: "3.41.0" }]
       }.to_json
     )
     client = described_class.new(hostname: hostname)
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       "providers.v1": "/v1/providers/"
     }.to_json)
     stub_request(:get, "https://#{hostname}/v1/providers/x/y/versions").
-      and_return(body: { "id": "x/y", "versions": [{ "version": "0.1.0" }] }.to_json)
+      and_return(body: { id: "x/y", versions: [{ version: "0.1.0" }] }.to_json)
     client = described_class.new(hostname: hostname, credentials: credentials)
 
     expect(client.all_provider_versions(identifier: "x/y")).to match_array([
@@ -126,10 +126,10 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       }.to_json)
     stub_request(:get, "https://#{hostname}/api/registry/v1/modules/hashicorp/consul/aws/versions").
       and_return(status: 200, body: {
-        "modules": [
+        modules: [
           {
-            "source": "hashicorp/consul/aws",
-            "versions": [{ 'version': "0.1.0" }, { 'version': "0.2.0" }]
+            source: "hashicorp/consul/aws",
+            versions: [{ version: "0.1.0" }, { version: "0.2.0" }]
           }
         ]
       }.to_json)
@@ -182,6 +182,19 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
 
     expect(source).to be_a Dependabot::Source
     expect(source.url).to eq("https://github.com/hashicorp/terraform-provider-ciscoasa")
+  end
+
+  context "with a custom hostname" do
+    let(:hostname) { "registry.example.org" }
+    subject(:client) { described_class.new(hostname: hostname) }
+
+    it "raises helpful error when request is not authenticated", :vcr do
+      stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(status: 401)
+
+      expect do
+        client.all_module_versions(identifier: "corp/package")
+      end.to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
+    end
   end
 
   describe "#service_url_for" do
