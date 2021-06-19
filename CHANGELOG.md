@@ -1,3 +1,12 @@
+## v0.154.3, 19 June 2021
+
+- fix: Fetches upload-pack using git if http fails
+- fix(Terraform): handle dependencies without a namespace
+- chore: Replace wget with curl for minimized dependency
+- chore: add lint job to check shell scripts
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+- chore: Double quote variables in Dockerfile's shellscript, cc #3917
+
 ## v0.154.2, 17 June 2021
 
 - Terraform: Handle 401 registry responses
