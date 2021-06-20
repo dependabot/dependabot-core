@@ -177,6 +177,81 @@ RSpec.describe Dependabot::Hex::FileUpdater do
           expect(updated_business_content).to include(%({:plug, "~> 1.4.0"},))
         end
       end
+
+      context "with sub projects" do
+        let(:mixfile_fixture_name) { "sub_projects" }
+        let(:lockfile_fixture_name) { "sub_projects" }
+
+        let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+        let(:sub_mixfile1) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_business/mix.exs",
+            content: fixture("mixfiles", "dependabot_business")
+          )
+        end
+        let(:sub_mixfile2) do
+          Dependabot::DependencyFile.new(
+            name: "apps/dependabot_web/mix.exs",
+            content: fixture("mixfiles", "dependabot_web")
+          )
+        end
+
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "plug",
+            version: "1.4.5",
+            requirements: [
+              {
+                requirement: "~> 1.4.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.4.5",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            previous_version: "1.3.6",
+            previous_requirements: [
+              {
+                requirement: "~> 1.3.0",
+                file: "apps/dependabot_business/mix.exs",
+                groups: [],
+                source: nil
+              },
+              {
+                requirement: "1.3.6",
+                file: "apps/dependabot_web/mix.exs",
+                groups: [],
+                source: nil
+              }
+            ],
+            package_manager: "hex"
+          )
+        end
+
+        it "updates the right files" do
+          expect(updated_files.map(&:name)).
+            to match_array(
+              %w(mix.lock
+                 apps/dependabot_business/mix.exs
+                 apps/dependabot_web/mix.exs)
+            )
+
+          updated_web_content = updated_files.find do |f|
+            f.name == "apps/dependabot_web/mix.exs"
+          end.content
+          expect(updated_web_content).to include(%({:plug, "1.4.5"},))
+
+          updated_business_content = updated_files.find do |f|
+            f.name == "apps/dependabot_business/mix.exs"
+          end.content
+          expect(updated_business_content).to include(%({:plug, "~> 1.4.0"},))
+        end
+      end
     end
 
     describe "the updated lockfile" do

@@ -532,6 +532,42 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
 
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
+
+    context "with sub projects" do
+      let(:mixfile_body) { fixture("mixfiles", "sub_projects") }
+      let(:lockfile_body) { fixture("lockfiles", "sub_projects") }
+      let(:files) { [mixfile, lockfile, sub_mixfile1, sub_mixfile2] }
+      let(:sub_mixfile1) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_business/mix.exs",
+          content: fixture("mixfiles", "dependabot_business")
+        )
+      end
+      let(:sub_mixfile2) do
+        Dependabot::DependencyFile.new(
+          name: "apps/dependabot_web/mix.exs",
+          content: fixture("mixfiles", "dependabot_web")
+        )
+      end
+
+      let(:dependency_name) { "plug" }
+      let(:version) { "1.3.6" }
+      let(:dependency_requirements) do
+        [{
+          requirement: "~> 1.3.0",
+          file: "apps/dependabot_business/mix.exs",
+          groups: [],
+          source: nil
+        }, {
+          requirement: "1.3.6",
+          file: "apps/dependabot_web/mix.exs",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be >= Gem::Version.new("1.4.3") }
+    end
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
