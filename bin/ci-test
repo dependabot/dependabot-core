@@ -23,8 +23,9 @@ function handle_args() {
   if ! [ -d "$MODULE" ]; then
     print_usage
     echo "module not found, try:"
-    for m in $(ls */*.gemspec | grep -v omni); do
-      echo -n "  "; dirname $m
+    for m in */*.gemspec; do
+      [[ "$m" == "omnibus" ]] && continue
+      echo -n "  "; dirname "$m"
     done
     exit 1
   fi
