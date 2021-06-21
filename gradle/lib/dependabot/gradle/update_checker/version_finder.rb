@@ -13,7 +13,6 @@ module Dependabot
   module Gradle
     class UpdateChecker
       class VersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"

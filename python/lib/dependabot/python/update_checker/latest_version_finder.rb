@@ -15,7 +15,6 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         require_relative "index_finder"
 

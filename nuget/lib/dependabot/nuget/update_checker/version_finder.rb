@@ -15,7 +15,6 @@ module Dependabot
       class VersionFinder
         require_relative "repository_finder"
 
-        include Dependabot::UpdateCheckers::VersionFilters
 
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
 

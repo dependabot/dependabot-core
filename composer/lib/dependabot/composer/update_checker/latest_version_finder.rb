@@ -12,7 +12,6 @@ module Dependabot
   module Composer
     class UpdateChecker
       class LatestVersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,

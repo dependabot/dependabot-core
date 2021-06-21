@@ -13,7 +13,6 @@ module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         TYPE_SUFFICES = %w(jre android java).freeze
 
