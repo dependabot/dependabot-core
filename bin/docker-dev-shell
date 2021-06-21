@@ -124,13 +124,13 @@ docker run --rm -ti \
   -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
   -v "$(pwd)/git_submodules/.rubocop.yml:$CODE_DIR/git_submodules/.rubocop.yml" \
   -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
-  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-core.gemspec" \
+  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-git_submodules.gemspec" \
   -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
   -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
   -v "$(pwd)/git_submodules/script:$CODE_DIR/git_submodules/script" \
   -v "$(pwd)/github_actions/.rubocop.yml:$CODE_DIR/github_actions/.rubocop.yml" \
   -v "$(pwd)/github_actions/Gemfile:$CODE_DIR/github_actions/Gemfile" \
-  -v "$(pwd)/github_actions/dependabot-github_actions.gemspec:$CODE_DIR/github_actions/dependabot-core.gemspec" \
+  -v "$(pwd)/github_actions/dependabot-github_actions.gemspec:$CODE_DIR/github_actions/dependabot-github_actions.gemspec" \
   -v "$(pwd)/github_actions/lib:$CODE_DIR/github_actions/lib" \
   -v "$(pwd)/github_actions/spec:$CODE_DIR/github_actions/spec" \
   -v "$(pwd)/github_actions/script:$CODE_DIR/github_actions/script" \
@@ -144,13 +144,13 @@ docker run --rm -ti \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
   -v "$(pwd)/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
   -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
-  -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-core.gemspec" \
+  -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
   -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
   -v "$(pwd)/nuget/script:$CODE_DIR/nuget/script" \
   -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
   -v "$(pwd)/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
-  -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-core.gemspec" \
+  -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
   -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
   -v "$(pwd)/maven/script:$CODE_DIR/maven/script" \
@@ -168,7 +168,7 @@ docker run --rm -ti \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
   -v "$(pwd)/cargo/.rubocop.yml:$CODE_DIR/cargo/.rubocop.yml" \
   -v "$(pwd)/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
-  -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-core.gemspec" \
+  -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-cargo.gemspec" \
   -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
   -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \
   -v "$(pwd)/cargo/script:$CODE_DIR/cargo/script" \
