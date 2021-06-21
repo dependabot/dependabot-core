@@ -37,7 +37,12 @@ module Dependabot
           return unless valid_npm_details?
           return version_from_dist_tags if version_from_dist_tags
           return if specified_dist_tag_requirement?
+          
+          versions = possible_versions
+          versions = filter_lower_versions(versions)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories)
 
+          ensure_secure_version_available!(versions)
           possible_versions.find { |v| !yanked?(v) }
         rescue Excon::Error::Socket, Excon::Error::Timeout, RegistryError
           raise if dependency_registry == "registry.npmjs.org"
@@ -50,6 +55,8 @@ module Dependabot
           return version_from_dist_tags if specified_dist_tag_requirement?
 
           in_range_versions = filter_out_of_range_versions(possible_versions)
+
+          ensure_secure_version_available!(in_range_versions)
           in_range_versions.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
@@ -60,22 +67,29 @@ module Dependabot
         def lowest_security_fix_version
           return unless valid_npm_details?
 
-          versions_array =
+          secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
             else possible_versions(filter_ignored: false)
             end
 
-          secure_versions = filter_ignored_versions(versions_array)
+          secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
           secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
                                                                                                   security_advisories)
 
+          ensure_secure_version_available!(secure_versions)
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
+        end
+
+        def ensure_secure_version_available!(secure_versions)
+          if @raise_on_ignored && !secure_versions.nil? && secure_versions.empty?
+            raise AllVersionsIgnored
+          end
         end
 
         def possible_previous_versions_with_details
@@ -88,8 +102,8 @@ module Dependabot
         def possible_versions_with_details(filter_ignored: true)
           versions = possible_previous_versions_with_details.
                      reject { |_, details| details["deprecated"] }
-
-          return filter_ignored_versions(versions) if filter_ignored
+          
+          versions = filter_ignored_versions(versions) if filter_ignored
 
           versions
         end
@@ -111,10 +125,6 @@ module Dependabot
         def filter_ignored_versions(versions_array)
           filtered = versions_array.reject do |v, _|
             ignore_requirements.any? { |r| r.satisfied_by?(v) }
-          end
-
-          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
-            raise AllVersionsIgnored
           end
 
           filtered
