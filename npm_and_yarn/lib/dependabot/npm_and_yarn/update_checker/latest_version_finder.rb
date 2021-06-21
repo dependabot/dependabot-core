@@ -12,7 +12,6 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         class RegistryError < StandardError
           attr_reader :status

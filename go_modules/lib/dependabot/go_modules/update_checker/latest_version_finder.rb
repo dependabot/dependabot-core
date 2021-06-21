@@ -13,7 +13,6 @@ module Dependabot
   module GoModules
     class UpdateChecker
       class LatestVersionFinder
-        include Dependabot::UpdateCheckers::VersionFilters
 
         RESOLVABILITY_ERROR_REGEXES = [
           # Package url/proxy doesn't include any redirect meta tags
