@@ -668,5 +668,16 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
     end
+
+    context "with a provider that uses the terraform-providers namespace" do
+      let(:files) { project_dependency_files("terraform_providers_namespace") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "fastly/fastly" }
+
+        expect(dependency.version).to eq("0.29.0")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("terraform-providers/fastly")
+      end
+    end
   end
 end

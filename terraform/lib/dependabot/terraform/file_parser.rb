@@ -91,12 +91,16 @@ module Dependabot
 
         source_address = details.fetch("source", nil)
         version_req = details["version"]&.strip
-        hostname, namespace, name = provider_source_from(source_address, name)
-        dependency_name = source_address ? "#{namespace}/#{name}" : name
+        hostname, file_namespace, name = provider_source_from(source_address, name)
+        # NOTE: terraform-providers/name is a shorthard for the provider name
+        # matching the namespace, we separate this from the file namespace
+        # needed to find the provider in the parsed file
+        dependency_namespace = file_namespace == "terraform-providers" ? name : file_namespace
+        dependency_name = source_address ? "#{dependency_namespace}/#{name}" : name
 
         Dependency.new(
           name: dependency_name,
-          version: determine_version_for(hostname, namespace, name, version_req),
+          version: determine_version_for(hostname, file_namespace, name, version_req),
           package_manager: "terraform",
           requirements: [
             requirement: version_req,
@@ -105,7 +109,7 @@ module Dependabot
             source: {
               type: "provider",
               registry_hostname: hostname,
-              module_identifier: "#{namespace}/#{name}"
+              module_identifier: "#{file_namespace}/#{name}"
             }
           ]
         )
