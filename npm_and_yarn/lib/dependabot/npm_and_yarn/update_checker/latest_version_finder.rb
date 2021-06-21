@@ -12,7 +12,6 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
-
         class RegistryError < StandardError
           attr_reader :status
 
@@ -60,16 +59,16 @@ module Dependabot
         def lowest_security_fix_version
           return unless valid_npm_details?
 
-          versions_array =
+          secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
             else possible_versions(filter_ignored: false)
             end
 
-          secure_versions = filter_ignored_versions(versions_array)
-          secure_versions = filter_lower_versions(secure_versions)
           secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
                                                                                                   security_advisories)
+          secure_versions = filter_ignored_versions(secure_versions)
+          secure_versions = filter_lower_versions(secure_versions)
 
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
