@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
@@ -46,9 +47,10 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = filter_vulnerable_versions(possible_versions)
           possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
+          possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(possible_versions,
+                                                                                                    security_advisories)
 
           possible_versions.first
         end
@@ -109,18 +111,6 @@ module Dependabot
           end
 
           filtered
-        end
-
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
         end
 
         def filter_lower_versions(possible_versions)

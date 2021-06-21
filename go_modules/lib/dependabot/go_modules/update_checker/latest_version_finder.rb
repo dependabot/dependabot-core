@@ -3,6 +3,7 @@
 require "excon"
 
 require "dependabot/go_modules/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
