@@ -15,7 +15,6 @@ module Dependabot
   module Python
     class UpdateChecker
       class LatestVersionFinder
-
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,

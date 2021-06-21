@@ -15,7 +15,6 @@ module Dependabot
       class VersionFinder
         require_relative "repository_finder"
 
-
         NUGET_RANGE_REGEX = /[\(\[].*,.*[\)\]]/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,

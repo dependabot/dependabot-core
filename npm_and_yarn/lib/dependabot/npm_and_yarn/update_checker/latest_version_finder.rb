@@ -12,7 +12,6 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LatestVersionFinder
-
         class RegistryError < StandardError
           attr_reader :status
 
@@ -37,10 +36,11 @@ module Dependabot
           return unless valid_npm_details?
           return version_from_dist_tags if version_from_dist_tags
           return if specified_dist_tag_requirement?
-          
+
           versions = possible_versions
           versions = filter_lower_versions(versions)
-          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions, security_advisories)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+                                                                                           security_advisories)
 
           ensure_secure_version_available!(versions)
           possible_versions.find { |v| !yanked?(v) }
@@ -87,9 +87,7 @@ module Dependabot
         end
 
         def ensure_secure_version_available!(secure_versions)
-          if @raise_on_ignored && !secure_versions.nil? && secure_versions.empty?
-            raise AllVersionsIgnored
-          end
+          raise AllVersionsIgnored if @raise_on_ignored && !secure_versions.nil? && secure_versions.empty?
         end
 
         def possible_previous_versions_with_details
@@ -102,7 +100,7 @@ module Dependabot
         def possible_versions_with_details(filter_ignored: true)
           versions = possible_previous_versions_with_details.
                      reject { |_, details| details["deprecated"] }
-          
+
           versions = filter_ignored_versions(versions) if filter_ignored
 
           versions

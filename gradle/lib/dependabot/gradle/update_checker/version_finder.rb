@@ -13,7 +13,6 @@ module Dependabot
   module Gradle
     class UpdateChecker
       class VersionFinder
-
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
