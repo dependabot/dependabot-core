@@ -8,7 +8,6 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
-
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
