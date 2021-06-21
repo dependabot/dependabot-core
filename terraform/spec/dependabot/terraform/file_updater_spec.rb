@@ -791,5 +791,52 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    describe "for a nested module" do
+      let(:files) { project_dependency_files("nested_modules") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "terraform-aws-modules/iam/aws",
+            version: "4.1.0",
+            previous_version: "4.0.0",
+            requirements: [{
+              requirement: "4.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "iam/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "4.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "iam/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            module "github_terraform" {
+              source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+              version = "4.1.0"
+            }
+          DEP
+        )
+      end
+    end
   end
 end
