@@ -17,7 +17,7 @@ RSpec.describe "auto_merge", :pix4d do
       stub_request(:put, url1).
         to_return(
           status: 200,
-          body: { "merged": true }.to_json,
+          body: { merged: true }.to_json,
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, url1).
@@ -51,7 +51,7 @@ RSpec.describe "auto_merge", :pix4d do
       stub_request(:put, url1).
         to_return(
           status: 200,
-          body: { "merged": true }.to_json,
+          body: { merged: true }.to_json,
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, url1).

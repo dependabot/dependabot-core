@@ -764,8 +764,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           and_return(
             status: 200,
             body: {
-              "name": "library/#{dependency_name}",
-              "tags": ["20200310162045"]
+              name: "library/#{dependency_name}",
+              tags: ["20200310162045"]
             }.to_json
           )
       end
@@ -816,8 +816,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           and_return(
             status: 200,
             body: {
-              "name": "library/#{dependency_name}",
-              "tags": ["20200315081015"]
+              name: "library/#{dependency_name}",
+              tags: ["20200315081015"]
             }.to_json
           )
       end
@@ -872,8 +872,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             and_return(
               status: 200,
               body: {
-                "name": "library/#{dependency_name}",
-                "tags": ["20200320091510"]
+                name: "library/#{dependency_name}",
+                tags: ["20200320091510"]
               }.to_json
             )
         end
@@ -951,9 +951,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             and_return(
               status: 200,
               body: {
-                "name": "library/#{dependency_name}",
-                "tags": %w(bootstrapme 20190220091510 \
-                           20200220091510 20200320091510)
+                name: "library/#{dependency_name}",
+                tags: %w(bootstrapme 20190220091510 \
+                         20200220091510 20200320091510)
               }.to_json
             )
         end
@@ -974,8 +974,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             and_return(
               status: 200,
               body: {
-                "name": "library/#{dependency_name}",
-                "tags": %w(20190220 20200302 20200320091510)
+                name: "library/#{dependency_name}",
+                tags: %w(20190220 20200302 20200320091510)
               }.to_json
             )
         end
@@ -991,8 +991,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             and_return(
               status: 200,
               body: {
-                "name": "library/#{dependency_name}",
-                "tags": %w(20200301 20200302 latest 20200320091510)
+                name: "library/#{dependency_name}",
+                tags: %w(20200301 20200302 latest 20200320091510)
               }.to_json
             )
           stub_request(
@@ -1041,9 +1041,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           and_return(
             status: 200,
             body: {
-              "name": "library/#{dependency_name}",
-              "tags": %w(bootstrapme 20190220091510 \
-                         20200220091510 20200320091510)
+              name: "library/#{dependency_name}",
+              tags: %w(bootstrapme 20190220091510 \
+                       20200220091510 20200320091510)
             }.to_json
           )
       end

@@ -136,14 +136,14 @@ RSpec.describe "describe pix4_dependabot function", :pix4d do
         stub_request(:get, url1).
           to_return(
             status: 200,
-            body: { "name": branch, "commit": { "sha": github_sha } }.to_json,
+            body: { name: branch, commit: { sha: github_sha } }.to_json,
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, url2).
           to_return(
             status: 200,
-            body: { "sha": github_sha, "tree": [
-              { "path": "dockerfiles/folder-1/Dockerfile" }
+            body: { sha: github_sha, tree: [
+              { path: "dockerfiles/folder-1/Dockerfile" }
             ] }.to_json,
             headers: { "content-type" => "application/json" }
           )
