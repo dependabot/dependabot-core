@@ -131,7 +131,7 @@ module Dependabot
                   reject { |file| updated_filenames.include?(file.name) }
 
           args = dependency.to_h
-          args = Hash[args.keys.map { |k| [k.to_sym, args[k]] }]
+          args = args.keys.map { |k| [k.to_sym, args[k]] }.to_h
           args[:requirements] = new_reqs
           args[:previous_requirements] = old_reqs
 

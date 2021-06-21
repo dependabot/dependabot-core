@@ -1,3 +1,18 @@
+## v0.154.3, 21 June 2021
+
+- Terraform: handle missing source
+- Terraform: handle unreachable private module proxy
+- Terraform: handle dependencies without a namespace
+- fix: Fetches upload-pack using git if http fails
+- chore: shellcheck scripts
+- chore: Replace wget with curl @PeterDaveHello
+- chore: Double quote shell variables in Dockerfile @PeterDaveHello
+- Returns basename and relative path in CodeCommit file fetcher @lorengordon
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1 and /composer/helpers/v2
+- build(deps): update commonmarker requirement from >= 0.20.1, < 0.22.0 to >= 0.20.1, < 0.23.0
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
 ## v0.154.2, 17 June 2021
 
 - Terraform: Handle 401 registry responses

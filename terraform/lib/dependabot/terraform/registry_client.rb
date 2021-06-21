@@ -58,15 +58,17 @@ module Dependabot
       #
       # @param dependency [Dependabot::Dependency] the dependency who's source
       # we're attempting to find
-      # @return Dependabot::Source
-      # @raise [Dependabot::DependabotError] when the source cannot be retrieved
+      # @return [nil, Dependabot::Source]
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
         base_url = service_url_for(service_key_for(type))
-        response = http_get!(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+        response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+        return nil unless response.status == 200
 
         source_url = JSON.parse(response.body).fetch("source")
         Source.from_url(source_url) if source_url
+      rescue JSON::ParserError, Excon::Error::Timeout
+        nil
       end
 
       # Perform service discovery and return the absolute URL for

@@ -167,7 +167,7 @@ module Dependabot
 
         def serialize_release(release)
           rel = release
-          title = "## #{rel.name.to_s != '' ? rel.name : rel.tag_name}\n"
+          title = "## #{rel.name.to_s == '' ? rel.tag_name : rel.name}\n"
           body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
                    "No release notes provided."
                  else
@@ -178,7 +178,7 @@ module Dependabot
         end
 
         def release_body_includes_title?(release)
-          title = release.name.to_s != "" ? release.name : release.tag_name
+          title = release.name.to_s == "" ? release.tag_name : release.name
           release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
