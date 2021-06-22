@@ -90,7 +90,7 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration
+      def update_lockfile_declaration # rubocop:disable Metrics/AbcSize
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
@@ -115,6 +115,14 @@ module Dependabot
                  content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
             content.sub!(declaration_regex, updated_dependency)
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if @retrying_lock || !e.message.include?("terraform init")
+
+          # NOTE: Modules need to be installed before terraform can update the
+          # lockfile
+          @retrying_lock = true
+          SharedHelpers.run_shell_command("terraform init")
+          retry
         end
 
         content
