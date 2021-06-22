@@ -1,0 +1,230 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://github.com/dependabot-fixtures/business.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.153.0 excon/0.82.0 ruby/2.7.1 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Github-Request-Id:
+      - CA05:74D3:13C470:1B15B2:60C8F0D6
+      X-Frame-Options:
+      - DENY
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n00000156799cd60c8cd51c9f379b423d506fc02c3a68e895
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        object-format=sha1 agent=git/github-g69d6dd5d35d8\n005066c6e104155ec10701d5e6a6f6f1563c05d59994
+        refs/heads/joesouthan/denmark-2021\n003f799cd60c8cd51c9f379b423d506fc02c3a68e895
+        refs/heads/master\n0040ace90dc4d34136a5d9570e54288c505711fb93ce refs/heads/rubocop\n00412e8e26df5786a5d2a732fd37a9ae085682c1089a
+        refs/heads/try-rust\n003ec5bf1bd47935504072ac0eba1006cf4d67af6a7a refs/tags/v1.0.0\n0041df9f605d7111b6814fe493cf8f41de3f9f0978b2
+        refs/tags/v1.0.0^{}\n003ea58ed2ef16972597b6ddf99357d1a56cf98cedb2 refs/tags/v1.1.0\n0041f6203eaf657c4e1b69315d43083804d818aafe23
+        refs/tags/v1.1.0^{}\n003fd31e445215b5af70c1604715d97dd953e868380e refs/tags/v1.10.0\n003fe39e059fe0d1632b95e5800cb8a594d49599654d
+        refs/tags/v1.11.0\n003fc170ea081c121c00ed6fe8764e3557e731454b9d refs/tags/v1.11.1\n003f37f41032a0f191507903ebbae8a5c0cb945d7585
+        refs/tags/v1.13.0\n00427bb4e41ce5164074a0920d5b5770d196b4d90104 refs/tags/v1.13.0^{}\n003f3b5a0ff1ef12081d30fb4e782e3d558262469ea8
+        refs/tags/v1.14.0\n003f71083639645603d3bc25f7f5b11c96f0d07bf252 refs/tags/v1.15.0\n003f155d9aad3daa870612c06be6316817faeb4c98a8
+        refs/tags/v1.17.1\n003fb12c186ca6fd4ffdac85175742ff7e4d0a705ef4 refs/tags/v1.18.0\n003ee540fac7b4a958612e051842aa1ace69ba95a6eb
+        refs/tags/v1.2.0\n0041b9c932dd543261c7fe6afc54f8c51a99bbc2bdd8 refs/tags/v1.2.0^{}\n003e58266f176afd655faedde8726e5bce17edd09a4a
+        refs/tags/v1.3.0\n0041469dacb70fafd72ed9571748036642df0d0857fa refs/tags/v1.3.0^{}\n003eda8b496c60593b72680454334588a753fcf2c0b6
+        refs/tags/v1.4.0\n004126f4887ec647493f044836363537e329d9d213aa refs/tags/v1.4.0^{}\n003e55d39bf3042fac0b770bca2bfb200cfdffcd0175
+        refs/tags/v1.5.0\n003e444606ddc1a6543ff37199c072c829564a9a8a65 refs/tags/v1.6.0\n003eefb29a3cab92c962629d4728400147b60d88b6eb
+        refs/tags/v1.7.0\n003e20984b51291e25782bb55ef72008bed592c4c2d7 refs/tags/v1.8.0\n003ec878eaa4dfcc38a2b95100f79dedc63f34755473
+        refs/tags/v1.9.0\n003eb7bcef49295db54092762ea4f637663c5877e2e5 refs/tags/v2.0.0\n003e624341fe34a8f103a736312831a79cd821ac79c8
+        refs/tags/v2.1.0\n003efc9d4b87e5c06741efa356ee9859653068c7553c refs/tags/v2.2.0\n003e2db744653e5cce3f77ef59bbbb7ceed5e206b211
+        refs/tags/v2.2.1\n0000"
+  recorded_at: Tue, 15 Jun 2021 18:26:30 GMT
+- request:
+    method: get
+    uri: https://github.com/dependabot-fixtures/prius.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.153.0 excon/0.82.0 ruby/2.7.1 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Github-Request-Id:
+      - CA06:6283:4A767:89FE8:60C8F0D6
+      X-Frame-Options:
+      - DENY
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n00000156786656cc97ca6d8b613e4f41495715296290d07f
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        object-format=sha1 agent=git/github-g69d6dd5d35d8\n003f786656cc97ca6d8b613e4f41495715296290d07f
+        refs/heads/master\n003e76e239c47af14300bd917016c1f5fdabb43b9274 refs/tags/v0.2.0\n0041b2d076022d73a9bb95471b6c42213e80fa738bb2
+        refs/tags/v0.2.0^{}\n003e99093f4e72c049fcb750ae2ef2421688fda0afac refs/tags/v1.0.0\n0041cff701b3bfb182afc99a85657d7c9f3d6c1ccce2
+        refs/tags/v1.0.0^{}\n003ed111425fa31a95dac3174e2dc9003553b9293bd9 refs/tags/v2.0.0\n0000"
+  recorded_at: Tue, 15 Jun 2021 18:26:30 GMT
+- request:
+    method: get
+    uri: https://github.com/dependabot-fixtures/que.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.153.0 excon/0.82.0 ruby/2.7.1 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Github-Request-Id:
+      - CA07:768D:24CDA:5D4F4:60C8F0D6
+      X-Frame-Options:
+      - DENY
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n0000015661e1805deb8161e5c1502e518a9a44fa464d308c
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        object-format=sha1 agent=git/github-g69d6dd5d35d8\n003cf0b75334a2f9450ff51d91c8bebfe33098c3209e
+        refs/heads/0.x\n003cfb94321b40f763fb48db1a63f0c1084bee961388 refs/heads/1.0\n00419f59433d38d2dedf6d5d7d11c6c9c57537f7bfa6
+        refs/heads/1.0-docs\n00507ccb256ef604ce273445aa5043e47f3846d9101b refs/heads/configurable-log-levels\n0054d7a5aaf26b1f7df1e52772818a3b037cb776cc73
+        refs/heads/dedicated-locker-connection\n003f61e1805deb8161e5c1502e518a9a44fa464d308c
+        refs/heads/master\n003e6f8eb86cd480bda87d10b37750a6fa476bf72e02 refs/heads/ruby3\n004163073c67650222f68c45fbda1ed15b74dfd2096b
+        refs/heads/spec-fix\n004d0293fd2eb954c03ea71ebe91093be8a0778b6a43 refs/tags/aborted-jruby-attempt\n004a6563fd63d0b9ae32ee6d5dcdad10bf46d124afe1
+        refs/tags/aborted-rapid-stop\n003e2c198ef576ced1e891552f4bb7f31d77051694cb
+        refs/tags/v0.0.1\n0041234418aa9f6df09f88b7714c7a0508e049ec1d54 refs/tags/v0.0.1^{}\n003e21287e8ec53dc2db5840e5c30e2cceb3998ec9c7
+        refs/tags/v0.1.0\n00418214fdde4d34e2ecc7ea962486eefc6686a7ddca refs/tags/v0.1.0^{}\n003fedda2f2b6849a23093b83dab143efca9487609e2
+        refs/tags/v0.10.0\n0042ed5732f17ae23a7e0e24c1f3e3e3ea4fb726796b refs/tags/v0.10.0^{}\n003ff84210a83e528c521700b505466cb06ab23b1b8f
+        refs/tags/v0.11.0\n004259ac77c970cd59ed1a4bfa21f7c84729ca98de6d refs/tags/v0.11.0^{}\n003f2ab78d7bc8076076e3e39fe32a870dcb418ddba1
+        refs/tags/v0.11.1\n0042181a15c9af7c841295515d98c3d2c0543df51f66 refs/tags/v0.11.1^{}\n003f52efff3c6ff9aaac3008f7f654206167c6542e3e
+        refs/tags/v0.11.2\n004286d3e9008cff8c728069f9690dc5da5098a068fc refs/tags/v0.11.2^{}\n003f5cd0b77ef8cdd94aaca31f3859c756dabd6d49f3
+        refs/tags/v0.11.3\n0042e253e36627cb59c75edbbed2d1c1565a81bcbe02 refs/tags/v0.11.3^{}\n003f0a09d96409329cefef56b101ccd79ab124bdaed5
+        refs/tags/v0.11.4\n0042d211c65a6e5eee00bb93e6af0779f5fb5b1134cc refs/tags/v0.11.4^{}\n003fe14280c42c80fccc20ae6c43a194dc4eb259f1d9
+        refs/tags/v0.11.5\n00426364df2576e1e93ff11f22df4ad33a9fb66cdb78 refs/tags/v0.11.5^{}\n003ffea2725a0988c5367a1b8a833961564d87b03b85
+        refs/tags/v0.11.6\n0042997d1a6ee76a1f254fd72ce16acbc8d347fcaee3 refs/tags/v0.11.6^{}\n003fa688c8a97eb7865a06c8b0e58d486e5dc547edf5
+        refs/tags/v0.12.0\n004207f74f25cc1432acc84a857d2b356ec5c9a37d48 refs/tags/v0.12.0^{}\n003f0950b37a5d1010242236c90fafc119194564ae7f
+        refs/tags/v0.12.1\n00427a329c550906b3198fde165ec4a66d8635892fa1 refs/tags/v0.12.1^{}\n003f69ef0e3f771bb0e442bacc74e59903fc1853dda1
+        refs/tags/v0.12.2\n00426af388f5caa1ecaf6e04122ebbc952fcd2bfc3c3 refs/tags/v0.12.2^{}\n003fdc1f1442f2a981e5b64e222f5767a86c9e1930b0
+        refs/tags/v0.12.3\n0042468bc5d126b11de3e2db08f893a8a944f6fcfb58 refs/tags/v0.12.3^{}\n003f2036fa3908a80fa7daea7e64434f2b52f07fb852
+        refs/tags/v0.13.0\n0042b05b505ca488885b1c7c72a3a2f7c593bee66f0d refs/tags/v0.13.0^{}\n003f81a334cf15a07a41506aafcc8aedca50faaaeb56
+        refs/tags/v0.13.1\n0042b128db21ad60a3fbebd30abcce2d8bbbab519a20 refs/tags/v0.13.1^{}\n003ffbe5ef33cc2dc3e0963cbe57f7e6925363c3a542
+        refs/tags/v0.14.0\n0042496aa68453a6a08c27a8725ae4e3c34e0b74c3b8 refs/tags/v0.14.0^{}\n003fc0461b88e67e7ce77a18838a113e2af92ddd4dc9
+        refs/tags/v0.14.1\n004284775a90a1b2116631baf7394670eddb7d3cd7a3 refs/tags/v0.14.1^{}\n003fac5e4331a55318b1d6dbe5bea81deefe55a5df94
+        refs/tags/v0.14.2\n004214b4769dc9f5b1d77e3f53b5c3e8a353965f14cf refs/tags/v0.14.2^{}\n003f5bf80f3f86304963cf39f848dee8c33af0825901
+        refs/tags/v0.14.3\n004245e68691f2599c13b401e2d70cde6f6fbfcac708 refs/tags/v0.14.3^{}\n003e3f7c0212126ccdd963b1ea78df8a2716be4e220f
+        refs/tags/v0.2.0\n0041e25d7b7fc996532aa265c73e0f279bf6c3c593e2 refs/tags/v0.2.0^{}\n003ec216bcfb7a57bc2ad8b7fb28a0adb21b77d7df1b
+        refs/tags/v0.3.0\n0041c2c7c0a94c6e3e7873aca29452494bb0cc79c639 refs/tags/v0.3.0^{}\n003eef029158d833eb6bf4754ef6607c60bbc4b2ac07
+        refs/tags/v0.4.0\n0041c6f178b9a1269bea6001e8cd07dc074d40ee776d refs/tags/v0.4.0^{}\n003eb931db37ed5e0ece53c374f02a29421fc6cf5689
+        refs/tags/v0.5.0\n004134b1082638b1c0500f8ff8f063bcd1806b5ec5a1 refs/tags/v0.5.0^{}\n003e4f2bf169992ac55a26180953f22e3dc485379542
+        refs/tags/v0.6.0\n00413d44e0198fac91a4e853bf726f0de0f687a78af3 refs/tags/v0.6.0^{}\n003e2fec544b8b4d950d8cbc002bf43d77058b6251f2
+        refs/tags/v0.7.0\n0041b6946e9cc4226ca97ba2802a262322931db15d31 refs/tags/v0.7.0^{}\n003e41d31b2a8dc279ae013b745a34baf4db8468e6e3
+        refs/tags/v0.7.1\n00415cd30686d996bc45669eda8b7838b492bbcb5e7f refs/tags/v0.7.1^{}\n003e97afe83636ffae054d53ad5618986b8b53346d46
+        refs/tags/v0.7.2\n0041628040e43702a056f84fc5c5deb43e845aab5542 refs/tags/v0.7.2^{}\n003ea8e16ad972fe73f4c02650a3b86cdb6f1441bc15
+        refs/tags/v0.7.3\n0041c71c0123cf5b1685a1e4aab83f74d68ae21da1ca refs/tags/v0.7.3^{}\n003ed37d6c482c4da36a891d7579a69b7ea14d151d04
+        refs/tags/v0.8.0\n0041a7df15952b2c7602b20cbcbc764d09560789360c refs/tags/v0.8.0^{}\n003e5f17bfd105981595af21b752286e54811ecb8a09
+        refs/tags/v0.8.1\n0041f677acf34683a281c0915757e2f9566a07c903ad refs/tags/v0.8.1^{}\n003ef1a240956628dba55e866c27bb2d4e8233855083
+        refs/tags/v0.8.2\n0041dcb71276d967f670ff5d0f46edad2a48e418beea refs/tags/v0.8.2^{}\n003e87741f3537fdc3f08f00b134ee7c0fe9590438d1
+        refs/tags/v0.9.0\n0041a5dee3727007f2e1ddeb49bafeb87f466c29211f refs/tags/v0.9.0^{}\n003e7c73900a675dbce41bd35b8b201584ac25d1e6fa
+        refs/tags/v0.9.1\n0041948f26e4c649923bfc9e73d5c624cb7e3ce19672 refs/tags/v0.9.1^{}\n003e4602c41e73bcb5d07a79ed22b5f430a576cba29a
+        refs/tags/v0.9.2\n0041cd68575fafd2f781fa02313607900c8f1a386646 refs/tags/v0.9.2^{}\n0043456dc8663ed805bbedc9251d995f70019021382e
+        refs/tags/v1.0.0.beta\n0046267d985082eb11b27f721ef1d1bb0d1b0d4d21fe refs/tags/v1.0.0.beta^{}\n0044252436b31f631d6f45b3688bca34f66d5e54cf32
+        refs/tags/v1.0.0.beta2\n0047b7c360d418d127f0bd30f28f5ec7ca83341783e4 refs/tags/v1.0.0.beta2^{}\n00441e187ec6eec6853d94d8f44e28887484be5bee8a
+        refs/tags/v1.0.0.beta3\n0047a2c9a2d7a11debee4ce5bd6121a4a5e0f6fd3323 refs/tags/v1.0.0.beta3^{}\n00447004dfcffebe5917896e7f59960ca39b9b6c4869
+        refs/tags/v1.0.0.beta4\n0047fd819a010ec797b189983b012ffcab0b9ed25c99 refs/tags/v1.0.0.beta4^{}\n0000"
+  recorded_at: Tue, 15 Jun 2021 18:26:30 GMT
+- request:
+    method: get
+    uri: http://github.com/dependabot-fixtures/uk_phone_numbers.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.153.0 excon/0.82.0 ruby/2.7.1 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - application/x-git-upload-pack-advertisement
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Expires:
+      - Fri, 01 Jan 1980 00:00:00 GMT
+      Pragma:
+      - no-cache
+      Cache-Control:
+      - no-cache, max-age=0, must-revalidate
+      Vary:
+      - Accept-Encoding
+      X-Github-Request-Id:
+      - CA08:6405:11682F:1A6B82:60C8F0D6
+      X-Frame-Options:
+      - DENY
+    body:
+      encoding: ASCII-8BIT
+      string: "001e# service=git-upload-pack\n000001561530024bd6a68d36ac18e04836ce110e0d433c36
+        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
+        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
+        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/master filter
+        object-format=sha1 agent=git/github-g69d6dd5d35d8\n003f1530024bd6a68d36ac18e04836ce110e0d433c36
+        refs/heads/master\n003eee6e0ac1ddc00ea18066c724c4a3808a96c3c211 refs/tags/v0.1.1\n00411530024bd6a68d36ac18e04836ce110e0d433c36
+        refs/tags/v0.1.1^{}\n0000"
+  recorded_at: Tue, 15 Jun 2021 18:26:30 GMT
+recorded_with: VCR 6.0.0

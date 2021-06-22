@@ -157,7 +157,11 @@ module Dependabot
         %r{
           (?<=\{)
           (?:(?!^\}).)*
-          source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{Regexp.escape(dependency.name)}["']
+          source\s*=\s*["']
+            (#{Regexp.escape(registry_host_for(dependency))}/)?
+            #{Regexp.escape(dependency.name)}
+            (//modules/\S+)?
+            ["']
           (?:(?!^\}).)*
         }mx
       end

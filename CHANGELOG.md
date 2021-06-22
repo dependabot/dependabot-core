@@ -1,3 +1,9 @@
+## v0.154.4, 22 June 2021
+
+- Terraform: handle nested module sources
+- Common: refactor filter_vulnerable_version into a separate module
+- Bundler: ignore invalid auth_uri
+
 ## v0.154.3, 21 June 2021
 
 - Terraform: handle missing source
