@@ -838,5 +838,51 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    describe "with a lockfile and modules that need to be installed" do
+      let(:files) { project_dependency_files("lockfile_with_modules") }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "integrations/github",
+            version: "4.12.0",
+            previous_version: "4.4.0",
+            requirements: [{
+              requirement: "4.12.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "integrations/github"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "4.4.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "integrations/github"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the version in the lockfile" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/integrations/github" {
+              version     = "4.12.0"
+              constraints = "~> 4.4"
+          DEP
+        )
+      end
+    end
   end
 end
