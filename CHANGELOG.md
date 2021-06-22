@@ -1,3 +1,9 @@
+## v0.155.0, 22 June 2021
+
+- Go: add security advisories
+- Devcontainer: do not rename gemspec
+- docker-dev-shell: do not rename gemspec
+
 ## v0.154.5, 22 June 2021
 
 - Terraform: install modules when updating lockfile
