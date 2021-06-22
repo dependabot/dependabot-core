@@ -78,10 +78,10 @@ puts
 puts "Double check the changes (editing CHANGELOG.md where necessary), then"
 puts "commit, tag, and push the release:"
 puts
+puts "git checkout -b v#{new_version}-release-notes"
 puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
 puts "git commit -m 'v#{new_version}'"
 puts "git push origin HEAD:v#{new_version}-release-notes"
-puts "git checkout v#{new_version}-release-notes"
 puts "# ... create PR, verify, merge, for example:"
 puts "gh pr create"
 puts "# tag the approved release notes:"
