@@ -123,6 +123,15 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
+    context "doesn't update indirect dependencies (not supported)" do
+      let(:requirements) { [] }
+      it do
+        is_expected.to eq(
+          Dependabot::GoModules::Version.new(dependency.version)
+        )
+      end
+    end
+
     context "when the current version is not vulnerable" do
       let(:dependency_version) { "1.0.0" }
 
