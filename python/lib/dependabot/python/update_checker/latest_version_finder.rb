@@ -72,10 +72,11 @@ module Dependabot
           versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
-          versions = filter_ignored_versions(versions)
-          versions = filter_lower_versions(versions)
           versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
                                                                                            security_advisories)
+          versions = filter_ignored_versions(versions)
+          versions = filter_lower_versions(versions)
+
           versions.min
         end
 
