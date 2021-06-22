@@ -9,7 +9,7 @@ component = ARGV[0].to_sym
 
 unless `which gh` && $?.success?
   puts "Please install the gh cli: brew install gh"
-  exut 1
+  exit 1
 end
 
 unless `gh auth status > /dev/null 2>&1` && $?.success?
