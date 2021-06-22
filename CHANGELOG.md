@@ -1,3 +1,7 @@
+## v0.154.5, 22 June 2021
+
+- Terraform: install modules when updating lockfile
+
 ## v0.154.4, 22 June 2021
 
 - Terraform: handle nested module sources
