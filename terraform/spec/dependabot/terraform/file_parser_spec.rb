@@ -658,5 +658,15 @@ RSpec.describe Dependabot::Terraform::FileParser do
         expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
       end
     end
+
+    context "with a private module proxy that can't be reached", vcr: true do
+      let(:files) { project_dependency_files("private_module_proxy") }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
+          expect(boom.source).to eq("artifactory.dependabot.com")
+        end
+      end
+    end
   end
 end

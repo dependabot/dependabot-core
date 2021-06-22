@@ -59,18 +59,18 @@ RSpec.describe "recursive_path", :pix4d do
       stub_request(:get, url1).
         to_return(
           status: 200,
-          body: { "name": branch, "commit": { "sha": github_sha } }.to_json,
+          body: { name: branch, commit: { sha: github_sha } }.to_json,
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, url2).
         to_return(
           status: 200,
-          body: { "sha": github_sha, "tree": [
-            { "path": "dockerfiles/folder-1/Dockerfile" },
-            { "path": "dockerfiles/folder-2/Dockerfile" },
-            { "path": "second_folder/Dockerfile" },
-            { "path": "dockerfiles/folder-2/code.py" },
-            { "path": "ci/pipeline-template.ymls" }
+          body: { sha: github_sha, tree: [
+            { path: "dockerfiles/folder-1/Dockerfile" },
+            { path: "dockerfiles/folder-2/Dockerfile" },
+            { path: "second_folder/Dockerfile" },
+            { path: "dockerfiles/folder-2/code.py" },
+            { path: "ci/pipeline-template.ymls" }
           ] }.to_json,
           headers: { "content-type" => "application/json" }
         )
@@ -107,7 +107,7 @@ RSpec.describe "recursive_path", :pix4d do
       stub_request(:get, url1).
         to_return(
           status: 404,
-          body: { "message": "not found" }.to_json,
+          body: { message: "not found" }.to_json,
           headers: { "content-type" => "application/json" }
         )
     end
@@ -141,13 +141,13 @@ RSpec.describe "recursive_path", :pix4d do
       stub_request(:get, url1).
         to_return(
           status: 200,
-          body: { "name": "master", "commit": { "sha": github_sha } }.to_json,
+          body: { name: "master", commit: { sha: github_sha } }.to_json,
           headers: { "content-type" => "application/json" }
         )
       stub_request(:get, url2).
         to_return(
           status: 404,
-          body: { "message": "not found" }.to_json,
+          body: { message: "not found" }.to_json,
           headers: { "content-type" => "application/json" }
         )
     end

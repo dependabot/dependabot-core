@@ -22,7 +22,6 @@ RUN apt-get update \
     gnupg2 \
     ca-certificates \
     curl \
-    wget \
     file \
     zlib1g-dev \
     liblzma-dev \
@@ -113,7 +112,7 @@ RUN npm install -g npm@v7.10.0 \
 
 # Install Elm 0.19
 ENV PATH="$PATH:/node_modules/.bin"
-RUN wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz
@@ -182,7 +181,7 @@ RUN cd /tmp \
   && rm go.tar.gz \
   && mkdir "$GOPATH" \
   && chown dependabot:dependabot "$GOPATH" \
-  && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
+  && curl -sSLfo /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
   && chmod +x /opt/go/bin/dep
 
 
@@ -194,11 +193,11 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 ARG ELIXIR_VERSION=v1.11.4
 ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
 ARG ERLANG_VERSION=1:23.3.1-1
-RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
-  && wget https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
+  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
   && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
