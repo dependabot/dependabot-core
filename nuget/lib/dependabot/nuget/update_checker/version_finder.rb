@@ -106,17 +106,16 @@ module Dependabot
             listing.
               fetch("versions", []).
               map do |v|
-                nuspec_url =
-                  listing.fetch("listing_details").
-                  fetch(:versions_url).
+                listing_details = listing.fetch("listing_details")
+                nuspec_url = listing_details.
+                             fetch(:versions_url, nil)&.
                   gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                 {
                   version: version_class.new(v),
                   nuspec_url: nuspec_url,
                   source_url: nil,
-                  repo_url:
-                    listing.fetch("listing_details").fetch(:repository_url)
+                  repo_url: listing_details.fetch(:repository_url)
                 }
               end
           end

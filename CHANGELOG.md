@@ -1,3 +1,10 @@
+## v0.155.1, 23 June 2021
+
+- Terraform: fix module updates with a lockfile
+- nuget: handle RepositoryDetails without BaseAddress
+- bundler: GemspecSanitizer replace interpolated strings
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+
 ## v0.155.0, 22 June 2021
 
 - Go: add security advisories

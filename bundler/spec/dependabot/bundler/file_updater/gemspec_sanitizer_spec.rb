@@ -229,7 +229,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       # rubocop:disable Lint/InterpolationCheck
       context "with an assignment to a string-interpolated constant" do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
-        it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
+        it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
+      end
+
+      context "with an assignment to a string-interpolated constant with multiple values" do
+        let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}-#{git_commit}" }' }
+        it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
       end
 
       context "with a version constant used elsewhere in the file" do
