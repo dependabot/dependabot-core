@@ -94,8 +94,10 @@ module Dependabot
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
-        content = lock_file.content.dup
+        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        return unless new_req[:source][:type] == "provider"
 
+        content = lock_file.content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
