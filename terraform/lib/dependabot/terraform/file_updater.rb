@@ -102,7 +102,8 @@ module Dependabot
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        SharedHelpers.in_a_temporary_directory do
+        base_dir = dependency_files.first.directory
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           write_dependency_files
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
