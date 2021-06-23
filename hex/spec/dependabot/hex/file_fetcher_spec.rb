@@ -334,4 +334,46 @@ RSpec.describe Dependabot::Hex::FileFetcher do
         to include("apps/bank/mix.exs")
     end
   end
+
+  context "with sub-projects" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_umbrella.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_sub_project_mixfile.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "apps?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_umbrella_apps.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "apps/bank/mix.exs?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_elixir_bank_mixfile.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the mixfiles for the sub-apps" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to include("apps/bank/mix.exs")
+    end
+  end
 end
