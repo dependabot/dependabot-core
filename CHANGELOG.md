@@ -1,4 +1,4 @@
-## v0.155.2, 23 June 2021
+## v0.156.0, 23 June 2021
 
 - Create changelog from merge commits [#3642](https://github.com/dependabot/dependabot-core/pull/3642)
 - Terraform: always clone repository contents [#3978](https://github.com/dependabot/dependabot-core/pull/3978)
