@@ -11,6 +11,7 @@ module Dependabot
       SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
       SUPPORT_FILE = /Code\.(?:#{SUPPORTED_METHODS})\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
                      freeze
+      PATH_DEPS_REGEX = /{.*path: ?#{STRING_ARG}.*}/.freeze
 
       def self.required_files_in?(filenames)
         filenames.include?("mix.exs")
@@ -44,16 +45,26 @@ module Dependabot
         nil
       end
 
-      def subapp_mixfiles
+      def umbrella_app_directories
         apps_path = mixfile.content.match(APPS_PATH_REGEX)&.
                     named_captures&.fetch("path")
         return [] unless apps_path
 
-        app_directories = repo_contents(dir: apps_path).
-                          select { |f| f.type == "dir" }.
-                          map { |f| File.join(apps_path, f.name) }
+        repo_contents(dir: apps_path).
+          select { |f| f.type == "dir" }.
+          map { |f| File.join(apps_path, f.name) }
+      end
 
-        app_directories.map do |dir|
+      def sub_project_directories
+        mixfile.content.scan(PATH_DEPS_REGEX).flatten
+      end
+
+      def subapp_mixfiles
+        subapp_directories = []
+        subapp_directories += umbrella_app_directories
+        subapp_directories += sub_project_directories
+
+        subapp_directories.map do |dir|
           fetch_file_from_host("#{dir}/mix.exs")
         rescue Dependabot::DependencyFileNotFound
           # If the folder doesn't have a mix.exs it *might* be because it's
