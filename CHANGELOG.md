@@ -3,7 +3,7 @@
 - Create changelog from merge commits [#3642](https://github.com/dependabot/dependabot-core/pull/3642)
 - Terraform: always clone repository contents [#3978](https://github.com/dependabot/dependabot-core/pull/3978)
 - build(deps): bump pip-tools from 6.1.0 to 6.2.0 in /python/helpers [#3974](https://github.com/dependabot/dependabot-core/pull/3974)
-- Adds support for elixir sub-projects without the need for umbrella applications (@gjsduarte) [#3944](https://github.com/dependabot/dependabot-core/pull/3944)
+- Hex: Adds support for sub-projects without the need for umbrella applications (@gjsduarte) [#3944](https://github.com/dependabot/dependabot-core/pull/3944)
 
 ## v0.155.1, 23 June 2021
 
