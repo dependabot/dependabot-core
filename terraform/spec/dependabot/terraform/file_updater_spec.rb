@@ -10,10 +10,18 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   subject(:updater) do
-    described_class.new(dependency_files: files, dependencies: dependencies, credentials: credentials)
+    described_class.new(
+      dependency_files: files,
+      dependencies: dependencies,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
 
-  let(:files) { [] }
+  let(:project_name) { "" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  let(:files) { project_dependency_files(project_name) }
   let(:dependencies) { [] }
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
@@ -23,7 +31,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     subject { updater.updated_dependency_files }
 
     context "with a private module" do
-      let(:files) { project_dependency_files("private_module") }
+      let(:project_name) { "private_module" }
 
       let(:dependencies) do
         [
@@ -69,7 +77,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a private provider" do
-      let(:files) { project_dependency_files("private_provider") }
+      let(:project_name) { "private_provider" }
 
       let(:dependencies) do
         [
@@ -119,7 +127,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a valid legacy dependency file" do
-      let(:files) { project_dependency_files("git_tags_011") }
+      let(:project_name) { "git_tags_011" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -158,7 +166,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a valid HCL2 dependency file" do
-      let(:files) { project_dependency_files("git_tags_012") }
+      let(:project_name) { "git_tags_012" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -231,7 +239,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a legacy git dependency" do
-        let(:files) { project_dependency_files("git_tags_011") }
+        let(:project_name) { "git_tags_011" }
 
         it "updates the requirement" do
           updated_file = subject.find { |file| file.name == "main.tf" }
@@ -257,7 +265,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with an hcl2-based git dependency" do
-        let(:files) { project_dependency_files("git_tags_012") }
+        let(:project_name) { "git_tags_012" }
 
         it "updates the requirement" do
           updated_file = subject.find { |file| file.name == "main.tf" }
@@ -283,7 +291,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with an up-to-date hcl2-based git dependency" do
-        let(:files) { project_dependency_files("hcl2") }
+        let(:project_name) { "hcl2" }
 
         it "shows no updates" do
           expect { subject }.to raise_error do |error|
@@ -293,7 +301,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a legacy registry dependency" do
-        let(:files) { project_dependency_files("registry") }
+        let(:project_name) { "registry" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -339,7 +347,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with an hcl2-based registry dependency" do
-        let(:files) { project_dependency_files("registry_012") }
+        let(:project_name) { "registry_012" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -386,7 +394,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with an hcl-based terragrunt file" do
-      let(:files) { project_dependency_files("terragrunt_hcl") }
+      let(:project_name) { "terragrunt_hcl" }
 
       let(:dependencies) do
         [
@@ -433,7 +441,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a required provider" do
-      let(:files) { project_dependency_files("registry_provider") }
+      let(:project_name) { "registry_provider" }
 
       let(:dependencies) do
         [
@@ -489,7 +497,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a required provider block with multiple versions" do
-      let(:files) { project_dependency_files("registry_provider_compound_local_name") }
+      let(:project_name) { "registry_provider_compound_local_name" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -541,7 +549,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a versions file" do
-      let(:files) { project_dependency_files("versions_file") }
+      let(:project_name) { "versions_file" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -589,7 +597,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "updating an up-to-date terraform project with a lockfile" do
-      let(:files) { project_dependency_files("up-to-date_lockfile") }
+      let(:project_name) { "up-to-date_lockfile" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -629,7 +637,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "using versions.tf with a lockfile present" do
-      let(:files) { project_dependency_files("lockfile") }
+      let(:project_name) { "lockfile" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -723,7 +731,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     describe "for a provider with an implicit source" do
-      let(:files) { project_dependency_files("provider_implicit_source") }
+      let(:project_name) { "provider_implicit_source" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -778,7 +786,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     describe "for a nested module" do
-      let(:files) { project_dependency_files("nested_modules") }
+      let(:project_name) { "nested_modules" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -825,7 +833,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     describe "with a lockfile and modules that need to be installed" do
-      let(:files) { project_dependency_files("lockfile_with_modules") }
+      let(:project_name) { "lockfile_with_modules" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -871,7 +879,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     describe "when updating a module in a project with a provider lockfile" do
-      let(:files) { project_dependency_files("lockfile_with_modules") }
+      let(:project_name) { "lockfile_with_modules" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -912,6 +920,51 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               source  = "aztfmod/caf/azurerm"
               version = "5.3.10"
             }
+          DEP
+        )
+      end
+    end
+
+    describe "when updating a provider with local path modules" do
+      let(:project_name) { "provider_with_local_path_moudules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "2.64.0",
+            previous_version: "2.63.0",
+            requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/azurerm" {
+              version     = "2.64.0"
           DEP
         )
       end
