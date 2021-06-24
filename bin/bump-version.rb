@@ -45,7 +45,9 @@ changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
 changelog_contents = File.read(changelog_path)
 
 commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
-merge_subjects = commit_subjects.select { |s| s.start_with?("Merge pull request #") }
+merge_subjects = commit_subjects.select do |s|
+  s.downcase.start_with?("merge pull request #") && !s.match?(/release[-_\s]notes/i)
+end
 pr_numbers = merge_subjects.map { |s| s.match(/#(\d+)/)[1].to_i }
 puts "⏳ fetching pull request details"
 pr_details = pr_numbers.map do |pr_number|
