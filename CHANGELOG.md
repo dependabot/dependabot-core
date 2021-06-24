@@ -1,3 +1,8 @@
+## v0.156.1, 24 June 2021
+
+- Terraform: Configure git for `terraform init` and capture errors [#3983](https://github.com/dependabot/dependabot-core/pull/3983)
+- build(deps-dev): update rubocop requirement from ~> 1.16.0 to ~> 1.17.0 in /common [#3912](https://github.com/dependabot/dependabot-core/pull/3912)
+
 ## v0.156.0, 23 June 2021
 
 - Create changelog from merge commits [#3642](https://github.com/dependabot/dependabot-core/pull/3642)
