@@ -93,11 +93,11 @@ module Dependabot
               current_version = dependency.version
               if current_version && Gem::Version.correct?(current_version) &&
                  Gem::Version.new(current_version).prerelease?
-                return true
-              end
-
-              dependency.requirements.any? do |req|
-                req[:requirement].match?(/[a-z]/i)
+                true
+              else
+                dependency.requirements.any? do |req|
+                  req[:requirement].match?(/[a-z]/i)
+                end
               end
             end
         end
