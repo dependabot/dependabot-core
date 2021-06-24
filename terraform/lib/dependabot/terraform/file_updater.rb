@@ -133,7 +133,10 @@ module Dependabot
 
       def run_terraform_init
         SharedHelpers.with_git_configured(credentials: credentials) do
-          SharedHelpers.run_shell_command("terraform init")
+          # -backend=false option used to ignore any backend configuration, as these won't be accessible
+          # -input=false option used to immediately fail if it needs user input
+          # -no-color option used to prevent any color characters being printed in the output 
+          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
         rescue SharedHelpers::HelperSubprocessFailed => e
           output = strip_terminal_colors(e.message)
 

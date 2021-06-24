@@ -1009,5 +1009,50 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    describe "when updating provider with backend in configuration" do
+      let(:project_name) { "provider_with_backend" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "2.64.0",
+            previous_version: "2.63.0",
+            requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/azurerm" {
+              version     = "2.64.0"
+          DEP
+        )
+      end
+    end
   end
 end
