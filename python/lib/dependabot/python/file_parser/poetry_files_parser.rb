@@ -72,8 +72,7 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed_lockfile.fetch("package", []).each do |details|
-            dep_type = details.dig("source", "type")
-            next if %w(git directory).include?(dep_type)
+            next if %w(directory git url).include?(details.dig("source", "type"))
 
             dependencies <<
               Dependency.new(

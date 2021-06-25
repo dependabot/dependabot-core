@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         let(:pyproject_fixture_name) { "path_dependency.toml" }
         subject(:dependency_names) { dependencies.map(&:name) }
 
-        it "ignores path dependency" do
+        it "excludes path dependency" do
           expect(dependency_names).to_not include("toml")
         end
 
@@ -78,11 +78,24 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         let(:pyproject_fixture_name) { "git_dependency.toml" }
         subject(:dependency_names) { dependencies.map(&:name) }
 
-        it "ignores path dependency" do
+        it "excludes git dependency" do
           expect(dependency_names).to_not include("toml")
         end
 
-        it "includes non-path dependencies" do
+        it "includes non-git dependencies" do
+          expect(dependency_names).to include("pytest")
+        end
+      end
+
+      context "with a url requirement" do
+        let(:pyproject_fixture_name) { "url_dependency.toml" }
+        subject(:dependency_names) { dependencies.map(&:name) }
+
+        it "excludes url dependency" do
+          expect(dependency_names).to_not include("toml")
+        end
+
+        it "includes non-url dependencies" do
           expect(dependency_names).to include("pytest")
         end
       end
@@ -154,6 +167,15 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         let(:pyproject_lock_fixture_name) { "git_dependency.lock" }
 
         it "excludes the git dependency" do
+          expect(dependencies.map(&:name)).to_not include("toml")
+        end
+      end
+
+      context "with a url dependency" do
+        let(:pyproject_fixture_name) { "url_dependency.toml" }
+        let(:pyproject_lock_fixture_name) { "url_dependency.lock" }
+
+        it "excludes the url dependency" do
           expect(dependencies.map(&:name)).to_not include("toml")
         end
       end
