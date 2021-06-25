@@ -257,7 +257,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         def set_target_dependency_req(pyproject_content, updated_requirement)
           return pyproject_content unless updated_requirement
 
@@ -284,7 +283,6 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
-        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type

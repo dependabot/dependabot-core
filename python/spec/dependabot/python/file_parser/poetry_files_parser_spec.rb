@@ -60,6 +60,32 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
             end
         end
       end
+
+      context "with a path requirement" do
+        let(:pyproject_fixture_name) { "path_dependency.toml" }
+        subject(:dependency_names) { dependencies.map(&:name) }
+
+        it "ignores path dependency" do
+          expect(dependency_names).to_not include("toml")
+        end
+
+        it "includes non-path dependencies" do
+          expect(dependency_names).to include("pytest")
+        end
+      end
+
+      context "with a git requirement" do
+        let(:pyproject_fixture_name) { "git_dependency.toml" }
+        subject(:dependency_names) { dependencies.map(&:name) }
+
+        it "ignores path dependency" do
+          expect(dependency_names).to_not include("toml")
+        end
+
+        it "includes non-path dependencies" do
+          expect(dependency_names).to include("pytest")
+        end
+      end
     end
 
     context "with a lockfile" do
@@ -106,6 +132,20 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
           its(:subdependency_metadata) do
             is_expected.to eq([{ production: true }])
           end
+        end
+      end
+
+      context "with a path dependency" do
+        let(:pyproject_fixture_name) { "path_dependency.toml" }
+        let(:pyproject_lock_fixture_name) { "path_dependency.lock" }
+        subject(:dependency_names) { dependencies.map(&:name) }
+
+        it "excludes the path dependency" do
+          expect(dependency_names).to_not include("toml")
+        end
+
+        it "includes non-path dependencies" do
+          expect(dependency_names).to include("pytest")
         end
       end
 

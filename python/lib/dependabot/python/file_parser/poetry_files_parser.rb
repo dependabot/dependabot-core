@@ -15,6 +15,9 @@ module Dependabot
       class PoetryFilesParser
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
+        # https://python-poetry.org/docs/dependency-specification/
+        UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
+
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
@@ -40,7 +43,7 @@ module Dependabot
 
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
-              next if req.is_a?(Hash) && req.key?("git")
+              next if req.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.any? { |t| req.key?(t) }
 
               check_requirements(req)
 
@@ -69,7 +72,8 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed_lockfile.fetch("package", []).each do |details|
-            next if details.dig("source", "type") == "git"
+            dep_type = details.dig("source", "type")
+            next if %w(git directory).include?(dep_type)
 
             dependencies <<
               Dependency.new(
