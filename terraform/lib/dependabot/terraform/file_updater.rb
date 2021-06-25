@@ -11,6 +11,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include FileSelector
 
+      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
+
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
       end
@@ -122,11 +124,26 @@ module Dependabot
           # NOTE: Modules need to be installed before terraform can update the
           # lockfile
           @retrying_lock = true
-          SharedHelpers.run_shell_command("terraform init")
+          run_terraform_init
           retry
         end
 
         content
+      end
+
+      def run_terraform_init
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          # -backend=false option used to ignore any backend configuration, as these won't be accessible
+          # -input=false option used to immediately fail if it needs user input
+          # -no-color option used to prevent any color characters being printed in the output
+          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          output = e.message
+
+          if output.match?(PRIVATE_MODULE_ERROR)
+            raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+          end
+        end
       end
 
       def dependency
