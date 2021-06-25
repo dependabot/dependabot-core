@@ -42,13 +42,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
     )
   end
   let(:pipfile_fixture_name) { "exact_version" }
-  let(:pyproject) do
-    Dependabot::DependencyFile.new(
-      name: "pyproject.toml",
-      content: fixture("pyproject_files", pyproject_fixture_name)
-    )
-  end
-  let(:pyproject_fixture_name) { "exact_version.toml" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",

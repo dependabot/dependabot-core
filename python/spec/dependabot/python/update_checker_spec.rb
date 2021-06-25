@@ -113,6 +113,20 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         ).and_call_original
       expect(checker.latest_version).to eq(Gem::Version.new("2.6.0"))
     end
+
+    context "with a pyproject path dependency" do
+      let(:pyproject_fixture_name) { "path_dependency.toml" }
+      let(:dependency_name) { "toml" }
+      let(:dependency_files) { [pyproject] }
+
+      it "does not query index" do
+        allow(described_class::LatestVersionFinder).to receive(:new)
+
+        expect(checker.latest_version).to be_nil
+
+        expect(described_class::LatestVersionFinder).not_to have_received(:new)
+      end
+    end
   end
 
   describe "#lowest_security_fix_version" do

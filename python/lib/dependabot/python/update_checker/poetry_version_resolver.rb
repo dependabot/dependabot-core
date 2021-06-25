@@ -44,6 +44,8 @@ module Dependabot
         end
 
         def latest_resolvable_version(requirement: nil)
+          return nil if PoetryVersionResolver.path_dependency?(pyproject.content, dependency)
+
           version_string =
             fetch_latest_resolvable_version_string(requirement: requirement)
 
@@ -63,6 +65,21 @@ module Dependabot
           raise unless e.message.include?("SolverProblemError")
 
           @resolvable[version] = false
+        end
+
+        def self.path_dependency?(pyproject_content, dependency)
+          pyproject_object = TomlRB.parse(pyproject_content)
+          poetry_object = pyproject_object.dig("tool", "poetry")
+
+          %w(dependencies dev-dependencies).each do |type|
+            names = poetry_object[type]&.keys || []
+            pkg_name = names.find { |nm| NameNormaliser.normalise(nm) == dependency.name }
+            next unless pkg_name
+            next unless poetry_object.dig(type, pkg_name).is_a?(Hash)
+
+            return true if poetry_object[type][pkg_name].fetch("path", false)
+          end
+          false
         end
 
         private

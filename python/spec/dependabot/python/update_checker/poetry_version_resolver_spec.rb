@@ -222,6 +222,21 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to be >= Gem::Version.new("1.4.3") }
     end
 
+    context "with a path dependency" do
+      let(:pyproject_fixture_name) { "path_dependency.toml" }
+      let(:dependency_name) { "toml" }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: nil,
+          groups: ["dependencies"],
+          source: nil
+        }]
+      end
+
+      it { is_expected.to be_nil }
+    end
+
     context "not resolvable" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "solver_problem.toml" }

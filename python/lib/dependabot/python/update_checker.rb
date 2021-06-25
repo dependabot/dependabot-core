@@ -252,6 +252,8 @@ module Dependabot
       end
 
       def fetch_latest_version
+        return nil if PoetryVersionResolver.path_dependency?(pyproject.content, dependency)
+
         latest_version_finder.latest_version
       end
 
