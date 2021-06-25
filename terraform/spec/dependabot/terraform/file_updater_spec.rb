@@ -730,6 +730,46 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    context "when using a lockfile that requires access to an unreachable module" do
+      let(:project_name) { "lockfile_unreachable_module" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.source).to eq("github.com/dependabot-fixtures/private-terraform-module")
+        end
+      end
+    end
+
     describe "for a provider with an implicit source" do
       let(:project_name) { "provider_implicit_source" }
       let(:dependencies) do
@@ -927,6 +967,51 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
     describe "when updating a provider with local path modules" do
       let(:project_name) { "provider_with_local_path_moudules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "2.64.0",
+            previous_version: "2.63.0",
+            requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/azurerm" {
+              version     = "2.64.0"
+          DEP
+        )
+      end
+    end
+
+    describe "when updating provider with backend in configuration" do
+      let(:project_name) { "provider_with_backend" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
