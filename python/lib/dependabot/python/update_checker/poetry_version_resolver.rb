@@ -257,13 +257,14 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def set_target_dependency_req(pyproject_content, updated_requirement)
           return pyproject_content unless updated_requirement
 
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          %w(dependencies dev-dependencies).each do |type|
+          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name
@@ -283,6 +284,7 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
+        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type
