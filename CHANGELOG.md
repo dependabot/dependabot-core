@@ -1,3 +1,8 @@
+## v0.156.2, 25 June 2021
+
+- poetry: skip path and url dependencies [#3991](https://github.com/dependabot/dependabot-core/pull/3991)
+- Terraform: Prevent `terraform init` from initializing backends (@hfurubotten) [#3986](https://github.com/dependabot/dependabot-core/pull/3986)
+
 ## v0.156.1, 24 June 2021
 
 - Terraform: Configure git for `terraform init` and capture errors [#3983](https://github.com/dependabot/dependabot-core/pull/3983)
