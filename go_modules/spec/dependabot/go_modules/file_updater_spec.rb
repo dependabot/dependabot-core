@@ -381,5 +381,33 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
       end
     end
+
+    context "when the dependency isn't used" do
+      let(:project_name) { "unused_dependency" }
+      let(:dependency_name) { "github.com/pterodactyl/wings" }
+      let(:dependency_version) { "1.4.4" }
+      let(:dependency_previous_version) { "1.4.0" }
+      let(:requirements) do
+        [{
+          requirement: ::Gem::Version.new(dependency_version),
+          file: "go.mod",
+          source: { type: "default", source: dependency_name },
+          groups: []
+        }]
+      end
+
+      let(:previous_requirements) do
+        [{
+          requirement: "v#{dependency_previous_version}",
+          file: "go.mod",
+          source: { type: "default", source: dependency_name },
+          groups: []
+        }]
+      end
+
+      it "does not create a pull request" do
+        expect(updater.updated_dependency_files).to be_empty
+      end
+    end
   end
 end
