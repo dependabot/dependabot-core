@@ -1,3 +1,9 @@
+## v0.156.3, 29 June 2021
+
+- Python: bump poetry from 1.1.6 to 1.1.7 in /python/helpers [#3996](https://github.com/dependabot/dependabot-core/pull/3996)
+- Python: bump pip from 21.1.2 to 21.1.3 in /python/helpers [#3997](https://github.com/dependabot/dependabot-core/pull/3997)
+- PR Updater: Handle required status checks [#3998](https://github.com/dependabot/dependabot-core/pull/3998)
+
 ## v0.156.2, 25 June 2021
 
 - poetry: skip path and url dependencies [#3991](https://github.com/dependabot/dependabot-core/pull/3991)
