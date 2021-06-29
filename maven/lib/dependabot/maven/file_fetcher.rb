@@ -37,11 +37,11 @@ module Dependabot
         return @extensions if defined?(@extensions)
         return @extensions if defined?(@extensions)
 
-          begin
-            fetch_file_if_present(".mvn/extensions.xml")
-          rescue Dependabot::DependencyFileNotFound
-            nil
-          end
+        begin
+          fetch_file_if_present(".mvn/extensions.xml")
+        rescue Dependabot::DependencyFileNotFound
+          nil
+        end
       end
 
       def child_poms
