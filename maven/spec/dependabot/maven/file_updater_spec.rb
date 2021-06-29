@@ -602,7 +602,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
     end
 
     context "the updated extensions.xml file" do
-      let(:dependency_files) { [extensions] }
+      let(:dependency_files) { [pom, extensions] }
       let(:extensions) do
         Dependabot::DependencyFile.new(
           name: "extensions.xml",

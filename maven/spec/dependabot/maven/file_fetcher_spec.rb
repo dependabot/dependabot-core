@@ -29,7 +29,15 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     }]
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 404
+      )
+  end
 
   context "with a basic pom" do
     before do
@@ -60,6 +68,13 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
     context "with extensions.xml" do
       before do
+        stub_request(:get, File.join(url, ".mvn?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_mvn_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
         stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -262,6 +277,11 @@ RSpec.describe Dependabot::Maven::FileFetcher do
 
       context "when asked to fetch only a subdirectory" do
         before do
+          stub_request(:get, File.join(url, "util/util/.mvn?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 404
+            )
           stub_request(:get, File.join(url, "util/util/.mvn/extensions.xml?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
