@@ -912,7 +912,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/integrations/github" {
               version     = "4.12.0"
-              constraints = "~> 4.4"
+              constraints = "~> 4.4, <= 4.12.0"
           DEP
         )
       end
