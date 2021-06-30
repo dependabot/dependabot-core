@@ -225,7 +225,7 @@ module Dependabot
           write_go_mod(body)
         end
 
-        def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
+        def handle_subprocess_error(stderr)
           stderr = stderr.gsub(Dir.getwd, "")
 
           # Package version doesn't match the module major version
@@ -254,13 +254,22 @@ module Dependabot
             raise Dependabot::OutOfDisk.new, error_message
           end
 
-          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
-          end
+          detect_private_source_failures_from!(stderr)
 
           # We don't know what happened so we raise a generic error
           msg = stderr.lines.last(10).join.strip
           raise Dependabot::DependabotError, msg
+        end
+
+        def detect_private_source_failures_from!(stderr)
+          [
+            /unable to access '(?<url>http\S+)': The requested URL returned error: 403/,
+            /Authentication failed for '(?<url>.+)'/
+          ].each do |regex|
+            if (matches = stderr.match(regex))
+              raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
+            end
+          end
         end
 
         def filter_error_message(message:, regex:)
