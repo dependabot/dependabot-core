@@ -66,6 +66,18 @@ RSpec.describe Dependabot::Clients::Azure do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
+    
+    context "when response is 401" do
+      before do
+        stub_request(:get, branch_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 401)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
+    end
 
     context "when response is 400" do
       before do
@@ -157,6 +169,18 @@ RSpec.describe Dependabot::Clients::Azure do
       specify { expect { subject }.to_not raise_error }
 
       it { is_expected.to eq(JSON.parse(response_body)) }
+    end
+    
+    context "when response is 401" do
+      before do
+        stub_request(:get, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 401)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
     end
 
     context "when response is 404" do
