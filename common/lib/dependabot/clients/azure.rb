@@ -13,7 +13,7 @@ module Dependabot
       class ServiceNotAvailable < StandardError; end
 
       class BadGateway < StandardError; end
-      
+
       class Unauthorized < StandardError; end
 
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
