@@ -13,6 +13,8 @@ module Dependabot
       class ServiceNotAvailable < StandardError; end
 
       class BadGateway < StandardError; end
+      
+      class Unauthorized < StandardError; end
 
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
@@ -228,6 +230,7 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
+        raise Unauthorized if response.status == 401
         raise NotFound if response.status == 404
 
         response
@@ -257,6 +260,7 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
+        raise Unauthorized if response.status == 401
         raise NotFound if response.status == 404
 
         response
