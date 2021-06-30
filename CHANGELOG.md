@@ -1,3 +1,9 @@
+## v0.156.4, 30 June 2021
+
+- build(deps): bump @npmcli/arborist from 2.6.3 to 2.6.4 in /npm_and_yarn/helpers [#3988](https://github.com/dependabot/dependabot-core/pull/3988)
+- build(deps-dev): update rubocop requirement from ~> 1.17.0 to ~> 1.18.0 in /common [#4004](https://github.com/dependabot/dependabot-core/pull/4004)
+- fix(Maven): Add support for updating Maven extensions.xml files (@britter) [#3366](https://github.com/dependabot/dependabot-core/pull/3366)
+
 ## v0.156.3, 29 June 2021
 
 - Python: bump poetry from 1.1.6 to 1.1.7 in /python/helpers [#3996](https://github.com/dependabot/dependabot-core/pull/3996)
