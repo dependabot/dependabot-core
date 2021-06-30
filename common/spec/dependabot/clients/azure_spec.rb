@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Clients::Azure do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
-    
+
     context "when response is 401" do
       before do
         stub_request(:get, branch_url).
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::Clients::Azure do
 
       it { is_expected.to eq(JSON.parse(response_body)) }
     end
-    
+
     context "when response is 401" do
       before do
         stub_request(:get, pull_request_url).
