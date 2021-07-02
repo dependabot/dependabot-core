@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
         )
       end
 
-      specify { expect(updated_files).not_to be_empty }
+      specify { expect(updated_files.count).to eq(2) }
     end
 
     context "with a Pipfile and Pipfile.lock" do
