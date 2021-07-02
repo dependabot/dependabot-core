@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
     subject(:updated_files) { updater.updated_dependency_files }
 
     context "with a relative project path" do
-      let(:dependency_files) { project_dependency_files('poetry/relative_path') }
+      let(:dependency_files) { project_dependency_files("poetry/relative_path") }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -70,13 +70,13 @@ RSpec.describe Dependabot::Python::FileUpdater do
           requirements: [{
             file: "pyproject.toml",
             requirement: "^0.910",
-            groups: ['dev-dependencies'],
+            groups: ["dev-dependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "pyproject.toml",
             requirement: "^0.812",
-            groups: ['dev-dependencies'],
+            groups: ["dev-dependencies"],
             source: nil
           }],
           package_manager: "pip"
