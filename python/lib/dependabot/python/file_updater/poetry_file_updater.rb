@@ -257,7 +257,8 @@ module Dependabot
         def pyproject_hash_for(pyproject_content)
           SharedHelpers.in_a_temporary_directory do |dir|
             SharedHelpers.with_git_configured(credentials: credentials) do
-              File.write(File.join(dir, "pyproject.toml"), pyproject_content)
+              write_temporary_dependency_files(pyproject_content)
+
               SharedHelpers.run_helper_subprocess(
                 command: "pyenv exec python #{python_helper_path}",
                 function: "get_pyproject_hash",
