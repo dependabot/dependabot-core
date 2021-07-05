@@ -234,7 +234,7 @@ jobs:
          cd /home/dependabot/pix4d-dependabot/
          bundle exec ruby pix4d-dependabot.rb
    params:
-      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      GITHUB_ACCESS_TOKEN:  ((janus_developers_rw_token))
       DOCKER_REGISTRY: docker.ci.pix4d.com
       DOCKER_USER: ((docker_cloud_pix4d_user))
       DOCKER_PASS: ((docker_cloud_pix4d_password))
@@ -287,7 +287,7 @@ jobs:
          cd /home/dependabot/pix4d-dependabot/
          bundle exec ruby pix4d-dependabot.rb
    params:
-      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      GITHUB_ACCESS_TOKEN:  ((janus_developers_rw_token))
       DOCKER_REGISTRY: docker.ci.pix4d.com
       DOCKER_USER: ((docker_cloud_pix4d_user))
       DOCKER_PASS: ((docker_cloud_pix4d_password))
@@ -337,7 +337,7 @@ jobs:
          cd /home/dependabot/pix4d-dependabot/
          bundle exec ruby pix4d-dependabot.rb
    params:
-      GITHUB_ACCESS_TOKEN:  ((dependabot_github_access_token))
+      GITHUB_ACCESS_TOKEN:  ((janus_developers_rw_token))
       ARTIFACTORY_PASSWORD: ((concourse_artifactory_password))
       ARTIFACTORY_USERNAME: concourse
       EXTRA_INDEX_URL: https://artifactory.ci.pix4d.com/artifactory/api/pypi/pix4d-pypi-local/simple/

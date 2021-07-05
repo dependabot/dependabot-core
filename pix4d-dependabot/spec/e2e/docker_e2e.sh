@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Before running the script, setup your secret in pass. They can be found in the Vault
-# Github/pix4d-dependabot    --> ./tools/vault_helper.py read-secret /concourse/shared/dependabot_github_access_token
+# Github/pix4d-dependabot    --> ./tools/vault_helper.py read-secret /concourse/developers/janus_developers_rw_token
 # Artifactory/concourse_pass --> ./tools/vault_helper.py read-secret /concourse/shared/concourse_artifactory_password
 # docker/pix4d-pass --> ./tools/vault_helper.py read-secret /concourse/shared/docker_cloud_pix4d_password
 

@@ -6,7 +6,7 @@ image_resource:
     tag: 3.8
 
 params:
-  REPOSITORY_ACCESS_TOKEN: ((dependabot_github_access_token))
+  REPOSITORY_ACCESS_TOKEN: ((janus_developers_rw_token))
 
 inputs:
   - name: upstream-dependabot-core.git

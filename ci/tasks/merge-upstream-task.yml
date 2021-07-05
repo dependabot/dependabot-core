@@ -6,8 +6,8 @@ image_resource:
     tag: 3.8
 
 params:
-  REPOSITORY_ACCESS_TOKEN: ((dependabot_github_access_token))
-  private_keys: 
+  REPOSITORY_ACCESS_TOKEN: ((janus_developers_rw_token))
+  private_keys:
     - ((concourse_janus_ssh_key_base64))
 
 inputs:
