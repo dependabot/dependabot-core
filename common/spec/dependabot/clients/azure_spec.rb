@@ -67,6 +67,18 @@ RSpec.describe Dependabot::Clients::Azure do
       end
     end
 
+    context "when response is 403" do
+      before do
+        stub_request(:get, branch_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 403)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+      end
+    end
+
     context "when response is 401" do
       before do
         stub_request(:get, branch_url).
