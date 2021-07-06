@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Clients::Azure do
         let(:author_details) { nil }
         it "pushes commit without author property" do
           create_commit
-  
+
           expect(WebMock).
             to(
               have_requested(:post, "#{repo_url}/pushes?api-version=5.0").
@@ -157,15 +157,15 @@ RSpec.describe Dependabot::Clients::Azure do
             )
         end
       end
-  
+
       context "when author_details contains name and email" do
         let(:author_details) do
           { email: "support@dependabot.com", name: "dependabot" }
         end
-  
+
         it "pushes commit with author property containing name and email" do
           create_commit
-  
+
           expect(WebMock).
             to(
               have_requested(:post, "#{repo_url}/pushes?api-version=5.0").
