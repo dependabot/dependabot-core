@@ -105,13 +105,29 @@ RSpec.describe Dependabot::Clients::Azure do
 
     let(:commit_url) { repo_url + "/pushes?api-version=5.0" }
 
+    context "when response is 403" do
+      let(:author_details) do
+        { email: "support@dependabot.com", name: "dependabot" }
+      end
+
+      before do
+        stub_request(:post, commit_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 403)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+      end
+    end
+
     context "when response is 200" do
       before do
         stub_request(:post, commit_url).
           with(basic_auth: [username, password]).
           to_return(status: 200)
       end
-  
+
       context "when author_details is nil" do
         let(:author_details) { nil }
         it "pushes commit without author property" do
