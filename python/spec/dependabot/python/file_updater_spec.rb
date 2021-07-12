@@ -59,6 +59,33 @@ RSpec.describe Dependabot::Python::FileUpdater do
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
 
+    context "with a relative project path" do
+      let(:dependency_files) { project_dependency_files("poetry/relative_path") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mypy",
+          version: "0.910",
+          previous_version: "0.812",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.910",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.812",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      specify { expect(updated_files.count).to eq(2) }
+    end
+
     context "with a Pipfile and Pipfile.lock" do
       let(:dependency_files) { [pipfile, lockfile] }
       let(:pipfile) do
