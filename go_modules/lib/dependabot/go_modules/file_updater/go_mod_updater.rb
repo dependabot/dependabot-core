@@ -35,7 +35,9 @@ module Dependabot
           /go: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze
+          /go: .*: unknown revision/m.freeze,
+          # Package pointing to a proxy that 404s
+          /go: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
