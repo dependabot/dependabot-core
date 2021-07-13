@@ -1054,5 +1054,50 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    describe "when updating a provider with local path modules" do
+      let(:project_name) { "provider_with_mixed_case" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "Mongey/confluentcloud",
+            version: "0.0.11",
+            previous_version: "0.0.6",
+            requirements: [{
+              requirement: ">= 0.0.11",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 0.0.6",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/mongey/confluentcloud" {
+              version     = "0.0.11"
+          DEP
+        )
+      end
+    end
   end
 end

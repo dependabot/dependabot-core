@@ -206,7 +206,7 @@ module Dependabot
           (?:(?!^\}).)*
           provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
           (?:(?!^\}).)*}
-        /mx
+        /mix
       end
     end
   end
