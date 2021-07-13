@@ -1,3 +1,7 @@
+## v0.156.6, 13 July 2021
+
+- Terraform: handle mixed case providers [#4044](https://github.com/dependabot/dependabot-core/pull/4044)
+
 ## v0.156.5, 12 July 2021
 
 - fix(poetry): Detect relative project paths [#4018](https://github.com/dependabot/dependabot-core/pull/4018)
