@@ -2518,7 +2518,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
               expect(parsed_package_lock["dependencies"]["is-number"]["from"]).
-                to eq("is-number@github:jonschlinkert/is-number#semver:^4.0.0")
+                to eq("is-number@jonschlinkert/is-number#semver:^4.0.0")
             end
           end
         end
