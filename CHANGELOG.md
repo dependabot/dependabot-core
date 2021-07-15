@@ -1,3 +1,9 @@
+## v0.156.8, 15 July 2021
+
+- Terraform: ignore symlinks in file fetcher [#4053](https://github.com/dependabot/dependabot-core/pull/4053)
+- Bump npm from 7.10.0 to 7.19.1 [#4052](https://github.com/dependabot/dependabot-core/pull/4052)
+- Dry-run: cache cloned repos [#4050](https://github.com/dependabot/dependabot-core/pull/4050)
+
 ## v0.156.7, 15 July 2021
 
 - Terraform: support updating local path modules [#4048](https://github.com/dependabot/dependabot-core/pull/4048)

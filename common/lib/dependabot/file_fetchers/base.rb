@@ -233,10 +233,19 @@ module Dependabot
         Dir.entries(repo_path).map do |name|
           next if [".", ".."].include?(name)
 
+          absolute_path = File.join(repo_path, name)
+          type = if File.symlink?(absolute_path)
+                   "symlink"
+                 elsif Dir.exist?(absolute_path)
+                   "dir"
+                 else
+                   "file"
+                 end
+
           OpenStruct.new(
             name: name,
             path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
-            type: Dir.exist?(File.join(repo_path, name)) ? "dir" : "file",
+            type: type,
             size: 0 # NOTE: added for parity with github contents API
           )
         end.compact

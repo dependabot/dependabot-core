@@ -97,14 +97,11 @@ USER root
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm (updated after elm)
+# Install Node 14.0 and npm v7
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
-  && rm -rf /var/lib/apt/lists/*
-
-# NOTE: This was a hack to get around the fact that elm 18 failed to install with
-# npm 7, we should look into installing the latest version of node + npm
-RUN npm install -g npm@v7.10.0 \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install -g npm@v7.19.1 \
   && rm -rf ~/.npm
 
 
