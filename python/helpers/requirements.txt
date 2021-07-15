@@ -8,4 +8,4 @@ poetry==1.1.7
 wheel==0.36.2
 
 # Some dependencies will only install if Cython is present
-Cython==0.29.23
+Cython==0.29.24
