@@ -1,0 +1,3 @@
+module "loader" {
+  source = "./loader"
+}

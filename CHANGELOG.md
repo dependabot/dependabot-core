@@ -1,3 +1,9 @@
+## v0.156.7, 15 July 2021
+
+- Terraform: support updating local path modules [#4048](https://github.com/dependabot/dependabot-core/pull/4048)
+- build(deps): bump cython from 0.29.23 to 0.29.24 in /python/helpers [#4047](https://github.com/dependabot/dependabot-core/pull/4047)
+- build(deps): bump @npmcli/arborist from 2.6.4 to 2.7.0 in /npm_and_yarn/helpers [#4046](https://github.com/dependabot/dependabot-core/pull/4046)
+
 ## v0.156.6, 13 July 2021
 
 - Terraform: handle mixed case providers [#4044](https://github.com/dependabot/dependabot-core/pull/4044)
