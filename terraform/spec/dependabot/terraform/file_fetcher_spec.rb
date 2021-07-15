@@ -66,12 +66,11 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   context "when fetching nested local path modules" do
     let(:project_name) { "provider_with_multiple_local_path_modules" }
 
-    it "fetches nested terraform files" do
+    it "fetches nested terraform files excluding symlinks" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
           %w(.terraform.lock.hcl loader.tf providers.tf
-             loader/providers.tf loader/projects.tf
-             loader/project/providers.tf)
+             loader/providers.tf loader/projects.tf)
         )
     end
   end
