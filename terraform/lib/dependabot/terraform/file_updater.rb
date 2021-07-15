@@ -29,7 +29,7 @@ module Dependabot
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        updated_lockfile_content = update_lockfile_declaration
+        updated_lockfile_content = update_lockfile_declaration(updated_files)
 
         if updated_lockfile_content && lock_file.content != updated_lockfile_content
           updated_files << updated_file(file: lock_file, content: updated_lockfile_content)
@@ -92,7 +92,7 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration # rubocop:disable Metrics/AbcSize
+      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
@@ -106,6 +106,9 @@ module Dependabot
 
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Update the provider requirements in case the previous requirement doesn't allow the new version
+          updated_manifest_files.each { |f| File.write(f.name, f.content) }
+
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
           SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
 

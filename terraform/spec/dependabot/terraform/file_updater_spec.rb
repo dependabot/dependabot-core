@@ -698,7 +698,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
               version     = "3.45.0"
-              constraints = ">= 3.37.0, < 3.46.0"
+              constraints = ">= 3.42.0, < 3.46.0"
           DEP
         )
       end
@@ -1055,7 +1055,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
-    describe "when updating a provider with local path modules" do
+    describe "when updating a provider with mixed case path" do
       let(:project_name) { "provider_with_mixed_case" }
       let(:dependencies) do
         [
@@ -1095,6 +1095,93 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/mongey/confluentcloud" {
               version     = "0.0.11"
+          DEP
+        )
+      end
+    end
+
+    describe "when updating a provider with multiple local path modules" do
+      let(:project_name) { "provider_with_multiple_local_path_modules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "Mongey/confluentcloud",
+            version: "0.0.10",
+            previous_version: "0.0.6",
+            requirements: [{
+              requirement: "0.0.10",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }, {
+              requirement: "0.0.10",
+              groups: [],
+              file: "loader/providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }, {
+              requirement: "0.0.10",
+              groups: [],
+              file: "loader/project/providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "0.0.6",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }, {
+              requirement: "0.0.6",
+              groups: [],
+              file: "loader/providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }, {
+              requirement: "0.0.6",
+              groups: [],
+              file: "loader/project/providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "Mongey/confluentcloud"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version across all nested providers" do
+        updated_files = subject
+        lockfile = updated_files.find { |file| file.name == ".terraform.lock.hcl" }
+        provider_files = updated_files.select { |file| file.name.end_with?(".tf") }
+
+        expect(provider_files.count).to eq(3)
+        provider_files.each do |file|
+          expect(file.content).to include("version = \"0.0.10\"")
+        end
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/mongey/confluentcloud" {
+              version     = "0.0.10"
           DEP
         )
       end
