@@ -112,7 +112,7 @@ $options = {
   security_advisories: [],
   security_updates_only: false,
   ignore_conditions: [],
-  pull_request: false,
+  pull_request: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -201,11 +201,9 @@ option_parse = OptionParser.new do |opts|
   opts_opt_desc = "Comma separated list of updater options, "\
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
-    $options[:updater_options] = Hash[
-                                   value.split(",").map do |o|
-                                     [o.strip.downcase.to_sym, true]
-                                   end
-                                 ]
+    $options[:updater_options] = value.split(",").map do |o|
+      [o.strip.downcase.to_sym, true]
+    end.to_h
   end
 
   opts.on("--security-updates-only",
@@ -255,7 +253,7 @@ def show_diff(original_file, updated_file)
   puts
   puts "    ± #{original_file.name}"
   puts "    ~~~"
-  puts diff.lines.map { |line| "    " + line }.join("")
+  puts diff.lines.map { |line| "    " + line }.join
   puts "    ~~~"
 end
 
@@ -436,8 +434,8 @@ def handle_dependabot_error(error:, dependency:)
       raise error
     end
 
-  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
-       "#{error_details.fetch(:'error-detail')}"
+  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:"error-type")} "\
+       "#{error_details.fetch(:"error-detail")}"
 end
 # rubocop:enable Metrics/MethodLength
 
@@ -453,10 +451,7 @@ $source = Dependabot::Source.new(
 
 always_clone = Dependabot::Utils.
                always_clone_for_package_manager?($package_manager)
-if $options[:clone] || always_clone
-  $repo_contents_path = Dir.mktmpdir
-  puts "=> cloning into #{$repo_contents_path}"
-end
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
 
 fetcher_args = {
   source: $source,
@@ -476,8 +471,20 @@ $update_config = $config_file.update_config(
 )
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
-$files = if $options[:clone] || always_clone
+$files = if $repo_contents_path
+           if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
+             puts "=> reading cloned repo from #{$repo_contents_path}"
+           else
+             puts "=> cloning into #{$repo_contents_path}"
+             FileUtils.rm_rf($repo_contents_path)
+           end
            fetcher.clone_repo_contents
+           if $options[:commit]
+             Dir.chdir($repo_contents_path) do
+               puts "=> checking out commit #{$options[:commit]}"
+               Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
+             end
+           end
            fetcher.files
          else
            cached_dependency_files_read do
@@ -492,7 +499,7 @@ parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
   repo_contents_path: $repo_contents_path,
   source: $source,
   credentials: $options[:credentials],
-  reject_external_code: $options[:reject_external_code],
+  reject_external_code: $options[:reject_external_code]
 )
 
 dependencies = cached_read("dependencies") { parser.parse }
@@ -527,7 +534,7 @@ def ignored_versions_for(dep)
       )
     end
     Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
-    ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
+      ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
