@@ -56,6 +56,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       automerge_candidate: false
     )
   end
+  let(:reviewers) { [] }
   let(:work_item) { 123 }
   let(:custom_labels) { nil }
   let(:dependency) do
@@ -105,6 +106,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
                 headers: json_header)
     stub_request(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
       to_return(status: 200,
+                body: fixture("azure", "create_pull_request_details.json"),
                 headers: json_header)
   end
 

@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#fetch_commit" do
-    subject { client.fetch_commit(nil, branch) }
+    subject(:fetch_commit) { client.fetch_commit(nil, branch) }
 
     context "when response is 200" do
       before do
@@ -50,7 +50,7 @@ RSpec.describe Dependabot::Clients::Azure do
           to_return(status: 200, body: fixture("azure", "master_branch.json"))
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { fetch_commit }.to_not raise_error }
 
       it { is_expected.to eq("9c8376e9b2e943c2c72fac4b239876f377f0305a") }
     end
@@ -63,7 +63,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
 
@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
 
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
       end
     end
 
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { fetch_commit }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
   end
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+        expect { create_commit }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
 
@@ -182,12 +182,98 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#create_pull_request" do
-    subject do
-      client.create_pull_request("pr_name", "source_branch", "target_branch",
-                                 "", [], nil)
+    subject(:create_pull_request) do
+      client.create_pull_request(
+        pr_name, source_branch, target_branch,
+        pr_description, labels, reviewers, work_item
+      )
     end
 
-    let(:pull_request_url) { repo_url + "/pullrequests?api-version=5.0" }
+    let(:pr_name) { "test-create-pr" }
+    let(:source_branch) { "feature/test-create-pr" }
+    let(:target_branch) { "main" }
+    let(:pr_description) { "PR description" }
+    let(:labels) { [] }
+    let(:reviewers) { [] }
+    let(:work_item) { nil }
+    let(:create_pull_request_url) { repo_url + "/pullrequests?api-version=5.0" }
+
+    context "when response is 200" do
+      response_body = fixture("azure", "create_pull_request_details.json")
+
+      before do
+        request_body = {
+          sourceRefName: "refs/heads/#{source_branch}",
+          targetRefName: "refs/heads/#{target_branch}", title: pr_name,
+          description: pr_description, labels: [], workItemRefs: [], reviewers: []
+        }
+
+        stub_request(:post, create_pull_request_url).
+          with(basic_auth: [username, password], body: JSON.dump(request_body)).
+          to_return(status: 200, body: response_body)
+      end
+
+      it "returns the parsed response" do
+        expect(create_pull_request).to eq(JSON.parse(response_body))
+      end
+    end
+
+    context "when response is 200 - with workItem" do
+      let(:work_item) { 42 }
+      response_body = fixture("azure", "create_pull_request_details.json")
+
+      before do
+        request_body = {
+          sourceRefName: "refs/heads/#{source_branch}",
+          targetRefName: "refs/heads/#{target_branch}", title: pr_name,
+          description: pr_description, labels: [], workItemRefs: [{ id: 42 }], reviewers: []
+        }
+
+        stub_request(:post, create_pull_request_url).
+          with(basic_auth: [username, password], body: JSON.dump(request_body)).
+          to_return(status: 200, body: response_body)
+      end
+
+      it "returns the parsed response" do
+        expect(create_pull_request).to eq(JSON.parse(response_body))
+      end
+    end
+
+    context "when response is 200 - with reviewer" do
+      let(:reviewers) { ["d6245f20-2af8-44f4-9451-8107cb2767db"] }
+      response_body = fixture("azure", "create_pull_request_details.json")
+
+      before do
+        request_body = {
+          sourceRefName: "refs/heads/#{source_branch}",
+          targetRefName: "refs/heads/#{target_branch}", title: pr_name,
+          description: pr_description, labels: [], workItemRefs: [],
+          reviewers: [{ id: "d6245f20-2af8-44f4-9451-8107cb2767db" }]
+        }
+
+        stub_request(:post, create_pull_request_url).
+          with(basic_auth: [username, password], body: JSON.dump(request_body)).
+          to_return(status: 200, body: response_body)
+      end
+
+      specify { expect { create_pull_request }.to_not raise_error }
+
+      it "returns the parsed response" do
+        expect(create_pull_request).to eq(JSON.parse(response_body))
+      end
+    end
+
+    context "when response is 401" do
+      before do
+        stub_request(:post, create_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 401)
+      end
+
+      it "raises a helpful error" do
+        expect { create_pull_request }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
+    end
 
     context "when response is 403 & tags creation is forbidden" do
       before do
@@ -213,6 +299,18 @@ RSpec.describe Dependabot::Clients::Azure do
 
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+      end
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:post, create_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+      end
+
+      it "raises a helpful error" do
+        expect { create_pull_request }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
   end
@@ -286,7 +384,7 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#pull_request" do
-    subject { client.pull_request(pull_request_id) }
+    subject(:pull_request) { client.pull_request(pull_request_id) }
 
     let(:pull_request_id) { "1" }
     let(:pull_request_url) { base_url + "/_apis/git/pullrequests/#{pull_request_id}" }
@@ -300,7 +398,7 @@ RSpec.describe Dependabot::Clients::Azure do
           to_return(status: 200, body: response_body)
       end
 
-      specify { expect { subject }.to_not raise_error }
+      specify { expect { pull_request }.to_not raise_error }
 
       it { is_expected.to eq(JSON.parse(response_body)) }
     end
@@ -313,7 +411,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+        expect { pull_request }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
       end
     end
 
@@ -325,7 +423,7 @@ RSpec.describe Dependabot::Clients::Azure do
       end
 
       it "raises a helpful error" do
-        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+        expect { pull_request }.to raise_error(Dependabot::Clients::Azure::NotFound)
       end
     end
   end
