@@ -1,0 +1,11 @@
+<Project>
+
+  <Sdk Name="Awesome.Sdk" Version="1.2.3" />
+
+  <PropertyGroup>
+    <Description>Very simple project using a custom SDK.</Description>
+  </PropertyGroup>
+
+  <Sdk Name="Prototype.Sdk" Version="0.1.0-beta" />
+
+</Project>

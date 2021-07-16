@@ -135,6 +135,49 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           )
         end
       end
+
+      context "with MSBuild SDKs" do
+        let(:csproj_body) do
+          fixture("csproj", "sdk_references_of_all_kinds.csproj")
+        end
+        let(:dependency_name) { "Foo.Bar" }
+        let(:version) { "1.2.3" }
+        let(:previous_version) { "1.1.1" }
+        let(:requirements) do
+          [{
+            requirement: "1.2.3",
+            file: "my.csproj",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "1.1.1",
+            file: "my.csproj",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "updates the project correctly" do
+          content = updated_csproj_file.content
+          # Sdk attribute on Project (front, middle, back)
+          expect(content).to include(%(Sdk="Foo.Bar/1.2.3;))
+          expect(content).to include(%(X;Foo.Bar/1.2.3;Y))
+          expect(content).to include(%(Y;Foo.Bar/1.2.3">))
+          # Sdk tag (name/version and version/name)
+          expect(content).to include(%(<Sdk Version="1.2.3" Name="Foo.Bar"))
+          expect(content).to include(%(<Sdk Name="Foo.Bar" Version="1.2.3"))
+          # Import tag (name/version and version/name)
+          expect(content).to include(
+            %(<Import Project="X" Version="1.2.3" Sdk="Foo.Bar")
+          )
+          expect(content).to include(
+            %(<Import Sdk="Foo.Bar" Project="Y" Version="1.2.3")
+          )
+        end
+      end
     end
 
     context "with a packages.config file" do
