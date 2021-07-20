@@ -1,3 +1,9 @@
+## v0.156.9, 20 July 2021
+
+- build(deps): bump @npmcli/arborist from 2.7.0 to 2.7.1 in /npm_and_yarn/helpers [#4055](https://github.com/dependabot/dependabot-core/pull/4055)
+- build(deps-dev): bump eslint from 7.30.0 to 7.31.0 in /npm_and_yarn/helpers [#4060](https://github.com/dependabot/dependabot-core/pull/4060)
+- npm: prevent scoped registries becoming global [#4061](https://github.com/dependabot/dependabot-core/pull/4061)
+
 ## v0.156.8, 15 July 2021
 
 - Terraform: ignore symlinks in file fetcher [#4053](https://github.com/dependabot/dependabot-core/pull/4053)
