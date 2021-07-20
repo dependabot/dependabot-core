@@ -224,6 +224,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               end
             end
 
+            context "with scoped registry configured in npmrc" do
+              let(:dependency_files) { project_dependency_files("yarn/scoped_private_source_with_npmrc") }
+
+              let(:credentials) do
+                [{
+                  "type" => "git_source",
+                  "host" => "github.com",
+                  "username" => "x-access-token",
+                  "password" => "token"
+                }, {
+                  "type" => "npm_registry",
+                  "registry" => "registry.dependabot.com/npm-private",
+                  "token" => "my_token"
+                }]
+              end
+
+              it "adds auth details without replacing the global registry" do
+                expect(npmrc_content).
+                  to eq(
+                    "registry=https://registry.yarnpkg.com\n"\
+                    "@dependabot:always-auth=true\n"\
+                    "@dependabot:registry=https://registry.dependabot.com\n"\
+                    "\n"\
+                    "//registry.dependabot.com/npm-private/:_authToken=my_token"
+                  )
+              end
+            end
+
             context "with an irrelevant package-lock.json" do
               let(:dependency_files) { project_dependency_files("npm6_and_yarn/private_source_empty_npm_lock") }
 
@@ -545,6 +573,34 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
+          end
+        end
+
+        context "with scoped registry configured in npmrc" do
+          let(:dependency_files) { project_dependency_files("npm7/scoped_private_source_with_npmrc") }
+
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "npm_registry",
+              "registry" => "registry.dependabot.com/npm-private",
+              "token" => "my_token"
+            }]
+          end
+
+          it "adds auth details without replacing the global registry" do
+            expect(npmrc_content).
+              to eq(
+                "registry=https://registry.yarnpkg.com\n"\
+                "@dependabot:always-auth=true\n"\
+                "@dependabot:registry=https://registry.dependabot.com\n"\
+                "\n"\
+                "//registry.dependabot.com/npm-private/:_authToken=my_token"
+              )
           end
         end
       end
