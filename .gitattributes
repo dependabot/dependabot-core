@@ -1,0 +1,8 @@
+*.ps1 text=auto eol=lf
+*.sh text=auto eol=lf
+*.bash text=auto eol=lf
+build text=auto eol=lf
+*.php text=auto eol=lf
+*.php_cs text=auto eol=lf
+*.html text=auto eol=lf
+*.md text=auto eol=lf
