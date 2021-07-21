@@ -102,7 +102,7 @@ module Dependabot
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
       when "azure" then azure_creator.create
-      when "bitbucket" then bitbucket_creator.create
+      when "bitbucket", "bitbucket_server" then bitbucket_creator.create
       when "codecommit" then codecommit_creator.create
       else raise "Unsupported provider #{source.provider}"
       end

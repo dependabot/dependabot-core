@@ -19,140 +19,266 @@ module Dependabot
       def self.for_source(source:, credentials:)
         credential =
           credentials.
-          select { |cred| cred["type"] == "git_source" }.
-          find { |cred| cred["host"] == source.hostname }
+            select { |cred| cred["type"] == "git_source" }.
+            find { |cred| cred["host"] == source.hostname }
 
-        new(credentials: credential)
+        new(source: source, credentials: credential)
       end
 
       ##########
       # Client #
       ##########
 
-      def initialize(credentials:)
+      def initialize(source:, credentials:)
+        @source = source
         @credentials = credentials
         @auth_header = auth_header_for(credentials&.fetch("token", nil))
       end
 
       def fetch_commit(repo, branch)
-        path = "#{repo}/refs/branches/#{branch}"
-        response = get(base_url + path)
-
-        JSON.parse(response.body).fetch("target").fetch("hash")
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp225
+          path = "projects/#{@source.namespace}/repos/#{repo}/commits/#{branch}"
+          response = get(base_url + path)
+          JSON.parse(response.body).fetch("id")
+        else
+          path = "#{repo}/refs/branches/#{branch}"
+          response = get(base_url + path)
+          JSON.parse(response.body).fetch("target").fetch("hash")
+        end
       end
 
       def fetch_default_branch(repo)
-        response = get(base_url + repo)
-
-        JSON.parse(response.body).fetch("mainbranch").fetch("name")
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp213
+          path = "projects/#{@source.namespace}/repos/#{repo}/branches/default"
+          response = get(base_url + path)
+          JSON.parse(response.body).fetch("id").sub("refs/heads/", "")
+        else
+          response = get(base_url + repo)
+          JSON.parse(response.body).fetch("mainbranch").fetch("name")
+        end
       end
 
       def fetch_repo_contents(repo, commit = nil, path = nil)
         raise "Commit is required if path provided!" if commit.nil? && path
 
-        api_path = "#{repo}/src"
-        api_path += "/#{commit}" if commit
-        api_path += "/#{path.gsub(%r{/+$}, '')}" if path
-        api_path += "?pagelen=100"
-        response = get(base_url + api_path)
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp216
+          api_path = "projects/#{@source.namespace}/repos/#{repo}/browse?at=#{commit}&limit=100"
+          response = get(base_url + api_path)
+          JSON.parse(response.body).fetch("children").fetch("values")
+        else
+          api_path = "#{repo}/src"
+          api_path += "/#{commit}" if commit
+          api_path += "/#{path.gsub(%r{/+$}, '')}" if path
+          api_path += "?pagelen=100"
+          response = get(base_url + api_path)
 
-        JSON.parse(response.body).fetch("values")
+          JSON.parse(response.body).fetch("values")
+        end
       end
 
       def fetch_file_contents(repo, commit, path)
-        path = "#{repo}/src/#{commit}/#{path.gsub(%r{/+$}, '')}"
-        response = get(base_url + path)
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp362
+          path = "projects/#{@source.namespace}/repos/#{repo}/raw/#{path}?at=#{commit}"
+          response = get(base_url + path)
 
-        response.body
+          response.body
+        else
+          path = "#{repo}/src/#{commit}/#{path.gsub(%r{/+$}, '')}"
+          response = get(base_url + path)
+
+          response.body
+        end
       end
 
       def commits(repo, branch_name = nil)
-        commits_path = "#{repo}/commits/#{branch_name}?pagelen=100"
-        next_page_url = base_url + commits_path
-        paginate({ "next" => next_page_url })
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp222
+          commits_path = "projects/#{@source.namespace}/repos/#{repo}/commits?since=#{branch_name}&limit=100"
+          next_page_url = base_url + commits_path
+          paginate({ "next" => next_page_url })
+        else
+          commits_path = "#{repo}/commits/#{branch_name}?pagelen=100"
+          next_page_url = base_url + commits_path
+          paginate({ "next" => next_page_url })
+        end
       end
 
       def branch(repo, branch_name)
-        branch_path = "#{repo}/refs/branches/#{branch_name}"
-        response = get(base_url + branch_path)
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp209
+          branch_path = "projects/#{@source.namespace}/repos/#{repo}/branches?filterText=#{branch_name}"
+          response = get(base_url + branch_path)
+          branch = JSON.parse(response.body)
 
-        JSON.parse(response.body)
+          if branch.fetch("values").length === 0
+            raise Clients::Bitbucket::NotFound.new
+          end
+        else
+          branch_path = "#{repo}/refs/branches/#{branch_name}"
+          response = get(base_url + branch_path)
+
+          JSON.parse(response.body)
+        end
       end
 
       def pull_requests(repo, source_branch, target_branch)
-        pr_path = "#{repo}/pullrequests"
-        # Get pull requests with any status
-        pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
-        next_page_url = base_url + pr_path
-        pull_requests = paginate({ "next" => next_page_url })
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp294
+          pr_path = "projects/#{@source.namespace}/repos/#{repo}/pull-requests?state=ALL"
+          next_page_url = base_url + pr_path
+          pull_requests = paginate({ "next" => next_page_url })
 
-        pull_requests unless source_branch && target_branch
+          pull_requests unless source_branch && target_branch
 
-        pull_requests.select do |pr|
-          pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
-          pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
-          pr_source_branch == source_branch && pr_target_branch == target_branch
+          pull_requests.select do |pr|
+            pr_source_branch = pr.fetch("fromRef").fetch("id").sub("refs/heads/", "")
+            pr_target_branch = pr.fetch("toRef").fetch("id").sub("refs/heads/", "")
+
+            pr_source_branch == source_branch && pr_target_branch == target_branch
+          end
+        else
+          pr_path = "#{repo}/pullrequests"
+          # Get pull requests with any status
+          pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
+          next_page_url = base_url + pr_path
+          pull_requests = paginate({ "next" => next_page_url })
+
+          pull_requests unless source_branch && target_branch
+
+          pull_requests.select do |pr|
+            pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+            pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
+            pr_source_branch == source_branch && pr_target_branch == target_branch
+          end
         end
       end
 
       # rubocop:disable Metrics/ParameterLists
       def create_commit(repo, branch_name, base_commit, commit_message, files,
                         author_details)
-        parameters = {
-          message: commit_message, # TODO: Format markup in commit message
-          author: "#{author_details.fetch(:name)} <#{author_details.fetch(:email)}>",
-          parents: base_commit,
-          branch: branch_name
-        }
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp218
+          source_branch = self.fetch_default_branch(repo)
+          source_commit_id = base_commit
 
-        files.each do |file|
-          absolute_path = file.name.start_with?("/") ? file.name : "/" + file.name
-          parameters[absolute_path] = file.content
+          files.each do |file|
+            multipart_data = multipart_form_data(
+              {
+                message: commit_message, # TODO: Format markup in commit message
+                branch: branch_name,
+                sourceCommitId: source_commit_id,
+                content: file.content,
+                sourceBranch: source_branch
+              }
+            )
+
+            commit_path = "projects/#{@source.namespace}/repos/#{repo}/browse/#{file.name}"
+            response = put(base_url + commit_path, multipart_data.fetch('body'), multipart_data.fetch('header_value'))
+
+            brand_details = JSON.parse(response.body)
+
+            source_commit_id = brand_details.fetch("id")
+            source_branch = nil
+          end
+        else
+          parameters = {
+            message: commit_message, # TODO: Format markup in commit message
+            author: "#{author_details.fetch(:name)} <#{author_details.fetch(:email)}>",
+            parents: base_commit,
+            branch: branch_name
+          }
+
+          files.each do |file|
+            absolute_path = file.name.start_with?("/") ? file.name : "/" + file.name
+            parameters[absolute_path] = file.content
+          end
+
+          body = encode_form_parameters(parameters)
+
+          commit_path = "#{repo}/src"
+          post(base_url + commit_path, body, "application/x-www-form-urlencoded")
         end
-
-        body = encode_form_parameters(parameters)
-
-        commit_path = "#{repo}/src"
-        post(base_url + commit_path, body, "application/x-www-form-urlencoded")
       end
+
       # rubocop:enable Metrics/ParameterLists
 
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(repo, pr_name, source_branch, target_branch,
                               pr_description, _labels, _work_item = nil)
-        content = {
-          title: pr_name,
-          source: {
-            branch: {
-              name: source_branch
+        if @source.provider == "bitbucket_server"
+          content = {
+            title: pr_name,
+            description: pr_description,
+            state: "OPEN",
+            fromRef: {
+              id: source_branch
+            },
+            toRef: {
+              id: target_branch
             }
-          },
-          destination: {
-            branch: {
-              name: target_branch
-            }
-          },
-          description: pr_description,
-          close_source_branch: true
-        }
+          }
 
-        pr_path = "#{repo}/pullrequests"
-        post(base_url + pr_path, content.to_json)
+          pr_path = "projects/#{@source.namespace}/repos/#{repo}/pull-requests"
+          post(base_url + pr_path, content.to_json)
+        else
+          content = {
+            title: pr_name,
+            source: {
+              branch: {
+                name: source_branch
+              }
+            },
+            destination: {
+              branch: {
+                name: target_branch
+              }
+            },
+            description: pr_description,
+            close_source_branch: true
+          }
+
+          pr_path = "#{repo}/pullrequests"
+          post(base_url + pr_path, content.to_json)
+        end
       end
+
       # rubocop:enable Metrics/ParameterLists
-
       def tags(repo)
-        path = "#{repo}/refs/tags?pagelen=100"
-        response = get(base_url + path)
+        if @source.provider == "bitbucket_server"
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp398
+          raise "Not tested"
 
-        JSON.parse(response.body).fetch("values")
+          path = "projects/#{@source.namespace}/repos/#{repo}/tags?limit=100"
+          response = get(base_url + path)
+
+          JSON.parse(response.body).fetch("values")
+        else
+          path = "#{repo}/refs/tags?pagelen=100"
+          response = get(base_url + path)
+
+          JSON.parse(response.body).fetch("values")
+        end
       end
 
       def compare(repo, previous_tag, new_tag)
-        path = "#{repo}/commits/?include=#{new_tag}&exclude=#{previous_tag}"
-        response = get(base_url + path)
+        if @source.provider == "bitbucket_server"
+          raise "Not tested"
 
-        JSON.parse(response.body).fetch("values")
+          # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp398
+          path = "projects/#{@source.namespace}/repos/#{repo}/compare/changes?from=#{previous_tag}&to=#{new_tag}"
+          response = get(base_url + path)
+
+          JSON.parse(response.body).fetch("values")
+        else
+          path = "#{repo}/commits/?include=#{new_tag}&exclude=#{previous_tag}"
+          response = get(base_url + path)
+
+          JSON.parse(response.body).fetch("values")
+        end
       end
 
       def get(url)
@@ -208,6 +334,29 @@ module Dependabot
         { "Authorization" => "Bearer #{token}" }
       end
 
+      def multipart_form_data(parameters)
+        body = ""
+        boundary = SecureRandom.hex(4)
+
+        parameters.map do |key, value|
+          next if value.nil?
+          body << "--#{boundary}" << Excon::CR_NL
+          body << "Content-Disposition: form-data; name=\"#{key}\"" << Excon::CR_NL
+          body << "Content-Type: text/plain" << Excon::CR_NL
+          body << Excon::CR_NL
+          body << value # TODO
+          body << Excon::CR_NL
+        end
+
+        body << "--#{boundary}--"
+        body << Excon::CR_NL
+
+        {
+          "header_value" => "multipart/form-data; boundary=\"#{boundary}\"",
+          "body" => body
+        }
+      end
+
       def encode_form_parameters(parameters)
         parameters.map do |key, value|
           URI.encode_www_form_component(key.to_s) + "=" + URI.encode_www_form_component(value.to_s)
@@ -228,13 +377,33 @@ module Dependabot
       #     first_page = JSON.parse(repsonse.body)
       #     paginate(first_page)
       def paginate(page)
-        Enumerator.new do |yielder|
-          loop do
-            page.fetch("values", []).each { |value| yielder << value }
-            break unless page.key?("next")
+        if @source.provider == "bitbucket_server"
+          start = 0
+          limit = 100
+          Enumerator.new do |yielder|
+            loop do
+              page.fetch("values", []).each { |value| yielder << value }
+              break if page.fetch("isLastPage", false)
 
-            next_page_url = page.fetch("next")
-            page = JSON.parse(get(next_page_url).body)
+              uri = URI(page.fetch("next"))
+              uri.query = [uri.query, "start=#{start}&limit=#{limit}"].compact.join('&')
+              next_page_url = uri.to_s
+
+              page = JSON.parse(get(next_page_url).body)
+              if page.key?("nextPageStart") and page.fetch("nextPageStart") != nil
+                start = page.fetch("nextPageStart");
+              end
+            end
+          end
+        else
+          Enumerator.new do |yielder|
+            loop do
+              page.fetch("values", []).each { |value| yielder << value }
+              break unless page.key?("next")
+
+              next_page_url = page.fetch("next")
+              page = JSON.parse(get(next_page_url).body)
+            end
           end
         end
       end
@@ -243,8 +412,13 @@ module Dependabot
       attr_reader :credentials
 
       def base_url
-        # TODO: Make this configurable when we support enterprise Bitbucket
-        "https://api.bitbucket.org/2.0/repositories/"
+        if @source.provider == "bitbucket_server"
+          uri = URI(@source.api_endpoint)
+          uri.path = uri.path + (uri.path.end_with?("/") ? '' : '/')
+          uri.to_s
+        else
+          "https://api.bitbucket.org/2.0/repositories/"
+        end
       end
     end
   end

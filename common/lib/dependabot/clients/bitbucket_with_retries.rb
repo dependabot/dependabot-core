@@ -23,6 +23,15 @@ module Dependabot
         new(credentials: credential)
       end
 
+      def self.for_source(source:, credentials:)
+        credential =
+          credentials.
+            select { |cred| cred["type"] == "git_source" }.
+            find { |cred| cred["host"] == source.hostname }
+
+        new(source:source, credentials: credential)
+      end
+
       ############
       # Proxying #
       ############

@@ -101,7 +101,7 @@ module Dependabot
             JSON.parse(composer_file.content).
             fetch("repositories", []).
             select { |r| r.is_a?(Hash) }
-
+          # @TODO versions in vcs
           urls = repositories.
                  select { |h| h["type"] == "composer" }.
                  map { |h| h["url"] }.compact.

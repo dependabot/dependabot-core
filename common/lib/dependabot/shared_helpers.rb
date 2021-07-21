@@ -87,8 +87,10 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
+      puts "Running #{env_cmd}"
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
+      puts "Finished. Took #{time_taken}"
 
       if ENV["DEBUG_HELPERS"] == "true"
         puts stdout

@@ -206,7 +206,7 @@ module Dependabot
           _gitlab_repo_contents(repo, path, commit)
         when "azure"
           _azure_repo_contents(path, commit)
-        when "bitbucket"
+        when "bitbucket", "bitbucket_server"
           _bitbucket_repo_contents(repo, path, commit)
         when "codecommit"
           _codecommit_repo_contents(repo, path, commit)
@@ -332,18 +332,33 @@ module Dependabot
         )
 
         response.map do |file|
-          type = case file.fetch("type")
-                 when "commit_file" then "file"
-                 when "commit_directory" then "dir"
-                 else file.fetch("type")
-                 end
+          if @source.provider == "bitbucket_server"
+            type = case file.fetch("type")
+                   when "FILE" then "file"
+                   when "DIRECTORY" then "dir"
+                   else raise "Unsupported file type"
+                   end
 
-          OpenStruct.new(
-            name: File.basename(file.fetch("path")),
-            path: file.fetch("path"),
-            type: type,
-            size: file.fetch("size", 0)
-          )
+            OpenStruct.new(
+              name: File.basename(file.fetch("path").fetch("name")),
+              path: file.fetch("path"),
+              type: type,
+              size: file.fetch("size", 0)
+            )
+          else
+            type = case file.fetch("type")
+                   when "commit_file" then "file"
+                   when "commit_directory" then "dir"
+                   else file.fetch("type")
+                   end
+
+            OpenStruct.new(
+              name: File.basename(file.fetch("path")),
+              path: file.fetch("path"),
+              type: type,
+              size: file.fetch("size", 0)
+            )
+          end
         end
       end
 
@@ -418,7 +433,7 @@ module Dependabot
           Base64.decode64(tmp).force_encoding("UTF-8").encode
         when "azure"
           azure_client.fetch_file_contents(commit, path)
-        when "bitbucket"
+        when "bitbucket", "bitbucket_server"
           bitbucket_client.fetch_file_contents(repo, commit, path)
         when "codecommit"
           codecommit_client.fetch_file_contents(repo, commit, path)
@@ -518,7 +533,7 @@ module Dependabot
         when "github" then github_client
         when "gitlab" then gitlab_client
         when "azure" then azure_client
-        when "bitbucket" then bitbucket_client
+        when "bitbucket", "bitbucket_server" then bitbucket_client
         when "codecommit" then codecommit_client
         else raise "Unsupported provider '#{source.provider}'."
         end
@@ -547,11 +562,9 @@ module Dependabot
       end
 
       def bitbucket_client
-        # TODO: When self-hosted Bitbucket is supported this should use
-        # `Bitbucket.for_source`
         @bitbucket_client ||=
           Dependabot::Clients::BitbucketWithRetries.
-          for_bitbucket_dot_org(credentials: credentials)
+            for_source(source: source, credentials: credentials)
       end
 
       def codecommit_client

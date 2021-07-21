@@ -37,7 +37,7 @@ module Dependabot
     /x.freeze
 
     attr_accessor :provider, :repo, :directory, :branch, :commit,
-                  :hostname, :api_endpoint
+                  :hostname, :api_endpoint, :namespace
 
     def self.from_url(url_string)
       return unless url_string&.match?(SOURCE_REGEX)
@@ -53,7 +53,7 @@ module Dependabot
     end
 
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil)
+                   hostname: nil, api_endpoint: nil, namespace: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
         msg = "Both hostname and api_endpoint must be specified if either "\
               "are. Alternatively, both may be left blank to use the "\
@@ -64,6 +64,7 @@ module Dependabot
       @provider = provider
       @repo = repo
       @directory = directory
+      @namespace = namespace
       @branch = branch
       @commit = commit
       @hostname = hostname || default_hostname(provider)

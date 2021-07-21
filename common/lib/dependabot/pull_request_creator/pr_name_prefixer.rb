@@ -265,7 +265,7 @@ module Dependabot
         when "github" then recent_github_commit_messages
         when "gitlab" then recent_gitlab_commit_messages
         when "azure" then recent_azure_commit_messages
-        when "bitbucket" then recent_bitbucket_commit_messages
+        when "bitbucket", "bitbucket_server" then recent_bitbucket_commit_messages
         when "codecommit" then recent_codecommit_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
@@ -338,7 +338,7 @@ module Dependabot
           when "github" then last_github_dependabot_commit_message
           when "gitlab" then last_gitlab_dependabot_commit_message
           when "azure" then last_azure_dependabot_commit_message
-          when "bitbucket" then last_bitbucket_dependabot_commit_message
+          when "bitbucket", "bitbucket_server" then last_bitbucket_dependabot_commit_message
           when "codecommit" then last_codecommit_dependabot_commit_message
           else raise "Unsupported provider: #{source.provider}"
           end
@@ -405,8 +405,12 @@ module Dependabot
       end
 
       def bitbucket_commit_author_email(commit)
-        matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
-        matches ? matches[1] : ""
+        if @source.provider == "bitbucket_server"
+          commit.fetch("author").fetch("emailAddress")
+        else
+          matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
+          matches ? matches[1] : ""
+        end
       end
 
       def github_client_for_source
