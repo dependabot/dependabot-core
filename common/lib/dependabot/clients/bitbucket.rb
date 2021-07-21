@@ -282,30 +282,21 @@ module Dependabot
       end
 
       def get(url)
-        response = Excon.get(
-          url,
-          user: credentials&.fetch("username", nil),
-          password: credentials&.fetch("password", nil),
-          idempotent: true,
-          **Dependabot::SharedHelpers.excon_defaults(
-            headers: auth_header
-          )
-        )
-        raise Unauthorized if response.status == 401
-        raise Forbidden if response.status == 403
-        raise NotFound if response.status == 404
-
-        if response.status >= 400
-          raise "Unhandled Bitbucket error!\n"\
-                "Status: #{response.status}\n"\
-                "Body: #{response.body}"
-        end
-
-        response
+        make_request("get", url, nil, "application/json")
       end
 
       def post(url, body, content_type = "application/json")
-        response = Excon.post(
+        make_request("post", url, body, content_type)
+      end
+
+      def put(url, body, content_type = "application/json")
+        make_request("put", url, body, content_type)
+      end
+
+      private
+
+      def make_request(method, url, body = nil, content_type = "application/json")
+        response = Excon.method(method).call(
           url,
           body: body,
           user: credentials&.fetch("username", nil),
@@ -325,8 +316,6 @@ module Dependabot
 
         response
       end
-
-      private
 
       def auth_header_for(token)
         return {} unless token
