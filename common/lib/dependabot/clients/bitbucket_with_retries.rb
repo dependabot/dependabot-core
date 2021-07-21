@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "bitbucket"
+require_relative "bitbucket_server"
 
 module Dependabot
   module Clients
@@ -26,19 +27,23 @@ module Dependabot
       def self.for_source(source:, credentials:)
         credential =
           credentials.
-            select { |cred| cred["type"] == "git_source" }.
-            find { |cred| cred["host"] == source.hostname }
+          select { |cred| cred["type"] == "git_source" }.
+          find { |cred| cred["host"] == source.hostname }
 
-        new(source:source, credentials: credential)
+        new(source: source, credentials: credential)
       end
 
       ############
       # Proxying #
       ############
 
-      def initialize(max_retries: 3, **args)
-        @max_retries = max_retries || 3
-        @client = Bitbucket.new(**args)
+      def initialize(max_retries: 3, source: nil, credentials:)
+        @max_retries = max_retries
+        @client = if not source.nil? && source.provider == "bitbucket_server"
+                    BitbucketServer.new(credentials:credentials, source:source)
+                  else
+                    Bitbucket.new(credentials)
+                  end
       end
 
       def method_missing(method_name, *args, &block)

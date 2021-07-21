@@ -439,7 +439,7 @@ module Dependabot
 
       def bitbucket_client_for_source
         @bitbucket_client_for_source ||=
-          Dependabot::Clients::Bitbucket.for_source(
+          Dependabot::Clients::BitbucketWithRetries.for_source(
             source: source,
             credentials: credentials
           )

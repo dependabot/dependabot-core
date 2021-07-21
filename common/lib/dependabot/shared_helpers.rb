@@ -87,10 +87,16 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      puts "Running #{env_cmd}"
+      if ENV["DEBUG_HELPERS"] == "true"
+        puts "Running #{env_cmd}"
+      end
+
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
-      puts "Finished. Took #{time_taken}"
+
+      if ENV["DEBUG_HELPERS"] == "true"
+        puts "Finished. Took #{time_taken}"
+      end
 
       if ENV["DEBUG_HELPERS"] == "true"
         puts stdout
@@ -154,6 +160,33 @@ module Dependabot
         middlewares: excon_middleware,
         headers: excon_headers(headers)
       }.merge(options)
+    end
+
+    def self.auth_header_for(token)
+      return {} unless token
+
+      { "Authorization" => "Bearer #{token}" }
+    end
+
+    def self.excon_multipart_form_data(parameters)
+      body = ""
+      boundary = SecureRandom.hex(4)
+
+      parameters.map do |key, value|
+        next if value.nil?
+        body = body + "--#{boundary}" + Excon::CR_NL
+        body = body + "Content-Disposition: form-data; name=\"#{key}\"" + Excon::CR_NL
+        body = body + "Content-Type: text/plain" + Excon::CR_NL
+        body = body + Excon::CR_NL
+        body = body + value + Excon::CR_NL
+      end
+
+      body = body + "--#{boundary}--" + Excon::CR_NL
+
+      {
+        "header_value" => "multipart/form-data; boundary=\"#{boundary}\"",
+        "body" => body
+      }
     end
 
     def self.with_git_configured(credentials:)
