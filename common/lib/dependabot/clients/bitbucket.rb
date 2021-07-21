@@ -340,16 +340,14 @@ module Dependabot
 
         parameters.map do |key, value|
           next if value.nil?
-          body << "--#{boundary}" << Excon::CR_NL
-          body << "Content-Disposition: form-data; name=\"#{key}\"" << Excon::CR_NL
-          body << "Content-Type: text/plain" << Excon::CR_NL
-          body << Excon::CR_NL
-          body << value # TODO
-          body << Excon::CR_NL
+          body = body + "--#{boundary}" + Excon::CR_NL
+          body = body + "Content-Disposition: form-data; name=\"#{key}\"" + Excon::CR_NL
+          body = body + "Content-Type: text/plain" + Excon::CR_NL
+          body = body + Excon::CR_NL
+          body = body + value + Excon::CR_NL
         end
 
-        body << "--#{boundary}--"
-        body << Excon::CR_NL
+        body = body + "--#{boundary}--" + Excon::CR_NL
 
         {
           "header_value" => "multipart/form-data; boundary=\"#{boundary}\"",
