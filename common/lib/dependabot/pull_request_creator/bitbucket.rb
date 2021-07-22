@@ -27,14 +27,11 @@ module Dependabot
       end
 
       def create
-        return if branch_exists? && pull_request_exists?
-
-        # FIXME: Copied from Azure, but not verified whether this is true
-        # For Bitbucket we create or update a branch in the same request as creating
-        # a commit (so we don't need create or update branch logic here)
         create_commit
 
-        create_pull_request
+        if not pull_request_exists?
+          create_pull_request
+        end
       end
 
       private
@@ -82,7 +79,7 @@ module Dependabot
           branch_name,
           source.branch || default_branch,
           pr_description,
-          labeler&.labels_for_pr,
+          nil,
           work_item
         )
       end

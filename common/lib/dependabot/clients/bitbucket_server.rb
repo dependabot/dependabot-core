@@ -64,9 +64,11 @@ module Dependabot
         # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp209
         branch_path = "projects/#{@source.namespace}/repos/#{repo}/branches?filterText=#{branch_name}"
         response = get(base_url + branch_path)
-        branch = JSON.parse(response.body)
+        branches = JSON.parse(response.body).fetch("values")
 
-        branch.fetch("values").length > 0
+        raise "More then one branches found" if branches.length > 1
+
+        branches.first
       end
 
       def pull_requests(repo, source_branch, target_branch)
@@ -86,11 +88,16 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/ParameterLists
-      def create_commit(repo, branch_name, base_commit, commit_message, files,
-                        author_details)
+      def create_commit(repo, branch_name, base_commit, commit_message, files, author_details)
         # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp218
-        source_branch = self.fetch_default_branch(repo)
-        source_commit_id = base_commit
+        branch = self.branch(repo, branch_name)
+        if branch.nil?
+          source_branch = self.fetch_default_branch(repo)
+          source_commit_id = base_commit
+        else
+          source_branch = branch_name;
+          source_commit_id = branch.fetch("latestCommit")
+        end
 
         files.each do |file|
           multipart_data = SharedHelpers.excon_multipart_form_data(
@@ -107,9 +114,10 @@ module Dependabot
           response = put(base_url + commit_path, multipart_data.fetch('body'), multipart_data.fetch('header_value'))
 
           brand_details = JSON.parse(response.body)
+          next if brand_details.fetch("errors", []).length > 0
 
           source_commit_id = brand_details.fetch("id")
-          source_branch = nil
+          source_branch = brand_details.fetch("displayId")
         end
       end
 
