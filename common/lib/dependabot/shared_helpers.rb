@@ -88,7 +88,7 @@ module Dependabot
 
       env_cmd = [env, cmd].compact
       if ENV["DEBUG_HELPERS"] == "true"
-        puts "Running #{env_cmd}"
+        puts "Running #{env_cmd} with stdin: #{stdin_data}"
       end
 
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
