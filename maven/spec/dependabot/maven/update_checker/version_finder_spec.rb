@@ -142,11 +142,20 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
       end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/1.4.12-java7/xstream-1.4.12-java7.jar"
+      end
       let(:dependency_version) { "1.4.11-java7" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
 
       context "and the type is native-mt" do
         let(:dependency_version) { "1.4.11-native-mt" }
+        let(:maven_central_version_files_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "com/thoughtworks/xstream/"\
+          "xstream/1.4.12-native-mt/xstream-1.4.12-native-mt.jar"
+        end
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.12-native-mt"))
         end
@@ -163,6 +172,10 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/1.4.12/xstream-1.4.12.jar"
       end
       let(:dependency_version) { "1.4.11.1" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
