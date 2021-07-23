@@ -564,7 +564,7 @@ module Dependabot
       def bitbucket_client
         @bitbucket_client ||=
           Dependabot::Clients::BitbucketWithRetries.
-            for_source(source: source, credentials: credentials)
+          for_source(source: source, credentials: credentials)
       end
 
       def codecommit_client

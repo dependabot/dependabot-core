@@ -7,12 +7,12 @@ unless %w(minor patch).include?(ARGV[0])
 end
 component = ARGV[0].to_sym
 
-unless `which gh` && $?.success?
+unless `which gh` && $CHILD_STATUS.success?
   puts "Please install the gh cli: brew install gh"
   exit 1
 end
 
-unless `gh auth status > /dev/null 2>&1` && $?.success?
+unless `gh auth status > /dev/null 2>&1` && $CHILD_STATUS.success?
   puts "Please login to GitHub first: gh auth login"
   exit 1
 end

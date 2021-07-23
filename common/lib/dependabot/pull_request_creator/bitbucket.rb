@@ -29,9 +29,7 @@ module Dependabot
       def create
         create_commit
 
-        if not pull_request_exists?
-          create_pull_request
-        end
+        create_pull_request unless pull_request_exists?
       end
 
       private

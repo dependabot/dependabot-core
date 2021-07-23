@@ -39,8 +39,8 @@ module Dependabot
 
       def initialize(max_retries: 3, source: nil, credentials:)
         @max_retries = max_retries
-        @client = if not source.nil? && source.provider == "bitbucket_server"
-                    BitbucketServer.new(credentials:credentials, source:source)
+        @client = if !source.nil? && source.provider == "bitbucket_server"
+                    BitbucketServer.new(credentials: credentials, source: source)
                   else
                     Bitbucket.new(credentials)
                   end

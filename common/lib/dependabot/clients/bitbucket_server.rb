@@ -87,15 +87,14 @@ module Dependabot
         end
       end
 
-      # rubocop:disable Metrics/ParameterLists
-      def create_commit(repo, branch_name, base_commit, commit_message, files, author_details)
+      def create_commit(repo, branch_name, base_commit, commit_message, files)
         # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp218
         branch = self.branch(repo, branch_name)
         if branch.nil?
-          source_branch = self.fetch_default_branch(repo)
+          source_branch = fetch_default_branch(repo)
           source_commit_id = base_commit
         else
-          source_branch = branch_name;
+          source_branch = branch_name
           source_commit_id = branch.fetch("latestCommit")
         end
 
@@ -111,17 +110,15 @@ module Dependabot
           )
 
           commit_path = "projects/#{@source.namespace}/repos/#{repo}/browse/#{file.name}"
-          response = put(base_url + commit_path, multipart_data.fetch('body'), multipart_data.fetch('header_value'))
+          response = put(base_url + commit_path, multipart_data.fetch("body"), multipart_data.fetch("header_value"))
 
           brand_details = JSON.parse(response.body)
-          next if brand_details.fetch("errors", []).length > 0
+          next if brand_details.fetch("errors", []).empty?
 
           source_commit_id = brand_details.fetch("id")
           source_branch = brand_details.fetch("displayId")
         end
       end
-
-      # rubocop:enable Metrics/ParameterLists
 
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(repo, pr_name, source_branch, target_branch,
@@ -221,13 +218,11 @@ module Dependabot
             break if page.fetch("isLastPage", false)
 
             uri = URI(page.fetch("next"))
-            uri.query = [uri.query, "start=#{start}&limit=#{limit}"].compact.join('&')
+            uri.query = [uri.query, "start=#{start}&limit=#{limit}"].compact.join("&")
             next_page_url = uri.to_s
 
             page = JSON.parse(get(next_page_url).body)
-            if page.key?("nextPageStart") and page.fetch("nextPageStart") != nil
-              start = page.fetch("nextPageStart");
-            end
+            start = page.fetch("nextPageStart") if page.key?("nextPageStart") && !page.fetch("nextPageStart").nil?
           end
         end
       end
@@ -237,7 +232,7 @@ module Dependabot
 
       def base_url
         uri = URI(@source.api_endpoint)
-        uri.path = uri.path + (uri.path.end_with?("/") ? '' : '/')
+        uri.path = uri.path + (uri.path.end_with?("/") ? "" : "/")
         uri.to_s
       end
     end
