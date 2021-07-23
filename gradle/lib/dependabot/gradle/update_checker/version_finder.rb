@@ -16,7 +16,7 @@ module Dependabot
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
-        TYPE_SUFFICES = %w(jre android java).freeze
+        TYPE_SUFFICES = %w(jre android java native_mt).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
@@ -258,16 +258,18 @@ module Dependabot
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type = dependency.version.split(/[.\-]/).
+          current_type = dependency.version.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
                          find do |type|
-                           TYPE_SUFFICES.
-                             find { |s| type.include?(s) }
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
                          end
 
-          version_type = comparison_version.to_s.split(/[.\-]/).
+          version_type = comparison_version.to_s.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
                          find do |type|
-                           TYPE_SUFFICES.
-                             find { |s| type.include?(s) }
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
                          end
 
           current_type == version_type
