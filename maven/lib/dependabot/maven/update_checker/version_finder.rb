@@ -13,7 +13,7 @@ module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
-        TYPE_SUFFICES = %w(jre android java native_mt).freeze
+        TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:,
