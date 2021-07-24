@@ -613,6 +613,11 @@ dependencies.each do |dep|
   puts " => checking for updates #{checker_count}/#{dependencies.count}"
   puts " => latest available version is #{checker.latest_version}"
 
+  if checker.up_to_date?
+    puts "    (no update needed as it's already up-to-date)"
+    next
+  end
+
   if $options[:security_updates_only] && !checker.vulnerable?
     if checker.version_class.correct?(checker.dependency.version)
       puts "    (no security update needed as it's not vulnerable)"
@@ -648,11 +653,6 @@ dependencies.each do |dep|
     conflicting_dependencies.each do |conflicting_dep|
       puts "   #{conflicting_dep['explanation']}"
     end
-  end
-
-  if checker.up_to_date?
-    puts "    (no update needed as it's already up-to-date)"
-    next
   end
 
   requirements_to_unlock =
