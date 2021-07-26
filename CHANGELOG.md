@@ -1,3 +1,11 @@
+## v0.157.0, 26 July 2021
+
+- Elixir version upgrades (@baseballlover723) [#4089](https://github.com/dependabot/dependabot-core/pull/4089)
+- Make native-mt and agp version types for Maven and Gradle (@greysteil) [#4077](https://github.com/dependabot/dependabot-core/pull/4077)
+- Python: Upgrade pyenv to 2.0.4 [#4086](https://github.com/dependabot/dependabot-core/pull/4086)
+- build(deps-dev): bump phpstan/phpstan from 0.12.92 to 0.12.93 in /composer/helpers/v2 [#4067](https://github.com/dependabot/dependabot-core/pull/4067)
+- build(deps-dev): bump phpstan/phpstan from 0.12.92 to 0.12.93 in /composer/helpers/v1 [#4068](https://github.com/dependabot/dependabot-core/pull/4068)
+
 ## v0.156.9, 20 July 2021
 
 - build(deps): bump @npmcli/arborist from 2.7.0 to 2.7.1 in /npm_and_yarn/helpers [#4055](https://github.com/dependabot/dependabot-core/pull/4055)
