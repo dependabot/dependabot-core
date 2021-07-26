@@ -190,14 +190,14 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 ARG ELIXIR_VERSION=v1.11.4
 ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
 ARG ERLANG_VERSION=1:23.3.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
-  && dpkg -i erlang-solutions_1.0_all.deb \
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
+  && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
   && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
+  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
   && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
