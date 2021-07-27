@@ -189,6 +189,9 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.11.4
 ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
+# This version is currently pinned to OTP 23, due to an issue that we only hit
+# in production, where traffic is routed through a proxy that OTP 24 doesn't
+# play nice with.
 ARG ERLANG_VERSION=1:23.3.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
