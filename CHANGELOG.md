@@ -1,6 +1,8 @@
 ## v0.157.0, 26 July 2021
 
 - Elixir version upgrades (@baseballlover723) [#4089](https://github.com/dependabot/dependabot-core/pull/4089)
+
+## v0.156.10, 26 July 2021
 - Make native-mt and agp version types for Maven and Gradle (@greysteil) [#4077](https://github.com/dependabot/dependabot-core/pull/4077)
 - Python: Upgrade pyenv to 2.0.4 [#4086](https://github.com/dependabot/dependabot-core/pull/4086)
 - build(deps-dev): bump phpstan/phpstan from 0.12.92 to 0.12.93 in /composer/helpers/v2 [#4067](https://github.com/dependabot/dependabot-core/pull/4067)
