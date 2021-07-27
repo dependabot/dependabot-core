@@ -1,3 +1,8 @@
+## v0.157.1, 27 July 2021
+
+- Upgrade elixir to v1.12.2 [#4093](https://github.com/dependabot/dependabot-core/pull/4093)
+- Revert "Elixir version upgrades" [#4091](https://github.com/dependabot/dependabot-core/pull/4091)
+
 ## v0.157.0, 26 July 2021
 
 - Elixir version upgrades (@baseballlover723) [#4089](https://github.com/dependabot/dependabot-core/pull/4089)
