@@ -1,3 +1,8 @@
+## v0.157.2, 28 July 2021
+
+- fix(terraform): exclude path source types in update check [#4097](https://github.com/dependabot/dependabot-core/pull/4097)
+- Document pinned OTP version [#4092](https://github.com/dependabot/dependabot-core/pull/4092)
+
 ## v0.157.1, 27 July 2021
 
 - Upgrade elixir to v1.12.2 [#4093](https://github.com/dependabot/dependabot-core/pull/4093)
