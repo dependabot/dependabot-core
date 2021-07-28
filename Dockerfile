@@ -88,9 +88,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.1 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.9.5 \
-  && pyenv global 3.9.5 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.4 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.9.6 \
+  && pyenv global 3.9.6 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -187,8 +187,11 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.11.4
-ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
+ARG ELIXIR_VERSION=v1.12.2
+ARG ELIXIR_CHECKSUM=38eb2281032b0cb096ef5e61f048c5374d6fb9bf4078ab8f9526a42e16e7c661732a632b55d6072328eedf87a47e6eeb3f0e3f90bba1086239c71350f90c75e5
+# This version is currently pinned to OTP 23, due to an issue that we only hit
+# in production, where traffic is routed through a proxy that OTP 24 doesn't
+# play nice with.
 ARG ERLANG_VERSION=1:23.3.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
