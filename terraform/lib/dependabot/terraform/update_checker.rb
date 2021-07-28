@@ -203,7 +203,7 @@ module Dependabot
       def eligible_sources_from(requirements)
         requirements.
           map { |r| r.fetch(:source) }.
-          find_all { |x| ELIGIBLE_SOURCE_TYPES.include?(x[:type].to_s) }.
+          select { |source| ELIGIBLE_SOURCE_TYPES.include?(source[:type].to_s) }.
           uniq.compact
       end
     end
