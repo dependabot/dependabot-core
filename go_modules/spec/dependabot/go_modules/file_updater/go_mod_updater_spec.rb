@@ -586,6 +586,35 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
+
+    context "with a package that's been transferred and replaced by a private repo" do
+      let(:project_name) { "transferred_private_package" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include(
+            "github.com/mholt/caddy@v0.0.0-20180213163048-2de495001514: invalid version: git fetch -f origin"
+          )
+        end
+      end
+    end
   end
 
   describe "#updated_go_sum_content" do

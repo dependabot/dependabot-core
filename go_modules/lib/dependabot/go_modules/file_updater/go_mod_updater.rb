@@ -33,6 +33,8 @@ module Dependabot
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
           /go: .*: invalid pseudo-version/m.freeze,
+          # Package has been transferred and the original location is now private (mholt/caddy)
+          /go: .*: invalid version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
           /go: .*: unknown revision/m.freeze,
