@@ -1,3 +1,11 @@
+## v0.158.0, 3 August 2021
+
+- Npm: Bump npm from 7.19.1 to 7.20.3 [#4110](https://github.com/dependabot/dependabot-core/pull/4110)
+- Terraform: Pin fixture to range to prevent tests failing [#4115](https://github.com/dependabot/dependabot-core/pull/4115)
+- build(deps-dev): bump eslint from 7.31.0 to 7.32.0 in /npm_and_yarn/helpers [#4112](https://github.com/dependabot/dependabot-core/pull/4112)
+- build(deps): bump @npmcli/arborist from 2.7.1 to 2.8.0 in /npm_and_yarn/helpers [#4098](https://github.com/dependabot/dependabot-core/pull/4098)
+- build(deps): bump npm from 6.14.13 to 6.14.14 in /npm_and_yarn/helpers [#4099](https://github.com/dependabot/dependabot-core/pull/4099)
+
 ## v0.157.2, 28 July 2021
 
 - fix(terraform): exclude path source types in update check [#4097](https://github.com/dependabot/dependabot-core/pull/4097)
