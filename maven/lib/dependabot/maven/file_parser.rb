@@ -88,6 +88,9 @@ module Dependabot
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
 
+        classifier = dependency_classifier(dependency_node, pom)
+        name = classifier ? "#{name}:#{classifier}" : name
+
         build_dependency(pom, dependency_node, name)
       end
 
@@ -125,7 +128,7 @@ module Dependabot
         return unless dependency_node.at_xpath("./groupId")
         return unless dependency_node.at_xpath("./artifactId")
 
-        name = [
+        [
           evaluated_value(
             dependency_node.at_xpath("./groupId").content.strip,
             pom
@@ -135,15 +138,15 @@ module Dependabot
             pom
           )
         ].join(":")
+      end
 
-        if dependency_node.at_xpath("./classifier")
-          name += ":#{evaluated_value(
-            dependency_node.at_xpath('./classifier').content.strip,
-            pom
-          )}"
-        end
+      def dependency_classifier(dependency_node, pom)
+        return unless dependency_node.at_xpath("./classifier")
 
-        name
+        evaluated_value(
+          dependency_node.at_xpath("./classifier").content.strip,
+          pom
+        )
       end
 
       def plugin_name(dependency_node, pom)

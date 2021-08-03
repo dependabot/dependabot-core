@@ -49,6 +49,12 @@
                 <artifactId>util</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>net.evenh.multimodule</groupId>
+                <artifactId>util</artifactId>
+                <version>${project.version}</version>
+                <classifier>sources</classifier>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
