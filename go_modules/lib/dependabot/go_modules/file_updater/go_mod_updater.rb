@@ -172,6 +172,8 @@ module Dependabot
             version = "v" + dep.version.sub(/^v/i, "")
             command << " #{dep.name}@#{version}"
           end
+          command = SharedHelpers.escape_command(command)
+
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
