@@ -52,15 +52,26 @@ module Dependabot
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
               # If all the URLs include this registry, it's global
-              next true if dependency_urls.all? { |url| url.include?(cred["registry"]) }
+              if dependency_urls.all? { |url| url.include?(cred["registry"]) }
+                puts "npmrc builder: global registry detected (all dependency urls match registry)"
+                next true
+              end
 
               # Check if this registry has already been defined in .npmrc as a scoped registry
-              next false if npmrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
+              if npmrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
+                puts "npmrc builder: not using global registry (found scoped registry in .npmrc)"
+                next false
+              end
+
 
               # If any unscoped URLs include this registry, assume it's global
-              dependency_urls.
-                reject { |u| u.include?("@") || u.include?("%40") }.
-                any? { |url| url.include?(cred["registry"]) }
+              some_unscoped_registry_urls = dependency_urls.
+                                            reject { |u| u.include?("@") || u.include?("%40") }.
+                                            any? { |url| url.include?(cred["registry"]) }
+              if some_unscoped_registry_urls
+                puts "npmrc builder: global registry detected (some unscoped registry urls)"
+              end
+              some_unscoped_registry_urls
             end
         end
 
