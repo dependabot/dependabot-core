@@ -1,3 +1,9 @@
+## v0.159.0, 4 August 2021
+
+- Remove go dep entirely (@jeffwidman) [#3538](https://github.com/dependabot/dependabot-core/pull/3538)
+- Skip classifier when checking for internal dep (@honnix) [#4117](https://github.com/dependabot/dependabot-core/pull/4117)
+- Improve argument sanitation [#4121](https://github.com/dependabot/dependabot-core/pull/4121)
+
 ## v0.158.0, 3 August 2021
 
 - Npm: Bump npm from 7.19.1 to 7.20.3 [#4110](https://github.com/dependabot/dependabot-core/pull/4110)
