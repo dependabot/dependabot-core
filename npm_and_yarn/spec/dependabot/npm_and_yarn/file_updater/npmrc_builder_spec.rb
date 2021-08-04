@@ -603,6 +603,33 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               )
           end
         end
+
+        context "with scoped registry configured in npmrc without global" do
+          let(:dependency_files) { project_dependency_files("npm7/scoped_private_source_with_npmrc_without_global") }
+
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "npm_registry",
+              "registry" => "pgk.dependabot.com/npm/registry",
+              "token" => "my_token"
+            }]
+          end
+
+          it "adds auth details without adding a global registry" do
+            expect(npmrc_content).
+              to eq(
+                "@dependabot:always-auth=true\n"\
+                "@dependabot:registry=https://pgk.dependabot.com/npm/registry/\n"\
+                "\n"\
+                "//pgk.dependabot.com/npm/registry/:_authToken=my_token"
+              )
+          end
+        end
       end
 
       context "with a private source used for some deps and creds cleared" do
