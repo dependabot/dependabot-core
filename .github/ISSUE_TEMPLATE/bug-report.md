@@ -1,16 +1,14 @@
 ---
 name: "\U0001F41B Bug report"
-about: Report a bug in Dependabot to help us fix it
+about: Report a bug in dependabot-core to help us fix it
 title: ''
 labels: 'T: bug 🐞'
 assignees: ''
 
 ---
 
-<!-- Please search existing issues to avoid creating duplicates. -->
-
-<!-- The Dependabot team is currently at reduced capacity, because of this our
-response times on issues will be slower than we'd like. -->
+<!-- For support on the GitHub-integrated Dependabot service, please contact [GitHub support](https://support.github.com/) -->
+<!-- This issue-tracker is meant for issues related to Dependabot's updating logic, a good rule of thumb is that if you have questions about the _diff_ in a PR, it belongs here, otherwise the GitHub support team is best equipped to help you -->
 
 <!-- The more information you can provide, the easier it will be to reproduce the issue and find a fix -->
 

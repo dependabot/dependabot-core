@@ -727,6 +727,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       # 5.5.0 series and up require an update to illuminate/contracts
       it { is_expected.to be >= Gem::Version.new("5.6.23") }
     end
+
+    context "with an invalid composer.json file" do
+      let(:project_name) { "invalid_manifest" }
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
   end
 
   describe "#preferred_resolvable_version" do

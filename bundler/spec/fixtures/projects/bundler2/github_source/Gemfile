@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 source "https://rubygems.org"
 
-gem "business", github: "gocardless/business"
+gem "business", github: "dependabot-fixtures/business"
 gem "statesman", "~> 1.2.0"

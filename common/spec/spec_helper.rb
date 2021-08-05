@@ -6,9 +6,12 @@ require "vcr"
 require "byebug"
 require "simplecov"
 require "simplecov-console"
+require "stackprof"
+require "uri"
 
 require "dependabot/dependency_file"
 require_relative "dummy_package_manager/dummy"
+require_relative "warning_monkey_patch"
 
 if ENV["COVERAGE"]
   SimpleCov::Formatter::Console.output_style = "block"
@@ -34,6 +37,18 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+
+  config.around do |example|
+    if example.metadata[:profile]
+      example_name = example.metadata[:full_description].strip.gsub(/[\s#\.-]/, "_").gsub("::", "_").downcase
+      name = "../tmp/stackprof_#{example_name}.dump"
+      StackProf.run(mode: :wall, interval: 100, raw: true, out: name) do
+        example.run
+      end
+    else
+      example.run
+    end
+  end
 end
 
 VCR.configure do |config|
@@ -43,6 +58,14 @@ VCR.configure do |config|
 
   unless ENV["DEPENDABOT_TEST_DEBUG_LOGGER"].nil?
     config.debug_logger = File.open(ENV["DEPENDABOT_TEST_DEBUG_LOGGER"], "w")
+  end
+
+  # Prevent auth headers and username:password params being written to VCR cassets
+  config.before_record do |interaction|
+    interaction.response.headers.transform_keys!(&:downcase).delete("set-cookie")
+    interaction.request.headers.transform_keys!(&:downcase).delete("authorization")
+    uri = URI.parse(interaction.request.uri)
+    interaction.request.uri.sub!(%r{:\/\/.*#{Regexp.escape(uri.host)}}, "://#{uri.host}")
   end
 
   # Prevent access tokens being written to VCR cassettes

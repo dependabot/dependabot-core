@@ -175,17 +175,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
-    context "with a met marker that forces a difference Python version" do
-      let(:manifest_fixture_name) { "met_marker.in" }
-      let(:generated_fixture_name) { "pip_compile_met_marker.txt" }
-
-      it "updates the requirements.txt, keeping the unmet dep in it" do
-        expect(updated_files.count).to eq(1)
-        expect(updated_files.first.content).to include("attrs==18.1.0")
-        expect(updated_files.first.content).to include("flaky")
-      end
-    end
-
     context "with an unsafe dependency" do
       let(:manifest_fixture_name) { "unsafe.in" }
       let(:dependency_name) { "flake8" }
@@ -496,92 +485,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
           expect(updated_files[4].content).to include("attrs==18.1.0")
           expect(updated_files[5].content).to include("attrs==18.1.0")
         end
-      end
-    end
-
-    context "when the upgrade requires Python 2.7" do
-      let(:manifest_fixture_name) { "legacy_python.in" }
-      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
-
-      let(:dependency_name) { "wsgiref" }
-      let(:dependency_version) { "0.1.2" }
-      let(:dependency_previous_version) { "0.1.1" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "<=0.1.2",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:dependency_previous_requirements) { dependency_requirements }
-
-      it "updates the requirements.txt" do
-        expect(updated_files.count).to eq(1)
-        expect(updated_files.last.content).to include("wsgiref==0.1.2")
-      end
-
-      context "for a dependency that uses markers correctly" do
-        let(:manifest_fixture_name) { "legacy_python_2.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
-
-        let(:dependency_name) { "astroid" }
-        let(:dependency_version) { "1.6.5" }
-        let(:dependency_previous_version) { "1.6.4" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "<2",
-            groups: [],
-            source: nil
-          }]
-        end
-        let(:dependency_previous_requirements) { dependency_requirements }
-
-        it "updates the requirements.txt" do
-          expect(updated_files.count).to eq(1)
-          expect(updated_files.last.content).to include("astroid==1.6.5")
-        end
-      end
-    end
-
-    context "when the upgrade would resolve differently on Python 3" do
-      let(:dependency_files) { [manifest_file, generated_file, python_file] }
-      let(:manifest_fixture_name) { "resolves_differently_by_python.in" }
-      let(:generated_fixture_name) do
-        "pip_compile_resolves_differently_by_python.txt"
-      end
-      let(:python_file) do
-        Dependabot::DependencyFile.new(
-          name: ".python-version",
-          content: "2.7.18"
-        )
-      end
-
-      let(:dependency_name) { "tornado" }
-      let(:dependency_version) { "5.1.1" }
-      let(:dependency_previous_version) { "5.1.0" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "==5.1.1",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:dependency_previous_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "==5.1.0",
-          groups: [],
-          source: nil
-        }]
-      end
-
-      it "updates the requirements.txt using Python 2.7" do
-        expect(updated_files.count).to eq(2)
-        expect(updated_files.last.content).to include("tornado==5.1.1")
-        expect(updated_files.last.content).to include("futures")
       end
     end
   end

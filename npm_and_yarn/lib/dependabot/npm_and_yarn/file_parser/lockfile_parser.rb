@@ -56,10 +56,11 @@ module Dependabot
           parsed_lockfile = parse_package_lock(lockfile)
 
           if Helpers.npm_version(lockfile.content) == "npm7"
-            parsed_lockfile.dig(
-              "packages",
-              node_modules_path(manifest_name, dependency_name)
-            )&.slice("version", "resolved", "integrity", "dev")
+            # NOTE: npm 7 sometimes doesn't install workspace dependencies in the
+            # workspace folder so we need to fallback to checking top-level
+            nested_details = parsed_lockfile.dig("packages", node_modules_path(manifest_name, dependency_name))
+            details = nested_details || parsed_lockfile.dig("packages", "node_modules/#{dependency_name}")
+            details&.slice("version", "resolved", "integrity", "dev")
           else
             parsed_lockfile.dig("dependencies", dependency_name)
           end
@@ -169,7 +170,7 @@ module Dependabot
                   [{ production: !details["dev"] }]
               end
 
-              dependency_set << Dependency.new(dependency_args)
+              dependency_set << Dependency.new(**dependency_args)
               dependency_set += recursively_fetch_npm_lock_dependencies(details)
             end
 

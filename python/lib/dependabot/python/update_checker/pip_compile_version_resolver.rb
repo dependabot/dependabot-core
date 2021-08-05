@@ -28,7 +28,8 @@ module Dependabot
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
           /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
-        NATIVE_COMPILATION_ERROR = "pip._internal.exceptions.InstallationError: Command errored out with exit status 1"
+        NATIVE_COMPILATION_ERROR =
+          "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -141,16 +142,16 @@ module Dependabot
             return nil
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
-            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
-                  named_captures.fetch("url")
-            raise GitDependenciesNotReachable, url
-          end
-
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
+          end
+
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+            url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
+                  named_captures.fetch("url")
+            raise GitDependenciesNotReachable, url
           end
 
           raise
@@ -169,7 +170,7 @@ module Dependabot
 
               filenames_to_compile.each do |filename|
                 run_pip_compile_command(
-                  "pyenv exec pip-compile --allow-unsafe #{filename}"
+                  "pyenv exec pip-compile #{pip_compile_options(filename)} --allow-unsafe #{filename}"
                 )
               end
 
@@ -235,35 +236,6 @@ module Dependabot
         def run_pip_compile_command(command)
           run_command("pyenv local #{python_version}")
           run_command(command)
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          original_err ||= e
-          msg = e.message
-
-          relevant_error = choose_relevant_error(original_err, e)
-          raise relevant_error unless error_suggests_bad_python_version?(msg)
-          raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.18"
-
-          @python_version = "2.7.18"
-          retry
-        ensure
-          @python_version = nil
-          FileUtils.remove_entry(".python-version", true)
-        end
-
-        def choose_relevant_error(previous_error, new_error)
-          return previous_error if previous_error == new_error
-
-          # If the previous error was definitely due to using the wrong Python
-          # version, return the new error (which can't be worse)
-          return new_error if error_certainly_bad_python_version?(previous_error.message)
-
-          # Otherwise, if the new error may be due to using the wrong Python
-          # version, return the old error (which can't be worse)
-          return previous_error if error_suggests_bad_python_version?(new_error.message)
-
-          # Otherwise, default to the new error
-          new_error
         end
 
         def python_env
@@ -290,15 +262,6 @@ module Dependabot
           end
 
           message.include?("SyntaxError")
-        end
-
-        def error_suggests_bad_python_version?(message)
-          return true if error_certainly_bad_python_version?(message)
-          return true if message.include?("not find a version that satisfies")
-          return true if message.include?("No matching distribution found")
-
-          message.include?('Command "python setup.py egg_info" failed') ||
-            message.include?("exit status 1: python setup.py egg_info")
         end
 
         def write_temporary_dependency_files(updated_req: nil,

@@ -153,7 +153,7 @@ module Dependabot
 
       def add_approvers_to_merge_request(merge_request)
         approvers_hash =
-          Hash[approvers.keys.map { |k| [k.to_sym, approvers[k]] }]
+          approvers.keys.map { |k| [k.to_sym, approvers[k]] }.to_h
 
         gitlab_client_for_source.edit_merge_request_approvers(
           source.repo,

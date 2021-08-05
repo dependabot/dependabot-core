@@ -1,5 +1,5 @@
 GIT
-  remote: https://github.com/hvssle/onfido
+  remote: https://github.com/dependabot-fixtures/onfido
   revision: 7b36eac82a7e42049052a58af0a7943fe0363714
   ref: v0.4.0
   specs:

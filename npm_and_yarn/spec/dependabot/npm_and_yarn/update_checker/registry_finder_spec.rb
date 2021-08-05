@@ -286,5 +286,69 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
       it { is_expected.to eq("http://npm.mine.io/dependabot/etag") }
     end
+
+    context "when multiple js sources are provided" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example",
+          version: "1.0.0",
+          requirements: requirements,
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "shared-lib/package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ]
+      end
+
+      it "allows multiple sources" do
+        expect { subject }.not_to raise_error
+      end
+    end
+
+    context "when a public registry and a private registry is detected" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "example",
+          version: "1.0.0",
+          requirements: requirements,
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "shared-lib/package.json",
+            requirement: "^1.0.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.example.org" }
+          }
+        ]
+      end
+
+      it "returns the private registry url" do
+        expect(subject).to eql("https://registry.example.org/example")
+      end
+    end
   end
 end

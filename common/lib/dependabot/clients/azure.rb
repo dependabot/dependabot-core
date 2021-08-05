@@ -14,6 +14,10 @@ module Dependabot
 
       class BadGateway < StandardError; end
 
+      class Unauthorized < StandardError; end
+
+      class Forbidden < StandardError; end
+
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
       MAX_PR_DESCRIPTION_LENGTH = 3999
@@ -228,26 +232,39 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
         response
       end
 
       def post(url, json)
-        response = Excon.post(
-          url,
-          body: json,
-          user: credentials&.fetch("username", nil),
-          password: credentials&.fetch("password", nil),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(
-            headers: auth_header.merge(
-              {
-                "Content-Type" => "application/json"
-              }
+        response = nil
+
+        retry_connection_failures do
+          response = Excon.post(
+            url,
+            body: json,
+            user: credentials&.fetch("username", nil),
+            password: credentials&.fetch("password", nil),
+            idempotent: true,
+            **SharedHelpers.excon_defaults(
+              headers: auth_header.merge(
+                {
+                  "Content-Type" => "application/json"
+                }
+              )
             )
           )
-        )
+
+          raise InternalServerError if response.status == 500
+          raise BadGateway if response.status == 502
+          raise ServiceNotAvailable if response.status == 503
+        end
+
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
         response

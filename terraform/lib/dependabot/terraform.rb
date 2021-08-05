@@ -17,3 +17,6 @@ Dependabot::PullRequestCreator::Labeler.
 require "dependabot/dependency"
 Dependabot::Dependency.
   register_production_check("terraform", ->(_) { true })
+
+require "dependabot/utils"
+Dependabot::Utils.register_always_clone("terraform")

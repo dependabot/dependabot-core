@@ -46,5 +46,19 @@ RSpec.describe Dependabot::Config::File do
         expect(update_config.commit_message_options.prefix).to be_nil
       end
     end
+
+    describe "#parse" do
+      let(:config) { Dependabot::Config::File.parse(fixture("configfile", "ignore-conditions.yml")) }
+      let(:update_config) { config.update_config("npm_and_yarn") }
+
+      it "loads ignore conditions" do
+        expect(update_config.ignore_conditions.length).to eq(3)
+      end
+
+      it "passes update-types" do
+        types_ignore = update_config.ignore_conditions.find { |ic| ic.dependency_name == "@types/node" }
+        expect(types_ignore.update_types).to eq(["version-update:semver-patch"])
+      end
+    end
   end
 end

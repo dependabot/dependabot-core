@@ -87,8 +87,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
     context "when the user has asked for a version type and it's available" do
       let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
-      let(:dependency_version) { "1.4.11.1" }
-
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/"\
         "com/thoughtworks/xstream/xstream/maven-metadata.xml"
@@ -98,6 +96,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
       let(:dependency_version) { "1.4.11-java7" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
+
+      context "and the type is native-mt" do
+        let(:dependency_version) { "1.4.11-native-mt" }
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.12-native-mt"))
+        end
+      end
     end
 
     context "when a version type is available that wasn't requested" do
@@ -113,6 +118,44 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
       let(:dependency_version) { "1.4.11.1" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
+    end
+
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when already on the latest version" do
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user has asked to ignore all later versions" do
+      let(:ignored_versions) { ["> 22.0"] }
+      let(:dependency_version) { "22.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/22.0/guava-22.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the user has asked to ignore a major version" do
@@ -144,6 +187,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
         end
       end
     end

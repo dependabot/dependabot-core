@@ -1292,5 +1292,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(22) }
       end
     end
+
+    context "with duplicate dependencies" do
+      subject { parser.parse }
+      let(:files) { project_dependency_files("npm6_and_yarn/duplicate_dependency") }
+
+      it "includes both registries" do
+        expect(subject.count).to eql(1)
+        expect(subject[0].requirements).to match_array([
+          {
+            requirement: "^10.5.12",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          },
+          {
+            requirement: "10.5.12",
+            file: "package.json",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ])
+      end
+    end
   end
 end

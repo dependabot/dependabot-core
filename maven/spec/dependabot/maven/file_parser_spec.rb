@@ -87,6 +87,33 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "with extensions.xml" do
+      let(:files) { [extensions, pom] }
+      let(:extensions) do
+        Dependabot::DependencyFile.new(name: ".mvn/extensions.xml", content: extensions_body)
+      end
+      let(:extensions_body) { fixture("extensions", "extensions.xml") }
+
+      describe "the sole dependency" do
+        subject(:dependency) { dependencies[3] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("io.takari.polyglot:polyglot-yaml")
+          expect(dependency.version).to eq("0.4.6")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.4.6",
+              file: ".mvn/extensions.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
     context "with rogue whitespace" do
       let(:pom_body) { fixture("poms", "whitespace.xml") }
 

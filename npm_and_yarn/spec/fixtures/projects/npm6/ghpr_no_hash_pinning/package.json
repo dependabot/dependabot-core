@@ -1,0 +1,10 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "dependencies": {
+    "discord.js": "github:discordjs/discord.js"
+  },
+  "engines": {
+    "node": "14.x"
+  }
+}

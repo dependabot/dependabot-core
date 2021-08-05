@@ -1,0 +1,16 @@
+# https://docs.github.com/en/code-security/supply-chain-security/configuration-options-for-dependency-updates#ignore
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "express"
+        # For Express, ignore all updates for version 4 and 5
+        versions: ["4.x", "5.x"]
+        # For Lodash, ignore all updates
+      - dependency-name: "lodash"
+      - dependency-name: "@types/node"
+        # For Node types, ignore any patch versions
+        update-types: ["version-update:semver-patch"]

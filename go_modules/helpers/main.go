@@ -8,7 +8,6 @@ import (
 
 	"github.com/dependabot/dependabot-core/go_modules/helpers/importresolver"
 	"github.com/dependabot/dependabot-core/go_modules/helpers/updatechecker"
-	"github.com/dependabot/dependabot-core/go_modules/helpers/updater"
 )
 
 type HelperParams struct {
@@ -33,20 +32,16 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
-	case "getUpdatedVersion":
+	case "getVersions":
 		var args updatechecker.Args
 		parseArgs(helperParams.Args, &args)
-		funcOut, funcErr = updatechecker.GetUpdatedVersion(&args)
-	case "updateDependencyFile":
-		var args updater.Args
-		parseArgs(helperParams.Args, &args)
-		funcOut, funcErr = updater.UpdateDependencyFile(&args)
+		funcOut, funcErr = updatechecker.GetVersions(&args)
 	case "getVcsRemoteForImport":
 		var args importresolver.Args
 		parseArgs(helperParams.Args, &args)
 		funcOut, funcErr = importresolver.VCSRemoteForImport(&args)
 	default:
-		abort(fmt.Errorf("Unrecognised function '%s'", helperParams.Function))
+		abort(fmt.Errorf("unrecognised function '%s'", helperParams.Function))
 	}
 
 	if funcErr != nil {

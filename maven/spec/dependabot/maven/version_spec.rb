@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Maven::Version do
   end
 
   describe "#<=>" do
-    subject { version.send(:"<=>", other_version) }
+    subject { version.send(:<=>, other_version) }
 
     context "compared to a Gem::Version" do
       context "that is lower" do

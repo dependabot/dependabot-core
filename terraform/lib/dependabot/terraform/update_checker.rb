@@ -6,13 +6,17 @@ require "dependabot/git_commit_checker"
 require "dependabot/terraform/requirements_updater"
 require "dependabot/terraform/requirement"
 require "dependabot/terraform/version"
+require "dependabot/terraform/registry_client"
 
 module Dependabot
   module Terraform
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      ELIGIBLE_SOURCE_TYPES = %w(git provider registry).freeze
+
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
         return latest_version_for_registry_dependency if registry_dependency?
+        return latest_version_for_provider_dependency if provider_dependency?
         # Other sources (mercurial, path dependencies) just return `nil`
       end
 
@@ -65,34 +69,40 @@ module Dependabot
 
         return @latest_version_for_registry_dependency if @latest_version_for_registry_dependency
 
-        versions = all_registry_versions
+        versions = all_module_versions
         versions.reject!(&:prerelease?) unless wants_prerelease?
         versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
         @latest_version_for_registry_dependency = versions.max
       end
 
-      def all_registry_versions
-        hostname = dependency_source_details.fetch(:registry_hostname)
+      def all_module_versions
         identifier = dependency_source_details.fetch(:module_identifier)
+        registry_client.all_module_versions(identifier: identifier)
+      end
 
-        # TODO: Implement service discovery for custom registries
-        return [] unless hostname == "registry.terraform.io"
+      def all_provider_versions
+        identifier = dependency_source_details.fetch(:module_identifier)
+        registry_client.all_provider_versions(identifier: identifier)
+      end
 
-        url = "https://registry.terraform.io/v1/modules/"\
-              "#{identifier}/versions"
+      def registry_client
+        @registry_client ||= begin
+          hostname = dependency_source_details.fetch(:registry_hostname)
+          RegistryClient.new(hostname: hostname, credentials: credentials)
+        end
+      end
 
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+      def latest_version_for_provider_dependency
+        return unless provider_dependency?
 
-        raise "Response from registry was #{response.status}" unless response.status == 200
+        return @latest_version_for_provider_dependency if @latest_version_for_provider_dependency
 
-        JSON.parse(response.body).
-          fetch("modules").first.fetch("versions").
-          map { |release| version_class.new(release.fetch("version")) }
+        versions = all_provider_versions
+        versions.reject!(&:prerelease?) unless wants_prerelease?
+        versions.reject! { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+
+        @latest_version_for_provider_dependency = versions.max
       end
 
       def wants_prerelease?
@@ -160,9 +170,14 @@ module Dependabot
         dependency_source_details.fetch(:type) == "registry"
       end
 
+      def provider_dependency?
+        return false if dependency_source_details.nil?
+
+        dependency_source_details.fetch(:type) == "provider"
+      end
+
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
+        sources = eligible_sources_from(dependency.requirements)
 
         raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
@@ -183,6 +198,13 @@ module Dependabot
             requirement_class: Requirement,
             version_class: Version
           )
+      end
+
+      def eligible_sources_from(requirements)
+        requirements.
+          map { |r| r.fetch(:source) }.
+          select { |source| ELIGIBLE_SOURCE_TYPES.include?(source[:type].to_s) }.
+          uniq.compact
       end
     end
   end

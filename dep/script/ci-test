@@ -1,5 +1,0 @@
-#!/bin/sh
-
-bundle install
-bundle exec rubocop .
-bundle exec rspec spec

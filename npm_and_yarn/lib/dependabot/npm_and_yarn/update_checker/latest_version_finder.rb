@@ -2,6 +2,7 @@
 
 require "excon"
 require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
@@ -58,15 +59,17 @@ module Dependabot
         def lowest_security_fix_version
           return unless valid_npm_details?
 
-          versions_array =
+          secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
             else possible_versions(filter_ignored: false)
             end
 
-          secure_versions = filter_vulnerable_versions(versions_array)
+          secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
+                                                                                                  security_advisories)
           secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
+
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
@@ -109,7 +112,9 @@ module Dependabot
             ignore_requirements.any? { |r| r.satisfied_by?(v) }
           end
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
+            raise AllVersionsIgnored
+          end
 
           filtered
         end
@@ -123,21 +128,11 @@ module Dependabot
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
-        def filter_vulnerable_versions(versions_array)
-          updated_versions_array = versions_array
-
-          security_advisories.each do |advisory|
-            updated_versions_array =
-              updated_versions_array.
-              reject { |v| advisory.vulnerable?(v) }
-          end
-
-          updated_versions_array
-        end
-
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version, _| version > version_class.new(dependency.version) }
         end
 
         def version_from_dist_tags
@@ -286,12 +281,14 @@ module Dependabot
                    Excon::Error::Timeout,
                    Excon::Error::Socket,
                    RegistryError => e
-              return if git_dependency?
-
-              retry_count ||= 0
-              retry_count += 1
-              raise_npm_details_error(e) if retry_count > 2
-              sleep(rand(3.0..10.0)) && retry
+              if git_dependency?
+                nil
+              else
+                retry_count ||= 0
+                retry_count += 1
+                raise_npm_details_error(e) if retry_count > 2
+                sleep(rand(3.0..10.0)) && retry
+              end
             end
         end
 

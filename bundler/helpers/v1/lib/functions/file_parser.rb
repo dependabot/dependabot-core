@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Functions
   class FileParser
     def initialize(lockfile_name:)
@@ -39,7 +41,7 @@ module Functions
     end
 
     def source_from_lockfile(dependency_name)
-      parsed_lockfile&.specs.find { |s| s.name == dependency_name }&.source
+      parsed_lockfile&.specs&.find { |s| s.name == dependency_name }&.source
     end
 
     def source_for(dependency)
@@ -54,12 +56,8 @@ module Functions
       return nil if default_rubygems?(source)
 
       details = { type: source.class.name.split("::").last.downcase }
-      if source.is_a?(Bundler::Source::Git)
-        details.merge!(git_source_details(source))
-      end
-      if source.is_a?(Bundler::Source::Rubygems)
-        details[:url] = source.remotes.first.to_s
-      end
+      details.merge!(git_source_details(source)) if source.is_a?(Bundler::Source::Git)
+      details[:url] = source.remotes.first.to_s if source.is_a?(Bundler::Source::Rubygems)
       details
     end
 

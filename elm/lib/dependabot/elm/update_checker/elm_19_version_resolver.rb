@@ -29,7 +29,7 @@ module Dependabot
           return current_version if unlock_requirement == :none
 
           # Otherwise, we gotta check a few conditions to see if bumping
-          # wouldn't also bump other deps in elm-package.json
+          # wouldn't also bump other deps in elm.json
           fetch_latest_resolvable_version(unlock_requirement)
         end
 

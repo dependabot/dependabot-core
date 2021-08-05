@@ -198,8 +198,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to include("You are using Composer 2, which some of "\
-                                           "your plugins seem to be incompatible with.")
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.1.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -261,8 +261,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to include("You are using Composer 2, which some of "\
-                                           "your plugins seem to be incompatible with.")
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.1.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -854,6 +854,70 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"v5.3.0\"")
         expect(updated_lockfile_content).to include("e244eda135819216ac3044146")
+      end
+    end
+
+    context "with a missing git repository source" do
+      let(:project_name) { "git_source_unreachable" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.0.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
+      end
+    end
+
+    context "with a missing vcs repository source" do
+      let(:project_name) { "vcs_source_unreachable" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.0.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+          end
       end
     end
   end

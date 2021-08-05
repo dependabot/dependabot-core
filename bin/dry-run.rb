@@ -27,7 +27,6 @@
 # - hex
 # - composer
 # - nuget
-# - dep
 # - go_modules
 # - elm
 # - submodules
@@ -40,7 +39,6 @@ $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
-$LOAD_PATH << "./dep/lib"
 $LOAD_PATH << "./docker/lib"
 $LOAD_PATH << "./elm/lib"
 $LOAD_PATH << "./git_submodules/lib"
@@ -77,7 +75,6 @@ require "dependabot/config/file_fetcher"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
-require "dependabot/dep"
 require "dependabot/docker"
 require "dependabot/elm"
 require "dependabot/git_submodules"
@@ -133,10 +130,10 @@ end
 
 unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
   # For example:
-  # [{"dependency_name":"name",
-  #   "patched_versions":[],
-  #   "unaffected_versions":[],
-  #   "affected_versions":["< 0.10.0"]}]
+  # [{"dependency-name":"name",
+  #   "patched-versions":[],
+  #   "unaffected-versions":[],
+  #   "affected-versions":["< 0.10.0"]}]
   $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
 end
 
@@ -201,11 +198,9 @@ option_parse = OptionParser.new do |opts|
   opts_opt_desc = "Comma separated list of updater options, "\
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
-    $options[:updater_options] = Hash[
-                                   value.split(",").map do |o|
-                                     [o.strip.downcase.to_sym, true]
-                                   end
-                                 ]
+    $options[:updater_options] = value.split(",").map do |o|
+      [o.strip.downcase.to_sym, true]
+    end.to_h
   end
 
   opts.on("--security-updates-only",
@@ -255,7 +250,7 @@ def show_diff(original_file, updated_file)
   puts
   puts "    ± #{original_file.name}"
   puts "    ~~~"
-  puts diff.lines.map { |line| "    " + line }.join("")
+  puts diff.lines.map { |line| "    " + line }.join
   puts "    ~~~"
 end
 
@@ -436,8 +431,8 @@ def handle_dependabot_error(error:, dependency:)
       raise error
     end
 
-  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:'error-type')} "\
-       "#{error_details.fetch(:'error-detail')}"
+  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:"error-type")} "\
+       "#{error_details.fetch(:"error-detail")}"
 end
 # rubocop:enable Metrics/MethodLength
 
@@ -453,10 +448,7 @@ $source = Dependabot::Source.new(
 
 always_clone = Dependabot::Utils.
                always_clone_for_package_manager?($package_manager)
-if $options[:clone] || always_clone
-  $repo_contents_path = Dir.mktmpdir
-  puts "=> cloning into #{$repo_contents_path}"
-end
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
 
 fetcher_args = {
   source: $source,
@@ -476,8 +468,20 @@ $update_config = $config_file.update_config(
 )
 
 fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
-$files = if $options[:clone] || always_clone
+$files = if $repo_contents_path
+           if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
+             puts "=> reading cloned repo from #{$repo_contents_path}"
+           else
+             puts "=> cloning into #{$repo_contents_path}"
+             FileUtils.rm_rf($repo_contents_path)
+           end
            fetcher.clone_repo_contents
+           if $options[:commit]
+             Dir.chdir($repo_contents_path) do
+               puts "=> checking out commit #{$options[:commit]}"
+               Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
+             end
+           end
            fetcher.files
          else
            cached_dependency_files_read do
@@ -519,10 +523,15 @@ end
 
 def ignored_versions_for(dep)
   if $options[:ignore_conditions].any?
-    $options[:ignore_conditions].
-      select { |ic| ic["dependency-name"] == dep.name }.
-      map { |ic| ic["version-requirement"] }.
-      compact
+    ignore_conditions = $options[:ignore_conditions].map do |ic|
+      Dependabot::Config::IgnoreCondition.new(
+        dependency_name: ic["dependency-name"],
+        versions: [ic["version-requirement"]].compact,
+        update_types: ic["update-types"]
+      )
+    end
+    Dependabot::Config::UpdateConfig.new(ignore_conditions: ignore_conditions).
+      ignored_versions_for(dep, security_updates_only: $options[:security_updates_only])
   else
     $update_config.ignored_versions_for(dep)
   end
@@ -530,12 +539,12 @@ end
 
 def security_advisories
   $options[:security_advisories].map do |adv|
-    vulnerable_versions = adv["affected_versions"] || []
-    safe_versions = (adv["patched_versions"] || []) +
-                    (adv["unaffected_versions"] || [])
+    vulnerable_versions = adv["affected-versions"] || []
+    safe_versions = (adv["patched-versions"] || []) +
+                    (adv["unaffected-versions"] || [])
 
     # Handle case mismatches between advisory name and parsed dependency name
-    dependency_name = adv["dependency_name"].downcase
+    dependency_name = adv["dependency-name"].downcase
     Dependabot::SecurityAdvisory.new(
       dependency_name: dependency_name,
       package_manager: $package_manager,

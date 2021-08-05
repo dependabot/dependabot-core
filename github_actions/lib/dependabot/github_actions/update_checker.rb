@@ -62,12 +62,14 @@ module Dependabot
         return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
-        # we want to update that tag. The latest version will then be the SHA
-        # of the latest tag that looks like a version.
+        # we want to update that tag.
         if git_commit_checker.pinned_ref_looks_like_version? &&
            git_commit_checker.local_tag_for_latest_version
           latest_tag = git_commit_checker.local_tag_for_latest_version
-          return latest_tag.fetch(:commit_sha)
+          latest_version = latest_tag.fetch(:version)
+          return version_class.new(dependency.version) if shortened_semver_eq?(dependency.version, latest_version.to_s)
+
+          return latest_version
         end
 
         # If the dependency is pinned to a commit SHA and the latest
@@ -82,7 +84,7 @@ module Dependabot
 
         # If the dependency is pinned to a tag that doesn't look like a
         # version or a commit SHA then there's nothing we can do.
-        dependency.version
+        nil
       end
 
       def updated_source
@@ -139,6 +141,16 @@ module Dependabot
           ignored_versions: ignored_versions,
           raise_on_ignored: raise_on_ignored
         )
+      end
+
+      def shortened_semver_eq?(base, other)
+        return false unless base
+
+        base_split = base.split(".")
+        other_split = other.split(".")
+        return false unless base_split.length <= other_split.length
+
+        other_split[0..base_split.length - 1] == base_split
       end
     end
   end

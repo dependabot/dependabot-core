@@ -4,6 +4,7 @@ require "excon"
 require "json"
 
 require "dependabot/composer/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -45,9 +46,11 @@ module Dependabot
         def fetch_lowest_security_fix_version
           versions = available_versions
           versions = filter_prerelease_versions(versions)
-          versions = filter_vulnerable_versions(versions)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+                                                                                           security_advisories)
           versions = filter_ignored_versions(versions)
           versions = filter_lower_versions(versions)
+
           versions.min
         end
 
@@ -62,17 +65,16 @@ module Dependabot
             versions_array.
             reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-          raise AllVersionsIgnored if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
+            raise AllVersionsIgnored
+          end
 
           filtered
         end
 
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
-        end
-
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+
           versions_array.
             select { |version| version > version_class.new(dependency.version) }
         end

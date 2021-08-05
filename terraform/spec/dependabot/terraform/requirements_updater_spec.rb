@@ -75,5 +75,33 @@ RSpec.describe Dependabot::Terraform::RequirementsUpdater do
         end
       end
     end
+
+    context "for a git requirement" do
+      let(:latest_version) { "0.4.1" }
+      let(:tag_for_latest_version) { "tags/0.4.1" }
+      let(:requirements) do
+        [
+          {
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "git",
+              url: "https://github.com/cloudposse/terraform-null-label.git",
+              branch: nil,
+              ref: "tags/0.3.7"
+            }
+          }
+        ]
+      end
+
+      it "updates the source ref" do
+        expect(subject.dig(:source, :ref)).to eq("tags/0.4.1")
+      end
+
+      it "does not touch the requirement" do
+        expect(subject[:requirement]).to be_nil
+      end
+    end
   end
 end

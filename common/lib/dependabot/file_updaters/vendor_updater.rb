@@ -25,7 +25,7 @@ module Dependabot
           status = SharedHelpers.run_shell_command(
             "git status --untracked-files all --porcelain v1 #{relative_dir}"
           )
-          changed_paths = status.split("\n").map { |l| l.split(" ") }
+          changed_paths = status.split("\n").map(&:split)
           changed_paths.map do |type, path|
             # The following types are possible to be returned:
             # M = Modified = Default for DependencyFile

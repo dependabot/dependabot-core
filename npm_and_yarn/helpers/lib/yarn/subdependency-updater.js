@@ -7,8 +7,8 @@ const Lockfile = require("@dependabot/yarn-lib/lib/lockfile").default;
 const fixDuplicates = require("./fix-duplicates");
 const { LightweightAdd, LightweightInstall } = require("./helpers");
 const { parse } = require("./lockfile-parser");
-const stringify = require("@dependabot/yarn-lib/lib/lockfile/stringify")
-  .default;
+const stringify =
+  require("@dependabot/yarn-lib/lib/lockfile/stringify").default;
 
 // Replace the version comments in the new lockfile with the ones from the old
 // lockfile. If they weren't present in the old lockfile, delete them.
@@ -39,6 +39,7 @@ async function getLockfileEntryForUpdate(depName, depVersion) {
     cwd: directory,
     nonInteractive: true,
     enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
 
   // Empty lockfile
@@ -73,6 +74,7 @@ async function updateDependencyFile(
     cwd: directory,
     nonInteractive: true,
     enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
   const depName = updatedDependency && updatedDependency.name;

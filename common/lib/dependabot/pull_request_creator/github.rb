@@ -226,12 +226,12 @@ module Dependabot
       end
 
       def create_branch(commit)
-        ref = "heads/#{branch_name}"
+        ref = "refs/heads/#{branch_name}"
 
         begin
           branch =
             github_client_for_source.create_ref(source.repo, ref, commit.sha)
-          @branch_name = ref.gsub(%r{^heads/}, "")
+          @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
           # Return quietly in the case of a race
@@ -244,7 +244,7 @@ module Dependabot
 
           # Branch creation will fail if a branch called `dependabot` already
           # exists, since git won't be able to create a dir with the same name
-          ref = "heads/#{SecureRandom.hex[0..3] + branch_name}"
+          ref = "refs/heads/#{SecureRandom.hex[0..3] + branch_name}"
           retry
         end
       end
@@ -267,7 +267,7 @@ module Dependabot
 
       def add_reviewers_to_pull_request(pull_request)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
 
         github_client_for_source.request_pull_request_review(
           source.repo,
@@ -297,7 +297,7 @@ module Dependabot
 
       def comment_with_invalid_reviewer(pull_request, message)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
         reviewers += (reviewers_hash[:team_reviewers] || []).

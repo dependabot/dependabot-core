@@ -3,8 +3,8 @@
 source "https://rubygems.org"
 
 gem "elasticsearch-dsl",
-    github: "elasticsearch/elasticsearch-ruby",
+    github: "dependabot-fixtures/elasticsearch-ruby",
     branch: "5.x",
     require: "elasticsearch/dsl"
-gem "elasticsearch-model", github: "elastic/elasticsearch-rails", branch: "5.x"
-gem "elasticsearch-rails", github: "elastic/elasticsearch-rails", branch: "5.x"
+gem "elasticsearch-model", github: "dependabot-fixtures/elasticsearch-rails", branch: "5.x"
+gem "elasticsearch-rails", github: "dependabot-fixtures/elasticsearch-rails", branch: "5.x"
