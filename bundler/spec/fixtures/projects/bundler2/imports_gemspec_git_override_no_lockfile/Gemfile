@@ -3,4 +3,4 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "business", "~> 1.4.0", git: "https://github.com/gocardless/business"
+gem "business", "~> 1.4.0", git: "https://github.com/dependabot-fixtures/business"

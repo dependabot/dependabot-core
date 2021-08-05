@@ -110,6 +110,43 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include("retract v1.0.5") }
         end
 
+        describe "a dependency who's module path has changed during an update" do
+          let(:project_name) { "module_path_and_version_changed_during_update" }
+          let(:dependency_name) { "gopkg.in/DATA-DOG/go-sqlmock.v1" }
+          let(:dependency_version) { "v1.3.3" }
+          let(:dependency_previous_version) { "v1.3.0" }
+          let(:requirements) do
+            [{
+              file: "go.mod",
+              requirement: dependency_version,
+              groups: [],
+              source: {
+                type: "default",
+                source: dependency_name
+              }
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "go.mod",
+              requirement: dependency_previous_version,
+              groups: [],
+              source: {
+                type: "default",
+                source: dependency_name
+              }
+            }]
+          end
+
+          it "raises the correct error" do
+            error_class = Dependabot::GoModulePathMismatch
+            expect { updater.updated_go_sum_content }.
+              to raise_error(error_class) do |error|
+              expect(error.message).to include("github.com/DATA-DOG")
+            end
+          end
+        end
+
         describe "a dependency who's module path has changed (inc version)" do
           let(:project_name) { "module_path_and_version_changed" }
 
@@ -408,6 +445,33 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
           expect(error.message).to include("unknown revision v1.33.999")
+        end
+      end
+    end
+
+    context "for a project that references a non-existing proxy" do
+      let(:project_name) { "nonexisting_proxy" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.2",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("unrecognized import path")
         end
       end
     end

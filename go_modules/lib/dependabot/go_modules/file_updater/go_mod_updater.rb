@@ -35,11 +35,13 @@ module Dependabot
           /go: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze
+          /go: .*: unknown revision/m.freeze,
+          # Package pointing to a proxy that 404s
+          /go: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
           /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
@@ -91,7 +93,7 @@ module Dependabot
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
 
-            # `go get` will generate the required go.mod/go.sum updates for the updated deps
+            # Bump the deps we want to upgrade using `go get lib@version`
             run_go_get(dependencies)
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
@@ -149,7 +151,7 @@ module Dependabot
           handle_subprocess_error(stderr) unless status.success?
         end
 
-        def run_go_get(dependencies)
+        def run_go_get(dependencies = [])
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
@@ -167,6 +169,7 @@ module Dependabot
             version = "v" + dep.version.sub(/^v/i, "")
             command << " #{dep.name}@#{version}"
           end
+          command = SharedHelpers.escape_command(command)
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
 
@@ -175,6 +178,7 @@ module Dependabot
           # https://github.com/dependabot/dependabot-core/pull/3590#discussion_r632456405
           # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
           command = "go get -d"
+          command = SharedHelpers.escape_command(command)
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure

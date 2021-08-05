@@ -127,6 +127,69 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a private registry" do
+      let(:files) { project_dependency_files("private_registry") }
+
+      it "parses the dependency correctly" do
+        expect(subject.length).to eq(1)
+        expect(subject[0].name).to eq("namespace/name")
+        expect(subject[0].version).to eq("0.1.0")
+        expect(subject[0].requirements).to eq([{
+          requirement: "0.1.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.example.org",
+            module_identifier: "namespace/name"
+          }
+        }])
+      end
+    end
+
+    context "with a private registry using a pessimistic version constraint" do
+      let(:files) { project_dependency_files("private_registry_pessimistic_constraint") }
+
+      it "parses the dependency correctly" do
+        expect(subject.length).to eq(1)
+        expect(subject[0].name).to eq("namespace/name")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
+          requirement: "~> 0.1",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.example.org",
+            module_identifier: "namespace/name"
+          }
+        }])
+      end
+    end
+
+    context "with a pessimistic constraint and a lockfile" do
+      let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
+
+      it "parses the lockfile" do
+        expect(subject.length).to eq(1)
+      end
+
+      it "parses the dependency correctly" do
+        expect(subject[0].name).to eq("hashicorp/http")
+        expect(subject[0].version).to eq("2.1.0")
+        expect(subject[0].requirements).to eq([{
+          requirement: "~> 2.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/http"
+          }
+        }])
+      end
+    end
+
     context "with git sources" do
       let(:files) { project_dependency_files("git_tags_011") }
       specify { expect(subject.length).to eq(6) }
@@ -226,6 +289,20 @@ RSpec.describe Dependabot::Terraform::FileParser do
             branch: nil
           }
         }])
+      end
+    end
+
+    context "deprecated terraform provider syntax" do
+      let(:files) { project_dependency_files("deprecated_provider") }
+
+      it "raises a helpful error message" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message).to eq(
+            "This terraform provider syntax is now deprecated.\n"\
+            "See https://www.terraform.io/docs/language/providers/requirements.html "\
+            "for the new Terraform v0.13+ provider syntax."
+          )
+        end
       end
     end
 
@@ -506,6 +583,88 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "does not attempt to parse the lockfile" do
         expect { dependencies.length }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("No Terraform configuration file!")
+        end
+      end
+    end
+
+    context "with a required provider" do
+      let(:files) { project_dependency_files("registry_provider") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
+
+        expect(dependency.version).to eq("3.37.0")
+      end
+
+      it "handles version ranges correctly" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/http" }
+
+        expect(dependency.version).to be_nil
+        expect(dependency.requirements).to eq([{
+          requirement: "~> 2.0",
+          groups: [],
+          file: "main.tf",
+          source: {
+            type: "provider",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/http"
+          }
+        }])
+      end
+    end
+
+    context "with a required provider block with multiple versions" do
+      let(:files) { project_dependency_files("registry_provider_compound_local_name") }
+
+      it "has the right details" do
+        hashicorp = dependencies.find { |d| d.name == "hashicorp/http" }
+        mycorp = dependencies.find { |d| d.name == "mycorp/http" }
+
+        expect(hashicorp.version).to eq("2.0")
+        expect(mycorp.version).to eq("1.0")
+      end
+    end
+
+    context "with a required provider that does not specify a source" do
+      let(:files) { project_dependency_files("provider_implicit_source") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "oci" }
+
+        expect(dependency.version).to eq("3.27")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/oci")
+      end
+    end
+
+    context "with a toplevel provider" do
+      let(:files) { project_dependency_files("provider") }
+
+      it "does not find the details" do
+        # This feature is deprecated as documented here:
+        # https://www.terraform.io/docs/language/providers/configuration.html#version-an-older-way-to-manage-provider-versions
+        # So dependabot does not support it. This test is here for
+        # documentatio-sake.
+        expect(dependencies.count).to eq(0)
+      end
+    end
+
+    context "with a provider that doesn't have a namespace provider" do
+      let(:files) { project_dependency_files("provider_no_namespace") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/random" }
+
+        expect(dependency.version).to eq("2.2.1")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
+      end
+    end
+
+    context "with a private module proxy that can't be reached", vcr: true do
+      let(:files) { project_dependency_files("private_module_proxy") }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
+          expect(boom.source).to eq("artifactory.dependabot.com")
         end
       end
     end

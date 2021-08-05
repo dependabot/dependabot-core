@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/gocardless/business",
+              url: "https://github.com/dependabot-fixtures/business",
               branch: "master",
               ref: "master"
             }
@@ -217,7 +217,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
-            git_url = "https://github.com/gocardless/business.git"
+            git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/business",
+                url: "https://github.com/dependabot-fixtures/business",
                 branch: "master",
                 ref: "a1b78a9"
               }
@@ -293,7 +293,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/business",
+                  url: "https://github.com/dependabot-fixtures/business",
                   branch: "master",
                   ref: "v1.0.0"
                 }
@@ -303,7 +303,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             before do
               stub_request(:get, rubygems_url + "versions/business.json").
                 to_return(status: 404, body: "This rubygem could not be found.")
-              url = "https://github.com/gocardless/business.git"
+              url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
@@ -725,7 +725,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/gocardless/business",
+              url: "https://github.com/dependabot-fixtures/business",
               branch: "master",
               ref: "master"
             }
@@ -737,7 +737,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
-            git_url = "https://github.com/gocardless/business.git"
+            git_url = "https://github.com/dependabot-fixtures/business.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -785,7 +785,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/prius",
+                url: "https://github.com/dependabot-fixtures/prius",
                 branch: "master",
                 ref: "master"
               }
@@ -796,7 +796,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
-            git_url = "https://github.com/gocardless/prius.git"
+            git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -827,7 +827,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/business",
+                url: "https://github.com/dependabot-fixtures/business",
                 branch: "master",
                 ref: "a1b78a9"
               }
@@ -867,7 +867,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/business",
+                  url: "https://github.com/dependabot-fixtures/business",
                   branch: "master",
                   ref: "v1.0.0"
                 }
@@ -877,7 +877,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             before do
               stub_request(:get, rubygems_url + "versions/business.json").
                 to_return(status: 404, body: "This rubygem could not be found.")
-              url = "https://github.com/gocardless/business.git"
+              url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
@@ -1057,7 +1057,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/prius",
+                url: "https://github.com/dependabot-fixtures/prius",
                 branch: "master",
                 ref: "master"
               }
@@ -1068,7 +1068,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             allow_any_instance_of(Dependabot::GitCommitChecker).
               to receive(:branch_or_ref_in_release?).
               and_return(false)
-            git_url = "https://github.com/gocardless/prius.git"
+            git_url = "https://github.com/dependabot-fixtures/prius.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -1160,7 +1160,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           before do
             stub_request(
               :get,
-              "https://github.com/fundingcircle/prius.git/info/refs"\
+              "https://github.com/no-exist-sorry/prius.git/info/refs"\
               "?service=git-upload-pack"
             ).with(headers: { "Authorization" => "Basic #{token}" }).
               to_return(status: 401)
@@ -1171,7 +1171,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                 expect(error.dependency_urls).
-                  to eq(["git@github.com:fundingcircle/prius"])
+                  to eq(["git@github.com:no-exist-sorry/prius"])
               end
           end
 
@@ -1189,7 +1189,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           around { |example| capture_stderr { example.run } }
 
           before do
-            stub_request(:get, "https://github.com/gocardless/prius").
+            stub_request(:get, "https://github.com/dependabot-fixtures/prius").
               to_return(status: 200)
           end
 
@@ -1332,7 +1332,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/fundingcircle/prius.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
@@ -1343,7 +1343,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
               expect(error.dependency_urls).
-                to eq(["git@github.com:fundingcircle/prius"])
+                to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
             end
         end
       end
@@ -1358,7 +1358,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/fundingcircle/prius.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
@@ -1369,7 +1369,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
               expect(error.dependency_urls).
-                to eq(["https://github.com/fundingcircle/prius.git"])
+                to eq(["https://github.com/dependabot-fixtures/does-not-exist.git"])
             end
         end
       end
@@ -1384,7 +1384,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/fundingcircle/prius.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_raise(Excon::Error::Timeout)
@@ -1395,7 +1395,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             to raise_error do |error|
               expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
               expect(error.dependency_urls).
-                to eq(["git@github.com:fundingcircle/prius"])
+                to eq(["git@github.com:dependabot-fixtures/does-not-exist"])
             end
         end
       end
@@ -1647,7 +1647,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/gocardless/business",
+                url: "https://github.com/dependabot-fixtures/business",
                 branch: "master",
                 ref: "a1b78a9"
               }
@@ -1685,7 +1685,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 groups: [],
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/business",
+                  url: "https://github.com/dependabot-fixtures/business",
                   branch: "master",
                   ref: "v1.0.0"
                 }
@@ -1693,7 +1693,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             end
 
             before do
-              git_url = "https://github.com/gocardless/business.git"
+              git_url = "https://github.com/dependabot-fixtures/business.git"
               git_header = {
                 "content-type" => "application/x-git-upload-pack-advertisement"
               }
@@ -1717,7 +1717,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   latest_resolvable_version: "1.13.0",
                   updated_source: {
                     type: "git",
-                    url: "https://github.com/gocardless/business",
+                    url: "https://github.com/dependabot-fixtures/business",
                     branch: "master",
                     ref: "v1.13.0"
                   }
@@ -1931,7 +1931,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           groups: [],
           source: {
             type: "git",
-            url: "https://github.com/gocardless/business",
+            url: "https://github.com/dependabot-fixtures/business",
             branch: "master",
             ref: "master"
           }

@@ -2,6 +2,7 @@
 
 require "nokogiri"
 require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/gradle/file_parser/repositories_finder"
 require "dependabot/gradle/update_checker"
 require "dependabot/gradle/version"
@@ -15,7 +16,7 @@ module Dependabot
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
-        TYPE_SUFFICES = %w(jre android java).freeze
+        TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
@@ -46,7 +47,8 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
-          possible_versions = filter_vulnerable_versions(possible_versions)
+          possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(possible_versions,
+                                                                                                    security_advisories)
           possible_versions = filter_ignored_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
@@ -111,19 +113,9 @@ module Dependabot
           filtered
         end
 
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
-        end
-
         def filter_lower_versions(possible_versions)
+          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
+
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
@@ -266,16 +258,18 @@ module Dependabot
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type = dependency.version.split(/[.\-]/).
+          current_type = dependency.version.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
                          find do |type|
-                           TYPE_SUFFICES.
-                             find { |s| type.include?(s) }
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
                          end
 
-          version_type = comparison_version.to_s.split(/[.\-]/).
+          version_type = comparison_version.to_s.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
                          find do |type|
-                           TYPE_SUFFICES.
-                             find { |s| type.include?(s) }
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
                          end
 
           current_type == version_type

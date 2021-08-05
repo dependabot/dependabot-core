@@ -157,11 +157,12 @@ module Dependabot
         path = Pathname.new(File.join(dir)).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
-        @repo_contents[dir] ||= _fetch_repo_contents(
-          path,
-          raise_errors: raise_errors,
-          fetch_submodules: fetch_submodules
-        )
+        @repo_contents[dir] ||= if repo_contents_path
+                                  _cloned_repo_contents(path)
+                                else
+                                  _fetch_repo_contents(path, raise_errors: raise_errors,
+                                                             fetch_submodules: fetch_submodules)
+                                end
       end
 
       #################################################
@@ -223,6 +224,31 @@ module Dependabot
         end
 
         github_response.map { |f| _build_github_file_struct(f) }
+      end
+
+      def _cloned_repo_contents(relative_path)
+        repo_path = File.join(clone_repo_contents, relative_path)
+        return [] unless Dir.exist?(repo_path)
+
+        Dir.entries(repo_path).map do |name|
+          next if [".", ".."].include?(name)
+
+          absolute_path = File.join(repo_path, name)
+          type = if File.symlink?(absolute_path)
+                   "symlink"
+                 elsif Dir.exist?(absolute_path)
+                   "dir"
+                 else
+                   "file"
+                 end
+
+          OpenStruct.new(
+            name: name,
+            path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
+            type: type,
+            size: 0 # NOTE: added for parity with github contents API
+          )
+        end.compact
       end
 
       def update_linked_paths(repo, path, commit, github_response)
@@ -330,8 +356,8 @@ module Dependabot
 
         response.files.map do |file|
           OpenStruct.new(
-            name: file.absolute_path,
-            path: file.absolute_path,
+            name: File.basename(file.relative_path),
+            path: file.relative_path,
             type: "file",
             size: 0 # file size would require new api call per file..
           )

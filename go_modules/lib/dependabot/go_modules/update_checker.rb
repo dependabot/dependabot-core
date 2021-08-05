@@ -24,14 +24,7 @@ module Dependabot
           return version_class.new(dependency.version)
         end
 
-        @latest_resolvable_version ||=
-          LatestVersionFinder.new(
-            dependency: dependency,
-            dependency_files: dependency_files,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored
-          ).latest_version
+        latest_version_finder.latest_version
       end
 
       # This is currently used to short-circuit latest_resolvable_version,
@@ -39,6 +32,22 @@ module Dependabot
       # resolvability. As this is quite quick in Go anyway, we just alias.
       def latest_version
         latest_resolvable_version
+      end
+
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        unless dependency.top_level?
+          return unless dependency.version
+
+          return version_class.new(dependency.version)
+        end
+
+        lowest_security_fix_version
+      end
+
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -53,6 +62,18 @@ module Dependabot
       end
 
       private
+
+      def latest_version_finder
+        @latest_version_finder ||=
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored
+          )
+      end
 
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't implemented for Go (yet)

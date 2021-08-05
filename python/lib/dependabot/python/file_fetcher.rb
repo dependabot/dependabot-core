@@ -5,6 +5,7 @@ require "toml-rb"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
+require "dependabot/python/file_parser/poetry_files_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -385,7 +386,7 @@ module Dependabot
         return [] unless pyproject
 
         paths = []
-        %w(dependencies dev-dependencies).each do |dep_type|
+        Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pyproject.dig("tool", "poetry", dep_type)
 
           parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|

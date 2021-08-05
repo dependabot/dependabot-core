@@ -175,16 +175,16 @@ module Dependabot
       end
 
       def pipenv_version_resolver
-        @pipenv_version_resolver ||= PipenvVersionResolver.new(resolver_args)
+        @pipenv_version_resolver ||= PipenvVersionResolver.new(**resolver_args)
       end
 
       def pip_compile_version_resolver
         @pip_compile_version_resolver ||=
-          PipCompileVersionResolver.new(resolver_args)
+          PipCompileVersionResolver.new(**resolver_args)
       end
 
       def poetry_version_resolver
-        @poetry_version_resolver ||= PoetryVersionResolver.new(resolver_args)
+        @poetry_version_resolver ||= PoetryVersionResolver.new(**resolver_args)
       end
 
       def pip_version_resolver

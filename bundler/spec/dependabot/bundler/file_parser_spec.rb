@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
-      repo: "gocardless/bump",
+      repo: "dependabot-fixtures/bump",
       directory: "/"
     )
   end
@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/gocardless/uk_phone_numbers",
+              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: "master",
               ref: "master"
             },
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "git@github.com:chanks/que",
+              url: "git@github.com:dependabot-fixtures/que",
               branch: "master",
               ref: "v0.11.6"
             },
@@ -219,7 +219,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "https://github.com/gocardless/business.git",
+              url: "https://github.com/dependabot-fixtures/business.git",
               branch: "master",
               ref: "master"
             },
@@ -244,7 +244,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "git://github.com/gocardless/business.git",
+              url: "git://github.com/dependabot-fixtures/business.git",
               branch: "master",
               ref: "master"
             },
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "https://github.com/kaminari/kaminari",
+              url: "https://github.com/dependabot-fixtures/kaminari",
               branch: "master",
               ref: "master"
             },
@@ -541,7 +541,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
                 groups: ["runtime"],
                 source: {
                   type: "git",
-                  url: "git@github.com:gocardless/business",
+                  url: "git@github.com:dependabot-fixtures/business",
                   branch: "master",
                   ref: "master"
                 }
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
                 file: "Gemfile",
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/business",
+                  url: "https://github.com/dependabot-fixtures/business",
                   branch: "master",
                   ref: "master"
                 },

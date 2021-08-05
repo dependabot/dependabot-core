@@ -2,7 +2,7 @@
 source "https://rubygems.org"
 
 def git_gem(name, **options)
-  gem name, git: "git@github.com:gocardless/business"
+  gem name, git: "git@github.com:dependabot-fixtures/business"
 end
 
 git_gem 'business'

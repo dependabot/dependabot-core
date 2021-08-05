@@ -11,7 +11,7 @@
 
 ## Contributing new ecosystems
 
-We are not currently accepting new ecosystems into `dependabot-core`, starting in December 2020 until at least June 2021.
+We are not currently accepting new ecosystems into `dependabot-core`, starting in December 2020.
 
 ### Why have we paused accepting new ecosystems?
 
@@ -20,6 +20,8 @@ possible for each of these, but we have found we've lacked the capacity – and 
 confident we can support each ecosystem we merge.
 
 In the immediate future, we want to focus more of our resources on merging improvements to the ecosystems we already support. This does not mean that we are stopping work or investing less in this space - in fact, we're investing more, to make it a great user experience. This tough call means we can also provide a better experience for our contributors, where PRs don't go stale while waiting for a review.
+
+If you are an ecosystem maintainer and are interested in integrating with Dependabot, and are willing to help provide the expertise necessary to build and support it, please open an issue and let us know.
 
 We hope to be able to accept community contributions for ecosystem support again soon.
 

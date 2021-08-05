@@ -122,6 +122,28 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "when the current version isn't known" do
+        let(:current_version) { nil }
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+      end
+
+      context "when the dependency is a git dependency" do
+        let(:current_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+        context "raise_on_ignored" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+      end
+
       context "when the user has ignored all later versions" do
         let(:ignored_versions) { ["> 1.3.0"] }
 
@@ -427,7 +449,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
         let(:source) do
           {
             type: "git",
-            url: "https://github.com/gocardless/business",
+            url: "https://github.com/dependabot-fixtures/business",
             branch: "master",
             ref: "a1b78a9" # Pinned, to ensure we unpin
           }
@@ -444,7 +466,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           let(:source) do
             {
               type: "git",
-              url: "https://github.com/gocardless/business",
+              url: "https://github.com/dependabot-fixtures/business",
               branch: "bad_branch",
               ref: "bad_branch"
             }

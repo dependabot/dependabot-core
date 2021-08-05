@@ -23,7 +23,6 @@ jobs:
         - { path: cargo, name: cargo }
         - { path: common, name: common }
         - { path: composer, name: composer }
-        - { path: dep, name: dep }
         - { path: docker, name: docker }
         - { path: elm, name: elm }
         - { path: git_submodules, name: git_submodules }
@@ -88,7 +87,15 @@ jobs:
         run: |
           docker run \
             --env "CI=true" \
+            --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm "$CORE_CI_IMAGE" bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
+      - run: ./bin/lint

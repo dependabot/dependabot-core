@@ -56,9 +56,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
-  describe "errors" do
-    subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
+  subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
 
+  describe "errors" do
     context "with a dependency version that can't be found" do
       let(:files) { project_dependency_files("yarn/yanked_version") }
 
@@ -126,60 +126,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       it "raises a helpful error" do
         expect { updated_yarn_lock_content }.
           to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
-      end
-
-      context "that is unscoped" do
-        let(:files) { project_dependency_files("yarn/private_source_unscoped") }
-
-        let(:dependency_name) { "my-private-dep-asdlfkasdf" }
-        let(:version) { "1.0.1" }
-        let(:previous_version) { "1.0.0" }
-        let(:requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.0.0",
-            groups: ["devDependencies"],
-            source: nil
-          }]
-        end
-        let(:previous_requirements) do
-          [{
-            file: "package.json",
-            requirement: "^1.0.0",
-            groups: ["devDependencies"],
-            source: nil
-          }]
-        end
-
-        it "raises a helpful error" do
-          expect { updated_yarn_lock_content }.
-            to raise_error do |error|
-            expect(error).
-              to be_a(Dependabot::PrivateSourceAuthenticationFailure)
-            expect(error.source).to eq("npm-proxy.fury.io/<redacted>")
-          end
-        end
-
-        context "with bad credentials" do
-          let(:credentials) do
-            [{
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "token"
-            }, {
-              "type" => "npm_registry",
-              "registry" => "npm-proxy.fury.io/dependabot",
-              "token" => "bad_token"
-            }]
-          end
-
-          # TODO: Fix broken test
-          it "raises a helpful error" do
-            expect { updated_yarn_lock_content }.
-              to raise_error(Dependabot::PrivateSourceAuthenticationFailure)
-          end
-        end
       end
     end
 
@@ -354,6 +300,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
         expect { updated_yarn_lock_content }.
           to raise_error(Dependabot::DependencyFileNotResolvable)
       end
+    end
+  end
+
+  context "updating a top-level dependency with a .yarnrc file overriding the yarn registry proxy" do
+    let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
+
+    it "keeps the default npm registry" do
+      expect(updated_yarn_lock_content).
+        to include("https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.2")
+    end
+  end
+
+  context "updating a sub-dependency with a .yarnrc file overriding the yarn registry proxy" do
+    let(:files) { project_dependency_files("yarn/yarnrc_npm_registry") }
+
+    let(:dependency_name) { "node-fetch" }
+    let(:version) { "1.7.3" }
+    let(:previous_version) { "1.6.1" }
+    let(:requirements) { [] }
+    let(:previous_requirements) { [] }
+
+    it "keeps the default npm registry" do
+      expect(updated_yarn_lock_content).
+        to include("https://registry.npmjs.org/node-fetch/-/node-fetch-1.7.3")
     end
   end
 end

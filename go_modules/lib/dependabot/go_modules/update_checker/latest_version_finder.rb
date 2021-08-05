@@ -3,6 +3,7 @@
 require "excon"
 
 require "dependabot/go_modules/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/go_modules/requirement"
@@ -23,11 +24,12 @@ module Dependabot
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, raise_on_ignored: false)
+                       ignored_versions:, security_advisories:, raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @security_advisories = security_advisories
           @raise_on_ignored    = raise_on_ignored
         end
 
@@ -35,9 +37,13 @@ module Dependabot
           @latest_version ||= fetch_latest_version
         end
 
+        def lowest_security_fix_version
+          @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+        end
+
         private
 
-        attr_reader :dependency, :dependency_files, :credentials, :ignored_versions
+        attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version
           return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
@@ -47,6 +53,19 @@ module Dependabot
           candidate_versions = filter_ignored_versions(candidate_versions)
 
           candidate_versions.max
+        end
+
+        def fetch_lowest_security_fix_version
+          return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
+
+          relevant_versions = available_versions
+          relevant_versions = filter_prerelease_versions(relevant_versions)
+          relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
+                                                                                                    security_advisories)
+          relevant_versions = filter_ignored_versions(relevant_versions)
+          relevant_versions = filter_lower_versions(relevant_versions)
+
+          relevant_versions.min
         end
 
         def available_versions
@@ -109,6 +128,8 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+
           versions_array.
             select { |version| version > version_class.new(dependency.version) }
         end

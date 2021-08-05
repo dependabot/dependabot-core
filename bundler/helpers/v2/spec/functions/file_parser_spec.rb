@@ -12,9 +12,9 @@ RSpec.describe Functions::FileParser do
     )
   end
 
-  let(:project_name) { "gemfile" }
-
   describe "#parsed_gemfile" do
+    let(:project_name) { "gemfile" }
+
     subject(:parsed_gemfile) do
       in_tmp_folder do
         dependency_source.parsed_gemfile(gemfile_name: "Gemfile")
@@ -54,7 +54,7 @@ RSpec.describe Functions::FileParser do
               branch: "master",
               ref: "a1b78a9",
               type: "git",
-              url: "git@github.com:gocardless/business"
+              url: "git@github.com:dependabot-fixtures/business"
             },
             type: :runtime
           },
@@ -68,36 +68,36 @@ RSpec.describe Functions::FileParser do
           {
             groups: [:default],
             name: "prius",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "master",
               type: "git",
-              url: "https://github.com/gocardless/prius"
+              url: "https://github.com/dependabot-fixtures/prius"
             },
             type: :runtime
           },
           {
             groups: [:default],
             name: "que",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "v0.11.6",
               type: "git",
-              url: "git@github.com:chanks/que"
+              url: "git@github.com:dependabot-fixtures/que"
             },
             type: :runtime
           },
           {
             groups: [:default],
             name: "uk_phone_numbers",
-            requirement:  Gem::Requirement.new(">= 0"),
+            requirement: Gem::Requirement.new(">= 0"),
             source: {
               branch: "master",
               ref: "master",
               type: "git",
-              url: "http://github.com/gocardless/uk_phone_numbers"
+              url: "http://github.com/dependabot-fixtures/uk_phone_numbers"
             },
             type: :runtime
           }
@@ -108,14 +108,11 @@ RSpec.describe Functions::FileParser do
   end
 
   describe "#parsed_gemspec" do
-    let!(:gemspec_fixture) do
-      fixture("ruby", "gemspecs", "exact")
-    end
+    let(:project_name) { "gemfile_exact" }
 
     subject(:parsed_gemspec) do
-      in_tmp_folder do |tmp_path|
-        File.write(File.join(tmp_path, "test.gemspec"), gemspec_fixture)
-        dependency_source.parsed_gemspec(gemspec_name: "test.gemspec")
+      in_tmp_folder do |_tmp_path|
+        dependency_source.parsed_gemspec(gemspec_name: "example.gemspec")
       end
     end
 

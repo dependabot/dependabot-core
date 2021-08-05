@@ -58,6 +58,27 @@ RSpec.describe Dependabot::GitCommitChecker do
       it { is_expected.to eq(false) }
     end
 
+    context "with a non-git dependency that has multiple sources" do
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ]
+      end
+
+      it { is_expected.to eq(false) }
+    end
+
     context "with a git dependency" do
       let(:source) do
         {
@@ -107,7 +128,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "with multiple source types" do
-          let(:s2) { { type: "path" } }
+          let(:s2) { { type: "git", url: "https://github.com/dependabot/dependabot-core" } }
 
           it "raises a helpful error" do
             expect { checker.git_dependency? }.
@@ -169,7 +190,16 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "but GitHub returns a 404" do
-          before { stub_request(:get, service_pack_url).to_return(status: 404) }
+          let(:url) { "https://github.com/gocardless/business.git" }
+
+          before do
+            stub_request(:get, service_pack_url).to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+          end
+
           it { is_expected.to eq(false) }
         end
 
@@ -412,6 +442,12 @@ RSpec.describe Dependabot::GitCommitChecker do
             git_url = "https://github.com/gocardless/business.git"
             stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
               to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).
+              with(anything, "git ls-remote #{git_url}").
+              and_return(["", "", exit_status])
           end
           let(:ref) { "my_ref" }
 
@@ -608,10 +644,16 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "that results in a 403" do
+        let(:url) { "https://github.com/gocardless/business.git" }
+
         before do
           stub_request(:get, git_url).
             with(headers: { "Authorization" => auth_header }).
             to_return(status: 403)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
         end
 
         it "raises a helpful error" do
@@ -863,7 +905,15 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "but GitHub returns a 404" do
-      before { stub_request(:get, service_pack_url).to_return(status: 404) }
+      let(:url) { "https://github.com/gocardless/business.git" }
+
+      before do
+        stub_request(:get, service_pack_url).to_return(status: 404)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+      end
 
       it "raises a helpful error" do
         expect { checker.local_tag_for_latest_version }.
@@ -1087,10 +1137,16 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "that results in a 403" do
+      let(:url) { "https://github.com/gocardless/business.git" }
+
       before do
         stub_request(:get, git_url).
           with(headers: { "Authorization" => auth_header }).
           to_return(status: 403)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it { is_expected.to eq(false) }

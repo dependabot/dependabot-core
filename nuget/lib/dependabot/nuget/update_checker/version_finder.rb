@@ -5,6 +5,7 @@ require "nokogiri"
 
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
 require "dependabot/shared_helpers"
 
@@ -42,9 +43,12 @@ module Dependabot
             begin
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
-              possible_versions = filter_vulnerable_versions(possible_versions)
+              possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+                possible_versions, security_advisories
+              )
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
+
               possible_versions.min_by { |hash| hash.fetch(:version) }
             end
         end
@@ -83,19 +87,9 @@ module Dependabot
           filtered
         end
 
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
-        end
-
         def filter_lower_versions(possible_versions)
+          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
+
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
@@ -112,17 +106,16 @@ module Dependabot
             listing.
               fetch("versions", []).
               map do |v|
-                nuspec_url =
-                  listing.fetch("listing_details").
-                  fetch(:versions_url).
+                listing_details = listing.fetch("listing_details")
+                nuspec_url = listing_details.
+                             fetch(:versions_url, nil)&.
                   gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                 {
                   version: version_class.new(v),
                   nuspec_url: nuspec_url,
                   source_url: nil,
-                  repo_url:
-                    listing.fetch("listing_details").fetch(:repository_url)
+                  repo_url: listing_details.fetch(:repository_url)
                 }
               end
           end

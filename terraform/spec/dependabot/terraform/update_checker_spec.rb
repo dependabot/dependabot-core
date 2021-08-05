@@ -53,6 +53,19 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   describe "#latest_version" do
     subject { checker.latest_version }
 
+    context "with multiple file sources" do
+      let(:requirements) do
+        [
+          { file: "./modules/main.tf", source: { type: "path", url: "./modules" }, requirement: nil, groups: [] },
+          { file: "main.tf", source: { type: "path", url: "./" }, requirement: nil, groups: [] }
+        ]
+      end
+
+      it "ignores the dependencies with file sources" do
+        expect(subject).to be_nil
+      end
+    end
+
     context "with a git dependency" do
       let(:source) do
         {
@@ -96,6 +109,12 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
           "hashicorp_consul_aws_versions.json"
         )
 
+        stub_request(
+          :get, "https://registry.terraform.io/.well-known/terraform.json"
+        ).to_return(status: 200, body: {
+          "modules.v1": "/v1/modules/",
+          "providers.v1": "/v1/providers/"
+        }.to_json)
         stub_request(:get, url).to_return(status: 200, body: registry_response)
       end
 
@@ -104,19 +123,6 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       context "when the user is ignoring the latest version" do
         let(:ignored_versions) { [">= 0.3.8, < 0.4.0"] }
         it { is_expected.to eq(Gem::Version.new("0.3.7")) }
-      end
-
-      context "for a custom registry" do
-        let(:source) do
-          {
-            type: "registry",
-            registry_hostname: "app.terraform.io",
-            module_identifier: "hashicorp/consul/aws"
-          }
-        end
-
-        # See TODO on UpdateChecker on adding support for custom registries
-        it { is_expected.to be_nil }
       end
     end
   end
@@ -299,6 +305,33 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
       context "when the requirement is already up-to-date" do
         let(:requirement) { "~> 0.3.1" }
         it { is_expected.to eq(requirements) }
+      end
+    end
+
+    context "with a provider", :vcr do
+      let(:source) do
+        {
+          type: "provider",
+          registry_hostname: "registry.terraform.io",
+          module_identifier: "hashicorp/aws"
+        }
+      end
+      let(:requirement) { "~> 2.0" }
+
+      it "updates the requirement" do
+        expect(updated_requirements).
+          to eq(
+            [{
+              requirement: "~> 3.42",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }]
+          )
       end
     end
   end

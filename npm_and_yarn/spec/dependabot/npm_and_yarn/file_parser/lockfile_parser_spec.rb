@@ -267,7 +267,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for an npm7 workspace project with a direct dependency in the workspace" do
+    context "for an npm7 workspace project with a direct dependency that's installed in the workspace's node_modules" do
       let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package") }
       let(:dependency_name) { "yargs" }
       let(:manifest_name) { "packages/build/package.json" }
@@ -278,6 +278,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
           "integrity" =>
             "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+        )
+      end
+    end
+
+    context "for an npm7 workspace project with a direct dependency that's installed in the top-level node_modules" do
+      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package_top_level") }
+      let(:dependency_name) { "uuid" }
+      let(:manifest_name) { "api/package.json" }
+
+      it "finds the correct dependency" do
+        expect(lockfile_details).to eq(
+          "version" => "8.3.2",
+          "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+          "integrity" =>
+            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
         )
       end
     end

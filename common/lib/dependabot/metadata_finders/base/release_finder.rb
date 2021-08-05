@@ -22,9 +22,8 @@ module Dependabot
 
           case source.provider
           when "github" then "#{source.url}/releases"
-          when "gitlab" then "#{source.url}/tags"
+          when "gitlab", "azure" then "#{source.url}/tags"
           when "bitbucket" then nil
-          when "azure" then "#{source.url}/tags"
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
@@ -167,7 +166,7 @@ module Dependabot
 
         def serialize_release(release)
           rel = release
-          title = "## #{rel.name.to_s != '' ? rel.name : rel.tag_name}\n"
+          title = "## #{rel.name.to_s == '' ? rel.tag_name : rel.name}\n"
           body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
                    "No release notes provided."
                  else
@@ -178,7 +177,7 @@ module Dependabot
         end
 
         def release_body_includes_title?(release)
-          title = release.name.to_s != "" ? release.name : release.tag_name
+          title = release.name.to_s == "" ? release.tag_name : release.name
           release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
@@ -195,9 +194,9 @@ module Dependabot
 
           case source.provider
           when "github" then fetch_github_releases
-          when "bitbucket" then [] # Bitbucket doesn't support releases
+          # Bitbucket doesn't support releases and Azure can't list API for annotated tags
+          when "bitbucket", "azure" then []
           when "gitlab" then fetch_gitlab_releases
-          when "azure" then [] # Azure can't list API for annotated tags
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end

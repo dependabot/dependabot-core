@@ -20,6 +20,10 @@ module Dependabot
       include FileSelector
 
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
+      DEFAULT_REGISTRY = "registry.terraform.io"
+      DEFAULT_NAMESPACE = "hashicorp"
+      # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
+      PROVIDER_SOURCE_ADDRESS = %r{\A((?<hostname>.+)/)?(?<namespace>.+)/(?<name>.+)\z}.freeze
 
       def parse
         dependency_set = DependencySet.new
@@ -28,6 +32,15 @@ module Dependabot
           modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
             dependency_set << build_terraform_dependency(file, name, details)
+          end
+
+          parsed_file(file).fetch("terraform", []).each do |terraform|
+            required_providers = terraform.fetch("required_providers", {})
+            required_providers.each do |provider|
+              provider.each do |name, details|
+                dependency_set << build_provider_dependency(file, name, details)
+              end
+            end
           end
         end
 
@@ -49,8 +62,11 @@ module Dependabot
         details = details.first
 
         source = source_from(details)
-        dep_name =
-          source[:type] == "registry" ? source[:module_identifier] : name
+        dep_name = case source[:type]
+                   when "registry" then source[:module_identifier]
+                   when "provider" then details["source"]
+                   else name
+                   end
         version_req = details["version"]&.strip
         version =
           if source[:type] == "git" then version_from_ref(source[:ref])
@@ -68,6 +84,46 @@ module Dependabot
             source: source
           ]
         )
+      end
+
+      def build_provider_dependency(file, name, details = {})
+        deprecated_provider_error(file) if deprecated_provider?(details)
+
+        source_address = details.fetch("source", nil)
+        version_req = details["version"]&.strip
+        hostname, namespace, name = provider_source_from(source_address, name)
+        dependency_name = source_address ? "#{namespace}/#{name}" : name
+
+        Dependency.new(
+          name: dependency_name,
+          version: determine_version_for(hostname, namespace, name, version_req),
+          package_manager: "terraform",
+          requirements: [
+            requirement: version_req,
+            groups: [],
+            file: file.name,
+            source: {
+              type: "provider",
+              registry_hostname: hostname,
+              module_identifier: "#{namespace}/#{name}"
+            }
+          ]
+        )
+      end
+
+      def deprecated_provider_error(file)
+        raise Dependabot::DependencyFileNotParseable.new(
+          file.path,
+          "This terraform provider syntax is now deprecated.\n"\
+          "See https://www.terraform.io/docs/language/providers/requirements.html "\
+          "for the new Terraform v0.13+ provider syntax."
+        )
+      end
+
+      def deprecated_provider?(details)
+        # The old syntax for terraform providers v0.12- looked like
+        # "tls ~> 2.1" which gets parsed as a string instead of a hash
+        details.is_a?(String)
       end
 
       def build_terragrunt_dependency(file, details)
@@ -111,6 +167,15 @@ module Dependabot
 
         source_details[:proxy_url] = raw_source if raw_source != bare_source
         source_details
+      end
+
+      def provider_source_from(source_address, name)
+        matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
+        [
+          matches.try(:[], :hostname) || DEFAULT_REGISTRY,
+          matches.try(:[], :namespace) || DEFAULT_NAMESPACE,
+          matches.try(:[], :name) || name
+        ]
       end
 
       def registry_source_details_from(source_string)
@@ -166,20 +231,22 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
-      def get_proxied_source(raw_source)
+      def get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
         return raw_source unless raw_source.start_with?("http")
 
         uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
         return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-        return raw_source if URI.parse(raw_source).query.include?("archive=")
+        return raw_source if URI.parse(raw_source).query&.include?("archive=")
 
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
+        host = URI.parse(raw_source).host
 
         response = Excon.get(
           url,
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
+        raise PrivateSourceAuthenticationFailure, host if response.status == 401
 
         return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
 
@@ -187,6 +254,10 @@ module Dependabot
         doc.css("meta").find do |tag|
           tag.attributes&.fetch("name", nil)&.value == "terraform-get"
         end&.attributes&.fetch("content", nil)&.value
+      rescue Excon::Error::Socket, Excon::Error::Timeout => e
+        raise PrivateSourceAuthenticationFailure, host if e.message.include?("no address for")
+
+        raw_source
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
@@ -206,7 +277,7 @@ module Dependabot
         path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
         query_uri = URI.parse(source_string)
         return :http_archive if path_uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-        return :http_archive if query_uri.query.include?("archive=")
+        return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"
       end
@@ -281,6 +352,23 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def determine_version_for(hostname, namespace, name, constraint)
+        return constraint if constraint&.match?(/\A\d/)
+
+        lock_file_content.
+          dig("provider", "#{hostname}/#{namespace}/#{name}", 0, "version")
+      end
+
+      def lock_file_content
+        @lock_file_content ||=
+          begin
+            lock_file = dependency_files.find do |file|
+              file.name == ".terraform.lock.hcl"
+            end
+            lock_file ? parsed_file(lock_file) : {}
+          end
       end
     end
   end

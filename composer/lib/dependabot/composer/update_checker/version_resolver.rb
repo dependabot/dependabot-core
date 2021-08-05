@@ -37,6 +37,8 @@ module Dependabot
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
         SOURCE_TIMED_OUT_REGEX =
           /The "(?<url>[^"]+packages\.json)".*timed out/.freeze
+        FAILED_GIT_CLONE_WITH_MIRROR = /Failed to execute git clone --(mirror|checkout)[^']*'(?<url>.*?)'/.freeze
+        FAILED_GIT_CLONE = /Failed to clone (?<url>.*?) via/.freeze
 
         def initialize(credentials:, dependency:, dependency_files:,
                        requirements_to_unlock:, latest_allowable_version:)
@@ -184,7 +186,7 @@ module Dependabot
                            fetch(keys[:lockfile], []).
                            find { |d| d["name"] == name }&.
                            dig("source", "reference")
-              updated_req_parts = req.split(" ")
+              updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
             end
@@ -231,6 +233,8 @@ module Dependabot
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Extract error handling and share between the lockfile updater
+        #
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
@@ -244,15 +248,11 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.start_with?("Failed to execute git clone")
-            dependency_url =
-              error.message.match(/--mirror '(?<url>.*?)'/).
-              named_captures.fetch("url")
+          if error.message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
+            dependency_url = error.message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
-          elsif error.message.start_with?("Failed to clone")
-            dependency_url =
-              error.message.match(/Failed to clone (?<url>.*?) via/).
-              named_captures.fetch("url")
+          elsif error.message.match?(FAILED_GIT_CLONE)
+            dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, dependency_url
           elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
@@ -304,22 +304,17 @@ module Dependabot
             nil
           elsif error.message.include?("URL required authentication") ||
                 error.message.include?("403 Forbidden")
-            source =
-              error.message.match(%r{https?://(?<source>[^/]+)/}).
-              named_captures.fetch("source")
+            source = error.message.match(%r{https?://(?<source>[^/]+)/}).named_captures.fetch("source")
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           elsif error.message.match?(SOURCE_TIMED_OUT_REGEX)
-            url = error.message.match(SOURCE_TIMED_OUT_REGEX).
-                  named_captures.fetch("url")
+            url = error.message.match(SOURCE_TIMED_OUT_REGEX).named_captures.fetch("url")
             raise if url.include?("packagist.org")
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
-          elsif error.message.start_with?("Allowed memory size") ||
-                error.message.start_with?("Out of memory")
+          elsif error.message.start_with?("Allowed memory size") || error.message.start_with?("Out of memory")
             raise Dependabot::OutOfMemory
-          elsif error.error_context[:process_termsig] ==
-                Dependabot::SharedHelpers::SIGKILL
+          elsif error.error_context[:process_termsig] == Dependabot::SharedHelpers::SIGKILL
             # If the helper was SIGKILL-ed, assume the OOMKiller did it
             raise Dependabot::OutOfMemory
           elsif error.message.start_with?("Package not found in updated") &&
@@ -336,6 +331,11 @@ module Dependabot
             #
             # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
             nil
+          elsif error.message.include?("does not match the expected JSON schema")
+            msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n"\
+                  "Run `composer validate` to check your composer.json and composer.lock files.\n\n"\
+                  "See https://getcomposer.org/doc/04-schema.md for details on the schema."
+            raise Dependabot::DependencyFileNotParseable, msg
           else
             raise error
           end
