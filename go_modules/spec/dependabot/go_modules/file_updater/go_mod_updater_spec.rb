@@ -641,6 +641,35 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         end
       end
     end
+
+    context "with an unreachable sub-dependency" do
+      let(:project_name) { "unreachable_sub_dependency" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls).
+              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+    end
   end
 
   describe "#updated_go_sum_content" do
