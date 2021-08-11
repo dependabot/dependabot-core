@@ -25,7 +25,7 @@ module Dependabot
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git fetch .*: exit status 128/.freeze,
+          /go: .*: git fetch .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
@@ -231,12 +231,15 @@ module Dependabot
 
         def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
           stderr = stderr.gsub(Dir.getwd, "")
-
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
             error_message = filter_error_message(message: stderr, regex: error_regex)
             raise Dependabot::DependencyFileNotResolvable, error_message
+          end
+
+          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
@@ -256,10 +259,6 @@ module Dependabot
           if out_of_disk_regex
             error_message = filter_error_message(message: stderr, regex: out_of_disk_regex)
             raise Dependabot::OutOfDisk.new, error_message
-          end
-
-          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
           # We don't know what happened so we raise a generic error
