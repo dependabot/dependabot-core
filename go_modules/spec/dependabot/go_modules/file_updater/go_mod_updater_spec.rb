@@ -606,9 +606,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
-            expect(error.message).to include("dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end
@@ -635,9 +635,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
-            expect(error.message).to include("dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end
@@ -664,9 +664,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         error_class = Dependabot::GitDependenciesNotReachable
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
-            expect(error.message).to include("dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end
