@@ -231,6 +231,7 @@ module Dependabot
 
         def handle_subprocess_error(stderr) # rubocop:disable Metrics/AbcSize
           stderr = stderr.gsub(Dir.getwd, "")
+
           # Package version doesn't match the module major version
           error_regex = RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if error_regex
