@@ -1,3 +1,7 @@
+## v0.159.1, 12 August 2021
+
+- gomod: Handle errors where go module dependencies are unreachable [#4130](https://github.com/dependabot/dependabot-core/pull/4130)
+
 ## v0.159.0, 4 August 2021
 
 - Remove go dep entirely (@jeffwidman) [#3538](https://github.com/dependabot/dependabot-core/pull/3538)
