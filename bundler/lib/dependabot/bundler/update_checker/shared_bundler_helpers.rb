@@ -174,8 +174,11 @@ module Dependabot
               }
             )
             git_specs.reject do |spec|
+              uri = URI.parse(spec.fetch("auth_uri"))
+              next false unless %w(http https).include?(uri.scheme)
+
               Excon.get(
-                spec.fetch("auth_uri"),
+                uri.to_s,
                 idempotent: true,
                 **SharedHelpers.excon_defaults
               ).status == 200

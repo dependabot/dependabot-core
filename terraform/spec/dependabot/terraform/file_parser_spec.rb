@@ -170,8 +170,11 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "with a pessimistic constraint and a lockfile" do
       let(:files) { project_dependency_files("pessimistic_constraint_lock_file") }
 
-      it "parses the dependency correctly" do
+      it "parses the lockfile" do
         expect(subject.length).to eq(1)
+      end
+
+      it "parses the dependency correctly" do
         expect(subject[0].name).to eq("hashicorp/http")
         expect(subject[0].version).to eq("2.1.0")
         expect(subject[0].requirements).to eq([{
@@ -286,6 +289,20 @@ RSpec.describe Dependabot::Terraform::FileParser do
             branch: nil
           }
         }])
+      end
+    end
+
+    context "deprecated terraform provider syntax" do
+      let(:files) { project_dependency_files("deprecated_provider") }
+
+      it "raises a helpful error message" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
+          expect(error.message).to eq(
+            "This terraform provider syntax is now deprecated.\n"\
+            "See https://www.terraform.io/docs/language/providers/requirements.html "\
+            "for the new Terraform v0.13+ provider syntax."
+          )
+        end
       end
     end
 
@@ -576,7 +593,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "has the right details" do
         dependency = dependencies.find { |d| d.name == "hashicorp/aws" }
 
-        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.version).to eq("3.37.0")
       end
 
       it "handles version ranges correctly" do
@@ -628,6 +645,27 @@ RSpec.describe Dependabot::Terraform::FileParser do
         # So dependabot does not support it. This test is here for
         # documentatio-sake.
         expect(dependencies.count).to eq(0)
+      end
+    end
+
+    context "with a provider that doesn't have a namespace provider" do
+      let(:files) { project_dependency_files("provider_no_namespace") }
+
+      it "has the right details" do
+        dependency = dependencies.find { |d| d.name == "hashicorp/random" }
+
+        expect(dependency.version).to eq("2.2.1")
+        expect(dependency.requirements.first[:source][:module_identifier]).to eq("hashicorp/random")
+      end
+    end
+
+    context "with a private module proxy that can't be reached", vcr: true do
+      let(:files) { project_dependency_files("private_module_proxy") }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |boom|
+          expect(boom.source).to eq("artifactory.dependabot.com")
+        end
       end
     end
   end

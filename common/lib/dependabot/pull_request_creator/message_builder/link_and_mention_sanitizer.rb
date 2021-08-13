@@ -51,10 +51,10 @@ module Dependabot
           doc.walk do |node|
             if node.type == :text &&
                node.string_content.match?(MENTION_REGEX)
-              nodes = if !parent_node_link?(node)
-                        build_mention_nodes(node.string_content)
-                      else
+              nodes = if parent_node_link?(node)
                         build_mention_link_text_nodes(node.string_content)
+                      else
+                        build_mention_nodes(node.string_content)
                       end
 
               nodes.each do |n|

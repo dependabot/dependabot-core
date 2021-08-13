@@ -29,7 +29,15 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     }]
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".mvn?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 404
+      )
+  end
 
   context "with a basic pom" do
     before do
@@ -42,10 +50,45 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         )
     end
 
-    it "fetches the pom" do
-      expect(file_fetcher_instance.files.count).to eq(1)
-      expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(pom.xml))
+    context "without extensions.xml" do
+      before do
+        stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404
+          )
+      end
+
+      it "only fetches the pom.xml" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pom.xml))
+      end
+    end
+
+    context "with extensions.xml" do
+      before do
+        stub_request(:get, File.join(url, ".mvn?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_mvn_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_java_extensions_xml.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the pom.xml and extensions.xml" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pom.xml .mvn/extensions.xml))
+      end
     end
   end
 
@@ -81,6 +124,12 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           status: 200,
           body: fixture("github", "contents_java_basic_pom.json"),
           headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
         )
     end
 
@@ -127,6 +176,11 @@ RSpec.describe Dependabot::Maven::FileFetcher do
             body: fixture("github", "contents_java_basic_pom.json"),
             headers: { "content-type" => "application/json" }
           )
+        stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404
+          )
       end
 
       it "doesn't fetch the submodule pom (which we couldn't update)" do
@@ -152,6 +206,12 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           to_return(
             status: 404,
             headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404
           )
       end
 
@@ -196,6 +256,12 @@ RSpec.describe Dependabot::Maven::FileFetcher do
             body: fixture("github", "contents_java_basic_pom.json"),
             headers: { "content-type" => "application/json" }
           )
+
+        stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404
+          )
       end
 
       it "fetches the poms" do
@@ -210,6 +276,18 @@ RSpec.describe Dependabot::Maven::FileFetcher do
       end
 
       context "when asked to fetch only a subdirectory" do
+        before do
+          stub_request(:get, File.join(url, "util/util/.mvn?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 404
+            )
+          stub_request(:get, File.join(url, "util/util/.mvn/extensions.xml?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 404
+            )
+        end
         let(:directory) { "/util/util" }
 
         it "fetches the relevant poms" do

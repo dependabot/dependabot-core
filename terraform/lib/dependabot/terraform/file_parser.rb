@@ -87,6 +87,8 @@ module Dependabot
       end
 
       def build_provider_dependency(file, name, details = {})
+        deprecated_provider_error(file) if deprecated_provider?(details)
+
         source_address = details.fetch("source", nil)
         version_req = details["version"]&.strip
         hostname, namespace, name = provider_source_from(source_address, name)
@@ -107,6 +109,21 @@ module Dependabot
             }
           ]
         )
+      end
+
+      def deprecated_provider_error(file)
+        raise Dependabot::DependencyFileNotParseable.new(
+          file.path,
+          "This terraform provider syntax is now deprecated.\n"\
+          "See https://www.terraform.io/docs/language/providers/requirements.html "\
+          "for the new Terraform v0.13+ provider syntax."
+        )
+      end
+
+      def deprecated_provider?(details)
+        # The old syntax for terraform providers v0.12- looked like
+        # "tls ~> 2.1" which gets parsed as a string instead of a hash
+        details.is_a?(String)
       end
 
       def build_terragrunt_dependency(file, details)
@@ -153,13 +170,11 @@ module Dependabot
       end
 
       def provider_source_from(source_address, name)
-        return [DEFAULT_REGISTRY, DEFAULT_NAMESPACE, name] unless source_address
-
-        matches = source_address.match(PROVIDER_SOURCE_ADDRESS)
+        matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
         [
-          matches[:hostname] || DEFAULT_REGISTRY,
-          matches[:namespace],
-          matches[:name] || name
+          matches.try(:[], :hostname) || DEFAULT_REGISTRY,
+          matches.try(:[], :namespace) || DEFAULT_NAMESPACE,
+          matches.try(:[], :name) || name
         ]
       end
 
@@ -216,20 +231,22 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # See https://www.terraform.io/docs/modules/sources.html#http-urls for
       # details of how Terraform handle HTTP(S) sources for modules
-      def get_proxied_source(raw_source)
+      def get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
         return raw_source unless raw_source.start_with?("http")
 
         uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
         return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-        return raw_source if URI.parse(raw_source).query.include?("archive=")
+        return raw_source if URI.parse(raw_source).query&.include?("archive=")
 
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
+        host = URI.parse(raw_source).host
 
         response = Excon.get(
           url,
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
+        raise PrivateSourceAuthenticationFailure, host if response.status == 401
 
         return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
 
@@ -237,6 +254,10 @@ module Dependabot
         doc.css("meta").find do |tag|
           tag.attributes&.fetch("name", nil)&.value == "terraform-get"
         end&.attributes&.fetch("content", nil)&.value
+      rescue Excon::Error::Socket, Excon::Error::Timeout => e
+        raise PrivateSourceAuthenticationFailure, host if e.message.include?("no address for")
+
+        raw_source
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
@@ -256,7 +277,7 @@ module Dependabot
         path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
         query_uri = URI.parse(source_string)
         return :http_archive if path_uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-        return :http_archive if query_uri.query.include?("archive=")
+        return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"
       end

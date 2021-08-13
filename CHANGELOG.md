@@ -1,3 +1,201 @@
+## v0.159.0, 4 August 2021
+
+- Remove go dep entirely (@jeffwidman) [#3538](https://github.com/dependabot/dependabot-core/pull/3538)
+- Skip classifier when checking for internal dep (@honnix) [#4117](https://github.com/dependabot/dependabot-core/pull/4117)
+- Improve argument sanitation [#4121](https://github.com/dependabot/dependabot-core/pull/4121)
+
+## v0.158.0, 3 August 2021
+
+- Npm: Bump npm from 7.19.1 to 7.20.3 [#4110](https://github.com/dependabot/dependabot-core/pull/4110)
+- Terraform: Pin fixture to range to prevent tests failing [#4115](https://github.com/dependabot/dependabot-core/pull/4115)
+- build(deps-dev): bump eslint from 7.31.0 to 7.32.0 in /npm_and_yarn/helpers [#4112](https://github.com/dependabot/dependabot-core/pull/4112)
+- build(deps): bump @npmcli/arborist from 2.7.1 to 2.8.0 in /npm_and_yarn/helpers [#4098](https://github.com/dependabot/dependabot-core/pull/4098)
+- build(deps): bump npm from 6.14.13 to 6.14.14 in /npm_and_yarn/helpers [#4099](https://github.com/dependabot/dependabot-core/pull/4099)
+
+## v0.157.2, 28 July 2021
+
+- fix(terraform): exclude path source types in update check [#4097](https://github.com/dependabot/dependabot-core/pull/4097)
+- Document pinned OTP version [#4092](https://github.com/dependabot/dependabot-core/pull/4092)
+
+## v0.157.1, 27 July 2021
+
+- Upgrade elixir to v1.12.2 [#4093](https://github.com/dependabot/dependabot-core/pull/4093)
+- Revert "Elixir version upgrades" [#4091](https://github.com/dependabot/dependabot-core/pull/4091)
+
+## v0.157.0, 26 July 2021
+
+- Elixir version upgrades (@baseballlover723) [#4089](https://github.com/dependabot/dependabot-core/pull/4089)
+
+## v0.156.10, 26 July 2021
+- Make native-mt and agp version types for Maven and Gradle (@greysteil) [#4077](https://github.com/dependabot/dependabot-core/pull/4077)
+- Python: Upgrade pyenv to 2.0.4 [#4086](https://github.com/dependabot/dependabot-core/pull/4086)
+- build(deps-dev): bump phpstan/phpstan from 0.12.92 to 0.12.93 in /composer/helpers/v2 [#4067](https://github.com/dependabot/dependabot-core/pull/4067)
+- build(deps-dev): bump phpstan/phpstan from 0.12.92 to 0.12.93 in /composer/helpers/v1 [#4068](https://github.com/dependabot/dependabot-core/pull/4068)
+
+## v0.156.9, 20 July 2021
+
+- build(deps): bump @npmcli/arborist from 2.7.0 to 2.7.1 in /npm_and_yarn/helpers [#4055](https://github.com/dependabot/dependabot-core/pull/4055)
+- build(deps-dev): bump eslint from 7.30.0 to 7.31.0 in /npm_and_yarn/helpers [#4060](https://github.com/dependabot/dependabot-core/pull/4060)
+- npm: prevent scoped registries becoming global [#4061](https://github.com/dependabot/dependabot-core/pull/4061)
+
+## v0.156.8, 15 July 2021
+
+- Terraform: ignore symlinks in file fetcher [#4053](https://github.com/dependabot/dependabot-core/pull/4053)
+- Bump npm from 7.10.0 to 7.19.1 [#4052](https://github.com/dependabot/dependabot-core/pull/4052)
+- Dry-run: cache cloned repos [#4050](https://github.com/dependabot/dependabot-core/pull/4050)
+
+## v0.156.7, 15 July 2021
+
+- Terraform: support updating local path modules [#4048](https://github.com/dependabot/dependabot-core/pull/4048)
+- build(deps): bump cython from 0.29.23 to 0.29.24 in /python/helpers [#4047](https://github.com/dependabot/dependabot-core/pull/4047)
+- build(deps): bump @npmcli/arborist from 2.6.4 to 2.7.0 in /npm_and_yarn/helpers [#4046](https://github.com/dependabot/dependabot-core/pull/4046)
+
+## v0.156.6, 13 July 2021
+
+- Terraform: handle mixed case providers [#4044](https://github.com/dependabot/dependabot-core/pull/4044)
+
+## v0.156.5, 12 July 2021
+
+- fix(poetry): Detect relative project paths [#4018](https://github.com/dependabot/dependabot-core/pull/4018)
+- Add Forbidden error type to Azure client (@wolf-cola) [#4029](https://github.com/dependabot/dependabot-core/pull/4029)
+- build(deps-dev): bump phpstan/phpstan from 0.12.90 to 0.12.92 in /composer/helpers/v2 [#4036](https://github.com/dependabot/dependabot-core/pull/4036)
+- build(deps-dev): bump jest from 27.0.5 to 27.0.6 in /npm_and_yarn/helpers [#4003](https://github.com/dependabot/dependabot-core/pull/4003)
+- build(deps-dev): bump eslint from 7.29.0 to 7.30.0 in /npm_and_yarn/helpers [#4021](https://github.com/dependabot/dependabot-core/pull/4021)
+- build(deps-dev): bump phpstan/phpstan from 0.12.90 to 0.12.92 in /composer/helpers/v1 [#4037](https://github.com/dependabot/dependabot-core/pull/4037)
+- Gomod: Handle unrecognized import path error [#4016](https://github.com/dependabot/dependabot-core/pull/4016)
+- Fix for Azure client trying to parse 401 responses (@wolf-cola) [#4012](https://github.com/dependabot/dependabot-core/pull/4012)
+
+## v0.156.4, 30 June 2021
+
+- build(deps): bump @npmcli/arborist from 2.6.3 to 2.6.4 in /npm_and_yarn/helpers [#3988](https://github.com/dependabot/dependabot-core/pull/3988)
+- build(deps-dev): update rubocop requirement from ~> 1.17.0 to ~> 1.18.0 in /common [#4004](https://github.com/dependabot/dependabot-core/pull/4004)
+- fix(Maven): Add support for updating Maven extensions.xml files (@britter) [#3366](https://github.com/dependabot/dependabot-core/pull/3366)
+
+## v0.156.3, 29 June 2021
+
+- Python: bump poetry from 1.1.6 to 1.1.7 in /python/helpers [#3996](https://github.com/dependabot/dependabot-core/pull/3996)
+- Python: bump pip from 21.1.2 to 21.1.3 in /python/helpers [#3997](https://github.com/dependabot/dependabot-core/pull/3997)
+- PR Updater: Handle required status checks [#3998](https://github.com/dependabot/dependabot-core/pull/3998)
+
+## v0.156.2, 25 June 2021
+
+- poetry: skip path and url dependencies [#3991](https://github.com/dependabot/dependabot-core/pull/3991)
+- Terraform: Prevent `terraform init` from initializing backends (@hfurubotten) [#3986](https://github.com/dependabot/dependabot-core/pull/3986)
+
+## v0.156.1, 24 June 2021
+
+- Terraform: Configure git for `terraform init` and capture errors [#3983](https://github.com/dependabot/dependabot-core/pull/3983)
+- build(deps-dev): update rubocop requirement from ~> 1.16.0 to ~> 1.17.0 in /common [#3912](https://github.com/dependabot/dependabot-core/pull/3912)
+
+## v0.156.0, 23 June 2021
+
+- Create changelog from merge commits [#3642](https://github.com/dependabot/dependabot-core/pull/3642)
+- Terraform: always clone repository contents [#3978](https://github.com/dependabot/dependabot-core/pull/3978)
+- build(deps): bump pip-tools from 6.1.0 to 6.2.0 in /python/helpers [#3974](https://github.com/dependabot/dependabot-core/pull/3974)
+- Hex: Adds support for sub-projects without the need for umbrella applications (@gjsduarte) [#3944](https://github.com/dependabot/dependabot-core/pull/3944)
+
+## v0.155.1, 23 June 2021
+
+- Terraform: fix module updates with a lockfile
+- nuget: handle RepositoryDetails without BaseAddress
+- bundler: GemspecSanitizer replace interpolated strings
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+
+## v0.155.0, 22 June 2021
+
+- Go: add security advisories
+- Devcontainer: do not rename gemspec
+- docker-dev-shell: do not rename gemspec
+
+## v0.154.5, 22 June 2021
+
+- Terraform: install modules when updating lockfile
+
+## v0.154.4, 22 June 2021
+
+- Terraform: handle nested module sources
+- Common: refactor filter_vulnerable_version into a separate module
+- Bundler: ignore invalid auth_uri
+
+## v0.154.3, 21 June 2021
+
+- Terraform: handle missing source
+- Terraform: handle unreachable private module proxy
+- Terraform: handle dependencies without a namespace
+- fix: Fetches upload-pack using git if http fails
+- chore: shellcheck scripts
+- chore: Replace wget with curl @PeterDaveHello
+- chore: Double quote shell variables in Dockerfile @PeterDaveHello
+- Returns basename and relative path in CodeCommit file fetcher @lorengordon
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1 and /composer/helpers/v2
+- build(deps): update commonmarker requirement from >= 0.20.1, < 0.22.0 to >= 0.20.1, < 0.23.0
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
+## v0.154.2, 17 June 2021
+
+- Terraform: Handle 401 registry responses
+- Github actions: Handle no latest version found
+- Python: Fix ruby 2.7 deprecations
+- Double quote variables in shellscript @PeterDaveHello
+- Add `--no-install-recommends` to all `apt-get install` in Dockerfile @PeterDaveHello
+
+## v0.154.1, 16 June 2021
+
+- Ruby: Fix 2.7 deprecation warnings in rubygems
+- Bundler: Run native helper specs
+
+## v0.154.0, 15 June 2021
+
+- Update ruby from 2.6 to 2.7
+- Bundler: add missing specs from bundler1 and load bundler2 fixtures
+- Dockerfile improvements @PeterDaveHello
+  - Set SHELL option for shell pipe
+  - Add missing `-y` for apt-get install
+  - Fix npm cache clean up
+  - Add missing apt lists clean up
+
+## v0.153.0, 14 June 2021
+
+- Bundler: Upgrade rubygems to 3.2.20 and bundler to 2.2.20
+- Python: Upgrade pyenv to 2.0.1 to add support for Python 3.9.5
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v1
+- build(deps-dev): bump phpstan/phpstan in /composer/helpers/v2
+- build(deps): bump composer/composer in /composer/helpers/v2
+
+## v0.152.1, 11 June 2021
+
+- Tests: Allow profiling tests with stackprof when tagged
+- Throw an error when using the deprecated terraform provider syntax, include upgrade instructions
+- Update `bump-version` with instructions to checkout the new branch
+
+## v0.152.0, 10 June 2021
+
+- Python: Upgrade pip to 21.1.2
+- Python: Upgrade pip-tools to 6.1.0
+- Python: Drop python 2.x support
+- Python: Upgrade pipenv to 2021.5.29
+- Terraform: Add support for lockfiles
+- Terraform: Upgrade and pin Terraform to version 1.0.0
+
+## v0.151.1, 7 June 2021
+
+fix(npm): Prevent unnecessary hash pinning in lock file constraint
+
+## v0.151.0, 7 June 2021
+
+- Pin erlang to OTP 23 until we can resolve OTP 24 warning issues
+- build(deps-dev): bump friendsofphp/php-cs-fixer in /composer/helpers/v2
+
+## v0.150.0, 7 June 2021
+
+- build(deps): bump composer/composer from 2.0.14 to 2.1.1 in /composer/helpers/v2
+- build(deps-dev): bump jest in /npm_and_yarn/helpers
+- build(deps-dev): bump eslint in /npm_and_yarn/helpers
+- build(deps-dev): bump prettier in /npm_and_yarn/helpers
+- build(deps): bump dependabot/fetch-metadata from 1.0.2 to 1.0.3
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
+
 ## v0.149.5, 2 June 2021
 
 - build(deps): bump detect-indent in /npm_and_yarn/helpers

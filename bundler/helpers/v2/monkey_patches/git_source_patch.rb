@@ -40,9 +40,7 @@ module Bundler
         $LOAD_PATH.shift until $LOAD_PATH.empty?
         reduced_load_paths.each { |p| $LOAD_PATH << p }
 
-        if destination.relative?
-          destination = destination.expand_path(Bundler.root)
-        end
+        destination = destination.expand_path(Bundler.root) if destination.relative?
         Dir["#{destination}/#{@glob}"].each do |spec_path|
           # Evaluate gemspecs and cache the result. Gemspecs
           # in git might require git or other dependencies.

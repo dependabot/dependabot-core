@@ -25,7 +25,7 @@ module Dependabot
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git fetch .*: exit status 128/.freeze,
+          /go: .*: git fetch .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
@@ -35,7 +35,9 @@ module Dependabot
           /go: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze
+          /go: .*: unknown revision/m.freeze,
+          # Package pointing to a proxy that 404s
+          /go: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
@@ -170,6 +172,8 @@ module Dependabot
             version = "v" + dep.version.sub(/^v/i, "")
             command << " #{dep.name}@#{version}"
           end
+          command = SharedHelpers.escape_command(command)
+
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
@@ -235,6 +239,10 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error_message
           end
 
+          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
+          end
+
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
             error_message = filter_error_message(message: stderr, regex: repo_error_regex)
@@ -252,10 +260,6 @@ module Dependabot
           if out_of_disk_regex
             error_message = filter_error_message(message: stderr, regex: out_of_disk_regex)
             raise Dependabot::OutOfDisk.new, error_message
-          end
-
-          if (matches = stderr.match(/Authentication failed for '(?<url>.+)'/))
-            raise Dependabot::PrivateSourceAuthenticationFailure, matches[:url]
           end
 
           # We don't know what happened so we raise a generic error

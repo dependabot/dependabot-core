@@ -7,7 +7,7 @@
 Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
-2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
+2. It is the public issue tracker for issues related to Dependabot's updating logic. For issues about Dependabot the service, please contact [GitHub support][support]. While the distinction between Dependabot Core and the service can be fuzzy, a good rule of thumb is if your issue is with the _diff_ that Dependabot created, it belongs here and for most other things the GitHub support team is best equipped to help you.
 
 ## Got feedback?
 
@@ -183,10 +183,11 @@ and you'll get all you need.
 
 ## Profiling
 
-You can profile a dry-run by passing the `--profile` flag when running it. This
-will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you
-can generate a flamegraph from this by running:
-`stackprof --d3-flamegraph tmp/stackprof-<datetime>.dump > tmp/flamegraph.html`.
+You can profile a dry-run by passing the `--profile` flag when running it, or
+tag an rspec test with `:profile`. This will generate a
+`stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a
+flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html`.
 
 ## Why is this public?
 
@@ -234,3 +235,4 @@ recurring payments from Europe, check them out.
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
+[support]: https://support.github.com/

@@ -137,6 +137,8 @@ function installArgs(
     // requirement when installing the new version
     if (existingVersionRequirement.match(desiredVersion)) {
       return `${depName}@${existingVersionRequirement}`;
+    } else if (!existingVersionRequirement.includes("#")) {
+      return `${depName}@${existingVersionRequirement}`;
     } else {
       return `${depName}@${existingVersionRequirement.replace(
         /#.*/,

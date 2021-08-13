@@ -3,6 +3,7 @@
 require "excon"
 
 require "dependabot/bundler/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/bundler/requirement"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
@@ -55,7 +56,8 @@ module Dependabot
 
           relevant_versions = dependency_source.versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
-          relevant_versions = filter_vulnerable_versions(relevant_versions)
+          relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
+                                                                                                    security_advisories)
           relevant_versions = filter_ignored_versions(relevant_versions)
           relevant_versions = filter_lower_versions(relevant_versions)
 
@@ -78,11 +80,6 @@ module Dependabot
           filtered
         end
 
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
-        end
-
         def filter_lower_versions(versions_array)
           return versions_array unless dependency.version && Gem::Version.correct?(dependency.version)
 
@@ -96,11 +93,11 @@ module Dependabot
               current_version = dependency.version
               if current_version && Gem::Version.correct?(current_version) &&
                  Gem::Version.new(current_version).prerelease?
-                return true
-              end
-
-              dependency.requirements.any? do |req|
-                req[:requirement].match?(/[a-z]/i)
+                true
+              else
+                dependency.requirements.any? do |req|
+                  req[:requirement].match?(/[a-z]/i)
+                end
               end
             end
         end

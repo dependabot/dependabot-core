@@ -500,4 +500,44 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
   end
+
+  context "when updating a git source dependency that is not pinned to a hash" do
+    subject { JSON.parse(updated_npm_lock_content) }
+
+    let(:files) { project_dependency_files("npm6/ghpr_no_hash_pinning") }
+    let(:dependency_name) { "discord.js" }
+    let(:version) { "HEAD" }
+    let(:previous_version) { "ab82cafcde0ee259a32ef14303c1b4a64dea8fae" }
+    let(:requirements) do
+      [{
+        file: "package.json",
+        requirement: nil,
+        groups: ["dependencies"],
+        source: {
+          type: "git",
+          url: "https://github.com/discordjs/discord.js",
+          branch: nil,
+          ref: "master"
+        }
+      }]
+    end
+    let(:previous_requirements) do
+      [{
+        file: "package.json",
+        requirement: nil,
+        groups: ["dependencies"],
+        source: {
+          type: "git",
+          url: "https://github.com/discordjs/discord.js",
+          branch: nil,
+          ref: "master"
+        }
+      }]
+    end
+
+    it "pins the version to a hash and ensures that the `from` field matches the original constraint" do
+      expect(subject["dependencies"]["discord.js"]["version"]).to match(%r{github:discordjs/discord.js#[0-9a-z]{40}})
+      expect(subject["dependencies"]["discord.js"]["from"]).to eq("github:discordjs/discord.js")
+    end
+  end
 end

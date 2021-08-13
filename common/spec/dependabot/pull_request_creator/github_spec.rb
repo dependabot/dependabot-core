@@ -338,10 +338,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when we got a 401" do
       before do
-        service_pack_url =
-          "https://github.com/gocardless/bump.git/info/refs"\
-          "?service=git-upload-pack"
+        url = "https://github.com/gocardless/bump.git"
+        service_pack_url = "#{url}/info/refs?service=git-upload-pack"
+
         stub_request(:get, service_pack_url).to_return(status: 401)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it "raises a normal error" do
@@ -356,10 +360,14 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
                     body: fixture("github", "bump_repo.json"),
                     headers: json_header)
 
-        service_pack_url =
-          "https://github.com/gocardless/bump.git/info/refs"\
-          "?service=git-upload-pack"
+        url = "https://github.com/gocardless/bump.git"
+        service_pack_url = "#{url}/info/refs?service=git-upload-pack"
+
         stub_request(:get, service_pack_url).to_return(status: 404)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it "raises a normal error" do
@@ -369,15 +377,19 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
 
     context "when the repo exists but is disabled" do
       before do
-        service_pack_url =
-          "https://github.com/gocardless/bump.git/info/refs"\
-          "?service=git-upload-pack"
+        url = "https://github.com/gocardless/bump.git"
+        service_pack_url = "#{url}/info/refs?service=git-upload-pack"
+
         stub_request(:get, service_pack_url).
           to_return(
             status: 403,
             body: "Account `gocardless' is disabled. Please ask the owner to "\
                   "check their account."
           )
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it "raises a helpful error" do

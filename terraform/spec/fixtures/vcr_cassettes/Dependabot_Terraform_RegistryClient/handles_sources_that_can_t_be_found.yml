@@ -1,0 +1,123 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://registry.terraform.io/.well-known/terraform.json
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.154.2 excon/0.82.0 ruby/2.7.3 (x86_64-darwin19) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '65'
+      server:
+      - Cowboy
+      cache-control:
+      - public, max-age=3600, stale-if-error=31536000
+      content-encoding:
+      - ''
+      content-security-policy:
+      - 'default-src ''self''; script-src ''self'' ''unsafe-inline'' https://www.google-analytics.com
+        https://cdn.segment.com https://www.googletagmanager.com https://a.optnmstr.com;
+        style-src ''self'' ''unsafe-inline'' https://maxcdn.bootstrapcdn.com https://fonts.googleapis.com
+        https://p.typekit.net https://use.typekit.net; img-src ''self'' data: https:
+        https://www.google-analytics.com; font-src ''self'' https://maxcdn.bootstrapcdn.com
+        https://fonts.googleapis.com https://fonts.gstatic.com https://use.typekit.net;
+        connect-src ''self'' https://www.google-analytics.com https://api.segment.io
+        https://sentry.io https://api.omappapi.com https://api.opmnstr.com https://api.optmnstr.com
+        https://*.algolia.net https://*.algolianet.com'
+      content-type:
+      - application/json
+      feature-policy:
+      - ''
+      last-modified:
+      - Fri, 18 Jun 2021 14:48:43 GMT
+      referrer-policy:
+      - no-referrer-when-downgrade
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+      x-registry-fastboot:
+      - 'false'
+      x-xss-protection:
+      - 1; mode=block
+      via:
+      - 1.1 vegur, 1.1 varnish, 1.1 varnish
+      accept-ranges:
+      - bytes
+      date:
+      - Mon, 21 Jun 2021 12:46:30 GMT
+      age:
+      - '1494'
+      x-served-by:
+      - cache-dca17760-DCA, cache-lhr7346-LHR
+      x-cache:
+      - HIT, HIT
+      x-cache-hits:
+      - 1, 31
+      vary:
+      - Accept-Encoding
+    body:
+      encoding: UTF-8
+      string: '{"modules.v1":"/v1/modules/","providers.v1":"/v1/providers/"}
+
+        '
+  recorded_at: Mon, 21 Jun 2021 12:46:30 GMT
+- request:
+    method: get
+    uri: https://registry.terraform.io/v1/modules/dependabot/package/0.9.3
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.154.2 excon/0.82.0 ruby/2.7.3 (x86_64-darwin19) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 404
+      message: Not Found
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '49'
+      server:
+      - Cowboy
+      content-encoding:
+      - ''
+      content-type:
+      - application/json
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      via:
+      - 1.1 vegur, 1.1 varnish, 1.1 varnish
+      accept-ranges:
+      - bytes
+      date:
+      - Mon, 21 Jun 2021 12:46:30 GMT
+      x-served-by:
+      - cache-dca17779-DCA, cache-lhr7358-LHR
+      x-cache:
+      - MISS, MISS
+      x-cache-hits:
+      - 0, 0
+      vary:
+      - Accept-Encoding
+    body:
+      encoding: UTF-8
+      string: '{"errors":["Not Found"]}
+
+        '
+  recorded_at: Mon, 21 Jun 2021 12:46:30 GMT
+recorded_with: VCR 6.0.0

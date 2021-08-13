@@ -601,6 +601,43 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
     end
 
+    context "the updated extensions.xml file" do
+      let(:dependency_files) { [pom, extensions] }
+      let(:extensions) do
+        Dependabot::DependencyFile.new(
+          name: "extensions.xml",
+          content: fixture("extensions", "extensions.xml")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "io.takari.polyglot:polyglot-yaml",
+          version: "0.4.7",
+          requirements: [{
+            file: "extensions.xml",
+            requirement: "0.4.7",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "extensions.xml",
+            requirement: "0.4.6",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "extensions.xml" }
+      end
+
+      its(:content) { is_expected.to include("<version>0.4.7</version>") }
+    end
+
     context "with a multimodule pom" do
       let(:dependency_files) do
         [

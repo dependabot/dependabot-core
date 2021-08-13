@@ -26,8 +26,7 @@ end
 LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
 
 def project_dependency_files(project)
-  # TODO: Retrieve files from bundler2 folder once it is fully up to date
-  project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler1", project))
+  project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler2", project))
 
   raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
 
@@ -37,9 +36,7 @@ def project_dependency_files(project)
     files = files.select { |f| File.file?(f) }
     files.map do |filename|
       content = File.read(filename)
-      if filename == "Gemfile.lock"
-        content = content.gsub(LOCKFILE_ENDING, "")
-      end
+      content = content.gsub(LOCKFILE_ENDING, "") if filename == "Gemfile.lock"
       {
         name: filename,
         content: content

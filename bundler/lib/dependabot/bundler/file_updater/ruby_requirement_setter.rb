@@ -50,10 +50,10 @@ module Dependabot
         end
 
         def ruby_version
-          requirement = if !ruby_requirement.is_a?(Gem::Requirement)
-                          Dependabot::Bundler::Requirement.new(ruby_requirement)
-                        else
+          requirement = if ruby_requirement.is_a?(Gem::Requirement)
                           ruby_requirement
+                        else
+                          Dependabot::Bundler::Requirement.new(ruby_requirement)
                         end
 
           ruby_version =
