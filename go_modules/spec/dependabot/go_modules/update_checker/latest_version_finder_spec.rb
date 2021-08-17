@@ -51,12 +51,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
+      credentials: [],
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       raise_on_ignored: raise_on_ignored
