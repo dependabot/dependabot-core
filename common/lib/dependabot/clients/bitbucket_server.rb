@@ -55,7 +55,7 @@ module Dependabot
 
       def commits(repo, branch_name = nil)
         # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp222
-        commits_path = "projects/#{@source.namespace}/repos/#{repo}/commits?since=#{branch_name}&limit=100"
+        commits_path = "projects/#{@source.namespace}/repos/#{repo}/commits?since=#{branch_name}"
         next_page_url = base_url + commits_path
         paginate({ "next" => next_page_url })
       end
@@ -87,7 +87,7 @@ module Dependabot
         end
       end
 
-      def create_commit(repo, branch_name, base_commit, commit_message, files)
+      def create_commit(repo, branch_name, base_commit, commit_message, files, _author)
         # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp218
         branch = self.branch(repo, branch_name)
         if branch.nil?
@@ -113,7 +113,7 @@ module Dependabot
           response = put(base_url + commit_path, multipart_data.fetch("body"), multipart_data.fetch("header_value"))
 
           brand_details = JSON.parse(response.body)
-          next if brand_details.fetch("errors", []).empty?
+          next if !brand_details.fetch("errors", []).empty?
 
           source_commit_id = brand_details.fetch("id")
           source_branch = brand_details.fetch("displayId")
@@ -212,16 +212,20 @@ module Dependabot
       def paginate(page)
         start = 0
         limit = 100
+        uri_template = page.fetch("next")
+
         Enumerator.new do |yielder|
           loop do
             page.fetch("values", []).each { |value| yielder << value }
             break if page.fetch("isLastPage", false)
 
-            uri = URI(page.fetch("next"))
+            uri = URI(uri_template)
             uri.query = [uri.query, "start=#{start}&limit=#{limit}"].compact.join("&")
             next_page_url = uri.to_s
 
             page = JSON.parse(get(next_page_url).body)
+            page["next"] = uri_template # preserve uri template
+
             start = page.fetch("nextPageStart") if page.key?("nextPageStart") && !page.fetch("nextPageStart").nil?
           end
         end
