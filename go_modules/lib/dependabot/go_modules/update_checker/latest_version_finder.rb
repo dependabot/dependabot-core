@@ -19,7 +19,9 @@ module Dependabot
           # Package url 404s
           /404 Not Found/,
           /Repository not found/,
-          /unrecognized import path/
+          /unrecognized import path/,
+          # (Private) module could not be fetched
+          /module .*: git ls-remote .*: exit status 128/m.freeze
         ].freeze
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
