@@ -659,20 +659,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           end
         end
       end
-
-      context "with github credentials" do
-        let(:credentials) { github_credentials }
-
-        it "raises the correct error" do
-          error_class = Dependabot::GitDependenciesNotReachable
-          expect { updater.updated_go_sum_content }.
-            to raise_error(error_class) do |error|
-            expect(error.message).to include("dependabot-fixtures/go-modules-private")
-            expect(error.dependency_urls).
-              to eq(["github.com/dependabot-fixtures/go-modules-private"])
-          end
-        end
-      end
     end
 
     context "with an unreachable sub-dependency" do
