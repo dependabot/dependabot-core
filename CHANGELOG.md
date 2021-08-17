@@ -1,3 +1,9 @@
+## v0.159.2, 17 August 2021
+
+- Bump go from 1.16.3 to 1.16.7 [#4145](https://github.com/dependabot/dependabot-core/pull/4145)
+- Handle unreachable go module dependencies in LatestVersionFinder [#4142](https://github.com/dependabot/dependabot-core/pull/4142)
+- Fix failing go modules tests [#4141](https://github.com/dependabot/dependabot-core/pull/4141)
+
 ## v0.159.1, 12 August 2021
 
 - gomod: Handle errors where go module dependencies are unreachable [#4130](https://github.com/dependabot/dependabot-core/pull/4130)
