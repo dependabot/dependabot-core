@@ -9,7 +9,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
-      credentials: empty_credentials,
+      credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
       options: { tidy: tidy, vendor: false }
@@ -22,7 +22,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:tidy) { true }
   let(:directory) { "/" }
 
-  let(:empty_credentials) { [] }
+  let(:credentials) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -638,6 +638,25 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
           expect(error.dependency_urls).
             to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => ""
+          }]
+        end
+
+        it "raises the correct error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { updater.updated_go_sum_content }.
+            to raise_error(error_class) do |error|
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          end
         end
       end
     end

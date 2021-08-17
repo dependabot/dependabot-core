@@ -134,13 +134,6 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         }]
       end
 
-      it "raises a helpful error" do
-        expect { updated_files }.to raise_error(
-          Dependabot::PrivateSourceAuthenticationFailure,
-          %r{github\.com/mholt/caddy}
-        )
-      end
-
       context "with github credentials" do
         let(:credentials) { github_credentials }
 
