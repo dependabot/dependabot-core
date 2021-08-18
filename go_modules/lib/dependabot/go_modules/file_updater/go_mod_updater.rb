@@ -138,7 +138,7 @@ module Dependabot
 
         def run_go_mod_tidy
           return unless tidy?
-          
+
           ## Compatibility of go1.17 and older versions.
           ## https://golang.org/doc/go1.17#:~:text=by%20other%20commands.-,The%20-compat%20flag,-allows%20that%20version
           command = "go mod tidy -compat=1.17 -e"
