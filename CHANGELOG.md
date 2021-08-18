@@ -1,3 +1,8 @@
+## v0.160.0, 18 August 2021
+
+- Bump go from 1.16.7 to 1.17 (@obalunenko) [#4149](https://github.com/dependabot/dependabot-core/pull/4149)
+- build(deps): bump golang.org/x/mod from 0.4.2 to 0.5.0 in /go_modules/helpers [#4139](https://github.com/dependabot/dependabot-core/pull/4139)
+
 ## v0.159.2, 17 August 2021
 
 - Bump go from 1.16.3 to 1.16.7 [#4145](https://github.com/dependabot/dependabot-core/pull/4145)
