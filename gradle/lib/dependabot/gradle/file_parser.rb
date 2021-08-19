@@ -298,13 +298,17 @@ module Dependabot
         end
       end
 
+      def self.find_includes(buildfile, dependency_files)
+        buildfile.content.
+          scan(/apply from(\s+=|:)\s+['"]([^'"]+)['"]/).flatten.
+          map { |f| dependency_files.find { |bf| bf.name == f } }.
+          compact
+      end
+
       def script_plugin_files
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
-            buildfile.content.
-              scan(/apply from(\s+=|:)\s+['"]([^'"]+)['"]/).flatten.
-              map { |f| dependency_files.find { |bf| bf.name == f } }.
-              compact
+            FileParser.find_includes(buildfile, dependency_files)
           end.
           uniq
       end
