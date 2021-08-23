@@ -2022,8 +2022,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           parsed_lockfile = JSON.parse(lockfile.content)
           expect(parsed_lockfile["dependencies"]["lodash"]["version"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["other_package"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["package1"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["other_package"]["requires"]["lodash"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["package1"]["requires"]["lodash"]).to eq("1.3.1")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package1.content).to include('"lodash": "^1.3.1"')
