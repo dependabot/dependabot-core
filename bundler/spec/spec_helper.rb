@@ -20,12 +20,16 @@ module PackageManagerHelper
   end
 
   def self.bundler_version
-    use_bundler_2? ? "2" : "1"
+    use_bundler_2? ? "2.2.26" : "1.17.3"
+  end
+
+  def self.bundler_major_version
+    bundler_version.split(".").first
   end
 end
 
 def bundler_project_dependency_files(project)
-  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project))
+  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_major_version}", project))
 end
 
 def bundler_project_dependency_file(project, filename:)
