@@ -1064,7 +1064,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             version: "0.0.11",
             previous_version: "0.0.6",
             requirements: [{
-              requirement: ">= 0.0.11",
+              requirement: ">= 0.0.11, < 0.0.12",
               groups: [],
               file: "providers.tf",
               source: {
@@ -1074,7 +1074,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               }
             }],
             previous_requirements: [{
-              requirement: ">= 0.0.6",
+              requirement: ">= 0.0.6, < 0.0.12",
               groups: [],
               file: "providers.tf",
               source: {

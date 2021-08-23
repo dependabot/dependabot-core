@@ -23,7 +23,6 @@ jobs:
         - { path: cargo, name: cargo }
         - { path: common, name: common }
         - { path: composer, name: composer }
-        - { path: dep, name: dep }
         - { path: docker, name: docker }
         - { path: elm, name: elm }
         - { path: git_submodules, name: git_submodules }

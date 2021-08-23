@@ -51,12 +51,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
+      credentials: [],
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
       raise_on_ignored: raise_on_ignored
@@ -187,6 +182,28 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         expect { finder.latest_version }.
           to raise_error(error_class) do |error|
           expect(error.message).to include("pkg-errors")
+        end
+      end
+    end
+
+    context "when the module is unreachable" do
+      let(:dependency_files) { [go_mod] }
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-private" }
+      let(:dependency_version) { "1.0.0" }
+      let(:go_mod) do
+        Dependabot::DependencyFile.new(
+          name: "go.mod",
+          content: fixture("projects", "unreachable_dependency", "go.mod")
+        )
+      end
+
+      it "raises a GitDependenciesNotReachable error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end

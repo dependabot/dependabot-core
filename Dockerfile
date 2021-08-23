@@ -101,7 +101,7 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.19.1 \
+  && npm install -g npm@v7.20.3 \
   && rm -rf ~/.npm
 
 
@@ -166,20 +166,15 @@ USER root
 
 ### GO
 
-# Install Go and dep
-ARG GOLANG_VERSION=1.16.3
-ARG GOLANG_CHECKSUM=951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2
-ENV PATH=/opt/go/bin:$PATH \
-  GOPATH=/opt/go/gopath
+# Install Go
+ARG GOLANG_VERSION=1.17
+ARG GOLANG_CHECKSUM=6bf89fc4f5ad763871cf7eac80a2d594492de7a818303283f1366a7f6a30372d
+ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
-  && rm go.tar.gz \
-  && mkdir "$GOPATH" \
-  && chown dependabot:dependabot "$GOPATH" \
-  && curl -sSLfo /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep
+  && rm go.tar.gz
 
 
 ### ELIXIR
@@ -232,7 +227,6 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 USER root
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
@@ -241,7 +235,7 @@ COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
+  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
@@ -249,7 +243,6 @@ RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/dep/helpers/build /opt/dep
 RUN bash /opt/go_modules/helpers/build /opt/go_modules
 RUN bash /opt/hex/helpers/build /opt/hex
 RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn

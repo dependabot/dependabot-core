@@ -1,3 +1,32 @@
+## v0.160.0, 18 August 2021
+
+- Bump go from 1.16.7 to 1.17 (@obalunenko) [#4149](https://github.com/dependabot/dependabot-core/pull/4149)
+- build(deps): bump golang.org/x/mod from 0.4.2 to 0.5.0 in /go_modules/helpers [#4139](https://github.com/dependabot/dependabot-core/pull/4139)
+
+## v0.159.2, 17 August 2021
+
+- Bump go from 1.16.3 to 1.16.7 [#4145](https://github.com/dependabot/dependabot-core/pull/4145)
+- Handle unreachable go module dependencies in LatestVersionFinder [#4142](https://github.com/dependabot/dependabot-core/pull/4142)
+- Fix failing go modules tests [#4141](https://github.com/dependabot/dependabot-core/pull/4141)
+
+## v0.159.1, 12 August 2021
+
+- gomod: Handle errors where go module dependencies are unreachable [#4130](https://github.com/dependabot/dependabot-core/pull/4130)
+
+## v0.159.0, 4 August 2021
+
+- Remove go dep entirely (@jeffwidman) [#3538](https://github.com/dependabot/dependabot-core/pull/3538)
+- Skip classifier when checking for internal dep (@honnix) [#4117](https://github.com/dependabot/dependabot-core/pull/4117)
+- Improve argument sanitation [#4121](https://github.com/dependabot/dependabot-core/pull/4121)
+
+## v0.158.0, 3 August 2021
+
+- Npm: Bump npm from 7.19.1 to 7.20.3 [#4110](https://github.com/dependabot/dependabot-core/pull/4110)
+- Terraform: Pin fixture to range to prevent tests failing [#4115](https://github.com/dependabot/dependabot-core/pull/4115)
+- build(deps-dev): bump eslint from 7.31.0 to 7.32.0 in /npm_and_yarn/helpers [#4112](https://github.com/dependabot/dependabot-core/pull/4112)
+- build(deps): bump @npmcli/arborist from 2.7.1 to 2.8.0 in /npm_and_yarn/helpers [#4098](https://github.com/dependabot/dependabot-core/pull/4098)
+- build(deps): bump npm from 6.14.13 to 6.14.14 in /npm_and_yarn/helpers [#4099](https://github.com/dependabot/dependabot-core/pull/4099)
+
 ## v0.157.2, 28 July 2021
 
 - fix(terraform): exclude path source types in update check [#4097](https://github.com/dependabot/dependabot-core/pull/4097)
