@@ -29,7 +29,8 @@ func GetVersions(args *Args) (interface{}, error) {
 
 	currentVersion := args.Dependency.Version
 
-	modload.LoadModFile(context.Background())
+	modload.DisallowWriteGoMod()
+	_ = modload.LoadModFile(context.Background())
 
 	repo := modfetch.Lookup("direct", args.Dependency.Name)
 	versions, err := repo.Versions("")
