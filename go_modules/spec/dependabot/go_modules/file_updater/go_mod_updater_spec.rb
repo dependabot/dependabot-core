@@ -98,6 +98,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_1.13" }
 
           it { is_expected.to include("go 1.13") }
+
+          it "doesn't add additional go 1.17 requirement sections" do
+            is_expected.to include("require").once
+          end
+        end
+
+        context "for a go 1.17 go.mod" do
+          let(:project_name) { "go_1.17" }
+
+          it { is_expected.to include("go 1.17") }
+
+          it "preserves the two requirements sections" do
+            is_expected.to include("require").twice
+          end
         end
 
         context "when a retract directive is present" do
