@@ -154,7 +154,7 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-zmq \
     php7.4-mcrypt \
     php7.4-opcache \
-  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /var/lib/apt/lists/*
 
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
