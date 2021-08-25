@@ -3,3 +3,5 @@ branch: master
 gchat_hook: ((gchat_hook_integration_team))
 trigger: true
 disable_on_feature: false
+docker_tag: latest
+docker_tag_add_file: version/date.txt

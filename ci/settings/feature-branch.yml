@@ -4,3 +4,4 @@ trigger: false
 pr_bot_triggered_jobs:
     - test-dependabot
 disable_on_feature: true
+docker_tag_add_file:
