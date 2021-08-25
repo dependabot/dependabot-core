@@ -247,8 +247,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2
+RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
 RUN bash /opt/dep/helpers/build /opt/dep
