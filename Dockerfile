@@ -8,6 +8,8 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
+RUN export MAKEFLAGS="-j $(nproc)"
+
 # Everything from `make` onwards in apt-get install is only installed to ensure
 # Python support works with all packages (which may require specific libraries
 # at install time).
