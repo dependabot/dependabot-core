@@ -246,7 +246,6 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
   MIX_HOME="/opt/hex/mix"
 
-USER dependabot
 RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
@@ -259,6 +258,7 @@ RUN bash /opt/terraform/helpers/build /opt/terraform
 RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
 RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
 
+USER dependabot
 ENV HOME="/home/dependabot"
 
 WORKDIR ${HOME}
