@@ -71,7 +71,7 @@ resources:
       tag: ((docker_tag))
 
 jobs:
-  - name: test-dependabot
+  - name: build-test-deploy-dependabot
     on_success:
       put: gh-status
       inputs: [dependabot-core.git]
