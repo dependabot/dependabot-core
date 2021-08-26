@@ -1,3 +1,9 @@
+## v0.160.1, 25 August 2021
+
+- build(deps): bump github.com/dependabot/gomodules-extracted from 1.3.0 to 1.4.1 in /go_modules/helpers [#4157](https://github.com/dependabot/dependabot-core/pull/4157)
+- Add a minimal test for go 1.17 module handling [#4159](https://github.com/dependabot/dependabot-core/pull/4159)
+- Bump bundler from 2.2.20 to 2.2.25 [#4132](https://github.com/dependabot/dependabot-core/pull/4132)
+
 ## v0.160.0, 18 August 2021
 
 - Bump go from 1.16.7 to 1.17 (@obalunenko) [#4149](https://github.com/dependabot/dependabot-core/pull/4149)
