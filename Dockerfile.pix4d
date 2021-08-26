@@ -83,10 +83,13 @@ WORKDIR /home/dependabot/pix4d-dependabot/
 RUN bundle config build.nokogiri --use-system-libraries
 RUN bundle install
 
-### Run rubocop and rspec tests (missing: run rspec also in pix4d-dependabot)
+### Run rubocop and rspec tests
 RUN bundle exec rubocop -c ../.rubocop.yml ../
 
 WORKDIR /home/dependabot/docker/
+RUN bundle exec rspec .
+
+WORKDIR /home/dependabot/pix4d-dependabot/
 RUN bundle exec rspec .
 
 WORKDIR /home/dependabot/
