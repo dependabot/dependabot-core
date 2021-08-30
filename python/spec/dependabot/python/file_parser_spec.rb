@@ -1317,10 +1317,11 @@ RSpec.describe Dependabot::Python::FileParser do
     end
 
     context "with multiple requirements" do
-      let(:files) { project_dependency_files('poetry/multiple_requirements') }
+      let(:files) { project_dependency_files("poetry/multiple_requirements") }
 
       it "returns the dependencies with multiple requirements" do
         expect { dependencies }.not_to raise_error
+        expect(dependencies.map(&:name)).to contain_exactly("numpy", "scipy")
       end
     end
   end
