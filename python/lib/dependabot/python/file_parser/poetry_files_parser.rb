@@ -44,29 +44,30 @@ module Dependabot
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
 
-              requirements = Array(req).compact.map do |detected_requirement|
-                next if detected_requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.any? { |t| detected_requirement.key?(t) }
-
-                check_requirements(detected_requirement)
-                {
-                  requirement: detected_requirement.is_a?(String) ? detected_requirement : detected_requirement["version"],
-                  file: pyproject.name,
-                  source: nil,
-                  groups: [type]
-                }
-              end
-              next if requirements.empty?
-
               dependencies << Dependency.new(
                 name: normalise(name),
                 version: version_from_lockfile(name),
-                requirements: requirements,
+                requirements: parse_requirements_from(req, type),
                 package_manager: "pip"
               )
             end
           end
 
           dependencies
+        end
+
+        def parse_requirements_from(req, type)
+          Array(req).compact.map do |requirement|
+            next if requirement.is_a?(Hash) && (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).any?
+            check_requirements(requirement)
+
+            {
+              requirement: requirement.is_a?(String) ? requirement : requirement["version"],
+              file: pyproject.name,
+              source: nil,
+              groups: [type]
+            }
+          end.compact
         end
 
         # Create a DependencySet where each element has no requirement. Any
