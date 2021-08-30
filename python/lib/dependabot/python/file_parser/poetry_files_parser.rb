@@ -60,6 +60,7 @@ module Dependabot
         def parse_requirements_from(req, type)
           [req].flatten.compact.map do |requirement|
             next if requirement.is_a?(Hash) && (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).any?
+
             check_requirements(requirement)
 
             {
