@@ -43,22 +43,26 @@ module Dependabot
 
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
-              next if req.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.any? { |t| req.key?(t) }
 
-              check_requirements(req)
+              requirements = Array(req).compact.map do |detected_requirement|
+                next if detected_requirement.is_a?(Hash) && UNSUPPORTED_DEPENDENCY_TYPES.any? { |t| detected_requirement.key?(t) }
 
-              dependencies <<
-                Dependency.new(
-                  name: normalise(name),
-                  version: version_from_lockfile(name),
-                  requirements: [{
-                    requirement: req.is_a?(String) ? req : req["version"],
-                    file: pyproject.name,
-                    source: nil,
-                    groups: [type]
-                  }],
-                  package_manager: "pip"
-                )
+                check_requirements(detected_requirement)
+                {
+                  requirement: detected_requirement.is_a?(String) ? detected_requirement : detected_requirement["version"],
+                  file: pyproject.name,
+                  source: nil,
+                  groups: [type]
+                }
+              end
+              next if requirements.empty?
+
+              dependencies << Dependency.new(
+                name: normalise(name),
+                version: version_from_lockfile(name),
+                requirements: requirements,
+                package_manager: "pip"
+              )
             end
           end
 
