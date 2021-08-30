@@ -56,8 +56,9 @@ module Dependabot
           dependencies
         end
 
+        # @param req can be an Array, Hash or String that represents the constraints for a dependency
         def parse_requirements_from(req, type)
-          Array(req).compact.map do |requirement|
+          [req].flatten.compact.map do |requirement|
             next if requirement.is_a?(Hash) && (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).any?
             check_requirements(requirement)
 
