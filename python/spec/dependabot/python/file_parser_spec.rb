@@ -1320,7 +1320,7 @@ RSpec.describe Dependabot::Python::FileParser do
       let(:files) { project_dependency_files('poetry/multiple_requirements') }
 
       it "returns the dependencies with multiple requirements" do
-        expect(dependencies).not_to be_empty
+        expect { dependencies }.not_to raise_error
       end
     end
   end
