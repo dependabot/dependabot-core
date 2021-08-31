@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "gitlab", "4.17.0"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", "~> 4.6"
+  #spec.add_dependency "faraday", "1.7.0"
   spec.add_dependency "pandoc-ruby", "~> 2.0"
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
