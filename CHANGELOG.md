@@ -1,3 +1,7 @@
+## v0.161.0, 1 September 2021
+
+- chore: fix typo in documentation (@rethab) [#4172](https://github.com/dependabot/dependabot-core/pull/4172)
+
 ## v0.160.1, 25 August 2021
 
 - build(deps): bump github.com/dependabot/gomodules-extracted from 1.3.0 to 1.4.1 in /go_modules/helpers [#4157](https://github.com/dependabot/dependabot-core/pull/4157)
