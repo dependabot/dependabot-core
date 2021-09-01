@@ -101,7 +101,7 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.20.3 \
+  && npm install -g npm@v7.21.0 \
   && rm -rf ~/.npm
 
 
