@@ -1,6 +1,9 @@
 ## v0.161.0, 1 September 2021
 
+- Upgrade npm to 7.21.0
+- Pin Faraday to 1.7.0
 - chore: fix typo in documentation (@rethab) [#4172](https://github.com/dependabot/dependabot-core/pull/4172)
+- build(deps): update commonmarker requirement from >= 0.20.1, < 0.23.0 to >= 0.20.1, < 0.24.0
 
 ## v0.160.1, 25 August 2021
 
