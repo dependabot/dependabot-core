@@ -1,3 +1,10 @@
+## v0.161.0, 1 September 2021
+
+- Upgrade npm to 7.21.0
+- Pin Faraday to 1.7.0
+- chore: fix typo in documentation (@rethab) [#4172](https://github.com/dependabot/dependabot-core/pull/4172)
+- build(deps): update commonmarker requirement from >= 0.20.1, < 0.23.0 to >= 0.20.1, < 0.24.0
+
 ## v0.160.1, 25 August 2021
 
 - build(deps): bump github.com/dependabot/gomodules-extracted from 1.3.0 to 1.4.1 in /go_modules/helpers [#4157](https://github.com/dependabot/dependabot-core/pull/4157)
