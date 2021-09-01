@@ -44,10 +44,13 @@ module Dependabot
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
 
+              requirements = parse_requirements_from(req, type)
+              next if requirements.empty?
+
               dependencies << Dependency.new(
                 name: normalise(name),
                 version: version_from_lockfile(name),
-                requirements: parse_requirements_from(req, type),
+                requirements: requirements,
                 package_manager: "pip"
               )
             end
