@@ -966,7 +966,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     describe "when updating a provider with local path modules" do
-      let(:project_name) { "provider_with_local_path_moudules" }
+      let(:project_name) { "provider_with_local_path_modules" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
