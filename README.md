@@ -130,6 +130,11 @@ Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll 
 to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
 
+⚠️ The `Clone Repository ...` commands of the Remote Containers extension are currently
+missing some functionality and are therefore not supported. You have to clone the
+repository manually and use the `Reopen in Container` or `Open Folder in Container...`
+command.
+
 ## Releasing
 
 Triggering the jobs that will push the new gems is done by following the steps below.
