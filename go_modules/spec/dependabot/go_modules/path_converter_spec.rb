@@ -29,7 +29,7 @@ RSpec.describe Dependabot::GoModules::PathConverter do
       it { is_expected.to eq("https://github.com/kubernetes/apimachinery") }
     end
 
-    context "with a vanity URL that redirects" do
+    xcontext "with a vanity URL that redirects" do
       let(:path) { "code.cloudfoundry.org/bytefmt" }
       it { is_expected.to eq("https://github.com/cloudfoundry/bytefmt") }
     end

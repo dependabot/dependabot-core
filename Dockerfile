@@ -76,7 +76,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.20 --no-document \
+  && gem install bundler -v 2.2.26 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -101,7 +101,7 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.20.3 \
+  && npm install -g npm@v7.21.0 \
   && rm -rf ~/.npm
 
 
@@ -215,7 +215,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.0
+ARG TERRAFORM_VERSION=1.0.6
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \

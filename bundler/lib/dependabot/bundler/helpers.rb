@@ -3,8 +3,8 @@
 module Dependabot
   module Bundler
     module Helpers
-      V1 = "1"
-      V2 = "2"
+      V1 = "1.17.3"
+      V2 = "2.2.26"
       # If we are updating a project with no Gemfile.lock, we default to the
       # newest version we support
       DEFAULT = V2
@@ -31,7 +31,7 @@ module Dependabot
         if (matches = lockfile.content.match(BUNDLER_MAJOR_VERSION_REGEX))
           matches[:version]
         else
-          FAILOVER
+          "1"
         end
       end
     end
