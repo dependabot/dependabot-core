@@ -1,3 +1,10 @@
+## v0.162.0, 7 September 2021
+
+- Python: Raise resolvability error with explanation when update is not possible [#4206](https://github.com/dependabot/dependabot-core/pull/4206)
+- chore: run builds on a regular basis to detect anomolies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
+- fix: Parse multiple requirements from a poetry dependency [#4179](https://github.com/dependabot/dependabot-core/pull/4179)
+- Bump terraform CLI from 1.0.0 to 1.0.6 [#4205](https://github.com/dependabot/dependabot-core/pull/4205)
+
 ## v0.161.0, 1 September 2021
 
 - Upgrade npm to 7.21.0
