@@ -35,6 +35,15 @@
 
 # rubocop:disable Style/GlobalVars
 
+unless File.exist?("/etc/dependabot-core-dev")
+  puts <<~INFO
+    bin/dry-run.rb is only supported in a developerment container.
+
+    Please use bin/docker-dev-shell first.
+  INFO
+  exit 1
+end
+
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
