@@ -49,6 +49,20 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      def self.find_include_names(buildfile)
+        return [] unless buildfile
+
+        buildfile.content.
+          scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/).
+          map { |match| match[2] }
+      end
+
+      def self.find_includes(buildfile, dependency_files)
+        FileParser.find_include_names(buildfile).
+          map { |f| dependency_files.find { |bf| bf.name == f } }.
+          compact
+      end
+
       private
 
       def map_value_regex(key)
@@ -296,13 +310,6 @@ module Dependabot
         @buildfiles ||= dependency_files.select do |f|
           f.name.end_with?(*SUPPORTED_BUILD_FILE_NAMES)
         end
-      end
-
-      def self.find_includes(buildfile, dependency_files)
-        buildfile.content.
-          scan(/apply from(\s+=|:)\s+['"]([^'"]+)['"]/).flatten.
-          map { |f| dependency_files.find { |bf| bf.name == f } }.
-          compact
       end
 
       def script_plugin_files

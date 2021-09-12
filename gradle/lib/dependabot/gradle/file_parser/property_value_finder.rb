@@ -96,14 +96,15 @@ module Dependabot
 
           # Look for a property in the callsite buildfile. If that fails, look
           # for the property in the top-level buildfile
-          all_files = [callsite_buildfile, top_level_buildfile].concat( 
-              FileParser.find_includes(callsite_buildfile, dependency_files), 
-              FileParser.find_includes(top_level_buildfile, dependency_files))
+          all_files = [callsite_buildfile, top_level_buildfile].concat(
+            FileParser.find_includes(callsite_buildfile, dependency_files),
+            FileParser.find_includes(top_level_buildfile, dependency_files)
+          )
           all_files.each do |file|
-            if properties(file).fetch(property_name, nil)
-              return properties(file).fetch(property_name)
-            end
+            details = properties(file).fetch(property_name, nil)
+            return details if details
           end
+          nil
         end
 
         def property_value(property_name:, callsite_buildfile:)

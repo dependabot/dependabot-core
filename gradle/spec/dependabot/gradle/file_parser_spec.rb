@@ -395,7 +395,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(19) }
+      its(:length) { is_expected.to eq(20) }
 
       describe "the last dependency" do
         subject(:dependency) { dependencies.last }
