@@ -1,7 +1,7 @@
 ## v0.162.0, 7 September 2021
 
 - Python: Raise resolvability error with explanation when update is not possible [#4206](https://github.com/dependabot/dependabot-core/pull/4206)
-- chore: run builds on a regular basis to detect anomolies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
+- chore: run builds on a regular basis to detect anomalies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
 - fix: Parse multiple requirements from a poetry dependency [#4179](https://github.com/dependabot/dependabot-core/pull/4179)
 - Bump terraform CLI from 1.0.0 to 1.0.6 [#4205](https://github.com/dependabot/dependabot-core/pull/4205)
 
@@ -170,7 +170,7 @@
 ## v0.154.2, 17 June 2021
 
 - Terraform: Handle 401 registry responses
-- Github actions: Handle no latest version found
+- GitHub actions: Handle no latest version found
 - Python: Fix ruby 2.7 deprecations
 - Double quote variables in shellscript @PeterDaveHello
 - Add `--no-install-recommends` to all `apt-get install` in Dockerfile @PeterDaveHello
@@ -388,7 +388,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.144.0, 5 May 2021
 
 - Elm: Drop support for Elm 0.18
-- Commom: Handle nil dependency version when generating ignored versions
+- Common: Handle nil dependency version when generating ignored versions
 - Python: allow comments when parsing setup.cfg
 - go_modules: stub consistently and ignore invalid modules
 - build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
@@ -485,7 +485,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 - Dockerfile: create a `dependabot` user and drop privileges
   This is a potentially BREAKING change for consumers of the `dependabot/dependabot-core` docker image.
-- Maven/Gradle: Add option to use Gitlab access token for authentication against maven repositories @gringostar
+- Maven/Gradle: Add option to use GitLab access token for authentication against maven repositories @gringostar
 - common: raise Dependabot::OutOfDisk on more out of space errors
 - Bump eslint from 7.23.0 to 7.24.0
 
@@ -523,7 +523,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.139.1, 30 March 2021
 
-- Pull Requests: Fix github redirect for www.github.com links
+- Pull Requests: Fix GitHub redirect for www.github.com links
 - Pull Requests: Sanitize team mentions
 - Bundler 2 [Beta]: Add test for bundler dependency
 
@@ -554,7 +554,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.138.5, 26 March 2021
 
-- Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
+- Maven/Gradle: Treat dev and pr as pre-releases for Gradle/Maven
 - Bundler v2 [pre-release]: Add and test jfrog source helper
 - Cargo: Update Rust to 1.51.0 (thanks @CryZe)
 - Bump npm from 6.14.11 to 6.14.12 in /npm_and_yarn/helpers
@@ -671,7 +671,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.133.4, 18 February 2021
 
 - Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)
-- Common: Insert zero-width space in @mentions when sanitizing github pull request descriptions
+- Common: Insert zero-width space in @mentions when sanitizing GitHub pull request descriptions
 - Azure: raise NotFound error when response status code is 400 for fetch_commit (@milind009)
 - JS: Switch from yarn to npm for helper deps
 - JS: Convert spec fixtures to project based
@@ -852,7 +852,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.128.0, 14 December 2020
 
-- Gradle: Support kotlin manifest files (thanks, @shakhar!)
+- Gradle: Support Kotlin manifest files (thanks, @shakhar!)
 
 ## v0.127.1, 14 December 2020
 
