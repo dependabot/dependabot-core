@@ -64,8 +64,7 @@ module Dependabot
         return [] unless buildfile
 
         dependency_plugin_paths =
-          buildfile.content.
-          scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
+          FileParser.find_include_names(buildfile).
           reject { |path| path.include?("://") }.
           reject { |path| !path.include?("/") && path.split(".").count > 2 }.
           select { |filename| filename.include?("dependencies") }.

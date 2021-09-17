@@ -32,7 +32,10 @@ module Dependabot
 
         def repository_urls
           repository_urls = []
-          repository_urls += inherited_repository_urls
+          repository_urls += inherited_repository_urls(top_level_buildfile)
+          FileParser.find_includes(top_level_buildfile, dependency_files).each do |dependency_file|
+            repository_urls += inherited_repository_urls(dependency_file)
+          end
           repository_urls += own_buildfile_repository_urls
           repository_urls = repository_urls.uniq
 
@@ -45,10 +48,10 @@ module Dependabot
 
         attr_reader :dependency_files, :target_dependency_file
 
-        def inherited_repository_urls
-          return [] unless top_level_buildfile
+        def inherited_repository_urls(dependency_file)
+          return [] unless dependency_file
 
-          buildfile_content = comment_free_content(top_level_buildfile)
+          buildfile_content = comment_free_content(dependency_file)
           subproject_blocks = []
 
           buildfile_content.scan(/(?:^|\s)allprojects\s*\{/) do

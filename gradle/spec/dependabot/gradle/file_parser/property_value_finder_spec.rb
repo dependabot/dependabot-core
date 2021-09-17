@@ -139,6 +139,22 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
       end
     end
 
+    context "with a script plugin" do
+      let(:dependency_files) { [buildfile, script_plugin] }
+      let(:buildfile_fixture_name) { "with_dependency_script.gradle" }
+      let(:callsite_buildfile) { buildfile }
+      let(:script_plugin) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/dependencies.gradle",
+          content: fixture("script_plugins", "dependencies.gradle")
+        )
+      end
+
+      let(:property_name) { "collectionsVersion" }
+      its([:value]) { is_expected.to eq("4.4") }
+      its([:file]) { is_expected.to eq("gradle/dependencies.gradle") }
+    end
+
     context "with multiple buildfiles" do
       let(:dependency_files) { [buildfile, callsite_buildfile] }
       let(:buildfile_fixture_name) { "single_property_build.gradle" }
@@ -307,6 +323,22 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             end
           end
         end
+      end
+
+      context "with a script plugin" do
+        let(:dependency_files) { [buildfile, script_plugin] }
+        let(:buildfile_fixture_name) { "with_dependency_script.gradle.kts" }
+        let(:callsite_buildfile) { buildfile }
+        let(:script_plugin) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/dependencies.gradle.kts",
+            content: fixture("script_plugins", "dependencies.gradle.kts")
+          )
+        end
+
+        let(:property_name) { "collectionsVersion" }
+        its([:value]) { is_expected.to eq("4.4") }
+        its([:file]) { is_expected.to eq("gradle/dependencies.gradle.kts") }
       end
 
       context "with multiple buildfiles" do
