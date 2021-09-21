@@ -182,8 +182,8 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.2
-ARG ELIXIR_CHECKSUM=38eb2281032b0cb096ef5e61f048c5374d6fb9bf4078ab8f9526a42e16e7c661732a632b55d6072328eedf87a47e6eeb3f0e3f90bba1086239c71350f90c75e5
+ARG ELIXIR_VERSION=v1.12.3
+ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
 # This version is currently pinned to OTP 23, due to an issue that we only hit
 # in production, where traffic is routed through a proxy that OTP 24 doesn't
 # play nice with.
