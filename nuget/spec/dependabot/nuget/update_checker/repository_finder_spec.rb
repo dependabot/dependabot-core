@@ -45,7 +45,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           repository_url: "https://api.nuget.org/v3/index.json",
           versions_url: "https://api.nuget.org/v3-flatcontainer/"\
                            "microsoft.extensions.dependencymodel/index.json",
-          search_url: "https://api-v2v3search-0.nuget.org/query"\
+          search_url: "https://azuresearch-usnc.nuget.org/query"\
                            "?q=microsoft.extensions.dependencymodel"\
                            "&prerelease=true",
           auth_header: {},
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             repository_url: "https://api.nuget.org/v3/index.json",
             versions_url: "https://api.nuget.org/v3-flatcontainer/"\
                             "microsoft.extensions.dependencymodel/index.json",
-            search_url: "https://api-v2v3search-0.nuget.org/query"\
+            search_url: "https://azuresearch-usnc.nuget.org/query"\
                             "?q=microsoft.extensions.dependencymodel"\
                             "&prerelease=true",
             auth_header: {},
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
               repository_url: "https://api.nuget.org/v3/index.json",
               versions_url: "https://api.nuget.org/v3-flatcontainer/"\
                               "microsoft.extensions.dependencymodel/index.json",
-              search_url: "https://api-v2v3search-0.nuget.org/query"\
+              search_url: "https://azuresearch-usnc.nuget.org/query"\
                               "?q=microsoft.extensions.dependencymodel"\
                               "&prerelease=true",
               auth_header: {},

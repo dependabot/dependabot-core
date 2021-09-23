@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://api-v2v3search-0.nuget.org/query"\
+    "https://azuresearch-usnc.nuget.org/query"\
     "?q=microsoft.extensions.dependencymodel&prerelease=true"
   end
   let(:version_class) { Dependabot::Nuget::Version }
