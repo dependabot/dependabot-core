@@ -59,7 +59,7 @@ module Dependabot
           end
           if search_url
             details[:search_url] =
-              search_url + "?q=#{dependency.name.downcase}&prerelease=true"
+              search_url + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"
           end
           details
         rescue JSON::ParserError
@@ -197,7 +197,7 @@ module Dependabot
             versions_url: "https://api.nuget.org/v3-flatcontainer/"\
                              "#{dependency.name.downcase}/index.json",
             search_url: "https://azuresearch-usnc.nuget.org/query"\
-                             "?q=#{dependency.name.downcase}&prerelease=true",
+                             "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
             auth_header: {},
             repository_type: "v3"
           }

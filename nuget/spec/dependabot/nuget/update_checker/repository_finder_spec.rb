@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                            "microsoft.extensions.dependencymodel/index.json",
           search_url: "https://azuresearch-usnc.nuget.org/query"\
                            "?q=microsoft.extensions.dependencymodel"\
-                           "&prerelease=true",
+                           "&prerelease=true&semVerLevel=2.0.0",
           auth_header: {},
           repository_type: "v3"
         }]
@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                              "dependencymodel/index.json",
             search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                              "query?q=microsoft.extensions.dependencymodel"\
-                             "&prerelease=true",
+                             "&prerelease=true&semVerLevel=2.0.0",
             auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
             repository_type: "v3"
           }]
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
             [{
               repository_url: custom_repo_url,
               search_url: "http://localhost:8082/artifactory/api/nuget/v3/"\
-                             "nuget-local/query?q=microsoft.extensions.dependencymodel&prerelease=true",
+                             "nuget-local/query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
               auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
               repository_type: "v3"
             }]
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                                "dependencymodel/index.json",
               search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                                "query?q=microsoft.extensions.dependencymodel"\
-                               "&prerelease=true",
+                               "&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }]
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                             "microsoft.extensions.dependencymodel/index.json",
             search_url: "https://azuresearch-usnc.nuget.org/query"\
                             "?q=microsoft.extensions.dependencymodel"\
-                            "&prerelease=true",
+                            "&prerelease=true&semVerLevel=2.0.0",
             auth_header: {},
             repository_type: "v3"
           }, {
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                             "dependencymodel/index.json",
             search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                             "query?q=microsoft.extensions.dependencymodel"\
-                            "&prerelease=true",
+                            "&prerelease=true&semVerLevel=2.0.0",
             auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
             repository_type: "v3"
           }]
@@ -238,7 +238,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                               "microsoft.extensions.dependencymodel/index.json",
               search_url: "https://azuresearch-usnc.nuget.org/query"\
                               "?q=microsoft.extensions.dependencymodel"\
-                              "&prerelease=true",
+                              "&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }, {
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                               "dependencymodel/index.json",
               search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                               "query?q=microsoft.extensions.dependencymodel"\
-                              "&prerelease=true",
+                              "&prerelease=true&semVerLevel=2.0.0",
               auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
               repository_type: "v3"
             }]
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                                 "dependencymodel/index.json",
                 search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                                 "query?q=microsoft.extensions.dependencymodel"\
-                                "&prerelease=true",
+                                "&prerelease=true&semVerLevel=2.0.0",
                 auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
                 repository_type: "v3"
               }]
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                                 "dependencymodel/index.json",
                 search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                                 "query?q=microsoft.extensions.dependencymodel"\
-                                "&prerelease=true",
+                                "&prerelease=true&semVerLevel=2.0.0",
                 auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
                 repository_type: "v3"
               }]
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                               "dependencymodel/index.json",
               search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                               "query?q=microsoft.extensions.dependencymodel"\
-                              "&prerelease=true",
+                              "&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }]
@@ -351,7 +351,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                               "dependencymodel/index.json",
               search_url: "https://www.myget.org/F/exceptionless/api/v3/"\
                               "query?q=microsoft.extensions.dependencymodel"\
-                              "&prerelease=true",
+                              "&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }]
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                 "flatcontainer/microsoft.extensions.dependencymodel/index.json",
               search_url:
                 "https://www.myget.org/F/exceptionless/api/v3/"\
-                "query?q=microsoft.extensions.dependencymodel&prerelease=true",
+                "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }, {
@@ -450,7 +450,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
                 "flatcontainer/microsoft.extensions.dependencymodel/index.json",
               search_url:
                 "https://www.myget.org/F/exceptionless/api/v3/"\
-                "query?q=microsoft.extensions.dependencymodel&prerelease=true",
+                "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0",
               auth_header: {},
               repository_type: "v3"
             }, {

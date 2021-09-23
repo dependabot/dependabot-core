@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   end
   let(:nuget_search_url) do
     "https://azuresearch-usnc.nuget.org/query"\
-    "?q=microsoft.extensions.dependencymodel&prerelease=true"
+    "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
         "https://azuresearch-usnc.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -240,7 +240,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           before do
             codegeneration_search_url =
               "https://azuresearch-usnc.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -258,7 +258,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           before do
             codegeneration_search_url =
               "https://azuresearch-usnc.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             to_return(status: 404)
           custom_v3_nuget_search_url =
             "https://www.myget.org/F/exceptionless/api/v3/"\
-            "query?q=microsoft.extensions.dependencymodel&prerelease=true"
+            "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
           stub_request(:get, custom_v3_nuget_search_url).
             to_return(status: 404)
 
@@ -495,7 +495,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
         "https://azuresearch-usnc.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -510,7 +510,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           before do
             codegeneration_search_url =
               "https://azuresearch-usnc.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
