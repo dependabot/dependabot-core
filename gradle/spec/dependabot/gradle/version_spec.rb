@@ -270,6 +270,12 @@ RSpec.describe Dependabot::Gradle::Version do
           it { is_expected.to eq(1) }
         end
 
+        context "numeric token after underscore" do
+          let(:version) { described_class.new("1.0.0_100") }
+          let(:other_version) { described_class.new("1.0.0_99") }
+          it { is_expected.to eq(1) }
+        end
+
         context "null values (again)" do
           let(:version) { described_class.new("1-sp-1") }
           let(:other_version) { described_class.new("1-ga-1") }

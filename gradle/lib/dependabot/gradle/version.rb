@@ -132,7 +132,7 @@ module Dependabot
       end
 
       def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.])/)
+        ".#{version}".tr("_", "-").split(/(?=[\-\.])/)
       end
 
       def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)
