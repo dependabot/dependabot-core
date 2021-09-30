@@ -32,8 +32,7 @@ module Dependabot
           ]
         end
 
-        def initialize(dependencies:, dependency_files:,
-                       repo_contents_path: nil, credentials:, options:)
+        def initialize(dependencies:, dependency_files:, repo_contents_path: nil, credentials:, options:)
           @dependencies = dependencies
           @dependency_files = dependency_files
           @repo_contents_path = repo_contents_path
@@ -42,43 +41,33 @@ module Dependabot
         end
 
         def updated_lockfile_content
-          @updated_lockfile_content ||=
-            begin
-              updated_content = build_updated_lockfile
+          @updated_lockfile_content ||= begin
+            updated_content = Dependabot.with_timer("build_updated_lockfile") { build_updated_lockfile }
+            raise "Expected content to change!" if lockfile.content == updated_content
 
-              raise "Expected content to change!" if lockfile.content == updated_content
-
-              updated_content
-            end
+            updated_content
+          end
         end
 
         private
 
-        attr_reader :dependencies, :dependency_files, :repo_contents_path,
-                    :credentials, :options
+        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials, :options
 
         def build_updated_lockfile
           base_dir = dependency_files.first.directory
-          lockfile_body =
-            SharedHelpers.in_a_temporary_repo_directory(
-              base_dir,
-              repo_contents_path
-            ) do |tmp_dir|
-              write_temporary_dependency_files
-
-              NativeHelpers.run_bundler_subprocess(
-                bundler_version: bundler_version,
-                function: "update_lockfile",
-                args: {
-                  gemfile_name: gemfile.name,
-                  lockfile_name: lockfile.name,
-                  dir: tmp_dir,
-                  credentials: credentials,
-                  dependencies: dependencies.map(&:to_h)
-                }
-              )
-            end
-          post_process_lockfile(lockfile_body)
+          lockfile_body = SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do |tmp_dir|
+            write_temporary_dependency_files
+            NativeHelpers.run_bundler_subprocess(bundler_version: bundler_version, function: "update_lockfile", args: {
+              gemfile_name: gemfile.name,
+              lockfile_name: lockfile.name,
+              dir: tmp_dir,
+              credentials: credentials,
+              dependencies: dependencies.map(&:to_h)
+            })
+          end
+          Dependabot.with_timer("post_process_lockfile") do
+            post_process_lockfile(lockfile_body)
+          end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise unless ruby_lock_error?(e)
 
@@ -241,13 +230,13 @@ module Dependabot
               dependencies: dependencies,
               gemfile: file
             ).updated_gemfile_content
-          return content if @dont_lock_ruby_version
+            return content if @dont_lock_ruby_version
 
-          top_level_gemspecs.each do |gs|
-            content = RubyRequirementSetter.new(gemspec: gs).rewrite(content)
-          end
+            top_level_gemspecs.each do |gs|
+              content = RubyRequirementSetter.new(gemspec: gs).rewrite(content)
+            end
 
-          content
+            content
         end
 
         def updated_gemfile_content(file)
@@ -266,7 +255,7 @@ module Dependabot
 
         def gemfile
           @gemfile ||= dependency_files.find { |f| f.name == "Gemfile" } ||
-                       dependency_files.find { |f| f.name == "gems.rb" }
+            dependency_files.find { |f| f.name == "gems.rb" }
         end
 
         def lockfile

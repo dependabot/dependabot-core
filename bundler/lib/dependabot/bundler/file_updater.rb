@@ -28,40 +28,45 @@ module Dependabot
       def updated_dependency_files
         updated_files = []
 
-        Dependabot.logger.info("Checking if Gemfile changed")
+        Dependabot.logger.debug("Checking if Gemfile changed")
         if gemfile && file_changed?(gemfile)
-          Dependabot.logger.info("Updated Gemfile #{gemfile}")
-          updated_files << updated_file(file: gemfile, content: updated_gemfile_content(gemfile))
+          Dependabot.with_timer("updated_gemfile_content") do
+            updated_files << updated_file(file: gemfile, content: updated_gemfile_content(gemfile))
+          end
         end
 
-        Dependabot.logger.info("Checking if any dependencies appear in the lockfile")
+        Dependabot.logger.debug("Checking if any dependencies appear in the lockfile")
         if lockfile && dependencies.any?(&:appears_in_lockfile?)
-          Dependabot.logger.info("Updated Gemfile.lock #{lockfile}")
-          updated_files << updated_file(file: lockfile, content: updated_lockfile_content)
+          Dependabot.with_timer("updated_lockfile_content") do
+            updated_files << updated_file(file: lockfile, content: updated_lockfile_content)
+          end
         end
 
-        Dependabot.logger.info("Checking if any top level gemspecs have changed")
+        Dependabot.logger.debug("Checking if any top level gemspecs have changed")
         top_level_gemspecs.each do |file|
           next unless file_changed?(file)
 
-          Dependabot.logger.info("Updated .gemspec #{file}")
-          updated_files << updated_file(file: file, content: updated_gemspec_content(file))
+          Dependabot.with_timer("updated_gemspec_content") do
+            updated_files << updated_file(file: file, content: updated_gemspec_content(file))
+          end
         end
 
-        Dependabot.logger.info("Checking if any eval'd gemspecs have changed")
+        Dependabot.logger.debug("Checking if any eval'd gemspecs have changed")
         evaled_gemfiles.each do |file|
           next unless file_changed?(file)
 
-          Dependabot.logger.info("Updated evaled gemfile #{file}")
-          updated_files << updated_file(file: file, content: updated_gemfile_content(file))
+          Dependabot.with_timer("updated_gemfile_content") do
+            updated_files << updated_file(file: file, content: updated_gemfile_content(file))
+          end
         end
 
-        Dependabot.logger.info("Checking the updated files")
-        check_updated_files(updated_files)
+        Dependabot.with_timer("check_updated_files") do
+          check_updated_files(updated_files)
+        end
 
         base_dir = updated_files.first.directory
         vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          Dependabot.logger.info("Updated evaled gemfile #{file}")
+          Dependabot.logger.debug("Updated evaled gemfile #{file}")
           updated_files << file
         end
 

@@ -10,18 +10,21 @@ module Dependabot
         # Run helper suprocess with all bundler-related ENV variables removed
         bundler_major_version = bundler_version.split(".").first
         ::Bundler.with_original_env do
-          SharedHelpers.run_helper_subprocess(
-            command: helper_path(bundler_version: bundler_major_version),
-            function: function,
-            args: args,
-            env: {
-              # Bundler will pick the matching installed major version
-              "BUNDLER_VERSION" => bundler_version,
-              "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_major_version), "Gemfile"),
-              # Prevent the GEM_HOME from being set to a folder owned by root
-              "GEM_HOME" => File.join(versioned_helper_path(bundler_version: bundler_major_version), ".bundle")
-            }
-          )
+          Dependabot.with_timer("run_bundler_subprocess") do
+            Dependabot.logger.debug(helper_path(bundler_version: bundler_major_version))
+            SharedHelpers.run_helper_subprocess(
+              command: helper_path(bundler_version: bundler_major_version),
+              function: function,
+              args: args,
+              env: {
+                # Bundler will pick the matching installed major version
+                "BUNDLER_VERSION" => bundler_version,
+                "BUNDLE_GEMFILE" => File.join(versioned_helper_path(bundler_version: bundler_major_version), "Gemfile"),
+                # Prevent the GEM_HOME from being set to a folder owned by root
+                "GEM_HOME" => File.join(versioned_helper_path(bundler_version: bundler_major_version), ".bundle")
+              }
+            )
+          end
         rescue SharedHelpers::HelperSubprocessFailed => e
           # TODO: Remove once we stop stubbing out the V2 native helper
           raise Dependabot::NotImplemented, e.message if e.error_class == "Functions::NotImplementedError"
