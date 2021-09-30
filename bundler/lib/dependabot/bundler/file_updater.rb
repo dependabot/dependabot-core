@@ -29,6 +29,7 @@ module Dependabot
         updated_files = []
 
         if gemfile && file_changed?(gemfile)
+          Dependabot.logger.debug("Updated Gemfile")
           updated_files <<
             updated_file(
               file: gemfile,
@@ -37,6 +38,7 @@ module Dependabot
         end
 
         if lockfile && dependencies.any?(&:appears_in_lockfile?)
+          Dependabot.logger.debug("Updated Gemfile.lock")
           updated_files <<
             updated_file(file: lockfile, content: updated_lockfile_content)
         end
@@ -44,6 +46,7 @@ module Dependabot
         top_level_gemspecs.each do |file|
           next unless file_changed?(file)
 
+          Dependabot.logger.debug("Updated .gemspec")
           updated_files <<
             updated_file(file: file, content: updated_gemspec_content(file))
         end
@@ -51,6 +54,7 @@ module Dependabot
         evaled_gemfiles.each do |file|
           next unless file_changed?(file)
 
+          Dependabot.logger.debug("Updated evaled gemfile")
           updated_files <<
             updated_file(file: file, content: updated_gemfile_content(file))
         end
@@ -61,6 +65,7 @@ module Dependabot
         vendor_updater.
           updated_vendor_cache_files(base_directory: base_dir).
           each do |file|
+          Dependabot.logger.debug("Updated evaled gemfile")
           updated_files << file
         end
 
