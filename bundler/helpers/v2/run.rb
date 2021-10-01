@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-
+$stderr.puts("Reporting for duty")
 require "bundler"
 require "json"
 require "timeout"
