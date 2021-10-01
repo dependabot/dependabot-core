@@ -29,10 +29,10 @@ module Functions
 
     def with_timer(message)
       started_at = Time.now.to_i
-      stderr.puts("Starting #{message}")
+      STDERR.puts("Starting #{message}")
       yield
     ensure
-      stderr.puts("Finished #{message} in #{Time.now.to_i - started_at} seconds")
+      STDERR.puts("Finished #{message} in #{Time.now.to_i - started_at} seconds")
     end
 
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
@@ -64,7 +64,7 @@ module Functions
       rescue Bundler::VersionConflict => e
         with_timer("unlock_blocking_subdeps") { unlock_blocking_subdeps(dependencies_to_unlock, e) } && retry
       rescue *RETRYABLE_ERRORS => e
-        stderr.puts(e.message)
+        STDERR.puts(e.message)
         raise if @retrying
 
         @retrying = true
