@@ -157,8 +157,8 @@ module Dependabot
         end
 
         def post_process_lockfile(lockfile_body)
-          lockfile_body = reorder_git_dependencies(lockfile_body)
-          replace_lockfile_ending(lockfile_body)
+          lockfile_body = Dependabot.with_timer("reorder_git_dependencies") { reorder_git_dependencies(lockfile_body) }
+          Dependabot.with_timer("replace_lockfile_ending") { replace_lockfile_ending(lockfile_body) }
         end
 
         def reorder_git_dependencies(lockfile_body)
