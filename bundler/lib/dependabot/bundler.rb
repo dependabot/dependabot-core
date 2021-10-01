@@ -34,47 +34,4 @@ module Dependabot
   ensure
     Dependabot.logger.debug("Finished #{message} in #{Time.now.to_i - start} seconds")
   end
-
-  module SharedHelpers
-    def self.run_helper_subprocess(command:, function:, args:, env: nil, stderr_to_stdout: false, allow_unsafe_shell_command: false)
-      start = Time.now
-      stdin_data = JSON.dump(function: function, args: args)
-      cmd = allow_unsafe_shell_command ? command : escape_command(command)
-
-      env_cmd = [env, cmd].compact
-      Dependabot.logger.debug(cmd)
-      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
-      time_taken = Time.now - start
-
-      # puts stdout
-      Dependabot.logger.debug(stderr)
-
-      stdout = "#{stderr}\n#{stdout}" if stderr_to_stdout
-
-      response = JSON.parse(stdout)
-      return response["result"] if process.success?
-
-      raise HelperSubprocessFailed.new(
-        message: response["error"],
-        error_class: response["error_class"],
-        trace: response["trace"],
-        error_context: {
-          command: command,
-          function: function,
-          args: args,
-          time_taken: time_taken,
-          stderr_output: stderr ? stderr[0..50_000] : "",
-          process_exit_value: process.to_s,
-          process_termsig: process.termsig
-        },
-      )
-    rescue JSON::ParserError
-      raise HelperSubprocessFailed.new(
-        message: stdout || "No output from command",
-        error_class: "JSON::ParserError",
-        error_context: error_context
-      )
-    end
-  end
 end
-
