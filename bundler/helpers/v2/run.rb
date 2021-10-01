@@ -2,6 +2,7 @@
 
 require "bundler"
 require "json"
+require "timeout"
 
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
@@ -37,7 +38,9 @@ begin
   function = request["function"]
   args = request["args"].transform_keys(&:to_sym)
 
-  output({ result: Functions.send(function, **args) })
+  Timeout.timeout(120) do
+    output({ result: Functions.send(function, **args) })
+  end
 rescue StandardError => e
   output(
     { error: e.message, error_class: e.class, trace: e.backtrace }
