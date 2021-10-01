@@ -60,6 +60,8 @@ module Dependabot
         response = JSON.parse(result.stdout)
         if result.status.success?
           return response["result"]
+        else
+          Dependabot.logger.debug("Failed: #{response["error"]}")
         end
 
         raise ::Dependabot::SharedHelpers::HelperSubprocessFailed.new(
