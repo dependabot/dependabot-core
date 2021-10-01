@@ -6,13 +6,54 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Bundler
     module NativeHelpers
+      def self.execute(command:, function:, args:, env: nil)
+        Dependabot.logger.debug(command)
+        env_cmd = [env, ::Dependabot::SharedHelpers.escape_command(command)].compact
+        stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: JSON.dump(function: function, args: args))
+
+        Dependabot.logger.debug(stderr)
+
+        response = JSON.parse(stdout)
+        if process.success?
+          return response["result"]
+        end
+
+        raise ::Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: response["error"],
+          error_class: response["error_class"],
+          error_context: {
+            command: command,
+            function: function,
+            args: args,
+            time_taken: 0,
+            stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+            process_exit_value: process.to_s,
+            process_termsig: process.termsig
+          },
+          trace: response["trace"]
+        )
+      rescue JSON::ParserError
+        raise ::Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+          message: stdout || "No output from command",
+          error_class: "JSON::ParserError",
+          error_context: {
+            command: command,
+            function: function,
+            args: args,
+            time_taken: 0,
+            stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+            process_exit_value: process.to_s,
+            process_termsig: process.termsig
+          }
+        )
+      end
+
       def self.run_bundler_subprocess(function:, args:, bundler_version:)
         # Run helper suprocess with all bundler-related ENV variables removed
         bundler_major_version = bundler_version.split(".").first
         ::Bundler.with_original_env do
           Dependabot.with_timer("run_bundler_subprocess") do
-            Dependabot.logger.debug(helper_path(bundler_version: bundler_major_version))
-            SharedHelpers.run_helper_subprocess(
+            execute(
               command: helper_path(bundler_version: bundler_major_version),
               function: function,
               args: args,
