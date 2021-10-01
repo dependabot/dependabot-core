@@ -22,12 +22,9 @@ module Dependabot
                  "(+https://github.com/dependabot/dependabot-core)"
     SIGKILL = 9
 
-    def self.in_a_temporary_repo_directory(directory = "/",
-                                           repo_contents_path = nil,
-                                           &block)
+    def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).
-               expand_path
+        path = Pathname.new(File.join(repo_contents_path, directory)). expand_path
         reset_git_repo(repo_contents_path)
         # Handle missing directories by creating an empty one and relying on the
         # file fetcher to raise a DependencyFileNotFound error

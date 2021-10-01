@@ -27,37 +27,49 @@ module Functions
 
     attr_reader :gemfile_name, :lockfile_name, :dependencies
 
+    def with_timer(message)
+      started_at = Time.now.to_i
+      stderr.puts("Starting #{message}")
+      yield
+    ensure
+      stderr.puts("Finished #{message} in #{Time.now.to_i - started_at} seconds")
+    end
+
     def generate_lockfile # rubocop:disable Metrics/PerceivedComplexity
       dependencies_to_unlock = dependencies.map { |d| d.fetch("name") }
 
       begin
-        definition = build_definition(dependencies_to_unlock)
+        definition = with_timer("build_definition") { build_definition(dependencies_to_unlock) }
 
-        old_reqs = lock_deps_being_updated_to_exact_versions(definition)
+        old_reqs = with_timer("lock_deps_being_updated_to_exact_versions") { lock_deps_being_updated_to_exact_versions(definition) }
 
-        definition.resolve_remotely!
+        with_timer("resolve_remotely!") do
+          definition.resolve_remotely!
+        end
 
-        old_reqs.each do |dep_name, old_req|
-          d_dep = definition.dependencies.find { |d| d.name == dep_name }
-          if old_req.to_s == DEPENDENCY_DROPPED then definition.dependencies.delete(d_dep)
-          else
-            d_dep.instance_variable_set(:@requirement, old_req)
+        with_timer("old_reqs.each") do
+          old_reqs.each do |dep_name, old_req|
+            d_dep = definition.dependencies.find { |d| d.name == dep_name }
+            if old_req.to_s == DEPENDENCY_DROPPED then definition.dependencies.delete(d_dep)
+            else
+              d_dep.instance_variable_set(:@requirement, old_req)
+            end
           end
         end
 
-        cache_vendored_gems(definition) if Bundler.app_cache.exist?
-
-        definition.to_lock
+        with_timer("cache_vendored_gems") { cache_vendored_gems(definition) } if Bundler.app_cache.exist?
+        with_timer("to_lock") { definition.to_lock }
       rescue Bundler::GemNotFound => e
-        unlock_yanked_gem(dependencies_to_unlock, e) && retry
+        with_timer("unlock_yanked_gem") { unlock_yanked_gem(dependencies_to_unlock, e) } && retry
       rescue Bundler::VersionConflict => e
-        unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
-      rescue *RETRYABLE_ERRORS
+        with_timer("unlock_blocking_subdeps") { unlock_blocking_subdeps(dependencies_to_unlock, e) } && retry
+      rescue *RETRYABLE_ERRORS => e
+        stderr.puts(e.message)
         raise if @retrying
 
         @retrying = true
-        sleep(rand(1.0..5.0))
-        retry
+        # sleep(rand(1.0..5.0))
+        retry # this looks like an infinite loop
       end
     end
 

@@ -39,8 +39,6 @@ begin
 
   output({ result: Functions.send(function, **args) })
 rescue StandardError => e
-  output(
-    { error: e.message, error_class: e.class, trace: e.backtrace }
-  )
+  output({ error: e.message, error_class: e.class, trace: e.backtrace })
   exit(1)
 end
