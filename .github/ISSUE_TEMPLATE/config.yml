@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions or comments about Dependabot Alerts or Security Updates
+    url: https://support.github.com/
+    about: You're looking at the repository for Dependabot's updating logic. For issues about Dependabot the service, please contact GitHub Support.
