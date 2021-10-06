@@ -25,6 +25,7 @@ module Dependabot
                             "dependencies > dependency, "\
                             "extensions > extension"
       PLUGIN_SELECTOR     = "plugins > plugin"
+      EXTENSION_SELECTOR  = "extensions > extension"
 
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
@@ -32,6 +33,7 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         dependency_set.dependencies
       end
 
@@ -53,6 +55,25 @@ module Dependabot
 
         doc.css(PLUGIN_SELECTOR).each do |dependency_node|
           dep = dependency_from_plugin_node(pom, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
+        end
+
+        raise errors.first if errors.any? && dependency_set.dependencies.none?
+
+        dependency_set
+      end
+
+      def extensionfile_dependencies(extension)
+        dependency_set = DependencySet.new
+
+        errors = []
+        doc = Nokogiri::XML(extension.content)
+        doc.remove_namespaces!
+
+        doc.css(EXTENSION_SELECTOR).each do |dependency_node|
+          dep = dependency_from_dependency_node(extension, dependency_node)
           dependency_set << dep if dep
         rescue DependencyFileNotEvaluatable => e
           errors << e
@@ -250,6 +271,11 @@ module Dependabot
         # NOTE: this (correctly) excludes any parent POMs that were downloaded
         @pomfiles ||=
           dependency_files.select { |f| f.name.end_with?("pom.xml") }
+      end
+
+      def extensionfiles
+        @extensionfiles ||=
+          dependency_files.select { |f| f.name.end_with?("extensions.xml") }
       end
 
       def internal_dependency_names

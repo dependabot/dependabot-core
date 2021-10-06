@@ -210,7 +210,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("[Security] Bump business") }
         end
 
@@ -446,7 +446,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("chore(deps): [security] bump") }
         end
 
@@ -489,7 +489,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("Upgrade: [Security] Bump") }
         end
       end
@@ -505,7 +505,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to start_with("⬆️ Bump business") }
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
       end
@@ -613,7 +613,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("[Security] Update business") }
         end
 
@@ -667,7 +667,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("chore(deps): [security] update") }
         end
       end
@@ -687,7 +687,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
       end
@@ -1807,7 +1807,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it { is_expected.to start_with(":arrow_up: Bump ") }
 
       context "with a security vulnerability fixed" do
-        let(:vulnerabilities_fixed) { { "business": [{}] } }
+        let(:vulnerabilities_fixed) { { business: [{}] } }
         it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end

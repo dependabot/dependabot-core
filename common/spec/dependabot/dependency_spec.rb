@@ -5,7 +5,7 @@ require "dependabot/dependency"
 
 RSpec.describe Dependabot::Dependency do
   describe ".new" do
-    subject(:dependency) { described_class.new(args) }
+    subject(:dependency) { described_class.new(**args) }
 
     let(:args) do
       {
@@ -90,22 +90,22 @@ RSpec.describe Dependabot::Dependency do
     end
 
     context "when two dependencies are equal" do
-      let(:dependency1) { described_class.new(args) }
-      let(:dependency2) { described_class.new(args) }
+      let(:dependency1) { described_class.new(**args) }
+      let(:dependency2) { described_class.new(**args) }
 
       specify { expect(dependency1).to eq(dependency2) }
     end
 
     context "when two dependencies are not equal" do
-      let(:dependency1) { described_class.new(args) }
-      let(:dependency2) { described_class.new(args.merge(name: "dep2")) }
+      let(:dependency1) { described_class.new(**args) }
+      let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
 
       specify { expect(dependency1).to_not eq(dependency2) }
     end
   end
 
   describe "#production?" do
-    subject(:production?) { described_class.new(dependency_args).production? }
+    subject(:production?) { described_class.new(**dependency_args).production? }
 
     let(:dependency_args) do
       {
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Dependency do
   end
 
   describe "#display_name" do
-    subject(:display_name) { described_class.new(dependency_args).display_name }
+    subject(:display_name) { described_class.new(**dependency_args).display_name }
 
     let(:dependency_args) do
       {
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Dependency do
   end
 
   describe "#to_h" do
-    subject(:to_h) { described_class.new(dependency_args).to_h }
+    subject(:to_h) { described_class.new(**dependency_args).to_h }
 
     context "with requirements" do
       let(:dependency_args) do
@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Dependency do
 
   describe "#subdependency_metadata" do
     subject(:subdependency_metadata) do
-      described_class.new(dependency_args).subdependency_metadata
+      described_class.new(**dependency_args).subdependency_metadata
     end
 
     let(:dependency_args) do

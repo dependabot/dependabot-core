@@ -271,7 +271,7 @@ module Dependabot
 
       def add_reviewers_to_pull_request(pull_request)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
 
         github_client_for_source.request_pull_request_review(
           source.repo,
@@ -301,7 +301,7 @@ module Dependabot
 
       def comment_with_invalid_reviewer(pull_request, message)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
         reviewers += (reviewers_hash[:team_reviewers] || []).

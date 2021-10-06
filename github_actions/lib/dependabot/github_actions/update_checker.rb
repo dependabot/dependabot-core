@@ -84,7 +84,7 @@ module Dependabot
 
         # If the dependency is pinned to a tag that doesn't look like a
         # version or a commit SHA then there's nothing we can do.
-        dependency.version
+        nil
       end
 
       def updated_source

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "functions/file_parser"
 require "functions/force_updater"
 require "functions/lockfile_updater"
@@ -123,8 +125,6 @@ module Functions
       lockfile_name: args.fetch(:lockfile_name)
     ).conflicting_dependencies
   end
-
-  private
 
   def self.set_bundler_flags_and_credentials(dir:, credentials:)
     dir = dir ? Pathname.new(dir) : dir

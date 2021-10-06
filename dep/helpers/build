@@ -18,7 +18,7 @@ if [ ! -d "$install_dir/bin" ]; then
 fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cd $helpers_dir
+cd "$helpers_dir"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 echo "building $install_dir/bin/helper"

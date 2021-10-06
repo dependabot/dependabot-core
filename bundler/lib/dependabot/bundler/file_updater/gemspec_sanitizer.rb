@@ -307,22 +307,11 @@ module Dependabot
           def replace_constant(node)
             case node.children.last&.type
             when :str, :int then nil # no-op
-            when :float, :const, :send, :lvar, :if
+            when :float, :const, :send, :lvar, :if, :dstr
               replace(
                 node.children.last.loc.expression,
                 %("#{replacement_version}")
               )
-            when :dstr
-              node.children.last.children.
-                select { |n| n.type == :begin }.
-                flat_map(&:children).
-                select { |n| node_is_version_constant?(n) }.
-                each do |n|
-                  replace(
-                    n.loc.expression,
-                    %("#{replacement_version}")
-                  )
-                end
             else
               raise "Unexpected node type #{node.children.last&.type}"
             end

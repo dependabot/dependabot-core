@@ -44,7 +44,7 @@ module Dependabot
           poetry_object = pyproject_object["tool"]["poetry"]
           excluded_names = dependencies.map(&:name) + ["python"]
 
-          %w(dependencies dev-dependencies).each do |key|
+          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
             poetry_object.fetch(key).each do |dep_name, _|

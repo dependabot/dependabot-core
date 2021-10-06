@@ -11,6 +11,8 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include FileSelector
 
+      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
+
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
       end
@@ -90,19 +92,20 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration
+      def update_lockfile_declaration # rubocop:disable Metrics/AbcSize
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
-        content = lock_file.content.dup
+        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        return unless new_req[:source][:type] == "provider"
 
+        content = lock_file.content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        SharedHelpers.in_a_temporary_directory do
-          write_dependency_files
-
+        base_dir = dependency_files.first.directory
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
           SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
 
@@ -115,17 +118,31 @@ module Dependabot
                  content.scan(declaration_regex).first.scan(/^\s*version\s*=.*/)
             content.sub!(declaration_regex, updated_dependency)
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if @retrying_lock || !e.message.include?("terraform init")
+
+          # NOTE: Modules need to be installed before terraform can update the
+          # lockfile
+          @retrying_lock = true
+          run_terraform_init
+          retry
         end
 
         content
       end
 
-      def write_dependency_files
-        dependency_files.each do |file|
-          # Do not include the .terraform directory or .terraform.lock.hcl
-          next if file.name.include?(".terraform")
+      def run_terraform_init
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          # -backend=false option used to ignore any backend configuration, as these won't be accessible
+          # -input=false option used to immediately fail if it needs user input
+          # -no-color option used to prevent any color characters being printed in the output
+          SharedHelpers.run_shell_command("terraform init -backend=false -input=false -no-color")
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          output = e.message
 
-          File.write(file.name, file.content)
+          if output.match?(PRIVATE_MODULE_ERROR)
+            raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+          end
         end
       end
 
@@ -157,7 +174,11 @@ module Dependabot
         %r{
           (?<=\{)
           (?:(?!^\}).)*
-          source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{Regexp.escape(dependency.name)}["']
+          source\s*=\s*["']
+            (#{Regexp.escape(registry_host_for(dependency))}/)?
+            #{Regexp.escape(dependency.name)}
+            (//modules/\S+)?
+            ["']
           (?:(?!^\}).)*
         }mx
       end

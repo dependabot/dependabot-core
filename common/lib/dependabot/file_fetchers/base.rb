@@ -332,8 +332,8 @@ module Dependabot
 
         response.files.map do |file|
           OpenStruct.new(
-            name: file.absolute_path,
-            path: file.absolute_path,
+            name: File.basename(file.relative_path),
+            path: file.relative_path,
             type: "file",
             size: 0 # file size would require new api call per file..
           )

@@ -10,10 +10,18 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
   it_behaves_like "a dependency file updater"
 
   subject(:updater) do
-    described_class.new(dependency_files: files, dependencies: dependencies, credentials: credentials)
+    described_class.new(
+      dependency_files: files,
+      dependencies: dependencies,
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
+    )
   end
 
-  let(:files) { [] }
+  let(:project_name) { "" }
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  let(:files) { project_dependency_files(project_name) }
   let(:dependencies) { [] }
   let(:credentials) do
     [{ "type" => "git_source", "host" => "github.com", "username" => "x-access-token", "password" => "token" }]
@@ -23,7 +31,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     subject { updater.updated_dependency_files }
 
     context "with a private module" do
-      let(:files) { project_dependency_files("private_module") }
+      let(:project_name) { "private_module" }
 
       let(:dependencies) do
         [
@@ -69,7 +77,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a private provider" do
-      let(:files) { project_dependency_files("private_provider") }
+      let(:project_name) { "private_provider" }
 
       let(:dependencies) do
         [
@@ -119,7 +127,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a valid legacy dependency file" do
-      let(:files) { project_dependency_files("git_tags_011") }
+      let(:project_name) { "git_tags_011" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -158,7 +166,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a valid HCL2 dependency file" do
-      let(:files) { project_dependency_files("git_tags_012") }
+      let(:project_name) { "git_tags_012" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -231,7 +239,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a legacy git dependency" do
-        let(:files) { project_dependency_files("git_tags_011") }
+        let(:project_name) { "git_tags_011" }
 
         it "updates the requirement" do
           updated_file = subject.find { |file| file.name == "main.tf" }
@@ -243,6 +251,21 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             DEP
           )
         end
+
+        it "doesn't update the duplicate" do
+          updated_file = subject.find { |file| file.name == "main.tf" }
+
+          expect(updated_file.content).to include(
+            <<~DEP
+              module "duplicate_label" {
+                source     = "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7"
+            DEP
+          )
+        end
+      end
+
+      context "with an hcl2-based git dependency" do
+        let(:project_name) { "git_tags_012" }
 
         it "doesn't update the duplicate" do
           updated_file = subject.find { |file| file.name == "main.tf" }
@@ -283,7 +306,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with an up-to-date hcl2-based git dependency" do
-        let(:files) { project_dependency_files("hcl2") }
+        let(:project_name) { "hcl2" }
 
         it "shows no updates" do
           expect { subject }.to raise_error do |error|
@@ -293,7 +316,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with a legacy registry dependency" do
-        let(:files) { project_dependency_files("registry") }
+        let(:project_name) { "registry" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -339,7 +362,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
 
       context "with an hcl2-based registry dependency" do
-        let(:files) { project_dependency_files("registry_012") }
+        let(:project_name) { "registry_012" }
         let(:dependencies) do
           [
             Dependabot::Dependency.new(
@@ -386,7 +409,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with an hcl-based terragrunt file" do
-      let(:files) { project_dependency_files("terragrunt_hcl") }
+      let(:project_name) { "terragrunt_hcl" }
 
       let(:dependencies) do
         [
@@ -433,7 +456,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a required provider" do
-      let(:files) { project_dependency_files("registry_provider") }
+      let(:project_name) { "registry_provider" }
 
       let(:dependencies) do
         [
@@ -489,7 +512,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a required provider block with multiple versions" do
-      let(:files) { project_dependency_files("registry_provider_compound_local_name") }
+      let(:project_name) { "registry_provider_compound_local_name" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -541,7 +564,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "with a versions file" do
-      let(:files) { project_dependency_files("versions_file") }
+      let(:project_name) { "versions_file" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -589,29 +612,29 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "updating an up-to-date terraform project with a lockfile" do
-      let(:files) { project_dependency_files("up-to-date_lockfile") }
+      let(:project_name) { "up-to-date_lockfile" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: ".terraform.lock.hcl",
-            version: "3.44.0",
+            name: "hashicorp/aws",
+            version: "3.45.0",
             previous_version: "3.37.0",
             requirements: [{
-              requirement: "3.45.0",
+              requirement: ">= 3.37.0, < 3.46.0",
               groups: [],
-              file: ".terraform.lock.hcl",
+              file: "versions.tf",
               source: {
-                type: "lockfile",
+                type: "provider",
                 registry_hostname: "registry.terraform.io",
                 module_identifier: "hashicorp/aws"
               }
             }],
             previous_requirements: [{
-              requirement: "3.37.0",
+              requirement: ">= 3.37.0, < 3.46.0",
               groups: [],
-              file: ".terraform.lock.hcl",
+              file: "versions.tf",
               source: {
-                type: "lockfile",
+                type: "provider",
                 registry_hostname: "registry.terraform.io",
                 module_identifier: "hashicorp/aws"
               }
@@ -629,19 +652,19 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
     end
 
     context "using versions.tf with a lockfile present" do
-      let(:files) { project_dependency_files("lockfile") }
+      let(:project_name) { "lockfile" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
-            name: ".terraform.lock.hcl",
+            name: "hashicorp/aws",
             version: "3.42.0",
             previous_version: "3.37.0",
             requirements: [{
               requirement: "3.42.0",
               groups: [],
-              file: ".terraform.lock.hcl",
+              file: "versions.tf",
               source: {
-                type: "lockfile",
+                type: "provider",
                 registry_hostname: "registry.terraform.io",
                 module_identifier: "hashicorp/aws"
               }
@@ -649,9 +672,9 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             previous_requirements: [{
               requirement: "3.37.0",
               groups: [],
-              file: ".terraform.lock.hcl",
+              file: "versions.tf",
               source: {
-                type: "lockfile",
+                type: "provider",
                 registry_hostname: "registry.terraform.io",
                 module_identifier: "hashicorp/aws"
               }
@@ -670,14 +693,15 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
               required_providers {
                 random = {
                   source  = "hashicorp/random"
-                  version = ">= 3.0.0"
+                  version = "3.0.0"
                 }
 
                 aws = {
                   source  = "hashicorp/aws"
-                  version = ">= 3.37.0"
+                  version = ">= 3.37.0, < 3.46.0"
                 }
               }
+            }
           DEP
         )
       end
@@ -689,22 +713,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
               version     = "3.45.0"
-              constraints = ">= 3.37.0"
-              hashes = [
-                "h1:LKU/xfna87/p+hl5yTTW3dvOqWJp5JEM+Dt3nnvSDvA=",
-                "zh:0fdbb3af75ff55807466533f97eb314556ec41a908a543d7cafb06546930f7c6",
-                "zh:20656895744fa0f4607096b9681c77b2385f450b1577f9151d3070818378a724",
-                "zh:390f316d00f25a5e45ef5410961fd05bf673068c1b701dc752d11df6d8e741d7",
-                "zh:3da70f9de241d5f66ea9994ef1e0beddfdb005fa2d2ef6712392f57c5d2e4844",
-                "zh:65de63cc0f97c85c28a19db560c546aa25f4f403dbf4783ac53c3918044cf180",
-                "zh:6fc52072e5a66a5d0510aaa2b373a2697895f51398613c68619d8c0c95fc75f5",
-                "zh:7c1da61092bd1206a020e3ee340ab11be8a4f9bb74e925ca1229ea5267fb3a62",
-                "zh:94e533d86ce3c08e7102dcabe34ba32ae7fd7819fd0aedef28f48d29e635eae2",
-                "zh:a3180d4826662e19e71cf20e925a2be8613a51f2f3f7b6d2643ac1418b976d58",
-                "zh:c783df364928c77fd4dec5419533b125bebe2d50212c4ad609f83b701c2d981a",
-                "zh:e1279bde388cb675d324584d965c6d22c3ec6890b13de76a50910a3bcd84ed64",
-              ]
-            }
+              constraints = ">= 3.37.0, < 3.46.0"
           DEP
         )
       end
@@ -716,7 +725,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/random" {
               version     = "3.0.0"
-              constraints = ">= 3.0.0"
+              constraints = "3.0.0"
               hashes = [
                 "h1:yhHJpb4IfQQfuio7qjUXuUFTU/s+ensuEpm23A+VWz0=",
                 "zh:0fcb00ff8b87dcac1b0ee10831e47e0203a6c46aafd76cb140ba2bab81f02c6b",
@@ -736,8 +745,48 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    context "when using a lockfile that requires access to an unreachable module" do
+      let(:project_name) { "lockfile_unreachable_module" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/aws",
+            version: "3.42.0",
+            previous_version: "3.37.0",
+            requirements: [{
+              requirement: "3.42.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "3.37.0",
+              groups: [],
+              file: "versions.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::PrivateSourceAuthenticationFailure) do |error|
+          expect(error.source).to eq("github.com/dependabot-fixtures/private-terraform-module")
+        end
+      end
+    end
+
     describe "for a provider with an implicit source" do
-      let(:files) { project_dependency_files("provider_implicit_source") }
+      let(:project_name) { "provider_implicit_source" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -786,6 +835,236 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
                 oci = { // When no `source` is specified, use the implied `hashicorp/oci` source address
                   version = "3.28"
                 }
+          DEP
+        )
+      end
+    end
+
+    describe "for a nested module" do
+      let(:project_name) { "nested_modules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "terraform-aws-modules/iam/aws",
+            version: "4.1.0",
+            previous_version: "4.0.0",
+            requirements: [{
+              requirement: "4.1.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "iam/aws"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "4.0.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "iam/aws"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the requirement" do
+        updated_file = subject.find { |file| file.name == "main.tf" }
+
+        expect(updated_file.content).to include(
+          <<~DEP
+            module "github_terraform" {
+              source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+              version = "4.1.0"
+            }
+          DEP
+        )
+      end
+    end
+
+    describe "with a lockfile and modules that need to be installed" do
+      let(:project_name) { "lockfile_with_modules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "integrations/github",
+            version: "4.12.0",
+            previous_version: "4.4.0",
+            requirements: [{
+              requirement: "4.12.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "integrations/github"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "4.4.0",
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "integrations/github"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the version in the lockfile" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/integrations/github" {
+              version     = "4.12.0"
+              constraints = "~> 4.4, <= 4.12.0"
+          DEP
+        )
+      end
+    end
+
+    describe "when updating a module in a project with a provider lockfile" do
+      let(:project_name) { "lockfile_with_modules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "aztfmod/caf/azurerm",
+            version: "5.3.10",
+            previous_version: "5.1.0",
+            requirements: [{
+              requirement: "5.3.10",
+              groups: [],
+              file: "caf_module.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "aztfmod/caf/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: "5.1.0",
+              groups: [],
+              file: "caf_module.tf",
+              source: {
+                type: "registry",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "aztfmod/caf/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        module_file = subject.find { |file| file.name == "caf_module.tf" }
+
+        expect(module_file.content).to include(
+          <<~DEP
+            module "caf" {
+              source  = "aztfmod/caf/azurerm"
+              version = "5.3.10"
+            }
+          DEP
+        )
+      end
+    end
+
+    describe "when updating a provider with local path modules" do
+      let(:project_name) { "provider_with_local_path_moudules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "2.64.0",
+            previous_version: "2.63.0",
+            requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/azurerm" {
+              version     = "2.64.0"
+          DEP
+        )
+      end
+    end
+
+    describe "when updating provider with backend in configuration" do
+      let(:project_name) { "provider_with_backend" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "2.64.0",
+            previous_version: "2.63.0",
+            requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            previous_requirements: [{
+              requirement: ">= 2.48.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "updates the module version" do
+        lockfile = subject.find { |file| file.name == ".terraform.lock.hcl" }
+
+        expect(lockfile.content).to include(
+          <<~DEP
+            provider "registry.terraform.io/hashicorp/azurerm" {
+              version     = "2.64.0"
           DEP
         )
       end

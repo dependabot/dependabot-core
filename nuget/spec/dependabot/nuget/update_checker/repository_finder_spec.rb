@@ -97,6 +97,29 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         )
       end
 
+      context "that does not return PackageBaseAddress" do
+        let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
+        before do
+          stub_request(:get, custom_repo_url).
+            to_return(
+              status: 200,
+              body: fixture("nuget_responses", "artifactory_base.json")
+            )
+        end
+
+        it "gets the right URL" do
+          expect(dependency_urls).to eq(
+            [{
+              repository_url: custom_repo_url,
+              search_url: "http://localhost:8082/artifactory/api/nuget/v3/"\
+                             "nuget-local/query?q=microsoft.extensions.dependencymodel&prerelease=true",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that 404s" do
         before { stub_request(:get, custom_repo_url).to_return(status: 404) }
 

@@ -14,6 +14,10 @@ module Dependabot
 
       class BadGateway < StandardError; end
 
+      class Unauthorized < StandardError; end
+
+      class Forbidden < StandardError; end
+
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
       MAX_PR_DESCRIPTION_LENGTH = 3999
@@ -229,6 +233,8 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
         response
@@ -258,6 +264,8 @@ module Dependabot
           raise ServiceNotAvailable if response.status == 503
         end
 
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
         response
