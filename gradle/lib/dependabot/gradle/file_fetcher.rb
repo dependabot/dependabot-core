@@ -89,7 +89,7 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def check_required_files_present
-        return if buildfile || (@subproject_buildfiles && !@subproject_buildfiles.empty?)
+        return if buildfile || (subproject_buildfiles && !subproject_buildfiles.empty?)
 
         path = Pathname.new(File.join(directory, "build.gradle")).cleanpath.to_path
         path += "(.kts)?"
