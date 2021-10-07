@@ -1,0 +1,13 @@
+[
+  {
+    "name": "etag.tar",
+    "path": "deps/etag.tar",
+    "sha": "2393602fac96cfe31d64f89476014124b4a13b85",
+    "size": 19,
+    "url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/contents/.deps/etag.tar?ref=master",
+    "html_url": "https://github.com/CityOfNewYork/NYCOpenRecords/blob/master/.deps/etag.tar",
+    "git_url": "https://api.github.com/repos/CityOfNewYork/NYCOpenRecords/git/blobs/2393602fac96cfe31d64f89476014124b4a13b85",
+    "download_url": "https://raw.githubusercontent.com/CityOfNewYork/NYCOpenRecords/master/.deps/etag.tar",
+    "type": "file"
+  }
+]
