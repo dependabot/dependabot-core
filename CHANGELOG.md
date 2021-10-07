@@ -1,3 +1,8 @@
+## v0.162.2, 29 September 2021
+
+- Ignore replaced dependencies in go.mod (@jerbob92) [#4140](https://github.com/dependabot/dependabot-core/pull/4140)
+- Treat hyphens and underscores the same in Gradle versioning (@zbynek) [#4257](https://github.com/dependabot/dependabot-core/pull/4257)
+
 ## v0.162.1, 20 September 2021
 
 - Fix minor typos in changelog (@zbynek) [#4237](https://github.com/dependabot/dependabot-core/pull/4237)
