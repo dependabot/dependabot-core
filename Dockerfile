@@ -48,6 +48,7 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
+    libgnutls30 \
     python3-enchant \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
