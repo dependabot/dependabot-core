@@ -19,6 +19,7 @@ GEMSPECS = %w(
   git_submodules/dependabot-git_submodules.gemspec
   github_actions/dependabot-github_actions.gemspec
   nuget/dependabot-nuget.gemspec
+  cake/dependabot-cake.gemspec
   gradle/dependabot-gradle.gemspec
   maven/dependabot-maven.gemspec
   bundler/dependabot-bundler.gemspec

@@ -1,0 +1,9 @@
+#addin nuget:?package=Cake.Addin&version=1.2.0
+
+Task("SomeOtherTask")
+    .IsDependeeOf("Default")
+    .Does(() =>
+{
+  Information("Another task");
+});
+
