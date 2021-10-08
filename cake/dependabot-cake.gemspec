@@ -17,6 +17,8 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = Dir["lib/**/*"]
 
+  spec.add_dependency "inifile", "~> 3.0"
+
   spec.required_ruby_version = common_gemspec.required_ruby_version
   spec.required_rubygems_version = common_gemspec.required_ruby_version
 

@@ -17,6 +17,7 @@ COPY --chown=dependabot:dependabot docker ${CODE_DIR}/docker
 COPY --chown=dependabot:dependabot nuget ${CODE_DIR}/nuget
 COPY --chown=dependabot:dependabot maven ${CODE_DIR}/maven
 COPY --chown=dependabot:dependabot gradle ${CODE_DIR}/gradle
+COPY --chown=dependabot:dependabot cake ${CODE_DIR}/cake
 COPY --chown=dependabot:dependabot cargo ${CODE_DIR}/cargo
 COPY --chown=dependabot:dependabot composer ${CODE_DIR}/composer
 COPY --chown=dependabot:dependabot go_modules ${CODE_DIR}/go_modules
