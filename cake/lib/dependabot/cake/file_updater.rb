@@ -12,16 +12,15 @@ module Dependabot
       end
 
       def updated_dependency_files
-        updated_files = []
+        updated_files = dependency_files.dup
 
-        dependency_files.each do |file|
-          next unless requirement_changed?(file, dependency)
-
-          updated_files <<
-            updated_file(
-              file: file,
-              content: updated_cake_file_content(file)
-            )
+        # Loop through each of the changed requirements, applying changes to
+        # all files for that change.
+        dependencies.each do |dependency|
+          updated_files = update_files_for_dependency(
+            files: updated_files,
+            dependency: dependency
+          )
         end
 
         updated_files.reject! { |f| dependency_files.include?(f) }
@@ -32,11 +31,6 @@ module Dependabot
 
       private
 
-      def dependency
-        # cake files will only ever be updating a single dependency
-        dependencies.first
-      end
-
       def check_required_files
         # Just check if there are any files at all.
         return if dependency_files.any?
@@ -44,7 +38,39 @@ module Dependabot
         raise "No Cake file!"
       end
 
-      def updated_cake_file_content(file)
+      def update_files_for_dependency(files:, dependency:)
+        # The UpdateChecker ensures the order of requirements is preserved
+        # when updating, so we can zip them together in new/old pairs.
+        reqs = dependency.
+               requirements.
+               zip(dependency.previous_requirements).
+               reject { |new_req, old_req| new_req == old_req }
+
+        # Loop through each changed requirement and update the files
+        reqs.each do |new_req, old_req|
+          raise "Bad req match" unless new_req[:file] == old_req[:file]
+          next if new_req[:requirement] == old_req[:requirement]
+
+          file = files.find { |f| f.name == new_req.fetch(:file) }
+
+          files = update_declaration(files, dependency, file)
+        end
+
+        files
+      end
+
+      def update_declaration(files, dependency, file)
+        files = files.dup
+        updated_content = updated_cake_file_content(dependency, file)
+
+        raise "Expected content to change!" if updated_content == file.content
+
+        files[files.index(file)] =
+          updated_file(file: file, content: updated_content)
+        files
+      end
+
+      def updated_cake_file_content(dependency, file)
         updated_content = file.content
 
         file.content.each_line do |line|
@@ -58,8 +84,6 @@ module Dependabot
 
           updated_content = updated_content.gsub(line, new_declaration)
         end
-
-        raise "Expected content to change!" if updated_content == file.content
 
         updated_content
       end

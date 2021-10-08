@@ -12,7 +12,6 @@ module Dependabot
           @cake_file = cake_file
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def import_paths(base_path:, wildcard_search:)
           paths = []
 
@@ -43,7 +42,6 @@ module Dependabot
           end
           paths.flatten
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 

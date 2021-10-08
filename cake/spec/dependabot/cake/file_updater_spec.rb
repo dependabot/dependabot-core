@@ -12,12 +12,13 @@ RSpec.describe Dependabot::Cake::FileUpdater do
 
   let(:updater) do
     described_class.new(
-      dependency_files: files,
-      dependencies: [dependency],
+      dependency_files: dependency_files,
+      dependencies: dependencies,
       credentials: credentials
     )
   end
-  let(:files) { [cake_file] }
+  let(:dependencies) { [dependency, other_dependency] }
+  let(:dependency_files) { [cake_file] }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -54,6 +55,27 @@ RSpec.describe Dependabot::Cake::FileUpdater do
       package_manager: "cake"
     )
   end
+  let(:other_dependency) do
+    Dependabot::Dependency.new(
+      name: "Cake.Tool",
+      version: "2.0.2",
+      previous_version: "2.0.1",
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "build.cake",
+        source: nil
+      }],
+      previous_requirements: [{
+        requirement: "2.0.1",
+        groups: [],
+        file: "build.cake",
+        source: nil,
+        metadata: { directive: { type: "addin", scheme: "nuget", url: nil } }
+      }],
+      package_manager: "cake"
+    )
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -72,7 +94,7 @@ RSpec.describe Dependabot::Cake::FileUpdater do
       # rubocop:disable Layout/LineLength
       its(:content) { is_expected.to include "#module nuget:?package=Cake.Module&version=0.1.0\n" }
       its(:content) { is_expected.to include "#addin nuget:?package=Cake.Addin&version=1.3.56\n" }
-      its(:content) { is_expected.to include "#tool nuget:?package=Cake.Tool&version=2.0.1\n" }
+      its(:content) { is_expected.to include "#tool nuget:?package=Cake.Tool&version=2.0.2\n" }
       # rubocop:enable Layout/LineLength
     end
   end
