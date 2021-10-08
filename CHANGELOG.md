@@ -1,7 +1,40 @@
+## v0.163.0, 7 October 2021
+
+- build(deps): bump composer/composer from 2.1.3 to 2.1.9 in /composer/helpers/v2 [#4286](https://github.com/dependabot/dependabot-core/pull/4286)
+- Bitbucket: Fix unsupported labels error (@meladRaouf) [#4236](https://github.com/dependabot/dependabot-core/pull/4236)
+- build(deps): bump pip-tools from 6.2.0 to 6.3.0 in /python/helpers [#4251](https://github.com/dependabot/dependabot-core/pull)
+- build(deps): bump poetry from 1.1.7 to 1.1.11 in /python/helpers [#4281](https://github.com/dependabot/dependabot-core/pull/4281)
+- build(deps-dev): bump jest from 27.0.6 to 27.2.4 in /npm_and_yarn/helpers [#4271](https://github.com/dependabot/dependabot-core/pull/4271)
+- Poetry: Fix unreachable git deps error [#4295](https://github.com/dependabot/dependabot-core/pull/4295)
+- Elm: Fix failing tests [#4294](https://github.com/dependabot/dependabot-core/pull/4294)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.0.0 to 3.2.1 in /composer/helpers/v2 [#4285](https://github.com/dependabot/dependabot-core/pull/4285)
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers [#4284](https://github.com/dependabot/dependabot-core/pull/4284)
+- build(deps): bump composer/composer from 1.10.22 to 1.10.23 in /composer/helpers/v1 [#4283](https://github.com/dependabot/dependabot-core/pull/4283)
+- npm: Handle .tar path dependency (@AlekhyaYalla) [#4246](https://github.com/dependabot/dependabot-core/pull/4246)
+- build(deps-dev): bump jest in /npm_and_yarn/helpers [#4271](https://github.com/dependabot/dependabot-core/pull/4271)
+- Gradle: Add support for `gradlePluginPortal()` (@zbynek) [#4268](https://github.com/dependabot/dependabot-core/pull/4268)
+- Gradle: Support Gradle files with no top level build.gradle file (@zbynek) [#4256](https://github.com/dependabot/dependabot-core/pull/4256)
+
+## v0.162.2, 29 September 2021
+
+- Ignore replaced dependencies in go.mod (@jerbob92) [#4140](https://github.com/dependabot/dependabot-core/pull/4140)
+- Treat hyphens and underscores the same in Gradle versioning (@zbynek) [#4257](https://github.com/dependabot/dependabot-core/pull/4257)
+
+## v0.162.1, 20 September 2021
+
+- Fix minor typos in changelog (@zbynek) [#4237](https://github.com/dependabot/dependabot-core/pull/4237)
+- Bump golang from 1.17 to 1.17.1 [#4231](https://github.com/dependabot/dependabot-core/pull/4231)
+- build(deps): bump github.com/dependabot/gomodules-extracted from 1.4.1 to 1.4.2 in /go_modules/helpers [#4235](https://github.com/dependabot/dependabot-core/pull/4235)
+- Improved support `apply from` in gradle files (@zbynek) [#4155](https://github.com/dependabot/dependabot-core/pull/4155)
+- Escape paths passed to VendorUpdater [#4221](https://github.com/dependabot/dependabot-core/pull/4221)
+- bin/dry-run.rb requires a development container to run [#4215](https://github.com/dependabot/dependabot-core/pull/4215)
+- Python: Upgrade pyenv to 2.0.6 (@pauloromeira) [#4207](https://github.com/dependabot/dependabot-core/pull/4207)
+- handle terraform module versions with a 'v' prefix (@declan-fitzpatrick) [#4191](https://github.com/dependabot/dependabot-core/pull/4191)
+
 ## v0.162.0, 7 September 2021
 
 - Python: Raise resolvability error with explanation when update is not possible [#4206](https://github.com/dependabot/dependabot-core/pull/4206)
-- chore: run builds on a regular basis to detect anomolies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
+- chore: run builds on a regular basis to detect anomalies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
 - fix: Parse multiple requirements from a poetry dependency [#4179](https://github.com/dependabot/dependabot-core/pull/4179)
 - Bump terraform CLI from 1.0.0 to 1.0.6 [#4205](https://github.com/dependabot/dependabot-core/pull/4205)
 
@@ -170,7 +203,7 @@
 ## v0.154.2, 17 June 2021
 
 - Terraform: Handle 401 registry responses
-- Github actions: Handle no latest version found
+- GitHub actions: Handle no latest version found
 - Python: Fix ruby 2.7 deprecations
 - Double quote variables in shellscript @PeterDaveHello
 - Add `--no-install-recommends` to all `apt-get install` in Dockerfile @PeterDaveHello
@@ -388,7 +421,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.144.0, 5 May 2021
 
 - Elm: Drop support for Elm 0.18
-- Commom: Handle nil dependency version when generating ignored versions
+- Common: Handle nil dependency version when generating ignored versions
 - Python: allow comments when parsing setup.cfg
 - go_modules: stub consistently and ignore invalid modules
 - build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
@@ -485,7 +518,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 - Dockerfile: create a `dependabot` user and drop privileges
   This is a potentially BREAKING change for consumers of the `dependabot/dependabot-core` docker image.
-- Maven/Gradle: Add option to use Gitlab access token for authentication against maven repositories @gringostar
+- Maven/Gradle: Add option to use GitLab access token for authentication against maven repositories @gringostar
 - common: raise Dependabot::OutOfDisk on more out of space errors
 - Bump eslint from 7.23.0 to 7.24.0
 
@@ -523,7 +556,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.139.1, 30 March 2021
 
-- Pull Requests: Fix github redirect for www.github.com links
+- Pull Requests: Fix GitHub redirect for www.github.com links
 - Pull Requests: Sanitize team mentions
 - Bundler 2 [Beta]: Add test for bundler dependency
 
@@ -554,7 +587,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.138.5, 26 March 2021
 
-- Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
+- Maven/Gradle: Treat dev and pr as pre-releases for Gradle/Maven
 - Bundler v2 [pre-release]: Add and test jfrog source helper
 - Cargo: Update Rust to 1.51.0 (thanks @CryZe)
 - Bump npm from 6.14.11 to 6.14.12 in /npm_and_yarn/helpers
@@ -671,7 +704,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.133.4, 18 February 2021
 
 - Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)
-- Common: Insert zero-width space in @mentions when sanitizing github pull request descriptions
+- Common: Insert zero-width space in @mentions when sanitizing GitHub pull request descriptions
 - Azure: raise NotFound error when response status code is 400 for fetch_commit (@milind009)
 - JS: Switch from yarn to npm for helper deps
 - JS: Convert spec fixtures to project based
@@ -852,7 +885,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.128.0, 14 December 2020
 
-- Gradle: Support kotlin manifest files (thanks, @shakhar!)
+- Gradle: Support Kotlin manifest files (thanks, @shakhar!)
 
 ## v0.127.1, 14 December 2020
 

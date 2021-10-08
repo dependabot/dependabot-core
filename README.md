@@ -101,16 +101,13 @@ $ bin/docker-dev-shell
 
 ### Dry run script
 
-*Note: you must have run `bundle install` in the `omnibus` directory before
-running this script.*
-
 You can use the "dry-run" script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
 arguments: the package manager and the GitHub repo name (including the
 account):
 
 ```bash
-$ cd omnibus && bundle install && cd -
+$ bin/docker-dev-shell
 $ bin/dry-run.rb go_modules rsc/quote
 => fetching dependency files
 => parsing dependency files

@@ -88,9 +88,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.4 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.9.6 \
-  && pyenv global 3.9.6 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.6 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.9.7 \
+  && pyenv global 3.9.7 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17
-ARG GOLANG_CHECKSUM=6bf89fc4f5ad763871cf7eac80a2d594492de7a818303283f1366a7f6a30372d
+ARG GOLANG_VERSION=1.17.1
+ARG GOLANG_CHECKSUM=dab7d9c34361dc21ec237d584590d72500652e7c909bf082758fb63064fca0ef
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \

@@ -82,7 +82,7 @@ module Dependabot
           branch_name,
           source.branch || default_branch,
           pr_description,
-          labeler&.labels_for_pr,
+          nil,
           work_item
         )
       end

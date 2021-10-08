@@ -462,6 +462,78 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       end
     end
 
+    context "with a tar path dependency" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_tar_path.json"),
+            headers: json_header
+          )
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+                           "contents/deps/etag.tar?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 403,
+            body: fixture("github", "file_too_large.json"),
+            headers: json_header
+          )
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+                            "contents/deps?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_tar.json"),
+            headers: json_header
+          )
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/git/"\
+                           "blobs/2393602fac96cfe31d64f89476014124b4a13b85").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "blob_js_tarball.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the tar path dependency" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(
+          ["package.json", "package-lock.json", "deps/etag.tar"]
+        )
+      end
+    end
+
+    context "that has an unfetchable tar path dependency" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_tar_path.json"),
+            headers: json_header
+          )
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+                            "contents/deps?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_js_tar.json"),
+            headers: json_header
+          )
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+                          "contents/deps/etag.tar?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
+
+      it "doesn't try to fetch the tar as a package" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(
+          ["package.json", "package-lock.json"]
+        )
+      end
+    end
+
     context "that has an unfetchable path" do
       before do
         stub_request(:get, File.join(url, "deps/etag/package.json?ref=sha")).
