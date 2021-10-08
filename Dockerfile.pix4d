@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 as build
 
-ARG PYTHON_VERSIONS="3.6.14 3.7.11 3.8.11 3.9.6"
+ARG PYTHON_VERSIONS="3.6.14 3.7.11 3.8.11 3.9.7"
 
 LABEL "maintainer"="platform_ci_team@pix4d.com"
 LABEL "description"="Pix4D Dependabot for updating your dependencies."
@@ -37,6 +37,17 @@ RUN apt-get update \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
+### RUST
+
+# Install Rust 1.51.0
+ENV RUSTUP_HOME=/opt/rust \
+  CARGO_HOME=/opt/rust \
+  PATH="${PATH}:/opt/rust/bin"
+RUN mkdir -p "$RUSTUP_HOME"
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
+  && rustup toolchain install 1.51.0 && rustup default 1.51.0
+
 ### RUBY
 # Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
@@ -55,7 +66,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 # Install Python 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.4 --single-branch --depth=1 /usr/local/.pyenv
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.6 --single-branch --depth=1 /usr/local/.pyenv
 
 RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* } \
   && rm -Rf /tmp/python-build*

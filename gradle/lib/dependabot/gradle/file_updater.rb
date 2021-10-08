@@ -40,7 +40,7 @@ module Dependabot
       private
 
       def check_required_files
-        raise "No build.gradle or build.gradle.kts!" unless original_file
+        raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
       end
 
       def original_file
