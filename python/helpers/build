@@ -16,8 +16,8 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-# CRYPTOGRAPHY_DONT_BUILD_RUST=1 is used to avoid the need for a Rust compiler while installing cryptography subdependency
-PYENV_VERSION=3.6.14  CRYPTOGRAPHY_DONT_BUILD_RUST=1 pyenv exec pip install -r "requirements.txt"
+
+PYENV_VERSION=3.6.14  pyenv exec pip install -r "requirements.txt"
 PYENV_VERSION=3.7.11  pyenv exec pip install -r "requirements.txt"
 PYENV_VERSION=3.8.11  pyenv exec pip install -r "requirements.txt"
 PYENV_VERSION=3.9.7  pyenv exec pip install -r "requirements.txt"
