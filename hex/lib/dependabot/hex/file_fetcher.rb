@@ -80,7 +80,7 @@ module Dependabot
 
       def support_files
         mixfiles = [mixfile] + subapp_mixfiles
-        
+
         mixfiles.flat_map do |mixfile|
           mixfile_dir = mixfile.path.sub("/mix.exs", "").delete_prefix("/")
 
@@ -88,7 +88,7 @@ module Dependabot
             path = Pathname.new(File.join(*support_file_args.compact.reverse)).
                    cleanpath.to_path
             fetch_file_from_host(path).tap { |f| f.support_file = true }
-          end  
+          end
         end
       end
     end
