@@ -187,7 +187,7 @@ ARG ELIXIR_CHECKSUM=38eb2281032b0cb096ef5e61f048c5374d6fb9bf4078ab8f9526a42e16e7
 # This version is currently pinned to OTP 23, due to an issue that we only hit
 # in production, where traffic is routed through a proxy that OTP 24 doesn't
 # play nice with.
-ARG ERLANG_VERSION=1:23.3.1-1
+ARG ERLANG_VERSION=1:23.3.4.5-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
   && dpkg -i erlang-solutions_1.0_all.deb \
   && apt-get update \
