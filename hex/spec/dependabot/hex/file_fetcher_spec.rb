@@ -251,6 +251,33 @@ RSpec.describe Dependabot::Hex::FileFetcher do
       end
     end
 
+    context "when one of apps evals a top level file" do
+      before do
+        stub_request(:get, url + "apps/bank_web/mix.exs?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_elixir_bank_web_mixfile_with_eval.json"),
+            headers: json_header
+          )
+
+        stub_request(:get, url + "evaled.exs?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body:
+              fixture("github", "contents_todo_txt.json"),
+            headers: json_header
+          )
+      end
+
+      it "fetches the evaled file" do
+        expect(file_fetcher_instance.files.count).to eq(5)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to include("evaled.exs")
+      end
+    end
+
     context "when the apps folder doesn't exist" do
       before do
         stub_request(:get, url + "apps?ref=sha").
