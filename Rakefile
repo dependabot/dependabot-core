@@ -43,6 +43,9 @@ namespace :gems do
     pkg_path = File.join(root_path, "pkg")
     Dir.mkdir(pkg_path) unless File.directory?(pkg_path)
 
+    license_path = File.join(root_path, "LICENSE")
+    FileUtils.cp(license_path, pkg_path) if File.file?(license_path)
+
     GEMSPECS.each do |gemspec_path|
       puts "> Building #{gemspec_path}"
       Dir.chdir(File.dirname(gemspec_path)) do
