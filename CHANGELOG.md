@@ -1,3 +1,24 @@
+## v0.163.1, 14 October 2021
+
+- update Elixir from 1.12.2 -> 1.12.3 (@baseballlover723) [#4250](https://github.com/dependabot/dependabot-core/pull/4250)
+- build(deps): bump flake8 from 4.0.0 to 4.0.1 in /python/helpers [#4308](https://github.com/dependabot/dependabot-core/pull/4308)
+- Bump Terraform from 1.0.6 to 1.0.8 [#4310](https://github.com/dependabot/dependabot-core/pull/4310)
+- build(deps): bump pip-tools from 6.3.1 to 6.4.0 in /python/helpers [#4312](https://github.com/dependabot/dependabot-core/pull/4312)
+- Python: Upgrade pyenv to 2.1.0 (@Parnassius) [#4307](https://github.com/dependabot/dependabot-core/pull/4307)
+- Upgrade OTP to latest minor: 23.3.4.5 (@tomaspinho) [#4306](https://github.com/dependabot/dependabot-core/pull/4306)
+- hex: handle support files with macro in umbrellas (@nirev) [#4213](https://github.com/dependabot/dependabot-core/pull/4213)
+- Describe workaround for cloning with long file names on Windows (@Marcono1234) [#4198](https://github.com/dependabot/dependabot-core/pull/4198)
+- build(deps): bump golang.org/x/mod from 0.5.0 to 0.5.1 in /go_modules/helpers [#4254](https://github.com/dependabot/dependabot-core/pull/4254)
+- build(deps): bump pip from 21.1.3 to 21.2.4 in /python/helpers [#4136](https://github.com/dependabot/dependabot-core/pull/4136)
+- build(deps-dev): bump eslint from 7.32.0 to 8.0.0 in /npm_and_yarn/helpers [#4301](https://github.com/dependabot/dependabot-core/pull/4301)
+- build(deps): bump flake8 from 3.9.2 to 4.0.0 in /python/helpers [#4303](https://github.com/dependabot/dependabot-core/pull/4303)
+- build(deps-dev): bump jest from 27.2.4 to 27.2.5 in /npm_and_yarn/helpers [#4304](https://github.com/dependabot/dependabot-core/pull/4304)
+- build(deps): bump pip-tools from 6.3.0 to 6.3.1 in /python/helpers [#4302](https://github.com/dependabot/dependabot-core/pull/4302)
+- Clarify that Remote Containers Clone Repository commands are not supported (@Marcono1234) [#4199](https://github.com/dependabot/dependabot-core/pull/4199)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 2.19.0 to 2.19.2 in /composer/helpers/v1 [#4152](https://github.com/dependabot/dependabot-core/pull/4152)
+- build(deps): bump wheel from 0.36.2 to 0.37.0 in /python/helpers [#4128](https://github.com/dependabot/dependabot-core/pull/4128)
+- build(deps-dev): bump prettier from 2.3.2 to 2.4.1 in /npm_and_yarn/helpers [#4233](https://github.com/dependabot/dependabot-core/pull/4233)
+
 ## v0.163.0, 7 October 2021
 
 - build(deps): bump composer/composer from 2.1.3 to 2.1.9 in /composer/helpers/v2 [#4286](https://github.com/dependabot/dependabot-core/pull/4286)
