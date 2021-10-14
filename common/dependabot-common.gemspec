@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
   spec.author       = "Dependabot"
   spec.email        = "support@dependabot.com"
   spec.homepage     = "https://github.com/dependabot/dependabot-core"
-  spec.license      = "Prosperity Public License 2.0.0"
+  spec.license      = "Nonstandard" # License Zero Prosperity Public License
 
   spec.require_path = "lib"
   spec.files        = []
