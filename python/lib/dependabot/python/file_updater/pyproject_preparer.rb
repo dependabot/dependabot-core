@@ -24,8 +24,8 @@ module Dependabot
 
           sources_hash = pyproject_sources.map { |source| [source["url"], source] }.to_h
 
-          for source in config_variable_sources(credentials) do
-            if sources_hash.has_key?(source["original_url"])
+          config_variable_sources(credentials).each do |source|
+            if sources_hash.key?(source["original_url"])
               sources_hash[source["original_url"]]["url"] = source["url"]
             else
               source.delete("original_url")
@@ -33,7 +33,7 @@ module Dependabot
             end
           end
 
-          poetry_object["source"] = sources_hash.values if !sources_hash.empty?
+          poetry_object["source"] = sources_hash.values unless sources_hash.empty?
 
           TomlRB.dump(pyproject_object)
         end

@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         }]
       end
 
-      it { is_expected.to contain_exactly({"name": "custom", "secondary": true, "url": credentials[0]["index-url"]})}
+      it { is_expected.to contain_exactly({ name: "custom", secondary: true, url: credentials[0]["index-url"] }) }
 
       context "that includes auth details" do
         let(:credentials) do
@@ -83,7 +83,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
           }]
         end
 
-        it { is_expected.to contain_exactly({"name": "custom", "secondary": true, "url": "https://username:password@some.internal.registry.com/pypi/"})}
+        it {
+          is_expected.to contain_exactly({ name: "custom", secondary: true,
+                                           url: "https://username:password@some.internal.registry.com/pypi/" })
+        }
       end
     end
   end
