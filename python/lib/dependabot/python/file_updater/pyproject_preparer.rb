@@ -22,10 +22,18 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
-          sources = (pyproject_sources + config_variable_sources(credentials)).uniq {
-            |source| source["url"]
-          }
-          poetry_object["source"] = sources if sources.any?
+          sources_hash = pyproject_sources.map { |source| [source["url"], source] }.to_h
+
+          for source in config_variable_sources(credentials) do
+            if sources_hash.has_key?(source["original_url"])
+              sources_hash[source["original_url"]]["url"] = source["url"]
+            else
+              source.delete("original_url")
+              sources_hash[source["url"]] = source
+            end
+          end
+
+          poetry_object["source"] = sources_hash.values if !sources_hash.empty?
 
           TomlRB.dump(pyproject_object)
         end
@@ -107,6 +115,7 @@ module Dependabot
             select { |cred| cred["type"] == "python_index" }.
             map do |c|
               {
+                "original_url" => c["index-url"],
                 "url" => AuthedUrlBuilder.authed_url(credential: c),
                 "name" => SecureRandom.hex[0..3],
                 "default" => c["replaces-base"]
