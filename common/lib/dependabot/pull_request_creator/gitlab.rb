@@ -158,7 +158,7 @@ module Dependabot
           approvers.keys.map { |k| [k.to_sym, approvers[k]] }.to_h
 
         gitlab_client_for_source.edit_merge_request_approvers(
-          merge_request.project_id,
+          target_project_id || source.repo,
           merge_request.iid,
           approver_ids: approvers_hash[:approvers],
           approver_group_ids: approvers_hash[:group_approvers]

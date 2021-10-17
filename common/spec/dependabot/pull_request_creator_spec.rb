@@ -21,7 +21,8 @@ RSpec.describe Dependabot::PullRequestCreator do
       milestone: milestone,
       author_details: author_details,
       signature_key: signature_key,
-      provider_metadata: provider_metadata
+      provider_metadata: provider_metadata,
+      target_project_id: target_project_id
     )
   end
 
@@ -48,6 +49,7 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
   let(:provider_metadata) { nil }
+  let(:target_project_id) { 1 }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -228,7 +230,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             labeler: instance_of(described_class::Labeler),
             approvers: reviewers,
             assignees: nil,
-            milestone: milestone
+            milestone: milestone,
+            target_project_id: target_project_id
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create

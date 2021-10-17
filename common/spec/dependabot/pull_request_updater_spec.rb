@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
       old_commit: old_commit,
       files: files,
       credentials: credentials,
-      pull_request_number: pull_request_number
+      pull_request_number: pull_request_number,
+      target_project_id: target_project_id
     )
   end
 
@@ -24,6 +25,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:old_commit) { "oldcommitsha" }
   let(:pull_request_number) { 1 }
   let(:credentials) { [] }
+  let(:target_project_id) { 1 }
 
   describe "#update" do
     context "with a GitHub source" do
@@ -61,7 +63,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
             old_commit: old_commit,
             files: files,
             credentials: credentials,
-            pull_request_number: pull_request_number
+            pull_request_number: pull_request_number,
+            target_project_id: target_project_id
           ).and_return(dummy_updater)
         expect(dummy_updater).to receive(:update)
         updater.update
