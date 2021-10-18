@@ -8,16 +8,17 @@ module Dependabot
   class PullRequestUpdater
     class Gitlab
       attr_reader :source, :files, :base_commit, :old_commit, :credentials,
-                  :pull_request_number
+                  :pull_request_number, :target_project_id
 
       def initialize(source:, base_commit:, old_commit:, files:,
-                     credentials:, pull_request_number:)
+                     credentials:, pull_request_number:, target_project_id:)
         @source              = source
         @base_commit         = base_commit
         @old_commit          = old_commit
         @files               = files
         @credentials         = credentials
         @pull_request_number = pull_request_number
+        @target_project_id   = target_project_id
       end
 
       def update
@@ -39,7 +40,7 @@ module Dependabot
 
       def merge_request
         @merge_request ||= gitlab_client_for_source.merge_request(
-          source.repo,
+          target_project_id || source.repo,
           pull_request_number
         )
       end
