@@ -267,8 +267,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   groups: ["devDependencies"],
                   source: {
                     type: "registry",
-                    url: "https://gitlab.mydomain.com/api/v4/"\
-                         "packages/npm"
+                    url: "https://gitlab.mydomain.com/api/v4/projects/229/packages/npm"
                   }
                 }]
               )
