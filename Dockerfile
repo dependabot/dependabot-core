@@ -226,6 +226,7 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 
 USER root
 
+COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
