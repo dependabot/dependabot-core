@@ -21,8 +21,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       milestone: milestone,
       author_details: author_details,
       signature_key: signature_key,
-      provider_metadata: provider_metadata,
-      target_project_id: target_project_id
+      provider_metadata: provider_metadata
     )
   end
 
@@ -49,7 +48,6 @@ RSpec.describe Dependabot::PullRequestCreator do
   let(:files) { [gemfile] }
   let(:base_commit) { "basecommitsha" }
   let(:provider_metadata) { nil }
-  let(:target_project_id) { 1 }
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -213,6 +211,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with a GitLab source" do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }
+      let(:provider_metadata) { { target_project_id: 1 } }
 
       it "delegates to PullRequestCreator::Github with correct params" do
         expect(described_class::Gitlab).
@@ -231,7 +230,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             approvers: reviewers,
             assignees: nil,
             milestone: milestone,
-            target_project_id: target_project_id
+            target_project_id: provider_metadata[:target_project_id]
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create
