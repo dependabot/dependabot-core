@@ -151,5 +151,20 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         )
       end
     end
+
+    context "with file dependencies" do
+        let(:dependencies) { [] }
+
+        let(:pyproject_lock_fixture_name) { "file_dependency.lock" }
+        let(:pyproject_fixture_name) { "file_dependency.toml" }
+
+        it { is_expected.to include("pytest = \"3.7.4\"\n") }
+        it "does not include the version for path deps" do
+          expect(freeze_top_level_dependencies_except).to_not include(
+            "path = \"toml-8.2.54.tar.gz\"\n"\
+            "version = \"8.2.54\"\n"
+          )
+        end
+      end
   end
 end
