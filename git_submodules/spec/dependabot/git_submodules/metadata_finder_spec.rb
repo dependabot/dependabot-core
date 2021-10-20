@@ -42,6 +42,15 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
     }]
   end
 
+  before do
+    # Not hosted on GitHub Enterprise Server
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
