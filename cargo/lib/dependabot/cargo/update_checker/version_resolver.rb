@@ -19,6 +19,7 @@ module Dependabot
         OBJECT_PATTERN = /object not found - no match for id \(.*\)/.freeze
         REF_NOT_FOUND_REGEX =
           /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m.freeze
+        CARGO_DEFAULT_ENV = { "RUSTUP_PERMIT_COPY_RENAME" => "1" }.freeze
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
@@ -133,7 +134,7 @@ module Dependabot
         def run_cargo_command(command)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
+          stdout, process = Open3.capture2e(CARGO_DEFAULT_ENV, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo
