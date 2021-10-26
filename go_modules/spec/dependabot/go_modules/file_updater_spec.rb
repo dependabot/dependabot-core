@@ -150,6 +150,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         )
       end
 
+      subject(:updated_files) { updater.updated_dependency_files }
+
       it "includes an updated go.mod" do
         expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
       end
@@ -226,12 +228,12 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         }]
       end
 
+      subject(:updated_files) { updater.updated_dependency_files }
+
       it "updates the go.mod" do
         expect(go_mod_body).to include("github.com/pkg/errors v0.8.0")
 
-        updater.updated_dependency_files
-
-        go_mod_file = updater.updated_dependency_files.find do |file|
+        go_mod_file = updated_files.find do |file|
           file.name == "go.mod"
         end
 
@@ -239,7 +241,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       end
 
       it "includes the vendored files" do
-        expect(updater.updated_dependency_files.map(&:name)).to match_array(
+        expect(updated_files.map(&:name)).to match_array(
           %w(
             go.mod
             go.sum
@@ -316,7 +318,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
         end
 
         it "vendors in the right directory" do
-          expect(updater.updated_dependency_files.map(&:name)).to match_array(
+          expect(updated_files.map(&:name)).to match_array(
             %w(
               go.mod
               go.sum
@@ -330,7 +332,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             )
           )
 
-          updater.updated_dependency_files.map(&:directory).each do |dir|
+          updated_files.map(&:directory).each do |dir|
             expect(dir).to eq("/nested")
           end
         end

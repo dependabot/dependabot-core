@@ -44,13 +44,15 @@ module Dependabot
 
           vendor_updater.updated_vendor_cache_files(base_directory: directory).
             each do |file|
-            updated_files << file
+              updated_files << file
           end
         end
 
         raise "No files changed!" if updated_files.none?
 
         updated_files
+      ensure
+        FileUtils.remove_entry(@repo_contents_path, force=true) if File.exists?(@repo_contents_path)
       end
 
       private

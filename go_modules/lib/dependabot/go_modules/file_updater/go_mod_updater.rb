@@ -133,8 +133,6 @@ module Dependabot
             end
 
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
-          ensure
-            FileUtils.remove_dir(repo_contents_path) if File.exists?(repo_contents_path)
           end
         end
 
