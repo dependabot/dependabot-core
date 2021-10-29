@@ -12,7 +12,7 @@ module Dependabot
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, work_item: nil)
+                     author_details:, labeler: nil, work_item: nil)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -73,12 +73,13 @@ module Dependabot
       end
 
       def create_pull_request
+        labels = labeler ? labeler.labels_for_pr : []
         azure_client_for_source.create_pull_request(
           pr_name,
           branch_name,
           source.branch || default_branch,
           pr_description,
-          labeler.labels_for_pr,
+          labels,
           work_item
         )
       end
