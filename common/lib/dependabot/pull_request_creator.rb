@@ -60,7 +60,7 @@ module Dependabot
                    label_language: false, automerge_candidate: false,
                    github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
                    custom_headers: nil, require_up_to_date_base: false,
-                   provider_metadata: {}, message: nil)
+                   provider_metadata: {}, message: nil, labels_required: true)
       @dependencies               = dependencies
       @source                     = source
       @base_commit                = base_commit
@@ -85,6 +85,7 @@ module Dependabot
       @require_up_to_date_base    = require_up_to_date_base
       @provider_metadata          = provider_metadata
       @message                    = message
+      @labels_required            = labels_required
 
       check_dependencies_have_previous_version
     end
@@ -108,6 +109,10 @@ module Dependabot
       end
     end
 
+    def labels_required=(labels_required)
+      @labels_required = labels_required
+    end
+
     private
 
     def label_language?
@@ -120,6 +125,10 @@ module Dependabot
 
     def require_up_to_date_base?
       @require_up_to_date_base
+    end
+
+    def labels_required?
+      @labels_required
     end
 
     def github_creator
@@ -172,7 +181,7 @@ module Dependabot
         pr_description: message.pr_message,
         pr_name: message.pr_name,
         author_details: author_details,
-        labeler: labeler,
+        labeler: labels_required? ? labeler: nil,
         work_item: provider_metadata&.fetch(:work_item, nil)
       )
     end
