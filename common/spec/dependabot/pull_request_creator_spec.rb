@@ -261,7 +261,7 @@ RSpec.describe Dependabot::PullRequestCreator do
       end
 
       it "delegates to PullRequestCreator::Azure without labeler" do
-        creator.labels_required=false
+        creator.labels_required = false
         expect(described_class::Azure).
           to receive(:new).
           with(

@@ -266,8 +266,10 @@ module Dependabot
         end
 
         raise Unauthorized if response.status == 401
+
         if response.status == 403
           raise TagsCreationForbidden if tags_creation_forbidden?(response)
+
           raise Forbidden
         end
         raise NotFound if response.status == 404
@@ -317,8 +319,9 @@ module Dependabot
 
       def tags_creation_forbidden?(response)
         return if response.body.empty?
-        message = JSON.parse(response.body).fetch('message', nil)
-        message && message.include?("TF401289: The current user does not have permissions to create tags")
+
+        message = JSON.parse(response.body).fetch("message", nil)
+        message&.include?("TF401289: The current user does not have permissions to create tags")
       end
 
       attr_reader :auth_header

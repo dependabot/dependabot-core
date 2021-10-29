@@ -109,9 +109,7 @@ module Dependabot
       end
     end
 
-    def labels_required=(labels_required)
-      @labels_required = labels_required
-    end
+    attr_writer :labels_required
 
     private
 
@@ -181,7 +179,7 @@ module Dependabot
         pr_description: message.pr_message,
         pr_name: message.pr_name,
         author_details: author_details,
-        labeler: labels_required? ? labeler: nil,
+        labeler: labels_required? ? labeler : nil,
         work_item: provider_metadata&.fetch(:work_item, nil)
       )
     end

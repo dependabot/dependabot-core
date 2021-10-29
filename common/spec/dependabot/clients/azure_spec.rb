@@ -182,8 +182,10 @@ RSpec.describe Dependabot::Clients::Azure do
   end
 
   describe "#create_pull_request" do
-    subject { client.create_pull_request("pr_name", "source_branch", "target_branch",
-      "", [], nil) }
+    subject do
+      client.create_pull_request("pr_name", "source_branch", "target_branch",
+                                 "", [], nil)
+    end
 
     let(:pull_request_url) { repo_url + "/pullrequests?api-version=5.0" }
 
@@ -191,8 +193,7 @@ RSpec.describe Dependabot::Clients::Azure do
       before do
         stub_request(:post, pull_request_url).
           with(basic_auth: [username, password]).
-          to_return(status: 403, body: JSON.unparse({message: "TF401289: The current user does not have permissions to create tags"}))
-
+          to_return(status: 403, body: JSON.unparse({ message: "TF401289: The current user does not have permissions to create tags" }))
       end
 
       it "raises a helpful error" do
@@ -211,9 +212,8 @@ RSpec.describe Dependabot::Clients::Azure do
         expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
       end
     end
-
   end
-  
+
   describe "#pull_request" do
     subject { client.pull_request(pull_request_id) }
 
