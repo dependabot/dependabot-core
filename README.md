@@ -45,7 +45,7 @@ In addition to this library, you may be interested in:
 - The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
 
 ## Cloning the repository
-Clone the repository with Git using:
+Clone the repository with Git using: 
 
 ```
 git clone https://github.com/dependabot/dependabot-core.git
