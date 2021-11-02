@@ -6,12 +6,22 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Bundler
     module NativeHelpers
-      def self.run_bundler_subprocess(function:, args:, bundler_version:)
+      def self.run_bundler_subprocess(function:, args:, bundler_version:, options: {})
         # Run helper suprocess with all bundler-related ENV variables removed
         bundler_major_version = bundler_version.split(".").first
         ::Bundler.with_original_env do
+          timeout_seconds = options[:timeout_per_operation_seconds]
+          command = if timeout_seconds
+            [
+              "timeout -s HUP",
+              timeout_seconds,
+              helper_path(bundler_version: bundler_major_version)
+            ].join(" ")
+          else
+            helper_path(bundler_version: bundler_major_version)
+          end
           SharedHelpers.run_helper_subprocess(
-            command: helper_path(bundler_version: bundler_major_version),
+            command: command,
             function: function,
             args: args,
             env: {
