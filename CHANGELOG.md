@@ -1,3 +1,9 @@
+## v0.164.1, 2 November 2021
+
+- Only check auth for github.com when running `bump-version` [#4347](https://github.com/dependabot/dependabot-core/pull/4347)
+- Ensure we cleanup tmp directories after use [#4356](https://github.com/dependabot/dependabot-core/pull/4356)
+- Treat GHES hosted sources as github sources [#4335](https://github.com/dependabot/dependabot-core/pull/4335)
+
 ## v0.164.0, 27 October 2021
 
 - Add license to image and gemspec [#4317](https://github.com/dependabot/dependabot-core/pull/4317)
