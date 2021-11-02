@@ -168,7 +168,7 @@ module Dependabot
               ignored_versions: ignored_versions,
               raise_on_ignored: @raise_on_ignored,
               security_advisories: [],
-              options: options,
+              options: options
             ).latest_version_details
         end
 

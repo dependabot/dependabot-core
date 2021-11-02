@@ -12,14 +12,14 @@ module Dependabot
         ::Bundler.with_original_env do
           timeout_seconds = options[:timeout_per_operation_seconds]
           command = if timeout_seconds
-            [
-              "timeout -s HUP",
-              timeout_seconds,
-              helper_path(bundler_version: bundler_major_version)
-            ].join(" ")
-          else
-            helper_path(bundler_version: bundler_major_version)
-          end
+                      [
+                        "timeout -s HUP",
+                        timeout_seconds,
+                        helper_path(bundler_version: bundler_major_version)
+                      ].join(" ")
+                    else
+                      helper_path(bundler_version: bundler_major_version)
+                    end
           SharedHelpers.run_helper_subprocess(
             command: command,
             function: function,
