@@ -10,21 +10,17 @@ module Dependabot
         MAX_SECONDS = 1800
         MIN_SECONDS = 60
 
-        attr_reader :timeout_seconds
-
         def initialize(timeout_seconds)
           @timeout_seconds = adjust(timeout_seconds)
         end
 
-        def build(script_path)
-          [
-            timeout_command,
-            :bundle, :exec, :ruby,
-            script_path
-          ].compact.join(" ")
+        def build(script)
+          [timeout_command, :bundle, :exec, :ruby, script].compact.join(" ")
         end
 
         private
+
+        attr_reader :timeout_seconds
 
         def timeout_command
           "timeout -s HUP #{timeout_seconds}" unless timeout_seconds.zero?
