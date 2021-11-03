@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
           function: "noop",
           args: [],
           bundler_version: "2.0.0",
-          options: { }
+          options: {}
         )
 
         expect(Dependabot::SharedHelpers).
