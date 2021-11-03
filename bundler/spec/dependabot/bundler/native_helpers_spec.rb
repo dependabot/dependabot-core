@@ -30,5 +30,27 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
           )
       end
     end
+
+    context "without a timeout" do
+      it "does not apply a timeout" do
+        allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+
+        subject.run_bundler_subprocess(
+          function: "noop",
+          args: [],
+          bundler_version: "2.0.0",
+          options: { }
+        )
+
+        expect(Dependabot::SharedHelpers).
+          to have_received(:run_helper_subprocess).
+          with(
+            command: "bundle exec ruby /opt/bundler/v2/run.rb",
+            function: "noop",
+            args: [],
+            env: anything
+          )
+      end
+    end
   end
 end

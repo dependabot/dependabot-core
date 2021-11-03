@@ -10,18 +10,8 @@ module Dependabot
         # Run helper suprocess with all bundler-related ENV variables removed
         bundler_major_version = bundler_version.split(".").first
         ::Bundler.with_original_env do
-          timeout_seconds = options[:timeout_per_operation_seconds]
-          command = if timeout_seconds
-                      [
-                        "timeout -s HUP",
-                        timeout_seconds,
-                        helper_path(bundler_version: bundler_major_version)
-                      ].join(" ")
-                    else
-                      helper_path(bundler_version: bundler_major_version)
-                    end
           SharedHelpers.run_helper_subprocess(
-            command: command,
+            command: helper_path(bundler_version: bundler_major_version, timeout_seconds: options[:timeout_per_operation_seconds]),
             function: function,
             args: args,
             env: {
@@ -45,8 +35,9 @@ module Dependabot
         File.join(native_helpers_root, native_helper_version)
       end
 
-      def self.helper_path(bundler_version:)
-        "bundle exec ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
+      def self.helper_path(bundler_version:, timeout_seconds: nil)
+        prefix = "timeout -s HUP #{timeout_seconds} " if timeout_seconds
+        "#{prefix}bundle exec ruby #{File.join(versioned_helper_path(bundler_version: bundler_version), 'run.rb')}"
       end
 
       def self.native_helpers_root
