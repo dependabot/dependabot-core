@@ -7,10 +7,13 @@ module Dependabot
   module Bundler
     module NativeHelpers
       class BundleCommand
+        MAX_SECONDS = 1800
+        MIN_SECONDS = 60
+
         attr_reader :timeout_seconds
 
         def initialize(timeout_seconds)
-          @timeout_seconds = timeout_seconds
+          @timeout_seconds = adjust(timeout_seconds)
         end
 
         def build(script_path)
@@ -24,7 +27,17 @@ module Dependabot
         private
 
         def timeout_command
-          "timeout -s HUP #{timeout_seconds}" if timeout_seconds
+          "timeout -s HUP #{timeout_seconds}" unless timeout_seconds.zero?
+        end
+
+        def adjust(seconds)
+          return 0 unless seconds
+
+          seconds = seconds.to_i
+          return MAX_SECONDS if seconds > MAX_SECONDS
+          return MIN_SECONDS if seconds < MIN_SECONDS
+
+          seconds
         end
       end
 
