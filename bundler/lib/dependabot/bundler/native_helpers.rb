@@ -11,7 +11,8 @@ module Dependabot
         bundler_major_version = bundler_version.split(".").first
         ::Bundler.with_original_env do
           SharedHelpers.run_helper_subprocess(
-            command: helper_path(bundler_version: bundler_major_version, timeout_seconds: options[:timeout_per_operation_seconds]),
+            command: helper_path(bundler_version: bundler_major_version,
+                                 timeout_seconds: options[:timeout_per_operation_seconds]),
             function: function,
             args: args,
             env: {
