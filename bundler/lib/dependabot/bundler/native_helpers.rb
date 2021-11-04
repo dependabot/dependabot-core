@@ -11,7 +11,7 @@ module Dependabot
         MIN_SECONDS = 60
 
         def initialize(timeout_seconds)
-          @timeout_seconds = adjust(timeout_seconds)
+          @timeout_seconds = clamp(timeout_seconds)
         end
 
         def build(script)
@@ -26,14 +26,10 @@ module Dependabot
           "timeout -s HUP #{timeout_seconds}" unless timeout_seconds.zero?
         end
 
-        def adjust(seconds)
+        def clamp(seconds)
           return 0 unless seconds
 
-          seconds = seconds.to_i
-          return MAX_SECONDS if seconds > MAX_SECONDS
-          return MIN_SECONDS if seconds < MIN_SECONDS
-
-          seconds
+          seconds.to_i.clamp(MIN_SECONDS, MAX_SECONDS)
         end
       end
 
