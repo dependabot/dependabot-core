@@ -50,6 +50,7 @@ module Dependabot
             updated_deps, specs = NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "force_update",
+              options: options,
               args: {
                 dir: tmp_dir,
                 dependency_name: dependency.name,
