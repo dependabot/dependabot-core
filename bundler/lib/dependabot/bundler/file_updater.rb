@@ -79,6 +79,7 @@ module Dependabot
           NativeHelpers.run_bundler_subprocess(
             bundler_version: bundler_version,
             function: "vendor_cache_dir",
+            options: options,
             args: {
               dir: repo_contents_path
             }

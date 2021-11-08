@@ -262,6 +262,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             with({
               bundler_version: PackageManagerHelper.bundler_version,
               function: "resolve_version",
+              options: anything,
               args: anything
             }).
             and_return(

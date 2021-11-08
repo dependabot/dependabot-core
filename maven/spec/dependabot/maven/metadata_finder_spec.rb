@@ -54,6 +54,12 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
     before do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
       stub_request(:get, mockk_url).to_return(status: 200, body: mockk_response)
+
+      stub_request(:get, "https://example.com/status").to_return(
+        status: 200,
+        body: "Not GHES",
+        headers: {}
+      )
     end
 
     context "when the dependency name has a classifier" do

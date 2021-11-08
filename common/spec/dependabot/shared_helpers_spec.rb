@@ -7,6 +7,10 @@ RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
 
   describe ".in_a_temporary_directory" do
+    def existing_tmp_folders
+      Dir.glob(File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, "*"))
+    end
+
     subject(:in_a_temporary_directory) do
       Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
     end
@@ -19,6 +23,10 @@ RSpec.describe Dependabot::SharedHelpers do
     it "yields the path to the temporary directory created" do
       expect { |b| described_class.in_a_temporary_directory(&b) }.
         to yield_with_args(Pathname)
+    end
+
+    it "removes the temporary directory after use" do
+      expect { in_a_temporary_directory }.not_to(change { existing_tmp_folders })
     end
   end
 

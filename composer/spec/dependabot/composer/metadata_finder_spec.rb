@@ -33,6 +33,14 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
   end
   let(:dependency_name) { "monolog/monolog" }
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
