@@ -68,7 +68,8 @@ module Dependabot
       def binary_file?(path)
         return false unless File.exist?(path)
 
-        encoding = `file -b --mime-encoding #{path}`.strip
+        command = SharedHelpers.escape_command("file -b --mime-encoding #{path}")
+        encoding = `#{command}`.strip
 
         !TEXT_ENCODINGS.include?(encoding)
       end

@@ -44,6 +44,21 @@ In addition to this library, you may be interested in:
   GitLab or Azure DevOps
 - The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
 
+## Cloning the repository
+Clone the repository with Git using:
+
+```
+git clone https://github.com/dependabot/dependabot-core.git
+```
+
+On Windows this might fail with "Filename too long". To solve this, run the
+following commands in the cloned Git repository:
+
+1. `git config core.longpaths true`
+2. `git reset --hard`
+
+You can read more about this in the [Git for Windows wiki](https://github.com/git-for-windows/git/wiki/Git-cannot-create-a-file-or-directory-with-a-long-path).
+
 ## Setup
 
 To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
@@ -101,16 +116,13 @@ $ bin/docker-dev-shell
 
 ### Dry run script
 
-*Note: you must have run `bundle install` in the `omnibus` directory before
-running this script.*
-
 You can use the "dry-run" script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
 arguments: the package manager and the GitHub repo name (including the
 account):
 
 ```bash
-$ cd omnibus && bundle install && cd -
+$ bin/docker-dev-shell
 $ bin/dry-run.rb go_modules rsc/quote
 => fetching dependency files
 => parsing dependency files
@@ -129,6 +141,11 @@ If the development Docker image isn't present on your machine, it will be built 
 Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted
 to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
+
+⚠️ The `Clone Repository ...` commands of the Remote Containers extension are currently
+missing some functionality and are therefore not supported. You have to clone the
+repository manually and use the `Reopen in Container` or `Open Folder in Container...`
+command.
 
 ## Releasing
 
@@ -226,6 +243,7 @@ Dependabot and Dependabot Core started life as [Bump][bump] and
 [GoCardless][gocardless]. We remain grateful for the help and support of
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
+
 
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073

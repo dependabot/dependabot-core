@@ -47,7 +47,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
         parser.parse.select(&:top_level?)
       end
 
-      its(:length) { is_expected.to eq(3) }
+      its(:length) { is_expected.to eq(2) }
 
       it "sets the package manager" do
         expect(dependencies.first.package_manager).to eq("go_modules")
@@ -127,6 +127,19 @@ RSpec.describe Dependabot::GoModules::FileParser do
             )
           end
         end
+      end
+    end
+
+    describe "a dependency that is replaced" do
+      subject(:dependency) do
+        dependencies.find { |d| d.name == "rsc.io/qr" }
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("rsc.io/qr")
+        expect(dependency.version).to eq("0.1.0")
+        expect(dependency.requirements).to eq([])
       end
     end
 

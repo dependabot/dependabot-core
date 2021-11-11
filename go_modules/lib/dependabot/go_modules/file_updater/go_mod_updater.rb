@@ -25,7 +25,7 @@ module Dependabot
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git fetch .*: exit status 128/m.freeze,
+          /go: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed

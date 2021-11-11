@@ -40,10 +40,14 @@ module Dependabot
 
     def self.in_a_temporary_directory(directory = "/")
       Dir.mkdir(Utils::BUMP_TMP_DIR_PATH) unless Dir.exist?(Utils::BUMP_TMP_DIR_PATH)
-      Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH) do |dir|
-        path = Pathname.new(File.join(dir, directory)).expand_path
+      tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
+
+      begin
+        path = Pathname.new(File.join(tmp_dir, directory)).expand_path
         FileUtils.mkpath(path)
         Dir.chdir(path) { yield(path) }
+      ensure
+        FileUtils.rm_rf(tmp_dir)
       end
     end
 

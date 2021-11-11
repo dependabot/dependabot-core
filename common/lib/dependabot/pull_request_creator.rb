@@ -157,7 +157,8 @@ module Dependabot
         labeler: labeler,
         approvers: reviewers,
         assignees: assignees,
-        milestone: milestone
+        milestone: milestone,
+        target_project_id: provider_metadata[:target_project_id]
       )
     end
 

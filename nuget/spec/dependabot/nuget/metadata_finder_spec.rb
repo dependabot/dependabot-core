@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/nuget/metadata_finder"
 require_common_spec "metadata_finders/shared_examples_for_metadata_finders"
@@ -51,6 +52,11 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
     before do
       stub_request(:get, nuget_url).to_return(status: 200, body: nuget_response)
+      stub_request(:get, "https://example.com/status").to_return(
+        status: 200,
+        body: "Not GHES",
+        headers: {}
+      )
     end
 
     context "with a github link in the nuspec" do

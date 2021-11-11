@@ -12,6 +12,8 @@ module Dependabot
         # we're confident we're selecting repos correctly it's wise to include
         # it as a default.
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
+        GOOGLE_MAVEN_REPO = "https://maven.google.com"
+        GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
 
         REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
 
@@ -32,7 +34,10 @@ module Dependabot
 
         def repository_urls
           repository_urls = []
-          repository_urls += inherited_repository_urls
+          repository_urls += inherited_repository_urls(top_level_buildfile)
+          FileParser.find_includes(top_level_buildfile, dependency_files).each do |dependency_file|
+            repository_urls += inherited_repository_urls(dependency_file)
+          end
           repository_urls += own_buildfile_repository_urls
           repository_urls = repository_urls.uniq
 
@@ -45,10 +50,10 @@ module Dependabot
 
         attr_reader :dependency_files, :target_dependency_file
 
-        def inherited_repository_urls
-          return [] unless top_level_buildfile
+        def inherited_repository_urls(dependency_file)
+          return [] unless dependency_file
 
-          buildfile_content = comment_free_content(top_level_buildfile)
+          buildfile_content = comment_free_content(dependency_file)
           subproject_blocks = []
 
           buildfile_content.scan(/(?:^|\s)allprojects\s*\{/) do
@@ -93,11 +98,13 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            repository_urls << "https://maven.google.com/" if block.match?(/\sgoogle\(/)
+            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
 
-            repository_urls << "https://repo.maven.apache.org/maven2/" if block.match?(/\smavenCentral\(/)
+            repository_urls << CENTRAL_REPO_URL if block.match?(/\smavenCentral\(/)
 
             repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
+
+            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << Regexp.last_match.named_captures.fetch("url")
