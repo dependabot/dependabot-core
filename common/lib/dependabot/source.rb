@@ -45,7 +45,7 @@ module Dependabot
       (?:#{AZURE_SOURCE})
     /x.freeze
 
-    IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org).freeze
+    IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 
     attr_accessor :provider, :repo, :directory, :branch, :commit,
                   :hostname, :api_endpoint
