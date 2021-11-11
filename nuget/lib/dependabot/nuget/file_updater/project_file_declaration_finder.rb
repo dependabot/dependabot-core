@@ -122,7 +122,7 @@ module Dependabot
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
           declaring_file.content.scan(SDK_PROJECT_REGEX).each do |xml|
-            xml += "</Project>" unless string.end_with?("/>")
+            xml += "</Project>" unless xml.end_with?("/>")
             node = Nokogiri::XML(xml)
             node.remove_namespaces!
             element = node.at_xpath("/Project")
@@ -157,7 +157,7 @@ module Dependabot
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
           declaring_file.content.scan(regex).each do |xml|
-            xml += "</#{element_name}>" unless string.end_with?("/>")
+            xml += "</#{element_name}>" unless xml.end_with?("/>")
             node = Nokogiri::XML(xml)
             node.remove_namespaces!
             element = node.at_xpath("/#{element_name}")
@@ -175,7 +175,7 @@ module Dependabot
             node_version = node_version&.strip
             next unless node_version == dep_version
 
-            strings << string
+            strings << xml
           end
           strings
         end
