@@ -40,8 +40,7 @@ module Dependabot
             version = dependency_version(dependency_node, project_file)
             prop_name = req_property_name(dependency_node)
 
-            dependency =
-              build_dependency(name, req, version, prop_name, project_file)
+            dependency = build_dependency(name, req, version, prop_name, project_file)
             dependency_set << dependency if dependency
           end
           # Look for SDK references; see:
@@ -84,8 +83,7 @@ module Dependabot
             name = import_node.attribute("Sdk")&.value&.strip
             version = import_node.attribute("Version")&.value&.strip
 
-            dependency =
-              build_dependency(name, version, version, nil, project_file)
+            dependency = build_dependency(name, version, version, nil, project_file)
             dependency_set << dependency if dependency
           end
         end
@@ -106,8 +104,7 @@ module Dependabot
             name = sdk_node.attribute("Name")&.value&.strip
             version = sdk_node.attribute("Version")&.value&.strip
 
-            dependency =
-              build_dependency(name, version, version, nil, project_file)
+            dependency = build_dependency(name, version, version, nil, project_file)
             dependency_set << dependency if dependency
           end
         end

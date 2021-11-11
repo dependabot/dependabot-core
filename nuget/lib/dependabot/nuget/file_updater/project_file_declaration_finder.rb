@@ -121,8 +121,7 @@ module Dependabot
           dep_name = dependency_name&.downcase
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
-          declaring_file.content.scan(SDK_PROJECT_REGEX).each do |string|
-            xml = string
+          declaring_file.content.scan(SDK_PROJECT_REGEX).each do |xml|
             xml += "</Project>" unless string.end_with?("/>")
             node = Nokogiri::XML(xml)
             node.remove_namespaces!
@@ -143,9 +142,7 @@ module Dependabot
               strings << sdk_reference
             end
           end
-          # Drop duplicates, to avoid potential issues with repeated replacements (e.g. upgrading Foo/1.0.0-beta to
-          # Foo/1.0.0-beta.2). However, that turns the empty array into nil.
-          strings.uniq! || []
+          strings.uniq
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
@@ -159,8 +156,7 @@ module Dependabot
           dep_name = dependency_name&.downcase
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
-          declaring_file.content.scan(regex).each do |string|
-            xml = string
+          declaring_file.content.scan(regex).each do |xml|
             xml += "</#{element_name}>" unless string.end_with?("/>")
             node = Nokogiri::XML(xml)
             node.remove_namespaces!
