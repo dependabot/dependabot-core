@@ -45,6 +45,8 @@ module Dependabot
       (?:#{AZURE_SOURCE})
     /x.freeze
 
+    IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org).freeze
+
     attr_accessor :provider, :repo, :directory, :branch, :commit,
                   :hostname, :api_endpoint
 
@@ -64,6 +66,7 @@ module Dependabot
     def self.github_enterprise_from_url(url_string)
       captures = url_string&.match(GITHUB_ENTERPRISE_SOURCE)&.named_captures
       return unless captures
+      return if IGNORED_PROVIDER_HOSTS.include?(captures.fetch("host"))
 
       base_url = "https://#{captures.fetch('host')}"
 
@@ -86,6 +89,8 @@ module Dependabot
         # currently doesn't work with development environments
         resp.headers["X-GitHub-Request-Id"] &&
         !resp.headers["X-GitHub-Request-Id"].empty?
+    rescue Excon::Error
+      false
     end
 
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
