@@ -116,71 +116,66 @@ module Dependabot
           sdk_strings(SDK_IMPORT_REGEX, "Import", "Sdk", "Version")
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
+        def parse_element(string, name)
+          xml = string
+          xml += "</#{name}>" unless string.end_with?("/>")
+          node = Nokogiri::XML(xml)
+          node.remove_namespaces!
+          node.at_xpath("/#{name}")
+        end
+
+        def get_attribute_value_nocase(element, name)
+          value = element.attribute(name)&.value ||
+                  element.attribute(name.downcase)&.value ||
+                  element.attribute(name.upcase)&.value
+          value&.strip
+        end
+
+        def desired_sdk_reference?(sdk_reference, dep_name, dep_version)
+          parts = sdk_reference.split("/")
+          parts.length == 2 && parts[0]&.downcase == dep_name && parts[1] == dep_version
+        end
+
         def sdk_project_strings
           dep_name = dependency_name&.downcase
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
-          declaring_file.content.scan(SDK_PROJECT_REGEX).each do |xml|
-            xml += "</Project>" unless xml.end_with?("/>")
-            node = Nokogiri::XML(xml)
-            node.remove_namespaces!
-            element = node.at_xpath("/Project")
+          declaring_file.content.scan(SDK_PROJECT_REGEX).each do |string|
+            element = parse_element(string, "Project")
             next unless element
 
-            sdk_references = element.attribute("Sdk")&.value ||
-                             element.attribute("sdk")&.value
-            sdk_references = sdk_references&.strip
+            sdk_references = get_attribute_value_nocase(element, "Sdk")
             next unless sdk_references&.include?("/")
 
             sdk_references.split(";").each do |sdk_reference|
-              parts = sdk_reference.split("/")
-              next unless parts.length == 2
-              next unless parts[0]&.downcase == dep_name
-              next unless parts[1] == dep_version
-
-              strings << sdk_reference
+              strings << sdk_reference if desired_sdk_reference?(sdk_reference, dep_name, dep_version)
             end
           end
           strings.uniq
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def sdk_sdk_strings
           sdk_strings(SDK_SDK_REGEX, "Sdk", "Name", "Version")
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def sdk_strings(regex, element_name, name_attribute, version_attribute)
           dep_name = dependency_name&.downcase
           dep_version = declaring_requirement.fetch(:requirement)
           strings = []
-          declaring_file.content.scan(regex).each do |xml|
-            xml += "</#{element_name}>" unless xml.end_with?("/>")
-            node = Nokogiri::XML(xml)
-            node.remove_namespaces!
-            element = node.at_xpath("/#{element_name}")
+          declaring_file.content.scan(regex).each do |string|
+            element = parse_element(string, element_name)
             next unless element
 
-            node_name =
-              element.attribute(name_attribute)&.value ||
-              element.attribute(name_attribute.downcase)&.value
-            node_name = node_name&.strip&.downcase
+            node_name = get_attribute_value_nocase(element, name_attribute)&.downcase
             next unless node_name == dep_name
 
-            node_version =
-              element.attribute(version_attribute)&.value ||
-              element.attribute(version_attribute.downcase)&.value
-            node_version = node_version&.strip
+            node_version = get_attribute_value_nocase(element, version_attribute)
             next unless node_version == dep_version
 
-            strings << xml
+            strings << string
           end
           strings
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end
