@@ -9,10 +9,9 @@ description = "Various small python projects."
 
 [tool.poetry.dependencies]
 python = "^3.7"
-requests = "2.18.0"
-internal = { version = "=1.2.3", source = "custom" }
+luigi = { version = "^2.8.8", source = "custom" }
 
 [[tool.poetry.source]]
 name = "custom"
-url = "https://some.internal.registry.com/pypi/"
+url = "http://localhost:8080/simple/"
 secondary = true
