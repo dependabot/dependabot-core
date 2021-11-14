@@ -1,3 +1,8 @@
+## v0.166.1, 12 November 2021
+
+- Terraform: Improve file updater and registry request error handling [#4405](https://github.com/dependabot/dependabot-core/pull/4405)
+- Explicitly ignore metadata detection for fuchsia.googlesource.com [#4402](https://github.com/dependabot/dependabot-core/pull/4402)
+
 ## v0.166.0, 11 November 2021
 
 - Ignore errors from Source enterprise check and ignore known failures [#4401](https://github.com/dependabot/dependabot-core/pull/4401)
