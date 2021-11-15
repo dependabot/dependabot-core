@@ -259,11 +259,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Awesome.Sdk")
               expect(dependency.version).to eq("1.2.3")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "1.2.3",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
 
@@ -275,11 +275,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Prototype.Sdk")
               expect(dependency.version).to eq("0.1.0-beta")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "0.1.0-beta",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
         end
@@ -297,11 +297,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Awesome.Sdk")
               expect(dependency.version).to eq("1.2.3")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "1.2.3",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
 
@@ -313,11 +313,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Prototype.Sdk")
               expect(dependency.version).to eq("0.1.0-beta")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "0.1.0-beta",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
         end
@@ -335,11 +335,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Awesome.Sdk")
               expect(dependency.version).to eq("1.2.3")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "1.2.3",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
 
@@ -351,11 +351,11 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               expect(dependency.name).to eq("Prototype.Sdk")
               expect(dependency.version).to eq("0.1.0-beta")
               expect(dependency.requirements).to eq([{
-                                                      requirement: "0.1.0-beta",
-                                                      file: "my.csproj",
-                                                      groups: [],
-                                                      source: nil
-                                                    }])
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
             end
           end
         end
