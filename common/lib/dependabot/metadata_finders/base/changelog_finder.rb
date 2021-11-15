@@ -57,7 +57,7 @@ module Dependabot
 
             # If pandoc isn't installed just return the rst
             pruned_text
-          rescue RuntimeError => e
+          rescue RuntimeError
             pruned_text
           end
         end
