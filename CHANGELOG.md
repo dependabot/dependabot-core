@@ -1,3 +1,20 @@
+## v0.167.0, 16 November 2021
+
+- Maven: Correctly handle nested declarations [#4417](https://github.com/dependabot/dependabot-core/pull/4417)
+- Add parsing of MSBuild SDK dependencies (NuGet) (@Zastai) [#2849](https://github.com/dependabot/dependabot-core/pull/2849)
+- fix: remove fixed error message check [#4412](https://github.com/dependabot/dependabot-core/pull/4412)
+
+## v0.166.1, 12 November 2021
+
+- Terraform: Improve file updater and registry request error handling [#4405](https://github.com/dependabot/dependabot-core/pull/4405)
+- Explicitly ignore metadata detection for fuchsia.googlesource.com [#4402](https://github.com/dependabot/dependabot-core/pull/4402)
+
+## v0.166.0, 11 November 2021
+
+- Ignore errors from Source enterprise check and ignore known failures [#4401](https://github.com/dependabot/dependabot-core/pull/4401)
+- Bump to go 1.17.3 (@jeffwidman) [#4393](https://github.com/dependabot/dependabot-core/pull/4393)
+- Move composer-not-found fixture from decommissioned dependabot.com [#4399](https://github.com/dependabot/dependabot-core/pull/4399)
+
 ## v0.165.0, 8 November 2021
 
 - Add timeout per operation [#4362](https://github.com/dependabot/dependabot-core/pull/4362)
