@@ -57,9 +57,7 @@ module Dependabot
 
             # If pandoc isn't installed just return the rst
             pruned_text
-          rescue RuntimeError => e
-            raise unless e.message.include?("Pandoc timed out")
-
+          rescue RuntimeError
             pruned_text
           end
         end
