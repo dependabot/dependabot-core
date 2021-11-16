@@ -1,3 +1,9 @@
+## v0.167.0, 16 November 2021
+
+- Maven: Correctly handle nested declarations [#4417](https://github.com/dependabot/dependabot-core/pull/4417)
+- Add parsing of MSBuild SDK dependencies (NuGet) (@Zastai) [#2849](https://github.com/dependabot/dependabot-core/pull/2849)
+- fix: remove fixed error message check [#4412](https://github.com/dependabot/dependabot-core/pull/4412)
+
 ## v0.166.1, 12 November 2021
 
 - Terraform: Improve file updater and registry request error handling [#4405](https://github.com/dependabot/dependabot-core/pull/4405)
