@@ -48,7 +48,7 @@ module Dependabot
             PandocRuby.convert(
               pruned_text,
               from: :rst,
-              to: :markdown,
+              to: :gfm,
               wrap: :none,
               timeout: 10
             )
