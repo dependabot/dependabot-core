@@ -49,6 +49,7 @@ RUN apt-get update \
     libxmlsec1-dev \
     libgeos-dev \
     python3-enchant \
+    pandoc \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
