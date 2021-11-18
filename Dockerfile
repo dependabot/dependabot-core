@@ -12,43 +12,43 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     build-essential \
-    dirmngr \
-    git \
     bzr \
-    mercurial \
-    gnupg2 \
     ca-certificates \
     curl \
+    dirmngr \
     file \
-    zlib1g-dev \
+    git \
+    gnupg2 \
     liblzma-dev \
-    tzdata \
-    zip \
-    unzip \
     locales \
-    openssh-client \
-    software-properties-common \
     make \
+    mercurial \
+    openssh-client \
+    pandoc \
+    software-properties-common \
+    tzdata \
+    unzip \
+    zip \
+    zlib1g-dev \
 # All packages from here onward are installed to ensure the Python ecosystem
 # is properly supported as Python packages may depend on them.
-    libpq-dev \
-    libssl-dev \
     libbz2-dev \
-    libffi-dev \
-    libreadline-dev \
-    libsqlite3-dev \
     libcurl4-openssl-dev \
-    llvm \
+    libffi-dev \
+    libgeos-dev \
+    libmysqlclient-dev \
     libncurses5-dev \
     libncursesw5-dev \
-    libmysqlclient-dev \
-    xz-utils \
-    tk-dev \
+    libpq-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libssl-dev \
     libxml2-dev \
     libxmlsec1-dev \
-    libgeos-dev \
+    llvm \
     python3-enchant \
-    pandoc \
+    tk-dev \
+    xz-utils \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
