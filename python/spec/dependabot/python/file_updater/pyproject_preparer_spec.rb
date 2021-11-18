@@ -149,6 +149,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
           "path = \"../toml\"\n"\
           "version = \"0.10.0\"\n"
         )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"../toml\"\n"
+        )
       end
     end
 
@@ -163,6 +166,27 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         expect(freeze_top_level_dependencies_except).to_not include(
           "path = \"toml-8.2.54.tar.gz\"\n"\
           "version = \"8.2.54\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"toml-8.2.54.tar.gz\"\n"
+        )
+      end
+    end
+
+    context "with url dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "url_dependency.lock" }
+      let(:pyproject_fixture_name) { "url_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"6.2.4\"\n") }
+      it "does not include the version for url deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n"\
+          "version = \"0.10.2\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n"
         )
       end
     end
