@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
-              "CRITICAL:pipenv.patched.notpip._internal.index.package_finder:"\
+              "CRITICAL:pipenv.patched.notpip._internal.resolution.resolvelib.factory:"\
               "Could not find a version that satisfies the requirement "\
               "pytest==10.4.0"
             )
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "SyntaxError while installing dependencies. Is one of the dependencies not Python 3 compatible?"
+              "ERROR: No matching distribution found for futures==3.2.0"
             )
           end
         end
@@ -383,9 +383,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       it "raises a helpful error" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to include(
-              "Could not find a version that matches "\
-              "chardet<3.1.0,==3.0.0,>=3.0.2\n"
+            expect(error.message).to match(
+              "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
             )
           end
       end
@@ -403,7 +402,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to include(
-              "Pipenv failed to install \"rtree\""
+              "ERROR: No matching distribution found for rtree==0.9.3"
             )
           end
       end
@@ -456,9 +455,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-              expect(error.message).to include(
-                "Could not find a version that matches "\
-                "chardet<3.1.0,==3.0.0,>=3.0.2\n"
+              expect(error.message).to match(
+                "Cannot install -r .* and chardet==3.0.0 because these package versions have conflicting dependencies"
               )
             end
         end
