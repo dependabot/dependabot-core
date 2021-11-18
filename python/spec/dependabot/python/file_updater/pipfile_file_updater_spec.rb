@@ -372,8 +372,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           let(:dependency_files) do
             [pipfile, lockfile, setupfile, setup_cfg, requirements_file]
           end
-          let(:pipfile_fixture_name) { "dir_dependency" }
-          let(:lockfile_fixture_name) { "dir_dependency.lock" }
+          let(:pipfile_fixture_name) { "path_dependency" }
+          let(:lockfile_fixture_name) { "path_dependency.lock" }
           let(:setupfile) do
             Dependabot::DependencyFile.new(
               name: "setup.py",
