@@ -235,6 +235,11 @@ RSpec.describe Dependabot::Source do
       end
     end
 
+    context "with an explicitly ignored URL" do
+      let(:url) { "https://gitbox.apache.org/repos/asf?p=commons-lang.git" }
+      it { is_expected.to be_nil }
+    end
+
     context "with a Bitbucket URL" do
       let(:url) do
         "https://bitbucket.org/org/abc/src/master/dir/readme.md?at=default"

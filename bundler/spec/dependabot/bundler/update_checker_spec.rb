@@ -158,6 +158,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
+            options: anything,
             args: anything
           }).and_call_original
 
@@ -166,6 +167,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
+            options: anything,
             args: anything
           }).
           and_return(

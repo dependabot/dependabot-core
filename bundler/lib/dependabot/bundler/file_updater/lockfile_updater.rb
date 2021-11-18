@@ -69,6 +69,7 @@ module Dependabot
               NativeHelpers.run_bundler_subprocess(
                 bundler_version: bundler_version,
                 function: "update_lockfile",
+                options: options,
                 args: {
                   gemfile_name: gemfile.name,
                   lockfile_name: lockfile.name,

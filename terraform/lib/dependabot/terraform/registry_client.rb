@@ -33,6 +33,8 @@ module Dependabot
         JSON.parse(response.body).
           fetch("versions").
           map { |release| version_class.new(release.fetch("version")) }
+      rescue Excon::Error
+        raise error("Could not fetch provider versions")
       end
 
       # Fetch all the versions of a module, and return a Version
