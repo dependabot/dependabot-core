@@ -15,7 +15,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
-      commit_message_options: { signoff_details: signoff_details },
+      commit_message_options: { signoff_details: signoff_details, trailer: trailer },
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -42,6 +42,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
+  let(:trailer) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
@@ -1709,6 +1710,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         expect(pr_message).to_not include("Signed-off-by")
       end
     end
+
+    context "with custom traier" do
+      let(:trailer) { "Changelog: dependency" }
+
+      it "doesn't include git trailer" do
+        expect(pr_message).to_not include(trailer)
+      end
+    end
   end
 
   describe "#commit_message", :vcr do
@@ -1791,6 +1800,28 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "\n\nOn-behalf-of: @tutum <support@tutum.com>\n"\
             "Signed-off-by: dependabot <support@dependabot.com>"
           )
+        end
+      end
+    end
+
+    context "with custom trailer" do
+      let(:trailer) { "Changelog: dependency" }
+
+      it "includes custom trailer" do
+        expect(commit_message).to end_with("\n\n#{trailer}")
+      end
+
+      context "with author details" do
+        let(:signoff_details) do
+          {
+            email: "support@dependabot.com",
+            name: "dependabot"
+          }
+        end
+
+        it "includes custom trailer and signoff line" do
+          expect(commit_message).
+            to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>\n#{trailer}")
         end
       end
     end

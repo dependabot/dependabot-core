@@ -142,6 +142,19 @@ module Dependabot
       end
 
       def message_trailers
+        return unless signoff_trailers || custom_trailer
+
+        [signoff_trailers, custom_trailer].compact.join("\n")
+      end
+
+      def custom_trailer
+        trailer = commit_message_options[:trailer]
+        return unless trailer.is_a?(String)
+
+        trailer
+      end
+
+      def signoff_trailers
         return unless on_behalf_of_message || signoff_message
 
         [on_behalf_of_message, signoff_message].compact.join("\n")
