@@ -29,6 +29,7 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << buildfile if buildfile
+        fetched_files << settings_file if settings_file
         fetched_files += subproject_buildfiles
         fetched_files += dependency_script_plugins
         check_required_files_present
