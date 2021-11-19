@@ -20,6 +20,7 @@ module Dependabot
           /404 Not Found/,
           /Repository not found/,
           /unrecognized import path/,
+          /malformed module path/,
           # (Private) module could not be fetched
           /module .*: git ls-remote .*: exit status 128/m.freeze
         ].freeze
