@@ -798,18 +798,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             "* Fixed `issue <https://github.com/pytest-dev/"\
             "pytest-selenium/issues/216>`_ with TestingBot local tunnel."
           end
-          let(:converted_text) do
-            "1.16.0 (2019-02-12)\n"\
-            "===================\n"\
-            "\n"\
-            "-   `pytest-selenium` now requires pytest 3.6 or later.\n"\
-            "-   Fixed [issue](https://github.com/pytest-dev/"\
-            "pytest-selenium/issues/216) with TestingBot local tunnel.\n"
-          end
 
-          it "converts the rst properly (or falls back)" do
-            expect([converted_text, unconverted_text]).
-              to include(changelog_text)
+          it "does not convert the rst" do
+            expect(changelog_text).to eq(unconverted_text)
           end
         end
       end
