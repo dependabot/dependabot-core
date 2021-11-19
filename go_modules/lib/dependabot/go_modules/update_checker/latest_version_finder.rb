@@ -24,6 +24,7 @@ module Dependabot
           # (Private) module could not be fetched
           /module .*: git ls-remote .*: exit status 128/m.freeze
         ].freeze
+        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m.freeze
         PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
@@ -108,6 +109,8 @@ module Dependabot
         def handle_subprocess_error(error)
           if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
             ResolvabilityErrors.handle(error.message, credentials: credentials)
+          elsif INVALID_VERSION_REGEX =~ error.message
+            raise Dependabot::DependencyFileNotResolvable, error.message
           end
 
           raise

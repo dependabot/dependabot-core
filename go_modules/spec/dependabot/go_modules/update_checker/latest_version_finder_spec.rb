@@ -186,6 +186,34 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the dependency's major version is invalid because it's not specified in its go.mod" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
+      let(:dependency_version) { "2.0.0" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib/v2")
+          expect(error.message).to include("version \"v2.0.0\" invalid")
+        end
+      end
+    end
+
+    context "when the dependency's major version is invalid because not properly imported" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
+      let(:dependency_version) { "3.0.0" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib")
+          expect(error.message).to include("version \"v3.0.0\" invalid")
+        end
+      end
+    end
+
     context "when the module is unreachable" do
       let(:dependency_files) { [go_mod] }
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-private" }
