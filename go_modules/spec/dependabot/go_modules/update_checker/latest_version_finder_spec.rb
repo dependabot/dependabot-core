@@ -66,11 +66,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     end
 
     context "when already on the latest version" do
-      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
-      let(:dependency_version) { "2.0.0" }
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v3" }
+      let(:dependency_version) { "3.0.0" }
 
       it "returns the current version" do
-        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("2.0.0"))
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("3.0.0"))
       end
     end
 
