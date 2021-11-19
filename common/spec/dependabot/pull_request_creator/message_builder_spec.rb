@@ -15,7 +15,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
-      commit_message_options: { signoff_details: signoff_details, trailer: trailer },
+      commit_message_options: { signoff_details: signoff_details, trailers: trailers },
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -42,7 +42,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
-  let(:trailer) { nil }
+  let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "github-redirect.dependabot.com" }
 
@@ -1712,10 +1712,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     end
 
     context "with custom traier" do
-      let(:trailer) { "Changelog: dependency" }
+      let(:trailers) { { "Changelog" => "dependency" } }
 
       it "doesn't include git trailer" do
-        expect(pr_message).to_not include(trailer)
+        expect(pr_message).to_not include("Changelog: dependency")
       end
     end
   end
@@ -1804,11 +1804,11 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
-    context "with custom trailer" do
-      let(:trailer) { "Changelog: dependency" }
+    context "with single custom trailer" do
+      let(:trailers) { { "Changelog" => "dependency" } }
 
       it "includes custom trailer" do
-        expect(commit_message).to end_with("\n\n#{trailer}")
+        expect(commit_message).to end_with("\n\nChangelog: dependency")
       end
 
       context "with author details" do
@@ -1821,8 +1821,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "includes custom trailer and signoff line" do
           expect(commit_message).
-            to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>\n#{trailer}")
+            to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>\nChangelog: dependency")
         end
+      end
+    end
+
+    context "with multiple trailers" do
+      let(:trailers) { { "Changelog" => "dependency", "Helped-by" => "dependabot" } }
+
+      it "includes custom trailers" do
+        expect(commit_message).to end_with("\n\n#{trailers.map { |k, v| "#{k}: #{v}" }.join("\n")}")
+      end
+    end
+
+    context "with incorrect trailers format" do
+      let(:trailers) { "Changelog: dependency" }
+
+      it "raises error" do
+        expect { commit_message }.to raise_error("Commit trailers must be a Hash object")
       end
     end
 
