@@ -195,7 +195,7 @@ RSpec.describe Dependabot::Clients::Azure do
           with(basic_auth: [username, password]).
           to_return(
             status: 403,
-            body: { message: "TF401289: The current user does not have permissions to create tags" }.to_json
+            body: { message: "TF401289" }.to_json
           )
       end
 

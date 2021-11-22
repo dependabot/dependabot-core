@@ -321,7 +321,7 @@ module Dependabot
         return if response.body.empty?
 
         message = JSON.parse(response.body).fetch("message", nil)
-        message&.include?("TF401289: The current user does not have permissions to create tags")
+        message&.include?("TF401289")
       end
 
       attr_reader :auth_header
