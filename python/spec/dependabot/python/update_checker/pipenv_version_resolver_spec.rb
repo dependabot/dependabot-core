@@ -129,15 +129,6 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       let(:updated_requirement) { ">= 1.5.3, <= 1.7.0" }
 
       it { is_expected.to eq(Gem::Version.new("1.7.0")) }
-
-      context "that no longer appears in the lockfile after updating" do
-        let(:lockfile_fixture_name) { "unnecessary_subdependency.lock" }
-        let(:dependency_name) { "setuptools" }
-        let(:dependency_version) { "40.2.0" }
-        let(:updated_requirement) { ">= 40.2.0, <= 41.0.0" }
-
-        it { is_expected.to be_nil }
-      end
     end
 
     context "with a dependency that can only be built on a mac" do
