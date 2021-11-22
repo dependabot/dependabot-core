@@ -280,11 +280,10 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: nil)
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {})
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-      env_cmd = [env, cmd].compact
-      stdout, process = Open3.capture2e(*env_cmd)
+      stdout, process = Open3.capture2e(env || {}, cmd)
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
