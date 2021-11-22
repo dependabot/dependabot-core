@@ -193,7 +193,10 @@ RSpec.describe Dependabot::Clients::Azure do
       before do
         stub_request(:post, pull_request_url).
           with(basic_auth: [username, password]).
-          to_return(status: 403, body: JSON.unparse({ message: "TF401289: The current user does not have permissions to create tags" }))
+          to_return(
+            status: 403,
+            body: { message: "TF401289: The current user does not have permissions to create tags" }.to_json
+          )
       end
 
       it "raises a helpful error" do
