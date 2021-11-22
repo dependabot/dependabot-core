@@ -107,8 +107,7 @@ async function updateDependencyFiles(directory, dependencies) {
   let requiredVersions = [];
   for (let dep of dependencies) {
     for (let reqs of dep.requirements) {
-      if(requiredVersions.indexOf(reqs.requirement) > -1)
-      {
+      if (requiredVersions.indexOf(reqs.requirement) > -1) {
           continue;
       }
       updateRunResults = Object.assign(
