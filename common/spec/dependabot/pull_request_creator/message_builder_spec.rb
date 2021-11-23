@@ -44,7 +44,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:signoff_details) { nil }
   let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
-  let(:github_redirection_service) { "github-redirect.dependabot.com" }
+  let(:github_redirection_service) { "redirect.github.com" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -70,7 +70,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "Bump version to v1.4.0</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> "\
-    "[Fix <a href=\"https://github-redirect.dependabot.com/gocardless/"\
+    "[Fix <a href=\"https://redirect.github.com/gocardless/"\
     "business/issues/9\">#9</a>] Allow custom calendars</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> "\
@@ -80,16 +80,16 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "</a></li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> "\
-    "Spacing: <a href=\"https://github-redirect.dependabot.com/my/repo/"\
+    "Spacing: <a href=\"https://redirect.github.com/my/repo/"\
     "pull/5\">my/repo#5</a></li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> "\
-    "Merge pull request <a href=\"https://github-redirect.dependabot.com/"\
+    "Merge pull request <a href=\"https://redirect.github.com/"\
     "gocardless/business/issues/8\">#8</a> "\
     "from gocardless/rename-sepa-to-ecb</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> "\
-    "<a href=\"https://github-redirect.dependabot.com/gocardless/business/"\
+    "<a href=\"https://redirect.github.com/gocardless/business/"\
     "issues/12\">12</a> Remove <em>SEPA</em> "\
     "calendar (replaced by TARGET)</li>\n"\
     "<li>See full diff in <a href=\"https://github.com/gocardless/business/"\
@@ -775,7 +775,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the right text" do
           commits = commits_details(base: "v1.4.0", head: "v1.5.0").
-                    gsub("github-redirect.dependabot.com", "github.com")
+                    gsub("redirect.github.com", "github.com")
           expect(pr_message).
             to eq(
               "Bumps [business](https://github.com/gocardless/business) "\

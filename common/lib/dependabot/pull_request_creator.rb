@@ -23,7 +23,7 @@ module Dependabot
     #
     # If you wish to disable this behaviour when using Dependabot Core directly,
     # pass a nil value when initialising this class.
-    DEFAULT_GITHUB_REDIRECTION_SERVICE = "github-redirect.dependabot.com"
+    DEFAULT_GITHUB_REDIRECTION_SERVICE = "redirect.github.com"
 
     class RepoNotFound < StandardError; end
 
