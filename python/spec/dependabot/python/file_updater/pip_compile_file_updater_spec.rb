@@ -505,5 +505,21 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         end
       end
     end
+
+    context "with stripped extras" do
+      let(:manifest_fixture_name) { "strip_extras.in" }
+      let(:generated_fixture_name) { "pip_compile_strip_extras.txt" }
+      let(:dependency_name) { "cachecontrol" }
+      let(:dependency_version) { "0.12.10" }
+      let(:dependency_previous_version) { "0.12.9" }
+
+      it "doesn't add an extras annotation on cachecontrol" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--strip-extras")
+        expect(updated_files.first.content).to include("cachecontrol==0.12.10")
+        expect(updated_files.first.content).
+          to_not include("cachecontrol[filecache]==")
+      end
+    end
   end
 end
