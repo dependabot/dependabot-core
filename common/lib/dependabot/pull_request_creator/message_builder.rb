@@ -142,6 +142,20 @@ module Dependabot
       end
 
       def message_trailers
+        return unless signoff_trailers || custom_trailers
+
+        [signoff_trailers, custom_trailers].compact.join("\n")
+      end
+
+      def custom_trailers
+        trailers = commit_message_options[:trailers]
+        return if trailers.nil?
+        raise("Commit trailers must be a Hash object") unless trailers.is_a?(Hash)
+
+        trailers.compact.map { |k, v| "#{k}: #{v}" }.join("\n")
+      end
+
+      def signoff_trailers
         return unless on_behalf_of_message || signoff_message
 
         [on_behalf_of_message, signoff_message].compact.join("\n")

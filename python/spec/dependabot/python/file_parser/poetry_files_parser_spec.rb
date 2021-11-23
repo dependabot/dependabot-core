@@ -62,7 +62,7 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
       end
 
       context "with a path requirement" do
-        let(:pyproject_fixture_name) { "path_dependency.toml" }
+        let(:pyproject_fixture_name) { "dir_dependency.toml" }
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes path dependency" do
@@ -149,8 +149,8 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
       end
 
       context "with a path dependency" do
-        let(:pyproject_fixture_name) { "path_dependency.toml" }
-        let(:pyproject_lock_fixture_name) { "path_dependency.lock" }
+        let(:pyproject_fixture_name) { "dir_dependency.toml" }
+        let(:pyproject_lock_fixture_name) { "dir_dependency.lock" }
         subject(:dependency_names) { dependencies.map(&:name) }
 
         it "excludes the path dependency" do

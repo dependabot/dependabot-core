@@ -60,9 +60,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
 
       it "fetches the main buildfile and subproject buildfile" do
-        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.count).to eq(3)
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(build.gradle app/build.gradle))
+          to match_array(%w(build.gradle settings.gradle app/build.gradle))
       end
 
       context "when the subproject can't fe found" do
@@ -73,9 +73,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
 
         it "fetches the main buildfile" do
-          expect(file_fetcher_instance.files.count).to eq(1)
+          expect(file_fetcher_instance.files.count).to eq(2)
           expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(build.gradle))
+            to match_array(%w(build.gradle settings.gradle))
         end
       end
     end
@@ -89,9 +89,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
       end
 
       it "fetches the main buildfile and subproject buildfile" do
-        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.count).to eq(2)
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(%w(app/build.gradle))
+          to match_array(%w(settings.gradle app/build.gradle))
       end
     end
 
@@ -118,9 +118,9 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
 
         it "fetches the main buildfile and subproject buildfile" do
-          expect(file_fetcher_instance.files.count).to eq(2)
+          expect(file_fetcher_instance.files.count).to eq(3)
           expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(build.gradle.kts app/build.gradle.kts))
+            to match_array(%w(build.gradle.kts settings.gradle.kts app/build.gradle.kts))
         end
       end
     end
