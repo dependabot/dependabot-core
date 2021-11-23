@@ -13,14 +13,24 @@ module Dependabot
 
         def sanitized_content
           mixfile_content.
-            gsub(/String\.trim\(File\.read!\(.*?\)\)/, 'String.trim("0.0.1")').
-            gsub(/String\.trim\(File\.read\(.*?\)\)/, 'String.trim({:ok, "0.0.1"})').
-            gsub(/^\s*config_path:.*(?:,|$)/, "")
+            yield_self(&method(:prevent_version_file_loading)).
+            yield_self(&method(:prevent_config_path_loading))
         end
 
         private
 
         attr_reader :mixfile_content
+
+        def prevent_version_file_loading(configuration)
+          configuration.
+            gsub(/String\.trim\(File\.read!\(.*?\)\)/, 'String.trim("0.0.1")').
+            gsub(/String\.trim\(File\.read\(.*?\)\)/, 'String.trim({:ok, "0.0.1"})')
+        end
+
+        def prevent_config_path_loading(configuration)
+          configuration.
+            gsub(/^\s*config_path:.*(?:,|$)/, "")
+        end
       end
     end
   end
