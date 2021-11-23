@@ -66,11 +66,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     end
 
     context "when already on the latest version" do
-      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
-      let(:dependency_version) { "2.0.0" }
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v3" }
+      let(:dependency_version) { "3.0.0" }
 
       it "returns the current version" do
-        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("2.0.0"))
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("3.0.0"))
       end
     end
 
@@ -186,6 +186,34 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    context "when the dependency's major version is invalid because it's not specified in its go.mod" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib/v2" }
+      let(:dependency_version) { "2.0.0" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib/v2")
+          expect(error.message).to include("version \"v2.0.0\" invalid")
+        end
+      end
+    end
+
+    context "when the dependency's major version is invalid because not properly imported" do
+      let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-lib" }
+      let(:dependency_version) { "3.0.0" }
+
+      it "raises a DependencyFileNotResolvable error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { finder.latest_version }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("github.com/dependabot-fixtures/go-modules-lib")
+          expect(error.message).to include("version \"v3.0.0\" invalid")
+        end
+      end
+    end
+
     context "when the module is unreachable" do
       let(:dependency_files) { [go_mod] }
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-private" }
@@ -212,7 +240,7 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       # latest release v1.0.1 is retracted
       let(:dependency_name) { "github.com/dependabot-fixtures/go-modules-retracted" }
 
-      pending "doesn't return the retracted version" do
+      it "doesn't return the retracted version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.0.0"))
       end
     end
