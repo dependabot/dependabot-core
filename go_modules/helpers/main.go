@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/dependabot/dependabot-core/go_modules/helpers/importresolver"
-	"github.com/dependabot/dependabot-core/go_modules/helpers/updatechecker"
 )
 
 type HelperParams struct {
@@ -32,10 +31,6 @@ func main() {
 		funcErr error
 	)
 	switch helperParams.Function {
-	case "getVersions":
-		var args updatechecker.Args
-		parseArgs(helperParams.Args, &args)
-		funcOut, funcErr = updatechecker.GetVersions(&args)
 	case "getVcsRemoteForImport":
 		var args importresolver.Args
 		parseArgs(helperParams.Args, &args)
