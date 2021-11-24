@@ -83,6 +83,7 @@ final class Updater
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
+            ->setRunScripts(false)
             ->setIgnorePlatformRequirements(false);
 
         $install->run();
