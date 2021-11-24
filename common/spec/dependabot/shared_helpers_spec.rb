@@ -187,9 +187,10 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".run_shell_command" do
     let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
+    let(:env) { nil }
 
     subject(:run_shell_command) do
-      Dependabot::SharedHelpers.run_shell_command(command)
+      Dependabot::SharedHelpers.run_shell_command(command, env: env)
     end
 
     context "when the subprocess is successful" do
@@ -218,6 +219,14 @@ RSpec.describe Dependabot::SharedHelpers do
           expect(output).not_to eq("$(ps)\n")
           expect(output).to include("PID")
         end
+      end
+    end
+
+    context "with an environment variable" do
+      let(:env) { { "TEST_ENV" => "prefix:" } }
+
+      it "is available to the command" do
+        expect(run_shell_command).to eq("prefix:output\n")
       end
     end
 
