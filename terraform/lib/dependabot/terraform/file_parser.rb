@@ -40,14 +40,14 @@ module Dependabot
       def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
           modules = parsed_file(file).fetch("module", {})
-          modules.each do |_name, details|
+          modules.each do |name, details|
             details = details.first
 
             source = source_from(details)
             # Cannot update local path modules, skip
             next if source[:type] == "path"
 
-            dependency_set << build_terraform_dependency(file, source, details)
+            dependency_set << build_terraform_dependency(file, name, source, details)
           end
 
           parsed_file(file).fetch("terraform", []).each do |terraform|
@@ -72,11 +72,14 @@ module Dependabot
         end
       end
 
-      def build_terraform_dependency(file, source, details)
-        # dep_name should be unique for a source, using the source as the name provides this uniqueness
+      def build_terraform_dependency(file, name, source, details)
+        # dep_name should be unique for a source, using the info derived from
+        # the source or the source name provides this uniqueness
         dep_name = case source[:type]
                    when "registry" then source[:module_identifier]
-                   else details["source"]
+                   when "provider" then details["source"]
+                   when "git" then git_dependency_name(name, source)
+                   else name
                    end
         version_req = details["version"]&.strip
         version =
@@ -207,6 +210,15 @@ module Dependabot
         else
           msg = "Invalid registry source specified: '#{source_string}'"
           raise DependencyFileNotEvaluatable, msg
+        end
+      end
+
+      def git_dependency_name(name, source)
+        git_source = Source.from_url(source[:url])
+        if source[:ref]
+          name + "::" + git_source.provider + "::" + git_source.repo + "::" + source[:ref]
+        else
+          name + "::" + git_source.provider + "::" + git_source.repo
         end
       end
 
