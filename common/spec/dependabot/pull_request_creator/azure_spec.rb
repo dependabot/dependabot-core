@@ -55,6 +55,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
     )
   end
   let(:work_item) { 123 }
+  let(:auto_complete) { 456 }
   let(:custom_labels) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(

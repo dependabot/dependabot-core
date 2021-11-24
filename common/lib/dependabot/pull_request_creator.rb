@@ -175,6 +175,7 @@ module Dependabot
         author_details: author_details,
         labeler: labeler,
         work_item: provider_metadata&.fetch(:work_item, nil)
+        auto_complete: provider_metadata&.fetch(:auto_complete, nil)
       )
     end
 

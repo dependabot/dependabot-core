@@ -240,7 +240,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with an Azure source" do
       let(:source) { Dependabot::Source.new(provider: "azure", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Azure) }
-      let(:provider_metadata) { { work_item: 123 } }
+      let(:provider_metadata) { { work_item: 123, auto_complete: 456 } }
 
       it "delegates to PullRequestCreator::Azure with correct params" do
         expect(described_class::Azure).
@@ -257,6 +257,7 @@ RSpec.describe Dependabot::PullRequestCreator do
             author_details: author_details,
             labeler: instance_of(described_class::Labeler),
             work_item: 123
+            auto_complete: 456
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create

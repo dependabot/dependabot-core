@@ -172,7 +172,7 @@ module Dependabot
 
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
-                              pr_description, labels, work_item = nil)
+                              pr_description, labels, work_item = nil, auto_complete = nil)
         pr_description = truncate_pr_description(pr_description)
 
         content = {
@@ -181,7 +181,8 @@ module Dependabot
           title: pr_name,
           description: pr_description,
           labels: labels.map { |label| { name: label } },
-          workItemRefs: [{ id: work_item }]
+          workItemRefs: [{ id: work_item }],
+          autoCompleteSetBy: { id: auto_complete }
         }
 
         post(source.api_endpoint +

@@ -8,11 +8,11 @@ module Dependabot
     class Azure
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :commit_message, :pr_description, :pr_name,
-                  :author_details, :labeler, :work_item
+                  :author_details, :labeler, :work_item :auto_complete
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:, work_item: nil)
+                     author_details:, labeler:, work_item: nil, auto_complete: nil)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -24,6 +24,7 @@ module Dependabot
         @author_details = author_details
         @labeler        = labeler
         @work_item      = work_item
+        @auto_complete  = auto_complete
       end
 
       def create
@@ -80,6 +81,7 @@ module Dependabot
           pr_description,
           labeler.labels_for_pr,
           work_item
+          auto_complete
         )
       end
 
