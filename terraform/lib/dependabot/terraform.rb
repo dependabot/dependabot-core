@@ -20,3 +20,13 @@ Dependabot::Dependency.
 
 require "dependabot/utils"
 Dependabot::Utils.register_always_clone("terraform")
+
+Dependabot::Dependency.
+  register_display_name_builder(
+    "terraform",
+    lambda { |name|
+      next unless name.include? "::"
+
+      name.split("::").first + "::" + name.split("::")[2].split("/").last
+    }
+  )
