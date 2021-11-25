@@ -27,7 +27,8 @@ module Dependabot
         end
 
         def clamp(seconds)
-          return 0 unless seconds
+          # Tweak this value to tune the default timeout in seconds
+          return 60 unless seconds
 
           seconds.to_i.clamp(MIN_SECONDS, MAX_SECONDS)
         end
