@@ -3,9 +3,8 @@
 require "logger"
 require "bundler"
 require "json"
-require "logger"
 
-$logger = Logger.new($stderr, formatter: proc { |severity, datetime, progname, msg|
+$logger = Logger.new($stderr, formatter: proc { |_severity, _datetime, _progname, msg|
   JSON.generate(msg.is_a?(Hash) ? msg : { msg: msg }) + "\n"
 })
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
@@ -25,8 +24,8 @@ class With
   def self.tracer
     @tracer ||= TracePoint.new(:call) do |x|
       stacktrace << { path: x.path, lineno: x.lineno, clazz: x.defined_class, method: x.method_id, args: args_from(x) }
-    rescue => error
-      $logger.error({ msg: error, stacktrace: error.backtrace })
+    rescue StandardError => e
+      $logger.error({ msg: e, stacktrace: e.backtrace })
     end
   end
 
