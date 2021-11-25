@@ -4,9 +4,6 @@ require "logger"
 require "bundler"
 require "json"
 
-$logger = Logger.new($stderr, formatter: proc { |_severity, _datetime, _progname, msg|
-  JSON.generate(msg.is_a?(Hash) ? msg : { msg: msg }) + "\n"
-})
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
 
@@ -21,11 +18,17 @@ class With
     @stacktrace ||= []
   end
 
+  def self.logger
+    @logger ||= Logger.new($stderr, formatter: proc { |_severity, _datetime, _progname, msg|
+      JSON.generate(msg.is_a?(Hash) ? msg : { msg: msg }) + "\n"
+    })
+  end
+
   def self.tracer
     @tracer ||= TracePoint.new(:call) do |x|
       stacktrace << { path: x.path, lineno: x.lineno, clazz: x.defined_class, method: x.method_id, args: args_from(x) }
     rescue StandardError => e
-      $logger.error({ msg: e, stacktrace: e.backtrace })
+      logger.error({ msg: e, stacktrace: e.backtrace })
     end
   end
 

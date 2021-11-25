@@ -7,10 +7,6 @@ require "logger"
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
 
-$logger = Logger.new($stderr, formatter: proc { |_severity, _datetime, _progname, msg|
-  JSON.generate(msg.is_a?(Hash) ? msg : { msg: msg }) + "\n"
-})
-
 trap "HUP" do
   With.tracer.disable
   puts JSON.generate(error: "timeout", error_class: "Timeout::Error", trace: With.stacktrace)
@@ -22,11 +18,17 @@ class With
     @stacktrace ||= []
   end
 
+  def self.logger
+    @logger ||= Logger.new($stderr, formatter: proc { |_severity, _datetime, _progname, msg|
+      JSON.generate(msg.is_a?(Hash) ? msg : { msg: msg }) + "\n"
+    })
+  end
+
   def self.tracer
     @tracer ||= TracePoint.new(:call) do |x|
       stacktrace << { path: x.path, lineno: x.lineno, clazz: x.defined_class, method: x.method_id, args: args_from(x) }
     rescue StandardError => e
-      $logger.error({ msg: e, stacktrace: e.backtrace })
+      logger.error({ msg: e, stacktrace: e.backtrace })
     end
   end
 
