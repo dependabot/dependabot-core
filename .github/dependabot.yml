@@ -22,8 +22,7 @@ updates:
       interval: "daily"
     ignore:
       - dependency-name: "npm"
-        # We explicitly need npm 6 here, in order to support npm 6.
-        versions: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
