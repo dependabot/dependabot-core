@@ -211,6 +211,7 @@ RSpec.describe Dependabot::PullRequestCreator do
     context "with a GitLab source" do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
       let(:dummy_creator) { instance_double(described_class::Gitlab) }
+      let(:provider_metadata) { { target_project_id: 1 } }
 
       it "delegates to PullRequestCreator::Github with correct params" do
         expect(described_class::Gitlab).
@@ -228,7 +229,8 @@ RSpec.describe Dependabot::PullRequestCreator do
             labeler: instance_of(described_class::Labeler),
             approvers: reviewers,
             assignees: nil,
-            milestone: milestone
+            milestone: milestone,
+            target_project_id: provider_metadata[:target_project_id]
           ).and_return(dummy_creator)
         expect(dummy_creator).to receive(:create)
         creator.create

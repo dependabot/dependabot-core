@@ -2,7 +2,7 @@
     "repositories": [
         {
             "type": "composer",
-            "url": "https://dependabot.com/composer-not-found"
+            "url": "https://github.com/dependabot/composer-not-found"
         }
     ],
     "require": {

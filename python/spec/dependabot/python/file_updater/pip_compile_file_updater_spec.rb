@@ -487,5 +487,39 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         end
       end
     end
+
+    context "with incompatible versions" do
+      let(:manifest_fixture_name) { "incompatible_versions.in" }
+      let(:generated_fixture_name) { "incompatible_versions.txt" }
+      let(:dependency_name) { "pyyaml" }
+      let(:dependency_version) { "5.4" }
+      let(:dependency_previous_version) { "5.3.1" }
+      let(:dependency_requirements) { [] }
+      let(:dependency_previous_requirements) { [] }
+
+      it "raises an error indicating the dependencies are not resolvable" do
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          expect(err.message).to include(
+            "There are incompatible versions in the resolved dependencies:\n  pyyaml==5.4"
+          )
+        end
+      end
+    end
+
+    context "with stripped extras" do
+      let(:manifest_fixture_name) { "strip_extras.in" }
+      let(:generated_fixture_name) { "pip_compile_strip_extras.txt" }
+      let(:dependency_name) { "cachecontrol" }
+      let(:dependency_version) { "0.12.10" }
+      let(:dependency_previous_version) { "0.12.9" }
+
+      it "doesn't add an extras annotation on cachecontrol" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--strip-extras")
+        expect(updated_files.first.content).to include("cachecontrol==0.12.10")
+        expect(updated_files.first.content).
+          to_not include("cachecontrol[filecache]==")
+      end
+    end
   end
 end

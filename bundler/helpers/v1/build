@@ -20,6 +20,6 @@ cd "$install_dir"
 
 # NOTE: Sets `BUNDLED WITH` to match the installed v1 version in Gemfile.lock
 # forcing native helpers to run with the same version
-BUNDLER_VERSION=1 bundle config set --local path ".bundle"
-BUNDLER_VERSION=1 bundle config set --local without "test"
-BUNDLER_VERSION=1 bundle install
+BUNDLER_VERSION=1.17.3 bundle config set --local path ".bundle"
+BUNDLER_VERSION=1.17.3 bundle config set --local without "test"
+BUNDLER_VERSION=1.17.3 bundle install

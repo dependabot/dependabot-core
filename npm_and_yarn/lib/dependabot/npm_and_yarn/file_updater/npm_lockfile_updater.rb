@@ -615,7 +615,7 @@ module Dependabot
           # Restore npm 7 "packages" "name" entry from package.json if previously set
           updated_lockfile_content = restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
 
-          # Switch back npm 7 lockfile "pacakages" requirements from the package.json
+          # Switch back npm 7 lockfile "packages" requirements from the package.json
           updated_lockfile_content = restore_locked_package_dependencies(
             updated_lockfile_content, parsed_updated_lockfile_content
           )

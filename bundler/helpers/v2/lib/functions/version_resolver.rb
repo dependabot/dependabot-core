@@ -97,7 +97,7 @@ module Functions
         gemfile_name,
         lockfile_name,
         gems: dependencies_to_unlock,
-        lock_shared_dependencies: true
+        conservative: true
       )
     end
 

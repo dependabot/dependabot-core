@@ -8,14 +8,14 @@ bundle exec rspec spec
 
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   cd helpers/v1 \
-    && BUNDLER_VERSION=1 bundle install \
-    && BUNDLER_VERSION=1 bundle exec rspec spec\
+    && BUNDLER_VERSION=1.17.3 bundle install \
+    && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
     && cd -
 fi
 
 if [[ "$SUITE_NAME" == "bundler2" ]]; then
   cd helpers/v2 \
-    && BUNDLER_VERSION=2 bundle install \
-    && BUNDLER_VERSION=2 bundle exec rspec spec \
+    && BUNDLER_VERSION=2.2.26 bundle install \
+    && BUNDLER_VERSION=2.2.26 bundle exec rspec spec \
     && cd -
 fi

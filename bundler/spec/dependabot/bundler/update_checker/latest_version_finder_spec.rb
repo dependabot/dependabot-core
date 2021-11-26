@@ -253,6 +253,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
+            options: anything,
             args: anything
           }).and_call_original
 
@@ -261,6 +262,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
+            options: anything,
             args: anything
           }).
           and_return(
@@ -308,6 +310,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
+              options: anything,
               args: anything
             }).
             and_raise(subprocess_error)
@@ -341,6 +344,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
+              options: anything,
               args: anything
             }).
             and_raise(subprocess_error)
@@ -374,6 +378,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
+              options: anything,
               args: anything
             }).
             and_raise(subprocess_error)
@@ -407,6 +412,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
+              options: anything,
               args: anything
             }).
             and_raise(subprocess_error)
@@ -429,6 +435,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
             with({
               bundler_version: bundler_version,
               function: "private_registry_versions",
+              options: anything,
               args: anything
             }).
             and_return(
@@ -570,6 +577,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           with({
             bundler_version: bundler_version,
             function: "dependency_source_type",
+            options: anything,
             args: anything
           }).and_call_original
 
@@ -578,6 +586,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
           with({
             bundler_version: bundler_version,
             function: "private_registry_versions",
+            options: anything,
             args: anything
           }).
           and_return(

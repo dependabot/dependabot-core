@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
       old_commit: old_commit,
       files: files,
       credentials: credentials,
-      pull_request_number: merge_request_number
+      pull_request_number: merge_request_number,
+      target_project_id: target_project_id
     )
   end
 
@@ -77,6 +78,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
     repo_api_url + "/repository/branches/" + CGI.escape(branch_name)
   end
   let(:commit_url) { repo_api_url + "/repository/commits" }
+  let(:target_project_id) { nil }
 
   before do
     stub_request(:get, merge_request_url).
@@ -98,6 +100,20 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
   end
 
   describe "#update" do
+    context "with forked project" do
+      let(:target_project_id) { 1 }
+      let(:merge_request_url) do
+        "https://gitlab.com/api/v4/projects/#{target_project_id}/merge_requests/#{merge_request_number}"
+      end
+
+      it "fetches mr from upstream project" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:get, merge_request_url)
+      end
+    end
+
     context "when the branch doesn't exist" do
       before { stub_request(:get, branch_url).to_return(status: 404) }
 

@@ -14,7 +14,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
       old_commit: old_commit,
       files: files,
       credentials: credentials,
-      pull_request_number: pull_request_number
+      pull_request_number: pull_request_number,
+      provider_metadata: provider_metadata
     )
   end
 
@@ -24,6 +25,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
   let(:old_commit) { "oldcommitsha" }
   let(:pull_request_number) { 1 }
   let(:credentials) { [] }
+  let(:target_project_id) { 1 }
+  let(:provider_metadata) { {} }
 
   describe "#update" do
     context "with a GitHub source" do
@@ -51,6 +54,7 @@ RSpec.describe Dependabot::PullRequestUpdater do
     context "with a Gitlab source" do
       let(:source) { Dependabot::Source.new(provider: "gitlab", repo: "gc/bp") }
       let(:dummy_updater) { instance_double(described_class::Gitlab) }
+      let(:provider_metadata) { { target_project_id: 1 } }
 
       it "delegates to PullRequestUpdater::Gitlab with correct params" do
         expect(described_class::Gitlab).
@@ -61,7 +65,8 @@ RSpec.describe Dependabot::PullRequestUpdater do
             old_commit: old_commit,
             files: files,
             credentials: credentials,
-            pull_request_number: pull_request_number
+            pull_request_number: pull_request_number,
+            target_project_id: provider_metadata[:target_project_id]
           ).and_return(dummy_updater)
         expect(dummy_updater).to receive(:update)
         updater.update

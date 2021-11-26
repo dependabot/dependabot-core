@@ -35,3 +35,5 @@ libraries["kotlin"] = mapOf(
     "stdlib_1_3" to  "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion_1_3",
     "releaseCoroutines" to "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.26.1-eap13"
 )
+
+ext.collectionsVersion = '4.4'

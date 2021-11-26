@@ -11,5 +11,6 @@ subprojects {
         jcenter()
         maven { url 'https://dl.bintray.com/magnusja/maven' }
         google()
+        gradlePluginPortal()
     }
 }

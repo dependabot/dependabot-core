@@ -1,3 +1,142 @@
+## v0.169.0, 23 November 2021
+
+- Use `go list -m -versions` to determine available versions of a go module [#4434](https://github.com/dependabot/dependabot-core/pull/4434)
+- python: Upgrade to pip 21.3.1 (@rouge8) [#4444](https://github.com/dependabot/dependabot-core/pull/4444)
+
+## v0.168.0, 23 November 2021
+
+- [Azure] Check & Raise TagsCreationForbidden Exception (@AlekhyaYalla) [#4352](https://github.com/dependabot/dependabot-core/pull/4352)
+- Use redirect.github.com for redirect service [#4441](https://github.com/dependabot/dependabot-core/pull/4441)
+- Python: Honour `--strip-extras` flag of `pip-compile` (@NicolasT) [#4439](https://github.com/dependabot/dependabot-core/pull/4439)
+- build(deps): bump pipenv from 2021.5.29 to 2021.11.15 in /python/helpers [#4408](https://github.com/dependabot/dependabot-core/pull/4408)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 2.19.2 to 2.19.3 in /composer/helpers/v1 [#4415](https://github.com/dependabot/dependabot-core/pull/4415)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.2.1 to 3.3.2 in /composer/helpers/v2 [#4414](https://github.com/dependabot/dependabot-core/pull/4414)
+- Run YarnUpdate only once for a version requirement (@AlekhyaYalla) [#4409](https://github.com/dependabot/dependabot-core/pull/4409)
+- Do not freeze file-based Poetry dependency version (@phillipuniverse) [#4334](https://github.com/dependabot/dependabot-core/pull/4334)
+- Remove reliance on `PandocRuby` [#4433](https://github.com/dependabot/dependabot-core/pull/4433)
+- build(deps): bump @npmcli/arborist from 3.0.0 to 4.0.5 in /npm_and_yarn/helpers [#4429](https://github.com/dependabot/dependabot-core/pull/4429)
+- Add support for custom commit message trailers (@andrcuns) [#4432](https://github.com/dependabot/dependabot-core/pull/4432)
+- Support updating dependencies on settings file (@anatawa12) [#4374](https://github.com/dependabot/dependabot-core/pull/4374)
+- Remove the dependabot migration issue template [#4422](https://github.com/dependabot/dependabot-core/pull/4422)
+
+## v0.167.0, 16 November 2021
+
+- Maven: Correctly handle nested declarations [#4417](https://github.com/dependabot/dependabot-core/pull/4417)
+- Add parsing of MSBuild SDK dependencies (NuGet) (@Zastai) [#2849](https://github.com/dependabot/dependabot-core/pull/2849)
+- fix: remove fixed error message check [#4412](https://github.com/dependabot/dependabot-core/pull/4412)
+
+## v0.166.1, 12 November 2021
+
+- Terraform: Improve file updater and registry request error handling [#4405](https://github.com/dependabot/dependabot-core/pull/4405)
+- Explicitly ignore metadata detection for fuchsia.googlesource.com [#4402](https://github.com/dependabot/dependabot-core/pull/4402)
+
+## v0.166.0, 11 November 2021
+
+- Ignore errors from Source enterprise check and ignore known failures [#4401](https://github.com/dependabot/dependabot-core/pull/4401)
+- Bump to go 1.17.3 (@jeffwidman) [#4393](https://github.com/dependabot/dependabot-core/pull/4393)
+- Move composer-not-found fixture from decommissioned dependabot.com [#4399](https://github.com/dependabot/dependabot-core/pull/4399)
+
+## v0.165.0, 8 November 2021
+
+- Add timeout per operation [#4362](https://github.com/dependabot/dependabot-core/pull/4362)
+
+## v0.164.1, 2 November 2021
+
+- Only check auth for github.com when running `bump-version` [#4347](https://github.com/dependabot/dependabot-core/pull/4347)
+- Ensure we cleanup tmp directories after use [#4356](https://github.com/dependabot/dependabot-core/pull/4356)
+- Treat GHES hosted sources as github sources [#4335](https://github.com/dependabot/dependabot-core/pull/4335)
+
+## v0.164.0, 27 October 2021
+
+- Add license to image and gemspec [#4317](https://github.com/dependabot/dependabot-core/pull/4317)
+- Gitlab: add support for creating merge requests for forks (@andrcuns) [#4324](https://github.com/dependabot/dependabot-core/pull/4324)
+- update Elixir from 1.12.2 -> 1.12.3 (@baseballlover723) [#4250](https://github.com/dependabot/dependabot-core/pull/4250)
+- build(deps): bump flake8 from 4.0.0 to 4.0.1 in /python/helpers [#4308](https://github.com/dependabot/dependabot-core/pull/4308)
+- Bump Terraform from 1.0.6 to 1.0.8 [#4310](https://github.com/dependabot/dependabot-core/pull/4310)
+- build(deps): bump pip-tools from 6.3.1 to 6.4.0 in /python/helpers [#4312](https://github.com/dependabot/dependabot-core/pull/4312)
+- Python: Upgrade pyenv to 2.1.0 (@Parnassius) [#4307](https://github.com/dependabot/dependabot-core/pull/4307)
+- Upgrade OTP to latest minor: 23.3.4.5 (@tomaspinho) [#4306](https://github.com/dependabot/dependabot-core/pull/4306)
+- hex: handle support files with macro in umbrellas (@nirev) [#4213](https://github.com/dependabot/dependabot-core/pull/4213)
+- Describe workaround for cloning with long file names on Windows (@Marcono1234) [#4198](https://github.com/dependabot/dependabot-core/pull/4198)
+- build(deps): bump golang.org/x/mod from 0.5.0 to 0.5.1 in /go_modules/helpers [#4254](https://github.com/dependabot/dependabot-core/pull/4254)
+- build(deps): bump pip from 21.1.3 to 21.2.4 in /python/helpers [#4136](https://github.com/dependabot/dependabot-core/pull/4136)
+- build(deps-dev): bump eslint from 7.32.0 to 8.0.0 in /npm_and_yarn/helpers [#4301](https://github.com/dependabot/dependabot-core/pull/4301)
+- build(deps): bump flake8 from 3.9.2 to 4.0.0 in /python/helpers [#4303](https://github.com/dependabot/dependabot-core/pull/4303)
+- build(deps-dev): bump jest from 27.2.4 to 27.2.5 in /npm_and_yarn/helpers [#4304](https://github.com/dependabot/dependabot-core/pull/4304)
+- build(deps): bump pip-tools from 6.3.0 to 6.3.1 in /python/helpers [#4302](https://github.com/dependabot/dependabot-core/pull/4302)
+- Clarify that Remote Containers Clone Repository commands are not supported (@Marcono1234) [#4199](https://github.com/dependabot/dependabot-core/pull/4199)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 2.19.0 to 2.19.2 in /composer/helpers/v1 [#4152](https://github.com/dependabot/dependabot-core/pull/4152)
+- build(deps): bump wheel from 0.36.2 to 0.37.0 in /python/helpers [#4128](https://github.com/dependabot/dependabot-core/pull/4128)
+- build(deps-dev): bump prettier from 2.3.2 to 2.4.1 in /npm_and_yarn/helpers [#4233](https://github.com/dependabot/dependabot-core/pull/4233)
+
+## v0.163.0, 7 October 2021
+
+- build(deps): bump composer/composer from 2.1.3 to 2.1.9 in /composer/helpers/v2 [#4286](https://github.com/dependabot/dependabot-core/pull/4286)
+- Bitbucket: Fix unsupported labels error (@meladRaouf) [#4236](https://github.com/dependabot/dependabot-core/pull/4236)
+- build(deps): bump pip-tools from 6.2.0 to 6.3.0 in /python/helpers [#4251](https://github.com/dependabot/dependabot-core/pull)
+- build(deps): bump poetry from 1.1.7 to 1.1.11 in /python/helpers [#4281](https://github.com/dependabot/dependabot-core/pull/4281)
+- build(deps-dev): bump jest from 27.0.6 to 27.2.4 in /npm_and_yarn/helpers [#4271](https://github.com/dependabot/dependabot-core/pull/4271)
+- Poetry: Fix unreachable git deps error [#4295](https://github.com/dependabot/dependabot-core/pull/4295)
+- Elm: Fix failing tests [#4294](https://github.com/dependabot/dependabot-core/pull/4294)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.0.0 to 3.2.1 in /composer/helpers/v2 [#4285](https://github.com/dependabot/dependabot-core/pull/4285)
+- build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers [#4284](https://github.com/dependabot/dependabot-core/pull/4284)
+- build(deps): bump composer/composer from 1.10.22 to 1.10.23 in /composer/helpers/v1 [#4283](https://github.com/dependabot/dependabot-core/pull/4283)
+- npm: Handle .tar path dependency (@AlekhyaYalla) [#4246](https://github.com/dependabot/dependabot-core/pull/4246)
+- build(deps-dev): bump jest in /npm_and_yarn/helpers [#4271](https://github.com/dependabot/dependabot-core/pull/4271)
+- Gradle: Add support for `gradlePluginPortal()` (@zbynek) [#4268](https://github.com/dependabot/dependabot-core/pull/4268)
+- Gradle: Support Gradle files with no top level build.gradle file (@zbynek) [#4256](https://github.com/dependabot/dependabot-core/pull/4256)
+
+## v0.162.2, 29 September 2021
+
+- Ignore replaced dependencies in go.mod (@jerbob92) [#4140](https://github.com/dependabot/dependabot-core/pull/4140)
+- Treat hyphens and underscores the same in Gradle versioning (@zbynek) [#4257](https://github.com/dependabot/dependabot-core/pull/4257)
+
+## v0.162.1, 20 September 2021
+
+- Fix minor typos in changelog (@zbynek) [#4237](https://github.com/dependabot/dependabot-core/pull/4237)
+- Bump golang from 1.17 to 1.17.1 [#4231](https://github.com/dependabot/dependabot-core/pull/4231)
+- build(deps): bump github.com/dependabot/gomodules-extracted from 1.4.1 to 1.4.2 in /go_modules/helpers [#4235](https://github.com/dependabot/dependabot-core/pull/4235)
+- Improved support `apply from` in gradle files (@zbynek) [#4155](https://github.com/dependabot/dependabot-core/pull/4155)
+- Escape paths passed to VendorUpdater [#4221](https://github.com/dependabot/dependabot-core/pull/4221)
+- bin/dry-run.rb requires a development container to run [#4215](https://github.com/dependabot/dependabot-core/pull/4215)
+- Python: Upgrade pyenv to 2.0.6 (@pauloromeira) [#4207](https://github.com/dependabot/dependabot-core/pull/4207)
+- handle terraform module versions with a 'v' prefix (@declan-fitzpatrick) [#4191](https://github.com/dependabot/dependabot-core/pull/4191)
+
+## v0.162.0, 7 September 2021
+
+- Python: Raise resolvability error with explanation when update is not possible [#4206](https://github.com/dependabot/dependabot-core/pull/4206)
+- chore: run builds on a regular basis to detect anomalies [#4185](https://github.com/dependabot/dependabot-core/pull/4185)
+- fix: Parse multiple requirements from a poetry dependency [#4179](https://github.com/dependabot/dependabot-core/pull/4179)
+- Bump terraform CLI from 1.0.0 to 1.0.6 [#4205](https://github.com/dependabot/dependabot-core/pull/4205)
+
+## v0.161.0, 1 September 2021
+
+- Upgrade npm to 7.21.0
+- Pin Faraday to 1.7.0
+- chore: fix typo in documentation (@rethab) [#4172](https://github.com/dependabot/dependabot-core/pull/4172)
+- build(deps): update commonmarker requirement from >= 0.20.1, < 0.23.0 to >= 0.20.1, < 0.24.0
+
+## v0.160.1, 25 August 2021
+
+- build(deps): bump github.com/dependabot/gomodules-extracted from 1.3.0 to 1.4.1 in /go_modules/helpers [#4157](https://github.com/dependabot/dependabot-core/pull/4157)
+- Add a minimal test for go 1.17 module handling [#4159](https://github.com/dependabot/dependabot-core/pull/4159)
+- Bump bundler from 2.2.20 to 2.2.25 [#4132](https://github.com/dependabot/dependabot-core/pull/4132)
+
+## v0.160.0, 18 August 2021
+
+- Bump go from 1.16.7 to 1.17 (@obalunenko) [#4149](https://github.com/dependabot/dependabot-core/pull/4149)
+- build(deps): bump golang.org/x/mod from 0.4.2 to 0.5.0 in /go_modules/helpers [#4139](https://github.com/dependabot/dependabot-core/pull/4139)
+
+## v0.159.2, 17 August 2021
+
+- Bump go from 1.16.3 to 1.16.7 [#4145](https://github.com/dependabot/dependabot-core/pull/4145)
+- Handle unreachable go module dependencies in LatestVersionFinder [#4142](https://github.com/dependabot/dependabot-core/pull/4142)
+- Fix failing go modules tests [#4141](https://github.com/dependabot/dependabot-core/pull/4141)
+
+## v0.159.1, 12 August 2021
+
+- gomod: Handle errors where go module dependencies are unreachable [#4130](https://github.com/dependabot/dependabot-core/pull/4130)
+
 ## v0.159.0, 4 August 2021
 
 - Remove go dep entirely (@jeffwidman) [#3538](https://github.com/dependabot/dependabot-core/pull/3538)
@@ -135,7 +274,7 @@
 ## v0.154.2, 17 June 2021
 
 - Terraform: Handle 401 registry responses
-- Github actions: Handle no latest version found
+- GitHub actions: Handle no latest version found
 - Python: Fix ruby 2.7 deprecations
 - Double quote variables in shellscript @PeterDaveHello
 - Add `--no-install-recommends` to all `apt-get install` in Dockerfile @PeterDaveHello
@@ -353,7 +492,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.144.0, 5 May 2021
 
 - Elm: Drop support for Elm 0.18
-- Commom: Handle nil dependency version when generating ignored versions
+- Common: Handle nil dependency version when generating ignored versions
 - Python: allow comments when parsing setup.cfg
 - go_modules: stub consistently and ignore invalid modules
 - build(deps): bump @npmcli/arborist in /npm_and_yarn/helpers
@@ -450,7 +589,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 - Dockerfile: create a `dependabot` user and drop privileges
   This is a potentially BREAKING change for consumers of the `dependabot/dependabot-core` docker image.
-- Maven/Gradle: Add option to use Gitlab access token for authentication against maven repositories @gringostar
+- Maven/Gradle: Add option to use GitLab access token for authentication against maven repositories @gringostar
 - common: raise Dependabot::OutOfDisk on more out of space errors
 - Bump eslint from 7.23.0 to 7.24.0
 
@@ -488,7 +627,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.139.1, 30 March 2021
 
-- Pull Requests: Fix github redirect for www.github.com links
+- Pull Requests: Fix GitHub redirect for www.github.com links
 - Pull Requests: Sanitize team mentions
 - Bundler 2 [Beta]: Add test for bundler dependency
 
@@ -519,7 +658,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.138.5, 26 March 2021
 
-- Maven/Gradle: Treat dev and pr as pre-releases for gradle/maven
+- Maven/Gradle: Treat dev and pr as pre-releases for Gradle/Maven
 - Bundler v2 [pre-release]: Add and test jfrog source helper
 - Cargo: Update Rust to 1.51.0 (thanks @CryZe)
 - Bump npm from 6.14.11 to 6.14.12 in /npm_and_yarn/helpers
@@ -636,7 +775,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 ## v0.133.4, 18 February 2021
 
 - Elixir: support projects using Nerves extensions (@fhunleth and @cblavier)
-- Common: Insert zero-width space in @mentions when sanitizing github pull request descriptions
+- Common: Insert zero-width space in @mentions when sanitizing GitHub pull request descriptions
 - Azure: raise NotFound error when response status code is 400 for fetch_commit (@milind009)
 - JS: Switch from yarn to npm for helper deps
 - JS: Convert spec fixtures to project based
@@ -817,7 +956,7 @@ fix(npm): Prevent unnecessary hash pinning in lock file constraint
 
 ## v0.128.0, 14 December 2020
 
-- Gradle: Support kotlin manifest files (thanks, @shakhar!)
+- Gradle: Support Kotlin manifest files (thanks, @shakhar!)
 
 ## v0.127.1, 14 December 2020
 

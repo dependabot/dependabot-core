@@ -76,7 +76,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.20 --no-document \
+  && gem install bundler -v 2.2.26 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -88,9 +88,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.4 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.9.6 \
-  && pyenv global 3.9.6 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.1.0 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.0 \
+  && pyenv global 3.10.0 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -101,7 +101,7 @@ USER root
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.20.3 \
+  && npm install -g npm@v7.21.0 \
   && rm -rf ~/.npm
 
 
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.23 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.1.12 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.16.3
-ARG GOLANG_CHECKSUM=951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2
+ARG GOLANG_VERSION=1.17.3
+ARG GOLANG_CHECKSUM=550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -182,20 +182,20 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.2
-ARG ELIXIR_CHECKSUM=38eb2281032b0cb096ef5e61f048c5374d6fb9bf4078ab8f9526a42e16e7c661732a632b55d6072328eedf87a47e6eeb3f0e3f90bba1086239c71350f90c75e5
+ARG ELIXIR_VERSION=v1.12.3
+ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
 # This version is currently pinned to OTP 23, due to an issue that we only hit
 # in production, where traffic is routed through a proxy that OTP 24 doesn't
 # play nice with.
-ARG ERLANG_VERSION=1:23.3.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
-  && dpkg -i erlang-solutions_1.0_all.deb \
+ARG ERLANG_VERSION=1:23.3.4.5-1
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
+  && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
   && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
+  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
   && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
@@ -215,7 +215,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.0
+ARG TERRAFORM_VERSION=1.0.8
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
@@ -226,6 +226,7 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 
 USER root
 
+COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers

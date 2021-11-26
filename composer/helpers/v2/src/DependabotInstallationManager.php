@@ -9,7 +9,8 @@ use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\Installer\InstallationManager;
 use Composer\Package\PackageInterface;
-use Composer\Repository\RepositoryInterface;
+use Composer\Repository\InstalledRepositoryInterface;
+use React\Promise\PromiseInterface;
 
 final class DependabotInstallationManager extends InstallationManager
 {
@@ -17,7 +18,7 @@ final class DependabotInstallationManager extends InstallationManager
     private array $updated = [];
     private array $uninstalled = [];
 
-    public function execute(RepositoryInterface $repo, array $operations, $devMode = true, $runScripts = true): void
+    public function execute(InstalledRepositoryInterface $repo, array $operations, $devMode = true, $runScripts = true): void
     {
         foreach ($operations as $operation) {
             $method = $operation->getOperationType();
@@ -26,19 +27,25 @@ final class DependabotInstallationManager extends InstallationManager
         }
     }
 
-    public function install(RepositoryInterface $repo, InstallOperation $operation): void
+    public function install(InstalledRepositoryInterface $repo, InstallOperation $operation): ?PromiseInterface
     {
         $this->installed[] = $operation->getPackage();
+
+        return null;
     }
 
-    public function update(RepositoryInterface $repo, UpdateOperation $operation): void
+    public function update(InstalledRepositoryInterface $repo, UpdateOperation $operation): ?PromiseInterface
     {
         $this->updated[] = [$operation->getInitialPackage(), $operation->getTargetPackage()];
+
+        return null;
     }
 
-    public function uninstall(RepositoryInterface $repo, UninstallOperation $operation): void
+    public function uninstall(InstalledRepositoryInterface $repo, UninstallOperation $operation): ?PromiseInterface
     {
         $this->uninstalled[] = $operation->getPackage();
+
+        return null;
     }
 
     /**

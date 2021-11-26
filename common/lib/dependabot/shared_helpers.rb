@@ -40,10 +40,14 @@ module Dependabot
 
     def self.in_a_temporary_directory(directory = "/")
       Dir.mkdir(Utils::BUMP_TMP_DIR_PATH) unless Dir.exist?(Utils::BUMP_TMP_DIR_PATH)
-      Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH) do |dir|
-        path = Pathname.new(File.join(dir, directory)).expand_path
+      tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
+
+      begin
+        path = Pathname.new(File.join(tmp_dir, directory)).expand_path
         FileUtils.mkpath(path)
         Dir.chdir(path) { yield(path) }
+      ensure
+        FileUtils.rm_rf(tmp_dir)
       end
     end
 
@@ -276,10 +280,10 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false)
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {})
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
-      stdout, process = Open3.capture2e(cmd)
+      stdout, process = Open3.capture2e(env || {}, cmd)
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
