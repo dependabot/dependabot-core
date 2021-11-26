@@ -209,6 +209,7 @@ docker run --rm -ti \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
+  --env "LOCAL_CONFIG_VARIABLES=$LOCAL_CONFIG_VARIABLES" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
