@@ -109,10 +109,11 @@ module Dependabot
         function: function,
         args: args,
         time_taken: time_taken,
-        stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
+        stderr_output: stderr, # ? stderr[0..50_000] : "", # Truncate to ~100kb
         process_exit_value: process.to_s,
         process_termsig: process.termsig
       }
+      puts error_context.inspect
 
       response = JSON.parse(stdout)
       return response["result"] if process.success?
