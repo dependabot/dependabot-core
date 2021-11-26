@@ -48,15 +48,21 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
 
   const dryRun = true;
   const flattenedDependencies = flattenAllDependencies(manifest);
-  const args = dependencies.map((dependency) => {
+  const dependencyInfo = dependencies.map((dependency) => {
     const existingVersionRequirement = flattenedDependencies[dependency.name];
-    return installArgs(
+    const arg = installArgs(
       dependency.name,
       dependency.version,
       dependency.requirements,
       existingVersionRequirement
     );
+    return {
+      name: dependency.name,
+      arg: arg,
+      requirement: existingVersionRequirement,
+    };
   });
+  const args = dependencyInfo.map(info => info.arg);
   const initialInstaller = new installer.Installer(directory, dryRun, args, {
     packageLockOnly: true,
   });
@@ -75,15 +81,20 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
   // This is horrible, but works.
   const unmute = muteStderr();
   try {
+    const lockfilePath = path.join(directory, lockfileName);
+
     // Fix already present git sub-dependency with invalid "from" and "requires"
-    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
+    updateLockfileWithValidGitUrls(lockfilePath);
 
     await runAsync(initialInstaller, initialInstaller.run, []);
 
     // Fix npm5 lockfiles where invalid "from" is introduced after first install
-    updateLockfileWithValidGitUrls(path.join(directory, lockfileName));
+    updateLockfileWithValidGitUrls(lockfilePath);
 
     await runAsync(cleanupInstaller, cleanupInstaller.run, []);
+
+    // Reverts semver "from" changes back to existing requirement for "from"
+    updateLockfileWithCorrectSemverFroms(lockfilePath, dependencyInfo);
   } finally {
     unmute();
   }
@@ -91,6 +102,43 @@ async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const updatedLockfile = readFile(lockfileName);
 
   return { [lockfileName]: updatedLockfile };
+}
+
+function updateLockfileWithCorrectSemverFroms(lockfilePath, dependencyInfo) {
+  const lockfile = fs.readFileSync(lockfilePath).toString();
+  const indent = detectIndent(lockfile).indent || "  ";
+  const updatedLockfileObject = removeIncorrectSemverFroms(JSON.parse(lockfile), dependencyInfo);
+  fs.writeFileSync(
+    lockfilePath,
+    `${JSON.stringify(updatedLockfileObject, null, indent)}\n`
+  );
+}
+
+function removeIncorrectSemverFroms(lockfile, dependencyInfo) {
+  if (!lockfile || !lockfile.dependencies) return lockfile;
+  if (!dependencyInfo) return lockfile;
+
+  const dependencies = Object.keys(lockfile.dependencies).reduce((acc, key) => {
+    const dependency = dependencyInfo.find(info => info.name === key);
+    const value = lockfile.dependencies[key];
+    const validRequirement = dependency && dependency.requirement && dependency.requirement.includes("#semver");
+    const validFrom = value && value.from && value.from.includes('#');
+
+    if (!validFrom || !validRequirement) {
+      acc[key] = value;
+    } else {
+      const requirement = dependency.requirement.split('#')[1];
+      const version = value.from.split('#')[1];
+      const replaceRegex = new RegExp(`#${version}$`);
+      const from = value.from.replace(replaceRegex, `#${requirement}`);
+
+      acc[key] = Object.assign({}, value, { from });
+    }
+
+    return acc;
+  }, {});
+
+  return Object.assign({}, lockfile, { dependencies });
 }
 
 function updateLockfileWithValidGitUrls(lockfilePath) {
@@ -139,6 +187,11 @@ function installArgs(
       return `${depName}@${existingVersionRequirement}`;
     } else if (!existingVersionRequirement.includes("#")) {
       return `${depName}@${existingVersionRequirement}`;
+    } else if (existingVersionRequirement.includes("#semver")) {
+      return `${depName}@${existingVersionRequirement.replace(
+        /#semver:.*/,
+        ""
+      )}#semver:${desiredVersion}`;
     } else {
       return `${depName}@${existingVersionRequirement.replace(
         /#.*/,
