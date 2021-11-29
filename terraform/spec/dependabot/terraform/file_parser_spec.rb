@@ -278,7 +278,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
 
       it "has the right details for the dependency (which uses git@github.com)" do
-        expect(subject[3].name).to eq("github_ssh_without_protocol::github::cloudposse/terraform-aws-jenkins::tags/0.4.0")
+        expect(subject[3].name).to \
+          eq("github_ssh_without_protocol::github::cloudposse/terraform-aws-jenkins::tags/0.4.0")
         expect(subject[3].version).to eq("0.4.0")
         expect(subject[3].requirements).to eq([{
           requirement: nil,
