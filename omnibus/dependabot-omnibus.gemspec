@@ -25,7 +25,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-cargo", Dependabot::VERSION
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-composer", Dependabot::VERSION
-  spec.add_dependency "dependabot-dep", Dependabot::VERSION
   spec.add_dependency "dependabot-docker", Dependabot::VERSION
   spec.add_dependency "dependabot-elm", Dependabot::VERSION
   spec.add_dependency "dependabot-github_actions", Dependabot::VERSION

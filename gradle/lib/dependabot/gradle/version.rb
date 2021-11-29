@@ -14,7 +14,8 @@ module Dependabot
       NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = {
         "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 }
+        "-" => { qualifier: 2, number: 3 },
+        "_" => { qualifier: 2, number: 3 }
       }.freeze
       NAMED_QUALIFIERS_HIERARCHY = {
         "a" => 1, "alpha"     => 1,
@@ -132,7 +133,7 @@ module Dependabot
       end
 
       def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.])/)
+        ".#{version}".split(/(?=[_\-\.])/)
       end
 
       def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)

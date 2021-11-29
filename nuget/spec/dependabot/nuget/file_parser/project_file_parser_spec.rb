@@ -244,6 +244,122 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           expect(dependencies.count).to eq(0)
         end
       end
+
+      context "with a versioned sdk reference" do
+        context "specified in the Project tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_project.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+        end
+
+        context "specified via an Sdk tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_sdk.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+        end
+
+        context "specified via an Import tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_import.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: [],
+                source: nil
+              }])
+            end
+          end
+        end
+      end
     end
   end
 end

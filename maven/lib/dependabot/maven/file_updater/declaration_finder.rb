@@ -9,9 +9,7 @@ module Dependabot
   module Maven
     class FileUpdater
       class DeclarationFinder
-        DECLARATION_REGEX =
-          %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-             <plugin>.*?</plugin>|<extension>.*?</extension>}mx.freeze
+        DECLARATION_TYPES = %w(parent dependency plugin extension).freeze
 
         attr_reader :dependency, :declaring_requirement, :dependency_files
 
@@ -78,9 +76,14 @@ module Dependabot
         end
 
         def deep_find_declarations(string)
-          string.scan(DECLARATION_REGEX).flat_map do |matching_node|
-            [matching_node, *deep_find_declarations(matching_node[1..-1])]
+          pom = Nokogiri::XML(string)
+          nodes = []
+          pom.traverse do |node|
+            next unless DECLARATION_TYPES.include?(node.node_name)
+
+            nodes << node.to_s
           end
+          nodes
         end
 
         def declaring_requirement_matches?(node)

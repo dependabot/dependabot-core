@@ -18,7 +18,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
       PROPERTY_REGEX =
         /
@@ -47,6 +47,20 @@ module Dependabot
           dependency_set += buildfile_dependencies(plugin_file)
         end
         dependency_set.dependencies
+      end
+
+      def self.find_include_names(buildfile)
+        return [] unless buildfile
+
+        buildfile.content.
+          scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/).
+          map { |match| match[2] }
+      end
+
+      def self.find_includes(buildfile, dependency_files)
+        FileParser.find_include_names(buildfile).
+          map { |f| dependency_files.find { |bf| bf.name == f } }.
+          compact
       end
 
       private
@@ -301,16 +315,13 @@ module Dependabot
       def script_plugin_files
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
-            buildfile.content.
-              scan(/apply from(\s+=|:)\s+['"]([^'"]+)['"]/).flatten.
-              map { |f| dependency_files.find { |bf| bf.name == f } }.
-              compact
+            FileParser.find_includes(buildfile, dependency_files)
           end.
           uniq
       end
 
       def check_required_files
-        raise "No build.gradle or build.gradle.kts!" unless original_file
+        raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
       end
 
       def original_file

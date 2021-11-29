@@ -14,68 +14,30 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
       directory: directory
     )
   end
+
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
   end
+
+  let(:project_name) { "provider" }
   let(:directory) { "/" }
-  let(:github_url) { "https://api.github.com/" }
-  let(:url) { github_url + "repos/gocardless/bump/contents/" }
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
+  let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+  after do
+    FileUtils.rm_rf(repo_contents_path)
   end
 
-  before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
-
-  context "with a Terraform file" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_terraform_repo.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      %w(main.tf outputs.tf variables.tf).each do |nm|
-        stub_request(:get, File.join(url, "#{nm}?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_terraform_file.json"),
-            headers: { "content-type" => "application/json" }
-          )
-      end
-    end
+  context "with Terraform files" do
+    let(:project_name) { "versions_file" }
 
     it "fetches the Terraform files" do
       expect(file_fetcher_instance.files.map(&:name)).
-        to match_array(%w(main.tf outputs.tf variables.tf))
+        to match_array(%w(main.tf versions.tf))
     end
   end
 
   context "with a HCL based terragrunt file" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_terragrunt_hcl_repo.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, "terragrunt.hcl?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_terraform_file.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
+    let(:project_name) { "terragrunt_hcl" }
 
     it "fetches the Terragrunt file" do
       expect(file_fetcher_instance.files.map(&:name)).
@@ -84,23 +46,7 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   end
 
   context "with a lockfile" do
-    before do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_lockfile_repo.json"),
-          headers: { "content-type" => "application/json" }
-        )
-
-      stub_request(:get, File.join(url, ".terraform.lock.hcl?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "contents_terraform_file.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
+    let(:project_name) { "terraform_lock_only" }
 
     it "fetches the lockfile" do
       expect(file_fetcher_instance.files.map(&:name)).
@@ -111,19 +57,21 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
   context "with a directory that doesn't exist" do
     let(:directory) { "/nonexistent" }
 
-    before do
-      stub_request(:get, url + "nonexistent?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 404,
-          body: fixture("github", "not_found.json"),
-          headers: { "content-type" => "application/json" }
-        )
-    end
-
     it "raises a helpful error" do
       expect { file_fetcher_instance.files }.
         to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
+  context "when fetching nested local path modules" do
+    let(:project_name) { "provider_with_multiple_local_path_modules" }
+
+    it "fetches nested terraform files excluding symlinks" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(.terraform.lock.hcl loader.tf providers.tf
+             loader/providers.tf loader/projects.tf)
+        )
     end
   end
 end

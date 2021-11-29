@@ -38,7 +38,7 @@ RSpec.describe namespace::MetadataPresenter do
 
   let(:vulnerabilities_fixed) { [] }
 
-  let(:github_redirection_service) { "github-redirect.dependabot.com" }
+  let(:github_redirection_service) { "redirect.github.com" }
 
   subject(:presenter) do
     described_class.new(

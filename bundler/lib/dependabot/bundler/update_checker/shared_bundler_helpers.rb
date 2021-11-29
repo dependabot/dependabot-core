@@ -167,6 +167,7 @@ module Dependabot
             git_specs = NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "git_specs",
+              options: options,
               args: {
                 dir: tmp_dir,
                 gemfile_name: gemfile.name,
@@ -195,6 +196,7 @@ module Dependabot
             NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "jfrog_source",
+              options: options,
               args: {
                 dir: dir,
                 gemfile_name: gemfile.name,

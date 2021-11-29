@@ -2022,8 +2022,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
           parsed_lockfile = JSON.parse(lockfile.content)
           expect(parsed_lockfile["dependencies"]["lodash"]["version"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["other_package"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
-          expect(parsed_lockfile["dependencies"]["package1"]["dependencies"]["lodash"]["version"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["other_package"]["requires"]["lodash"]).to eq("1.3.1")
+          expect(parsed_lockfile["dependencies"]["package1"]["requires"]["lodash"]).to eq("1.3.1")
 
           expect(package.content).to include('"lodash": "1.3.1"')
           expect(package1.content).to include('"lodash": "^1.3.1"')
@@ -2518,7 +2518,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
                 to eq("git+ssh://git@github.com/jonschlinkert/is-number.git#"\
                       "0c6b15a88bc10cd47f67a09506399dfc9ddc075d")
               expect(parsed_package_lock["dependencies"]["is-number"]["from"]).
-                to eq("is-number@github:jonschlinkert/is-number#semver:^4.0.0")
+                to eq("is-number@jonschlinkert/is-number#semver:^4.0.0")
             end
           end
         end

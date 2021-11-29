@@ -6,7 +6,7 @@ module Dependabot
       GITHUB_REPO_REGEX = %r{github.com/[^:@]*}.freeze
 
       def self.handle(message, credentials:)
-        mod_path = message.scan(GITHUB_REPO_REGEX).first
+        mod_path = message.scan(GITHUB_REPO_REGEX).last
         raise Dependabot::DependencyFileNotResolvable, message unless mod_path
 
         # Module not found on github.com - query for _any_ version to know if it

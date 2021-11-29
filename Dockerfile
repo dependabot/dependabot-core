@@ -76,7 +76,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.20 --no-document \
+  && gem install bundler -v 2.2.26 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -88,28 +88,21 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.1 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.9.5 \
-  && pyenv global 3.9.5 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.1.0 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.0 \
+  && pyenv global 3.10.0 \
   && rm -Rf /tmp/python-build*
 USER root
 
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm (updated after elm)
+# Install Node 14.0 and npm v7
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
-  && rm -rf /var/lib/apt/lists/*
-
-# NOTE: This was a hack to get around the fact that elm 18 failed to install with
-# npm 7, we should look into installing the latest version of node + npm
-RUN npm install -g npm@v7.10.0 \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install -g npm@v7.21.0 \
   && rm -rf ~/.npm
-
-# NOTE: This was a hack to get around the fact that elm 18 failed to install with
-# npm 7, we should look into installing the latest version of node + npm
-RUN npm install -g npm@v7.10.0
 
 
 ### ELM
@@ -173,20 +166,15 @@ USER root
 
 ### GO
 
-# Install Go and dep
-ARG GOLANG_VERSION=1.16.3
-ARG GOLANG_CHECKSUM=951a3c7c6ce4e56ad883f97d9db74d3d6d80d5fec77455c6ada6c1f7ac4776d2
-ENV PATH=/opt/go/bin:$PATH \
-  GOPATH=/opt/go/gopath
+# Install Go
+ARG GOLANG_VERSION=1.17.3
+ARG GOLANG_CHECKSUM=550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
+ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
   && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
   && tar -xzf go.tar.gz -C /opt \
-  && rm go.tar.gz \
-  && mkdir "$GOPATH" \
-  && chown dependabot:dependabot "$GOPATH" \
-  && curl -sSLfo /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep
+  && rm go.tar.gz
 
 
 ### ELIXIR
@@ -194,17 +182,20 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.11.4
-ARG ELIXIR_CHECKSUM=4d8ead533a7bd35b41669be0d4548b612d5cc17723da67cfdf996ab36522fd0163215915a970675c6ebcba4dbfc7a46e644cb144b16087bc9417b385955a1e79
-ARG ERLANG_VERSION=1:23.3.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
-  && dpkg -i erlang-solutions_1.0_all.deb \
+ARG ELIXIR_VERSION=v1.12.3
+ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
+# This version is currently pinned to OTP 23, due to an issue that we only hit
+# in production, where traffic is routed through a proxy that OTP 24 doesn't
+# play nice with.
+ARG ERLANG_VERSION=1:23.3.4.5-1
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
+  && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
   && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
+  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
   && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
@@ -224,7 +215,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.0
+ARG TERRAFORM_VERSION=1.0.8
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
@@ -235,8 +226,8 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 
 USER root
 
+COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot dep/helpers /opt/dep/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
@@ -245,7 +236,7 @@ COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
+  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
@@ -253,7 +244,6 @@ RUN mkdir -p /opt/bundler/v1 \
   && mkdir -p /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/dep/helpers/build /opt/dep
 RUN bash /opt/go_modules/helpers/build /opt/go_modules
 RUN bash /opt/hex/helpers/build /opt/hex
 RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn

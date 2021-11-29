@@ -12,6 +12,7 @@ module Dependabot
       include FileSelector
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
+      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -29,7 +30,7 @@ module Dependabot
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        updated_lockfile_content = update_lockfile_declaration
+        updated_lockfile_content = update_lockfile_declaration(updated_files)
 
         if updated_lockfile_content && lock_file.content != updated_lockfile_content
           updated_files << updated_file(file: lock_file, content: updated_lockfile_content)
@@ -92,7 +93,7 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration # rubocop:disable Metrics/AbcSize
+      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
@@ -106,8 +107,11 @@ module Dependabot
 
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Update the provider requirements in case the previous requirement doesn't allow the new version
+          updated_manifest_files.each { |f| File.write(f.name, f.content) }
+
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
+          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
@@ -119,6 +123,10 @@ module Dependabot
             content.sub!(declaration_regex, updated_dependency)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
           raise if @retrying_lock || !e.message.include?("terraform init")
 
           # NOTE: Modules need to be installed before terraform can update the
@@ -143,6 +151,8 @@ module Dependabot
           if output.match?(PRIVATE_MODULE_ERROR)
             raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
           end
+
+          raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
         end
       end
 
@@ -206,7 +216,7 @@ module Dependabot
           (?:(?!^\}).)*
           provider\s*["']#{Regexp.escape(provider_source)}["']\s*\{
           (?:(?!^\}).)*}
-        /mx
+        /mix
       end
     end
   end

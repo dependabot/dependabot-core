@@ -80,6 +80,8 @@ dependencies {
 
     compileOnly libraries.junit4, libraries.hamcrest
     compile libraries.objenesis
+    implementation "org.apache.commons:commons-collections4:$collectionsVersion"
+
 
     testCompile libraries.asm
 

@@ -53,6 +53,19 @@ RSpec.describe Dependabot::Terraform::UpdateChecker do
   describe "#latest_version" do
     subject { checker.latest_version }
 
+    context "with multiple file sources" do
+      let(:requirements) do
+        [
+          { file: "./modules/main.tf", source: { type: "path", url: "./modules" }, requirement: nil, groups: [] },
+          { file: "main.tf", source: { type: "path", url: "./" }, requirement: nil, groups: [] }
+        ]
+      end
+
+      it "ignores the dependencies with file sources" do
+        expect(subject).to be_nil
+      end
+    end
+
     context "with a git dependency" do
       let(:source) do
         {

@@ -31,6 +31,7 @@ module Dependabot
             '\['git',
             \s+'clone',
             \s+'--recurse-submodules',
+            \s+'(--)?',
             \s+'(?<url>.+?)'.*
             \s+exit\s+status\s+128
           /mx.freeze

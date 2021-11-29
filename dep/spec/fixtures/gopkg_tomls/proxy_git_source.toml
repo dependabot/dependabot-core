@@ -1,3 +1,0 @@
-[[constraint]]
-  branch = "master"
-  name = "k8s.io/apimachinery"

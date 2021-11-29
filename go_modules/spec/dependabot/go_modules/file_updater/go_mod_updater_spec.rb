@@ -9,12 +9,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }],
+      credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
       options: { tidy: tidy, vendor: false }
@@ -26,6 +21,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
   let(:directory) { "/" }
+
+  let(:credentials) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -101,6 +98,20 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           let(:project_name) { "go_1.13" }
 
           it { is_expected.to include("go 1.13") }
+
+          it "doesn't add additional go 1.17 requirement sections" do
+            is_expected.to include("require").once
+          end
+        end
+
+        context "for a go 1.17 go.mod" do
+          let(:project_name) { "go_1.17" }
+
+          it { is_expected.to include("go 1.17") }
+
+          it "preserves the two requirements sections" do
+            is_expected.to include("require").twice
+          end
         end
 
         context "when a retract directive is present" do
@@ -583,6 +594,141 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
             "invalid version: unknown revision"
           )
+        end
+      end
+    end
+
+    context "with an unreachable dependency" do
+      let(:project_name) { "unreachable_dependency" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+    end
+
+    context "with an unreachable dependency with a pseudo version" do
+      let(:project_name) { "unreachable_dependency_pseudo_version" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+
+      context "with bad credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => ""
+          }]
+        end
+
+        it "raises the correct error" do
+          error_class = Dependabot::PrivateSourceAuthenticationFailure
+          expect { updater.updated_go_sum_content }.
+            to raise_error(error_class) do |error|
+            expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          end
+        end
+      end
+    end
+
+    context "with an unreachable sub-dependency" do
+      let(:project_name) { "unreachable_sub_dependency" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+    end
+
+    context "with an unreachable sub-dependency with a pseudo version" do
+      let(:project_name) { "unreachable_sub_dependency_pseudo_version" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      it "raises the correct error" do
+        error_class = Dependabot::GitDependenciesNotReachable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("dependabot-fixtures/go-modules-private")
+          expect(error.dependency_urls).
+            to eq(["github.com/dependabot-fixtures/go-modules-private"])
         end
       end
     end

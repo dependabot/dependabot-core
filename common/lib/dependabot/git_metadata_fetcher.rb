@@ -94,8 +94,9 @@ module Dependabot
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
 
-      command = "git ls-remote #{service_pack_uri}"
       env = { "PATH" => ENV["PATH"] }
+      command = "git ls-remote #{service_pack_uri}"
+      command = SharedHelpers.escape_command(command)
 
       stdout, stderr, process = Open3.capture3(env, command)
       # package the command response like a HTTP response so error handling

@@ -13,7 +13,7 @@ module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
-        TYPE_SUFFICES = %w(jre android java).freeze
+        TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:,
@@ -221,13 +221,19 @@ module Dependabot
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type =
-            TYPE_SUFFICES.
-            find { |t| dependency.version.split(/[.\-]/).include?(t) }
+          current_type = dependency.version.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
+                         end
 
-          version_type =
-            TYPE_SUFFICES.
-            find { |t| comparison_version.to_s.split(/[.\-]/).include?(t) }
+          version_type = comparison_version.to_s.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
+                         end
 
           current_type == version_type
         end

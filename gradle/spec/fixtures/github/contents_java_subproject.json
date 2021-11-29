@@ -1,0 +1,18 @@
+[
+  {
+    "name": "build.gradle",
+    "path": "app/build.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/dependabot-fixtures/gradle/blob/main/build.gradle"
+    }
+  }
+]

@@ -87,8 +87,6 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
     context "when the user has asked for a version type and it's available" do
       let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
-      let(:dependency_version) { "1.4.11.1" }
-
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/"\
         "com/thoughtworks/xstream/xstream/maven-metadata.xml"
@@ -98,6 +96,13 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       end
       let(:dependency_version) { "1.4.11-java7" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
+
+      context "and the type is native-mt" do
+        let(:dependency_version) { "1.4.11-native-mt" }
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.12-native-mt"))
+        end
+      end
     end
 
     context "when a version type is available that wasn't requested" do

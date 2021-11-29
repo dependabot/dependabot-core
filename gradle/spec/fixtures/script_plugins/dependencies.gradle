@@ -7,6 +7,12 @@ def versions = [:]
 versions.bytebuddy = '1.9.7'
 versions.junitJupiter = '5.1.1'
 
+allprojects {
+  repositories {
+    maven { url 'https://repo.example.com/' }
+  }
+}
+
 libraries.junit4 = 'junit:junit:4.12'
 libraries.junitJupiterApi = "org.junit.jupiter:junit-jupiter-api:${versions.junitJupiter}"
 libraries.junitPlatformLauncher = 'org.junit.platform:junit-platform-launcher:1.1.0'
@@ -37,3 +43,5 @@ libraries.kotlin = [
     stdlib_1_3:  "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion_1_3",
     releaseCoroutines: "org.jetbrains.kotlinx:kotlinx-coroutines-core:0.26.1-eap13"
 ]
+
+def collectionsVersion = '4.4'

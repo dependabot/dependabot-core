@@ -52,7 +52,7 @@ module Dependabot
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: details["Indirect"] ? [] : reqs,
+          requirements: details["Indirect"] || dependency_is_replaced(details) ? [] : reqs,
           package_manager: "go_modules"
         )
       end
@@ -92,6 +92,15 @@ module Dependabot
 
       def local_replacements
         @local_replacements ||=
+          # Find all the local replacements, and return them with a stub path
+          # we can use in their place. Using generated paths is safer as it
+          # means we don't need to worry about references to parent
+          # directories, etc.
+          ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod.directory)
+      end
+
+      def manifest
+        @manifest ||=
           SharedHelpers.in_a_temporary_directory do |path|
             File.write("go.mod", go_mod.content)
 
@@ -106,12 +115,7 @@ module Dependabot
             stdout, stderr, status = Open3.capture3(env, command)
             handle_parser_error(path, stderr) unless status.success?
 
-            # Find all the local replacements, and return them with a stub path
-            # we can use in their place. Using generated paths is safer as it
-            # means we don't need to worry about references to parent
-            # directories, etc.
-            manifest = JSON.parse(stdout)
-            ReplaceStubber.new(repo_contents_path).stub_paths(manifest, go_mod.directory)
+            JSON.parse(stdout)
           end
       end
 
@@ -171,6 +175,24 @@ module Dependabot
         rescue URI::InvalidURIError
           false
         end
+      end
+
+      def dependency_is_replaced(details)
+        # Mark dependency as replaced if the requested dependency has a
+        # "replace" directive and that either has the same version, or no
+        # version mentioned. This mimics the behaviour of go get -u, and
+        # prevents that we change dependency versions without any impact since
+        # the actual version that is being imported is defined by the replace
+        # directive.
+        if manifest["Replace"]
+          dep_replace = manifest["Replace"].find do |replace|
+            replace["Old"]["Path"] == details["Path"] &&
+              (!replace["Old"]["Version"] || replace["Old"]["Version"] == details["Version"])
+          end
+
+          return true if dep_replace
+        end
+        false
       end
     end
   end
