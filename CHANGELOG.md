@@ -1,3 +1,13 @@
+## v0.169.1, 29 November 2021
+
+- build(deps): bump poetry from 1.1.11 to 1.1.12 in /python/helpers [#4461](https://github.com/dependabot/dependabot-core/pull/4461)
+- build(deps): bump composer/composer from 2.1.9 to 2.1.12 in /composer/helpers/v2 [#4395](https://github.com/dependabot/dependabot-core/pull/4395)
+- build(deps-dev): bump phpstan/phpstan from 0.12.93 to 1.2.0 in /composer/helpers/v2 [#4431](https://github.com/dependabot/dependabot-core/pull/4431)
+- build(deps-dev): bump phpstan/phpstan from 0.12.99 to 1.2.0 in /composer/helpers/v1 [#4430](https://github.com/dependabot/dependabot-core/pull/4430)
+- build(deps-dev): bump eslint from 8.0.0 to 8.3.0 in /npm_and_yarn/helpers [#4436](https://github.com/dependabot/dependabot-core/pull/4436)
+- build(deps): bump pipenv from 2021.11.15 to 2021.11.23 in /python/helpers [#4452](https://github.com/dependabot/dependabot-core/pull/4452)
+- Go modules: Bump minimum to 1.17 (@jeffwidman) [#4447](https://github.com/dependabot/dependabot-core/pull/4447)
+
 ## v0.169.0, 23 November 2021
 
 - Use `go list -m -versions` to determine available versions of a go module [#4434](https://github.com/dependabot/dependabot-core/pull/4434)
