@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 as build
 
-ARG PYTHON_VERSIONS="3.6.14 3.7.11 3.8.11 3.10.0"
+ARG PYTHON_VERSIONS="3.10.0"
 
 LABEL "maintainer"="platform_ci_team@pix4d.com"
 LABEL "description"="Pix4D Dependabot for updating your dependencies."
