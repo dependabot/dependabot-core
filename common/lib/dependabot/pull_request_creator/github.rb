@@ -9,7 +9,6 @@ module Dependabot
   class PullRequestCreator
     # rubocop:disable Metrics/ClassLength
     class Github
-
       MAX_PR_DESCRIPTION_LENGTH = 65_536 # characters (see #create_pull_request)
 
       attr_reader :source, :branch_name, :base_commit, :credentials,
