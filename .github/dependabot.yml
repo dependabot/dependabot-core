@@ -20,6 +20,9 @@ updates:
     directory: "/npm_and_yarn/helpers"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "npm"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
