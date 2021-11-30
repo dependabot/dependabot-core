@@ -545,28 +545,30 @@ RSpec.describe Dependabot::Terraform::FileParser do
           end
           expect(dependency).to_not be_nil
           expect(dependency.version).to eq("0.2.5")
-          expect(dependency.requirements).to match_array([{
-            requirement: nil,
-            groups: [],
-            file: "child_module_two/main.tf",
-            source: {
-              type: "git",
-              url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
-              branch: nil,
-              ref: "tags/0.2.5"
+          expect(dependency.requirements).to match_array([
+            {
+              requirement: nil,
+              groups: [],
+              file: "child_module_two/main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
+                branch: nil,
+                ref: "tags/0.2.5"
+              }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
+                branch: nil,
+                ref: "tags/0.2.5"
+              }
             }
-          },
-                                                          {
-                                                            requirement: nil,
-                                                            groups: [],
-                                                            file: "main.tf",
-                                                            source: {
-                                                              type: "git",
-                                                              url: "https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git",
-                                                              branch: nil,
-                                                              ref: "tags/0.2.5"
-                                                            }
-                                                          }])
+          ])
         end
       end
 
