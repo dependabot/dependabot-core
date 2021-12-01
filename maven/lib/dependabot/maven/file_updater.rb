@@ -86,7 +86,7 @@ module Dependabot
       end
 
       def update_version_in_file(dependency, file, previous_req, requirement)
-        updated_content = file.content
+        updated_content = Nokogiri::XML(file.content).to_xml
 
         original_file_declarations(dependency, previous_req).each do |old_dec|
           updated_content = updated_content.gsub(
