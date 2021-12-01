@@ -20,6 +20,7 @@
     "-v", "${localWorkspaceFolder}/common/spec:/home/dependabot/dependabot-core/common/spec",
     "-v", "${localWorkspaceFolder}/bundler/dependabot-bundler.gemspec:/home/dependabot/dependabot-core/bundler/dependabot-bundler.gemspec",
     "-v", "${localWorkspaceFolder}/bundler/Gemfile:/home/dependabot/dependabot-core/bundler/Gemfile",
+    "-v", "${localWorkspaceFolder}/bundler/helpers:/home/dependabot/dependabot-core/bundler/helpers",
     "-v", "${localWorkspaceFolder}/bundler/lib:/home/dependabot/dependabot-core/bundler/lib",
     "-v", "${localWorkspaceFolder}/bundler/spec:/home/dependabot/dependabot-core/bundler/spec",
     "-v", "${localWorkspaceFolder}/cargo/dependabot-cargo.gemspec:/home/dependabot/dependabot-core/cargo/dependabot-cargo.gemspec",
