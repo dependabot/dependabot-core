@@ -796,5 +796,55 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
     end
+
+    context "with a remote parent" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "pom_with_parent.xml")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.springframework.boot:spring-boot-starter-parent",
+          version: "2.6.1",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "2.6.1",
+            groups: [],
+            source: { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" },
+            metadata: { packaging_type: "pom" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "1.5.9.RELEASE",
+            groups: [],
+            source: { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" },
+            metadata: { packaging_type: "pom" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "updates the version of the parent in the POM" do
+        expect(updated_files.first.content).
+          to include("<version>2.6.1</version>")
+      end
+
+      context "with insignificant whitespace" do
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("poms", "pom_with_parent_and_insignificant_whitespace.xml")
+          )
+        end
+
+        it "updates the version of the parent in the POM" do
+          expect(updated_files.first.content).
+            to include("<version>2.6.1</version>")
+        end
+      end
+    end
   end
 end
