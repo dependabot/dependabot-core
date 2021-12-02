@@ -199,10 +199,11 @@ module Dependabot
         return /terraform\s*\{(?:(?!^\}).)*/m if terragrunt_file?(filename)
 
         # For modules we can do better - filter for module blocks that use the
-        # name of the dependency
+        # name of the module
+        module_name = dependency.name.split("::").first
         /
-          module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
-          (?:(?!^\}).)*
+         module\s+["']#{Regexp.escape(module_name)}["']\s*\{
+         (?:(?!^\}).)*
         /mx
       end
 

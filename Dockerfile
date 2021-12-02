@@ -215,7 +215,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.8
+ARG TERRAFORM_VERSION=1.0.11
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \

@@ -1,3 +1,29 @@
+## v0.169.3, 2 December 2021
+
+- Test for updating version of a parent pom [#4477](https://github.com/dependabot/dependabot-core/pull/4477)
+- Revert "Maven: Correctly handle nested declarations" [#4479](https://github.com/dependabot/dependabot-core/pull/4479)
+- Fix terraform dependency checker (@dwc0011) [#4440](https://github.com/dependabot/dependabot-core/pull/4440)
+- Add tech-debt issue template (@jeffwidman) [#4470](https://github.com/dependabot/dependabot-core/pull/4470)
+- Add bundler/helpers directory to devcontainer.json for VSCode (@dwc0011) [#4471](https://github.com/dependabot/dependabot-core/pull/4471)
+- Limit the GitHub PR description message to API max [#4450](https://github.com/dependabot/dependabot-core/pull/4450)
+
+## v0.169.2, 30 November 2021
+
+- Hex: Handle additional dynamic version reading approaches [#4442](https://github.com/dependabot/dependabot-core/pull/4442)
+- Update contributor from Dependabot Ltd to GitHub Inc (@jjcaine) [#4463](https://github.com/dependabot/dependabot-core/pull/4463)
+- Bump Terraform from 1.0.8 to 1.0.11 [#4464](https://github.com/dependabot/dependabot-core/pull/4464)
+- Introduce dependabot-fixture for npm6 unpinned git source test [#4466](https://github.com/dependabot/dependabot-core/pull/4466)
+
+## v0.169.1, 29 November 2021
+
+- build(deps): bump poetry from 1.1.11 to 1.1.12 in /python/helpers [#4461](https://github.com/dependabot/dependabot-core/pull/4461)
+- build(deps): bump composer/composer from 2.1.9 to 2.1.12 in /composer/helpers/v2 [#4395](https://github.com/dependabot/dependabot-core/pull/4395)
+- build(deps-dev): bump phpstan/phpstan from 0.12.93 to 1.2.0 in /composer/helpers/v2 [#4431](https://github.com/dependabot/dependabot-core/pull/4431)
+- build(deps-dev): bump phpstan/phpstan from 0.12.99 to 1.2.0 in /composer/helpers/v1 [#4430](https://github.com/dependabot/dependabot-core/pull/4430)
+- build(deps-dev): bump eslint from 8.0.0 to 8.3.0 in /npm_and_yarn/helpers [#4436](https://github.com/dependabot/dependabot-core/pull/4436)
+- build(deps): bump pipenv from 2021.11.15 to 2021.11.23 in /python/helpers [#4452](https://github.com/dependabot/dependabot-core/pull/4452)
+- Go modules: Bump minimum to 1.17 (@jeffwidman) [#4447](https://github.com/dependabot/dependabot-core/pull/4447)
+
 ## v0.169.0, 23 November 2021
 
 - Use `go list -m -versions` to determine available versions of a go module [#4434](https://github.com/dependabot/dependabot-core/pull/4434)
