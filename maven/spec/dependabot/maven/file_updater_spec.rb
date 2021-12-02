@@ -828,9 +828,22 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       end
 
       it "updates the version of the parent in the POM" do
-        expect(updated_files.map(&:name)).to eq(["pom.xml"])
         expect(updated_files.first.content).
           to include("<version>2.6.1</version>")
+      end
+
+      context "with insignificant whitespace" do
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("poms", "pom_with_parent_and_insignificant_whitespace.xml")
+          )
+        end
+
+        it "updates the version of the parent in the POM" do
+          expect(updated_files.first.content).
+            to include("<version>2.6.1</version>")
+        end
       end
     end
   end
