@@ -29,3 +29,7 @@ module "dns_dup" {
   target_dns_name  = aws_cloudfront_distribution.default.domain_name
   target_zone_id   = aws_cloudfront_distribution.default.hosted_zone_id
 }
+
+module "codecommit_repo" {
+  source           = "git::https://git-codecommit.us-east-1.amazonaws.com/v1/repos/test-repo//modules/test_module?ref=0.10.0"
+}

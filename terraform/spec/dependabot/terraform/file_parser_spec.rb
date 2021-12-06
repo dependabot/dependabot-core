@@ -447,7 +447,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
       context "with relative path" do
         let(:files) { project_dependency_files("git_tags_013") }
-        specify { expect(subject.length).to eq(6) }
+        specify { expect(subject.length).to eq(7) }
         specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
 
         it "has the right details for the child_module_one child_label git dependency (uses git@github.com)" do
@@ -569,6 +569,25 @@ RSpec.describe Dependabot::Terraform::FileParser do
               }
             }
           ])
+        end
+
+        it "has the right details for the codecommit git repo" do
+          dependency = subject.find do |x|
+            x.name == "codecommit_repo::codecommit::test-repo::0.10.0"
+          end
+          expect(dependency).to_not be_nil
+          expect(dependency.version).to eq("0.10.0")
+          expect(dependency.requirements).to match_array([{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "git",
+              url: "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/test-repo",
+              branch: nil,
+              ref: "0.10.0"
+            }
+          }])
         end
       end
 
