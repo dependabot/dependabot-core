@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
         stub_request(:get, "https://unkown-git-repo-example.com/status").to_return(
           status: 200,
           body: "Not GHES",
-          headers:{}
+          headers: {}
         )
       end
 

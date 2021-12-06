@@ -4,7 +4,7 @@ require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
-require 'digest'
+require "digest"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
