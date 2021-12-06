@@ -33,3 +33,7 @@ module "dns_dup" {
 module "codecommit_repo" {
   source           = "git::https://git-codecommit.us-east-1.amazonaws.com/v1/repos/test-repo//modules/test_module?ref=0.10.0"
 }
+
+module "unknown_repo" {
+  source           = "git::https://unkown-git-repo-example.com/reponame/test?ref=1.0.0"
+}
