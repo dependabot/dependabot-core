@@ -14,9 +14,14 @@ fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
-hcl2json_checksum="24068f1e25a34d8f8ca763f34fce11527472891bfa834d1504f665855021d5d4"
+hcl2json_checksum_linux="24068f1e25a34d8f8ca763f34fce11527472891bfa834d1504f665855021d5d4"
+hcl2json_checksum_darwin="f7a78fc717db176bf33dcd28a62a64e60e098439f822f09a08ff44aa8ff4264e"
 hcl2json_url="https://github.com/tmccombs/hcl2json/releases/download/v0.3.3/hcl2json_${os}_amd64"
 hcl2json_path="$install_dir/bin/hcl2json"
 curl -sSLfo "$hcl2json_path" "$hcl2json_url"
-echo "$hcl2json_checksum  $hcl2json_path" | sha256sum -c
+if [ "${os}" == "darwin" ]; then
+  echo "$hcl2json_checksum_darwin  $hcl2json_path" | sha256sum -c
+else
+  echo "$hcl2json_checksum_linux  $hcl2json_path" | sha256sum -c
+fi
 chmod +x "$install_dir/bin/hcl2json"
