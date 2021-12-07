@@ -196,11 +196,13 @@ module Dependabot
 
         dependency_name =
           if group == "plugins" then name
-          else "#{group}:#{name}"
+          else
+            "#{group}:#{name}"
           end
         groups =
           if group == "plugins" then ["plugins"] + extra_groups
-          else []
+          else
+            []
           end
         source =
           source_from(group, name, version)

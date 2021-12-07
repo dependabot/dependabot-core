@@ -288,14 +288,16 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else [] # Invalid lerna.json, which must not be in use
+          else
+            [] # Invalid lerna.json, which must not be in use
           end
 
         paths_array.flat_map do |path|
           # The packages/!(not-this-package) syntax is unique to Yarn
           if path.include?("*") || path.include?("!(")
             expanded_paths(path)
-          else path
+          else
+            path
           end
         end
       end
