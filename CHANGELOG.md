@@ -1,3 +1,7 @@
+## v0.169.4, 7 December 2021
+
+- Maven: Handle nested plugin declarations [#4487](https://github.com/dependabot/dependabot-core/pull/4487)
+
 ## v0.169.3, 2 December 2021
 
 - Test for updating version of a parent pom [#4477](https://github.com/dependabot/dependabot-core/pull/4477)
