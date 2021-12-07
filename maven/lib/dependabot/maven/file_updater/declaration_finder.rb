@@ -11,7 +11,7 @@ module Dependabot
       class DeclarationFinder
         DECLARATION_REGEX =
           %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-             <plugin>.*?</plugin>|<extension>.*?</extension>}mx.freeze
+             <plugin>.*?(?:<plugin>.*?</plugin>.*)?</plugin>|<extension>.*?</extension>}mx.freeze
 
         attr_reader :dependency, :declaring_requirement, :dependency_files
 
