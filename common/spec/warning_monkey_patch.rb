@@ -5,7 +5,8 @@ ALLOW_PATTERNS = [
   # TODO: Fix these by upgrading to ruby 2.7.3 (requires ubuntu upgrade)
   %r{parser/current is loading parser/ruby27},
   /2.7.\d-compliant syntax, but you are running 2.7.\d/,
-  %r{whitequark/parser}
+  %r{whitequark/parser},
+  /`Faraday::Connection#authorization` is deprecated; it will be removed in version 2.0./
 ].freeze
 
 # Called internally by Ruby for all warnings
