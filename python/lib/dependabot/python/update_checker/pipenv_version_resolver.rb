@@ -405,7 +405,8 @@ module Dependabot
             elsif user_specified_python_requirement
               parts = user_specified_python_requirement.split(".")
               parts.fill("*", (parts.length)..2).join(".")
-            else PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+            else
+              PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
           # Ideally, the requirement is satisfied by a Python version we support

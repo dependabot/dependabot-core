@@ -62,7 +62,8 @@ module Dependabot
           secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
-            else possible_versions(filter_ignored: false)
+            else
+              possible_versions(filter_ignored: false)
             end
 
           secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,

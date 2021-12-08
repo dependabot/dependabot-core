@@ -25,7 +25,8 @@ module Dependabot
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
-            else build_npmrc_content_from_lockfile
+            else
+              build_npmrc_content_from_lockfile
             end
 
           return initial_content || "" unless registry_credentials.any?

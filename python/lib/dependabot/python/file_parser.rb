@@ -106,7 +106,8 @@ module Dependabot
 
       def group_from_filename(filename)
         if filename.include?("dev") then ["dev-dependencies"]
-        else ["dependencies"]
+        else
+          ["dependencies"]
         end
       end
 
