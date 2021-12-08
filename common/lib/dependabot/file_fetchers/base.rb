@@ -85,6 +85,14 @@ module Dependabot
         raise Dependabot::RepoNotFound, source
       end
 
+      def fetch_code_paths_for_search_text(provider:, search_text:)
+        case provider
+        when "azure"
+          azure_client.fetch_code_paths_for_search_text(search_text: search_text)
+        else raise "Unsupported provider!"
+        end
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)

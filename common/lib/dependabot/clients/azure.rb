@@ -170,6 +170,51 @@ module Dependabot
           "/pushes?api-version=5.0", content.to_json)
       end
 
+      def fetch_code_paths_for_search_text(search_text:)
+        code_paths = []
+        skip = 0
+        top = 1000
+
+        loop do
+          content = {
+            searchText: search_text,
+            "$skip": skip,
+            "$top": top,
+            filters: {
+              Project: [
+                source.project
+              ],
+              Repository: [
+                source.unscoped_repo
+              ],
+              Branch: [
+                source.branch
+              ]
+            }
+          }
+
+          response = post("https://almsearch.dev.azure.com/" +
+            source.organization + "/" + source.project +
+            "/_apis/search/codesearchresults?api-version=6.0-preview.1", content.to_json)
+
+          response_json = JSON.parse(response.body)
+
+          count = response_json.fetch("count").to_i
+
+          results = response_json.fetch("results")
+
+          results.each do |result|
+            code_paths.append(result.fetch("path"))
+          end
+
+          break if count <= skip + top
+
+          skip += top
+        end
+
+        code_paths
+      end
+
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
                               pr_description, labels, work_item = nil)
