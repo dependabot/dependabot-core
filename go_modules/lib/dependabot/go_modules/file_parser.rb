@@ -37,7 +37,8 @@ module Dependabot
       def dependency_from_details(details)
         source =
           if rev_identifier?(details) then git_source(details)
-          else { type: "default", source: details["Path"] }
+          else
+            { type: "default", source: details["Path"] }
           end
 
         version = details["Version"]&.sub(/^v?/, "")

@@ -311,7 +311,8 @@ module Dependabot
             version.segments.count - 2
           elsif req_string.strip.start_with?("~")
             req_string.split(".").count == 1 ? 0 : 1
-          else raise "Don't know how to convert #{req_string} to range"
+          else
+            raise "Don't know how to convert #{req_string} to range"
           end
         end
 
@@ -335,7 +336,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end
 

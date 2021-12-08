@@ -271,7 +271,8 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content =
               if update_requirement then update_req_file(file, updated_req)
-              else file.content
+              else
+                file.content
               end
             File.write(path, updated_content)
           end

@@ -134,7 +134,8 @@ module Dependabot
 
         def write_temporary_sanitized_dependency_files(prepared: true)
           files = if prepared then prepared_dependency_files
-                  else original_dependency_files
+                  else
+                    original_dependency_files
                   end
 
           files.each do |file|
