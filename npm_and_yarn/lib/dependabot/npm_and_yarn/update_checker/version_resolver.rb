@@ -262,7 +262,8 @@ module Dependabot
                 e.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
-              else raise
+              else
+                raise
               end
               errors
             end.compact

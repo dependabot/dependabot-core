@@ -68,7 +68,8 @@ module Dependabot
         elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
         elsif req_string.match?(/^[\dv^]/) then convert_caret_req(req_string)
         elsif req_string.match?(/[<=>]/) then req_string
-        else ruby_range(req_string)
+        else
+          ruby_range(req_string)
         end
       end
 

@@ -48,7 +48,8 @@ module Dependabot
                 name: name, group: dep_type, requirement: req, direct: true
               )
             end
-          else raise "Unexpected repo type for Elm repo: #{repo_type}"
+          else
+            raise "Unexpected repo type for Elm repo: #{repo_type}"
           end
         end
 
