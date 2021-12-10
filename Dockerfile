@@ -14,41 +14,41 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    build-essential \
-    dirmngr \
-    git \
-    bzr \
-    mercurial \
-    gnupg2 \
-    ca-certificates \
-    curl \
-    file \
-    zlib1g-dev \
-    liblzma-dev \
-    tzdata \
-    zip \
-    unzip \
-    locales \
-    openssh-client \
-    software-properties-common \
-    make \
-    libpq-dev \
-    libssl-dev \
-    libbz2-dev \
-    libffi-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    libcurl4-openssl-dev \
-    llvm \
-    libncurses5-dev \
-    libncursesw5-dev \
-    libmysqlclient-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libgeos-dev \
-    python3-enchant \
+  build-essential \
+  dirmngr \
+  git \
+  bzr \
+  mercurial \
+  gnupg2 \
+  ca-certificates \
+  curl \
+  file \
+  zlib1g-dev \
+  liblzma-dev \
+  tzdata \
+  zip \
+  unzip \
+  locales \
+  openssh-client \
+  software-properties-common \
+  make \
+  libpq-dev \
+  libssl-dev \
+  libbz2-dev \
+  libffi-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  libcurl4-openssl-dev \
+  llvm \
+  libncurses5-dev \
+  libncursesw5-dev \
+  libmysqlclient-dev \
+  xz-utils \
+  tk-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  libgeos-dev \
+  python3-enchant \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -56,7 +56,7 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt
 
@@ -69,7 +69,7 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
-    BUNDLE_BIN=".bundle/bin"
+  BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
@@ -124,32 +124,32 @@ COPY --from=composer:2.1.12 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    php7.4 \
-    php7.4-apcu \
-    php7.4-bcmath \
-    php7.4-cli \
-    php7.4-common \
-    php7.4-curl \
-    php7.4-gd \
-    php7.4-geoip \
-    php7.4-gettext \
-    php7.4-gmp \
-    php7.4-imagick \
-    php7.4-imap \
-    php7.4-intl \
-    php7.4-json \
-    php7.4-ldap \
-    php7.4-mbstring \
-    php7.4-memcached \
-    php7.4-mongodb \
-    php7.4-mysql \
-    php7.4-redis \
-    php7.4-soap \
-    php7.4-sqlite3 \
-    php7.4-tidy \
-    php7.4-xml \
-    php7.4-zip \
-    php7.4-zmq \
+  php7.4 \
+  php7.4-apcu \
+  php7.4-bcmath \
+  php7.4-cli \
+  php7.4-common \
+  php7.4-curl \
+  php7.4-gd \
+  php7.4-geoip \
+  php7.4-gettext \
+  php7.4-gmp \
+  php7.4-imagick \
+  php7.4-imap \
+  php7.4-intl \
+  php7.4-json \
+  php7.4-ldap \
+  php7.4-mbstring \
+  php7.4-memcached \
+  php7.4-mongodb \
+  php7.4-mysql \
+  php7.4-redis \
+  php7.4-soap \
+  php7.4-sqlite3 \
+  php7.4-tidy \
+  php7.4-xml \
+  php7.4-zip \
+  php7.4-zmq \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
@@ -223,6 +223,38 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
 
+
+### DART
+
+# Install Dart 
+ENV PUB_CACHE=/opt/dart/pub-cache \
+  PUB_ENVIRONMENT="dependabot" \
+  PATH="${PATH}:/opt/dart/dart-sdk/bin"
+ARG DART_VERSION=2.14.2
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
+  && mkdir -p "$PUB_CACHE" \
+  && chown dependabot:dependabot "$PUB_CACHE" \
+  && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
+  && chmod -R o+rx "/opt/dart/dart-sdk" \
+  && rm "/tmp/dart-sdk.zip" \
+  && dart --version
+# HACK: We use a patched version of "dart pub" that is not in the Dart SDK yet.
+#       Hence, we clone from git and globally install it from local folder.
+#       Now it can be used with: 'dart pub global run pub ...'
+RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
+  && git -C /opt/dart/pub checkout dependency_services \
+  && dart pub global activate --source path /opt/dart/pub \
+  && chmod -R o+r "/opt/dart/pub" \
+  && chown -R dependabot:dependabot "$PUB_CACHE" \
+  && chown -R dependabot:dependabot /opt/dart/pub
+
+# Install Flutter
+ARG FLUTTER_VERSION=2.5.3
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
+  && tar xf "/tmp/flutter.xz" -C /opt/dart \
+  && chmod -R o+rx "/opt/dart/flutter" \
+  && chown -R dependabot:dependabot "/opt/dart/flutter" \
+  && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version"
 
 USER root
 

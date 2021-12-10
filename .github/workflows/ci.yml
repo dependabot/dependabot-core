@@ -37,6 +37,7 @@ jobs:
         - { path: nuget, name: nuget }
         - { path: omnibus, name: omnibus }
         - { path: python, name: python }
+        - { path: pub, name: pub }
         - { path: terraform, name: terraform }
     steps:
       - name: Checkout code

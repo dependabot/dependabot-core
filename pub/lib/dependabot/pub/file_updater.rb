@@ -1,0 +1,44 @@
+# frozen_string_literal: true
+
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
+require "dependabot/pub/helpers"
+
+module Dependabot
+  module Pub
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      include Dependabot::Pub::Helpers
+
+      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
+                     credentials:, options: {}, pub_hosted_url: nil)
+        @pub_hosted_url = pub_hosted_url
+        super(
+          dependencies: dependencies,
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials,
+          options: options
+        )
+      end
+
+      def self.updated_files_regex
+        [
+          /^pubspec\.yaml$/,
+          /^pubspec\.lock$/
+        ]
+      end
+
+      def updated_dependency_files
+        dependency_services_apply(@dependencies)
+      end
+
+      private
+
+      def check_required_files
+        raise "No pubspec.yaml!" unless get_original_file("pubspec.yaml")
+      end
+    end
+  end
+end
+
+Dependabot::FileUpdaters.register("pub", Dependabot::Pub::FileUpdater)
