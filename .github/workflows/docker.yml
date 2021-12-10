@@ -40,3 +40,38 @@ jobs:
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
           docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE:$VERSION"
           docker push "$CORE_IMAGE:$VERSION"
+  push-development-image:
+    runs-on: ubuntu-latest
+    needs: push-core-image
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Prepare environment variables
+        run: |
+          echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
+          echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
+          echo "DEV_IMAGE=dependabot/dependabot-core-development" >> $GITHUB_ENV
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "$DEV_IMAGE:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$CORE_IMAGE:latest" \
+            --cache-from "$DEV_IMAGE:lastest"
+            -f Dockerfile.development
+            .
+      - name: Log in to the Docker registry
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Push latest image
+        run: |
+          docker push "$DEV_IMAGE:latest"
+      - name: Push tagged image
+        if: "contains(github.ref, 'refs/tags')"
+        run: |
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          docker tag "$DEV_IMAGE:latest" "$DEV_IMAGE:$VERSION"
+          docker push "$DEV_IMAGE:$VERSION"
