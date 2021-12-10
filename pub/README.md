@@ -18,13 +18,13 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 ### Dependency Service Interface
 
-The `dart pub` client offers an experimental dependency services interface which
+The `dart pub` repo offers an experimental dependency services interface which
 allows checking for available updates.
 
 #### List Dependencies
 
 ```js
-# dart pub __experimental-dependency-services list
+# dart global run pub:dependency_services list
 {
   "dependencies": [
     // For each dependency:
@@ -34,19 +34,21 @@ allows checking for available updates.
 
       "kind": "direct" || "dev" || "transitive",
 
-      // Version constraint, as written in `pubspec.yaml`, omitted for
+      // Version constraint, as written in `pubspec.yaml`, null for
       // transitive dependencies.
-      "constraint": "<version-constraint>",
+      "constraint": "<version-constraint>" || null,
     },
     ... // must contain an entry for each dependency!
   ],
 }
+
 ```
 
 #### Dependency Report
 
 ```js
-# dart pub __experimental-dependency-services
+# dart global run pub:dependency_services report
+// TODO: We likely need to provide ignored versions on stdin
 {
   "dependencies": [
     // For each dependency:
@@ -54,16 +56,19 @@ allows checking for available updates.
       "name":        "<package-name>",       // name of current dependency
       "version":     "<version>",            // current version
       "kind":        "direct" || "dev" || "transitive",
-      "constraint":  "<version-constraint>", // omitted for transitive deps
+      "constraint":  "<version-constraint>" || null, // null for transitive deps
 
-      // Latest version of the current dependency, ignoring pre-releases, unless
-      // current version is a pre-release.
+      // Latest desirable version of the current dependency,
+      //
+      // Various heuristics defining "desirable" may apply.
+      // For Dart we ignore pre-releases, unless the current version of the
+      // dependency is already a pre-release.
       "latest": "<version>",
 
       // If it is possible to upgrade the current version without making any
       // changes in the project manifest, then this lists the set of upgrades
       // necessary to get the latest possible version of the current dependency
-      // without changes to project manifest.
+      // without changes to the project manifest.
       //
       // The set of changes here should aim to avoid unnecessary changes.
       // That is in order of preference (heuristics allowed):
@@ -73,8 +78,8 @@ allows checking for available updates.
       //  * Avoid changes to other dependencies when possible.
       //
       // This can involve breaking version changes for transitive dependencies.
-      // But breaking changes for direct-dependencies is only possible if the
-      // manifest allows this.
+      // But a breaking change for a direct-dependency is only possible if allowed by
+      // the manifest.
       "compatible": [
         {
            "name":            "<package-name>",
@@ -91,7 +96,7 @@ allows checking for available updates.
       // If it is possible to upgrade the current version without making changes
       // to other dependencies in the project manifest, then this lists the set
       // of upgrades necessary to get the latest possible version of the current
-      // dependency without changes to other packages in project manifest.
+      // dependency without changes to other packages in the project manifest.
       //
       // The set of changes here should aim to avoid unnecessary changes.
       // That is in order of preference (heuristics allowed):
@@ -102,8 +107,7 @@ allows checking for available updates.
       //
       // This can involve breaking version changes for the current dependency.
       // It can also involve breaking changes for transitive dependencies. But
-      // breaking changes for direct-dependencies is only possible if the
-      // manifest allows this.
+      // changes for direct-dependencies are only possible if the manifest allows them.
       "singleBreaking": [
         {
            "name":            "<package-name>",
@@ -153,45 +157,20 @@ allows checking for available updates.
 #### Applying Changes
 
 ```js
-# dart pub __experimental-dependency-services apply << EOF
+# dart global run pub:dependency_services apply << EOF
 {  // Write on stdin:
    "dependencyChanges": [
       {
          "name":            "<package-name>",
          "version":         "<new-version>",
-         "constraint":      "<version-constraint>",
+         "constraint":      "<version-constraint>" or null,
       },
       ...
    ],
 }
 # EOF
 { // Output:
-  "dependencies": [
-    // For each dependency: (even ones not changed)
-    {
-      // Same as in list-dependencies:
-      "name":     "<package-name>",     // name of current dependency
-      "version":  "<version>" || null,  // current version, null if removed!
-      "kind":     "direct" || "dev" || "transitive",
-
-      // What was the previous version, same as "version" if no change!
-      "previous": "<version>",
-
-      // Link to changelog
-      "changelog": "https://...",
-
-      // List of changelog entries from "version" to "previous" version.
-      "changes": [
-        {
-          "version": "<version>",
-          "section": "<markdown>",
-        },
-        ...
-      ],
-
-      // TODO: other meta-data fields like something to find commits...
-    },
-    ... // must contain an entry for each dependency!
-  ],
+  "dependencies": [],
 }
+# Modifies pubspec.yaml and pubspec.lock on disk
 ```
