@@ -56,7 +56,7 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
             --cache-from "$CORE_IMAGE:latest" \
-            --cache-from "$DEV_IMAGE:latest"
+            --cache-from "$DEV_IMAGE:latest" \
             -f Dockerfile.development .
       - name: Log in to the Docker registry
         run: |
