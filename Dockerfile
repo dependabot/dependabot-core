@@ -14,41 +14,41 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-  build-essential \
-  dirmngr \
-  git \
-  bzr \
-  mercurial \
-  gnupg2 \
-  ca-certificates \
-  curl \
-  file \
-  zlib1g-dev \
-  liblzma-dev \
-  tzdata \
-  zip \
-  unzip \
-  locales \
-  openssh-client \
-  software-properties-common \
-  make \
-  libpq-dev \
-  libssl-dev \
-  libbz2-dev \
-  libffi-dev \
-  libreadline-dev \
-  libsqlite3-dev \
-  libcurl4-openssl-dev \
-  llvm \
-  libncurses5-dev \
-  libncursesw5-dev \
-  libmysqlclient-dev \
-  xz-utils \
-  tk-dev \
-  libxml2-dev \
-  libxmlsec1-dev \
-  libgeos-dev \
-  python3-enchant \
+    build-essential \
+    dirmngr \
+    git \
+    bzr \
+    mercurial \
+    gnupg2 \
+    ca-certificates \
+    curl \
+    file \
+    zlib1g-dev \
+    liblzma-dev \
+    tzdata \
+    zip \
+    unzip \
+    locales \
+    openssh-client \
+    software-properties-common \
+    make \
+    libpq-dev \
+    libssl-dev \
+    libbz2-dev \
+    libffi-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    libmysqlclient-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libgeos-dev \
+    python3-enchant \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -56,7 +56,7 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-  else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt
 
@@ -69,7 +69,7 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
-  BUNDLE_BIN=".bundle/bin"
+    BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
@@ -120,36 +120,36 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.23 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.1.12 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-  php7.4 \
-  php7.4-apcu \
-  php7.4-bcmath \
-  php7.4-cli \
-  php7.4-common \
-  php7.4-curl \
-  php7.4-gd \
-  php7.4-geoip \
-  php7.4-gettext \
-  php7.4-gmp \
-  php7.4-imagick \
-  php7.4-imap \
-  php7.4-intl \
-  php7.4-json \
-  php7.4-ldap \
-  php7.4-mbstring \
-  php7.4-memcached \
-  php7.4-mongodb \
-  php7.4-mysql \
-  php7.4-redis \
-  php7.4-soap \
-  php7.4-sqlite3 \
-  php7.4-tidy \
-  php7.4-xml \
-  php7.4-zip \
-  php7.4-zmq \
+    php7.4 \
+    php7.4-apcu \
+    php7.4-bcmath \
+    php7.4-cli \
+    php7.4-common \
+    php7.4-curl \
+    php7.4-gd \
+    php7.4-geoip \
+    php7.4-gettext \
+    php7.4-gmp \
+    php7.4-imagick \
+    php7.4-imap \
+    php7.4-intl \
+    php7.4-json \
+    php7.4-ldap \
+    php7.4-mbstring \
+    php7.4-memcached \
+    php7.4-mongodb \
+    php7.4-mysql \
+    php7.4-redis \
+    php7.4-soap \
+    php7.4-sqlite3 \
+    php7.4-tidy \
+    php7.4-xml \
+    php7.4-zip \
+    php7.4-zmq \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.4
-ARG GOLANG_CHECKSUM=adab2483f644e2f8a10ae93122f0018cef525ca48d0b8764dae87cb5f4fd4206
+ARG GOLANG_VERSION=1.17.5
+ARG GOLANG_CHECKSUM=bd78114b0d441b029c8fe0341f4910370925a4d270a6a590668840675b0c653e
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \

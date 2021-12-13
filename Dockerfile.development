@@ -38,13 +38,13 @@ COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-  -not -path "${CODE_DIR}/common/Gemfile" \
-  -name 'Gemfile' | xargs dirname`; do \
-  echo && \
-  echo "---------------------------------------------------------------------------" && \
-  echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-  echo "---------------------------------------------------------------------------" && \
-  cd $d && bundle install; \
+    -not -path "${CODE_DIR}/common/Gemfile" \
+    -name 'Gemfile' | xargs dirname`; do \
+    echo && \
+    echo "---------------------------------------------------------------------------" && \
+    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+    echo "---------------------------------------------------------------------------" && \
+    cd $d && bundle install; \
   done
 
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
