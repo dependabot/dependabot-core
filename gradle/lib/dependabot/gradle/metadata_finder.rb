@@ -105,7 +105,8 @@ module Dependabot
         artifact_id =
           if kotlin_plugin? then "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"
           elsif plugin? then "#{dependency.name}.gradle.plugin"
-          else dependency.name.split(":").last
+          else
+            dependency.name.split(":").last
           end
 
         response = Excon.get(
@@ -157,7 +158,8 @@ module Dependabot
             ["#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}",
              "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{dependency.name}.gradle.plugin"]
           elsif plugin? then [dependency.name, "#{dependency.name}.gradle.plugin"]
-          else dependency.name.split(":")
+          else
+            dependency.name.split(":")
           end
 
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"

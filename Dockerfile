@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.3
-ARG GOLANG_CHECKSUM=550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
+ARG GOLANG_VERSION=1.17.4
+ARG GOLANG_CHECKSUM=adab2483f644e2f8a10ae93122f0018cef525ca48d0b8764dae87cb5f4fd4206
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \

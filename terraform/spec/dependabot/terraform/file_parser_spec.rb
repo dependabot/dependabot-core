@@ -572,6 +572,32 @@ RSpec.describe Dependabot::Terraform::FileParser do
         end
       end
 
+      context "with git@xxx.yy sources" do
+        let(:files) { project_dependency_files("git_protocol") }
+
+        specify { expect(subject.length).to eq(1) }
+        specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+        it "has the right details for the first dependency (which uses git@gitlab.com)" do
+          dependency = subject.find do |x|
+            x.name == "gitlab_ssh_without_protocol::gitlab::cloudposse/terraform-aws-jenkins::tags/0.4.0"
+          end
+          expect(dependency).to_not be_nil
+          expect(dependency.version).to eq("0.4.0")
+          expect(dependency.requirements).to eq([{
+            requirement: nil,
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "git",
+              url: "git@gitlab.com:cloudposse/terraform-aws-jenkins.git",
+              ref: "tags/0.4.0",
+              branch: nil
+            }
+          }])
+        end
+      end
+
       context "with registry sources" do
         let(:files) { project_dependency_files("registry_012") }
 
