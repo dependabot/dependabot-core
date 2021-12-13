@@ -13,7 +13,7 @@ module Dependabot
       def look_up_source
         repo = pub_listing.dig("latest", "pubspec", "repository")
         return nil unless repo
-        
+
         Source.from_url(repo)
       end
 
