@@ -32,11 +32,13 @@ def requirements(lockfile_only, checker)
   requirements =
     if lockfile_only || !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
-      else :update_not_possible
+      else
+        :update_not_possible
       end
     elsif checker.can_update?(requirements_to_unlock: :own) then :own
     elsif checker.can_update?(requirements_to_unlock: :all) then :all
-    else :update_not_possible
+    else
+      :update_not_possible
     end
   requirements
 end
