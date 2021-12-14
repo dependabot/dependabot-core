@@ -2,8 +2,6 @@ name: CI
 on:
   push:
     branches:
-      - "actions/**"
-      - "wip/**"
       - "main"
   pull_request:
     branches:
