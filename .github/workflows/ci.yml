@@ -36,16 +36,16 @@ jobs:
         - { path: omnibus, name: omnibus }
         - { path: python, name: python }
         - { path: terraform, name: terraform }
+    env:
+      BASE_IMAGE: ubuntu:18.04
+      CORE_IMAGE: dependabot/dependabot-core
+      CORE_CI_IMAGE: dependabot/dependabot-core-ci
+      CODE_DIR: /home/dependabot/dependabot-core
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Prepare environment variables
-        run: |
-          echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
-          echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
-          echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
-          echo "CORE_CI_IMAGE=dependabot/dependabot-core-ci" >> $GITHUB_ENV
-          echo "CODE_DIR=/home/dependabot/dependabot-core" >> $GITHUB_ENV
+      - name: Prepare BRANCH_REF environment variable
+        run: echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
       - name: Log in to Docker registry
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
