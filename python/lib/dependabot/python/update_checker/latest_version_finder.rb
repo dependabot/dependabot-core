@@ -162,6 +162,8 @@ module Dependabot
               raise if MAIN_PYPI_INDEXES.include?(index_url)
 
               raise PrivateSourceTimedOut, sanitized_url
+            rescue URI::InvalidURIError
+              raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url}"
             end
         end
 
