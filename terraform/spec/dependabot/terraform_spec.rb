@@ -15,14 +15,26 @@ RSpec.describe Dependabot::Terraform do
     let(:dependency_args) do
       { name: name, requirements: [], package_manager: "terraform" }
     end
-    
+
+    context "provider source" do
+      let(:name) { "hashicorp/aws" }
+
+      it { is_expected.to eq("hashicorp/aws") }
+    end
+
+    context "provider source with special chars" do
+      let(:name) { "terraform.example.com/examplecorp/ourcloud" }
+
+      it { is_expected.to eq("terraform.example.com/examplecorp/ourcloud") }
+    end
+
     context "registry source" do
       let(:name) { "hashicorp/consul/aws" }
 
       it { is_expected.to eq("hashicorp/consul/aws") }
     end
 
-    context "registry source with special case" do
+    context "registry source with special chars" do
       let(:name) { "app.terraform.io/example-corp/k8s-cluster/azurerm" }
 
       it { is_expected.to eq("app.terraform.io/example-corp/k8s-cluster/azurerm") }
@@ -40,5 +52,4 @@ RSpec.describe Dependabot::Terraform do
       it { is_expected.to eq("distribution_label::terraform-null-label") }
     end
   end
-
 end
