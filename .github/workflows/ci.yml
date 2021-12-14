@@ -42,6 +42,7 @@ jobs:
       CORE_IMAGE: dependabot/dependabot-core
       CORE_BRANCH_IMAGE: ghcr.io/dependabot/dependabot-core-branch
       CORE_CI_IMAGE: dependabot/dependabot-core-ci
+      CORE_CI_MIRROR: ghcr.io/dependabot/dependabot-core-ci
       CODE_DIR: /home/dependabot/dependabot-core
     steps:
       - name: Checkout code
@@ -90,6 +91,12 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
+      - name: Push dependabot-core-ci image to GHCR mirror
+        run: |
+          docker tag "$CORE_CI_IMAGE:latest" "$CORE_CI_MIRROR:latest"
+          docker push "$CORE_CI_MIRROR:latest"
+          docker tag "$CORE_CI_IMAGE:latest" "$CORE_CI_MIRROR:branch--$BRANCH_REF"
+          docker push "$CORE_CI_MIRROR:branch--$BRANCH_REF"
       - name: Run ${{ matrix.suite.name }} tests
         run: |
           docker run \
