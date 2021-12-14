@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["support@dependabot.com"]
 
 [dependencies]
-askama = { git = "https://github.com/djc/askama", branch = "main" }
+askama = { git = "https://github.com/djc/askama", rev = "d45e106bf219d6da94538e2816472ca8026500ba" }
 
 [build-dependencies]
 ructe = { git = "https://github.com/kaj/ructe" }
