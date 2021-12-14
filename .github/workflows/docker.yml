@@ -13,7 +13,7 @@ jobs:
   push-core-image:
     name: Push dependabot-core image to docker hub
     runs-on: ubuntu-latest
-    if: github.repository == "dependabot/dependabot-core"
+    if: ${{ github.repository == 'dependabot/dependabot-core' }}
     permissions:
       contents: read
       packages: write
