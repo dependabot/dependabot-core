@@ -18,7 +18,7 @@
   "devDependencies": {
     "eslint": "^8.4.1",
     "eslint-config-prettier": "^8.3.0",
-    "jest": "^27.4.3",
+    "jest": "^27.4.5",
     "prettier": "^2.5.1",
     "rimraf": "^3.0.2"
   }
