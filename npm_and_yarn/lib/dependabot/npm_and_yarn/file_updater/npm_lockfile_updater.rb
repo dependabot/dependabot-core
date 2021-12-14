@@ -750,7 +750,8 @@ module Dependabot
             trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
             incorrect_url = if url.start_with?("https")
                               trimmed_url.gsub(/^https:/, "http:")
-                            else trimmed_url.gsub(/^http:/, "https:")
+                            else
+                              trimmed_url.gsub(/^http:/, "https:")
                             end
             updated_lockfile_content = updated_lockfile_content.gsub(
               /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,
