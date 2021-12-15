@@ -58,7 +58,7 @@ else
 fi
 
 set +e
-RUNNING=$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME")
+RUNNING=$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME$")
 set -e
 echo "$RUNNING"
 if [ -n "$RUNNING" ]; then
