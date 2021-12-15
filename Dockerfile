@@ -97,11 +97,11 @@ USER root
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm v7
+# Install Node 14.0 and npm v8
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.21.0 \
+  && npm install -g npm@v8.3.0 \
   && rm -rf ~/.npm
 
 
