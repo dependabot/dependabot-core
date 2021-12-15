@@ -72,13 +72,11 @@ if [ -n "$RUNNING" ]; then
 fi
 
 DOCKER_OPTS=()
-if [ -n "$HTTP_PROXY" ]; then
-  DOCKER_OPTS+=(-e "http_proxy=$HTTP_PROXY")
-  DOCKER_OPTS+=(-e "HTTP_PROXY=$HTTP_PROXY")
-fi
-if [ -n "$HTTPS_PROXY" ]; then
-  DOCKER_OPTS+=(-e "https_proxy=$HTTPS_PROXY")
-  DOCKER_OPTS+=(-e "HTTPS_PROXY=$HTTPS_PROXY")
+if [ -n "$DEPENDABOT_PROXY" ]; then
+  DOCKER_OPTS+=(-e "http_proxy=$DEPENDABOT_PROXY")
+  DOCKER_OPTS+=(-e "HTTP_PROXY=$DEPENDABOT_PROXY")
+  DOCKER_OPTS+=(-e "https_proxy=$DEPENDABOT_PROXY")
+  DOCKER_OPTS+=(-e "HTTPS_PROXY=$DEPENDABOT_PROXY")
 fi
 
 if [ -n "$DOCKER_NETWORK" ]; then
