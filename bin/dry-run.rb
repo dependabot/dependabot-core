@@ -446,79 +446,6 @@ def handle_dependabot_error(error:, dependency:)
 end
 # rubocop:enable Metrics/MethodLength
 
-StackProf.start(raw: true) if $options[:profile]
-
-$source = Dependabot::Source.new(
-  provider: $options[:provider],
-  repo: $repo_name,
-  directory: $options[:directory],
-  branch: $options[:branch],
-  commit: $options[:commit]
-)
-
-always_clone = Dependabot::Utils.
-               always_clone_for_package_manager?($package_manager)
-$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
-
-fetcher_args = {
-  source: $source,
-  credentials: $options[:credentials],
-  repo_contents_path: $repo_contents_path
-}
-$config_file = begin
-  cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
-  Dependabot::Config::File.parse(cfg_file.content)
-rescue Dependabot::DependencyFileNotFound
-  Dependabot::Config::File.new(updates: [])
-end
-$update_config = $config_file.update_config(
-  $package_manager,
-  directory: $options[:directory],
-  target_branch: $options[:branch]
-)
-
-fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
-$files = if $repo_contents_path
-           if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
-             puts "=> reading cloned repo from #{$repo_contents_path}"
-           else
-             puts "=> cloning into #{$repo_contents_path}"
-             FileUtils.rm_rf($repo_contents_path)
-           end
-           fetcher.clone_repo_contents
-           if $options[:commit]
-             Dir.chdir($repo_contents_path) do
-               puts "=> checking out commit #{$options[:commit]}"
-               Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
-             end
-           end
-           fetcher.files
-         else
-           cached_dependency_files_read do
-             fetcher.files
-           end
-         end
-
-# Parse the dependency files
-puts "=> parsing dependency files"
-parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
-  dependency_files: $files,
-  repo_contents_path: $repo_contents_path,
-  source: $source,
-  credentials: $options[:credentials],
-  reject_external_code: $options[:reject_external_code]
-)
-
-dependencies = cached_read("dependencies") { parser.parse }
-
-if $options[:dependency_names].nil?
-  dependencies.select!(&:top_level?)
-else
-  dependencies.select! do |d|
-    $options[:dependency_names].include?(d.name.downcase)
-  end
-end
-
 def update_checker_for(dependency)
   Dependabot::UpdateCheckers.for_package_manager($package_manager).new(
     dependency: dependency,
@@ -606,155 +533,251 @@ def security_fix?(dependency)
   end
 end
 
-puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
+StackProf.start(raw: true) if $options[:profile]
 
-# rubocop:disable Metrics/BlockLength
-checker_count = 0
-dependencies.each do |dep|
-  checker_count += 1
-  checker = update_checker_for(dep)
-  name_version = "\n=== #{dep.name} (#{dep.version})"
-  vulnerable = checker.vulnerable? ? " (vulnerable 🚨)" : ""
-  puts name_version + vulnerable
+$source = Dependabot::Source.new(
+  provider: $options[:provider],
+  repo: $repo_name,
+  directory: $options[:directory],
+  branch: $options[:branch],
+  commit: $options[:commit]
+)
 
-  puts " => checking for updates #{checker_count}/#{dependencies.count}"
-  puts " => latest available version is #{checker.latest_version}"
+always_clone = Dependabot::Utils.
+               always_clone_for_package_manager?($package_manager)
+$repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) if $options[:clone] || always_clone
 
-  if $options[:security_updates_only] && !checker.vulnerable?
-    if checker.version_class.correct?(checker.dependency.version)
-      puts "    (no security update needed as it's not vulnerable)"
-    else
-      puts "    (can't update vulnerable dependencies for "\
-           "projects without a lockfile as the currently "\
-           "installed version isn't known 🚨)"
+fetcher_args = {
+  source: $source,
+  credentials: $options[:credentials],
+  repo_contents_path: $repo_contents_path
+}
+$config_file = begin
+  cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
+  Dependabot::Config::File.parse(cfg_file.content)
+rescue Dependabot::DependencyFileNotFound
+  Dependabot::Config::File.new(updates: [])
+end
+$update_config = $config_file.update_config(
+  $package_manager,
+  directory: $options[:directory],
+  target_branch: $options[:branch]
+)
+
+fetcher = Dependabot::FileFetchers.for_package_manager($package_manager).new(**fetcher_args)
+$files = if $repo_contents_path
+           if $options[:cache_steps].include?("files") && Dir.exist?($repo_contents_path)
+             puts "=> reading cloned repo from #{$repo_contents_path}"
+           else
+             puts "=> cloning into #{$repo_contents_path}"
+             FileUtils.rm_rf($repo_contents_path)
+           end
+           fetcher.clone_repo_contents
+           if $options[:commit]
+             Dir.chdir($repo_contents_path) do
+               puts "=> checking out commit #{$options[:commit]}"
+               Dependabot::SharedHelpers.run_shell_command("git checkout #{$options[:commit]}")
+             end
+           end
+           fetcher.files
+         else
+           cached_dependency_files_read do
+             fetcher.files
+           end
+         end
+
+if (dependency_updater = Dependabot::DependencyUpdaters.for_package_manager($package_manager)&.new)
+  return unless security_updates_only $options[:security_updates_only]
+
+  puts "=> using dependency updater"
+
+  security_advisories.each do |advisory|
+    next unless advisory.package_manager == $package_manager
+
+    advisory.dependencies.each do |dependency|
+      requirements = if advisory.safe_versions.any?
+                       advisory.safe_versions.join("||")
+                     else
+                       advisory.vulnerable_versions.map { |v| "!#{v}" }.join(",")
+                     end
+
+      puts "=> updating #{dependency.name} to #{requirements}"
+      dependency_updater.update(dependency: dependency, requirements: requirements)
     end
-    next
   end
-
-  if checker.vulnerable?
-    if checker.lowest_security_fix_version
-      puts " => earliest available non-vulnerable version is "\
-           "#{checker.lowest_security_fix_version}"
-    else
-      puts " => there is no available non-vulnerable version"
-    end
-  end
-
-  latest_allowed_version = if checker.vulnerable?
-                             checker.lowest_resolvable_security_fix_version
-                           else
-                             checker.latest_resolvable_version
-                           end
-  puts " => latest allowed version is #{latest_allowed_version || dep.version}"
-
-  conflicting_dependencies = checker.conflicting_dependencies
-  if conflicting_dependencies.any?
-    puts " => The update is not possible because of the following conflicting "\
-      "dependencies:"
-
-    conflicting_dependencies.each do |conflicting_dep|
-      puts "   #{conflicting_dep['explanation']}"
-    end
-  end
-
-  if checker.up_to_date?
-    puts "    (no update needed as it's already up-to-date)"
-    next
-  end
-
-  requirements_to_unlock =
-    if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
-      if checker.can_update?(requirements_to_unlock: :none) then :none
-      else :update_not_possible
-      end
-    elsif checker.can_update?(requirements_to_unlock: :own) then :own
-    elsif checker.can_update?(requirements_to_unlock: :all) then :all
-    else :update_not_possible
-    end
-
-  puts " => requirements to unlock: #{requirements_to_unlock}"
-
-  if checker.respond_to?(:requirements_update_strategy)
-    puts " => requirements update strategy: "\
-         "#{checker.requirements_update_strategy}"
-  end
-
-  if requirements_to_unlock == :update_not_possible
-    if checker.vulnerable? || $options[:security_updates_only]
-      puts "    (no security update possible 🙅‍♀️)"
-    else
-      puts "    (no update possible 🙅‍♀️)"
-    end
-    next
-  end
-
-  updated_deps = checker.updated_dependencies(
-    requirements_to_unlock: requirements_to_unlock
+else
+  # Parse the dependency files
+  puts "=> parsing dependency files"
+  parser = Dependabot::FileParsers.for_package_manager($package_manager).new(
+    dependency_files: $files,
+    repo_contents_path: $repo_contents_path,
+    source: $source,
+    credentials: $options[:credentials],
+    reject_external_code: $options[:reject_external_code]
   )
 
-  if peer_dependencies_can_update?(checker, requirements_to_unlock)
-    puts "    (no update possible, peer dependency can be updated)"
-    next
+  dependencies = cached_read("dependencies") { parser.parse }
+
+  if $options[:dependency_names].nil?
+    dependencies.select!(&:top_level?)
+  else
+    dependencies.select! do |d|
+      $options[:dependency_names].include?(d.name.downcase)
+    end
   end
 
-  updater = file_updater_for(updated_deps)
-  updated_files = updater.updated_dependency_files
+  puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
-  # Currently unused but used to create pull requests (from the updater)
-  updated_deps.reject do |d|
-    next false if d.name == checker.dependency.name
-    next true if d.requirements == d.previous_requirements
+  # rubocop:disable Metrics/BlockLength
+  checker_count = 0
+  dependencies.each do |dep|
+    checker_count += 1
+    checker = update_checker_for(dep)
+    name_version = "\n=== #{dep.name} (#{dep.version})"
+    vulnerable = checker.vulnerable? ? " (vulnerable 🚨)" : ""
+    puts name_version + vulnerable
 
-    d.version == d.previous_version
-  end
+    puts " => checking for updates #{checker_count}/#{dependencies.count}"
+    puts " => latest available version is #{checker.latest_version}"
 
-  if $options[:security_updates_only] &&
-     updated_deps.none? { |d| security_fix?(d) }
-    puts "    (updated version is still vulnerable 🚨)"
-  end
+    if $options[:security_updates_only] && !checker.vulnerable?
+      if checker.version_class.correct?(checker.dependency.version)
+        puts "    (no security update needed as it's not vulnerable)"
+      else
+        puts "    (can't update vulnerable dependencies for "\
+            "projects without a lockfile as the currently "\
+            "installed version isn't known 🚨)"
+      end
+      next
+    end
 
-  if $options[:write]
+    if checker.vulnerable?
+      if checker.lowest_security_fix_version
+        puts " => earliest available non-vulnerable version is "\
+            "#{checker.lowest_security_fix_version}"
+      else
+        puts " => there is no available non-vulnerable version"
+      end
+    end
+
+    latest_allowed_version = if checker.vulnerable?
+                               checker.lowest_resolvable_security_fix_version
+                             else
+                               checker.latest_resolvable_version
+                             end
+    puts " => latest allowed version is #{latest_allowed_version || dep.version}"
+
+    conflicting_dependencies = checker.conflicting_dependencies
+    if conflicting_dependencies.any?
+      puts " => The update is not possible because of the following conflicting "\
+        "dependencies:"
+
+      conflicting_dependencies.each do |conflicting_dep|
+        puts "   #{conflicting_dep['explanation']}"
+      end
+    end
+
+    if checker.up_to_date?
+      puts "    (no update needed as it's already up-to-date)"
+      next
+    end
+
+    requirements_to_unlock =
+      if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
+        if checker.can_update?(requirements_to_unlock: :none) then :none
+        else
+          :update_not_possible
+        end
+      elsif checker.can_update?(requirements_to_unlock: :own) then :own
+      elsif checker.can_update?(requirements_to_unlock: :all) then :all
+      else
+        :update_not_possible
+      end
+
+    puts " => requirements to unlock: #{requirements_to_unlock}"
+
+    if checker.respond_to?(:requirements_update_strategy)
+      puts " => requirements update strategy: "\
+          "#{checker.requirements_update_strategy}"
+    end
+
+    if requirements_to_unlock == :update_not_possible
+      if checker.vulnerable? || $options[:security_updates_only]
+        puts "    (no security update possible 🙅‍♀️)"
+      else
+        puts "    (no update possible 🙅‍♀️)"
+      end
+      next
+    end
+
+    updated_deps = checker.updated_dependencies(
+      requirements_to_unlock: requirements_to_unlock
+    )
+
+    if peer_dependencies_can_update?(checker, requirements_to_unlock)
+      puts "    (no update possible, peer dependency can be updated)"
+      next
+    end
+
+    updater = file_updater_for(updated_deps)
+    updated_files = updater.updated_dependency_files
+
+    # Currently unused but used to create pull requests (from the updater)
+    updated_deps.reject do |d|
+      next false if d.name == checker.dependency.name
+      next true if d.requirements == d.previous_requirements
+
+      d.version == d.previous_version
+    end
+
+    if $options[:security_updates_only] &&
+       updated_deps.none? { |d| security_fix?(d) }
+      puts "    (updated version is still vulnerable 🚨)"
+    end
+
+    if $options[:write]
+      updated_files.each do |updated_file|
+        path = File.join(dependency_files_cache_dir, updated_file.name)
+        puts " => writing updated file ./#{path}"
+        dirname = File.dirname(path)
+        FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
+        if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
+          File.delete(path) if File.exist?(path)
+        else
+          File.write(path, updated_file.decoded_content)
+        end
+      end
+    end
+
     updated_files.each do |updated_file|
-      path = File.join(dependency_files_cache_dir, updated_file.name)
-      puts " => writing updated file ./#{path}"
-      dirname = File.dirname(path)
-      FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
       if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-        File.delete(path) if File.exist?(path)
+        puts "deleted #{updated_file.name}"
       else
-        File.write(path, updated_file.decoded_content)
+        original_file = $files.find { |f| f.name == updated_file.name }
+        if original_file
+          show_diff(original_file, updated_file)
+        else
+          puts "added #{updated_file.name}"
+        end
       end
     end
-  end
 
-  updated_files.each do |updated_file|
-    if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-      puts "deleted #{updated_file.name}"
-    else
-      original_file = $files.find { |f| f.name == updated_file.name }
-      if original_file
-        show_diff(original_file, updated_file)
-      else
-        puts "added #{updated_file.name}"
-      end
+    if $options[:pull_request]
+      msg = Dependabot::PullRequestCreator::MessageBuilder.new(
+        dependencies: updated_deps,
+        files: updated_files,
+        credentials: $options[:credentials],
+        source: $source,
+        commit_message_options: $update_config.commit_message_options.to_h,
+        github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
+      ).message
+      puts "Pull Request Title: #{msg.pr_name}"
+      puts "--description--\n#{msg.pr_message}\n--/description--"
+      puts "--commit--\n#{msg.commit_message}\n--/commit--"
     end
+  rescue StandardError => e
+    handle_dependabot_error(error: e, dependency: dep)
   end
-
-  if $options[:pull_request]
-    msg = Dependabot::PullRequestCreator::MessageBuilder.new(
-      dependencies: updated_deps,
-      files: updated_files,
-      credentials: $options[:credentials],
-      source: $source,
-      commit_message_options: $update_config.commit_message_options.to_h,
-      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
-    ).message
-    puts "Pull Request Title: #{msg.pr_name}"
-    puts "--description--\n#{msg.pr_message}\n--/description--"
-    puts "--commit--\n#{msg.commit_message}\n--/commit--"
-  end
-rescue StandardError => e
-  handle_dependabot_error(error: e, dependency: dep)
 end
 
 StackProf.stop if $options[:profile]
