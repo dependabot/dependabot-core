@@ -2,7 +2,6 @@
 
 require "dependabot/shared_helpers"
 require "excon"
-require "cgi"
 
 module Dependabot
   module Clients
@@ -141,54 +140,6 @@ module Dependabot
         JSON.parse(response.body).fetch("value")
       end
 
-      def fetch_repo_paths_for_code_search(search_text, directory)
-        code_paths = []
-        current_page_number = 1
-        page_limit = 1000
-
-        # API documentation link: https://docs.microsoft.com/en-us/rest/api/azure/devops/search/code-search-results/fetch-code-search-results?view=azure-devops-rest-6.0
-        # This is a paginated API with page limit of 1000 records
-        # Hence we need to call the API iteratively for each page of records until all records are received.
-        loop do
-          content = {
-            searchText: search_text,
-            "$skip": (current_page_number - 1) * page_limit,
-            "$top": page_limit,
-            filters: {
-              Project: [
-                CGI.unescape(source.project)
-              ],
-              Repository: [
-                source.unscoped_repo
-              ],
-              Path: [
-                directory
-              ],
-              Branch: [
-                source.branch
-              ]
-            }
-          }
-
-          response = post("https://almsearch.dev.azure.com/" + source.organization + "/" + source.project +
-            "/_apis/search/codesearchresults?api-version=6.0", content.to_json)
-
-          response_json = JSON.parse(response.body)
-          total_result_count = response_json.fetch("count").to_i
-          fetched_results = response_json.fetch("results")
-
-          fetched_results.each do |result|
-            code_paths.append(result.fetch("path"))
-          end
-
-          break if total_result_count <= current_page_number * page_limit
-
-          current_page_number += 1
-        end
-
-        code_paths
-      end
-
       def create_commit(branch_name, base_commit, commit_message, files,
                         author_details)
         content = {
@@ -223,6 +174,8 @@ module Dependabot
                               pr_description, labels, work_item = nil)
         pr_description = truncate_pr_description(pr_description)
 
+        puts "Create pull request from source: #{source_branch} to target: #{target_branch}"
+        puts "PR name:#{pr_name}"
         content = {
           sourceRefName: "refs/heads/" + source_branch,
           targetRefName: "refs/heads/" + target_branch,
