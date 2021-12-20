@@ -26,7 +26,7 @@ Dependabot::Dependency.
     "terraform",
     lambda { |name|
       # Only modify the name if it a git source dependency
-      next unless name.include? "::"
+      return name unless name.include? "::"
 
       name.split("::").first + "::" + name.split("::")[2].split("/").last
     }
