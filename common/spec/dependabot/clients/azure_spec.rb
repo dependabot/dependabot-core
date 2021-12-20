@@ -300,6 +300,230 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
+  describe "#code_search" do
+    subject(:code_search) { client.fetch_repo_paths_for_code_search(search_text, source.directory) }
+
+    let(:source) do
+      Dependabot::Source.new(provider: "azure", repo: "org/project-id/_git/repo-id", branch: "main", directory: "src")
+    end
+    let(:repo_name) { "repo" }
+    let(:project_name) { "project" }
+    let(:code_search_url) do
+      "https://almsearch.dev.azure.com/" +
+        source.organization + "/" + source.project +
+        "/_apis/search/codesearchresults?api-version=6.0"
+    end
+    let(:search_text) { "package.json" }
+    let(:results) do
+      [{ "path" => "/src/folderA/package.json" }, { "path" => "/src/folderB/package.json" },
+       { "path" => "/src/folderC/package.json" }]
+    end
+    let(:expected_code_paths) do
+      ["/src/folderA/package.json", "/src/folderB/package.json", "/src/folderC/package.json"]
+    end
+
+    before do
+      repository_details_fetch_url = source.api_endpoint +
+                                     source.organization + "/" + source.project +
+                                     "/_apis/git/repositories/" + source.unscoped_repo +
+                                     "?api-version=6.0"
+      stub_request(:get, repository_details_fetch_url).
+        with(basic_auth: [username, password]).
+        to_return({ status: 200, body: fixture("azure", "repository_details.json") })
+    end
+
+    context "when response code is 200" do
+      context "when the API returns results in multiple pages" do
+        before do
+          stub_request(:post, code_search_url).
+            with(basic_auth: [username,
+                              password],
+                 body: {
+                   "searchText" => search_text,
+                   "$skip" => 0,
+                   "$top" => 1000,
+                   "filters" => {
+                     "Project" => [CGI.unescape(project_name)],
+                     "Repository" => [CGI.unescape(repo_name)],
+                     "Path" => [source.directory],
+                     "Branch" => [source.branch]
+                   }
+                 }.to_json).
+            to_return({ status: 200, body: { "count" => 1002, "results" => results[0, 2] }.to_json })
+
+          stub_request(:post, code_search_url).
+            with(basic_auth: [username,
+                              password],
+                 body: {
+                   "searchText" => search_text,
+                   "$skip" => 1000,
+                   "$top" => 1000,
+                   "filters" => {
+                     "Project" => [CGI.unescape(project_name)],
+                     "Repository" => [CGI.unescape(repo_name)],
+                     "Path" => [source.directory],
+                     "Branch" => [source.branch]
+                   }
+                 }.to_json).
+            to_return({ status: 200, body: { "count" => 1002, "results" => results[2..-1] }.to_json })
+        end
+
+        it "calls the code search API multiple times to get fetch all results and return the code paths" do
+          code_paths = code_search
+
+          expect(WebMock).to(have_requested(:post, code_search_url).times(2))
+          expect(code_paths).to eq(expected_code_paths)
+        end
+      end
+
+      context "when the API returns results in single page" do
+        before do
+          stub_request(:post, code_search_url).
+            with(basic_auth: [username,
+                              password],
+                 body: {
+                   "searchText" => search_text,
+                   "$skip" => 0,
+                   "$top" => 1000,
+                   "filters" => {
+                     "Project" => [CGI.unescape(project_name)],
+                     "Repository" => [CGI.unescape(repo_name)],
+                     "Path" => [source.directory],
+                     "Branch" => [source.branch]
+                   }
+                 }.to_json).
+            to_return({ status: 200, body: { "count" => 3, "results" => results }.to_json })
+        end
+
+        it "calls the code search API once to get all results and return the code paths" do
+          code_paths = code_search
+
+          expect(WebMock).to(have_requested(:post, code_search_url).times(1))
+          expect(code_paths).to eq(expected_code_paths)
+        end
+      end
+
+      context "when the API response contains number of results = 0" do
+        before do
+          stub_request(:post, code_search_url).
+            with(basic_auth: [username,
+                              password],
+                 body: {
+                   "searchText" => search_text,
+                   "$skip" => 0,
+                   "$top" => 1000,
+                   "filters" => {
+                     "Project" => [CGI.unescape(project_name)],
+                     "Repository" => [CGI.unescape(repo_name)],
+                     "Path" => [source.directory],
+                     "Branch" => [source.branch]
+                   }
+                 }.to_json).
+            to_return({ status: 200, body: { "count" => 0, "results" => [] }.to_json })
+        end
+
+        it "returns an empty array of code paths" do
+          code_paths = code_search
+
+          expect(WebMock).to(have_requested(:post, code_search_url).times(1))
+          expect(code_paths).to be_empty
+        end
+      end
+    end
+
+    context "when response is 400" do
+      before do
+        stub_request(:post, code_search_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 400, body: { "message" => "Invalid Project" }.to_json)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::BadRequest, "Invalid Project")
+      end
+    end
+
+    context "when response is 401" do
+      before do
+        stub_request(:post, code_search_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 401)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:post, code_search_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
+  describe "#repository_details" do
+    subject(:repository_details) { client.repository_details }
+    let(:source) do
+      Dependabot::Source.new(provider: "azure", repo: "org/project/_git/repo", branch: "main", directory: "src")
+    end
+
+    let(:repository_details_fetch_url) do
+      source.api_endpoint +
+        source.organization + "/" + source.project +
+        "/_apis/git/repositories/" + source.unscoped_repo +
+        "?api-version=6.0"
+    end
+
+    context "when response code is 200" do
+      response_body = fixture("azure", "repository_details.json")
+
+      before do
+        stub_request(:get, repository_details_fetch_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 200, body: response_body })
+      end
+
+      it "returns the repo details" do
+        repo_details = repository_details
+
+        # Expect
+        expect(repo_details).not_to be_nil
+        expect(repo_details).to eq(JSON.parse(response_body))
+      end
+    end
+
+    context "when response code is 401" do
+      before do
+        stub_request(:get, repository_details_fetch_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 401 })
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
+    end
+
+    context "when response code is 404" do
+      before do
+        stub_request(:get, repository_details_fetch_url).
+          with(basic_auth: [username, password]).
+          to_return({ status: 404 })
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
   describe "#get" do
     context "Using auth headers" do
       token = ":test_token"

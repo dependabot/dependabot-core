@@ -1,0 +1,45 @@
+{
+	"id": "repo-id",
+	"name": "repo",
+	"url": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e",
+	"project": {
+		"id": "project-id",
+		"name": "project",
+		"description": "Test project"
+	},
+	"defaultBranch": "refs/heads/main",
+	"size": 8469699983,
+	"remoteUrl": "https://org@dev.azure.com/org/project/_git/repo",
+	"sshUrl": "git@ssh.dev.azure.com:v3/org/project/repo",
+	"webUrl": "https://dev.azure.com/org/project/_git/repo",
+	"_links": {
+		"self": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e"
+		},
+		"project": {
+			"href": "vstfs:///Classification/TeamProject/6e261f3b-5e35-4762-a6d6-14043c738628"
+		},
+		"web": {
+			"href": "https://dev.azure.com/org/project/_git/repo"
+		},
+		"ssh": {
+			"href": "git@ssh.dev.azure.com:v3/org/project/repo"
+		},
+		"commits": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e/commits"
+		},
+		"refs": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e/refs"
+		},
+		"pullRequests": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e/pullRequests"
+		},
+		"items": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e/items"
+		},
+		"pushes": {
+			"href": "https://dev.azure.com/org/6e261f3b-5e35-4762-a6d6-14043c738628/_apis/git/repositories/99c1b1f9-b4e5-4b3f-bc34-13f6cda8697e/pushes"
+		}
+	},
+	"isDisabled": false
+}
