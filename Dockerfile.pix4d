@@ -66,7 +66,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 # Install Python 3.9 with pyenv. Using pyenv lets us support multiple Pythons
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.1.0 --single-branch --depth=1 /usr/local/.pyenv
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv
 
 RUN for ver in $PYTHON_VERSIONS; do pyenv install $ver; done && pyenv global ${PYTHON_VERSIONS##* } \
   && rm -Rf /tmp/python-build*
