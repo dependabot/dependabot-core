@@ -546,6 +546,32 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       its([:source_url]) do
         is_expected.to eq("http://repository.jboss.org/maven2")
       end
+
+      context "with custom repository and credentials" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "http://repository.jboss.org/maven2/",
+            "username" => "username",
+            "password" => "password"
+          }]
+        end
+
+        before do
+          stub_request(:get, jboss_metadata_url).
+            with(basic_auth: %w(username password)).
+            to_return(
+              status: 200,
+              body: fixture("maven_central_metadata", "with_release.xml")
+            )
+        end
+
+        it "calls custom repo once" do
+          subject
+
+          expect(a_request(:get, jboss_metadata_url)).to have_been_requested.once
+        end
+      end
     end
   end
 
