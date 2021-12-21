@@ -8,6 +8,9 @@ if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
 fi
 
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/composer/v2"
+
+mkdir -p $install_dir
+
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/bin" \
