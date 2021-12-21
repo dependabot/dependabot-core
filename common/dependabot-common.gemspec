@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.5.0"
   spec.required_rubygems_version = ">= 2.7.3"
 
-  spec.add_dependency "activesupport", ">= 6.0.0"
+  spec.add_dependency "activesupport", ">= 6.0.0", "< 7.0.0"
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"
   spec.add_dependency "bundler", ">= 1.16", "< 3.0.0"
@@ -40,7 +40,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
-  spec.add_development_dependency "rubocop", "~> 1.18.0"
+  spec.add_development_dependency "rubocop", "~> 1.23.0"
   spec.add_development_dependency "simplecov", "~> 0.21.0"
   spec.add_development_dependency "simplecov-console", "~> 0.9.1"
   spec.add_development_dependency "stackprof", "~> 0.2.16"

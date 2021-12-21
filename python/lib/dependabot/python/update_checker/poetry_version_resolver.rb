@@ -90,7 +90,8 @@ module Dependabot
 
                 updated_lockfile =
                   if File.exist?("poetry.lock") then File.read("poetry.lock")
-                  else File.read("pyproject.lock")
+                  else
+                    File.read("pyproject.lock")
                   end
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
