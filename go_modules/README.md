@@ -6,7 +6,8 @@ Go modules support for [`dependabot-core`][core-repo].
 
 1. Install native helpers
    ```
-   $ helpers/build "$(pwd)/helpers/install-dir/go_modules"
+   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
+   $ helpers/build
    ```
 
 2. Install Ruby dependencies
