@@ -1,3 +1,10 @@
+## v0.169.8, 21 December 2021
+
+- Bundler: update bundler to 2.2.33 [#4534](https://github.com/dependabot/dependabot-core/pull/4534)
+- Bundler: Fix syntax for setting bundle config [#4552](https://github.com/dependabot/dependabot-core/pull/4552)
+- Common: Consider all failed requests to check enterprise source as false [#4551](https://github.com/dependabot/dependabot-core/pull/4551)
+- build(deps-dev): bump eslint from 8.4.1 to 8.5.0 in /npm_and_yarn/helpers [#4547](https://github.com/dependabot/dependabot-core/pull/4547)
+
 ## v0.169.7, 19 December 2021
 
 - Common: Constrain activesupport to < 7 [#4541](https://github.com/dependabot/dependabot-core/pull/4541)
