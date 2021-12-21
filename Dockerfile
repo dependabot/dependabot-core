@@ -247,7 +247,7 @@ RUN bash /opt/go_modules/helpers/build
 RUN bash /opt/hex/helpers/build
 RUN bash /opt/npm_and_yarn/helpers/build
 RUN bash /opt/python/helpers/build
-RUN bash /opt/terraform/helpers/build /opt/terraform
+RUN bash /opt/terraform/helpers/build
 
 ENV HOME="/home/dependabot"
 
