@@ -239,7 +239,6 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
 USER dependabot
 RUN bash /opt/bundler/helpers/v1/build
 RUN bash /opt/bundler/helpers/v2/build
-RUN mkdir -p /opt/composer/v1 /opt/composer/v2
 RUN bash /opt/composer/helpers/v1/build
 RUN bash /opt/composer/helpers/v2/build
 RUN bash /opt/go_modules/helpers/build
