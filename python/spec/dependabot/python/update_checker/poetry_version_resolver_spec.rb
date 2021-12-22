@@ -204,7 +204,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
     end
 
-    context "resolvable only if git references are preserved" do
+    context "resolvable only if git references are preserved", :slow do
       let(:pyproject_fixture_name) { "git_conflict.toml" }
       let(:lockfile_fixture_name) { "git_conflict.lock" }
       let(:dependency_name) { "django-widget-tweaks" }

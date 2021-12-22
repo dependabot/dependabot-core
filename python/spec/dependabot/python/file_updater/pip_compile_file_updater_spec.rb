@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:generated_fixture_name) { "pip_compile_imports_setup.txt" }
       let(:setup_fixture_name) { "small.py" }
 
-      it "updates the requirements.txt" do
+      it "updates the requirements.txt", :slow do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
 
-      context "that needs sanitizing" do
+      context "that needs sanitizing", :slow do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(1)
@@ -497,7 +497,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:dependency_requirements) { [] }
       let(:dependency_previous_requirements) { [] }
 
-      it "raises an error indicating the dependencies are not resolvable" do
+      it "raises an error indicating the dependencies are not resolvable", :slow do
         expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
           expect(err.message).to include(
             "There are incompatible versions in the resolved dependencies:\n  pyyaml==5.4"
