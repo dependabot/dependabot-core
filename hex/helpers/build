@@ -2,7 +2,7 @@
 
 set -e
 
-if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
