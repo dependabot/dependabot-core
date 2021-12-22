@@ -99,16 +99,16 @@ $ bin/dry-run.rb go_modules rsc/quote
 Run the tests by running `rspec spec` inside each of the packages, e.g.
 
 ```bash
-cd go_modules
-bundle exec rspec spec
+$ cd go_modules
+$ bundle exec rspec spec
 ```
 
 Style is enforced by RuboCop. To check for style violations, simply run `rubocop` in
 each of the packages, e.g.
 
 ```bash
-cd go_modules
-bundle exec rubocop
+$ cd go_modules
+$ bundle exec rubocop
 ```
 
 ### Making changes to native helpers
@@ -121,8 +121,10 @@ Once you have made any edits to the helper files, run the appropriate build scri
 installed version with your changes like so:
 
 ```bash
-bundler/helpers/v1/build
-bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+$ bin/docker-dev-shell
+=> running docker development shell
+$ bundler/helpers/v1/build
+$ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
 ```
 
 ### Building the development image from source
