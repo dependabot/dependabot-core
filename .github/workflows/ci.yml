@@ -36,6 +36,7 @@ jobs:
         - { path: nuget, name: nuget }
         - { path: omnibus, name: omnibus }
         - { path: python, name: python }
+        - { path: python, name: python_slow }
         - { path: terraform, name: terraform }
     env:
       BASE_IMAGE: ubuntu:18.04
