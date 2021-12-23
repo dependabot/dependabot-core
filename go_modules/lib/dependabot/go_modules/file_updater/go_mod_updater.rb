@@ -84,6 +84,7 @@ module Dependabot
           in_repo_path do
             # Map paths in local replace directives to path hashes
             original_go_mod = File.read("go.mod")
+            puts "** original go.mod:\n#{original_go_mod}"
             original_manifest = parse_manifest
             original_go_sum = File.read("go.sum") if File.exist?("go.sum")
 
@@ -92,14 +93,17 @@ module Dependabot
 
             # Replace full paths with path hashes in the go.mod
             substitute_all(substitutions)
+            puts "** substitute go.mod:\n#{File.read("go.mod")}"
 
             # Bump the deps we want to upgrade using `go get lib@version`
             run_go_get(dependencies)
+            puts "** updated dep go.mod:\n#{File.read("go.mod")}"
 
             # Run `go get`'s internal validation checks against _each_ module in `go.mod`
             # by running `go get` w/o specifying any library. It finds problems like when a
             # module declares itself using a different name than specified in our `go.mod` etc.
             run_go_get
+            puts "** updated go.mod:\n#{File.read("go.mod")}"
 
             # If we stubbed modules, don't run `go mod {tidy,vendor}` as
             # dependencies are incomplete
@@ -107,9 +111,12 @@ module Dependabot
               # go mod tidy should run before go mod vendor to ensure any
               # dependencies removed by go mod tidy are also removed from vendors.
               run_go_mod_tidy
+              puts "** tidy go.mod:\n#{File.read("go.mod")}"
               run_go_vendor
+              puts "** vendor go.mod:\n#{File.read("go.mod")}"
             else
               substitute_all(substitutions.invert)
+              puts "** unsubstitute go.mod:\n#{File.read("go.mod")}"
             end
 
             updated_go_sum = original_go_sum ? File.read("go.sum") : nil
@@ -119,6 +126,7 @@ module Dependabot
             original_go_version = original_go_mod.match(GO_MOD_VERSION)&.to_a&.first
             updated_go_version = updated_go_mod.match(GO_MOD_VERSION)&.to_a&.first
             if original_go_version != updated_go_version
+              puts "** adjusting go version #{original_go_version} -> #{updated_go_version}"
               go_mod_lines = updated_go_mod.lines
               go_mod_lines.each_with_index do |line, i|
                 next unless line&.match?(GO_MOD_VERSION)
@@ -132,6 +140,8 @@ module Dependabot
               updated_go_mod = go_mod_lines.compact.join
             end
 
+            puts "** version adjusted go.mod:\n#{updated_go_mod}"
+
             { go_mod: updated_go_mod, go_sum: updated_go_sum }
           end
         end
@@ -141,17 +151,23 @@ module Dependabot
 
           command = "go mod tidy -e"
 
+          puts "** run #{command}"
+
           # we explicitly don't raise an error for 'go mod tidy' and silently
           # continue here. `go mod tidy` shouldn't block updating versions
           # because there are some edge cases where it's OK to fail (such as
           # generated files not available yet to us).
-          Open3.capture3(ENVIRONMENT, command)
+          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          puts "** #{command} failed\n#{stderr}" unless status.success?
         end
 
         def run_go_vendor
           return unless vendor?
 
           command = "go mod vendor"
+
+          puts "** run #{command}"
+
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
         end
@@ -163,6 +179,8 @@ module Dependabot
             !File.read(path).include?("// +build")
           end
 
+          puts "** package: #{package}"
+
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
           # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
@@ -173,6 +191,8 @@ module Dependabot
             command << " #{dep.name}@#{version}"
           end
           command = SharedHelpers.escape_command(command)
+
+          puts "** run #{command}"
 
           _, stderr, status = Open3.capture3(ENVIRONMENT, command)
           handle_subprocess_error(stderr) unless status.success?
@@ -201,6 +221,7 @@ module Dependabot
           # `go get -d` works, even if some modules have been `replace`d
           # with a local module that we don't have access to.
           stub_paths.each do |stub_path|
+            puts "** stubbing #{stub_path}"
             Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
             FileUtils.touch(File.join(stub_path, "go.mod"))
             FileUtils.touch(File.join(stub_path, "main.go"))
@@ -223,6 +244,7 @@ module Dependabot
 
         def substitute_all(substitutions)
           body = substitutions.reduce(File.read("go.mod")) do |text, (a, b)|
+            puts "** substitute #{a} -> #{b}"
             text.sub(a, b)
           end
 
