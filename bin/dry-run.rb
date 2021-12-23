@@ -68,7 +68,7 @@ Bundler.setup
 
 require "optparse"
 require "json"
-require "byebug"
+require "debug"
 require "logger"
 require "dependabot/logger"
 require "stackprof"
