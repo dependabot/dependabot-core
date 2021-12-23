@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
       end
     end
 
-    context "with a path dependency" do
+    context "with a path dependency", :slow do
       let(:dependency_files) { [pipfile, lockfile, setupfile] }
       let(:setupfile) do
         Dependabot::DependencyFile.new(
