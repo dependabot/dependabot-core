@@ -9,3 +9,21 @@ def require_common_spec(path)
 end
 
 require "#{common_dir}/spec/spec_helper.rb"
+
+module SlowTestHelper
+  def self.slow_tests?
+    ENV["SUITE_NAME"] == "python_slow"
+  end
+end
+
+RSpec.configure do |config|
+  config.around do |example|
+    if SlowTestHelper.slow_tests? && example.metadata[:slow]
+      example.run
+    elsif !SlowTestHelper.slow_tests? && !example.metadata[:slow]
+      example.run
+    else
+      example.skip
+    end
+  end
+end

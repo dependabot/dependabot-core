@@ -102,7 +102,7 @@ module Dependabot
         # currently doesn't work with development environments
         resp.headers["X-GitHub-Request-Id"] &&
         !resp.headers["X-GitHub-Request-Id"].empty?
-    rescue Excon::Error
+    rescue StandardError
       false
     end
 

@@ -2,16 +2,15 @@ name: CI
 on:
   push:
     branches:
-      - "actions/**"
-      - "wip/**"
       - "main"
   pull_request:
     branches:
-      - "**"
+      - "main"
   schedule:
     - cron: '0 0 * * *'
 permissions:
   contents: read
+  packages: write
 jobs:
   ci:
     name: CI
@@ -37,42 +36,41 @@ jobs:
         - { path: nuget, name: nuget }
         - { path: omnibus, name: omnibus }
         - { path: python, name: python }
+        - { path: python, name: python_slow }
         - { path: terraform, name: terraform }
+    env:
+      BASE_IMAGE: ubuntu:18.04
+      CORE_IMAGE: dependabot/dependabot-core
+      CORE_BRANCH_IMAGE: ghcr.io/dependabot/dependabot-core-branch
+      CORE_CI_IMAGE: ghcr.io/dependabot/dependabot-core-ci
+      CODE_DIR: /home/dependabot/dependabot-core
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Prepare environment variables
+      - name: Prepare BRANCH_REF environment variable
+        run: echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
+      - name: Log in to GHCR
         run: |
-          echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
-          echo "BASE_IMAGE=ubuntu:18.04" >> $GITHUB_ENV
-          echo "CORE_IMAGE=dependabot/dependabot-core" >> $GITHUB_ENV
-          echo "CORE_CI_IMAGE=dependabot/dependabot-core-ci" >> $GITHUB_ENV
-          echo "CODE_DIR=/home/dependabot/dependabot-core" >> $GITHUB_ENV
-      - name: Log in to Docker registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build dependabot-core image for branch
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
-          if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
-            echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            echo "DOCKER_LOGGED_IN=true" >> $GITHUB_ENV
-          else
-            echo "No Docker credentials, skipping login"
-          fi
-      - name: Build dependabot-core image
-        run: |
-          DOCKER_BUILDKIT=1 docker build \
-            -t "$CORE_IMAGE:latest" \
-            -t "$CORE_IMAGE:branch--$BRANCH_REF" \
+          docker build \
+            -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
-            --cache-from "$CORE_IMAGE:branch--$BRANCH_REF" \
             --cache-from "$CORE_IMAGE:latest" \
+            --cache-from "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             .
-      - name: Push dependabot-core image to Docker registry
-        if: env.DOCKER_LOGGED_IN == 'true'
+      - name: Push dependabot-core-branch image to GHCR
         run: |
-          docker push "$CORE_IMAGE:branch--$BRANCH_REF"
+          docker push "$CORE_BRANCH_IMAGE:$BRANCH_REF"
       - name: Build dependabot-core-ci image
+        env:
+          DOCKER_BUILDKIT: 1
         run: |
-          DOCKER_BUILDKIT=1 docker build \
+          docker build \
             -t "$CORE_CI_IMAGE:latest" \
             -t "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             -f Dockerfile.ci \
@@ -80,8 +78,7 @@ jobs:
             --cache-from "$CORE_CI_IMAGE:latest" \
             --cache-from "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             .
-      - name: Push dependabot-core-ci image to Docker registry
-        if: env.DOCKER_LOGGED_IN == 'true'
+      - name: Push dependabot-core-ci image to GHCR
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"

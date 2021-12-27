@@ -269,7 +269,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         }]
       end
 
-      it "raises a helpful error" do
+      it "raises a helpful error", :slow do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
@@ -337,7 +337,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
 
-    context "with an import of the setup.py" do
+    context "with an import of the setup.py", :slow do
       let(:dependency_files) do
         [manifest_file, generated_file, setup_file, pyproject]
       end
@@ -375,7 +375,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "with native dependencies that are not pre-built" do
+    context "with native dependencies that are not pre-built", :slow do
       let(:manifest_fixture_name) { "native_dependencies.in" }
       let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
       let(:dependency_name) { "cryptography" }

@@ -1,3 +1,23 @@
+## v0.169.8, 21 December 2021
+
+- Bundler: update bundler to 2.2.33 [#4534](https://github.com/dependabot/dependabot-core/pull/4534)
+- Bundler: Fix syntax for setting bundle config [#4552](https://github.com/dependabot/dependabot-core/pull/4552)
+- Common: Consider all failed requests to check enterprise source as false [#4551](https://github.com/dependabot/dependabot-core/pull/4551)
+- build(deps-dev): bump eslint from 8.4.1 to 8.5.0 in /npm_and_yarn/helpers [#4547](https://github.com/dependabot/dependabot-core/pull/4547)
+
+## v0.169.7, 19 December 2021
+
+- Common: Constrain activesupport to < 7 [#4541](https://github.com/dependabot/dependabot-core/pull/4541)
+- Dev: Avoid setting HTTP_PROXY for docker in the dev shell [#4533](https://github.com/dependabot/dependabot-core/pull/4533)
+- Python: Upgrade pyenv to 2.2.2 (@Dresdn) [#4526](https://github.com/dependabot/dependabot-core/pull/4526)
+- Cargo: Allow whitespace at beginning of Cargo dependency declarations [#4528](https://github.com/dependabot/dependabot-core/pull/4528)
+- Terraform: Return name unless contains git dependency name notation (@dwc0011) [#4527](https://github.com/dependabot/dependabot-core/pull/4527)
+- Dev: Fix conditional in `docker` workflow [#4529](https://github.com/dependabot/dependabot-core/pull/4529)
+- Dev: build(deps-dev): bump jest from 27.4.3 to 27.4.5 in /npm_and_yarn/helpers [#4522](https://github.com/dependabot/dependabot-core/pull/4522)
+- Dev: Disable `docker` workflow on forks [#4525](https://github.com/dependabot/dependabot-core/pull/4525)
+- Dev: Push dependabot/dependabot-core to GHCR in order to provide a mirror [#4523](https://github.com/dependabot/dependabot-core/pull/4523)
+- Dev: Reinstate the dev container build, pushing to GHCR [#4517](https://github.com/dependabot/dependabot-core/pull/4517)
+
 ## v0.169.6, 13 December 2021
 
 - Python invalid url [#4514](https://github.com/dependabot/dependabot-core/pull/4514)
