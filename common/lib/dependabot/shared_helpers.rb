@@ -87,7 +87,7 @@ module Dependabot
       if ENV["DEBUG_FUNCTION"] == function
         puts helper_subprocess_bash_command(stdin_data: stdin_data, command: cmd, env: env)
         # Pause execution so we can run helpers inside the temporary directory
-        binding.break # rubocop:disable Lint/Debugger
+        debugger # rubocop:disable Lint/Debugger
       end
 
       env_cmd = [env, cmd].compact
