@@ -82,6 +82,18 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
 
+        context "with an unrestricted goprivate" do
+          let(:goprivate) { "" }
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
+
+        context "with an org specific goprivate" do
+          let(:goprivate) { "rsc.io/*" }
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
+
         context "for a go 1.11 go.mod" do
           let(:project_name) { "go_1.11" }
 
@@ -624,6 +636,24 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
           expect(error.dependency_urls).
             to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+
+      context "with an unrestricted goprivate" do
+        let(:goprivate) { "" }
+
+        it "raises the correct error" do
+          expect { updater.updated_go_sum_content }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "raises the correct error" do
+          expect { updater.updated_go_sum_content }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
     end
