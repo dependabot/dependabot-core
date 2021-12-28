@@ -13,5 +13,5 @@ luigi = { version = "^2.8.8", source = "custom" }
 
 [[tool.poetry.source]]
 name = "custom"
-url = "http://localhost:8080/simple/"
+url = "https://some.internal.registry.com/pypi/"
 secondary = true
