@@ -12,7 +12,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
-      options: { tidy: tidy, vendor: false }
+      options: { tidy: tidy, vendor: false, goprivate: goprivate }
     )
   end
 
@@ -21,6 +21,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
   let(:directory) { "/" }
+  let(:goprivate) { "*" }
 
   let(:credentials) { [] }
 

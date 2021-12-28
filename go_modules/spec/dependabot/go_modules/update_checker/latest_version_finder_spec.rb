@@ -47,6 +47,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:raise_on_ignored) { false }
 
+  let(:goprivate) { "*" }
+
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -54,7 +56,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       credentials: [],
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      goprivate: goprivate
     )
   end
 
