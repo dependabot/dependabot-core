@@ -64,6 +64,9 @@ jobs:
             --cache-from "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             .
       - name: Push dependabot-core-branch image to GHCR
+        env:
+          ACCESS_CANARY: ${{ secrets.ACCESS_CANARY }}
+        if: env.ACCESS_CANARY != ''
         run: |
           docker push "$CORE_BRANCH_IMAGE:$BRANCH_REF"
       - name: Build dependabot-core-ci image
@@ -79,6 +82,9 @@ jobs:
             --cache-from "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             .
       - name: Push dependabot-core-ci image to GHCR
+        env:
+          ACCESS_CANARY: ${{ secrets.ACCESS_CANARY }}
+        if: env.ACCESS_CANARY != ''
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
