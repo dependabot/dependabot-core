@@ -10,25 +10,26 @@ module Dependabot
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :author_details, :labeler, :approvers, :assignees,
-                  :milestone
+                  :milestone, :target_project_id
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
                      author_details:, labeler:, approvers:, assignees:,
-                     milestone:)
-        @source         = source
-        @branch_name    = branch_name
-        @base_commit    = base_commit
-        @credentials    = credentials
-        @files          = files
-        @commit_message = commit_message
-        @pr_description = pr_description
-        @pr_name        = pr_name
-        @author_details = author_details
-        @labeler        = labeler
-        @approvers      = approvers
-        @assignees      = assignees
-        @milestone      = milestone
+                     milestone:, target_project_id:)
+        @source            = source
+        @branch_name       = branch_name
+        @base_commit       = base_commit
+        @credentials       = credentials
+        @files             = files
+        @commit_message    = commit_message
+        @pr_description    = pr_description
+        @pr_name           = pr_name
+        @author_details    = author_details
+        @labeler           = labeler
+        @approvers         = approvers
+        @assignees         = assignees
+        @milestone         = milestone
+        @target_project_id = target_project_id
       end
 
       def create
@@ -76,7 +77,7 @@ module Dependabot
 
       def merge_request_exists?
         gitlab_client_for_source.merge_requests(
-          source.repo,
+          target_project_id || source.repo,
           source_branch: branch_name,
           target_branch: source.branch || default_branch,
           state: "all"
@@ -143,7 +144,8 @@ module Dependabot
           remove_source_branch: true,
           assignee_ids: assignees,
           labels: labeler.labels_for_pr.join(","),
-          milestone_id: milestone
+          milestone_id: milestone,
+          target_project_id: target_project_id
         )
       end
 
@@ -156,7 +158,7 @@ module Dependabot
           approvers.keys.map { |k| [k.to_sym, approvers[k]] }.to_h
 
         gitlab_client_for_source.edit_merge_request_approvers(
-          source.repo,
+          target_project_id || source.repo,
           merge_request.iid,
           approver_ids: approvers_hash[:approvers],
           approver_group_ids: approvers_hash[:group_approvers]

@@ -9,11 +9,12 @@ module Dependabot
     class BranchProtected < StandardError; end
 
     attr_reader :source, :files, :base_commit, :old_commit, :credentials,
-                :pull_request_number, :author_details, :signature_key
+                :pull_request_number, :author_details, :signature_key, :provider_metadata
 
     def initialize(source:, base_commit:, old_commit:, files:,
                    credentials:, pull_request_number:,
-                   author_details: nil, signature_key: nil)
+                   author_details: nil, signature_key: nil,
+                   provider_metadata: {})
       @source              = source
       @base_commit         = base_commit
       @old_commit          = old_commit
@@ -22,6 +23,7 @@ module Dependabot
       @pull_request_number = pull_request_number
       @author_details      = author_details
       @signature_key       = signature_key
+      @provider_metadata   = provider_metadata
     end
 
     def update
@@ -55,7 +57,8 @@ module Dependabot
         old_commit: old_commit,
         files: files,
         credentials: credentials,
-        pull_request_number: pull_request_number
+        pull_request_number: pull_request_number,
+        target_project_id: provider_metadata[:target_project_id]
       )
     end
 

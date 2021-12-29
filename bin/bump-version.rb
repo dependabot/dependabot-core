@@ -12,7 +12,7 @@ unless `which gh` && $?.success?
   exit 1
 end
 
-unless `gh auth status > /dev/null 2>&1` && $?.success?
+unless `gh auth status -h github.com > /dev/null 2>&1` && $?.success?
   puts "Please login to GitHub first: gh auth login"
   exit 1
 end

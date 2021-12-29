@@ -6,6 +6,11 @@ require "json"
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("./monkey_patches", __dir__))
 
+trap "HUP" do
+  puts JSON.generate(error: "timeout", error_class: "Timeout::Error", trace: [])
+  exit 2
+end
+
 # Bundler monkey patches
 require "definition_ruby_version_patch"
 require "definition_bundler_version_patch"

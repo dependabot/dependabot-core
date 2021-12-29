@@ -18,7 +18,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
-      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts).freeze
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
 
       PROPERTY_REGEX =
         /
@@ -196,11 +196,13 @@ module Dependabot
 
         dependency_name =
           if group == "plugins" then name
-          else "#{group}:#{name}"
+          else
+            "#{group}:#{name}"
           end
         groups =
           if group == "plugins" then ["plugins"] + extra_groups
-          else []
+          else
+            []
           end
         source =
           source_from(group, name, version)

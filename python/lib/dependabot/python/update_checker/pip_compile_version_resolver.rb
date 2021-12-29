@@ -25,7 +25,7 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone -q (?<url>[^\s]+).* /.freeze
+          /git clone --filter=blob:none -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
           /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
         NATIVE_COMPILATION_ERROR =
@@ -271,7 +271,8 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content =
               if update_requirement then update_req_file(file, updated_req)
-              else file.content
+              else
+                file.content
               end
             File.write(path, updated_content)
           end

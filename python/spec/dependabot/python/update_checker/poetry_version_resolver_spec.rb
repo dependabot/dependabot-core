@@ -143,7 +143,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       end
     end
 
-    context "with a dependency file that includes a git dependency" do
+    context "with a dependency file that includes a git dependency", :slow do
       let(:pyproject_fixture_name) { "git_dependency.toml" }
       let(:lockfile_fixture_name) { "git_dependency.lock" }
       let(:dependency_name) { "pytest" }
@@ -204,7 +204,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
     end
 
-    context "resolvable only if git references are preserved" do
+    context "resolvable only if git references are preserved", :slow do
       let(:pyproject_fixture_name) { "git_conflict.toml" }
       let(:lockfile_fixture_name) { "git_conflict.lock" }
       let(:dependency_name) { "django-widget-tweaks" }

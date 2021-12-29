@@ -42,7 +42,8 @@ module Dependabot
               workspace_object.values_at("packages", "nohoist").
                 flatten.compact
             elsif workspace_object.is_a?(Array) then workspace_object
-            else raise "Unexpected workspace object"
+            else
+              raise "Unexpected workspace object"
             end
 
           paths_array.each { |path| path.gsub!(%r{^\./}, "") }

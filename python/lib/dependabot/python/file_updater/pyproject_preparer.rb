@@ -64,7 +64,7 @@ module Dependabot
 
               next unless (locked_version = locked_details&.fetch("version"))
 
-              next if locked_details&.dig("source", "type") == "directory"
+              next if %w(directory file url).include?(locked_details&.dig("source", "type"))
 
               if locked_details&.dig("source", "type") == "git"
                 poetry_object[key][dep_name] = {

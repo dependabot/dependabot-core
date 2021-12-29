@@ -12,6 +12,7 @@ module Dependabot
       include FileSelector
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
+      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -110,7 +111,7 @@ module Dependabot
           updated_manifest_files.each { |f| File.write(f.name, f.content) }
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source}")
+          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
@@ -122,6 +123,10 @@ module Dependabot
             content.sub!(declaration_regex, updated_dependency)
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
           raise if @retrying_lock || !e.message.include?("terraform init")
 
           # NOTE: Modules need to be installed before terraform can update the
@@ -146,6 +151,8 @@ module Dependabot
           if output.match?(PRIVATE_MODULE_ERROR)
             raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
           end
+
+          raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
         end
       end
 
@@ -192,10 +199,11 @@ module Dependabot
         return /terraform\s*\{(?:(?!^\}).)*/m if terragrunt_file?(filename)
 
         # For modules we can do better - filter for module blocks that use the
-        # name of the dependency
+        # name of the module
+        module_name = dependency.name.split("::").first
         /
-          module\s+["']#{Regexp.escape(dependency.name)}["']\s*\{
-          (?:(?!^\}).)*
+         module\s+["']#{Regexp.escape(module_name)}["']\s*\{
+         (?:(?!^\}).)*
         /mx
       end
 

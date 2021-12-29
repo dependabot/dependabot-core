@@ -161,7 +161,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
-              'The "https://dependabot.com/composer-not-found/packages.json"'\
+              'The "https://github.com/dependabot/composer-not-found/packages.json"'\
               " file could not be downloaded"
             )
           end

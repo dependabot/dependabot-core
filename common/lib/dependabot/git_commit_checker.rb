@@ -244,7 +244,8 @@ module Dependabot
 
       if comparison.commits.none? then "behind"
       elsif comparison.compare_same_ref then "identical"
-      else "ahead"
+      else
+        "ahead"
       end
     end
 
@@ -261,7 +262,8 @@ module Dependabot
       # Conservatively assume that ref2 is ahead in the equality case, of
       # if we get an unexpected format (e.g., due to a 404)
       if JSON.parse(response.body).fetch("values", ["x"]).none? then "behind"
-      else "ahead"
+      else
+        "ahead"
       end
     end
 

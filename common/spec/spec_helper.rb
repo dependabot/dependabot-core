@@ -3,7 +3,7 @@
 require "rspec/its"
 require "webmock/rspec"
 require "vcr"
-require "byebug"
+require "debug"
 require "simplecov"
 require "simplecov-console"
 require "stackprof"

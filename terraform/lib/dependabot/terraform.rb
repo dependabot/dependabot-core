@@ -20,3 +20,14 @@ Dependabot::Dependency.
 
 require "dependabot/utils"
 Dependabot::Utils.register_always_clone("terraform")
+
+Dependabot::Dependency.
+  register_display_name_builder(
+    "terraform",
+    lambda { |name|
+      # Only modify the name if it a git source dependency
+      return name unless name.include? "::"
+
+      name.split("::").first + "::" + name.split("::")[2].split("/").last
+    }
+  )

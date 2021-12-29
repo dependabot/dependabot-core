@@ -61,6 +61,7 @@ module Dependabot
                 NativeHelpers.run_bundler_subprocess(
                   bundler_version: bundler_version,
                   function: "depencency_source_latest_git_version",
+                  options: options,
                   args: {
                     dir: tmp_dir,
                     gemfile_name: gemfile.name,
@@ -106,6 +107,7 @@ module Dependabot
                 NativeHelpers.run_bundler_subprocess(
                   bundler_version: bundler_version,
                   function: "private_registry_versions",
+                  options: options,
                   args: {
                     dir: tmp_dir,
                     gemfile_name: gemfile.name,
@@ -126,6 +128,7 @@ module Dependabot
               NativeHelpers.run_bundler_subprocess(
                 bundler_version: bundler_version,
                 function: "dependency_source_type",
+                options: options,
                 args: {
                   dir: tmp_dir,
                   gemfile_name: gemfile.name,
