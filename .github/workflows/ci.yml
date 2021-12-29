@@ -69,7 +69,8 @@ jobs:
         if: env.ACCESS_CANARY != '' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
           docker push "$CORE_BRANCH_IMAGE:$BRANCH_REF"
-        else:
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
           echo "Using fork of Dependabot Core, skipping GHCR push"
       - name: Build dependabot-core-ci image
         env:
@@ -90,7 +91,8 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
-        else:
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        run: |
           echo "Using fork of Dependabot Core, skipping GHCR push"
       - name: Run ${{ matrix.suite.name }} tests
         run: |
