@@ -209,7 +209,7 @@ option_parse = OptionParser.new do |opts|
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
     $options[:updater_options] = value.split(",").map do |o|
-      if o.include?("=")
+      if o.include?("=") # key/value pair, e.g. "goprivate=true"
         o.split("=", 2).map.with_index do |v, i|
           if i == 0
             v.strip.downcase.to_sym
@@ -217,7 +217,7 @@ option_parse = OptionParser.new do |opts|
             v.strip
           end
         end
-      else
+      else # just a key, e.g. "vendor"
         [o.strip.downcase.to_sym, true]
       end
     end.to_h
