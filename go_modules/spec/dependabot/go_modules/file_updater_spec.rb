@@ -172,7 +172,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
             credentials: anything,
             repo_contents_path: anything,
             directory: anything,
-            options: { tidy: false, vendor: false }
+            options: { tidy: false, vendor: false, goprivate: "*" }
           ).and_return(double)
 
         updater.updated_dependency_files
