@@ -19,5 +19,10 @@
           "name": "toby.bellwood",
           "email": "toby.bellwood@gmail.com"
       }
-  ]
+  ],
+  "config": {
+    "allow-plugins": {
+      "cweagans/composer-patches": true
+    }
+  }
 }
