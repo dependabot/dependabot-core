@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
             expect(error.dependency_urls).
-              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+              to eq(["git@github.com:dependabot-fixtures/this-repo-does-not-exist.git"])
           end
       end
     end
@@ -247,7 +247,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
             expect(error.dependency_urls).
-              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+              to eq(["git@github.com:dependabot-fixtures/this-repo-does-not-exist.git"])
           end
       end
     end
@@ -269,7 +269,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
             expect(error.dependency_urls).
-              to eq(["https://github.com/no-exist-sorry/monolog.git"])
+              to eq(["https://github.com/no-exist-sorry/monolog"])
           end
       end
     end
