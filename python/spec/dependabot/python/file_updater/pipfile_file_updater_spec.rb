@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         )
       end
 
-      it "updates both files correctly" do
+      it "updates both files correctly", :slow do
         expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
 
         updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:lockfile_fixture_name) { "git_source_no_ref.lock" }
 
         context "when updating the non-git dependency" do
-          it "doesn't update the git dependency" do
+          it "doesn't update the git dependency", :slow do
             expect(json_lockfile["default"]["requests"]["version"]).
               to eq("==2.18.4")
             expect(json_lockfile["default"]["pythonfinder"]).
@@ -319,7 +319,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         end
       end
 
-      context "with a path dependency" do
+      context "with a path dependency", :slow do
         let(:dependency_files) { [pipfile, lockfile, setupfile] }
         let(:setupfile) do
           Dependabot::DependencyFile.new(
@@ -419,7 +419,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           )
         end
 
-        it "updates the lockfile and the requirements.txt" do
+        it "updates the lockfile and the requirements.txt", :slow do
           expect(updated_files.map(&:name)).
             to match_array(%w(Pipfile.lock requirements.txt))
 
