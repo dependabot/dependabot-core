@@ -223,9 +223,6 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
 
-
-USER root
-
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
@@ -240,8 +237,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2
+RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
 RUN bash /opt/go_modules/helpers/build /opt/go_modules
