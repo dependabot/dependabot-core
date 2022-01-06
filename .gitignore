@@ -17,7 +17,6 @@ vendor
 /.vscode/
 /.vscode-server/
 /.vscode-server-insiders/
-.byebug_history
 /bundler/helpers/install-dir
 /npm_and_yarn/helpers/node_modules
 /npm_and_yarn/helpers/install-dir

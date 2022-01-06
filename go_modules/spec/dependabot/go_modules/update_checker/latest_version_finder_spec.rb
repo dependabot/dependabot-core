@@ -47,6 +47,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   let(:raise_on_ignored) { false }
 
+  let(:goprivate) { "*" }
+
   let(:finder) do
     described_class.new(
       dependency: dependency,
@@ -54,7 +56,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       credentials: [],
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
-      raise_on_ignored: raise_on_ignored
+      raise_on_ignored: raise_on_ignored,
+      goprivate: goprivate
     )
   end
 
@@ -62,6 +65,22 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     context "when there's a newer major version but not a new minor version" do
       it "returns the latest minor version for the dependency's current major version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+      end
+
+      context "with an unrestricted goprivate" do
+        let(:goprivate) { "" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        end
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "returns the latest minor version for the dependency's current major version" do
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+        end
       end
     end
 
@@ -232,6 +251,34 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
           expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
           expect(error.dependency_urls).
             to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+
+      context "with an unrestricted goprivate" do
+        let(:goprivate) { "" }
+
+        it "raises a GitDependenciesNotReachable error" do
+          error_class = Dependabot::GitDependenciesNotReachable
+          expect { finder.latest_version }.
+            to raise_error(error_class) do |error|
+            expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls).
+              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          end
+        end
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "raises a GitDependenciesNotReachable error" do
+          error_class = Dependabot::GitDependenciesNotReachable
+          expect { finder.latest_version }.
+            to raise_error(error_class) do |error|
+            expect(error.message).to include("github.com/dependabot-fixtures/go-modules-private")
+            expect(error.dependency_urls).
+              to eq(["github.com/dependabot-fixtures/go-modules-private"])
+          end
         end
       end
     end

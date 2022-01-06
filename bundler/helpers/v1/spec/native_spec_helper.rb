@@ -2,7 +2,7 @@
 
 require "rspec/its"
 require "webmock/rspec"
-require "byebug"
+require "debug"
 require "tmpdir"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))

@@ -14,6 +14,7 @@ module Dependabot
                      credentials:, options: {})
         super
 
+        @goprivate = options.fetch(:goprivate, "*")
         use_repo_contents_stub if repo_contents_path.nil?
       end
 
@@ -114,7 +115,7 @@ module Dependabot
             credentials: credentials,
             repo_contents_path: repo_contents_path,
             directory: directory,
-            options: { tidy: tidy?, vendor: vendor? }
+            options: { tidy: tidy?, vendor: vendor?, goprivate: @goprivate }
           )
       end
 
