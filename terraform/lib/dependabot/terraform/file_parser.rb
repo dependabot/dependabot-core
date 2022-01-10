@@ -221,7 +221,7 @@ module Dependabot
         elsif git_source
           name + "::" + git_source.provider + "::" + git_source.repo
         elsif source[:ref]
-          name + "::git_provider::git_repo(" \
+          name + "::git_provider::repo_name/git_repo(" \
           + Digest::SHA1.hexdigest(source[:url]) + ")::" + source[:ref]
         else
           name + "::git_provider::repo_name/git_repo(" + Digest::SHA1.hexdigest(source[:url]) + ")"
