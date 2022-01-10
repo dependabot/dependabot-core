@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Terraform do
         "module_name::git_provider::repo_name/git_repo(9685A3B07E8D9C45BE0A3D92B02F13978FB311D8)::tags/0.1.0"
       end
 
-      it { is_expected.to eq("module_name::git_repo(9685A3B07E8D9C45BE0A3D92B02F13978FB311D8)") }
+      it { is_expected.to eq("module_name::git_repo") }
     end
 
     context "git unknown source without ref" do
