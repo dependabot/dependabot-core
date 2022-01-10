@@ -57,6 +57,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
+            -t "$CORE_IMAGE:latest" \
             -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \

@@ -233,4 +233,50 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
   end
+
+  describe "#prepared_project_file" do
+    subject(:prepared_project) { updater.send(:prepared_pyproject) }
+
+    context "with a python_index with auth details" do
+      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
+      let(:lockfile_fixture_name) { "private_secondary_source.lock" }
+      let(:dependency_name) { "luigi" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "2.8.9",
+          previous_version: "2.8.8",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "2.8.9",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "2.8.8",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+      let(:credentials) do
+        [{
+          "type" => "python_index",
+          "index-url" => "https://some.internal.registry.com/pypi/",
+          "username" => "test",
+          "password" => "test"
+        }]
+      end
+
+      it "prepares a pyproject file without credentials in" do
+        repo_obj = TomlRB.parse(prepared_project, symbolize_keys: true)[:tool][:poetry][:source]
+        expect(repo_obj[0][:url]).to eq(credentials[0]["index-url"])
+
+        user_pass = "#{credentials[0]['user']}:#{credentials[0]['password']}@"
+        expect(repo_obj[0][:url]).to_not include(user_pass)
+      end
+    end
+  end
 end
