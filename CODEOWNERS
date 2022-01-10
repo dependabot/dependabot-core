@@ -1,1 +1,16 @@
 * @dependabot/reviewers
+
+# Ecosystems
+bundler/* @dependabot/ruby-reviewers
+cargo/* @dependabot/rust-reviewers
+composer/* @dependabot/php-reviewers
+docker/* @dependabot/docker-reviewers
+elm/* @dependabot/elm-reviewers
+go_modules/* @dependabot/go-reviewers
+gradle/* @dependabot/java-reviewers
+hex/* @dependabot/erlang-reviewers
+maven/* @dependabot/java-reviewers
+npm_and_yarn/* @dependabot/javascript-reviewers
+nuget/* @dependabot/dotnet-reviewers
+python/* @dependabot/python-reviewers
+terraform/* @dependabot/terraform-reviewers
