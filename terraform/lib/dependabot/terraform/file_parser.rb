@@ -221,10 +221,10 @@ module Dependabot
         elsif git_source
           name + "::" + git_source.provider + "::" + git_source.repo
         elsif source[:ref]
-          name + "::unknown_provider::repo_name/unknown_name(" \
+          name + "::git_provider::git_repo(" \
           + Digest::SHA1.hexdigest(source[:url]) + ")::" + source[:ref]
         else
-          name + "::unknown_provider::repo_name/unknown_name(" + Digest::SHA1.hexdigest(source[:url]) + ")"
+          name + "::git_provider::repo_name/git_repo(" + Digest::SHA1.hexdigest(source[:url]) + ")"
         end
       end
 

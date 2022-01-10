@@ -35,5 +35,5 @@ module "codecommit_repo" {
 }
 
 module "unknown_repo" {
-  source           = "git::https://unkown-git-repo-example.com/reponame/test?ref=1.0.0"
+  source           = "git::https://unknown-git-repo-example.com/reponame/test?ref=1.0.0"
 }
