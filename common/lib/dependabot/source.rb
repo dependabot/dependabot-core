@@ -39,13 +39,13 @@ module Dependabot
     }x.freeze
 
     CODECOMMIT_SOURCE = %r{
-      (?<protocol>(http:\/\/|https:\/\/|git:\/\/|ssh:\/\/))
+      (?<protocol>(http://|https://|git://|ssh://))
       git[-]
       (?<provider>codecommit)
       (?:.*)
-      (?:\.com\/v1\/repos\/)
-      (?<repo>([^\/]*))
-      (?:\/)?(?<directory>[^?]*)?
+      (?:\.com/v1/repos/)
+      (?<repo>([^/]*))
+      (?:/)?(?<directory>[^?]*)?
       [?]?
       (?<ref>.*)?
     }x.freeze

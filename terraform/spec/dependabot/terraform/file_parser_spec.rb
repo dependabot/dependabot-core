@@ -446,7 +446,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
 
       before do
-        stub_request(:get, "https://unkown-git-repo-example.com/status").to_return(
+        stub_request(:get, "https://unknown-git-repo-example.com/status").to_return(
           status: 200,
           body: "Not GHES",
           headers: {}
@@ -600,7 +600,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
 
         it "has the right details for the unknown git repo example" do
           dependency = subject.find do |x|
-            x.name.include? "unknown_repo::unknown_provider::repo_name/unknown_name("
+            x.name.include? "unknown_repo::git_provider::repo_name/git_repo("
           end
           expect(dependency).to_not be_nil
           expect(dependency.version).to eq("1.0.0")
@@ -610,7 +610,7 @@ RSpec.describe Dependabot::Terraform::FileParser do
             file: "main.tf",
             source: {
               type: "git",
-              url: "https://unkown-git-repo-example.com/reponame/test",
+              url: "https://unknown-git-repo-example.com/reponame/test",
               branch: nil,
               ref: "1.0.0"
             }
