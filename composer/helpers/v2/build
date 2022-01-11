@@ -9,7 +9,16 @@ if [ -z "$install_dir" ]; then
 fi
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cd "$helpers_dir"
+cp -r \
+  "$helpers_dir/bin" \
+  "$helpers_dir/src" \
+  "$helpers_dir/.php-cs-fixer.php" \
+  "$helpers_dir/composer.json" \
+  "$helpers_dir/composer.lock" \
+  "$helpers_dir/phpstan.neon" \
+  "$install_dir"
+
+cd "$install_dir"
 
 composer validate --no-check-publish
 composer install
