@@ -3,7 +3,7 @@
 module Dependabot
   module DependencyUpdaters
     class Base
-      def update(dependency:, requirements:)
+      def update(dependency:, requirements:, configuration:)
         raise NotImplementedError
       end
     end

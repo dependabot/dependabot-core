@@ -17,10 +17,11 @@ This method is called within the root directory of a project.
 
 #### Arguments
 
-| Argument       | Type                     | Description                      |
-| -------------- | ------------------------ | -------------------------------- |
-| `dependency`   | `Dependabot::Dependency` | The package dependency to update |
-| `requirements` | `VersionRange`           | The updated version constraints  |
+| Argument        | Type                               | Description                                      |
+| --------------- | ---------------------------------- | ------------------------------------------------ |
+| `dependency`    | `Dependabot::Dependency`           | The package dependency to update                 |
+| `requirements`  | `VersionRange`                     | The updated version constraints                  |
+| `configuration` | `Dependabot::Config::UpdateConfig` | The configuration options for performing updates |
 
 #### Return
 
@@ -37,14 +38,22 @@ in the package manager.
 ```ruby
 require 'dependabot/dependency_updaters'
 
-# Creating and registering a dependency updater
+# Creating and registering a dependency updater for a hypothetical npm client
 
 module NPM
   class DependencyUpdater < Dependabot::DependencyUpdaters::Base
     class Error < StandardError; end
 
-    def update(dependency:, requirements:)
-      system "npm audit fix #{dependency.name} --requirements #{requirements}" # hypothetical
+    def update(dependency:, requirements:, configuration:)
+      cmd = "npm audit fix"
+      args = [dependency.name]
+
+      args += ['--requirements', requirements] if requirements.any?
+
+      ignored_versions = configuration.security_updates_only(dependency, security_updates_only: true)
+      args += ['--ignored-versions', ignored_versions.join(',')] if ignored_versions.any?
+
+      system [cmd, *args].join(' ')
     rescue => e
       raise Error.new(e.message)
     end
