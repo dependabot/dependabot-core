@@ -62,6 +62,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         it { is_expected.to include("default = true") }
       end
     end
+    context "with a private repository as a python_index" do
+      subject(:parsed_sources) { TomlRB.parse(replace_sources, symbolize_keys: true)[:tool][:poetry][:source] }
+      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
+      let(:credentials) do
+        [{
+          "type" => "python_index",
+          "index-url" => "https://some.internal.registry.com/pypi/"
+        }]
+      end
+
+      it { is_expected.to contain_exactly({ name: "custom", secondary: true, url: credentials[0]["index-url"] }) }
+
+      context "that includes auth details" do
+        let(:credentials) do
+          [{
+            "type" => "python_index",
+            "index-url" => "https://some.internal.registry.com/pypi/",
+            "token" => "username:password"
+          }]
+        end
+
+        it {
+          is_expected.to contain_exactly({ name: "custom", secondary: true,
+                                           url: "https://username:password@some.internal.registry.com/pypi/" })
+        }
+      end
+    end
   end
 
   describe "#sanitize" do

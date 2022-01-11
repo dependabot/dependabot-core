@@ -356,6 +356,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         end
       end
 
+      context "set in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "private_source.toml" }
+        let(:dependency_files) { [pyproject] }
+        let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+      end
+
       context "set in credentials" do
         let(:credentials) do
           [{
