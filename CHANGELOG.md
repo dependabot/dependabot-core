@@ -1,3 +1,54 @@
+## v0.170.1, 10 January 2022
+
+- Ensure CI builds pick up native helper changes [#4618](https://github.com/dependabot/dependabot-core/pull/4618)
+- Fix poetry secondary source bug (@isobelhooper) [#4323](https://github.com/dependabot/dependabot-core/pull/4323)
+- build(deps-dev): bump phpstan/phpstan from 1.2.0 to 1.3.1 in /composer/helpers/v2 [#4583](https://github.com/dependabot/dependabot-core/pull/4583)
+- Ensure CI uses the latest image built on that branch [#4596](https://github.com/dependabot/dependabot-core/pull/4596)
+
+## v0.170.0, 5 January 2022
+
+- Allow configuration of GOPRIVATE [#4568](https://github.com/dependabot/dependabot-core/pull/4568)
+- build(deps-dev): bump phpstan/phpstan from 1.2.0 to 1.3.1 in /composer/helpers/v1 [#4582](https://github.com/dependabot/dependabot-core/pull/4582)
+- Simplify Dockerfile a little bit (@PeterDaveHello) [#4584](https://github.com/dependabot/dependabot-core/pull/4584)
+- Check for access before ghcr push [#4569](https://github.com/dependabot/dependabot-core/pull/4569)
+- Cleanup after byebug removal [#4567](https://github.com/dependabot/dependabot-core/pull/4567)
+- build(deps): bump cython from 0.29.25 to 0.29.26 in /python/helpers [#4540](https://github.com/dependabot/dependabot-core/pull/4540)
+- build(deps): bump wheel from 0.37.0 to 0.37.1 in /python/helpers [#4562](https://github.com/dependabot/dependabot-core/pull/4562)
+- Enable support for ActiveSupport 7 [#4559](https://github.com/dependabot/dependabot-core/pull/4559)
+- Python: Move some more tests to the slow suite [#4564](https://github.com/dependabot/dependabot-core/pull/4564)
+- Use GHCR as the canonical source for CI images [#4560](https://github.com/dependabot/dependabot-core/pull/4560)
+- Python: Quarantine slow tests into their own CI run [#4558](https://github.com/dependabot/dependabot-core/pull/4558)
+- Update the CI workflow to use GHPR for branch images and as a mirror for CI images [#4524](https://github.com/dependabot/dependabot-core/pull/4524)
+
+## v0.169.8, 21 December 2021
+
+- Bundler: update bundler to 2.2.33 [#4534](https://github.com/dependabot/dependabot-core/pull/4534)
+- Bundler: Fix syntax for setting bundle config [#4552](https://github.com/dependabot/dependabot-core/pull/4552)
+- Common: Consider all failed requests to check enterprise source as false [#4551](https://github.com/dependabot/dependabot-core/pull/4551)
+- build(deps-dev): bump eslint from 8.4.1 to 8.5.0 in /npm_and_yarn/helpers [#4547](https://github.com/dependabot/dependabot-core/pull/4547)
+
+## v0.169.7, 19 December 2021
+
+- Common: Constrain activesupport to < 7 [#4541](https://github.com/dependabot/dependabot-core/pull/4541)
+- Dev: Avoid setting HTTP_PROXY for docker in the dev shell [#4533](https://github.com/dependabot/dependabot-core/pull/4533)
+- Python: Upgrade pyenv to 2.2.2 (@Dresdn) [#4526](https://github.com/dependabot/dependabot-core/pull/4526)
+- Cargo: Allow whitespace at beginning of Cargo dependency declarations [#4528](https://github.com/dependabot/dependabot-core/pull/4528)
+- Terraform: Return name unless contains git dependency name notation (@dwc0011) [#4527](https://github.com/dependabot/dependabot-core/pull/4527)
+- Dev: Fix conditional in `docker` workflow [#4529](https://github.com/dependabot/dependabot-core/pull/4529)
+- Dev: build(deps-dev): bump jest from 27.4.3 to 27.4.5 in /npm_and_yarn/helpers [#4522](https://github.com/dependabot/dependabot-core/pull/4522)
+- Dev: Disable `docker` workflow on forks [#4525](https://github.com/dependabot/dependabot-core/pull/4525)
+- Dev: Push dependabot/dependabot-core to GHCR in order to provide a mirror [#4523](https://github.com/dependabot/dependabot-core/pull/4523)
+- Dev: Reinstate the dev container build, pushing to GHCR [#4517](https://github.com/dependabot/dependabot-core/pull/4517)
+
+## v0.169.6, 13 December 2021
+
+- Python invalid url [#4514](https://github.com/dependabot/dependabot-core/pull/4514)
+- Fix failing Cargo test [#4520](https://github.com/dependabot/dependabot-core/pull/4520)
+- Bump go from 1.17.4 to 1.17.5 [#4512](https://github.com/dependabot/dependabot-core/pull/4512)
+- Remove the developer image docker build [#4513](https://github.com/dependabot/dependabot-core/pull/4513)
+- Prebuild and publish the dependabot/dependabot-core-development container [#4511](https://github.com/dependabot/dependabot-core/pull/4511)
+- build(deps): bump composer/composer from 2.1.12 to 2.1.14 in /composer/helpers/v2 [#4473](https://github.com/dependabot/dependabot-core/pull/4473)
+
 ## v0.169.5, 9 December 2021
 
 - build(deps): bump @npmcli/arborist from 4.0.5 to 4.1.1 in /npm_and_yarn/helpers [#4505](https://github.com/dependabot/dependabot-core/pull/4505)

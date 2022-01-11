@@ -73,21 +73,9 @@ module Dependabot
 
             command = "go mod edit -json"
 
-            # Turn off the module proxy for now, as it's causing issues with
-            # private git dependencies
-            env = { "GOPRIVATE" => "*" }
-
-            stdout, stderr, status = Open3.capture3(env, command)
+            stdout, stderr, status = Open3.capture3(command)
             handle_parser_error(path, stderr) unless status.success?
             JSON.parse(stdout)["Require"] || []
-          rescue Dependabot::DependencyFileNotResolvable
-            # We sometimes see this error if a host times out.
-            # In such cases, retrying (a maximum of 3 times) may fix it.
-            retry_count ||= 0
-            raise if retry_count >= 3
-
-            retry_count += 1
-            retry
           end
       end
 
@@ -109,11 +97,7 @@ module Dependabot
             # directives
             command = "go mod edit -json"
 
-            # Turn off the module proxy for now, as it's causing issues with
-            # private git dependencies
-            env = { "GOPRIVATE" => "*" }
-
-            stdout, stderr, status = Open3.capture3(env, command)
+            stdout, stderr, status = Open3.capture3(command)
             handle_parser_error(path, stderr) unless status.success?
 
             JSON.parse(stdout)

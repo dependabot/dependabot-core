@@ -14,41 +14,41 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    build-essential \
-    dirmngr \
-    git \
-    bzr \
-    mercurial \
-    gnupg2 \
-    ca-certificates \
-    curl \
-    file \
-    zlib1g-dev \
-    liblzma-dev \
-    tzdata \
-    zip \
-    unzip \
-    locales \
-    openssh-client \
-    software-properties-common \
-    make \
-    libpq-dev \
-    libssl-dev \
-    libbz2-dev \
-    libffi-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    libcurl4-openssl-dev \
-    llvm \
-    libncurses5-dev \
-    libncursesw5-dev \
-    libmysqlclient-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libgeos-dev \
-    python3-enchant \
+  build-essential \
+  dirmngr \
+  git \
+  bzr \
+  mercurial \
+  gnupg2 \
+  ca-certificates \
+  curl \
+  file \
+  zlib1g-dev \
+  liblzma-dev \
+  tzdata \
+  zip \
+  unzip \
+  locales \
+  openssh-client \
+  software-properties-common \
+  make \
+  libpq-dev \
+  libssl-dev \
+  libbz2-dev \
+  libffi-dev \
+  libreadline-dev \
+  libsqlite3-dev \
+  libcurl4-openssl-dev \
+  llvm \
+  libncurses5-dev \
+  libncursesw5-dev \
+  libmysqlclient-dev \
+  xz-utils \
+  tk-dev \
+  libxml2-dev \
+  libxmlsec1-dev \
+  libgeos-dev \
+  python3-enchant \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
@@ -56,7 +56,7 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt
 
@@ -69,14 +69,14 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
-    BUNDLE_BIN=".bundle/bin"
+  BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.26 --no-document \
+  && gem install bundler -v 2.2.33 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -88,7 +88,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.1.0 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv \
   && pyenv install 3.10.0 \
   && pyenv global 3.10.0 \
   && rm -Rf /tmp/python-build*
@@ -124,32 +124,32 @@ COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    php7.4 \
-    php7.4-apcu \
-    php7.4-bcmath \
-    php7.4-cli \
-    php7.4-common \
-    php7.4-curl \
-    php7.4-gd \
-    php7.4-geoip \
-    php7.4-gettext \
-    php7.4-gmp \
-    php7.4-imagick \
-    php7.4-imap \
-    php7.4-intl \
-    php7.4-json \
-    php7.4-ldap \
-    php7.4-mbstring \
-    php7.4-memcached \
-    php7.4-mongodb \
-    php7.4-mysql \
-    php7.4-redis \
-    php7.4-soap \
-    php7.4-sqlite3 \
-    php7.4-tidy \
-    php7.4-xml \
-    php7.4-zip \
-    php7.4-zmq \
+  php7.4 \
+  php7.4-apcu \
+  php7.4-bcmath \
+  php7.4-cli \
+  php7.4-common \
+  php7.4-curl \
+  php7.4-gd \
+  php7.4-geoip \
+  php7.4-gettext \
+  php7.4-gmp \
+  php7.4-imagick \
+  php7.4-imap \
+  php7.4-intl \
+  php7.4-json \
+  php7.4-ldap \
+  php7.4-mbstring \
+  php7.4-memcached \
+  php7.4-mongodb \
+  php7.4-mysql \
+  php7.4-redis \
+  php7.4-soap \
+  php7.4-sqlite3 \
+  php7.4-tidy \
+  php7.4-xml \
+  php7.4-zip \
+  php7.4-zmq \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
@@ -272,8 +272,7 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2
+RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
 RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
 RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
 RUN bash /opt/go_modules/helpers/build /opt/go_modules
