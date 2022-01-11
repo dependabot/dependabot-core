@@ -57,6 +57,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
+            -t "$CORE_IMAGE:latest" \
             -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
@@ -95,7 +96,7 @@ jobs:
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --rm "$CORE_CI_IMAGE" bash -c \
+            --rm "$CORE_CI_IMAGE:branch--$BRANCH_REF" bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
   lint:
     name: lint
