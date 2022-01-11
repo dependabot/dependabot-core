@@ -1,3 +1,7 @@
+## v0.170.2, 11 January 2022
+
+- build(deps): bump pipenv from 2021.11.23 to 2022.1.8 in /python/helpers [#4609](https://github.com/dependabot/dependabot-core/pull/4609)
+
 ## v0.170.1, 10 January 2022
 
 - Ensure CI builds pick up native helper changes [#4618](https://github.com/dependabot/dependabot-core/pull/4618)
