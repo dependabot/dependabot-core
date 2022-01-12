@@ -1,3 +1,11 @@
+## v0.171.1, 12 January 2022
+
+- build(deps): bump composer/composer from 1.10.23 to 1.10.24 in /composer/helpers/v1 [#4509](https://github.com/dependabot/dependabot-core/pull/4509)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v1 [#4613](https://github.com/dependabot/dependabot-core/pull/4613)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v2 [#4612](https://github.com/dependabot/dependabot-core/pull/4612)
+- Refresh the workflow for native helpers within the docker dev shell, Consistency pass on native dev [#4556](https://github.com/dependabot/dependabot-core/pull/4556)
+- build(deps): bump composer/composer from 2.1.14 to 2.2.4 in /composer/helpers/v2 [#4611](https://github.com/dependabot/dependabot-core/pull/4611)
+
 ## v0.171.0, 11 January 2022
 
 - Consistency pass on composer native helper build [#4554](https://github.com/dependabot/dependabot-core/pull/4554)
