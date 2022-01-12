@@ -633,7 +633,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "that specifies the dependency using github:" do
           let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
-          it "doesn't update the git dependencies" do
+          pending "doesn't update the git dependencies" do
             old_lock = bundler_project_dependency_file("github_source", filename: "Gemfile.lock").content.split(/^/)
             new_lock = file.content.split(/^/)
 
@@ -793,7 +793,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             }]
           end
 
-          it "updates the dependency's revision" do
+          pending "updates the dependency's revision" do
             old_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }.content.split(/^/)
             new_lock = file.content.split(/^/)
 
