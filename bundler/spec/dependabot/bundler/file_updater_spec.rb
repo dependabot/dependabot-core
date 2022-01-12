@@ -633,7 +633,13 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         context "that specifies the dependency using github:" do
           let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
-          pending "doesn't update the git dependencies" do
+          # TODO: Reinstate test for bundler1
+          #
+          # This test flakes exclusively for bundler v1 builds, so we've excluded it form that build for now
+          # it should be reinstated once we've resolved the issue
+          it "doesn't update the git dependencies" do
+            pending "[Flake] This is currently flaking for bundler1 builds" if PackageManagerHelper.use_bundler_1?
+
             old_lock = bundler_project_dependency_file("github_source", filename: "Gemfile.lock").content.split(/^/)
             new_lock = file.content.split(/^/)
 
@@ -793,7 +799,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             }]
           end
 
-          pending "updates the dependency's revision" do
+          it "updates the dependency's revision" do
+            pending "[Flake] This bundler 1 test is currently flaking"
+
             old_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }.content.split(/^/)
             new_lock = file.content.split(/^/)
 
