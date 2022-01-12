@@ -8,7 +8,7 @@ module Dependabot
       end
 
       def self.composer_helpers_dir
-        File.join(native_helpers_root, "composer/helpers")
+        File.join(native_helpers_root, "composer")
       end
 
       def self.native_helpers_root
