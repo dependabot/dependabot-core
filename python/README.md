@@ -19,7 +19,8 @@ Updating the list of known versions might be tricky, here are the steps:
 
 1. Install native helpers
    ```
-   $ helpers/build helpers/install-dir/python
+   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
+   $ helpers/build
    ```
 
 2. Install Ruby dependencies

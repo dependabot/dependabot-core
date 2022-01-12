@@ -2,14 +2,25 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
-  echo "usage: $0 INSTALL_DIR"
+if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
 
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/composer/v2"
+mkdir -p $install_dir
+
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cd "$helpers_dir"
+cp -r \
+  "$helpers_dir/bin" \
+  "$helpers_dir/src" \
+  "$helpers_dir/.php-cs-fixer.php" \
+  "$helpers_dir/composer.json" \
+  "$helpers_dir/composer.lock" \
+  "$helpers_dir/phpstan.neon" \
+  "$install_dir"
+
+cd "$install_dir"
 
 composer validate --no-check-publish
 composer install
