@@ -1,3 +1,12 @@
+## v0.171.2, 14 January 2022
+
+- Support npm lockfile v3 format [#4630](https://github.com/dependabot/dependabot-core/pull/4630)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.3.2 to 3.4.0 in /composer/helpers/v2 [#4516](https://github.com/dependabot/dependabot-core/pull/4516)
+- Terraform unknown git repo dependency name (@dwc0011) [#4493](https://github.com/dependabot/dependabot-core/pull/4493)
+- build(deps-dev): bump jest from 27.4.5 to 27.4.7 in /npm_and_yarn/helpers [#4594](https://github.com/dependabot/dependabot-core/pull/4594)
+- build(deps-dev): bump eslint from 8.5.0 to 8.6.0 in /npm_and_yarn/helpers [#4577](https://github.com/dependabot/dependabot-core/pull/4577)
+- build(deps): bump jason from 1.2.2 to 1.3.0 in /hex/helpers [#4557](https://github.com/dependabot/dependabot-core/pull/4557)
+
 ## v0.171.1, 12 January 2022
 
 - build(deps): bump composer/composer from 1.10.23 to 1.10.24 in /composer/helpers/v1 [#4509](https://github.com/dependabot/dependabot-core/pull/4509)
