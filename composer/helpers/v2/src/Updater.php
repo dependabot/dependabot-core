@@ -7,7 +7,6 @@ namespace Dependabot\Composer;
 use Composer\DependencyResolver\Request;
 use Composer\Factory;
 use Composer\Installer;
-use Composer\Util\Filesystem;
 
 final class Updater
 {
@@ -63,15 +62,6 @@ final class Updater
             $io->loadConfiguration($config);
         }
 
-        $installationManager = new DependabotInstallationManager($composer->getLoop(), $io);
-
-        $fs = new Filesystem(null);
-        $binaryInstaller = new Installer\BinaryInstaller($io, rtrim($composer->getConfig()->get('bin-dir'), '/'), $composer->getConfig()->get('bin-compat'), $fs);
-
-        $installationManager->addInstaller(new LibraryInstaller());
-        $installationManager->addInstaller(new Installer\PluginInstaller($io, $composer, $fs, $binaryInstaller));
-        $installationManager->addInstaller(new Installer\MetapackageInstaller($io));
-
         $install = new Installer(
             $io,
             $config,
@@ -79,7 +69,7 @@ final class Updater
             $composer->getDownloadManager(),
             $composer->getRepositoryManager(),
             $composer->getLocker(),
-            $installationManager,
+            $composer->getInstallationManager(),
             $composer->getEventDispatcher(),
             $composer->getAutoloadGenerator()
         );
@@ -88,6 +78,7 @@ final class Updater
         $install
             ->setWriteLock(true)
             ->setUpdate(true)
+            ->setInstall(false)
             ->setDevMode(true)
             ->setUpdateAllowList([$dependencyName])
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
