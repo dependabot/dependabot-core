@@ -57,6 +57,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
 
+    context "with an npm 8 package-lock.json using the v3 lockfile format" do
+      context "updating a dependency without peer dependency issues" do
+        let(:dependency_files) { project_dependency_files("npm8/package-lock-v3") }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+    end
+
     context "with a npm 7 package-lock.json" do
       context "updating a dependency without peer dependency issues" do
         let(:dependency_files) { project_dependency_files("npm7/package-lock") }
