@@ -1,3 +1,38 @@
+## v0.171.2, 14 January 2022
+
+- Support npm lockfile v3 format [#4630](https://github.com/dependabot/dependabot-core/pull/4630)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.3.2 to 3.4.0 in /composer/helpers/v2 [#4516](https://github.com/dependabot/dependabot-core/pull/4516)
+- Terraform unknown git repo dependency name (@dwc0011) [#4493](https://github.com/dependabot/dependabot-core/pull/4493)
+- build(deps-dev): bump jest from 27.4.5 to 27.4.7 in /npm_and_yarn/helpers [#4594](https://github.com/dependabot/dependabot-core/pull/4594)
+- build(deps-dev): bump eslint from 8.5.0 to 8.6.0 in /npm_and_yarn/helpers [#4577](https://github.com/dependabot/dependabot-core/pull/4577)
+- build(deps): bump jason from 1.2.2 to 1.3.0 in /hex/helpers [#4557](https://github.com/dependabot/dependabot-core/pull/4557)
+
+## v0.171.1, 12 January 2022
+
+- build(deps): bump composer/composer from 1.10.23 to 1.10.24 in /composer/helpers/v1 [#4509](https://github.com/dependabot/dependabot-core/pull/4509)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v1 [#4613](https://github.com/dependabot/dependabot-core/pull/4613)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v2 [#4612](https://github.com/dependabot/dependabot-core/pull/4612)
+- Refresh the workflow for native helpers within the docker dev shell, Consistency pass on native dev [#4556](https://github.com/dependabot/dependabot-core/pull/4556)
+- build(deps): bump composer/composer from 2.1.14 to 2.2.4 in /composer/helpers/v2 [#4611](https://github.com/dependabot/dependabot-core/pull/4611)
+
+## v0.171.0, 11 January 2022
+
+- Consistency pass on composer native helper build [#4554](https://github.com/dependabot/dependabot-core/pull/4554)
+  - NOTE: If you are using the `dependabot-composer` gem in your Dependabot scripts, you must ensure you upgrade
+    both the gem and the `dependabot/dependabot-core` image to v0.171.0 at the same time as this change modifies the
+    install path for composer's native helpers in both.
+
+## v0.170.2, 11 January 2022
+
+- build(deps): bump pipenv from 2021.11.23 to 2022.1.8 in /python/helpers [#4609](https://github.com/dependabot/dependabot-core/pull/4609)
+
+## v0.170.1, 10 January 2022
+
+- Ensure CI builds pick up native helper changes [#4618](https://github.com/dependabot/dependabot-core/pull/4618)
+- Fix poetry secondary source bug (@isobelhooper) [#4323](https://github.com/dependabot/dependabot-core/pull/4323)
+- build(deps-dev): bump phpstan/phpstan from 1.2.0 to 1.3.1 in /composer/helpers/v2 [#4583](https://github.com/dependabot/dependabot-core/pull/4583)
+- Ensure CI uses the latest image built on that branch [#4596](https://github.com/dependabot/dependabot-core/pull/4596)
+
 ## v0.170.0, 5 January 2022
 
 - Allow configuration of GOPRIVATE [#4568](https://github.com/dependabot/dependabot-core/pull/4568)
