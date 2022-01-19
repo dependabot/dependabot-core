@@ -83,7 +83,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 3.10 with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
