@@ -88,9 +88,12 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.0 \
-  && pyenv global 3.10.0 \
+# FIXME: Use tagged release when there is release with Python 3.10.2 support
+# RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.3 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
+  && cd /usr/local/.pyenv && git checkout a55dd92436863cae0e2af1c1e051ee5f8853c005 && cd - \
+  && pyenv install 3.10.2 \
+  && pyenv global 3.10.2 \
   && rm -Rf /tmp/python-build*
 USER root
 
