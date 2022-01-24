@@ -127,6 +127,30 @@ $ bundler/helpers/v1/build
 $ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
 ```
 
+### Debugging native helpers
+
+When you're making changes to native helpers or debugging a customer issue you often need to peek inside these scripts that run in a separate process.
+
+Print all log statements from native helpers:
+
+```bash
+DEBUG_HELPERS=true bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+Pause execution to debug a single native helper function:
+
+```bash
+DEBUG_FUNCTION=parsed_gemfile bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+The function maps to a native helper function name, for example, one of the functions in `bundler/helpers/v2/lib/functions.rb`.
+
+When this function is being executed a `debugger` is inserted, pausing execution of the `bin/dry-run.rb` script, this leaves the current updates tmp directory in place allowing you to cd into the directory and run the native helper function directly:
+
+```bash
+
+```
+
 ### Building the development image from source
 
 The developer shell uses volume mounts to incorporate your local changes to Dependabot's source
