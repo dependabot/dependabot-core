@@ -15,6 +15,7 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details(
     "github_actions",
     name: "github_actions",
+    description: "Pull requests that update GitHub action code",
     colour: "000000"
   )
 
