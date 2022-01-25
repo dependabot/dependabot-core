@@ -50,7 +50,6 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             color: "000000",
             description: "Pull requests that update GitHub action code"
           })
-        expect(labeler.labels_for_pr).to include("dependencies")
       end
     end
   end
