@@ -318,7 +318,6 @@ Dependabot and Dependabot Core started life as [Bump][bump] and
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
-
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
