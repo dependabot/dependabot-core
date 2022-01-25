@@ -357,7 +357,7 @@ module Dependabot
           source.repo,
           language_name,
           label.fetch(:colour),
-          description: label.fetch(:description) { "Pull requests that update #{language_name.capitalize} code" },
+          description: label.fetch(:description) { default_description_for(language_name) },
           accept: "application/vnd.github.symmetra-preview+json"
         )
         @labels = [*@labels, language_name].uniq
@@ -365,6 +365,10 @@ module Dependabot
         raise unless e.errors.first.fetch(:code) == "already_exists"
 
         @labels = [*@labels, language_name].uniq
+      end
+
+      def default_description_for(language)
+        "Pull requests that update #{language.capitalize} code"
       end
 
       def create_gitlab_language_label
