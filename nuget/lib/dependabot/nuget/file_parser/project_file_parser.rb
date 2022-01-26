@@ -17,8 +17,8 @@ module Dependabot
         DEPENDENCY_SELECTOR = "ItemGroup > PackageReference, "\
                               "ItemGroup > GlobalPackageReference, "\
                               "ItemGroup > PackageVersion, "\
-                              "ItemGroup > Dependency"
-        DEV_SELECTOR = "ItemGroup > DevelopmentDependency"
+                              "ItemGroup > Dependency, "\
+                              "ItemGroup > DevelopmentDependency"
 
         PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}.freeze
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/.freeze
@@ -33,25 +33,15 @@ module Dependabot
 
           doc = Nokogiri::XML(project_file.content)
           doc.remove_namespaces!
-          # Look for regular package references (production)
+          # Look for regular package references
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             name = dependency_name(dependency_node, project_file)
             req = dependency_requirement(dependency_node, project_file)
             version = dependency_version(dependency_node, project_file)
             prop_name = req_property_name(dependency_node)
+            is_dev = dependency_node.name == "DevelopmentDependency"
 
-            dependency = build_dependency(name, req, version, prop_name, project_file)
-            dependency_set << dependency if dependency
-          end
-
-          # Look for regular package references (development)
-          doc.css(DEV_SELECTOR).each do |dependency_node|
-            name = dependency_name(dependency_node, project_file)
-            req = dependency_requirement(dependency_node, project_file)
-            version = dependency_version(dependency_node, project_file)
-            prop_name = req_property_name(dependency_node)
-
-            dependency = build_dependency(name, req, version, prop_name, project_file, dev: true)
+            dependency = build_dependency(name, req, version, prop_name, project_file, dev: is_dev)
             dependency_set << dependency if dependency
           end
 
