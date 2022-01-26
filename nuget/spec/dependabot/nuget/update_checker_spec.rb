@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
   let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:dependency_version) { "1.1.1" }
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             requirement: "$(NukeVersion)",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -294,7 +294,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           file: "my.csproj",
           requirement: "2.1.0",
-          groups: [],
+          groups: ["dependencies"],
           source: {
             type: "nuget_repo",
             url: "https://api.nuget.org/v3/index.json",
@@ -335,7 +335,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             file: "my.csproj",
             requirement: "2.0.0",
-            groups: [],
+            groups: ["dependencies"],
             source: {
               type: "nuget_repo",
               url: "https://api.nuget.org/v3/index.json",
@@ -425,7 +425,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             [{
               file: "my.csproj",
               requirement: "4.8.1",
-              groups: [],
+              groups: ["dependencies"],
               source: {
                 type: "nuget_repo",
                 url: "https://www.nuget.org/api/v2",
@@ -449,7 +449,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -464,7 +464,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             requirement: "$(NukeVersion)",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -486,7 +486,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -531,7 +531,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   requirements: [{
                     requirement: "0.9.0",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: {
                       type: "nuget_repo",
                       url: "https://api.nuget.org/v3/index.json",
@@ -544,7 +544,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   previous_requirements: [{
                     requirement: "0.1.434",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: nil,
                     metadata: { property_name: "NukeVersion" }
                   }],
@@ -557,7 +557,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   requirements: [{
                     requirement: "0.9.0",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: {
                       type: "nuget_repo",
                       url: "https://api.nuget.org/v3/index.json",
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   previous_requirements: [{
                     requirement: "0.1.434",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: nil,
                     metadata: { property_name: "NukeVersion" }
                   }],

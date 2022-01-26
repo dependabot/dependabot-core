@@ -15,7 +15,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
       requirements: [{
         file: "my.csproj",
         requirement: dependency_version,
-        groups: [],
+        groups: ["dependencies"],
         source: source
       }],
       package_manager: "nuget"
