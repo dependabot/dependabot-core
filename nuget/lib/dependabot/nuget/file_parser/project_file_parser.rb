@@ -111,7 +111,6 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/ParameterLists
         def build_dependency(name, req, version, prop_name, project_file, dev: false)
           return unless name
 
@@ -140,7 +139,6 @@ module Dependabot
             requirements: [requirement]
           )
         end
-        # rubocop:enable Metrics/ParameterLists
 
         # rubocop:disable Metrics/PerceivedComplexity
         def dependency_name(dependency_node, project_file)
