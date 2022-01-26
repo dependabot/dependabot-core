@@ -51,7 +51,7 @@ module Dependabot
             version = dependency_version(dependency_node, project_file)
             prop_name = req_property_name(dependency_node)
 
-            dependency = build_dependency(name, req, version, prop_name, project_file, true)
+            dependency = build_dependency(name, req, version, prop_name, project_file, dev: true)
             dependency_set << dependency if dependency
           end
 
