@@ -122,7 +122,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/ParameterLists
-        def build_dependency(name, req, version, prop_name, project_file, dev = false)
+        def build_dependency(name, req, version, prop_name, project_file, dev: false)
           return unless name
 
           # Exclude any dependencies specified using interpolation
