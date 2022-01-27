@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
     {
       file: "my.csproj",
       requirement: csproj_req_string,
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }
   end
@@ -100,7 +100,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
           {
             file: "another/my.csproj",
             requirement: other_requirement_string,
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }
         end
@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
             [{
               file: "my.csproj",
               requirement: "23.6-jre",
-              groups: [],
+              groups: ["dependencies"],
               source: {
                 type: "nuget_repo",
                 url: "https://api.nuget.org/v3/index.json",
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
             }, {
               file: "another/my.csproj",
               requirement: "[23.6-jre]",
-              groups: [],
+              groups: ["dependencies"],
               source: {
                 type: "nuget_repo",
                 url: "https://api.nuget.org/v3/index.json",
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
               [{
                 file: "my.csproj",
                 requirement: "23.6-jre",
-                groups: [],
+                groups: ["dependencies"],
                 source: {
                   type: "nuget_repo",
                   url: "https://api.nuget.org/v3/index.json",
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
               }, {
                 file: "another/my.csproj",
                 requirement: "[23.0,)",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil
               }]
             )
