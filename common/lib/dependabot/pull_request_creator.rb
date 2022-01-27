@@ -189,7 +189,7 @@ module Dependabot
         pr_description: message.pr_message,
         pr_name: message.pr_name,
         author_details: author_details,
-        labeler: labeler,
+        labeler: nil,
         work_item: provider_metadata&.fetch(:work_item, nil)
       )
     end

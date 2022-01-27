@@ -2,11 +2,13 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
-  echo "usage: $0 INSTALL_DIR"
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/python"
+mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
@@ -16,9 +18,9 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-PYENV_VERSION=3.10.0 pyenv exec pip install -r "requirements.txt"
+PYENV_VERSION=3.10.2 pyenv exec pip install -r "requirements.txt"
 
 # Workaround of https://github.com/python-poetry/poetry/issues/3010
 # By default poetry config file is stored under ~/.config/pypoetry
 # and is not bound to any specific Python version
-PYENV_VERSION=3.10.0 pyenv exec poetry config experimental.new-installer false
+PYENV_VERSION=3.10.2 pyenv exec poetry config experimental.new-installer false

@@ -478,7 +478,7 @@ fetcher_args = {
 $config_file = begin
   cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
   Dependabot::Config::File.parse(cfg_file.content)
-rescue Dependabot::DependencyFileNotFound
+rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
   Dependabot::Config::File.new(updates: [])
 end
 $update_config = $config_file.update_config(

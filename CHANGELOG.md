@@ -1,3 +1,48 @@
+## v0.171.3, 26 January 2022
+
+- Update GitHub Actions label description [#4661](https://github.com/dependabot/dependabot-core/pull/4661)
+- build(deps): bump hashin from 0.15.0 to 0.17.0 in /python/helpers [#4619](https://github.com/dependabot/dependabot-core/pull/4619)
+- build(deps): bump lodash from 4.17.20 to 4.17.21 in /npm_and_yarn/helpers/test/yarn/fixtures/conflicting-dependency-parser/deeply-nested [#4668](https://github.com/dependabot/dependabot-core/pull/4668)
+- build(deps): bump extend from 3.0.0 to 3.0.2 in /npm_and_yarn/helpers/test/npm6/fixtures/conflicting-dependency-parser/simple [#4667](https://github.com/dependabot/dependabot-core/pull/4667)
+- build(deps-dev): bump eslint from 8.6.0 to 8.7.0 in /npm_and_yarn/helpers [#4637](https://github.com/dependabot/dependabot-core/pull/4637)
+- build(deps-dev): bump phpstan/phpstan from 1.3.3 to 1.4.2 in /composer/helpers/v2 [#4644](https://github.com/dependabot/dependabot-core/pull/4644)
+- build(deps-dev): bump phpstan/phpstan from 1.3.3 to 1.4.2 in /composer/helpers/v1 [#4645](https://github.com/dependabot/dependabot-core/pull/4645)
+- build(deps): bump npm from 6.14.14 to 6.14.16 in /npm_and_yarn/helpers [#4651](https://github.com/dependabot/dependabot-core/pull/4651)
+- build(deps): bump @npmcli/arborist from 4.1.1 to 4.2.1 in /npm_and_yarn/helpers [#4655](https://github.com/dependabot/dependabot-core/pull/4655)
+- build(deps): bump composer/composer from 2.2.4 to 2.2.5 in /composer/helpers/v2 [#4657](https://github.com/dependabot/dependabot-core/pull/4657)
+- build(deps): bump composer/composer from 1.10.24 to 1.10.25 in /composer/helpers/v1 [#4658](https://github.com/dependabot/dependabot-core/pull/4658)
+- npm7: Fix subdependency versoion resolver [#4664](https://github.com/dependabot/dependabot-core/pull/4664)
+- Add section to debug native helper scripts [#4665](https://github.com/dependabot/dependabot-core/pull/4665)
+- Bitbucket: creating pull-request-creator fails on labeler not supporting bitbucket (@stefangr) [#4608](https://github.com/dependabot/dependabot-core/pull/4608)
+
+## v0.171.2, 14 January 2022
+
+- Support npm lockfile v3 format [#4630](https://github.com/dependabot/dependabot-core/pull/4630)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.3.2 to 3.4.0 in /composer/helpers/v2 [#4516](https://github.com/dependabot/dependabot-core/pull/4516)
+- Terraform unknown git repo dependency name (@dwc0011) [#4493](https://github.com/dependabot/dependabot-core/pull/4493)
+- build(deps-dev): bump jest from 27.4.5 to 27.4.7 in /npm_and_yarn/helpers [#4594](https://github.com/dependabot/dependabot-core/pull/4594)
+- build(deps-dev): bump eslint from 8.5.0 to 8.6.0 in /npm_and_yarn/helpers [#4577](https://github.com/dependabot/dependabot-core/pull/4577)
+- build(deps): bump jason from 1.2.2 to 1.3.0 in /hex/helpers [#4557](https://github.com/dependabot/dependabot-core/pull/4557)
+
+## v0.171.1, 12 January 2022
+
+- build(deps): bump composer/composer from 1.10.23 to 1.10.24 in /composer/helpers/v1 [#4509](https://github.com/dependabot/dependabot-core/pull/4509)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v1 [#4613](https://github.com/dependabot/dependabot-core/pull/4613)
+- build(deps-dev): bump phpstan/phpstan from 1.3.1 to 1.3.3 in /composer/helpers/v2 [#4612](https://github.com/dependabot/dependabot-core/pull/4612)
+- Refresh the workflow for native helpers within the docker dev shell, Consistency pass on native dev [#4556](https://github.com/dependabot/dependabot-core/pull/4556)
+- build(deps): bump composer/composer from 2.1.14 to 2.2.4 in /composer/helpers/v2 [#4611](https://github.com/dependabot/dependabot-core/pull/4611)
+
+## v0.171.0, 11 January 2022
+
+- Consistency pass on composer native helper build [#4554](https://github.com/dependabot/dependabot-core/pull/4554)
+  - NOTE: If you are using the `dependabot-composer` gem in your Dependabot scripts, you must ensure you upgrade
+    both the gem and the `dependabot/dependabot-core` image to v0.171.0 at the same time as this change modifies the
+    install path for composer's native helpers in both.
+
+## v0.170.2, 11 January 2022
+
+- build(deps): bump pipenv from 2021.11.23 to 2022.1.8 in /python/helpers [#4609](https://github.com/dependabot/dependabot-core/pull/4609)
+
 ## v0.170.1, 10 January 2022
 
 - Ensure CI builds pick up native helper changes [#4618](https://github.com/dependabot/dependabot-core/pull/4618)
