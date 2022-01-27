@@ -1,3 +1,10 @@
+## v0.171.4, 27 January 2022
+
+- Nuget: Adding "devDependencies" support (@mwaddell) [#4671](https://github.com/dependabot/dependabot-core/pull/4671)
+- Support `releases` to list of supported changelog files (@nipunn1313) [#4599](https://github.com/dependabot/dependabot-core/pull/4599)
+- Composer v2: Prevent unnecessary package downloads (@driskell) [#4635](https://github.com/dependabot/dependabot-core/pull/4635)
+- Python: Upgrade to 3.10.2 (@ulgens) [#4646](https://github.com/dependabot/dependabot-core/pull/4646)
+
 ## v0.171.3, 26 January 2022
 
 - Update GitHub Actions label description [#4661](https://github.com/dependabot/dependabot-core/pull/4661)
