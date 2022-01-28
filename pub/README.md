@@ -34,7 +34,7 @@ allows checking for available updates.
 #### List Dependencies
 
 ```js
-# dart global run pub:dependency_services list
+# dart pub global run pub:dependency_services list
 {
   "dependencies": [
     // For each dependency:
@@ -57,7 +57,7 @@ allows checking for available updates.
 #### Dependency Report
 
 ```js
-# dart global run pub:dependency_services report
+# dart pub global run pub:dependency_services report
 // TODO: We likely need to provide ignored versions on stdin
 {
   "dependencies": [
@@ -167,7 +167,7 @@ allows checking for available updates.
 #### Applying Changes
 
 ```js
-# dart global run pub:dependency_services apply << EOF
+# dart pub global run pub:dependency_services apply << EOF
 {  // Write on stdin:
    "dependencyChanges": [
       {
