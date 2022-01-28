@@ -4,12 +4,14 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 ### Limitations
 
- - Doesn't support updating git dependencies. 
- - No support for vulnerabilities.
- - If the found version is ignored (by dependabot config) no update will happen (an earlier version is not used)
+ - No support for updating git-dependencies
+   * `dart pub` in general doesn't read versions from git, so upgrade logic is limited.
+   * Some variant of support for updating git-dependencies could be added in the future.
+ - No support for security advisory integration.
+ - If the version found is ignored (by dependabot config) no update will happen (even if, an earlier version could be used)
  - Very limited metadata support (just retrieves the github link)
- - Only stable versions of dart and flutter supported.
- - No support for private package repositories.
+ - Only stable versions of Dart and Flutter supported.
+ - No support for private package repositories (mostly a configuration issue).
  - `updated_dependencies_after_full_unlock` only allows updating to a later version, if the latest version that is mutually compatible with other dependencies is the latest version of the said package. This is a dependabot limitation.
 
 ### Running locally
