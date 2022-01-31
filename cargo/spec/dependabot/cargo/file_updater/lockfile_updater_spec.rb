@@ -158,9 +158,10 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
           [{ file: "Cargo.toml", requirement: nil, groups: [], source: nil }]
         end
 
-        it "updates the dependency version in the lockfile" do
-          expect(updated_lockfile_content).
-            to include(%(name = "time"\nversion = "0.1.40"))
+        it "raises a DependencyFileNotResolvable error" do
+          expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).to include("unexpected end of input while parsing major version")
+          end
         end
       end
 
