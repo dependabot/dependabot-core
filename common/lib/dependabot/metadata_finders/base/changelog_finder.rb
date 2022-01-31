@@ -16,7 +16,7 @@ module Dependabot
 
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(
-          changelog news changes history release whatsnew
+          changelog news changes history release whatsnew releases
         ).freeze
 
         attr_reader :source, :dependency, :credentials, :suggested_changelog_url
