@@ -34,7 +34,26 @@ RSpec.describe Dependabot::Nuget::FileParser::PackagesConfigParser do
             [{
               requirement: "1.0.0",
               file: "packages.config",
-              groups: [],
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.at(1) }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("Microsoft.Net.Compilers")
+          expect(dependency.version).to eq("1.0.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.1",
+              file: "packages.config",
+              groups: ["devDependencies"],
               source: nil
             }]
           )

@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     )
   end
   let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:dependency_version) { "1.1.1" }
@@ -286,7 +286,9 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
 
     context "with a package that returns paginated api results when using the v2 nuget api", :vcr do
       let(:dependency_files) { project_dependency_files("paginated_package_v2_api") }
-      let(:dependency_requirements) { [{ file: "my.csproj", requirement: "4.7.1", groups: [], source: nil }] }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "4.7.1", groups: ["dependencies"], source: nil }]
+      end
       let(:dependency_name) { "FakeItEasy" }
       let(:dependency_version) { "4.7.1" }
 
@@ -361,7 +363,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_files) { project_dependency_files("version_range") }
       let(:dependency_version) { "1.1.0" }
       let(:dependency_requirements) do
-        [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: [], source: nil }]
+        [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: ["dependencies"], source: nil }]
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
