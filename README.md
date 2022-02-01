@@ -72,6 +72,7 @@ Start by pulling the developer image from the [GitHub Container Registry][ghcr-c
 
 ```shell
 $ docker pull ghcr.io/dependabot/dependabot-core-development:latest
+$ docker tag ghcr.io/dependabot/dependabot-core-development dependabot/dependabot-core-development
 $ bin/docker-dev-shell
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
