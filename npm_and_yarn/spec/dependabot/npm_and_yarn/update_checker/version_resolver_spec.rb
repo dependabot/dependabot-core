@@ -38,7 +38,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:opentelemetry_api_registry_response) do
     fixture("npm_responses", "opentelemetry-api.json")
   end
-  let(:opentelemetry_context_async_hooks_registry_listing_url) { "https://registry.npmjs.org/%40opentelemetry%2Fcontext-async-hooks" }
+  let(:opentelemetry_context_async_hooks_registry_listing_url) do
+    "https://registry.npmjs.org/%40opentelemetry%2Fcontext-async-hooks"
+  end
   let(:opentelemetry_context_async_hooks_registry_response) do
     fixture("npm_responses", "opentelemetry-context-async-hooks.json")
   end
