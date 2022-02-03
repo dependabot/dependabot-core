@@ -76,7 +76,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.26 --no-document \
+  && gem install bundler -v 2.2.33 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -88,7 +88,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.1.0 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv \
   && pyenv install 3.10.0 \
   && pyenv global 3.10.0 \
   && rm -Rf /tmp/python-build*
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.24 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.3
-ARG GOLANG_CHECKSUM=550f9845451c0c94be679faf116291e7807a8d78b43149f9506c1b15eb89008c
+ARG GOLANG_VERSION=1.17.5
+ARG GOLANG_CHECKSUM=bd78114b0d441b029c8fe0341f4910370925a4d270a6a590668840675b0c653e
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -215,16 +215,13 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.8
+ARG TERRAFORM_VERSION=1.0.11
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
   && apt-get install -y --no-install-recommends terraform=${TERRAFORM_VERSION} \
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
-
-
-USER root
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
@@ -240,17 +237,15 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2
-RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
-RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/go_modules/helpers/build /opt/go_modules
-RUN bash /opt/hex/helpers/build /opt/hex
-RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
-RUN bash /opt/python/helpers/build /opt/python
-RUN bash /opt/terraform/helpers/build /opt/terraform
-RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
-RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
+RUN bash /opt/bundler/helpers/v1/build
+RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build
+RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/go_modules/helpers/build
+RUN bash /opt/hex/helpers/build
+RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/python/helpers/build
+RUN bash /opt/terraform/helpers/build
 
 ENV HOME="/home/dependabot"
 

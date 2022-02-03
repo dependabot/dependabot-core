@@ -107,6 +107,24 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
               to include('@version String.trim({:ok, "0.0.1"})')
           end
         end
+
+        context "when file loading is done with pipes" do
+          let(:mixfile_fixture_name) { "loads_file_with_pipes" }
+
+          it "removes the call to load the file" do
+            expect(prepared_mixfile.content).
+              to include('@version {:ok, "0.0.1"} |> String.trim()')
+          end
+        end
+
+        context "when file loading is done with pipes and a !" do
+          let(:mixfile_fixture_name) { "loads_file_with_pipes_and_bang" }
+
+          it "removes the call to load the file" do
+            expect(prepared_mixfile.content).
+              to include('@version "0.0.1" |> String.trim()')
+          end
+        end
       end
 
       context "with unlock_requirement set to false" do

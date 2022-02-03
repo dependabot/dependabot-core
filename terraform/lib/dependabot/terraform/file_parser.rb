@@ -4,6 +4,7 @@ require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
+require "digest"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -28,10 +29,26 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
 
+        parse_terraform_files(dependency_set)
+
+        parse_terragrunt_files(dependency_set)
+
+        dependency_set.dependencies.sort_by(&:name)
+      end
+
+      private
+
+      def parse_terraform_files(dependency_set)
         terraform_files.each do |file|
           modules = parsed_file(file).fetch("module", {})
           modules.each do |name, details|
-            dependency_set << build_terraform_dependency(file, name, details)
+            details = details.first
+
+            source = source_from(details)
+            # Cannot update local path modules, skip
+            next if source[:type] == "path"
+
+            dependency_set << build_terraform_dependency(file, name, source, details)
           end
 
           parsed_file(file).fetch("terraform", []).each do |terraform|
@@ -43,7 +60,9 @@ module Dependabot
             end
           end
         end
+      end
 
+      def parse_terragrunt_files(dependency_set)
         terragrunt_files.each do |file|
           modules = parsed_file(file).fetch("terraform", [])
           modules.each do |details|
@@ -52,19 +71,15 @@ module Dependabot
             dependency_set << build_terragrunt_dependency(file, details)
           end
         end
-
-        dependency_set.dependencies.sort_by(&:name)
       end
 
-      private
-
-      def build_terraform_dependency(file, name, details)
-        details = details.first
-
-        source = source_from(details)
+      def build_terraform_dependency(file, name, source, details)
+        # dep_name should be unique for a source, using the info derived from
+        # the source or the source name provides this uniqueness
         dep_name = case source[:type]
                    when "registry" then source[:module_identifier]
                    when "provider" then details["source"]
+                   when "git" then git_dependency_name(name, source)
                    else name
                    end
         version_req = details["version"]&.strip
@@ -199,6 +214,20 @@ module Dependabot
         end
       end
 
+      def git_dependency_name(name, source)
+        git_source = Source.from_url(source[:url])
+        if git_source && source[:ref]
+          name + "::" + git_source.provider + "::" + git_source.repo + "::" + source[:ref]
+        elsif git_source
+          name + "::" + git_source.provider + "::" + git_source.repo
+        elsif source[:ref]
+          name + "::git_provider::repo_name/git_repo(" \
+          + Digest::SHA1.hexdigest(source[:url]) + ")::" + source[:ref]
+        else
+          name + "::git_provider::repo_name/git_repo(" + Digest::SHA1.hexdigest(source[:url]) + ")"
+        end
+      end
+
       def git_source_details_from(source_string)
         git_url = source_string.strip.gsub(/^git::/, "")
         git_url = "https://" + git_url unless git_url.start_with?("git@") || git_url.include?("://")
@@ -266,7 +295,7 @@ module Dependabot
         return :path if source_string.start_with?(".")
         return :github if source_string.include?("github.com")
         return :bitbucket if source_string.start_with?("bitbucket.org/")
-        return :git if source_string.start_with?("git::")
+        return :git if source_string.start_with?("git::") || source_string.start_with?("git@")
         return :mercurial if source_string.start_with?("hg::")
         return :s3 if source_string.start_with?("s3::")
 

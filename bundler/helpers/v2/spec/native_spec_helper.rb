@@ -2,7 +2,7 @@
 
 require "rspec/its"
 require "webmock/rspec"
-require "byebug"
+require "debug"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))

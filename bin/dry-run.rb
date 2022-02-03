@@ -68,7 +68,7 @@ Bundler.setup
 
 require "optparse"
 require "json"
-require "byebug"
+require "debug"
 require "logger"
 require "dependabot/logger"
 require "stackprof"
@@ -119,7 +119,7 @@ $options = {
   security_advisories: [],
   security_updates_only: false,
   ignore_conditions: [],
-  pull_request: false,
+  pull_request: false
 }
 
 unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
@@ -209,7 +209,17 @@ option_parse = OptionParser.new do |opts|
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
     $options[:updater_options] = value.split(",").map do |o|
-      [o.strip.downcase.to_sym, true]
+      if o.include?("=") # key/value pair, e.g. "goprivate=true"
+        o.split("=", 2).map.with_index do |v, i|
+          if i == 0
+            v.strip.downcase.to_sym
+          else
+            v.strip
+          end
+        end
+      else # just a key, e.g. "vendor"
+        [o.strip.downcase.to_sym, true]
+      end
     end.to_h
   end
 
@@ -527,7 +537,8 @@ def update_checker_for(dependency)
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignored_versions_for(dependency),
-    security_advisories: security_advisories
+    security_advisories: security_advisories,
+    options: $options[:updater_options]
   )
 end
 

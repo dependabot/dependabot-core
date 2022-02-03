@@ -11,10 +11,6 @@ module Dependabot
   module GoModules
     class FileUpdater
       class GoModUpdater
-        # Turn off the module proxy for now, as it's causing issues with
-        # private git dependencies
-        ENVIRONMENT = { "GOPRIVATE" => "*" }.freeze
-
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
@@ -61,6 +57,7 @@ module Dependabot
           @directory = directory
           @tidy = options.fetch(:tidy, false)
           @vendor = options.fetch(:vendor, false)
+          @goprivate = options.fetch(:goprivate)
         end
 
         def updated_go_mod_content
@@ -145,14 +142,14 @@ module Dependabot
           # continue here. `go mod tidy` shouldn't block updating versions
           # because there are some edge cases where it's OK to fail (such as
           # generated files not available yet to us).
-          Open3.capture3(ENVIRONMENT, command)
+          Open3.capture3(environment, command)
         end
 
         def run_go_vendor
           return unless vendor?
 
           command = "go mod vendor"
-          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          _, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
         end
 
@@ -174,7 +171,7 @@ module Dependabot
           end
           command = SharedHelpers.escape_command(command)
 
-          _, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          _, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
           File.delete(tmp_go_file) if File.exist?(tmp_go_file)
@@ -182,7 +179,7 @@ module Dependabot
 
         def parse_manifest
           command = "go mod edit -json"
-          stdout, stderr, status = Open3.capture3(ENVIRONMENT, command)
+          stdout, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
 
           JSON.parse(stdout) || {}
@@ -246,7 +243,7 @@ module Dependabot
           repo_error_regex = REPO_RESOLVABILITY_ERROR_REGEXES.find { |r| stderr =~ r }
           if repo_error_regex
             error_message = filter_error_message(message: stderr, regex: repo_error_regex)
-            ResolvabilityErrors.handle(error_message, credentials: credentials)
+            ResolvabilityErrors.handle(error_message, credentials: credentials, goprivate: @goprivate)
           end
 
           path_regex = MODULE_PATH_MISMATCH_REGEXES.find { |r| stderr =~ r }
@@ -291,6 +288,10 @@ module Dependabot
 
         def vendor?
           !!@vendor
+        end
+
+        def environment
+          { "GOPRIVATE" => @goprivate }
         end
       end
     end

@@ -295,6 +295,19 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
         let(:requirements_fixture_name) { "custom_index.txt" }
         let(:dependency_files) { [requirements_file] }
         it { is_expected.to eq(Gem::Version.new("2.6.0")) }
+
+        context "and the url is invalid" do
+          let(:requirements_fixture_name) { "custom_index_invalid.txt" }
+
+          it "raises a helpful error" do
+            error_class = Dependabot::DependencyFileNotResolvable
+            expect { subject }.
+              to raise_error(error_class) do |error|
+                expect(error.message).
+                  to eq("Invalid URL: https://redacted@pypi.weasyldev.com/weasyl/source/+simple/")
+              end
+          end
+        end
       end
 
       context "set in a Pipfile" do
@@ -341,6 +354,13 @@ RSpec.describe Dependabot::Python::UpdateChecker::LatestVersionFinder do
             it { is_expected.to eq(Gem::Version.new("2.6.0")) }
           end
         end
+      end
+
+      context "set in a pyproject.toml" do
+        let(:pyproject_fixture_name) { "private_source.toml" }
+        let(:dependency_files) { [pyproject] }
+        let(:pypi_url) { "https://some.internal.registry.com/pypi/luigi/" }
+        it { is_expected.to eq(Gem::Version.new("2.6.0")) }
       end
 
       context "set in credentials" do

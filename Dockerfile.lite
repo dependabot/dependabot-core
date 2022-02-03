@@ -79,4 +79,4 @@ COPY common/ /opt/common
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
-RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
+RUN bash /opt/npm_and_yarn/helpers/build

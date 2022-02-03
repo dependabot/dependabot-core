@@ -5,7 +5,7 @@ module Dependabot
     module ResolvabilityErrors
       GITHUB_REPO_REGEX = %r{github.com/[^:@]*}.freeze
 
-      def self.handle(message, credentials:)
+      def self.handle(message, credentials:, goprivate:)
         mod_path = message.scan(GITHUB_REPO_REGEX).last
         raise Dependabot::DependencyFileNotResolvable, message unless mod_path
 
@@ -22,7 +22,7 @@ module Dependabot
                           mod_path
                         end
 
-            env = { "GOPRIVATE" => "*" }
+            env = { "GOPRIVATE" => goprivate }
             _, _, status = Open3.capture3(env, SharedHelpers.escape_command("go list -m -versions #{repo_path}"))
             raise Dependabot::DependencyFileNotResolvable, message if status.success?
 

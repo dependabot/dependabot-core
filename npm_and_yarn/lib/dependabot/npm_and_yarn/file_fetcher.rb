@@ -358,7 +358,8 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else [] # Invalid lerna.json, which must not be in use
+          else
+            [] # Invalid lerna.json, which must not be in use
           end
 
         # Currently, for complex glob patterns like packages/**/*, */packages/**,

@@ -270,7 +270,8 @@ module Dependabot
                    split("#").first
                elsif prefix.include?("bitbucket") then "bitbucket.org"
                elsif prefix.include?("gitlab") then "gitlab.com"
-               else "github.com"
+               else
+                 "github.com"
                end
 
         {
@@ -296,7 +297,8 @@ module Dependabot
             # Sonatype Nexus / Artifactory JFrog format
             resolved_url.split("/#{name}/-/#{name.split('/').last}").first
           elsif (cred_url = url_for_relevant_cred(resolved_url)) then cred_url
-          else resolved_url.split("/")[0..2].join("/")
+          else
+            resolved_url.split("/")[0..2].join("/")
           end
 
         { type: "registry", url: url }
