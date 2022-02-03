@@ -2075,16 +2075,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.4.2",
+            "version": "1.4.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "1dd8f3e40bf7aa30031a75c65cece99220a161b8"
+                "reference": "150d1fbd82fb71ff76b3bd7f6ea6006d89c5f0c3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/1dd8f3e40bf7aa30031a75c65cece99220a161b8",
-                "reference": "1dd8f3e40bf7aa30031a75c65cece99220a161b8",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/150d1fbd82fb71ff76b3bd7f6ea6006d89c5f0c3",
+                "reference": "150d1fbd82fb71ff76b3bd7f6ea6006d89c5f0c3",
                 "shasum": ""
             },
             "require": {
@@ -2131,7 +2131,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2022-01-18T16:09:11+00:00"
+            "time": "2022-02-02T19:35:10+00:00"
         },
         {
             "name": "psr/cache",
