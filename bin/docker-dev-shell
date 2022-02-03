@@ -95,6 +95,7 @@ docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/dry-run:$CODE_DIR/dry-run" \
   -v "$(pwd)/common/.rubocop.yml:$CODE_DIR/common/.rubocop.yml" \
   -v "$(pwd)/common/Gemfile:$CODE_DIR/common/Gemfile" \
   -v "$(pwd)/common/dependabot-common.gemspec:$CODE_DIR/common/dependabot-common.gemspec" \
