@@ -54,7 +54,7 @@ module Dependabot
               "CI" => "true",
               "PUB_ENVIRONMENT" => "dependabot",
               "FLUTTER_ROOT" => "/opt/dart/flutter",
-              "PUB_HOSTED_URL" => @pub_hosted_url
+              "PUB_HOSTED_URL" => options[:pub_hosted_url]
             }
             Dir.chdir File.join(Dir.pwd, dependency_files.first.directory) do
               stdout, stderr, status = Open3.capture3(

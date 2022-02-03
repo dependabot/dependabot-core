@@ -62,7 +62,9 @@ RSpec.describe Dependabot::Pub::FileUpdater do
         "username" => "x-access-token",
         "password" => "token"
       }],
-      pub_hosted_url: "http://localhost:#{@server[:Port]}"
+      options: {
+        pub_hosted_url: "http://localhost:#{@server[:Port]}"
+      }
     )
   end
 

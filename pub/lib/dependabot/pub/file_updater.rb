@@ -9,18 +9,6 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include Dependabot::Pub::Helpers
 
-      def initialize(dependencies:, dependency_files:, repo_contents_path: nil,
-                     credentials:, options: {}, pub_hosted_url: nil)
-        @pub_hosted_url = pub_hosted_url
-        super(
-          dependencies: dependencies,
-          dependency_files: dependency_files,
-          repo_contents_path: repo_contents_path,
-          credentials: credentials,
-          options: options
-        )
-      end
-
       def self.updated_files_regex
         [
           /^pubspec\.yaml$/,
