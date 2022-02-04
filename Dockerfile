@@ -271,8 +271,6 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_
     ! -path /opt/dart/flutter \
     -delete
 
-USER root
-
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
