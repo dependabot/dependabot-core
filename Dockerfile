@@ -209,7 +209,8 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
-  && rustup toolchain install 1.58.0 && rustup default 1.58.0
+  && rustup toolchain install 1.58.0 && rustup default 1.58.0 \
+  && rm -rf /opt/rust/toolchains
 
 
 ### Terraform
