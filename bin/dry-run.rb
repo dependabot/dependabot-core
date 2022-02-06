@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# This script is does a full update run for a given repo (optionally for a
+# This script executes a full update run for a given repo (optionally for a
 # specific dependency only), and shows the proposed changes to any dependency
 # files without actually creating a pull request.
 #
