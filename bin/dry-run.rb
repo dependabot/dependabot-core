@@ -38,7 +38,7 @@
 require "etc"
 unless Etc.getpwuid(Process.uid).name == "dependabot"
   puts <<~INFO
-    bin/dry-run.rb is only supported in a developerment container.
+    bin/dry-run.rb is only supported in a development container.
 
     Please use bin/docker-dev-shell first.
   INFO
