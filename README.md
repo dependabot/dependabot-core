@@ -11,7 +11,7 @@ Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 ## Got feedback?
 
-Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+https://github.com/github/feedback/discussions/categories/dependabot-feedback
 
 ## Contributing to Dependabot
 
