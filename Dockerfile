@@ -119,7 +119,7 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.24 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
 COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
