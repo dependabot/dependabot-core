@@ -22,6 +22,7 @@ jobs:
         - { path: bundler, name: bundler1 }
         - { path: bundler, name: bundler2 }
         - { path: cargo, name: cargo }
+        - { path: cocoapods, name: cocoapods }
         - { path: common, name: common }
         - { path: composer, name: composer }
         - { path: docker, name: docker }
