@@ -12,7 +12,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
+  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
   let(:checker) do
     described_class.new(
@@ -115,6 +115,29 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(Gem::Version.new("2.0.1"))
+    end
+
+    context "with a security vulnerability" do
+      let(:dependency_version) { "2.0.0" }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pip",
+            vulnerable_versions: ["<= 2.1.0"]
+          )
+        ]
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.1.1")) }
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 
@@ -139,23 +162,23 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_django.html")
         end
-        let(:pypi_url) { "https://pypi.python.org/simple/django/" }
+        let(:pypi_url) { "https://pypi.org/simple/django/" }
         let(:dependency_name) { "django" }
-        let(:dependency_version) { "1.2.4" }
+        let(:dependency_version) { "2.2.0" }
         let(:dependency_requirements) do
           [{
             file: "requirements.txt",
-            requirement: "==1.2.4",
+            requirement: "==2.2.0",
             groups: [],
             source: nil
           }]
         end
 
-        it { is_expected.to eq(Gem::Version.new("2.2.2")) }
+        it { is_expected.to eq(Gem::Version.new("3.2.4")) }
 
         context "that disallows the latest version" do
-          let(:python_version_content) { "2.7.13\n" }
-          it { is_expected.to eq(Gem::Version.new("1.11.21")) }
+          let(:python_version_content) { "3.5.3\n" }
+          it { is_expected.to eq(Gem::Version.new("2.2.24")) }
         end
       end
     end
@@ -204,7 +227,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }
         let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.python.org/simple/urllib3/" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib3/" }
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_urllib3.html")
         end
@@ -329,7 +352,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
             source: nil
           }]
         end
-        let(:pypi_url) { "https://pypi.python.org/simple/attrs/" }
+        let(:pypi_url) { "https://pypi.org/simple/attrs/" }
         let(:pypi_response) do
           fixture("pypi", "pypi_simple_response_attrs.html")
         end
@@ -498,14 +521,14 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         )
       end
 
-      let(:pypi_url) { "https://pypi.python.org/simple/requests/" }
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
       let(:pypi_response) do
         fixture("pypi", "pypi_simple_response_requests.html")
       end
 
       context "for a library" do
         before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
             to_return(
               status: 200,
               body: fixture("pypi", "pypi_response_pendulum.json")
@@ -517,7 +540,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
 
       context "for a non-library" do
         before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json").
+          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
             to_return(status: 404)
         end
 

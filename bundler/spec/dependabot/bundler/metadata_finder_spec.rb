@@ -33,6 +33,20 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
   end
   let(:dependency_name) { "business" }
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+
+    stub_request(:get, "https://www.rubydoc.info/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
 
@@ -63,7 +77,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         "https://repo.fury.io/grey/quick/Marshal.4.8/business-1.0.gemspec.rz"
       end
       let(:gemspec_response) do
-        fixture("ruby", "rubygems_responses", "business-1.0.0.gemspec.rz")
+        fixture("rubygems_responses", "business-1.0.0.gemspec.rz")
       end
       let(:rubygems_response) { fixture("ruby", "rubygems_response.json") }
       before do
@@ -377,7 +391,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
       context "when there is a changelog link in the rubygems response" do
         let(:rubygems_response) do
-          fixture("ruby", "rubygems_responses", "api_changelog_uri.json")
+          fixture("rubygems_responses", "api_changelog_uri.json")
         end
 
         it "gets the URL from the changelog_uri" do
@@ -421,7 +435,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         "https://repo.fury.io/grey/quick/Marshal.4.8/business-1.0.gemspec.rz"
       end
       let(:gemspec_response) do
-        fixture("ruby", "rubygems_responses", "business-1.0.0.gemspec.rz")
+        fixture("rubygems_responses", "business-1.0.0.gemspec.rz")
       end
 
       context "but the response is a 400" do
@@ -440,7 +454,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         context "and there is a changelog URL in the gemspec" do
           let(:gemspec_response) do
             fixture(
-              "ruby", "rubygems_responses", "activerecord-5.2.1.gemspec.rz"
+              "rubygems_responses", "activerecord-5.2.1.gemspec.rz"
             )
           end
 

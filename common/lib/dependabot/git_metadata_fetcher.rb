@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "open3"
 require "dependabot/errors"
 
 module Dependabot
@@ -52,13 +53,12 @@ module Dependabot
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
 
-      unless uri.match?(KNOWN_HOSTS)
-        raise Dependabot::GitDependenciesNotReachable, [uri]
-      end
+      response_with_git = fetch_raw_upload_pack_with_git_for(uri)
+      return response_with_git.body if response_with_git.status == 200
 
-      if response.status < 400
-        raise "Unexpected response: #{response.status} - #{response.body}"
-      end
+      raise Dependabot::GitDependenciesNotReachable, [uri] unless uri.match?(KNOWN_HOSTS)
+
+      raise "Unexpected response: #{response.status} - #{response.body}" if response.status < 400
 
       if uri.match?(/github\.com/i)
         response = response.data
@@ -90,6 +90,24 @@ module Dependabot
       )
     end
 
+    def fetch_raw_upload_pack_with_git_for(uri)
+      service_pack_uri = uri
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+
+      env = { "PATH" => ENV["PATH"] }
+      command = "git ls-remote #{service_pack_uri}"
+      command = SharedHelpers.escape_command(command)
+
+      stdout, stderr, process = Open3.capture3(env, command)
+      # package the command response like a HTTP response so error handling
+      # remains unchanged
+      if process.success?
+        OpenStruct.new(body: stdout, status: 200)
+      else
+        OpenStruct.new(body: stderr, status: 500)
+      end
+    end
+
     def tags_for_upload_pack
       refs_for_upload_pack.
         select { |ref| ref.ref_type == :tag }.
@@ -110,7 +128,7 @@ module Dependabot
       peeled_lines = []
 
       result = upload_pack.lines.each_with_object({}) do |line, res|
-        full_ref_name = line.split(" ").last
+        full_ref_name = line.split.last
         next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
         peeled_lines << line && next if line.strip.end_with?("^{}")
@@ -149,7 +167,8 @@ module Dependabot
     def uri_with_auth(uri)
       bare_uri =
         if uri.include?("git@") then uri.split("git@").last.sub(%r{:/?}, "/")
-        else uri.sub(%r{.*?://}, "")
+        else
+          uri.sub(%r{.*?://}, "")
         end
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| bare_uri.start_with?(c["host"]) }
@@ -178,12 +197,12 @@ module Dependabot
     end
 
     def sha_for_update_pack_line(line)
-      line.split(" ").first.chars.last(40).join
+      line.split.first.chars.last(40).join
     end
 
     def excon_defaults
       # Some git hosts are slow when returning a large number of tags
-      SharedHelpers.excon_defaults.merge(read_timeout: 20)
+      SharedHelpers.excon_defaults(read_timeout: 20)
     end
   end
 end

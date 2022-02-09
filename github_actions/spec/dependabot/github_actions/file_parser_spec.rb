@@ -135,7 +135,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
-        expect(dependency.version).to be_nil
+        expect(dependency.version).to eq("2.1.0")
         expect(dependency.requirements).to eq(expected_requirements)
       end
     end
@@ -155,6 +155,51 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       it "raises a helpful error" do
         expect { parser.parse }.
           to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "with a semver tag pinned to a commit" do
+      let(:workflow_file_fixture_name) { "pinned_source.yml" }
+      let(:service_pack_url) do
+        "https://github.com/actions/checkout.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "checkout"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("2.1.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
       end
     end
   end

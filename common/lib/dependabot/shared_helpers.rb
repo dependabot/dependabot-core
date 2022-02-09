@@ -1,73 +1,65 @@
 # frozen_string_literal: true
 
-require "json"
-require "tmpdir"
-require "excon"
-require "English"
 require "digest"
+require "English"
+require "excon"
+require "fileutils"
+require "json"
 require "open3"
 require "shellwords"
+require "tmpdir"
+
+require "dependabot/utils"
+require "dependabot/errors"
+require "dependabot/version"
 
 module Dependabot
   module SharedHelpers
-    BUMP_TMP_FILE_PREFIX = "dependabot_"
-    BUMP_TMP_DIR_PATH = "tmp"
     GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
+    USER_AGENT = "dependabot-core/#{Dependabot::VERSION} "\
+                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
+                 "(#{RUBY_PLATFORM}) "\
+                 "(+https://github.com/dependabot/dependabot-core)"
+    SIGKILL = 9
 
-    class ChildProcessFailed < StandardError
-      attr_reader :error_class, :error_message, :error_backtrace
-
-      def initialize(error_class:, error_message:, error_backtrace:)
-        @error_class = error_class
-        @error_message = error_message
-        @error_backtrace = error_backtrace
-
-        msg = "Child process raised #{error_class} with message: "\
-              "#{error_message}"
-        super(msg)
-        set_backtrace(error_backtrace)
+    def self.in_a_temporary_repo_directory(directory = "/",
+                                           repo_contents_path = nil,
+                                           &block)
+      if repo_contents_path
+        path = Pathname.new(File.join(repo_contents_path, directory)).
+               expand_path
+        reset_git_repo(repo_contents_path)
+        # Handle missing directories by creating an empty one and relying on the
+        # file fetcher to raise a DependencyFileNotFound error
+        FileUtils.mkdir_p(path) unless Dir.exist?(path)
+        Dir.chdir(path) { yield(path) }
+      else
+        in_a_temporary_directory(directory, &block)
       end
     end
 
     def self.in_a_temporary_directory(directory = "/")
-      Dir.mkdir(BUMP_TMP_DIR_PATH) unless Dir.exist?(BUMP_TMP_DIR_PATH)
-      Dir.mktmpdir(BUMP_TMP_FILE_PREFIX, BUMP_TMP_DIR_PATH) do |dir|
-        path = Pathname.new(File.join(dir, directory)).expand_path
+      Dir.mkdir(Utils::BUMP_TMP_DIR_PATH) unless Dir.exist?(Utils::BUMP_TMP_DIR_PATH)
+      tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
+
+      begin
+        path = Pathname.new(File.join(tmp_dir, directory)).expand_path
         FileUtils.mkpath(path)
         Dir.chdir(path) { yield(path) }
-      end
-    end
-
-    def self.in_a_forked_process
-      read, write = IO.pipe
-
-      pid = fork do
-        read.close
-        result = yield
-      rescue Exception => e # rubocop:disable Lint/RescueException
-        result = { _error_details: { error_class: e.class.to_s,
-                                     error_message: e.message,
-                                     error_backtrace: e.backtrace } }
       ensure
-        Marshal.dump(result, write)
-        exit!(0)
+        FileUtils.rm_rf(tmp_dir)
       end
-
-      write.close
-      result = read.read
-      Process.wait(pid)
-      result = Marshal.load(result) # rubocop:disable Security/MarshalLoad
-
-      return result unless result.is_a?(Hash) && result[:_error_details]
-
-      raise ChildProcessFailed, result[:_error_details]
     end
 
-    class HelperSubprocessFailed < StandardError
-      def initialize(message:, error_context:)
+    class HelperSubprocessFailed < Dependabot::DependabotError
+      attr_reader :error_class, :error_context, :trace
+
+      def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)
+        @error_class = error_class || ""
         @error_context = error_context
         @command = error_context[:command]
+        @trace = trace
       end
 
       def raven_context
@@ -77,19 +69,35 @@ module Dependabot
 
     # Escapes all special characters, e.g. = & | <>
     def self.escape_command(command)
-      command_parts = command.split(" ").map(&:strip).reject(&:empty?)
+      command_parts = command.split.map(&:strip).reject(&:empty?)
       Shellwords.join(command_parts)
     end
 
+    # rubocop:disable Metrics/MethodLength
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
-                                   escape_command_str: true)
+                                   allow_unsafe_shell_command: false)
       start = Time.now
       stdin_data = JSON.dump(function: function, args: args)
-      cmd = escape_command_str ? escape_command(command) : command
+      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+
+      # NOTE: For debugging native helpers in specs and dry-run: outputs the
+      # bash command to run in the tmp directory created by
+      # in_a_temporary_directory
+      if ENV["DEBUG_FUNCTION"] == function
+        puts helper_subprocess_bash_command(stdin_data: stdin_data, command: cmd, env: env)
+        # Pause execution so we can run helpers inside the temporary directory
+        debugger # rubocop:disable Lint/Debugger
+      end
+
       env_cmd = [env, cmd].compact
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
+
+      if ENV["DEBUG_HELPERS"] == "true"
+        puts stdout
+        puts stderr
+      end
 
       # Some package managers output useful stuff to stderr instead of stdout so
       # we want to parse this, most package manager will output garbage here so
@@ -102,7 +110,8 @@ module Dependabot
         args: args,
         time_taken: time_taken,
         stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
-        process_exit_value: process.to_s
+        process_exit_value: process.to_s,
+        process_termsig: process.termsig
       }
 
       response = JSON.parse(stdout)
@@ -110,14 +119,18 @@ module Dependabot
 
       raise HelperSubprocessFailed.new(
         message: response["error"],
-        error_context: error_context
+        error_class: response["error_class"],
+        error_context: error_context,
+        trace: response["trace"]
       )
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(
         message: stdout || "No output from command",
+        error_class: "JSON::ParserError",
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +
@@ -125,56 +138,55 @@ module Dependabot
         [Excon::Middleware::RedirectFollower]
     end
 
-    def self.excon_defaults
+    def self.excon_headers(headers = nil)
+      headers ||= {}
+      {
+        "User-Agent" => USER_AGENT
+      }.merge(headers)
+    end
+
+    def self.excon_defaults(options = nil)
+      options ||= {}
+      headers = options.delete(:headers)
       {
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
         omit_default_port: true,
-        middlewares: excon_middleware
-      }
+        middlewares: excon_middleware,
+        headers: excon_headers(headers)
+      }.merge(options)
     end
 
     def self.with_git_configured(credentials:)
       backup_git_config_path = stash_global_git_config
       configure_git_to_use_https_with_credentials(credentials)
       yield
+    rescue Errno::ENOSPC => e
+      raise Dependabot::OutOfDisk, e.message
     ensure
       reset_global_git_config(backup_git_config_path)
     end
 
+    def self.credential_helper_path
+      File.join(__dir__, "../../bin/git-credential-store-immutable")
+    end
+
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/PerceivedComplexity
     def self.configure_git_to_use_https_with_credentials(credentials)
-      configure_git_to_use_https
-      configure_git_credentials(credentials)
-    end
+      File.open(GIT_CONFIG_GLOBAL_PATH, "w") do |file|
+        file << "# Generated by dependabot/dependabot-core"
+      end
 
-    def self.configure_git_to_use_https
-      # Note: we use --global here (rather than --system) so that Dependabot
-      # can be run without privileged access
-      run_shell_command(
-        'git config --global --replace-all url."https://github.com/".'\
-        "insteadOf ssh://git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf ssh://git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf git@github.com: && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf git@github.com/ && "\
-        'git config --global --add url."https://github.com/".'\
-        "insteadOf git://github.com/"
-      )
-    end
-
-    def self.configure_git_credentials(credentials)
       # Then add a file-based credential store that loads a file in this repo.
       # Under the hood this uses git credential-store, but it's invoked through
       # a wrapper binary that only allows non-mutating commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
-      credential_helper_path =
-        File.join(__dir__, "../../bin/git-credential-store-immutable")
       run_shell_command(
         "git config --global credential.helper "\
-        "'!#{credential_helper_path} --file=#{Dir.pwd}/git.store'"
+        "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
+        allow_unsafe_shell_command: true
       )
 
       github_credentials = credentials.
@@ -187,6 +199,9 @@ module Dependabot
       github_credential =
         github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
         github_credentials.first
+
+      # Make sure we always have https alternatives for github.com.
+      configure_git_to_use_https("github.com") if github_credential.nil?
 
       deduped_credentials = credentials -
                             github_credentials +
@@ -203,10 +218,45 @@ module Dependabot
           "@#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
+        configure_git_to_use_https(cred.fetch("host"))
       end
 
       # Save the file
       File.write("git.store", git_store_content)
+    end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/PerceivedComplexity
+
+    def self.configure_git_to_use_https(host)
+      # NOTE: we use --global here (rather than --system) so that Dependabot
+      # can be run without privileged access
+      run_shell_command(
+        "git config --global --replace-all url.https://#{host}/."\
+        "insteadOf ssh://git@#{host}/"
+      )
+      run_shell_command(
+        "git config --global --add url.https://#{host}/."\
+        "insteadOf ssh://git@#{host}:"
+      )
+      run_shell_command(
+        "git config --global --add url.https://#{host}/."\
+        "insteadOf git@#{host}:"
+      )
+      run_shell_command(
+        "git config --global --add url.https://#{host}/."\
+        "insteadOf git@#{host}/"
+      )
+      run_shell_command(
+        "git config --global --add url.https://#{host}/."\
+        "insteadOf git://#{host}/"
+      )
+    end
+
+    def self.reset_git_repo(path)
+      Dir.chdir(path) do
+        run_shell_command("git reset HEAD --hard")
+        run_shell_command("git clean -fx")
+      end
     end
 
     def self.stash_global_git_config
@@ -221,23 +271,27 @@ module Dependabot
     end
 
     def self.reset_global_git_config(backup_path)
-      return if backup_path.nil?
+      if backup_path.nil?
+        FileUtils.rm(GIT_CONFIG_GLOBAL_PATH)
+        return
+      end
       return unless File.exist?(backup_path)
 
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command)
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {})
       start = Time.now
-      stdout, process = Open3.capture2e(command)
+      cmd = allow_unsafe_shell_command ? command : escape_command(command)
+      stdout, process = Open3.capture2e(env || {}, cmd)
       time_taken = Time.now - start
 
       # Raise an error with the output from the shell session if the
       # command returns a non-zero status
-      return if process.success?
+      return stdout if process.success?
 
       error_context = {
-        command: command,
+        command: cmd,
         time_taken: time_taken,
         process_exit_value: process.to_s
       }
@@ -247,5 +301,12 @@ module Dependabot
         error_context: error_context
       )
     end
+
+    def self.helper_subprocess_bash_command(command:, stdin_data:, env:)
+      escaped_stdin_data = stdin_data.gsub("\"", "\\\"")
+      env_keys = env ? env.compact.map { |k, v| "#{k}=#{v}" }.join(" ") + " " : ""
+      "$ cd #{Dir.pwd} && echo \"#{escaped_stdin_data}\" | #{env_keys}#{command}"
+    end
+    private_class_method :helper_subprocess_bash_command
   end
 end

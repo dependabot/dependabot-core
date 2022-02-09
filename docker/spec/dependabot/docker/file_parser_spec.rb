@@ -124,6 +124,38 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "arg from" do
+      let(:dockerfile_fixture_name) { "arg_from" }
+
+      describe "no curls" do
+        subject(:dependency) { dependencies.first }
+
+        it "can solve the dependency" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("docker")
+        end
+      end
+
+      describe "with curls" do
+        let(:dockerfile_fixture_name) { "arg_from_curls" }
+
+        subject(:dependency) { dependencies.first }
+
+        it "can solve the dependency" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("docker")
+        end
+      end
+
+      describe "without a default value" do
+        let(:dockerfile_fixture_name) { "arg_from_no_default" }
+
+        it "can't solve the dependency" do
+          expect(dependencies).to be_empty
+        end
+      end
+    end
+
     context "with a non-numeric version" do
       let(:dockerfile_body) { "FROM ubuntu:artful" }
 
@@ -624,6 +656,29 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("my-fork/ubuntu")
           expect(dependency.version).to eq("17.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with a platform" do
+      let(:dockerfile_body) { "FROM --platform=linux/amd64 ubuntu:artful" }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "artful" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("artful")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end

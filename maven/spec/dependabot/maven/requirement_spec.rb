@@ -74,11 +74,31 @@ RSpec.describe Dependabot::Maven::Requirement do
     context "with a dynamic version requirement" do
       let(:requirement_string) { "1.+" }
       its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0").to_s) }
+
+      context "that specifies a minimum" do
+        let(:requirement_string) { "1.5+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.5").to_s) }
+      end
+
+      context "that is just a +" do
+        let(:requirement_string) { "+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new(">= 0").to_s) }
+      end
+
+      context "with a comma-separated dynamic version requirements" do
+        let(:requirement_string) { "1.+, 2.+" }
+        its(:to_s) { is_expected.to eq(Gem::Requirement.new("~> 1.0", "~> 2.0").to_s) }
+      end
     end
 
     context "with a hard requirement" do
       let(:requirement_string) { "[1.0.0]" }
       it { is_expected.to eq(Gem::Requirement.new("= 1.0.0")) }
+    end
+
+    context "with a comma-separated ruby style version requirement" do
+      let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq(described_class.new("~> 4.2.5", ">= 4.2.5.1")) }
     end
   end
 
@@ -105,6 +125,16 @@ RSpec.describe Dependabot::Maven::Requirement do
           ]
         )
       end
+    end
+
+    context "with a comma-separated ruby style version requirement" do
+      let(:requirement_string) { "~> 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq([described_class.new("~> 4.2.5", ">= 4.2.5.1")]) }
+    end
+
+    context "with a comma-separated ruby style requirement with maven versions" do
+      let(:requirement_string) { ">= Finchley.a, < Finchley.999999" }
+      it { is_expected.to eq([described_class.new(">= Finchley.a", "< Finchley.999999")]) }
     end
   end
 

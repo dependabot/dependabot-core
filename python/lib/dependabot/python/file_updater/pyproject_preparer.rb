@@ -22,8 +22,18 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.fetch("tool").fetch("poetry")
 
-          sources = pyproject_sources + config_variable_sources(credentials)
-          poetry_object["source"] = sources if sources.any?
+          sources_hash = pyproject_sources.map { |source| [source["url"], source] }.to_h
+
+          config_variable_sources(credentials).each do |source|
+            if sources_hash.key?(source["original_url"])
+              sources_hash[source["original_url"]]["url"] = source["url"]
+            else
+              source.delete("original_url")
+              sources_hash[source["url"]] = source
+            end
+          end
+
+          poetry_object["source"] = sources_hash.values unless sources_hash.empty?
 
           TomlRB.dump(pyproject_object)
         end
@@ -36,7 +46,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
         def freeze_top_level_dependencies_except(dependencies)
           return pyproject_content unless lockfile
 
@@ -44,7 +54,7 @@ module Dependabot
           poetry_object = pyproject_object["tool"]["poetry"]
           excluded_names = dependencies.map(&:name) + ["python"]
 
-          %w(dependencies dev-dependencies).each do |key|
+          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
             poetry_object.fetch(key).each do |dep_name, _|
@@ -54,7 +64,7 @@ module Dependabot
 
               next unless (locked_version = locked_details&.fetch("version"))
 
-              next if locked_details&.dig("source", "type") == "directory"
+              next if %w(directory file url).include?(locked_details&.dig("source", "type"))
 
               if locked_details&.dig("source", "type") == "git"
                 poetry_object[key][dep_name] = {
@@ -71,8 +81,8 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
+        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         private
 
@@ -105,6 +115,7 @@ module Dependabot
             select { |cred| cred["type"] == "python_index" }.
             map do |c|
               {
+                "original_url" => c["index-url"],
                 "url" => AuthedUrlBuilder.authed_url(credential: c),
                 "name" => SecureRandom.hex[0..3],
                 "default" => c["replaces-base"]

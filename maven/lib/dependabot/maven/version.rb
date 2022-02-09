@@ -21,8 +21,8 @@ module Dependabot
         "a" => 1, "alpha"     => 1,
         "b" => 2, "beta"      => 2,
         "m" => 3, "milestone" => 3,
-        "rc" => 4, "cr" => 4,
-        "snapshot" => 5,
+        "rc" => 4, "cr" => 4, "pr" => 4,
+        "snapshot" => 5, "dev" => 5,
         "ga" => 6, "" => 6, "final" => 6,
         "sp" => 7
       }.freeze
@@ -175,8 +175,11 @@ module Dependabot
 
         return 1 if NAMED_QUALIFIERS_HIERARCHY[other_token]
 
-        token = token.to_i if token.match?(/^\d+$/)
-        other_token = other_token.to_i if other_token.match?(/^\d+$/)
+        if token.match?(/\A\d+\z/) && other_token.match?(/\A\d+\z/)
+          token = token.to_i
+          other_token = other_token.to_i
+        end
+
         token <=> other_token
       end
     end

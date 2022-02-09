@@ -39,7 +39,7 @@ module Dependabot
         @composer_lock ||= fetch_file_if_present("composer.lock")
       end
 
-      # Note: This is fetched but currently unused
+      # NOTE: This is fetched but currently unused
       def auth_json
         @auth_json ||= fetch_file_if_present("auth.json")&.
                        tap { |f| f.support_file = true }
@@ -79,14 +79,16 @@ module Dependabot
         @path_sources ||=
           begin
             repos = parsed_composer_json.fetch("repositories", [])
-            return [] unless repos.is_a?(Hash) || repos.is_a?(Array)
+            if repos.is_a?(Hash) || repos.is_a?(Array)
+              repos = repos.values if repos.is_a?(Hash)
+              repos = repos.select { |r| r.is_a?(Hash) }
 
-            repos = repos.values if repos.is_a?(Hash)
-            repos = repos.select { |r| r.is_a?(Hash) }
-
-            repos.
-              select { |details| details["type"] == "path" }.
-              map { |details| details["url"] }
+              repos.
+                select { |details| details["type"] == "path" }.
+                map { |details| details["url"] }
+            else
+              []
+            end
           end
       end
 

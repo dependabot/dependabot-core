@@ -26,6 +26,16 @@ module Dependabot
         end
       end
 
+      # Patches Gem::Requirement to make it accept requirement strings like
+      # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      def initialize(*requirements)
+        requirements = requirements.flatten.flat_map do |req_string|
+          req_string.split(",").map(&:strip)
+        end
+
+        super(requirements)
+      end
+
       # Override the parser to create Hex::Versions
       def self.parse(obj)
         return ["=", Hex::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

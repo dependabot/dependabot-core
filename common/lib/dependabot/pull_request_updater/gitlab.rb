@@ -8,16 +8,17 @@ module Dependabot
   class PullRequestUpdater
     class Gitlab
       attr_reader :source, :files, :base_commit, :old_commit, :credentials,
-                  :pull_request_number
+                  :pull_request_number, :target_project_id
 
       def initialize(source:, base_commit:, old_commit:, files:,
-                     credentials:, pull_request_number:)
+                     credentials:, pull_request_number:, target_project_id:)
         @source              = source
         @base_commit         = base_commit
         @old_commit          = old_commit
         @files               = files
         @credentials         = credentials
         @pull_request_number = pull_request_number
+        @target_project_id   = target_project_id
       end
 
       def update
@@ -39,7 +40,7 @@ module Dependabot
 
       def merge_request
         @merge_request ||= gitlab_client_for_source.merge_request(
-          source.repo,
+          target_project_id || source.repo,
           pull_request_number
         )
       end
@@ -62,10 +63,21 @@ module Dependabot
         gitlab_client_for_source.commit(source.repo, old_commit)
       end
 
+      # @param [DependencyFile] file
+      def file_action(file)
+        if file.operation == Dependabot::DependencyFile::Operation::DELETE
+          "delete"
+        elsif file.operation == Dependabot::DependencyFile::Operation::CREATE
+          "create"
+        else
+          "update"
+        end
+      end
+
       def create_commit
         actions = files.map do |file|
           {
-            action: "update",
+            action: file_action(file),
             file_path: file.type == "symlink" ? file.symlink_target : file.path,
             content: file.content
           }

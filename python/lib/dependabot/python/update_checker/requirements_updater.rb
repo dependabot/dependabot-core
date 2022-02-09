@@ -32,7 +32,7 @@ module Dependabot
         def updated_requirements
           requirements.map do |req|
             case req[:file]
-            when "setup.py" then updated_setup_requirement(req)
+            when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)
             when "pyproject.toml" then updated_pyproject_requirement(req)
             when "Pipfile" then updated_pipfile_requirement(req)
             when /\.txt$|\.in$/ then updated_requirement(req)
@@ -73,22 +73,17 @@ module Dependabot
           updated_requirement(req)
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
           return req if new_version_satisfies?(req) && !has_lockfile
 
           # If the requirement uses || syntax then we always want to widen it
-          if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
-            return widen_pyproject_requirement(req)
-          end
+          return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
 
           # If the requirement is a development dependency we always want to
           # bump it
-          if req.fetch(:groups).include?("dev-dependencies")
-            return update_pyproject_version(req)
-          end
+          return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
           when :widen_ranges then widen_pyproject_requirement(req)
@@ -98,8 +93,6 @@ module Dependabot
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_pyproject_version(req)
           requirement_strings = req[:requirement].split(",").map(&:strip)
@@ -160,6 +153,7 @@ module Dependabot
           "#{req_string.strip} || #{new_option.strip}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def widen_requirement_range(req_string)
           requirement_strings = req_string.split(",").map(&:strip)
 
@@ -179,6 +173,7 @@ module Dependabot
             update_requirements_range(requirement_strings)
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # rubocop:disable Metrics/PerceivedComplexity
         def updated_requirement(req)
@@ -316,7 +311,8 @@ module Dependabot
             version.segments.count - 2
           elsif req_string.strip.start_with?("~")
             req_string.split(".").count == 1 ? 0 : 1
-          else raise "Don't know how to convert #{req_string} to range"
+          else
+            raise "Don't know how to convert #{req_string} to range"
           end
         end
 
@@ -340,7 +336,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end
 

@@ -1,16 +1,18 @@
 # frozen_string_literal: true
 
-require "dependabot/git_commit_checker"
-require "dependabot/npm_and_yarn/update_checker"
-require "dependabot/npm_and_yarn/file_parser"
-require "dependabot/npm_and_yarn/version"
-require "dependabot/npm_and_yarn/requirement"
-require "dependabot/npm_and_yarn/native_helpers"
-require "dependabot/npm_and_yarn/dependency_files_filterer"
-require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/git_commit_checker"
+require "dependabot/logger"
+require "dependabot/npm_and_yarn/dependency_files_filterer"
+require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
+require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/requirement"
+require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/npm_and_yarn/version"
+require "dependabot/shared_helpers"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -38,11 +40,24 @@ module Dependabot
         # Error message from npm install:
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
-        NPM_PEER_DEP_ERROR_REGEX =
+        NPM6_PEER_DEP_ERROR_REGEX =
           /
             (?<requiring_dep>[^\s]+)\s
             requires\sa\speer\sof\s
             (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
+          /x.freeze
+
+        # Error message from npm install:
+        # npm ERR! Could not resolve dependency:
+        # npm ERR! peer react@"^16.14.0" from react-dom@16.14.0
+        #
+        # or with two semver constraints:
+        # npm ERR! Could not resolve dependency:
+        # npm ERR! peer @opentelemetry/api@">=1.0.0 <1.1.0" from @opentelemetry/context-async-hooks@1.0.1
+        NPM7_PEER_DEP_ERROR_REGEX =
+          /
+            npm\sERR!\sCould\snot\sresolve\sdependency:\n
+            npm\sERR!\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x.freeze
 
         def initialize(dependency:, credentials:, dependency_files:,
@@ -60,9 +75,7 @@ module Dependabot
           return latest_allowable_version if git_dependency?(dependency)
           return if part_of_tightly_locked_monorepo?
 
-          unless relevant_unmet_peer_dependencies.any?
-            return latest_allowable_version
-          end
+          return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
           satisfying_versions.first
         end
@@ -79,9 +92,7 @@ module Dependabot
 
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
-          if part_of_tightly_locked_monorepo?
-            return updated_monorepo_dependencies
-          end
+          return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
           return if newly_broken_peer_reqs_from_dep.any?
 
           updates = [{
@@ -130,6 +141,7 @@ module Dependabot
             )
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def resolve_latest_previous_version(dep, updated_version)
           return dep.version if dep.version
 
@@ -155,11 +167,14 @@ module Dependabot
             # latest version. This often happens if you don't have lockfiles and
             # have requirements update strategy set to bump_versions, where an
             # update might go from ^1.1.1 to ^1.1.2 (both resolve to 1.1.2).
-            return if updated_version.to_s == latest_previous_version
-
-            latest_previous_version
+            if updated_version.to_s == latest_previous_version
+              nil
+            else
+              latest_previous_version
+            end
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def part_of_tightly_locked_monorepo?
           monorepo_dep_names =
@@ -217,9 +232,7 @@ module Dependabot
         end
 
         def old_peer_dependency_errors
-          if @old_peer_dependency_errors_checked
-            return @old_peer_dependency_errors
-          end
+          return @old_peer_dependency_errors if @old_peer_dependency_errors_checked
 
           @old_peer_dependency_errors_checked = true
 
@@ -234,22 +247,27 @@ module Dependabot
           # here (since problematic repos will be resolved here before they're
           # seen by the FileUpdater)
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files
+            dependency_files_builder.write_temporary_dependency_files
 
             filtered_package_files.flat_map do |file|
               path = Pathname.new(file.name).dirname
               run_checker(path: path, version: version)
             rescue SharedHelpers::HelperSubprocessFailed => e
               errors = []
-              if e.message.match?(NPM_PEER_DEP_ERROR_REGEX)
-                e.message.scan(NPM_PEER_DEP_ERROR_REGEX) do
+              if e.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
+                  errors << Regexp.last_match.named_captures
+                end
+              elsif e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM7_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
               elsif e.message.match?(YARN_PEER_DEP_ERROR_REGEX)
                 e.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
-              else raise
+              else
+                raise
               end
               errors
             end.compact
@@ -276,7 +294,7 @@ module Dependabot
             requirement_name:
               captures.fetch("required_dep").sub(/@[^@]+$/, ""),
             requirement_version:
-              captures.fetch("required_dep").split("@").last,
+              captures.fetch("required_dep").split("@").last.gsub('"', ""),
             requiring_dep_name:
               captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
           }
@@ -388,9 +406,8 @@ module Dependabot
 
         def run_checker(path:, version:)
           # If there are both yarn lockfiles and npm lockfiles only run the
-          # yarn updater, yarn is also used when only a package.json exists
-          if lockfiles_for_path(lockfiles: yarn_locks, path: path).any? ||
-             lockfiles_for_path(lockfiles: lockfiles, path: path).none?
+          # yarn updater
+          if lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path).any?
             return run_yarn_checker(path: path, version: version)
           end
 
@@ -417,9 +434,17 @@ module Dependabot
         def run_npm_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
+              package_lock = dependency_files_builder.package_locks.find do |f|
+                # Find the lockfile that's in the current directory
+                f.name == [path, "package-lock.json"].join("/").sub(%r{\A.?\/}, "")
+              end
+              npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
+
+              return run_npm7_checker(version: version) if npm_version == "npm7"
+
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
-                function: "npm:checkPeerDependencies",
+                function: "npm6:checkPeerDependencies",
                 args: [
                   Dir.pwd,
                   dependency.name,
@@ -429,6 +454,25 @@ module Dependabot
                 ]
               )
             end
+          end
+        end
+
+        def run_npm7_checker(version:)
+          SharedHelpers.run_shell_command(
+            "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
+          )
+          nil
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise if e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
+        end
+
+        def version_install_arg(version:)
+          git_source = dependency.requirements.find { |req| req[:source] && req[:source][:type] == "git" }
+
+          if git_source
+            "#{dependency.name}@#{git_req[:source][:url]}##{version}"
+          else
+            "#{dependency.name}@#{version}"
           end
         end
 
@@ -442,48 +486,6 @@ module Dependabot
           end.compact
         end
 
-        def write_temporary_dependency_files
-          write_lock_files
-
-          File.write(".npmrc", npmrc_content)
-
-          package_files.each do |file|
-            path = file.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(file.name, prepared_package_json_content(file))
-          end
-        end
-
-        def write_lock_files
-          yarn_locks.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
-          end
-
-          package_locks.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
-          end
-
-          shrinkwraps.each do |f|
-            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
-            File.write(f.name, f.content)
-          end
-        end
-
-        def prepared_package_json_content(file)
-          NpmAndYarn::FileUpdater::PackageJsonPreparer.new(
-            package_json_content: file.content
-          ).prepared_content
-        end
-
-        def npmrc_content
-          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
-            credentials: credentials,
-            dependency_files: dependency_files
-          ).npmrc_content
-        end
-
         # Top level dependencies are required in the peer dep checker
         # to fetch the manifests for all top level deps which may contain
         # "peerDependency" requirements
@@ -495,34 +497,6 @@ module Dependabot
           ).parse.select(&:top_level?)
         end
 
-        def lockfiles
-          [*yarn_locks, *package_locks, *shrinkwraps]
-        end
-
-        def package_locks
-          @package_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package-lock.json") }
-        end
-
-        def yarn_locks
-          @yarn_locks ||=
-            dependency_files.
-            select { |f| f.name.end_with?("yarn.lock") }
-        end
-
-        def shrinkwraps
-          @shrinkwraps ||=
-            dependency_files.
-            select { |f| f.name.end_with?("npm-shrinkwrap.json") }
-        end
-
-        def package_files
-          @package_files ||=
-            dependency_files.
-            select { |f| f.name.end_with?("package.json") }
-        end
-
         def filtered_package_files
           @filtered_package_files ||=
             DependencyFilesFilterer.new(
@@ -531,10 +505,17 @@ module Dependabot
             ).package_files_requiring_update
         end
 
+        def dependency_files_builder
+          @dependency_files_builder ||=
+            DependencyFilesBuilder.new(
+              dependency: dependency,
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
+        end
+
         def version_for_dependency(dep)
-          if dep.version && version_class.correct?(dep.version)
-            return version_class.new(dep.version)
-          end
+          return version_class.new(dep.version) if dep.version && version_class.correct?(dep.version)
 
           dep.requirements.map { |r| r[:requirement] }.compact.
             reject { |req_string| req_string.start_with?("<") }.

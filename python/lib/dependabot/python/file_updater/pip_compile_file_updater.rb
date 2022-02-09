@@ -22,6 +22,7 @@ module Dependabot
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
+        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m.freeze
         WARNINGS = /\s*# WARNING:.*\Z/m.freeze
         UNSAFE_NOTE =
           /\s*# The following packages are considered to be unsafe.*\Z/m.freeze
@@ -78,7 +79,7 @@ module Dependabot
               run_pip_compile_command(
                 "#{SharedHelpers.escape_command(name_part)}=="\
                 "#{SharedHelpers.escape_command(version_part)}",
-                escape_command_str: false
+                allow_unsafe_shell_command: true
               )
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
@@ -131,7 +132,7 @@ module Dependabot
                   reject { |file| updated_filenames.include?(file.name) }
 
           args = dependency.to_h
-          args = Hash[args.keys.map { |k| [k.to_sym, args[k]] }]
+          args = args.keys.map { |k| [k.to_sym, args[k]] }.to_h
           args[:requirements] = new_reqs
           args[:previous_requirements] = old_reqs
 
@@ -142,45 +143,42 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        def run_command(cmd, env: python_env, escape_command_str: true)
+        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false)
           start = Time.now
-          command = escape_command_str ? SharedHelpers.escape_command(cmd) : cmd
+          command = if allow_unsafe_shell_command
+                      cmd
+                    else
+                      SharedHelpers.escape_command(cmd)
+                    end
           stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           return stdout if process.success?
+
+          handle_pip_errors(stdout, command, time_taken, process.to_s)
+        end
+
+        def handle_pip_errors(stdout, command, time_taken, exit_value)
+          if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
+            raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
+          end
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
               command: command,
               time_taken: time_taken,
-              process_exit_value: process.to_s
+              process_exit_value: exit_value
             }
           )
         end
 
-        def run_pip_compile_command(command, escape_command_str: true)
+        def run_pip_compile_command(command, allow_unsafe_shell_command: false)
           run_command("pyenv local #{python_version}")
-          run_command(command, escape_command_str: escape_command_str)
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          original_error ||= e
-          msg = e.message
-
-          relevant_error =
-            if error_suggests_bad_python_version?(msg) then original_error
-            else e
-            end
-
-          raise relevant_error unless error_suggests_bad_python_version?(msg)
-          raise relevant_error if user_specified_python_version
-          raise relevant_error if python_version == "2.7.18"
-
-          @python_version = "2.7.18"
-          retry
-        ensure
-          @python_version = nil
-          FileUtils.remove_entry(".python-version", true)
+          run_command(
+            command,
+            allow_unsafe_shell_command: allow_unsafe_shell_command
+          )
         end
 
         def python_env
@@ -196,14 +194,6 @@ module Dependabot
           end
 
           env
-        end
-
-        def error_suggests_bad_python_version?(message)
-          return true if message.include?("UnsupportedPythonVersion")
-          return true if message.include?("not find a version that satisfies")
-
-          message.include?('Command "python setup.py egg_info" failed') ||
-            message.include?("exit status 1: python setup.py egg_info")
         end
 
         def write_updated_dependency_files
@@ -230,9 +220,7 @@ module Dependabot
         end
 
         def install_required_python
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install -r "\
@@ -241,9 +229,7 @@ module Dependabot
 
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
-          if @sanitized_setup_file_content[file.name]
-            return @sanitized_setup_file_content[file.name]
-          end
+          return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
 
           @sanitized_setup_file_content[file.name] =
             SetupFileSanitizer.
@@ -333,9 +319,7 @@ module Dependabot
         def remove_new_warnings(updated_content, original_content)
           content = updated_content
 
-          if content.match?(WARNINGS) && !original_content.match?(WARNINGS)
-            content = content.sub(WARNINGS, "\n")
-          end
+          content = content.sub(WARNINGS, "\n") if content.match?(WARNINGS) && !original_content.match?(WARNINGS)
 
           if content.match?(UNSAFE_NOTE) &&
              !original_content.match?(UNSAFE_NOTE)
@@ -435,27 +419,20 @@ module Dependabot
         def pip_compile_options_from_compiled_file(requirements_file)
           options = ["--output-file=#{requirements_file.name}"]
 
-          unless requirements_file.content.include?("index-url http")
-            options << "--no-index"
-          end
+          options << "--no-emit-index-url" unless requirements_file.content.include?("index-url http")
 
-          if requirements_file.content.include?("--hash=sha")
-            options << "--generate-hashes"
-          end
+          options << "--generate-hashes" if requirements_file.content.include?("--hash=sha")
 
-          if includes_unsafe_packages?(requirements_file.content)
-            options << "--allow-unsafe"
-          end
+          options << "--allow-unsafe" if includes_unsafe_packages?(requirements_file.content)
 
-          unless requirements_file.content.include?("# via ")
-            options << "--no-annotate"
-          end
+          options << "--no-annotate" unless requirements_file.content.include?("# via ")
 
-          unless requirements_file.content.include?("autogenerated by pip-c")
-            options << "--no-header"
-          end
+          options << "--no-header" unless requirements_file.content.include?("autogenerated by pip-c")
 
           options << "--pre" if requirements_file.content.include?("--pre")
+
+          options << "--strip-extras" if requirements_file.content.include?("--strip-extras")
+
           options
         end
 
@@ -568,9 +545,7 @@ module Dependabot
         end
 
         def user_specified_python_version
-          unless python_requirement_parser.user_specified_requirements.any?
-            return
-          end
+          return unless python_requirement_parser.user_specified_requirements.any?
 
           user_specified_requirements =
             python_requirement_parser.user_specified_requirements.

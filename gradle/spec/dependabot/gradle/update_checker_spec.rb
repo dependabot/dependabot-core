@@ -163,6 +163,30 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(version_class.new("23.4-jre"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "gradle",
+            vulnerable_versions: ["< 23.5.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(version_class.new("23.5-jre"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
     it { is_expected.to eq(version_class.new("23.6-jre")) }

@@ -48,9 +48,7 @@ module Dependabot
         version_comparison = old_comp(other)
         return version_comparison unless version_comparison.zero?
 
-        unless post_version_comparison(other).zero?
-          return post_version_comparison(other)
-        end
+        return post_version_comparison(other) unless post_version_comparison(other).zero?
 
         local_version_comparison(other)
       end
@@ -116,7 +114,6 @@ module Dependabot
       #
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Style/CaseEquality
-      # rubocop:disable Layout/LineLength
       # rubocop:disable Style/ParallelAssignment
       # rubocop:disable Style/RedundantReturn
       def old_comp(other)
@@ -147,7 +144,6 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Style/CaseEquality
-      # rubocop:enable Layout/LineLength
       # rubocop:enable Style/ParallelAssignment
       # rubocop:enable Style/RedundantReturn
     end

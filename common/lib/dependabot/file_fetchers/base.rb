@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
@@ -14,7 +15,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials
+      attr_reader :source, :credentials, :repo_contents_path
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -32,10 +33,19 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(source:, credentials:)
+      # Creates a new FileFetcher for retrieving `DependencyFile`s.
+      #
+      # Files are typically grabbed individually via the source's API.
+      # repo_contents_path is an optional empty directory that will be used
+      # to clone the entire source repository on first read.
+      #
+      # If provided, file _data_ will be loaded from the clone.
+      # Submodules and directory listings are _not_ currently supported
+      # by repo_contents_path and still use an API trip.
+      def initialize(source:, credentials:, repo_contents_path: nil)
         @source = source
         @credentials = credentials
-
+        @repo_contents_path = repo_contents_path
         @linked_paths = {}
       end
 
@@ -67,9 +77,25 @@ module Dependabot
         raise unless e.message.include?("Repository is empty")
       end
 
+      # Returns the path to the cloned repo
+      def clone_repo_contents
+        @clone_repo_contents ||=
+          _clone_repo_contents(target_directory: repo_contents_path)
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+        raise Dependabot::RepoNotFound, source
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
+        unless repo_contents_path.nil?
+          begin
+            return load_cloned_file_if_present(filename)
+          rescue Dependabot::DependencyFileNotFound
+            return
+          end
+        end
+
         dir = File.dirname(filename)
         basename = File.basename(filename)
 
@@ -85,7 +111,31 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      def load_cloned_file_if_present(filename)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        repo_path = File.join(clone_repo_contents, path)
+        raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
+
+        content = File.read(repo_path)
+        type = if File.symlink?(repo_path)
+                 symlink_target = File.readlink(repo_path)
+                 "symlink"
+               else
+                 "file"
+               end
+
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: symlink_target
+        )
+      end
+
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
+
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
         type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type
@@ -107,11 +157,12 @@ module Dependabot
         path = Pathname.new(File.join(dir)).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
-        @repo_contents[dir] ||= _fetch_repo_contents(
-          path,
-          raise_errors: raise_errors,
-          fetch_submodules: fetch_submodules
-        )
+        @repo_contents[dir] ||= if repo_contents_path
+                                  _cloned_repo_contents(path)
+                                else
+                                  _fetch_repo_contents(path, raise_errors: raise_errors,
+                                                             fetch_submodules: fetch_submodules)
+                                end
       end
 
       #################################################
@@ -173,6 +224,31 @@ module Dependabot
         end
 
         github_response.map { |f| _build_github_file_struct(f) }
+      end
+
+      def _cloned_repo_contents(relative_path)
+        repo_path = File.join(clone_repo_contents, relative_path)
+        return [] unless Dir.exist?(repo_path)
+
+        Dir.entries(repo_path).map do |name|
+          next if [".", ".."].include?(name)
+
+          absolute_path = File.join(repo_path, name)
+          type = if File.symlink?(absolute_path)
+                   "symlink"
+                 elsif Dir.exist?(absolute_path)
+                   "dir"
+                 else
+                   "file"
+                 end
+
+          OpenStruct.new(
+            name: name,
+            path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
+            type: type,
+            size: 0 # NOTE: added for parity with github contents API
+          )
+        end.compact
       end
 
       def update_linked_paths(repo, path, commit, github_response)
@@ -280,8 +356,8 @@ module Dependabot
 
         response.files.map do |file|
           OpenStruct.new(
-            name: file.absolute_path,
-            path: file.absolute_path,
+            name: File.basename(file.relative_path),
+            path: file.relative_path,
             type: "file",
             size: 0 # file size would require new api call per file..
           )
@@ -417,6 +493,24 @@ module Dependabot
         linked_dirs.
           select { |k| path.match?(%r{^#{Regexp.quote(k)}(/|$)}) }.
           max_by(&:length)
+      end
+
+      def _clone_repo_contents(target_directory:)
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          path = target_directory || File.join("tmp", source.repo)
+          # Assume we're retrying the same branch, or that a `target_directory`
+          # is specified when retrying a different branch.
+          return path if Dir.exist?(File.join(path, ".git"))
+
+          FileUtils.mkdir_p(path)
+          br_opt = " --branch #{source.branch} --single-branch" if source.branch
+          SharedHelpers.run_shell_command(
+            <<~CMD
+              git clone --no-tags --no-recurse-submodules --depth 1#{br_opt} #{source.url} #{path}
+            CMD
+          )
+          path
+        end
       end
 
       def client_for_provider

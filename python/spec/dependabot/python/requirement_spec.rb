@@ -119,7 +119,7 @@ RSpec.describe Dependabot::Python::Requirement do
     context "with an array" do
       let(:requirement_string) { ["== 1.3.*", ">= 1.3.1"] }
       its(:to_s) do
-        is_expected.to eq(Gem::Requirement.new([">= 1.3.1", "~> 1.3.0.a"]).to_s)
+        is_expected.to eq(Gem::Requirement.new(["~> 1.3.0.a", ">= 1.3.1"]).to_s)
       end
     end
 

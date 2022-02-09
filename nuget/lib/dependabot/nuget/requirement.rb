@@ -46,32 +46,45 @@ module Dependabot
       def convert_dotnet_constraint_to_ruby_constraint(req_string)
         return unless req_string
 
-        if req_string&.start_with?("(", "[")
-          return convert_dotnet_range_to_ruby_range(req_string)
-        end
+        return convert_dotnet_range_to_ruby_range(req_string) if req_string&.start_with?("(", "[")
 
         return req_string.split(",").map(&:strip) if req_string.include?(",")
+
         return req_string unless req_string.include?("*")
 
         convert_wildcard_req(req_string)
       end
 
       def convert_dotnet_range_to_ruby_range(req_string)
-        lower_b, upper_b = req_string.split(",").map(&:strip)
+        lower_b, upper_b = req_string.split(",").map(&:strip).map do |bound|
+          next convert_range_wildcard_req(bound) if bound.include?("*")
+
+          bound
+        end
 
         lower_b =
           if ["(", "["].include?(lower_b) then nil
           elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
-          else ">= #{lower_b.sub(/\[\s*/, '').strip}"
+          else
+            ">= #{lower_b.sub(/\[\s*/, '').strip}"
           end
 
         upper_b =
           if [")", "]"].include?(upper_b) then nil
           elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
-          else "<= #{upper_b.sub(/\s*\]/, '').strip}"
+          else
+            "<= #{upper_b.sub(/\s*\]/, '').strip}"
           end
 
         [lower_b, upper_b].compact
+      end
+
+      def convert_range_wildcard_req(req_string)
+        range_end = req_string[-1]
+        defined_part = req_string.split("*").first
+        version = defined_part + "0"
+        version += range_end if [")", "]"].include?(range_end)
+        version
       end
 
       def convert_wildcard_req(req_string)

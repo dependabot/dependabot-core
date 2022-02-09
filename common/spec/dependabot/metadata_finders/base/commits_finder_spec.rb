@@ -259,6 +259,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     end
 
     context "with a github repo that has a DMCA takedown notice" do
+      let(:url) { "https://github.com/gocardless/business.git" }
       before do
         stub_request(:get, service_pack_url).
           to_return(
@@ -268,6 +269,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
           )
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it { is_expected.to eq("https://github.com/gocardless/business/commits") }
@@ -511,6 +516,13 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
           context "when authentication fails" do
             before do
               stub_request(:get, service_pack_url).to_return(status: 404)
+
+              url = "https://github.com/gocardless/business.git"
+              exit_status = double(success?: false)
+              allow(Open3).to receive(:capture3).and_call_original
+              allow(Open3).to receive(:capture3).
+                with(anything, "git ls-remote #{url}").
+                and_return(["", "", exit_status])
             end
 
             it do

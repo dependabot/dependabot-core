@@ -117,12 +117,10 @@ module Dependabot
         end
       end
 
-      # Note: This response MUST NOT be unmarshalled
+      # NOTE: This response MUST NOT be unmarshalled
       # (as calling Marshal.load is unsafe)
       def rubygems_marshalled_gemspec_response
-        if defined?(@rubygems_marshalled_gemspec_response)
-          return @rubygems_marshalled_gemspec_response
-        end
+        return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
 
         gemspec_uri =
           "#{registry_url}quick/Marshal.4.8/"\
@@ -131,14 +129,11 @@ module Dependabot
         response =
           Excon.get(
             gemspec_uri,
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
 
-        if response.status >= 400
-          return @rubygems_marshalled_gemspec_response = nil
-        end
+        return @rubygems_marshalled_gemspec_response = nil if response.status >= 400
 
         @rubygems_marshalled_gemspec_response =
           Zlib::Inflate.inflate(response.body)
@@ -152,9 +147,8 @@ module Dependabot
         response =
           Excon.get(
             "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
         return @rubygems_api_response = {} if response.status >= 400
 

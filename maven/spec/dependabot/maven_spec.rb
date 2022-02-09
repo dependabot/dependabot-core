@@ -9,7 +9,7 @@ RSpec.describe Dependabot::Maven do
 
   describe "Dependency#display_name" do
     subject(:display_name) do
-      Dependabot::Dependency.new(dependency_args).display_name
+      Dependabot::Dependency.new(**dependency_args).display_name
     end
 
     let(:dependency_args) do

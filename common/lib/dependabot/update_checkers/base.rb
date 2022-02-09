@@ -7,21 +7,25 @@ require "dependabot/security_advisory"
 module Dependabot
   module UpdateCheckers
     class Base
-      attr_reader :dependency, :dependency_files, :credentials,
-                  :ignored_versions, :raise_on_ignored,
-                  :security_advisories, :requirements_update_strategy
+      attr_reader :dependency, :dependency_files, :repo_contents_path,
+                  :credentials, :ignored_versions, :raise_on_ignored,
+                  :security_advisories, :requirements_update_strategy,
+                  :options
 
-      def initialize(dependency:, dependency_files:, credentials:,
-                     ignored_versions: [], raise_on_ignored: false,
-                     security_advisories: [],
-                     requirements_update_strategy: nil)
+      def initialize(dependency:, dependency_files:, repo_contents_path: nil,
+                     credentials:, ignored_versions: [],
+                     raise_on_ignored: false, security_advisories: [],
+                     requirements_update_strategy: nil,
+                     options: {})
         @dependency = dependency
         @dependency_files = dependency_files
+        @repo_contents_path = repo_contents_path
         @credentials = credentials
         @requirements_update_strategy = requirements_update_strategy
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
+        @options = options
       end
 
       def up_to_date?
@@ -34,7 +38,7 @@ module Dependabot
 
       def can_update?(requirements_to_unlock:)
         # Can't update if all versions are being ignored
-        return false if ignore_reqs.include?(requirement_class.new(">= 0"))
+        return false if ignore_requirements.include?(requirement_class.new(">= 0"))
 
         if dependency.version
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
@@ -47,9 +51,7 @@ module Dependabot
       end
 
       def updated_dependencies(requirements_to_unlock:)
-        unless can_update?(requirements_to_unlock: requirements_to_unlock)
-          return []
-        end
+        return [] unless can_update?(requirements_to_unlock: requirements_to_unlock)
 
         case requirements_to_unlock&.to_sym
         when :none then [updated_dependency_without_unlock]
@@ -78,12 +80,28 @@ module Dependabot
         raise NotImplementedError
       end
 
+      # Lowest available security fix version not checking resolvability
+      # @return [Dependabot::<package manager>::Version, #to_s] version class
+      def lowest_security_fix_version
+        raise NotImplementedError
+      end
+
       def lowest_resolvable_security_fix_version
         raise NotImplementedError
       end
 
       def latest_resolvable_version_with_no_unlock
         raise NotImplementedError
+      end
+
+      # Finds any dependencies in the lockfile that have a subdependency on the
+      # given dependency that do not satisfy the target_version.
+      # @return [Array<Hash{String => String}]
+      #   name [String] the blocking dependencies name
+      #   version [String] the version of the blocking dependency
+      #   requirement [String] the requirement on the target_dependency
+      def conflicting_dependencies
+        [] # return an empty array for ecosystems that don't support this yet
       end
 
       def latest_resolvable_previous_version(_updated_version)
@@ -121,6 +139,10 @@ module Dependabot
 
         version = version_class.new(dependency.version)
         security_advisories.any? { |a| a.vulnerable?(version) }
+      end
+
+      def ignore_requirements
+        ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
       end
 
       private
@@ -277,10 +299,6 @@ module Dependabot
         return false if changed_requirements.none?
 
         changed_requirements.none? { |r| r[:requirement] == :unfixable }
-      end
-
-      def ignore_reqs
-        ignored_versions.map { |req| requirement_class.new(req.split(",")) }
       end
     end
   end

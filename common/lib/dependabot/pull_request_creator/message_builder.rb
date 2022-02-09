@@ -5,11 +5,14 @@ require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
+require "dependabot/pull_request_creator/message"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
+    # MessageBuilder builds PR message for a dependency update
     class MessageBuilder
+      require_relative "message_builder/metadata_presenter"
       require_relative "message_builder/issue_linker"
       require_relative "message_builder/link_and_mention_sanitizer"
       require_relative "pr_name_prefixer"
@@ -22,7 +25,7 @@ module Dependabot
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
-                     github_redirection_service: nil)
+                     github_redirection_service:)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -53,6 +56,14 @@ module Dependabot
         message += metadata_links
         message += "\n\n" + message_trailers if message_trailers
         message
+      end
+
+      def message
+        Dependabot::PullRequestCreator::Message.new(
+          pr_name: pr_name,
+          pr_message: pr_message,
+          commit_message: commit_message
+        )
       end
 
       private
@@ -131,6 +142,20 @@ module Dependabot
       end
 
       def message_trailers
+        return unless signoff_trailers || custom_trailers
+
+        [signoff_trailers, custom_trailers].compact.join("\n")
+      end
+
+      def custom_trailers
+        trailers = commit_message_options[:trailers]
+        return if trailers.nil?
+        raise("Commit trailers must be a Hash object") unless trailers.is_a?(Hash)
+
+        trailers.compact.map { |k, v| "#{k}: #{v}" }.join("\n")
+      end
+
+      def signoff_trailers
         return unless on_behalf_of_message || signoff_message
 
         [on_behalf_of_message, signoff_message].compact.join("\n")
@@ -168,13 +193,9 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def version_commit_message_intro
-        if dependencies.count > 1 && updating_a_property?
-          return multidependency_property_intro
-        end
+        return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
-        if dependencies.count > 1 && updating_a_dependency_set?
-          return dependency_set_intro
-        end
+        return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
         return multidependency_intro if dependencies.count > 1
 
@@ -183,9 +204,7 @@ module Dependabot
               "#{from_version_msg(previous_version(dependency))}"\
               "to #{new_version(dependency)}."
 
-        if switching_from_ref_to_release?(dependency)
-          msg += " This release includes the previously tagged commit."
-        end
+        msg += " This release includes the previously tagged commit." if switching_from_ref_to_release?(dependency)
 
         if vulnerabilities_fixed[dependency.name]&.one?
           msg += " **This update includes a security fix.**"
@@ -271,9 +290,7 @@ module Dependabot
       end
 
       def metadata_links
-        if dependencies.count == 1
-          return metadata_links_for_dep(dependencies.first)
-        end
+        return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
 
         dependencies.map do |dep|
           "\n\nUpdates `#{dep.display_name}` "\
@@ -293,9 +310,7 @@ module Dependabot
       end
 
       def metadata_cascades
-        if dependencies.one?
-          return metadata_cascades_for_dep(dependencies.first)
-        end
+        return metadata_cascades_for_dep(dependencies.first) if dependencies.one?
 
         dependencies.map do |dep|
           msg = "\nUpdates `#{dep.display_name}` "\
@@ -312,240 +327,38 @@ module Dependabot
         end.join
       end
 
-      def metadata_cascades_for_dep(dep)
-        break_tag = source_provider_supports_html? ? "\n<br />" : "\n\n"
-
-        msg = ""
-        msg += vulnerabilities_cascade(dep)
-        msg += release_cascade(dep)
-        msg += changelog_cascade(dep)
-        msg += upgrade_guide_cascade(dep)
-        msg += commits_cascade(dep)
-        msg += maintainer_changes_cascade(dep)
-        msg += break_tag unless msg == ""
-        "\n" + sanitize_links_and_mentions(msg, unsafe: true)
-      end
-
-      def vulnerabilities_cascade(dep)
-        fixed_vulns = vulnerabilities_fixed[dep.name]
-        return "" unless fixed_vulns&.any?
-
-        msg = ""
-        fixed_vulns.each { |v| msg += serialized_vulnerability_details(v) }
-        msg = sanitize_template_tags(msg)
-        msg = sanitize_links_and_mentions(msg)
-
-        build_details_tag(summary: "Vulnerabilities fixed", body: msg)
-      end
-
-      def release_cascade(dep)
-        return "" unless releases_text(dep) && releases_url(dep)
-
-        msg = "*Sourced from [#{dep.display_name}'s releases]"\
-              "(#{releases_url(dep)}).*\n\n"
-        msg +=
-          begin
-            release_note_lines = releases_text(dep).split("\n").first(50)
-            release_note_lines = release_note_lines.map { |line| "> #{line}\n" }
-            if release_note_lines.count == 50
-              release_note_lines << truncated_line
-            end
-            release_note_lines.join
-          end
-        msg = link_issues(text: msg, dependency: dep)
-        msg = fix_relative_links(
-          text: msg,
-          base_url: source_url(dep) + "/blob/HEAD/"
-        )
-        msg = sanitize_template_tags(msg)
-        msg = sanitize_links_and_mentions(msg)
-
-        build_details_tag(summary: "Release notes", body: msg)
-      end
-
-      def changelog_cascade(dep)
-        return "" unless changelog_url(dep) && changelog_text(dep)
-
-        msg = "*Sourced from "\
-              "[#{dep.display_name}'s changelog](#{changelog_url(dep)}).*\n\n"
-        msg +=
-          begin
-            changelog_lines = changelog_text(dep).split("\n").first(50)
-            changelog_lines = changelog_lines.map { |line| "> #{line}\n" }
-            changelog_lines << truncated_line if changelog_lines.count == 50
-            changelog_lines.join
-          end
-        msg = link_issues(text: msg, dependency: dep)
-        msg = fix_relative_links(text: msg, base_url: changelog_url(dep))
-        msg = sanitize_template_tags(msg)
-        msg = sanitize_links_and_mentions(msg)
-
-        build_details_tag(summary: "Changelog", body: msg)
-      end
-
-      def upgrade_guide_cascade(dep)
-        return "" unless upgrade_url(dep) && upgrade_text(dep)
-
-        msg = "*Sourced from "\
-              "[#{dep.display_name}'s upgrade guide]"\
-              "(#{upgrade_url(dep)}).*\n\n"
-        msg +=
-          begin
-            upgrade_lines = upgrade_text(dep).split("\n").first(50)
-            upgrade_lines = upgrade_lines.map { |line| "> #{line}\n" }
-            upgrade_lines << truncated_line if upgrade_lines.count == 50
-            upgrade_lines.join
-          end
-        msg = link_issues(text: msg, dependency: dep)
-        msg = fix_relative_links(text: msg, base_url: upgrade_url(dep))
-        msg = sanitize_template_tags(msg)
-        msg = sanitize_links_and_mentions(msg)
-
-        build_details_tag(summary: "Upgrade guide", body: msg)
-      end
-
-      def commits_cascade(dep)
-        return "" unless commits_url(dep) && commits(dep)
-
-        msg = ""
-
-        commits(dep).reverse.first(10).each do |commit|
-          title = commit[:message].strip.split("\n").first
-          title = title.slice(0..76) + "..." if title && title.length > 80
-          title = title&.gsub(/(?<=[^\w.-])([_*`~])/, '\\1')
-          sha = commit[:sha][0, 7]
-          msg += "- [`#{sha}`](#{commit[:html_url]}) #{title}\n"
-        end
-
-        msg = msg.gsub(/\<.*?\>/) { |tag| "\\#{tag}" }
-
-        msg +=
-          if commits(dep).count > 10
-            "- Additional commits viewable in "\
-            "[compare view](#{commits_url(dep)})\n"
-          else
-            "- See full diff in [compare view](#{commits_url(dep)})\n"
-          end
-        msg = link_issues(text: msg, dependency: dep)
-        msg = sanitize_links_and_mentions(msg)
-
-        build_details_tag(summary: "Commits", body: msg)
-      end
-
-      def maintainer_changes_cascade(dep)
-        return "" unless maintainer_changes(dep)
-
-        build_details_tag(
-          summary: "Maintainer changes",
-          body: sanitize_links_and_mentions(maintainer_changes(dep)) + "\n"
-        )
-      end
-
-      def build_details_tag(summary:, body:)
-        # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
-        # CodeCommit does not support the <details> tag (no url available)
-        if source_provider_supports_html?
-          msg = "<details>\n<summary>#{summary}</summary>\n\n"
-          msg += body
-          msg + "</details>\n"
-        else
-          "\n\##{summary}\n\n#{body}"
-        end
-      end
-
-      def source_provider_supports_html?
-        !%w(azure codecommit).include?(source.provider)
-      end
-
-      def serialized_vulnerability_details(details)
-        msg = vulnerability_source_line(details)
-
-        if details["title"]
-          msg += "> **#{details['title'].lines.map(&:strip).join(' ')}**\n"
-        end
-
-        if (description = details["description"])
-          description.strip.lines.first(20).each { |line| msg += "> #{line}" }
-          msg += truncated_line if description.strip.lines.count > 20
-        end
-
-        msg += "\n" unless msg.end_with?("\n")
-        msg += "> \n"
-        msg += vulnerability_version_range_lines(details)
-        msg + "\n"
-      end
-
-      def vulnerability_source_line(details)
-        if details["source_url"] && details["source_name"]
-          "*Sourced from [#{details['source_name']}]"\
-          "(#{details['source_url']}).*\n\n"
-        elsif details["source_name"]
-          "*Sourced from #{details['source_name']}.*\n\n"
-        else
-          ""
-        end
-      end
-
-      def vulnerability_version_range_lines(details)
-        msg = ""
-        %w(patched_versions unaffected_versions affected_versions).each do |tp|
-          type = tp.split("_").first.capitalize
-          next unless details[tp]
-
-          versions_string = details[tp].any? ? details[tp].join("; ") : "none"
-          versions_string = versions_string.gsub(/(?<!\\)~/, '\~')
-          msg += "> #{type} versions: #{versions_string}\n"
-        end
-        msg
-      end
-
-      def truncated_line
-        # Tables can spill out of truncated details, so we close them
-        "></tr></table> ... (truncated)\n"
-      end
-
-      def releases_url(dependency)
-        metadata_finder(dependency).releases_url
-      end
-
-      def releases_text(dependency)
-        metadata_finder(dependency).releases_text
+      def metadata_cascades_for_dep(dependency)
+        MetadataPresenter.new(
+          dependency: dependency,
+          source: source,
+          metadata_finder: metadata_finder(dependency),
+          vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
+          github_redirection_service: github_redirection_service
+        ).to_s
       end
 
       def changelog_url(dependency)
         metadata_finder(dependency).changelog_url
       end
 
-      def changelog_text(dependency)
-        metadata_finder(dependency).changelog_text
-      end
-
-      def upgrade_url(dependency)
-        metadata_finder(dependency).upgrade_guide_url
-      end
-
-      def upgrade_text(dependency)
-        metadata_finder(dependency).upgrade_guide_text
-      end
-
       def commits_url(dependency)
         metadata_finder(dependency).commits_url
       end
 
-      def commits(dependency)
-        metadata_finder(dependency).commits
+      def homepage_url(dependency)
+        metadata_finder(dependency).homepage_url
       end
 
-      def maintainer_changes(dependency)
-        metadata_finder(dependency).maintainer_changes
+      def releases_url(dependency)
+        metadata_finder(dependency).releases_url
       end
 
       def source_url(dependency)
         metadata_finder(dependency).source_url
       end
 
-      def homepage_url(dependency)
-        metadata_finder(dependency).homepage_url
+      def upgrade_url(dependency)
+        metadata_finder(dependency).upgrade_guide_url
       end
 
       def metadata_finder(dependency)
@@ -567,7 +380,6 @@ module Dependabot
           )
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def previous_version(dependency)
         # If we don't have a previous version, we *may* still be able to figure
         # one out if a ref was provided and has been changed (in which case the
@@ -577,9 +389,7 @@ module Dependabot
         end
 
         if dependency.previous_version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && previous_ref(dependency)
-            return previous_ref(dependency)
-          end
+          return previous_ref(dependency) if ref_changed?(dependency) && previous_ref(dependency)
 
           "`#{dependency.previous_version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
@@ -590,13 +400,10 @@ module Dependabot
           dependency.previous_version
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def new_version(dependency)
         if dependency.version.match?(/^[0-9a-f]{40}$/)
-          if ref_changed?(dependency) && new_ref(dependency)
-            return new_ref(dependency)
-          end
+          return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
           "`#{dependency.version[0..6]}`"
         elsif dependency.version == dependency.previous_version &&
@@ -651,61 +458,25 @@ module Dependabot
 
         req = updated_reqs.first.fetch(:requirement)
         return req if req
-        if ref_changed?(dependency) && new_ref(dependency)
-          return new_ref(dependency)
-        end
+        return new_ref(dependency) if ref_changed?(dependency) && new_ref(dependency)
 
         raise "No new requirement!"
-      end
-
-      def link_issues(text:, dependency:)
-        IssueLinker.
-          new(source_url: source_url(dependency)).
-          link_issues(text: text)
-      end
-
-      def fix_relative_links(text:, base_url:)
-        text.gsub(/\[.*?\]\([^)]+\)/) do |link|
-          next link if link.include?("://")
-
-          relative_path = link.match(/\((.*?)\)/).captures.last
-          base = base_url.split("://").last.gsub(%r{[^/]*$}, "")
-          path = File.join(base, relative_path)
-          absolute_path =
-            base_url.sub(
-              %r{(?<=://).*$},
-              Pathname.new(path).cleanpath.to_s
-            )
-          link.gsub(relative_path, absolute_path)
-        end
-      end
-
-      def sanitize_links_and_mentions(text, unsafe: false)
-        return text unless source.provider == "github"
-
-        LinkAndMentionSanitizer.
-          new(github_redirection_service: github_redirection_service).
-          sanitize_links_and_mentions(text: text, unsafe: unsafe)
-      end
-
-      def sanitize_template_tags(text)
-        text.gsub(/\<.*?\>/) do |tag|
-          tag_contents = tag.match(/\<(.*?)\>/).captures.first.strip
-
-          # Unclosed calls to template overflow out of the blockquote block,
-          # wrecking the rest of our PRs. Other tags don't share this problem.
-          next "\\#{tag}" if tag_contents.start_with?("template")
-
-          tag
-        end
       end
 
       def ref_changed?(dependency)
         previous_ref(dependency) != new_ref(dependency)
       end
 
+      # TODO: Bring this in line with existing library checks that we do in the
+      # update checkers, which are also overriden by passing an explicit
+      # `requirements_update_strategy`.
+      #
+      # TODO re-use in BranchNamer
       def library?
-        return true if files.map(&:name).any? { |nm| nm.end_with?(".gemspec") }
+        # Reject any nested child gemspecs/vendored git dependencies
+        root_files = files.map(&:name).
+                     select { |p| Pathname.new(p).dirname.to_s == "." }
+        return true if root_files.select { |nm| nm.end_with?(".gemspec") }.any?
 
         dependencies.any? { |d| previous_version(d).nil? }
       end

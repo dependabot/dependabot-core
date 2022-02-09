@@ -56,6 +56,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def manifest_dependencies
         dependency_set = DependencySet.new
 
@@ -82,6 +83,7 @@ module Dependabot
 
         dependency_set
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def build_dependency(name, requirement, type, file)
         Dependency.new(
@@ -128,30 +130,22 @@ module Dependabot
         if declaration.is_a?(String)
           return declaration == "" ? nil : declaration
         end
-        unless declaration.is_a?(Hash)
-          raise "Unexpected dependency declaration: #{declaration}"
-        end
-        if declaration["version"]&.is_a?(String) && declaration["version"] != ""
-          return declaration["version"]
-        end
+        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
+        return declaration["version"] if declaration["version"].is_a?(String) && declaration["version"] != ""
 
         nil
       end
 
       def name_from_declaration(name, declaration)
         return name if declaration.is_a?(String)
-        unless declaration.is_a?(Hash)
-          raise "Unexpected dependency declaration: #{declaration}"
-        end
+        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
         declaration.fetch("package", name)
       end
 
       def source_from_declaration(declaration)
         return if declaration.is_a?(String)
-        unless declaration.is_a?(Hash)
-          raise "Unexpected dependency declaration: #{declaration}"
-        end
+        raise "Unexpected dependency declaration: #{declaration}" unless declaration.is_a?(Hash)
 
         return git_source_details(declaration) if declaration["git"]
         return { type: "path" } if declaration["path"]
@@ -201,9 +195,7 @@ module Dependabot
       end
 
       def version_from_lockfile_details(package_details)
-        unless package_details["source"]&.start_with?("git+")
-          return package_details["version"]
-        end
+        return package_details["version"] unless package_details["source"]&.start_with?("git+")
 
         package_details["source"].split("#").last
       end

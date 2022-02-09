@@ -1,0 +1,7 @@
+{
+    "id":"854e434d-b904-664a-b566-2d668372940c",
+    "uniqueName":"abc@xyz.com",
+    "title":"Bumps business",
+    "sourceRefName":"refs/heads/dependabot/npm_and_yarn/business-1.5.0",
+    "targetRefName":"refs/heads/master"
+}

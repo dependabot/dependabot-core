@@ -68,9 +68,7 @@ module Dependabot
       def latest_resolvable_version_for_git_dependency
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -103,9 +101,7 @@ module Dependabot
       def latest_git_version_sha
         # If the gem isn't pinned, the latest version is just the latest
         # commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -209,6 +205,7 @@ module Dependabot
         ).prepared_dependency_files
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def latest_release_from_hex_registry
         @latest_release_from_hex_registry ||=
           begin
@@ -221,15 +218,24 @@ module Dependabot
             versions.reject!(&:prerelease?) unless wants_prerelease?
 
             filtered = versions.reject do |v|
-              ignore_reqs.any? { |r| r.satisfied_by?(v) }
+              ignore_requirements.any? { |r| r.satisfied_by?(v) }
             end
 
-            if @raise_on_ignored && filtered.empty? && versions.any?
+            if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions).any?
               raise AllVersionsIgnored
             end
 
             filtered.max
           end
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
+
+      def filter_lower_versions(versions_array)
+        return versions_array unless current_version && version_class.correct?(current_version)
+
+        versions_array.select do |version|
+          version > current_version
+        end
       end
 
       def hex_registry_response
@@ -250,13 +256,14 @@ module Dependabot
         nil
       end
 
+      def current_version
+        return unless dependency.version && version_class.correct?(dependency.version)
+
+        version_class.new(dependency.version)
+      end
+
       def wants_prerelease?
-        current_version = dependency.version
-        if current_version &&
-           version_class.correct?(current_version) &&
-           version_class.new(current_version).prerelease?
-          return true
-        end
+        return true if current_version&.prerelease?
 
         dependency.requirements.any? do |req|
           req[:requirement]&.match?(/\d-[A-Za-z0-9]/)

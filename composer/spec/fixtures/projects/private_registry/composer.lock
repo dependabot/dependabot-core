@@ -1,0 +1,29 @@
+{
+  "_readme": [
+      "This file locks the dependencies of your project to a known state",
+      "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+      "This file is @generated automatically"
+  ],
+  "content-hash": "e1dbdc030a81b4cd4a95606e0c5525f5",
+  "packages": [
+      {
+          "name": "dependabot/dummy-pkg-a",
+          "version": "2.1.0",
+          "dist": {
+              "type": "zip",
+              "url": "https://yFu9PBmw1HxNjFB818TW:@php.fury.io/dependabot-throwaway/~/d/dependabot%2Fdummy-pkg-a/dependabot%2Fdummy-pkg-a-2.1.0",
+              "reference": null,
+              "shasum": null
+          },
+          "type": "library"
+      }
+  ],
+  "packages-dev": [],
+  "aliases": [],
+  "minimum-stability": "stable",
+  "stability-flags": [],
+  "prefer-stable": false,
+  "prefer-lowest": false,
+  "platform": [],
+  "platform-dev": []
+}

@@ -9,7 +9,13 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Python::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
+  let(:parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
+  end
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -17,6 +23,7 @@ RSpec.describe Dependabot::Python::FileParser do
       directory: "/"
     )
   end
+  let(:reject_external_code) { false }
 
   let(:files) { [requirements] }
   let(:requirements) do
@@ -209,16 +216,8 @@ RSpec.describe Dependabot::Python::FileParser do
       end
 
       describe "the first dependency" do
-        subject(:dependency) do
-          dependencies.find do |dep|
-            dep.name == "taxtea"
-          end
-        end
-
         it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("taxtea")
-          expect(dependency.version).to be_nil
+          expect(dependencies.map(&:name)).not_to match_array([])
         end
       end
     end
@@ -972,6 +971,92 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
+    context "with a setup.cfg" do
+      let(:files) { [setup_cfg_file] }
+      let(:setup_cfg_file) do
+        Dependabot::DependencyFile.new(
+          name: "setup.cfg",
+          content: fixture("setup_files", "setup_with_requires.cfg")
+        )
+      end
+
+      its(:length) { is_expected.to eq(15) }
+
+      describe "an install_requires dependencies" do
+        subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("boto3")
+          expect(dependency.version).to eq("1.3.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "==1.3.1",
+              file: "setup.cfg",
+              groups: ["install_requires"],
+              source: nil
+            }]
+          )
+        end
+      end
+
+      context "with markers" do
+        let(:setup_cfg_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.cfg",
+            content: fixture("setup_files", "markers.cfg")
+          )
+        end
+
+        describe "a dependency with markers" do
+          subject(:dependency) { dependencies.find { |d| d.name == "boto3" } }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("boto3")
+            expect(dependency.version).to eq("1.3.1")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==1.3.1",
+                file: "setup.cfg",
+                groups: ["install_requires"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+
+      context "with extras" do
+        let(:setup_cfg_file) do
+          Dependabot::DependencyFile.new(
+            name: "setup.cfg",
+            content: fixture("setup_files", "extras.cfg")
+          )
+        end
+
+        describe "a dependency with extras" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "requests[security]" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("requests[security]")
+            expect(dependency.version).to be_nil
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==2.12.*",
+                file: "setup.cfg",
+                groups: ["install_requires"],
+                source: nil
+              }]
+            )
+          end
+        end
+      end
+    end
+
     context "with a Pipfile and Pipfile.lock" do
       let(:files) { [pipfile, lockfile] }
       let(:pipfile) do
@@ -1220,6 +1305,23 @@ RSpec.describe Dependabot::Python::FileParser do
             )
           end
         end
+      end
+    end
+
+    context "with reject_external_code" do
+      let(:reject_external_code) { true }
+
+      it "raises UnexpectedExternalCode" do
+        expect { dependencies }.to raise_error(Dependabot::UnexpectedExternalCode)
+      end
+    end
+
+    context "with multiple requirements" do
+      let(:files) { project_dependency_files("poetry/multiple_requirements") }
+
+      it "returns the dependencies with multiple requirements" do
+        expect { dependencies }.not_to raise_error
+        expect(dependencies.map(&:name)).to contain_exactly("numpy", "scipy")
       end
     end
   end

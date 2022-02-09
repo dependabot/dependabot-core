@@ -8,8 +8,10 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m.freeze
       STRING_ARG = %{(?:["'](.*?)["'])}
-      EVAL_FILE = /Code\.eval_file\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
-                  freeze
+      SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
+      SUPPORT_FILE = /Code\.(?:#{SUPPORTED_METHODS})\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
+                     freeze
+      PATH_DEPS_REGEX = /{.*path: ?#{STRING_ARG}.*}/.freeze
 
       def self.required_files_in?(filenames)
         filenames.include?("mix.exs")
@@ -26,7 +28,7 @@ module Dependabot
         fetched_files << mixfile
         fetched_files << lockfile if lockfile
         fetched_files += subapp_mixfiles
-        fetched_files += evaled_files
+        fetched_files += support_files
         fetched_files
       end
 
@@ -43,16 +45,26 @@ module Dependabot
         nil
       end
 
-      def subapp_mixfiles
+      def umbrella_app_directories
         apps_path = mixfile.content.match(APPS_PATH_REGEX)&.
                     named_captures&.fetch("path")
         return [] unless apps_path
 
-        app_directories = repo_contents(dir: apps_path).
-                          select { |f| f.type == "dir" }.
-                          map { |f| File.join(apps_path, f.name) }
+        repo_contents(dir: apps_path).
+          select { |f| f.type == "dir" }.
+          map { |f| File.join(apps_path, f.name) }
+      end
 
-        app_directories.map do |dir|
+      def sub_project_directories
+        mixfile.content.scan(PATH_DEPS_REGEX).flatten
+      end
+
+      def subapp_mixfiles
+        subapp_directories = []
+        subapp_directories += umbrella_app_directories
+        subapp_directories += sub_project_directories
+
+        subapp_directories.map do |dir|
           fetch_file_from_host("#{dir}/mix.exs")
         rescue Dependabot::DependencyFileNotFound
           # If the folder doesn't have a mix.exs it *might* be because it's
@@ -66,11 +78,17 @@ module Dependabot
         []
       end
 
-      def evaled_files
-        mixfile.content.scan(EVAL_FILE).map do |eval_file_args|
-          path = Pathname.new(File.join(*eval_file_args.reverse)).
-                 cleanpath.to_path
-          fetch_file_from_host(path).tap { |f| f.support_file = true }
+      def support_files
+        mixfiles = [mixfile] + subapp_mixfiles
+
+        mixfiles.flat_map do |mixfile|
+          mixfile_dir = mixfile.path.sub("/mix.exs", "").delete_prefix("/")
+
+          mixfile.content.gsub(/__DIR__/, "\"#{mixfile_dir}\"").scan(SUPPORT_FILE).map do |support_file_args|
+            path = Pathname.new(File.join(*support_file_args.compact.reverse)).
+                   cleanpath.to_path
+            fetch_file_from_host(path).tap { |f| f.support_file = true }
+          end
         end
       end
     end

@@ -10,9 +10,45 @@ require "dependabot/terraform/requirement"
 
 module Dependabot
   module Terraform
+    # Takes an array of `requirements` hashes for a dependency at the old
+    # version and a new version, and generates a set of new `requirements`
+    # hashes at the new version.
+    #
+    # A requirements hash is a basic description of a dependency at a certain
+    # version constraint, and it includes the data that is needed to update the
+    # manifest (i.e. the `.tf` file) with the new version.
+    #
+    # A requirements hash looks like this for a registry hosted requirement:
+    # ```ruby
+    # {
+    #   requirement: "~> 0.2.1",
+    #   groups: [],
+    #   file: "main.tf",
+    #   source: {
+    #     type: "registry",
+    #     registry_hostname: "registry.terraform.io",
+    #     module_identifier: "hashicorp/consul/aws"
+    #   }
+    # }
+    #
+    # And like this for a git requirement:
+    # ```ruby
+    # {
+    #   requirement: nil,
+    #   groups: [],
+    #   file: "main.tf",
+    #   source: {
+    #     type: "git",
+    #     url: "https://github.com/cloudposse/terraform-null-label.git",
+    #     branch: nil,
+    #     ref: nil
+    #   }
+    # }
     class RequirementsUpdater
-      def initialize(requirements:, latest_version:,
-                     tag_for_latest_version:)
+      # @param requirements [Hash{Symbol => String, Array, Hash}]
+      # @param latest_version [Dependabot::Terraform::Version]
+      # @param tag_for_latest_version [String, NilClass]
+      def initialize(requirements:, latest_version:, tag_for_latest_version:)
         @requirements = requirements
         @tag_for_latest_version = tag_for_latest_version
 
@@ -22,16 +58,21 @@ module Dependabot
         @latest_version = version_class.new(latest_version)
       end
 
+      # @return requirements [Hash{Symbol => String, Array, Hash}]
+      #   * requirement [String, NilClass] the updated version constraint
+      #   * groups [Array] no-op for terraform
+      #   * file [String] the file that specified this dependency
+      #   * source [Hash{Symbol => String}] The updated git or registry source details
       def updated_requirements
         return requirements unless latest_version
 
-        # Note: Order is important here. The FileUpdater needs the updated
+        # NOTE: Order is important here. The FileUpdater needs the updated
         # requirement at index `i` to correspond to the previous requirement
         # at the same index.
         requirements.map do |req|
           case req.dig(:source, :type)
           when "git" then update_git_requirement(req)
-          when "registry" then update_registry_requirement(req)
+          when "registry", "provider" then update_registry_requirement(req)
           else req
           end
         end
@@ -120,7 +161,8 @@ module Dependabot
             version_to_be_permitted.segments[index]
           elsif index == index_to_update
             version_to_be_permitted.segments[index] + 1
-          else 0
+          else
+            0
           end
         end
 

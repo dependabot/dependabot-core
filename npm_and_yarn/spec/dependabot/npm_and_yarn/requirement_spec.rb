@@ -11,6 +11,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
   describe ".new" do
     it { is_expected.to be_a(described_class) }
 
+    context "with a comma-separated string" do
+      let(:requirement_string) { "^ 4.2.5, >= 4.2.5.1" }
+      it { is_expected.to eq(described_class.new([">= 4.2.5", "< 5.0.0.a", ">= 4.2.5.1"])) }
+    end
+
     context "with an exact version specified" do
       let(:requirement_string) { "1.0.0" }
       it { is_expected.to eq(described_class.new("1.0.0")) }
@@ -188,6 +193,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
       let(:requirement_string) { ">=v1.0.0" }
       it { is_expected.to eq(described_class.new(">= v1.0.0")) }
     end
+
+    context "with a latest string" do
+      let(:requirement_string) { "latest" }
+      it { expect { subject }.not_to raise_error }
+    end
   end
 
   describe "#requirements_array" do
@@ -265,6 +275,11 @@ RSpec.describe Dependabot::NpmAndYarn::Requirement do
         context "that includes a local version" do
           let(:version_string) { "1.0.0+gc.1" }
           it { is_expected.to eq(true) }
+        end
+
+        context "with a 'latest' requirement" do
+          let(:requirement_string) { "latest" }
+          it { is_expected.to eq(false) }
         end
       end
     end

@@ -73,9 +73,7 @@ module Dependabot
           path: path,
           ref: commit
         )
-        if content.is_a?(Array) || content.type != "submodule"
-          raise Dependabot::DependencyFileNotFound, path
-        end
+        raise Dependabot::DependencyFileNotFound, path if content.is_a?(Array) || content.type != "submodule"
 
         content.sha
       end

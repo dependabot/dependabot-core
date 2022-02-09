@@ -2,6 +2,7 @@
 
 require "excon"
 require "dependabot/npm_and_yarn/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
@@ -58,15 +59,18 @@ module Dependabot
         def lowest_security_fix_version
           return unless valid_npm_details?
 
-          versions_array =
+          secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
-            else possible_versions(filter_ignored: false)
+            else
+              possible_versions(filter_ignored: false)
             end
 
-          secure_versions = filter_vulnerable_versions(versions_array)
+          secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
+                                                                                                  security_advisories)
           secure_versions = filter_ignored_versions(secure_versions)
           secure_versions = filter_lower_versions(secure_versions)
+
           secure_versions.reverse.find { |version| !yanked?(version) }
         rescue Excon::Error::Socket, Excon::Error::Timeout
           raise if dependency_registry == "registry.npmjs.org"
@@ -75,12 +79,10 @@ module Dependabot
         end
 
         def possible_previous_versions_with_details
-          @possible_previous_versions_with_details ||= begin
-            npm_details.fetch("versions", {}).
-              transform_keys { |k| version_class.new(k) }.
-              reject { |v, _| v.prerelease? && !related_to_current_pre?(v) }.
-              sort_by(&:first).reverse
-          end
+          @possible_previous_versions_with_details ||= npm_details.fetch("versions", {}).
+                                                       transform_keys { |k| version_class.new(k) }.
+                                                       reject { |v, _| v.prerelease? && !related_to_current_pre?(v) }.
+                                                       sort_by(&:first).reverse
         end
 
         def possible_versions_with_details(filter_ignored: true)
@@ -108,10 +110,10 @@ module Dependabot
 
         def filter_ignored_versions(versions_array)
           filtered = versions_array.reject do |v, _|
-            ignore_reqs.any? { |r| r.satisfied_by?(v) }
+            ignore_requirements.any? { |r| r.satisfied_by?(v) }
           end
 
-          if @raise_on_ignored && filtered.empty? && versions_array.any?
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
             raise AllVersionsIgnored
           end
 
@@ -127,21 +129,11 @@ module Dependabot
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
         end
 
-        def filter_vulnerable_versions(versions_array)
-          updated_versions_array = versions_array
-
-          security_advisories.each do |advisory|
-            updated_versions_array =
-              updated_versions_array.
-              reject { |v| advisory.vulnerable?(v) }
-          end
-
-          updated_versions_array
-        end
-
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version, _| version > version_class.new(dependency.version) }
         end
 
         def version_from_dist_tags
@@ -167,6 +159,7 @@ module Dependabot
           wants_latest_dist_tag?(latest) ? latest : nil
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
           current_version = dependency.version
           if current_version &&
@@ -188,6 +181,7 @@ module Dependabot
             false
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
@@ -203,7 +197,7 @@ module Dependabot
           return false if related_to_current_pre?(ver) ^ ver.prerelease?
           return false if current_version_greater_than?(ver)
           return false if current_requirement_greater_than?(ver)
-          return false if ignore_reqs.any? { |r| r.satisfied_by?(ver) }
+          return false if ignore_requirements.any? { |r| r.satisfied_by?(ver) }
           return false if yanked?(ver)
 
           true
@@ -235,18 +229,16 @@ module Dependabot
             begin
               status = Excon.get(
                 dependency_url + "/#{version}",
-                headers: registry_auth_headers,
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
               ).status
 
               if status == 404 && dependency_registry != "registry.npmjs.org"
                 # Some registries don't handle escaped package names properly
                 status = Excon.get(
                   dependency_url.gsub("%2F", "/") + "/#{version}",
-                  headers: registry_auth_headers,
                   idempotent: true,
-                  **SharedHelpers.excon_defaults
+                  **SharedHelpers.excon_defaults(headers: registry_auth_headers)
                 ).status
               end
 
@@ -261,17 +253,14 @@ module Dependabot
         def version_endpoint_working?
           return true if dependency_registry == "registry.npmjs.org"
 
-          if defined?(@version_endpoint_working)
-            return @version_endpoint_working
-          end
+          return @version_endpoint_working if defined?(@version_endpoint_working)
 
           @version_endpoint_working =
             begin
               Excon.get(
                 dependency_url + "/latest",
-                headers: registry_auth_headers,
                 idempotent: true,
-                **SharedHelpers.excon_defaults
+                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
               ).status < 400
             rescue Excon::Error::Timeout, Excon::Error::Socket
               # Give the benefit of the doubt if the registry is playing up
@@ -293,21 +282,22 @@ module Dependabot
                    Excon::Error::Timeout,
                    Excon::Error::Socket,
                    RegistryError => e
-              return if git_dependency?
-
-              retry_count ||= 0
-              retry_count += 1
-              raise_npm_details_error(e) if retry_count > 2
-              sleep(rand(3.0..10.0)) && retry
+              if git_dependency?
+                nil
+              else
+                retry_count ||= 0
+                retry_count += 1
+                raise_npm_details_error(e) if retry_count > 2
+                sleep(rand(3.0..10.0)) && retry
+              end
             end
         end
 
         def fetch_npm_response
           response = Excon.get(
             dependency_url,
-            headers: registry_auth_headers,
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
           )
 
           return response unless response.status == 500
@@ -367,7 +357,9 @@ module Dependabot
               idempotent: true,
               **SharedHelpers.excon_defaults
             )
-            return web_response.body.include?("Forgot password?")
+            # NOTE: returns 429 when the login page is rate limited
+            return web_response.body.include?("Forgot password?") ||
+                   web_response.status == 429
           end
 
           true
@@ -394,8 +386,8 @@ module Dependabot
           )
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+        def ignore_requirements
+          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
         def version_class

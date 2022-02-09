@@ -22,12 +22,19 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          /'git'.*pypoetry-git-(?<name>.+?).{8}','checkout','(?<tag>.+?)'/.
-          freeze
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /'\['git',\s+'clone',\s+'(?<url>.+?)'.*\s+exit\s+status\s+128/m.
-          freeze
+        GIT_REFERENCE_NOT_FOUND_REGEX = /
+          'git'.*pypoetry-git-(?<name>.+?).{8}',
+          'checkout',
+          '(?<tag>.+?)'
+        /x.freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /
+            '\['git',
+            \s+'clone',
+            \s+'--recurse-submodules',
+            \s+'(--)?',
+            \s+'(?<url>.+?)'.*
+            \s+exit\s+status\s+128
+          /mx.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -48,11 +55,11 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
+                                   true
+                                 else
+                                   false
+                                 end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise unless e.message.include?("SolverProblemError")
 
@@ -63,9 +70,7 @@ module Dependabot
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -85,7 +90,8 @@ module Dependabot
 
                 updated_lockfile =
                   if File.exist?("poetry.lock") then File.read("poetry.lock")
-                  else File.read("pyproject.lock")
+                  else
+                    File.read("pyproject.lock")
                   end
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
@@ -252,13 +258,14 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def set_target_dependency_req(pyproject_content, updated_requirement)
           return pyproject_content unless updated_requirement
 
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          %w(dependencies dev-dependencies).each do |type|
+          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name
@@ -278,6 +285,7 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type
           category =

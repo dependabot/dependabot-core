@@ -14,14 +14,15 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
       old_commit: old_commit,
       files: files,
       credentials: credentials,
-      pull_request_number: merge_request_number
+      pull_request_number: merge_request_number,
+      target_project_id: target_project_id
     )
   end
 
   let(:source) do
     Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
   end
-  let(:files) { [gemfile, gemfile_lock] }
+  let(:files) { [gemfile, gemfile_lock, created_file, deleted_file] }
   let(:base_commit) { "basecommitsha" }
   let(:old_commit) { "oldcommitsha" }
   let(:merge_request_number) do
@@ -51,6 +52,20 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
       directory: "files/are/here"
     )
   end
+  let(:created_file) do
+    Dependabot::DependencyFile.new(
+      name: "created-file",
+      content: "created",
+      operation: Dependabot::DependencyFile::Operation::CREATE
+    )
+  end
+  let(:deleted_file) do
+    Dependabot::DependencyFile.new(
+      name: "deleted-file",
+      content: nil,
+      operation: Dependabot::DependencyFile::Operation::DELETE
+    )
+  end
 
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:repo_api_url) do
@@ -63,6 +78,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
     repo_api_url + "/repository/branches/" + CGI.escape(branch_name)
   end
   let(:commit_url) { repo_api_url + "/repository/commits" }
+  let(:target_project_id) { nil }
 
   before do
     stub_request(:get, merge_request_url).
@@ -84,6 +100,20 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
   end
 
   describe "#update" do
+    context "with forked project" do
+      let(:target_project_id) { 1 }
+      let(:merge_request_url) do
+        "https://gitlab.com/api/v4/projects/#{target_project_id}/merge_requests/#{merge_request_number}"
+      end
+
+      it "fetches mr from upstream project" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:get, merge_request_url)
+      end
+    end
+
     context "when the branch doesn't exist" do
       before { stub_request(:get, branch_url).to_return(status: 404) }
 
@@ -133,6 +163,16 @@ RSpec.describe Dependabot::PullRequestUpdater::Gitlab do
                 action: "update",
                 file_path: gemfile_lock.path,
                 content: gemfile_lock.content
+              },
+              {
+                action: "create",
+                file_path: created_file.path,
+                content: created_file.content
+              },
+              {
+                action: "delete",
+                file_path: deleted_file.path,
+                content: ""
               }
             ],
             force: true,

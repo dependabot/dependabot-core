@@ -1,66 +1,26 @@
 FROM dependabot/dependabot-core
+
+RUN git config --global user.name dependabot-ci \
+  && git config --global user.email no-reply@github.com
+
 ARG CODE_DIR=/home/dependabot/dependabot-core
 WORKDIR ${CODE_DIR}
 
-ENV BUNDLE_PATH="/home/dependabot/.bundle" \
-  BUNDLE_BIN=".bundle/binstubs" \
-  PATH=".bundle/binstubs:$PATH:/home/dependabot/.bundle/bin"
-
-COPY .rubocop.yml /home/dependabot/dependabot-core/
-
-RUN mkdir -p \
-  ${CODE_DIR}/bundler \
-  ${CODE_DIR}/cargo \
-  ${CODE_DIR}/cocoapods \
-  ${CODE_DIR}/common \
-  ${CODE_DIR}/composer \
-  ${CODE_DIR}/dep \
-  ${CODE_DIR}/docker \
-  ${CODE_DIR}/elm \
-  ${CODE_DIR}/git_submodules \
-  ${CODE_DIR}/github_actions \
-  ${CODE_DIR}/go_modules \
-  ${CODE_DIR}/gradle \
-  ${CODE_DIR}/hex \
-  ${CODE_DIR}/maven \
-  ${CODE_DIR}/npm_and_yarn \
-  ${CODE_DIR}/nuget \
-  ${CODE_DIR}/omnibus \
-  ${CODE_DIR}/python \
-  ${CODE_DIR}/terraform
-
-COPY common/ ${CODE_DIR}/common/
-COPY bundler/ ${CODE_DIR}/bundler/
-COPY cargo/ ${CODE_DIR}/cargo/
-COPY cocoapods/ ${CODE_DIR}/cocoapods/
-COPY composer/ ${CODE_DIR}/composer/
-COPY dep/ ${CODE_DIR}/dep/
-COPY docker/ ${CODE_DIR}/docker/
-COPY elm/ ${CODE_DIR}/elm/
-COPY git_submodules/ ${CODE_DIR}/git_submodules/
-COPY github_actions/ ${CODE_DIR}/github_actions/
-COPY go_modules/ ${CODE_DIR}/go_modules/
-COPY gradle/ ${CODE_DIR}/gradle/
-COPY hex/ ${CODE_DIR}/hex/
-COPY maven/ ${CODE_DIR}/maven/
-COPY npm_and_yarn/ ${CODE_DIR}/npm_and_yarn/
-COPY nuget/ ${CODE_DIR}/nuget/
-COPY omnibus/ ${CODE_DIR}/omnibus/
-COPY python/ ${CODE_DIR}/python/
-COPY terraform/ ${CODE_DIR}/terraform/
-
-RUN cd common && bundle install
-
-RUN GREEN='\033[0;32m'; NC='\033[0m'; \
-  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/omnibus/Gemfile" \
-    -not -path "${CODE_DIR}/common/Gemfile" \
-    -name 'Gemfile' | xargs dirname`; do \
-    echo && \
-    echo "---------------------------------------------------------------------------" && \
-    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-    echo "---------------------------------------------------------------------------" && \
-    cd $d && bundle install; \
-  done
-
-RUN cd omnibus && bundle install
+COPY --chown=dependabot:dependabot .rubocop.yml ${CODE_DIR}/.rubocop.yml
+COPY --chown=dependabot:dependabot omnibus ${CODE_DIR}/omnibus
+COPY --chown=dependabot:dependabot git_submodules ${CODE_DIR}/git_submodules
+COPY --chown=dependabot:dependabot terraform ${CODE_DIR}/terraform
+COPY --chown=dependabot:dependabot github_actions ${CODE_DIR}/github_actions
+COPY --chown=dependabot:dependabot hex ${CODE_DIR}/hex
+COPY --chown=dependabot:dependabot elm ${CODE_DIR}/elm
+COPY --chown=dependabot:dependabot docker ${CODE_DIR}/docker
+COPY --chown=dependabot:dependabot nuget ${CODE_DIR}/nuget
+COPY --chown=dependabot:dependabot maven ${CODE_DIR}/maven
+COPY --chown=dependabot:dependabot gradle ${CODE_DIR}/gradle
+COPY --chown=dependabot:dependabot cargo ${CODE_DIR}/cargo
+COPY --chown=dependabot:dependabot composer ${CODE_DIR}/composer
+COPY --chown=dependabot:dependabot go_modules ${CODE_DIR}/go_modules
+COPY --chown=dependabot:dependabot python ${CODE_DIR}/python
+COPY --chown=dependabot:dependabot npm_and_yarn ${CODE_DIR}/npm_and_yarn
+COPY --chown=dependabot:dependabot bundler ${CODE_DIR}/bundler
+COPY --chown=dependabot:dependabot common ${CODE_DIR}/common

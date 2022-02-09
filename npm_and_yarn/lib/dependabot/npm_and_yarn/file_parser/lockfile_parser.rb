@@ -2,6 +2,7 @@
 
 require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/helpers"
 
 module Dependabot
   module NpmAndYarn
@@ -23,23 +24,9 @@ module Dependabot
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
             details =
               if [*package_locks, *shrinkwraps].include?(lockfile)
-                parsed_lockfile = parse_package_lock(lockfile)
-                parsed_lockfile.dig("dependencies", dependency_name)
+                npm_lockfile_details(lockfile, dependency_name, manifest_name)
               else
-                parsed_yarn_lock = parse_yarn_lock(lockfile)
-                details_candidates =
-                  parsed_yarn_lock.
-                  select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
-
-                # If there's only one entry for this dependency, use it, even if
-                # the requirement in the lockfile doesn't match
-                if details_candidates.one?
-                  details_candidates.first.last
-                else
-                  details_candidates.find do |k, _|
-                    k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
-                  end&.last
-                end
+                yarn_lockfile_details(lockfile, dependency_name, requirement, manifest_name)
               end
 
             return details if details
@@ -65,6 +52,44 @@ module Dependabot
             compact
         end
 
+        def npm_lockfile_details(lockfile, dependency_name, manifest_name)
+          parsed_lockfile = parse_package_lock(lockfile)
+
+          if Helpers.npm_version(lockfile.content) == "npm7"
+            # NOTE: npm 7 sometimes doesn't install workspace dependencies in the
+            # workspace folder so we need to fallback to checking top-level
+            nested_details = parsed_lockfile.dig("packages", node_modules_path(manifest_name, dependency_name))
+            details = nested_details || parsed_lockfile.dig("packages", "node_modules/#{dependency_name}")
+            details&.slice("version", "resolved", "integrity", "dev")
+          else
+            parsed_lockfile.dig("dependencies", dependency_name)
+          end
+        end
+
+        def yarn_lockfile_details(lockfile, dependency_name, requirement, _manifest_name)
+          parsed_yarn_lock = parse_yarn_lock(lockfile)
+          details_candidates =
+            parsed_yarn_lock.
+            select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
+
+          # If there's only one entry for this dependency, use it, even if
+          # the requirement in the lockfile doesn't match
+          if details_candidates.one?
+            details_candidates.first.last
+          else
+            details_candidates.find do |k, _|
+              k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
+            end&.last
+          end
+        end
+
+        def node_modules_path(manifest_name, dependency_name)
+          return "node_modules/#{dependency_name}" if manifest_name == "package.json"
+
+          workspace_path = manifest_name.gsub("/package.json", "")
+          File.join(workspace_path, "node_modules", dependency_name)
+        end
+
         def yarn_lock_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
@@ -73,7 +98,7 @@ module Dependabot
               next unless semver_version_for(details["version"])
               next if alias_package?(req)
 
-              # Note: The DependencySet will de-dupe our dependencies, so they
+              # NOTE: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
               # the nested nature of JS resolution, but it makes everything work
               # comparably to other flat-resolution strategies
@@ -92,7 +117,7 @@ module Dependabot
         def package_lock_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
-          # Note: The DependencySet will de-dupe our dependencies, so they
+          # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
@@ -108,7 +133,7 @@ module Dependabot
         def shrinkwrap_dependencies
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
-          # Note: The DependencySet will de-dupe our dependencies, so they
+          # NOTE: The DependencySet will de-dupe our dependencies, so they
           # end up unique by name. That's not a perfect representation of
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
@@ -145,7 +170,7 @@ module Dependabot
                   [{ production: !details["dev"] }]
               end
 
-              dependency_set << Dependency.new(dependency_args)
+              dependency_set << Dependency.new(**dependency_args)
               dependency_set += recursively_fetch_npm_lock_dependencies(details)
             end
 

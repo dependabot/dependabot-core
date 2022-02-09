@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.required_rubygems_version = common_gemspec.required_ruby_version
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
+  spec.add_dependency "parseconfig", "~> 1.0", "< 1.1.0"
 
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, dep.requirement.to_s

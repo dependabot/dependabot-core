@@ -15,6 +15,9 @@ module Dependabot
       class PoetryFilesParser
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
+        # https://python-poetry.org/docs/dependency-specification/
+        UNSUPPORTED_DEPENDENCY_TYPES = %w(git path url).freeze
+
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
@@ -40,26 +43,36 @@ module Dependabot
 
             deps_hash.each do |name, req|
               next if normalise(name) == "python"
-              next if req.is_a?(Hash) && req.key?("git")
 
-              check_requirements(req)
+              requirements = parse_requirements_from(req, type)
+              next if requirements.empty?
 
-              dependencies <<
-                Dependency.new(
-                  name: normalise(name),
-                  version: version_from_lockfile(name),
-                  requirements: [{
-                    requirement: req.is_a?(String) ? req : req["version"],
-                    file: pyproject.name,
-                    source: nil,
-                    groups: [type]
-                  }],
-                  package_manager: "pip"
-                )
+              dependencies << Dependency.new(
+                name: normalise(name),
+                version: version_from_lockfile(name),
+                requirements: requirements,
+                package_manager: "pip"
+              )
             end
           end
 
           dependencies
+        end
+
+        # @param req can be an Array, Hash or String that represents the constraints for a dependency
+        def parse_requirements_from(req, type)
+          [req].flatten.compact.map do |requirement|
+            next if requirement.is_a?(Hash) && (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).any?
+
+            check_requirements(requirement)
+
+            {
+              requirement: requirement.is_a?(String) ? requirement : requirement["version"],
+              file: pyproject.name,
+              source: nil,
+              groups: [type]
+            }
+          end.compact
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -69,7 +82,7 @@ module Dependabot
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           parsed_lockfile.fetch("package", []).each do |details|
-            next if details.dig("source", "type") == "git"
+            next if %w(directory git url).include?(details.dig("source", "type"))
 
             dependencies <<
               Dependency.new(

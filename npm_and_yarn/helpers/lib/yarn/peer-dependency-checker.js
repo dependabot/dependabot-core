@@ -102,6 +102,7 @@ async function checkPeerDepsForReq(
     cwd: path.join(directory, path.dirname(requirement.file)),
     nonInteractive: true,
     enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);

@@ -1,0 +1,2 @@
+gem "prius", "1.0.0", require: false,
+git: "git_url"

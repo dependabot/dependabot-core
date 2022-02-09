@@ -25,6 +25,7 @@ module Dependabot
                             "dependencies > dependency, "\
                             "extensions > extension"
       PLUGIN_SELECTOR     = "plugins > plugin"
+      EXTENSION_SELECTOR  = "extensions > extension"
 
       # Regex to get the property name from a declaration that uses a property
       PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
@@ -32,6 +33,7 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         dependency_set.dependencies
       end
 
@@ -63,9 +65,31 @@ module Dependabot
         dependency_set
       end
 
+      def extensionfile_dependencies(extension)
+        dependency_set = DependencySet.new
+
+        errors = []
+        doc = Nokogiri::XML(extension.content)
+        doc.remove_namespaces!
+
+        doc.css(EXTENSION_SELECTOR).each do |dependency_node|
+          dep = dependency_from_dependency_node(extension, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
+        end
+
+        raise errors.first if errors.any? && dependency_set.dependencies.none?
+
+        dependency_set
+      end
+
       def dependency_from_dependency_node(pom, dependency_node)
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
+
+        classifier = dependency_classifier(dependency_node, pom)
+        name = classifier ? "#{name}:#{classifier}" : name
 
         build_dependency(pom, dependency_node, name)
       end
@@ -104,7 +128,7 @@ module Dependabot
         return unless dependency_node.at_xpath("./groupId")
         return unless dependency_node.at_xpath("./artifactId")
 
-        name = [
+        [
           evaluated_value(
             dependency_node.at_xpath("./groupId").content.strip,
             pom
@@ -114,15 +138,15 @@ module Dependabot
             pom
           )
         ].join(":")
+      end
 
-        if dependency_node.at_xpath("./classifier")
-          name += ":#{evaluated_value(
-            dependency_node.at_xpath('./classifier').content.strip,
-            pom
-          )}"
-        end
+      def dependency_classifier(dependency_node, pom)
+        return unless dependency_node.at_xpath("./classifier")
 
-        name
+        evaluated_value(
+          dependency_node.at_xpath("./classifier").content.strip,
+          pom
+        )
       end
 
       def plugin_name(dependency_node, pom)
@@ -247,9 +271,14 @@ module Dependabot
       end
 
       def pomfiles
-        # Note: this (correctly) excludes any parent POMs that were downloaded
+        # NOTE: this (correctly) excludes any parent POMs that were downloaded
         @pomfiles ||=
           dependency_files.select { |f| f.name.end_with?("pom.xml") }
+      end
+
+      def extensionfiles
+        @extensionfiles ||=
+          dependency_files.select { |f| f.name.end_with?("extensions.xml") }
       end
 
       def internal_dependency_names

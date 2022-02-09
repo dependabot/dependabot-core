@@ -8,55 +8,26 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
   subject(:lockfile_parser) do
     described_class.new(dependency_files: dependency_files)
   end
-  let(:npm_lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "package-lock.json",
-      content: npm_lockfile_content
-    )
-  end
-  let(:npm_lockfile_content) do
-    fixture("npm_lockfiles", npm_lockfile_fixture_name)
-  end
-  let(:npm_lockfile_fixture_name) { "only_dev_dependencies.json" }
-  let(:yarn_lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "yarn.lock",
-      content: yarn_lockfile_content
-    )
-  end
-  let(:yarn_lockfile_content) do
-    fixture("yarn_lockfiles", yarn_lockfile_fixture_name)
-  end
-  let(:yarn_lockfile_fixture_name) { "only_dev_dependencies.lock" }
-  let(:npm_shrinkwrap) do
-    Dependabot::DependencyFile.new(
-      name: "npm-shrinkwrap.json",
-      content: npm_shrinkwrap_content
-    )
-  end
-  let(:npm_shrinkwrap_content) do
-    fixture("npm_lockfiles", npm_shrinkwrap_fixture_name)
-  end
-  let(:npm_shrinkwrap_fixture_name) { "only_dev_dependencies.json" }
 
   describe "#parse" do
     subject(:dependencies) { lockfile_parser.parse }
 
     context "for yarn lockfiles" do
-      let(:dependency_files) { [yarn_lockfile] }
+      let(:dependency_files) { project_dependency_files("yarn/only_dev_dependencies") }
 
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
 
       context "that contains an empty version string" do
-        let(:yarn_lockfile_fixture_name) { "empty_version.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/empty_version") }
+
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
       context "that contains an aliased dependency" do
-        let(:yarn_lockfile_fixture_name) { "aliased_dependency.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/aliased_dependency") }
 
         it "excludes the dependency" do
           # Lockfile contains 11 dependencies but one is an alias
@@ -66,7 +37,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contain multiple dependencies" do
-        let(:yarn_lockfile_fixture_name) { "no_lockfile_change.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/no_lockfile_change") }
 
         its(:length) { is_expected.to eq(393) }
 
@@ -78,9 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contain bad lockfile" do
-        let(:yarn_lockfile_content) do
-          "{ something: else"
-        end
+        let(:dependency_files) { project_dependency_files("yarn/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
           expect { dependencies }.
@@ -92,8 +61,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "for npm lockfiles" do
-      let(:dependency_files) { [npm_lockfile] }
-      let(:npm_lockfile_fixture_name) { "multiple_updates.json" }
+      let(:dependency_files) { project_dependency_files("npm6/multiple_updates") }
 
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag", "is-number")
@@ -105,7 +73,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "with a dev dependency" do
-        let(:npm_lockfile_fixture_name) { "only_dev_dependencies.json" }
+        let(:dependency_files) { project_dependency_files("npm6/only_dev_dependencies") }
 
         it "includes subdependency_metadata for development dependency" do
           dep = dependencies.find { |d| d.name == "etag" }
@@ -114,7 +82,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contain multiple dependencies" do
-        let(:npm_lockfile_fixture_name) { "blank_requirement.json" }
+        let(:dependency_files) { project_dependency_files("npm6/blank_requirement") }
 
         its(:length) { is_expected.to eq(23) }
 
@@ -126,27 +94,27 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contains an empty version string" do
-        let(:npm_lockfile_fixture_name) { "empty_version.json" }
+        let(:dependency_files) { project_dependency_files("npm6/empty_version") }
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
       context "that contains an invalid version requirement string" do
-        let(:npm_lockfile_fixture_name) { "invalid_version_requirement.json" }
+        let(:dependency_files) { project_dependency_files("npm6/invalid_version_requirement") }
         subject { dependencies.find { |d| d.name == "etag" } }
+
         it { is_expected.to eq(nil) }
       end
 
       context "that has URL versions (i.e., is from a bad version of npm)" do
-        let(:npm_lockfile_fixture_name) { "url_versions.json" }
+        let(:dependency_files) { project_dependency_files("npm6/url_versions") }
+
         # All but 1 dependency in the lockfile has a URL version
         its(:length) { is_expected.to eq(1) }
       end
 
       context "that contain bad json" do
-        let(:npm_lockfile_content) do
-          '{ "bad": "json" "no": "comma" }'
-        end
+        let(:dependency_files) { project_dependency_files("npm6/broken_lockfile") }
 
         it "raises a DependencyFileNotParseable error" do
           expect { dependencies }.
@@ -157,7 +125,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contain bundled dependencies" do
-        let(:npm_lockfile_fixture_name) { "bundled_sub_dependency.json" }
+        let(:dependency_files) { project_dependency_files("npm6/bundled_sub_dependency") }
         subject { dependencies.find { |d| d.name == "tar" } }
 
         its(:subdependency_metadata) do
@@ -167,14 +135,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "for npm shrinkwraps" do
-      let(:dependency_files) { [npm_shrinkwrap] }
+      let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_only_dev_dependencies") }
 
       it "parses the dependencies" do
         expect(dependencies.map(&:name)).to contain_exactly("etag")
       end
 
       context "that contain multiple dependencies" do
-        let(:npm_shrinkwrap_fixture_name) { "blank_requirement.json" }
+        let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_blank_requirement") }
 
         its(:length) { is_expected.to eq(23) }
 
@@ -186,15 +154,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "that contains an empty version string" do
-        let(:npm_shrinkwrap_fixture_name) { "empty_version.json" }
+        let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_empty_version") }
         # Lockfile contains 10 dependencies but one has an empty version
         its(:length) { is_expected.to eq(9) }
       end
 
       context "that contain bad json" do
-        let(:npm_shrinkwrap_content) do
-          '{ "bad": "json" "no": "comma" }'
-        end
+        let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_broken") }
 
         it "raises a DependencyFileNotParseable error" do
           expect { dependencies }.
@@ -219,18 +185,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     let(:manifest_name) { "package.json" }
 
     context "for yarn lockfiles" do
-      let(:dependency_files) { [yarn_lockfile] }
+      let(:dependency_files) { project_dependency_files("yarn/only_dev_dependencies") }
 
       it "finds the dependency" do
         expect(lockfile_details).to eq(
-          "resolved" => "https://registry.yarnpkg.com/etag/-/etag-1.8.0.tgz"\
-                        "#6f631aef336d6c46362b51764044ce216be3c051",
+          "resolved" => "https://registry.yarnpkg.com/etag/-/etag-1.8.0.tgz#6f631aef336d6c46362b51764044ce216be3c051",
           "version" => "1.8.0"
         )
       end
 
       context "that contain duplicate dependencies" do
-        let(:yarn_lockfile_fixture_name) { "no_lockfile_change.lock" }
+        let(:dependency_files) { project_dependency_files("yarn/no_lockfile_change") }
         let(:dependency_name) { "ansi-styles" }
         let(:requirement) { "^2.2.1" }
 
@@ -252,7 +217,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "for npm lockfiles" do
-      let(:dependency_files) { [npm_lockfile] }
+      let(:dependency_files) { project_dependency_files("npm6/only_dev_dependencies") }
 
       it "finds the dependency" do
         expect(lockfile_details).to eq(
@@ -264,13 +229,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
 
       context "when a nested lockfile is also present" do
-        let(:dependency_files) { [npm_lockfile, irrelevant_npm_lockfile] }
-        let(:irrelevant_npm_lockfile) do
-          Dependabot::DependencyFile.new(
-            name: "nested/package-lock.json",
-            content: fixture("npm_lockfiles", "package1.json")
-          )
-        end
+        let(:dependency_files) { project_dependency_files("npm6/irrelevant_nested_lockfile") }
 
         it "finds the correct dependency" do
           expect(lockfile_details).to eq(
@@ -296,7 +255,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
     end
 
     context "for npm shrinkwraps" do
-      let(:dependency_files) { [npm_shrinkwrap] }
+      let(:dependency_files) { project_dependency_files("npm6/shrinkwrap_only_dev_dependencies") }
 
       it "finds the dependency" do
         expect(lockfile_details).to eq(
@@ -305,6 +264,96 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           "integrity" => "sha1-Qa4u62XvpiJorr/qg6x9eSmbCIc=",
           "dev" => true
         )
+      end
+    end
+
+    context "for an npm7 workspace project with a direct dependency that's installed in the workspace's node_modules" do
+      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package") }
+      let(:dependency_name) { "yargs" }
+      let(:manifest_name) { "packages/build/package.json" }
+
+      it "finds the correct dependency" do
+        expect(lockfile_details).to eq(
+          "version" => "16.2.0",
+          "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+          "integrity" =>
+            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+        )
+      end
+    end
+
+    context "for an npm7 workspace project with a direct dependency that's installed in the top-level node_modules" do
+      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package_top_level") }
+      let(:dependency_name) { "uuid" }
+      let(:manifest_name) { "api/package.json" }
+
+      it "finds the correct dependency" do
+        expect(lockfile_details).to eq(
+          "version" => "8.3.2",
+          "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+          "integrity" =>
+            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+        )
+      end
+    end
+
+    context "for a non-workspace npm 7 lockfile" do
+      let(:dependency_files) { project_dependency_files("npm7/simple") }
+      let(:dependency_name) { "fetch-factory" }
+      let(:manifest_name) { "package.json" }
+
+      it "finds the dependency" do
+        expect(lockfile_details).to eq(
+          "version" => "0.0.1",
+          "resolved" => "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
+          "integrity" => "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE="
+        )
+      end
+    end
+
+    context "npm8 with a v3 lockfile-version" do
+      context "workspace project with a direct dependency that's installed in the workspace's node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_lockfile_v3") }
+        let(:dependency_name) { "yargs" }
+        let(:manifest_name) { "packages/build/package.json" }
+
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "16.2.0",
+            "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+            "integrity" =>
+            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+          )
+        end
+      end
+
+      context "workspace project with a direct dependency that's installed in the top-level node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level_lockfile_v3") }
+        let(:dependency_name) { "uuid" }
+        let(:manifest_name) { "api/package.json" }
+
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "8.3.2",
+            "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+            "integrity" =>
+            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+          )
+        end
+      end
+
+      context "for a non-workspace project" do
+        let(:dependency_files) { project_dependency_files("npm8/simple_lockfile_v3") }
+        let(:dependency_name) { "fetch-factory" }
+        let(:manifest_name) { "package.json" }
+
+        it "finds the dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "0.0.1",
+            "resolved" => "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
+            "integrity" => "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE="
+          )
+        end
       end
     end
   end

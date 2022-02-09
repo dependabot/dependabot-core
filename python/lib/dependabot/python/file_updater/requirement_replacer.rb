@@ -30,9 +30,7 @@ module Dependabot
               updated_dependency_declaration_string
             end
 
-          unless old_requirement == new_requirement
-            raise "Expected content to change!" if content == updated_content
-          end
+          raise "Expected content to change!" if old_requirement != new_requirement && content == updated_content
 
           updated_content
         end
@@ -49,9 +47,7 @@ module Dependabot
         def updated_requirement_string
           new_req_string = new_requirement
 
-          if add_space_after_commas?
-            new_req_string = new_req_string.gsub(/,\s*/, ", ")
-          end
+          new_req_string = new_req_string.gsub(/,\s*/, ", ") if add_space_after_commas?
 
           if add_space_after_operators?
             new_req_string =
@@ -75,9 +71,7 @@ module Dependabot
                 end
             end
 
-          unless update_hashes? && requirement_includes_hashes?(old_req)
-            return updated_string
-          end
+          return updated_string unless update_hashes? && requirement_includes_hashes?(old_req)
 
           updated_string.sub(
             RequirementParser::HASHES,

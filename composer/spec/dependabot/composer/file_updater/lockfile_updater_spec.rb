@@ -22,21 +22,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       "password" => "token"
     }]
   end
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
+  let(:files) { project_dependency_files(project_name) }
+  let(:project_name) { "exact_version" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -64,7 +51,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       source: nil
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -82,7 +69,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
     context "when an old version of PHP is specified" do
       context "as a platform requirement" do
-        let(:manifest_fixture_name) { "old_php_platform" }
+        let(:project_name) { "old_php_platform" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
@@ -110,7 +97,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with an application using a >= PHP constraint" do
-        let(:manifest_fixture_name) { "php_specified" }
+        let(:project_name) { "php_specified" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -139,7 +126,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "with an application using a ^ PHP constraint" do
-        let(:manifest_fixture_name) { "php_specified_min_invalid" }
+        let(:project_name) { "php_specified_min_invalid" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -168,8 +155,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "and an extension is specified that we don't have" do
-        let(:manifest_fixture_name) { "missing_extension" }
-        let(:lockfile_fixture_name) { "missing_extension" }
+        let(:project_name) { "missing_extension" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "illuminate/support",
@@ -199,18 +185,28 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that would cause errors" do
-      let(:manifest_fixture_name) { "plugin" }
-      let(:lockfile_fixture_name) { "plugin" }
+    context "with a plugin that would cause errors (composer v1)" do
+      let(:project_name) { "v1/plugin" }
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
       end
     end
 
-    context "with a plugin that conflicts with the current composer version" do
-      let(:manifest_fixture_name) { "outdated_flex" }
-      let(:lockfile_fixture_name) { "outdated_flex" }
+    context "with a plugin that would cause errors (composer v2)" do
+      let(:project_name) { "plugin" }
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.to raise_error do |error|
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.2.0]")
+          expect(error).to be_a Dependabot::DependencyFileNotResolvable
+        end
+      end
+    end
+
+    context "with a plugin that conflicts with the current composer version v1" do
+      let(:project_name) { "v1/outdated_flex" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "symphony/lock",
@@ -234,14 +230,46 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
 
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to start_with("One of your Composer plugins")
+          expect(error.message).to start_with("One of your Composer plugins is not compatible")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
     end
 
-    context "that requires an environment variable" do
-      let(:manifest_fixture_name) { "env_variable" }
+    context "with a plugin that conflicts with the current composer version v2" do
+      let(:project_name) { "outdated_flex" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symphony/lock",
+          version: "4.1.3",
+          requirements: [{
+            file: "composer.json",
+            requirement: "^4.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "4.1.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "^4.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.to raise_error do |error|
+          expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.2.0]")
+          expect(error).to be_a Dependabot::DependencyFileNotResolvable
+        end
+      end
+    end
+
+    context "that requires an environment variable (composer v1)" do
+      let(:project_name) { "v1/env_variable" }
 
       context "that hasn't been provided" do
         it "raises a MissingEnvironmentVariable error" do
@@ -273,22 +301,24 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         it "runs just fine (we get a 404 here because our key is wrong)" do
           expect { updated_lockfile_content }.to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
-            expect(error.message).to include("404 Not Found")
+            expect(error.message).to include("404")
           end
         end
       end
     end
 
-    context "with a path source" do
-      let(:files) { [composer_json, lockfile, path_dep] }
-      let(:manifest_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source" }
-      let(:path_dep) do
-        Dependabot::DependencyFile.new(
-          name: "components/path_dep/composer.json",
-          content: fixture("composer_files", "path_dep")
-        )
+    context "that requires an environment variable (composer v2)" do
+      let(:project_name) { "env_variable" }
+
+      context "that hasn't been provided" do
+        it "does not attempt to download and has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"5.9.2\"")
+        end
       end
+    end
+
+    context "with a path source" do
+      let(:project_name) { "path_source" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -317,8 +347,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the new version is covered by the old requirements" do
-      let(:manifest_fixture_name) { "minor_version" }
-      let(:lockfile_fixture_name) { "covered_version" }
+      let(:project_name) { "covered_version" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -351,8 +380,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency is a development dependency" do
-      let(:manifest_fixture_name) { "development_dependencies" }
-      let(:lockfile_fixture_name) { "development_dependencies" }
+      let(:project_name) { "development_dependencies" }
 
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"1.22.1\"")
@@ -360,8 +388,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when the dependency is a subdependency" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -381,8 +408,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
 
       context "and is limited by a library's PHP version" do
-        let(:manifest_fixture_name) { "php_specified_in_library" }
-        let(:lockfile_fixture_name) { "php_specified_in_library" }
+        let(:project_name) { "php_specified_in_library" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -404,8 +430,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a private registry" do
-      let(:manifest_fixture_name) { "private_registry" }
-      let(:lockfile_fixture_name) { "private_registry" }
+      let(:project_name) { "private_registry" }
       before { `composer clear-cache --quiet` }
 
       let(:dependency) do
@@ -451,8 +476,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "with a laravel nova" do
-      let(:manifest_fixture_name) { "laravel_nova" }
-      let(:lockfile_fixture_name) { "laravel_nova" }
+      let(:project_name) { "laravel_nova" }
       before { `composer clear-cache --quiet` }
 
       let(:dependency) do
@@ -491,18 +515,14 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           }]
         end
 
-        it "raises a helpful errors" do
-          expect { updated_lockfile_content }.to raise_error do |error|
-            expect(error).to be_a Dependabot::PrivateSourceAuthenticationFailure
-            expect(error.source).to eq("nova.laravel.com")
-          end
+        it "does not attempt to download and has details of the updated item" do
+          expect(updated_lockfile_content).to include("\"version\":\"v2.0.9\"")
         end
       end
     end
 
     context "when another dependency has git source with a bad reference" do
-      let(:lockfile_fixture_name) { "git_source_bad_ref" }
-      let(:manifest_fixture_name) { "git_source_bad_ref" }
+      let(:project_name) { "git_source_bad_ref" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -525,17 +545,13 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "raises a helpful errors" do
-        expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
-          expect(error.dependency).to eq("monolog/monolog")
-        end
+      it "does not attempt to install it and has details of the updated item" do
+        expect(updated_lockfile_content).to include("\"version\":\"v1.6.0\"")
       end
     end
 
     context "when another dependency has git source with a bad commit" do
-      let(:manifest_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source_bad_commit" }
+      let(:project_name) { "git_source_bad_commit" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -558,22 +574,13 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
         )
       end
 
-      it "updates the lockfile correctly" do
-        # Updates the commit SHA of the git dependency (because we have to)
-        expect(updated_lockfile_content).
-          to include('"303b8a83c87d5c6d749926cf02620465a5dcd0f2"')
-        expect(updated_lockfile_content).to include('"version":"dev-example"')
-
-        # Updates the specified dependency
-        expect(updated_lockfile_content).
-          to include('"2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"')
-        expect(updated_lockfile_content).to include('"version":"v1.6.0"')
+      it "does not attempt to install it and has details of the updated item" do
+        expect(updated_lockfile_content).to include("\"version\":\"v1.6.0\"")
       end
     end
 
     context "with a git source using no-api" do
-      let(:manifest_fixture_name) { "git_source_no_api" }
-      let(:lockfile_fixture_name) { "git_source_no_api" }
+      let(:project_name) { "git_source_no_api" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -615,8 +622,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when another dependency has an unreachable git source" do
-      let(:lockfile_fixture_name) { "git_source_unreachable" }
-      let(:manifest_fixture_name) { "git_source_unreachable" }
+      let(:project_name) { "git_source_unreachable" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -648,9 +654,8 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "when there are patches" do
-      let(:manifest_fixture_name) { "patches" }
-      let(:lockfile_fixture_name) { "patches" }
+    context "when there are patches (composer v1)" do
+      let(:project_name) { "v1/patches" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -683,9 +688,44 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when there are patches (composer v2)" do
+      let(:project_name) { "patches" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ehime/hello-world",
+          version: "1.0.5",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.5",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "1.0.4",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.4",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      # This is a known issue in the composer-patches plugin and composer v2:
+      # https://github.com/cweagans/composer-patches/issues/338
+      pending "doesn't strip the patches" do
+        updated_dep = JSON.parse(updated_lockfile_content).
+                      fetch("packages").
+                      find { |p| p["name"] == "ehime/hello-world" }
+
+        expect(updated_dep.dig("extra", "patches_applied")).
+          to include("[PATCH] markdown modified")
+      end
+    end
+
     context "regression spec for media-organizer" do
-      let(:manifest_fixture_name) { "media_organizer" }
-      let(:lockfile_fixture_name) { "media_organizer" }
+      let(:project_name) { "media_organizer" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -719,8 +759,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "when a subdependency needs to be updated" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -750,8 +789,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
     end
 
     context "updating to a specific version when reqs would allow higher" do
-      let(:manifest_fixture_name) { "subdependency_update_required" }
-      let(:lockfile_fixture_name) { "subdependency_update_required" }
+      let(:project_name) { "subdependency_update_required" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -777,6 +815,70 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "has details of the updated item" do
         expect(updated_lockfile_content).to include("\"version\":\"v5.3.0\"")
         expect(updated_lockfile_content).to include("e244eda135819216ac3044146")
+      end
+    end
+
+    context "with a missing git repository source" do
+      let(:project_name) { "git_source_unreachable" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.0.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
+      end
+    end
+
+    context "with a missing vcs repository source" do
+      let(:project_name) { "vcs_source_unreachable" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "symfony/polyfill-mbstring",
+          version: "1.0.1",
+          requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          previous_version: "1.0.1",
+          previous_requirements: [{
+            file: "composer.json",
+            requirement: "1.0.1",
+            groups: ["runtime"],
+            source: nil
+          }],
+          package_manager: "composer"
+        )
+      end
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+          end
       end
     end
   end

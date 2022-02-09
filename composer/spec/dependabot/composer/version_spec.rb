@@ -5,7 +5,6 @@ require "dependabot/composer/version"
 
 RSpec.describe Dependabot::Composer::Version do
   subject(:version) { described_class.new(version_string) }
-  let(:version_string) { "1.0.0" }
 
   describe "#to_s" do
     subject { version.to_s }

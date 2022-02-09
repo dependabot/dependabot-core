@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       package_manager: "hex"
     )
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -150,6 +150,42 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with upgrade to transitive dependencies" do
+      let(:mixfile_fixture_name) { "deep_upgrade" }
+      let(:lockfile_fixture_name) { "deep_upgrade" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix_ecto",
+          version: "4.2.0",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.2.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "4.1.0",
+          previous_requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include ':hex, :phoenix_ecto, "4.2'
+      end
+
+      it "retains management info for transitive dependencies" do
+        decimal_lock_line = updated_lockfile_content.
+                            split("\n").
+                            find { |l| l.include?('"decimal":') }
+        expect(decimal_lock_line).to include ", [:mix], ["
+      end
+    end
+
     context "with a mix.exs that opens another file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
@@ -163,15 +199,33 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     end
 
     context "with a mix.exs that evals another file" do
-      let(:mixfile_body) do
-        fixture("mixfiles", "loads_file_with_eval")
-      end
-      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "loads_file_with_eval" }
+      let(:lockfile_fixture_name) { "exact_version" }
       let(:files) { [mixfile, lockfile, support_file] }
       let(:support_file) do
         Dependabot::DependencyFile.new(
           name: "version",
           content: fixture("support_files", "version"),
+          support_file: true
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+        expect(updated_lockfile_content).to include(
+          "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+        )
+      end
+    end
+
+    context "with a mix.exs that opens another file in a required file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:lockfile_fixture_name) { "exact_version" }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
           support_file: true
         )
       end
@@ -260,7 +314,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }
@@ -271,7 +325,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }

@@ -1,0 +1,23 @@
+{
+    "require": {
+        "php": "^7.4",
+        "ext-json": "*",
+        "composer/composer": "^2"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.0",
+        "phpstan/phpstan": "~1.4.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dependabot\\Composer\\": "src/"
+        }
+    },
+    "scripts": {
+        "lint": "php-cs-fixer fix --diff --verbose",
+        "stan": "phpstan analyse"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

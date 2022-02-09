@@ -44,7 +44,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     [{
       file: "my.csproj",
       requirement: "1.1.2",
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }]
   end
@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     [{
       file: "my.csproj",
       requirement: "1.1.1",
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }]
   end
@@ -87,7 +87,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             file: "my.csproj",
             requirement: "[1.0,2.1]",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             file: "my.csproj",
             requirement: "[1.0,2.0]",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             requirement: "0.1.500",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             requirement: "0.1.434",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -132,6 +132,49 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         it "updates the property correctly" do
           expect(updated_csproj_file.content).to include(
             %(NukeVersion Condition="$(NukeVersion) == ''">0.1.500</NukeVersion)
+          )
+        end
+      end
+
+      context "with MSBuild SDKs" do
+        let(:csproj_body) do
+          fixture("csproj", "sdk_references_of_all_kinds.csproj")
+        end
+        let(:dependency_name) { "Foo.Bar" }
+        let(:version) { "1.2.3" }
+        let(:previous_version) { "1.1.1" }
+        let(:requirements) do
+          [{
+            requirement: "1.2.3",
+            file: "my.csproj",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "1.1.1",
+            file: "my.csproj",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the project correctly" do
+          content = updated_csproj_file.content
+          # Sdk attribute on Project (front, middle, back)
+          expect(content).to include(%(Sdk="Foo.Bar/1.2.3;))
+          expect(content).to include(%(X;Foo.Bar/1.2.3;Y))
+          expect(content).to include(%(Y;Foo.Bar/1.2.3">))
+          # Sdk tag (name/version and version/name)
+          expect(content).to include(%(<Sdk Version="1.2.3" Name="Foo.Bar"))
+          expect(content).to include(%(<Sdk Name="Foo.Bar" Version="1.2.3"))
+          # Import tag (name/version and version/name)
+          expect(content).to include(
+            %(<Import Project="X" Version="1.2.3" Sdk="Foo.Bar")
+          )
+          expect(content).to include(
+            %(<Import Sdk="Foo.Bar" Project="Y" Version="1.2.3")
           )
         end
       end
@@ -152,7 +195,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         [{
           file: "packages.config",
           requirement: "8.0.4",
-          groups: [],
+          groups: ["dependencies"],
           source: nil
         }]
       end
@@ -160,7 +203,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         [{
           file: "packages.config",
           requirement: "8.0.3",
-          groups: [],
+          groups: ["dependencies"],
           source: nil
         }]
       end
@@ -194,7 +237,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             file: "dir/packages.config",
             requirement: "8.0.4",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -202,7 +245,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           [{
             file: "dir/packages.config",
             requirement: "8.0.3",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }]
         end
@@ -238,23 +281,23 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           requirements: [{
             file: "my.csproj",
             requirement: "1.1.2",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "my.vbproj",
             requirement: "1.1.*",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "my.csproj",
             requirement: "1.1.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }, {
             file: "my.vbproj",
             requirement: "1.0.1",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           package_manager: "nuget"

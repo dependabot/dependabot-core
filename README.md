@@ -7,13 +7,17 @@
 Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
-2. It is the public issue tracker for all things Dependabot, replacing the now-archived [feedback](https://github.com/dependabot/feedback/) repository.
+2. It is the public issue tracker for issues related to Dependabot's updating logic. For issues about Dependabot the service, please contact [GitHub support][support]. While the distinction between Dependabot Core and the service can be fuzzy, a good rule of thumb is if your issue is with the _diff_ that Dependabot created, it belongs here and for most other things the GitHub support team is best equipped to help you.
 
 ## Got feedback?
 
-Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+https://github.com/github/feedback/discussions/categories/dependabot-feedback
 
-Currently the Dependabot team is at reduced capacity, because of this our response times on issues and contributions will be slower than we'd like.
+## Contributing to Dependabot
+
+Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
+
+Please refer to the [CONTRIBUTING][contributing] guidelines for more information.
 
 ### Disclosing security issues
 
@@ -33,12 +37,24 @@ Highlights include:
 
 ## Other Dependabot resources
 
-In addition to this library, you may be interested in:
+In addition to this library, you may be interested in the [dependabot-script][dependabot-script] repo,
+which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab
+or Azure DevOps
 
-- The [dependabot-script][dependabot-script] repo, which provides a collection
-  of scripts that use this library to update dependencies on GitHub Enterprise,
-  GitLab or Azure DevOps
-- The [API docs][api-docs] for Dependabot's hosted instance (dependabot.com)
+## Cloning the repository
+Clone the repository with Git using:
+
+```
+git clone https://github.com/dependabot/dependabot-core.git
+```
+
+On Windows this might fail with "Filename too long". To solve this, run the
+following commands in the cloned Git repository:
+
+1. `git config core.longpaths true`
+2. `git reset --hard`
+
+You can read more about this in the [Git for Windows wiki](https://github.com/git-for-windows/git/wiki/Git-cannot-create-a-file-or-directory-with-a-long-path).
 
 ## Setup
 
@@ -46,30 +62,118 @@ To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
 Elm, and Rust installed. However, if you just wish to run it for a single
 language you can get away with just having that language and Ruby.
 
-The main library is written in Ruby, while JavaScript, Python, PHP, Elm,
-Elixir, Go, and Rust are required for dealing with updates for their respective
-languages.
+While you can run Dependabot Core without Docker, we provide a development
+Dockerfile that bakes in all required dependencies. In most cases this is the
+best way to work with the project.
 
-To install the helpers for each language:
+## Running with Docker
 
-1. `cd npm_and_yarn/helpers && yarn install --production && cd -`
-2. `cd composer/helpers && composer install --no-dev && cd -`
-3. `cd python/helpers && pyenv exec pip install -r requirements.txt && cd -`
-4. `cd hex/helpers && mix deps.get && cd -`
-5. `cd terraform && helpers/build "$(pwd)/helpers/install-dir/terraform" && cd -`
-6. `cd go_modules && helpers/build "$(pwd)/helpers/install-dir/go_modules" && cd -`
+Start by pulling the developer image from the [GitHub Container Registry][ghcr-core-dev] and then start the developer shell:
 
-## Local development
+```shell
+$ docker pull ghcr.io/dependabot/dependabot-core-development:latest
+$ docker tag ghcr.io/dependabot/dependabot-core-development dependabot/dependabot-core-development
+$ bin/docker-dev-shell
+=> running docker development shell
+[dependabot-core-dev] ~/dependabot-core $
+```
 
-Run the tests by running `rspec spec` inside each of the packages. Style is
-enforced by RuboCop. To check for style violations, simply run `rubocop` in
-each of the packages.
+### Dry run script
 
-### Running with Docker
+You can use the "dry-run" script to simulate a dependency update job, printing
+the diff that would be generated to the terminal. It takes two positional
+arguments: the package manager and the GitHub repo name (including the
+account):
 
-While you can run Dependabot Core without Docker, we also provide a development
-Dockerfile. In most cases, you'll be better off running Dependabot in the
-development Docker container as it bakes in all required dependencies.
+```bash
+$ bin/docker-dev-shell
+=> running docker development shell
+$ bin/dry-run.rb go_modules rsc/quote
+=> fetching dependency files
+=> parsing dependency files
+=> updating 2 dependencies
+...
+```
+
+### Running the tests
+
+Run the tests by running `rspec spec` inside each of the packages, e.g.
+
+```bash
+$ cd go_modules
+$ bundle exec rspec spec
+```
+
+Style is enforced by RuboCop. To check for style violations, simply run `rubocop` in
+each of the packages, e.g.
+
+```bash
+$ cd go_modules
+$ bundle exec rubocop
+```
+
+### Making changes to native helpers
+
+Several Dependabot packages make use of 'native helpers', small executables in their host language.
+
+**Changes to these files are not automatically reflected inside the development container**
+
+Once you have made any edits to the helper files, run the appropriate build script to update the
+installed version with your changes like so:
+
+```bash
+$ bin/docker-dev-shell
+=> running docker development shell
+$ bundler/helpers/v1/build
+$ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+### Debugging native helpers
+
+When you're making changes to native helpers or debugging a customer issue you often need to peek inside these scripts that run in a separate process.
+
+Print all log statements from native helpers:
+
+```bash
+DEBUG_HELPERS=true bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+Pause execution to debug a single native helper function:
+
+```bash
+DEBUG_FUNCTION=parsed_gemfile bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+The function maps to a native helper function name, for example, one of the functions in `bundler/helpers/v2/lib/functions.rb`.
+
+When this function is being executed a `debugger` is inserted, pausing execution of the `bin/dry-run.rb` script, this leaves the current updates tmp directory in place allowing you to cd into the directory and run the native helper function directly:
+
+```bash
+ DEBUG_FUNCTION=parsed_gemfile bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+=> fetching dependency files
+=> dumping fetched dependency files: ./dry-run/dependabot/demo/ruby
+=> parsing dependency files
+$ cd /home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby && echo "{\"function\":\"parsed_gemfile\",\"args\":{\"gemfile_name\":\"Gemfile\",\"lockfile_name\":\"Gemfile.lock\",\"dir\":\"/home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby\"}}" | BUNDLER_VERSION=1.17.3 BUNDLE_GEMFILE=/opt/bundler/v1/Gemfile GEM_HOME=/opt/bundler/v1/.bundle bundle exec ruby /opt/bundler/v1/run.rb
+```
+
+Copy and run the `cd... ` command:
+
+```bash
+cd /home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby && echo "{\"function\":\"parsed_gemfile\",\"args\":{\"gemfile_name\":\"Gemfile\",\"lockfile_name\":\"Gemfile.lock\",\"dir\":\"/home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby\"}}" | BUNDLER_VERSION=1.17.3 BUNDLE_GEMFILE=/opt/bundler/v1/Gemfile GEM_HOME=/opt/bundler/v1/.bundle bundle exec ruby /opt/bundler/v1/run.rb
+```
+
+This should log out the output of the `parsed_gemfile` function:
+
+```
+{"result":[{"name":"business","requirement":"~> 1.0.0","groups":["default"],"source":null,"type":"runtime"},{"name":"uk_phone_numbers","requirement":"~> 0.1.0","groups":["default"],"source":null,"type":"runtime"}]}
+```
+
+Edit the native helper function and re-run the above, for example: `vi /opt/bundler/v1/lib/functions/file_parser.rb`.
+
+### Building the development image from source
+
+The developer shell uses volume mounts to incorporate your local changes to Dependabot's source
+code. If you need to make changes to the development shell itself, you can rebuild it locally.
 
 Start by building the initial Dependabot Core image, or pull it from the
 Docker registry.
@@ -92,38 +196,31 @@ $ bin/docker-dev-shell
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
 ```
 
-### Dry run script
+## Running locally on your computer
 
-*Note: you must have run `bundle install` in the `omnibus` directory before
-running this script.*
+To work with Dependabot packages on your local machine you will need Ruby and the package's specific language installed.
 
-You can use the "dry-run" script to simulate a dependency update job, printing
-the diff that would be generated to the terminal. It takes two positional
-arguments: the package manager and the GitHub repo name (including the
-account):
-
-```bash
-$ cd omnibus && bundle install && cd -
-$ bin/dry-run.rb go_modules rsc/quote
-=> fetching dependency files
-=> parsing dependency files
-=> updating 2 dependencies
-...
-```
+For some languages there are additional steps required, please refer to the README file in each package.
 
 ## Debugging with Visual Studio Code and Docker
 
 There's built-in support for leveraging Visual Studio Code's [ability for
-debugging](https://code.visualstudio.com/docs/remote/containers) inside a Docker container.
-After installing the recommended [`Remote - Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
+debugging][vsc-remote-containers] inside a Docker container.
+After installing the recommended [`Remote - Containers` extension][vsc-remote-containers-ext],
 simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Remote-Containers: Reopen in Container`.
 You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
 If the development Docker image isn't present on your machine, it will be built automatically.
 Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll be prompted
 to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
+
+⚠️ The `Clone Repository ...` commands of the Remote Containers extension are currently
+missing some functionality and are therefore not supported. You have to clone the
+repository manually and use the `Reopen in Container` or `Open Folder in Container...`
+command.
 
 ## Releasing
 
@@ -176,6 +273,14 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
+## Profiling
+
+You can profile a dry-run by passing the `--profile` flag when running it, or
+tag an rspec test with `:profile`. This will generate a
+`stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a
+flamegraph from this by running:
+`stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html`.
+
 ## Why is this public?
 
 As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
@@ -214,10 +319,15 @@ Dependabot and Dependabot Core started life as [Bump][bump] and
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
+
 [dependabot]: https://dependabot.com
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
-[api-docs]: https://github.com/dependabot/api-docs
+[contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
 [bump]: https://github.com/gocardless/bump
 [bump-core]: https://github.com/gocardless/bump-core
 [gocardless]: https://gocardless.com
+[ghcr-core-dev]: https://github.com/dependabot/dependabot-core/pkgs/container/dependabot-core-development
+[support]: https://support.github.com/
+[vsc-remote-containers]: https://code.visualstudio.com/docs/remote/containers
+[vsc-remote-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers

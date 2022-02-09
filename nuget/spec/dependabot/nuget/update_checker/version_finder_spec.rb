@@ -26,7 +26,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     )
   end
   let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:dependency_version) { "1.1.1" }
@@ -99,6 +99,59 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     context "when the user is using an unfound property" do
       let(:dependency_version) { "$PackageVersion_LibGit2SharpNativeBinaries" }
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+    end
+
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:dependency_version) { "2.1.0" }
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the current version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the dependency is a git dependency" do
+      let(:dependency_version) { "a1b78a929dac93a52f08db4f2847d76d6cfe39bd" }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:ignored_versions) { ["> 1.1.1"] }
+      its([:version]) { is_expected.to eq(version_class.new("1.1.1")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
     end
 
     context "when the user is ignoring the latest version" do
@@ -231,6 +284,17 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
     end
 
+    context "with a package that returns paginated api results when using the v2 nuget api", :vcr do
+      let(:dependency_files) { project_dependency_files("paginated_package_v2_api") }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "4.7.1", groups: ["dependencies"], source: nil }]
+      end
+      let(:dependency_name) { "FakeItEasy" }
+      let(:dependency_version) { "4.7.1" }
+
+      its([:version]) { is_expected.to eq(version_class.new("7.1.0")) }
+    end
+
     context "with a custom repo in the credentials" do
       let(:credentials) do
         [{
@@ -247,6 +311,10 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:custom_repo_url) do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
+      let(:custom_nuget_search_url) do
+        "https://www.myget.org/F/exceptionless/api/v3/"\
+        "query?q=microsoft.extensions.dependencymodel&prerelease=true"
+      end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
         stub_request(:get, nuget_search_url).to_return(status: 404)
@@ -261,9 +329,6 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         custom_nuget_versions_url =
           "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
           "microsoft.extensions.dependencymodel/index.json"
-        custom_nuget_search_url =
-          "https://www.myget.org/F/exceptionless/api/v3/"\
-          "query?q=microsoft.extensions.dependencymodel&prerelease=true"
         stub_request(:get, custom_nuget_versions_url).to_return(status: 404)
         stub_request(:get, custom_nuget_versions_url).
           with(basic_auth: %w(my passw0rd)).
@@ -272,6 +337,33 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         stub_request(:get, custom_nuget_search_url).
           with(basic_auth: %w(my passw0rd)).
           to_return(status: 200, body: nuget_search_results)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+
+      context "that does not return PackageBaseAddress" do
+        let(:custom_repo_url) { "http://localhost:8082/artifactory/api/nuget/v3/nuget-local" }
+        let(:custom_nuget_search_url) do
+          "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/"\
+          "query?prerelease=true&q=microsoft.extensions.dependencymodel"
+        end
+        before do
+          stub_request(:get, custom_repo_url).
+            to_return(
+              status: 200,
+              body: fixture("nuget_responses", "artifactory_base.json")
+            )
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
+      end
+    end
+
+    context "with a version range specified" do
+      let(:dependency_files) { project_dependency_files("version_range") }
+      let(:dependency_version) { "1.1.0" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "[1.1.0, 3.0.0)", groups: ["dependencies"], source: nil }]
       end
 
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }

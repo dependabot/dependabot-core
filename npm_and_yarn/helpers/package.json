@@ -10,15 +10,16 @@
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.21.1",
-    "detect-indent": "^6.0.0",
-    "npm": "6.14.8",
-    "semver": "^7.3.2"
+    "@npmcli/arborist": "^4.2.1",
+    "detect-indent": "^6.1.0",
+    "npm": "6.14.16",
+    "semver": "^7.3.4"
   },
   "devDependencies": {
-    "eslint": "^7.7.0",
-    "eslint-plugin-prettier": "^3.1.4",
-    "jest": "^26.4.0",
-    "prettier": "^2.0.5",
+    "eslint": "^8.7.0",
+    "eslint-config-prettier": "^8.3.0",
+    "jest": "^27.4.7",
+    "prettier": "^2.5.1",
     "rimraf": "^3.0.2"
   }
 }

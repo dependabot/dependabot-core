@@ -11,7 +11,7 @@ module Dependabot
       class DeclarationFinder
         DECLARATION_REGEX =
           %r{<parent>.*?</parent>|<dependency>.*?</dependency>|
-             <plugin>.*?</plugin>|<extension>.*?</extension>}mx.freeze
+             <plugin>.*?(?:<plugin>.*?</plugin>.*)?</plugin>|<extension>.*?</extension>}mx.freeze
 
         attr_reader :dependency, :declaring_requirement, :dependency_files
 
@@ -71,9 +71,7 @@ module Dependabot
         end
 
         def node_group_id(node)
-          unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
-            return
-          end
+          return unless node.at_xpath("./*/groupId") || node.at_xpath("./plugin")
           return "org.apache.maven.plugins" unless node.at_xpath("./*/groupId")
 
           evaluated_value(node.at_xpath("./*/groupId").content.strip)

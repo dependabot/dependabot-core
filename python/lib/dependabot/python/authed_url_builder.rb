@@ -3,7 +3,6 @@
 module Dependabot
   module Python
     class AuthedUrlBuilder
-      # rubocop:disable Metrics/PerceivedComplexity
       def self.authed_url(credential:)
         token = credential.fetch("token", nil)
         url = credential.fetch("index-url")
@@ -14,7 +13,8 @@ module Dependabot
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
             Base64.decode64(token)
-          else token
+          else
+            token
           end
 
         if basic_auth_details.include?(":")
@@ -24,7 +24,6 @@ module Dependabot
 
         url.sub("://", "://#{basic_auth_details}@")
       end
-      # rubocop:enable Metrics/PerceivedComplexity
     end
   end
 end

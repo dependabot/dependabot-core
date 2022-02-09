@@ -20,6 +20,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
       it { is_expected.to eq(true) }
     end
 
+    context "with only a setup.cfg" do
+      let(:filenames) { %w(setup.cfg) }
+      it { is_expected.to eq(true) }
+    end
+
     context "with only a requirements folder" do
       let(:filenames) { %w(requirements) }
       it { is_expected.to eq(true) }
@@ -208,6 +213,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
         expect(file_fetcher_instance.files.count).to eq(1)
         expect(file_fetcher_instance.files.map(&:name)).
           to eq(["setup.py"])
+      end
+    end
+
+    context "with only a setup.cfg file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_setup_cfg.json")
+      end
+      before do
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_cfg_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the setup.cfg file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["setup.cfg"])
       end
     end
 
@@ -814,6 +840,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "file:./setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
           end
 
           it "fetches the path dependencies" do
@@ -1063,6 +1092,19 @@ RSpec.describe Dependabot::Python::FileFetcher do
           expect(file_fetcher_instance.files.first.name).
             to eq("requirements.txt")
         end
+      end
+    end
+
+    context "with a very large requirements.txt file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_large_requirements_txt.json")
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("requirements.txt")
+          end
       end
     end
   end

@@ -7,6 +7,7 @@ module Dependabot
   module Maven
     class Requirement < Gem::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
+      OR_SYNTAX = /(?<=\]|\)),/.freeze
       PATTERN_RAW =
         "\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*"
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
@@ -46,7 +47,9 @@ module Dependabot
       private
 
       def self.split_java_requirement(req_string)
-        req_string.split(/(?<=\]|\)),/).flat_map do |str|
+        return [req_string] unless req_string.match?(OR_SYNTAX)
+
+        req_string.split(OR_SYNTAX).flat_map do |str|
           next str if str.start_with?("(", "[")
 
           exacts, *rest = str.split(/,(?=\[|\()/)
@@ -62,11 +65,14 @@ module Dependabot
           raise "Can't convert multiple Java reqs to a single Ruby one"
         end
 
-        if req_string&.include?(",")
-          return convert_java_range_to_ruby_range(req_string)
+        # NOTE: Support ruby-style version requirements that are created from
+        # PR ignore conditions
+        version_reqs = req_string.split(",").map(&:strip)
+        if req_string.include?(",") && !version_reqs.all? { |s| PATTERN.match?(s) }
+          convert_java_range_to_ruby_range(req_string) if req_string.include?(",")
+        else
+          version_reqs.map { |r| convert_java_equals_req_to_ruby(r) }
         end
-
-        convert_java_equals_req_to_ruby(req_string)
       end
 
       def convert_java_range_to_ruby_range(req_string)
@@ -75,13 +81,15 @@ module Dependabot
         lower_b =
           if ["(", "["].include?(lower_b) then nil
           elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
-          else ">= #{lower_b.sub(/\[\s*/, '').strip}"
+          else
+            ">= #{lower_b.sub(/\[\s*/, '').strip}"
           end
 
         upper_b =
           if [")", "]"].include?(upper_b) then nil
           elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
-          else "<= #{upper_b.sub(/\s*\]/, '').strip}"
+          else
+            "<= #{upper_b.sub(/\s*\]/, '').strip}"
           end
 
         [lower_b, upper_b].compact
@@ -97,10 +105,11 @@ module Dependabot
       end
 
       def convert_wildcard_req(req_string)
-        version = req_string.gsub(/(?:\.|^)\+/, "")
-        return ">= 0" if version.empty?
+        version = req_string.split("+").first
+        return ">= 0" if version.nil? || version.empty?
 
-        "~> #{version}.0"
+        version += "0" if version.end_with?(".")
+        "~> #{version}"
       end
     end
   end

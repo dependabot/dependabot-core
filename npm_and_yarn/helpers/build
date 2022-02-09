@@ -2,11 +2,13 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
-  echo "usage: $0 INSTALL_DIR"
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/npm_and_yarn"
+mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
@@ -14,9 +16,10 @@ cp -r \
   "$helpers_dir/test" \
   "$helpers_dir/run.js" \
   "$helpers_dir/.eslintrc" \
+  "$helpers_dir/jest.config.js" \
   "$helpers_dir/package.json" \
-  "$helpers_dir/yarn.lock" \
+  "$helpers_dir/package-lock.json" \
   "$install_dir"
 
 cd "$install_dir"
-yarn install
+npm ci --no-audit --fetch-timeout=600000 --fetch-retries=5

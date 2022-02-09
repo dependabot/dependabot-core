@@ -42,7 +42,7 @@ module Dependabot
 
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",").map do |r|
+          req_string.split(",").map(&:strip).map do |r|
             convert_rust_constraint_to_ruby_constraint(r.strip)
           end
         end
@@ -53,14 +53,13 @@ module Dependabot
       private
 
       def convert_rust_constraint_to_ruby_constraint(req_string)
-        req_string = req_string
-
         if req_string.include?("*")
           ruby_range(req_string.gsub(/(?:\.|^)[*]/, "").gsub(/^[^\d]/, ""))
         elsif req_string.match?(/^~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.match?(/^[\d^]/) then convert_caret_req(req_string)
         elsif req_string.match?(/[<=>]/) then req_string
-        else ruby_range(req_string)
+        else
+          ruby_range(req_string)
         end
       end
 
@@ -94,7 +93,8 @@ module Dependabot
         upper_bound = parts.map.with_index do |part, i|
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
-          else 0
+          else
+            0
           end
         end.join(".")
 

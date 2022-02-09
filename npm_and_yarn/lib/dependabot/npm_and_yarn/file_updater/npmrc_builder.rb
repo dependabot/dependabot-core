@@ -13,6 +13,8 @@ module Dependabot
           registry.yarnpkg.com
         ).freeze
 
+        SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/.freeze
+
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files
           @credentials = credentials
@@ -23,7 +25,8 @@ module Dependabot
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
-            else build_npmrc_content_from_lockfile
+            else
+              build_npmrc_content_from_lockfile
             end
 
           return initial_content || "" unless registry_credentials.any?
@@ -44,17 +47,18 @@ module Dependabot
           "always-auth = true"
         end
 
-        def global_registry
+        def global_registry # rubocop:disable Metrics/PerceivedComplexity
           @global_registry ||=
             registry_credentials.find do |cred|
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
               # If all the URLs include this registry, it's global
-              if dependency_urls.all? { |url| url.include?(cred["registry"]) }
-                next true
-              end
+              next true if dependency_urls.all? { |url| url.include?(cred["registry"]) }
 
-              # If any unscoped URLs include this registry, it's global
+              # Check if this registry has already been defined in .npmrc as a scoped registry
+              next false if npmrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
+
+              # If any unscoped URLs include this registry, assume it's global
               dependency_urls.
                 reject { |u| u.include?("@") || u.include?("%40") }.
                 any? { |url| url.include?(cred["registry"]) }
@@ -120,14 +124,11 @@ module Dependabot
             match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
             named_captures&.fetch("registry")
 
-          if yarnrc_global_registry
-            return "registry = #{yarnrc_global_registry}\n"
-          end
+          return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
 
           build_npmrc_content_from_lockfile
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
@@ -154,8 +155,17 @@ module Dependabot
           # Work around a suspected yarn bug
           ["always-auth = true"] + lines
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
+        def npmrc_scoped_registries
+          return [] unless npmrc_file
+
+          @npmrc_scoped_registries ||=
+            npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
+            map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }.
+            compact
+        end
+
+        # rubocop:disable Metrics/PerceivedComplexity
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
@@ -174,7 +184,7 @@ module Dependabot
             end
 
           scopes = affected_urls.map do |url|
-            url.split(/\%40|@/)[1]&.split(%r{\%2F|/})&.first
+            url.split(/\%40|@/)[1]&.split(%r{\%2[fF]|/})&.first
           end
 
           # Registry used for unscoped packages
@@ -182,6 +192,7 @@ module Dependabot
 
           scopes.map { |scope| "@#{scope}:registry=https://#{registry}" }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def registry_credentials
           credentials.select { |cred| cred.fetch("type") == "npm_registry" }

@@ -17,27 +17,9 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com"
-    }]
-  end
-  let(:files) { [composer_json, lockfile] }
-  let(:composer_json) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "exact_version" }
-  let(:lockfile_fixture_name) { "exact_version" }
+  let(:credentials) { github_credentials }
+  let(:files) { project_dependency_files(project_name) }
+  let(:project_name) { "exact_version" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -65,7 +47,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       source: nil
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
@@ -84,8 +66,11 @@ RSpec.describe Dependabot::Composer::FileUpdater do
 
     describe "the updated composer_file" do
       let(:files) { [composer_json] }
-      subject(:updated_manifest_content) do
-        updated_files.find { |f| f.name == "composer.json" }.content
+      let(:composer_json) do
+        Dependabot::DependencyFile.new(
+          name: "composer.json",
+          content: fixture("projects/exact_version/composer.json")
+        )
       end
 
       context "if no files have changed" do
@@ -98,12 +83,11 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       end
 
       context "when the manifest has changed" do
-        it "includes the new requirement" do
-          expect(described_class::ManifestUpdater).
-            to receive(:new).
-            with(dependencies: [dependency], manifest: composer_json).
-            and_call_original
+        let(:updated_manifest_content) do
+          updated_files.find { |f| f.name == "composer.json" }.content
+        end
 
+        it "includes the new requirement" do
           expect(updated_manifest_content).
             to include("\"monolog/monolog\" : \"1.22.1\"")
           expect(updated_manifest_content).
@@ -113,22 +97,56 @@ RSpec.describe Dependabot::Composer::FileUpdater do
     end
 
     describe "the updated lockfile" do
-      subject(:updated_lockfile_content) do
+      let(:updated_lockfile_content) do
         updated_files.find { |f| f.name == "composer.lock" }.content
       end
+      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
+      let(:updated_lockfile_entry) do
+        parsed_updated_lockfile_content["packages"].find do |package|
+          package["name"] == dependency.name
+        end
+      end
 
-      it "updates the dependency version in the lockfile" do
-        expect(described_class::LockfileUpdater).
-          to receive(:new).
-          with(
-            credentials: credentials,
-            dependencies: [dependency],
-            dependency_files: files
-          ).
-          and_call_original
+      it "updates the dependency version and plugin-api-version (to match instaled composer) in the lockfile" do
+        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
+        expect(parsed_updated_lockfile_content["prefer-stable"]).to be(false)
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.2.0")
+      end
+    end
 
-        expect(updated_lockfile_content).to include("\"version\": \"1.22.1\"")
-        expect(updated_lockfile_content).to include("\"prefer-stable\": false")
+    describe "updates the lockfile using composer v1" do
+      let(:updated_lockfile_content) do
+        updated_files.find { |f| f.name == "composer.lock" }.content
+      end
+      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
+      let(:updated_lockfile_entry) do
+        parsed_updated_lockfile_content["packages"].find do |package|
+          package["name"] == dependency.name
+        end
+      end
+      let(:project_name) { "v1/exact_version" }
+
+      it "updates the dependency version and plugin-api-version (to match instaled composer) in the lockfile" do
+        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("1.1.0")
+      end
+    end
+
+    context "with a project that specifies a platform package" do
+      let(:updated_lockfile_content) do
+        updated_files.find { |f| f.name == "composer.lock" }.content
+      end
+      let(:parsed_updated_lockfile_content) { JSON.parse(updated_lockfile_content) }
+      let(:updated_lockfile_entry) do
+        parsed_updated_lockfile_content["packages"].find do |package|
+          package["name"] == dependency.name
+        end
+      end
+      let(:project_name) { "platform_package" }
+
+      it "updates the dependency and does not downgrade the composer version" do
+        expect(updated_lockfile_entry["version"]).to eq("1.22.1")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.2.0")
       end
     end
   end

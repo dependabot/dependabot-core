@@ -6,6 +6,7 @@ require "time"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 
 module Dependabot
@@ -14,9 +15,7 @@ module Dependabot
       def homepage_url
         # Attempt to use version_listing first, as fetching the entire listing
         # array can be slow (if it's large)
-        if latest_version_listing["homepage"]
-          return latest_version_listing["homepage"]
-        end
+        return latest_version_listing["homepage"] if latest_version_listing["homepage"]
 
         listing = all_version_listings.find { |_, l| l["homepage"] }
         listing&.last&.fetch("homepage", nil) || super
@@ -41,7 +40,7 @@ module Dependabot
 
         case source_type
         when "git" then find_source_from_git_url
-        when "private_registry" then find_source_from_registry
+        when "registry" then find_source_from_registry
         else raise "Unexpected source type: #{source_type}"
         end
       end
@@ -94,9 +93,8 @@ module Dependabot
 
       def new_source
         sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
+                  map { |r| r.fetch(:source) }.uniq.compact.
+                  sort_by { |source| UpdateChecker::RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
       end
@@ -136,9 +134,7 @@ module Dependabot
         # Special case DefinitelyTyped, which has predictable URLs.
         # This can be removed once this PR is merged:
         # https://github.com/Microsoft/types-publisher/pull/578
-        if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-          return dependency.name.gsub(/^@/, "")
-        end
+        return dependency.name.gsub(/^@/, "") if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
 
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
@@ -156,14 +152,11 @@ module Dependabot
 
         response = Excon.get(
           "#{dependency_url}/latest",
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
-        if response.status == 200
-          return @latest_version_listing = JSON.parse(response.body)
-        end
+        return @latest_version_listing = JSON.parse(response.body) if response.status == 200
 
         @latest_version_listing = {}
       rescue JSON::ParserError, Excon::Error::Timeout
@@ -184,9 +177,8 @@ module Dependabot
 
         response = Excon.get(
           dependency_url,
-          headers: registry_auth_headers,
           idempotent: true,
-          **SharedHelpers.excon_defaults
+          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
         )
 
         return @npm_listing = {} if response.status >= 500
@@ -205,7 +197,8 @@ module Dependabot
       def dependency_url
         registry_url =
           if new_source.nil? then "https://registry.npmjs.org"
-          else new_source.fetch(:url)
+          else
+            new_source.fetch(:url)
           end
 
         # NPM registries expect slashes to be escaped
@@ -221,7 +214,8 @@ module Dependabot
 
       def dependency_registry
         if new_source.nil? then "registry.npmjs.org"
-        else new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
+        else
+          new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
         end
       end
 

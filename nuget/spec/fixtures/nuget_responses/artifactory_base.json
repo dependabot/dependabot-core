@@ -1,0 +1,73 @@
+{
+  "version": "3.0.0",
+  "resources": [
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/query",
+      "@type": "SearchQueryService",
+      "comment": "Query endpoint of NuGet Search service (primary)"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/",
+      "@type": "RegistrationsBaseUrl",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/nuget-local",
+      "@type": "LegacyGallery"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/nuget-local",
+      "@type": "LegacyGallery/2.0.0"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/nuget-local",
+      "@type": "PackagePublish/2.0.0"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/query",
+      "@type": "SearchQueryService/3.0.0-rc",
+      "comment": "Query endpoint of NuGet Search service (primary) used by RC clients"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/",
+      "@type": "RegistrationsBaseUrl/3.0.0-rc",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored used by RC clients. This base URL does not include SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/{id-lower}/index.json",
+      "@type": "PackageDisplayMetadataUriTemplate/3.0.0-rc",
+      "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/{id-lower}/{version-lower}.json",
+      "@type": "PackageVersionDisplayMetadataUriTemplate/3.0.0-rc",
+      "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID, Version"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/query",
+      "@type": "SearchQueryService/3.0.0-beta",
+      "comment": "Query endpoint of NuGet Search service (primary) used by beta clients"
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/",
+      "@type": "RegistrationsBaseUrl/3.0.0-beta",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored used by Beta clients. This base URL does not include SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration/",
+      "@type": "RegistrationsBaseUrl/3.4.0",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format. This base URL does not include SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration-semver2/",
+      "@type": "RegistrationsBaseUrl/3.6.0",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format. This base URL includes SemVer 2.0.0 packages."
+    },
+    {
+      "@id": "http://localhost:8082/artifactory/api/nuget/v3/nuget-local/registration-semver2/",
+      "@type": "RegistrationsBaseUrl/Versioned",
+      "clientVersion": "4.3.0-alpha",
+      "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format. This base URL includes SemVer 2.0.0 packages."
+    }
+  ]
+}

@@ -33,6 +33,7 @@ module Dependabot
 
         attr_reader :requirements, :latest_resolvable_version, :updated_source
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def updated_mixfile_requirement(req)
           req = update_source(req)
           return req unless latest_resolvable_version && req[:requirement]
@@ -53,21 +54,17 @@ module Dependabot
               update_mixfile_range(last_string_reqs).map(&:to_s).join(" and ")
             end
 
-          if or_string_reqs.count > 1
-            new_requirement = req[:requirement] + " or " + new_requirement
-          end
+          new_requirement = req[:requirement] + " or " + new_requirement if or_string_reqs.count > 1
 
           req.merge(requirement: new_requirement)
         end
-
+        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
         def update_source(requirement_hash)
           # Only git sources ever need to be updated. Anything else should be
           # left alone.
-          unless requirement_hash.dig(:source, :type) == "git"
-            return requirement_hash
-          end
+          return requirement_hash unless requirement_hash.dig(:source, :type) == "git"
 
           requirement_hash.merge(source: updated_source)
         end
@@ -139,7 +136,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end
 

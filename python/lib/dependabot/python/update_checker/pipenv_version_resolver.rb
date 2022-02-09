@@ -16,7 +16,6 @@ require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
 require "dependabot/python/version"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class UpdateChecker
@@ -35,10 +34,16 @@ module Dependabot
         GIT_REFERENCE_NOT_FOUND_REGEX =
           %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
+        PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out"\
+                                    " with exit status 1: python setup.py egg_info"
+        TRACEBACK = "Traceback (most recent call last):"
+        PIPENV_INSTALLATION_ERROR_REGEX =
+          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/.
+          freeze
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
-          /"python setup\.py egg_info".*(?:#{UNSUPPORTED_DEPS.join("|")})/.
-          freeze
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/.freeze
+        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -59,20 +64,14 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-            @resolvable[version] = true
-          else
-            @resolvable[version] = false
-          end
+          @resolvable[version] = !!fetch_latest_resolvable_version_string(requirement: "==#{version}")
         end
 
         private
 
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
-          if @latest_resolvable_version_string.key?(requirement)
-            return @latest_resolvable_version_string[requirement]
-          end
+          return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
 
           @latest_resolvable_version_string[requirement] ||=
             SharedHelpers.in_a_temporary_directory do
@@ -147,16 +146,31 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          if error.message.include?("Could not find a version") ||
-             error.message.include?("is not a python version")
+          if error.message.match?(PIPENV_RANGE_WARNING)
+            msg = "Pipenv does not support specifying Python ranges "\
+              "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+              "details)."
+            raise DependencyFileNotResolvable, msg
+          end
+
+          if error.message.include?("Could not find a version") || error.message.include?("ResolutionFailure")
             check_original_requirements_resolvable
           end
 
-          if error.message.include?('Command "python setup.py egg_info"') ||
-             error.message.include?("exit status 1: python setup.py egg_info")
+          if error.message.include?("SyntaxError: invalid syntax")
+            raise DependencyFileNotResolvable,
+                  "SyntaxError while installing dependencies. Is one of the dependencies not Python 3 compatible? "\
+                  "Pip v21 no longer supports Python 2."
+          end
+
+          if (error.message.include?('Command "python setup.py egg_info"') ||
+              error.message.include?(
+                "exit status 1: python setup.py egg_info"
+              )) &&
+             check_original_requirements_resolvable
             # The latest version of the dependency we're updating is borked
             # (because it has an unevaluatable setup.py). Skip the update.
-            return if check_original_requirements_resolvable
+            return
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
@@ -168,7 +182,6 @@ module Dependabot
             return if error.message.match?(/#{Regexp.quote(dependency.name)}/i)
           end
 
-          puts error.message
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")
@@ -207,18 +220,12 @@ module Dependabot
         end
 
         def handle_pipenv_errors_resolving_original_reqs(error)
-          if error.message.include?("Could not find a version")
+          if error.message.include?("Could not find a version") ||
+             error.message.include?("package versions have conflicting dependencies")
             msg = clean_error_message(error.message)
             msg.gsub!(/\s+\(from .*$/, "")
             raise if msg.empty?
 
-            raise DependencyFileNotResolvable, msg
-          end
-
-          if error.message.include?("is not a python version")
-            msg = "Pipenv does not support specifying Python ranges "\
-              "(see https://github.com/pypa/pipenv/issues/1050 for more "\
-              "details)."
             raise DependencyFileNotResolvable, msg
           end
 
@@ -230,6 +237,10 @@ module Dependabot
 
             raise DependencyFileNotResolvable, msg
           end
+
+          # NOTE: Pipenv masks the actualy error, see this issue for updates:
+          # https://github.com/pypa/pipenv/issues/2791
+          handle_pipenv_installation_error(error.message) if error.message.match?(PIPENV_INSTALLATION_ERROR_REGEX)
 
           # Raise an unhandled error, as this could be a problem with
           # Dependabot's infrastructure, rather than the Pipfile
@@ -254,6 +265,19 @@ module Dependabot
 
           # We also need to redact any URLs, as they may include credentials
           msg.gsub(/http.*?(?=\s)/, "<redacted>")
+        end
+
+        def handle_pipenv_installation_error(error_message)
+          # Find the dependency that's causing resolution to fail
+          dependency_name = error_message.match(PIPENV_INSTALLATION_ERROR_REGEX).named_captures["name"]
+          raise unless dependency_name
+
+          msg = "Pipenv failed to install \"#{dependency_name}\". This could be caused by missing system "\
+                "dependencies that can't be installed by Dependabot or required installation flags.\n\n"\
+                "Error output from running \"pipenv lock\":\n"\
+                "#{clean_error_message(error_message)}"
+
+          raise DependencyFileNotResolvable, msg
         end
 
         def write_temporary_dependency_files(updated_req: nil,
@@ -295,9 +319,7 @@ module Dependabot
             nil
           end
 
-          if run_command("pyenv versions").include?("#{python_version}\n")
-            return
-          end
+          return if run_command("pyenv versions").include?("#{python_version}\n")
 
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")
@@ -332,6 +354,7 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def set_target_dependency_req(pipfile_content, updated_requirement)
           return pipfile_content unless updated_requirement
 
@@ -352,6 +375,7 @@ module Dependabot
 
           TomlRB.dump(pipfile_object)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def subdep_type?(type)
           return false if dependency.top_level?
@@ -381,7 +405,8 @@ module Dependabot
             elsif user_specified_python_requirement
               parts = user_specified_python_requirement.split(".")
               parts.fill("*", (parts.length)..2).join(".")
-            else PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+            else
+              PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
           # Ideally, the requirement is satisfied by a Python version we support
@@ -442,36 +467,6 @@ module Dependabot
         def run_pipenv_command(command, env: pipenv_env_variables)
           run_command("pyenv local #{python_version}")
           run_command(command, env: env)
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          original_error ||= e
-          msg = e.message
-
-          relevant_error =
-            if may_be_using_wrong_python_version?(msg) then original_error
-            else e
-            end
-
-          raise relevant_error unless may_be_using_wrong_python_version?(msg)
-          raise relevant_error if python_version.start_with?("2")
-
-          # Clear the existing virtualenv, so that we use the new Python version
-          run_command("pyenv local #{python_version}")
-          run_command("pyenv exec pipenv --rm")
-
-          @python_version = "2.7.18"
-          retry
-        ensure
-          @python_version = nil
-          FileUtils.remove_entry(".python-version", true)
-        end
-
-        def may_be_using_wrong_python_version?(error_message)
-          return false if user_specified_python_requirement
-          return true if error_message.include?("UnsupportedPythonVersion")
-          return true if error_message.include?("at matches #{dependency.name}")
-
-          error_message.include?('Command "python setup.py egg_info" failed') ||
-            error_message.include?("exit status 1: python setup.py egg_info")
         end
 
         def pipenv_env_variables
@@ -507,4 +502,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

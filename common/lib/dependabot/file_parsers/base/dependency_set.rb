@@ -21,9 +21,7 @@ module Dependabot
         attr_reader :dependencies
 
         def <<(dep)
-          unless dep.is_a?(Dependency)
-            raise ArgumentError, "must be a Dependency object"
-          end
+          raise ArgumentError, "must be a Dependency object" unless dep.is_a?(Dependency)
 
           existing_dependency = dependency_for_name(dep.name)
 
@@ -40,9 +38,7 @@ module Dependabot
         end
 
         def +(other)
-          unless other.is_a?(DependencySet)
-            raise ArgumentError, "must be a DependencySet"
-          end
+          raise ArgumentError, "must be a DependencySet" unless other.is_a?(DependencySet)
 
           other.dependencies.each { |dep| self << dep }
           self
@@ -60,7 +56,6 @@ module Dependabot
           dependencies.find { |d| d.name&.downcase == name&.downcase }
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def combined_dependency(old_dep, new_dep)
           package_manager = old_dep.package_manager
           v_cls = Utils.version_class_for_package_manager(package_manager)
@@ -73,7 +68,8 @@ module Dependabot
             elsif !v_cls.correct?(old_dep.version) then new_dep.version
             elsif v_cls.new(new_dep.version) > v_cls.new(old_dep.version)
               old_dep.version
-            else new_dep.version
+            else
+              new_dep.version
             end
 
           subdependency_metadata = (
@@ -89,8 +85,6 @@ module Dependabot
             subdependency_metadata: subdependency_metadata
           )
         end
-
-        # rubocop:enable Metrics/PerceivedComplexity
       end
     end
   end

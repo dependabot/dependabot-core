@@ -51,9 +51,7 @@ module Dependabot
         def new_tag
           new_version = dependency.version
 
-          if git_source?(dependency.requirements) && git_sha?(new_version)
-            return new_version
-          end
+          return new_version if git_source?(dependency.requirements) && git_sha?(new_version)
 
           return new_ref if new_ref && ref_changed?
 
@@ -98,9 +96,7 @@ module Dependabot
         end
 
         def version_from_tag(tag)
-          if version_class.correct?(tag.gsub(/^v/, ""))
-            version_class.new(tag.gsub(/^v/, ""))
-          end
+          version_class.new(tag.gsub(/^v/, "")) if version_class.correct?(tag.gsub(/^v/, ""))
 
           return unless tag.gsub(/^[^\d]*/, "").length > 1
           return unless version_class.correct?(tag.gsub(/^[^\d]*/, ""))
@@ -156,9 +152,7 @@ module Dependabot
         def tag_matches_version?(tag, version)
           return false unless version
 
-          unless version_class.correct?(version)
-            return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/)
-          end
+          return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/) unless version_class.correct?(version)
 
           version_regex = GitCommitChecker::VERSION_REGEX
           return false unless tag.match?(version_regex)
@@ -232,7 +226,7 @@ module Dependabot
               previous_commit_shas =
                 github_client.commits(repo, **args).map(&:sha)
 
-              # Note: We reverse this so it's consistent with the array we get
+              # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
               github_client.

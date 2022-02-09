@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "08e3181df84d04301c9d435357ec9cf43c4a491d79a1ada682cce8936c492f49"
+            "sha256": "c402ea48092e9d467af51a483bb8dd8ad0620e11c94f009dcd433f97a99d45db"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -20,7 +20,7 @@
         "requires": {},
         "sources": [
             {
-                "url": "https://pypi.python.org/simple",
+                "url": "https://pypi.org/simple",
                 "verify_ssl": true
             }
         ]

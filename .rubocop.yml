@@ -1,131 +1,212 @@
+---
 AllCops:
   DisplayCopNames: true
-  TargetRubyVersion: 2.5
   Exclude:
-    - '*/vendor/**/*'
-    - '*/bin/**/*'
-    - '*/tmp/**/*'
-    - 'tmp/**/*'
-    - '*/helpers/**/*'
-
+  - "*/vendor/**/*"
+  - "*/bin/**/*"
+  - "**/tmp/**/*"
+  - "*/spec/fixtures/**/*"
+  TargetRubyVersion: 2.5
+  SuggestExtensions: false
+Gemspec/DateAssignment:
+  Enabled: true
 Layout/DotPosition:
   EnforcedStyle: trailing
-
 Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
-
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
 Layout/LineLength:
-  Max: 80
-
+  Max: 120
 Layout/RescueEnsureAlignment:
   Enabled: false
-
 Layout/SpaceAroundMethodCallOperator:
   Enabled: false
-
+Layout/SpaceBeforeBrackets:
+  Enabled: true
+Lint/AmbiguousAssignment:
+  Enabled: true
+Lint/BinaryOperatorWithIdenticalOperands:
+  Enabled: true
+Lint/DeprecatedConstants:
+  Enabled: true
 Lint/DeprecatedOpenSSLConstant:
   Enabled: false
-
-Lint/MixedRegexpCaptureTypes:
+Lint/DuplicateBranch:
   Enabled: false
-
-Lint/RaiseException:
-  Enabled: false
-
-Lint/StructNewOverride:
-  Enabled: false
-
-Metrics/ClassLength:
-  Max: 350
-
-Metrics/ModuleLength:
-  Max: 350
-
-Metrics/CyclomaticComplexity:
-  Max: 15
-
-Metrics/AbcSize:
-  Max: 35
-
-Metrics/MethodLength:
-  Max: 35
-
-Metrics/BlockLength:
-  Max: 35
-  Exclude:
-    - '*/Rakefile'
-    - '*/spec/**/*'
-    - '*/dependabot-*.gemspec'
-
-Metrics/ParameterLists:
-  CountKeywordArgs: false
-
-Naming/FileName:
-  Enabled: false
-
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
-
-Style/SignalException:
-  EnforcedStyle: only_raise
-
-Style/Documentation:
-  Enabled: false
-
-Style/HashEachMethods:
-  Enabled: false
-
-Style/HashTransformKeys:
-  Enabled: false
-
-Style/HashTransformValues:
-  Enabled: false
-
-Style/PercentLiteralDelimiters:
-  PreferredDelimiters:
-    '%i': ()
-    '%I': ()
-    '%w': ()
-    '%W': ()
-
-Style/ExponentialNotation:
-  Enabled: false
-
-Style/RedundantRegexpCharacterClass:
-  Enabled: false
-
-Style/RedundantRegexpEscape:
-  Enabled: false
-
-Style/SlicingWithRange:
-  Enabled: false
-
-Style/RedundantFetchBlock:
-  Enabled: false
-
 Lint/DuplicateElsifCondition:
   Enabled: false
-
+Lint/DuplicateRegexpCharacterClassElement:
+  Enabled: true
+Lint/DuplicateRequire:
+  Enabled: true
+Lint/DuplicateRescueException:
+  Enabled: true
+Lint/EmptyBlock:
+  Enabled: true
+Lint/EmptyClass:
+  Enabled: true
+Lint/EmptyConditionalBody:
+  Enabled: true
+Lint/EmptyFile:
+  Enabled: true
+Lint/EmptyInPattern:
+  Enabled: true
+Lint/FloatComparison:
+  Enabled: true
+Lint/LambdaWithoutLiteralBlock:
+  Enabled: true
+Lint/MissingSuper:
+  Enabled: false
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+Lint/NoReturnInBeginEndBlocks:
+  Enabled: false
+Lint/NumberedParameterAssignment:
+  Enabled: true
+Lint/OrAssignmentToConstant:
+  Enabled: true
+Lint/OutOfRangeRegexpRef:
+  Enabled: true
+Lint/RaiseException:
+  Enabled: false
+Lint/RedundantDirGlobSort:
+  Enabled: true
+Lint/SelfAssignment:
+  Enabled: true
+Lint/StructNewOverride:
+  Enabled: false
+Lint/SymbolConversion:
+  Enabled: true
+Lint/ToEnumArguments:
+  Enabled: true
+Lint/TopLevelReturnWithArgument:
+  Enabled: true
+Lint/TrailingCommaInAttributeDeclaration:
+  Enabled: true
+Lint/TripleQuotes:
+  Enabled: true
+Lint/UnexpectedBlockArity:
+  Enabled: true
+Lint/UnmodifiedReduceAccumulator:
+  Enabled: true
+Lint/UnreachableLoop:
+  Enabled: true
+Lint/UselessMethodDefinition:
+  Enabled: true
+Metrics/AbcSize:
+  Max: 35
+Metrics/BlockLength:
+  Exclude:
+  - "*/Rakefile"
+  - "**/spec/**/*"
+  - "*/dependabot-*.gemspec"
+  Max: 35
+Metrics/ClassLength:
+  Max: 350
+Metrics/CyclomaticComplexity:
+  Max: 15
+Metrics/MethodLength:
+  Max: 35
+Metrics/ModuleLength:
+  Max: 350
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+Metrics/PerceivedComplexity:
+  Max: 10
+Naming/FileName:
+  Enabled: false
 Style/AccessorGrouping:
   Enabled: false
-
+Style/ArgumentsForwarding:
+  Enabled: true
 Style/ArrayCoercion:
   Enabled: false
-
 Style/BisectedAttrAccessor:
   Enabled: false
-
 Style/CaseLikeIf:
   Enabled: false
-
+Style/CollectionCompact:
+  Enabled: true
+Style/CombinableLoops:
+  Enabled: true
+Style/DocumentDynamicEvalDefinition:
+  Enabled: true
+Style/Documentation:
+  Enabled: false
+Style/EndlessMethod:
+  Enabled: true
+Style/ExplicitBlockArgument:
+  Enabled: true
+Style/ExponentialNotation:
+  Enabled: false
+Style/GlobalStdStream:
+  Enabled: true
 Style/HashAsLastArrayItem:
   Enabled: false
-
+Style/HashConversion:
+  Enabled: true
+Style/HashEachMethods:
+  Enabled: false
+Style/HashExcept:
+  Enabled: true
 Style/HashLikeCase:
   Enabled: false
-
+Style/HashTransformKeys:
+  Enabled: false
+Style/HashTransformValues:
+  Enabled: false
+Style/IfWithBooleanLiteralBranches:
+  Enabled: true
+Style/InPatternThen:
+  Enabled: true
+Style/KeywordParametersOrder:
+  Enabled: false
+Style/MultilineInPatternThen:
+  Enabled: true
+Style/NegatedIfElseCondition:
+  Enabled: true
+Style/NilLambda:
+  Enabled: true
+Style/OptionalBooleanParameter:
+  Enabled: false
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    "%I": "()"
+    "%W": "()"
+    "%i": "()"
+    "%w": "()"
+Style/QuotedSymbols:
+  Enabled: true
+Style/RedundantArgument:
+  Enabled: true
 Style/RedundantAssignment:
   Enabled: false
-
+Style/RedundantFetchBlock:
+  Enabled: false
 Style/RedundantFileExtensionInRequire:
   Enabled: false
+Style/RedundantRegexpCharacterClass:
+  Enabled: false
+Style/RedundantRegexpEscape:
+  Enabled: false
+Style/RedundantSelfAssignment:
+  Enabled: true
+Style/SignalException:
+  EnforcedStyle: only_raise
+Style/SingleArgumentDig:
+  Enabled: true
+Style/SlicingWithRange:
+  Enabled: false
+Style/SoleNestedConditional:
+  Enabled: true
+Style/StringChars:
+  Enabled: true
+Style/StringConcatenation:
+  Enabled: false
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+Style/SwapValues:
+  Enabled: true

@@ -218,6 +218,7 @@ module Dependabot
       # an alternative source (i.e., a git source) is also specified
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       def required_path?(file, path)
         # Paths specified in dependency declaration
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -254,9 +255,9 @@ module Dependabot
 
         false
       end
-
-      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path

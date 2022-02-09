@@ -96,6 +96,7 @@ module Dependabot
           req.merge(requirement: new_req)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def widen_requirement(req, or_separator)
           current_requirement = req[:requirement]
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
@@ -115,6 +116,7 @@ module Dependabot
 
           req.merge(requirement: updated_requirement)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_requirement_version(req, or_separator)
           current_requirement = req[:requirement]
@@ -142,9 +144,7 @@ module Dependabot
         def update_version_string(req_string)
           req_string.
             sub(VERSION_REGEX) do |old_version|
-              unless req_string.match?(/[~*\^]/)
-                next latest_resolvable_version.to_s
-              end
+              next latest_resolvable_version.to_s unless req_string.match?(/[~*\^]/)
 
               old_parts = old_version.split(".")
               new_parts = latest_resolvable_version.to_s.split(".").
@@ -236,7 +236,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end.join(".")
         end

@@ -26,10 +26,12 @@ module Dependabot
         latest_version
       end
 
-      def lowest_resolvable_security_fix_version
-        return nil if version_comes_from_multi_dependency_property?
-
+      def lowest_security_fix_version
         lowest_security_fix_version_details&.fetch(:version)
+      end
+
+      def lowest_resolvable_security_fix_version
+        lowest_security_fix_version
       end
 
       def latest_resolvable_version_with_no_unlock

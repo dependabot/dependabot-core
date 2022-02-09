@@ -71,9 +71,10 @@ module Dependabot
         def get_repo_metadata(repo_details)
           Excon.get(
             repo_details.fetch(:url),
-            headers: auth_header_for_token(repo_details.fetch(:token)),
             idempotent: true,
-            **SharedHelpers.excon_defaults
+            **SharedHelpers.excon_defaults(
+              headers: auth_header_for_token(repo_details.fetch(:token))
+            )
           )
         end
 
@@ -93,10 +94,12 @@ module Dependabot
 
         def build_v2_url(response, repo_details)
           doc = Nokogiri::XML(response.body)
+
           doc.remove_namespaces!
           base_url = doc.at_xpath("service")&.attributes&.
                      fetch("base", nil)&.value
-          return unless base_url
+
+          base_url ||= repo_details.fetch(:url)
 
           {
             repository_url: base_url,
@@ -129,9 +132,7 @@ module Dependabot
           @known_repositories += credential_repositories
           @known_repositories += config_file_repositories
 
-          if @known_repositories.empty?
-            @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil }
-          end
+          @known_repositories << { url: DEFAULT_REPOSITORY_URL, token: nil } if @known_repositories.empty?
 
           @known_repositories.uniq
         end
@@ -148,6 +149,8 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
@@ -162,6 +165,11 @@ module Dependabot
                     node.at_xpath("./value")&.content&.strip
               }
             end
+
+          disabled_sources = disabled_sources(doc)
+          sources.reject! do |s|
+            disabled_sources.include?(s[:key])
+          end
 
           unless doc.css("configuration > packageSources > clear").any?
             sources << { url: DEFAULT_REPOSITORY_URL, key: nil }
@@ -179,6 +187,8 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
 
         def default_repository_details
@@ -193,6 +203,21 @@ module Dependabot
           }
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
+        def disabled_sources(doc)
+          doc.css("configuration > disabledPackageSources > add").map do |node|
+            value = node.attribute("value")&.value ||
+                    node.at_xpath("./value")&.content
+
+            if value&.strip&.downcase == "true"
+              node.attribute("key")&.value&.strip ||
+                node.at_xpath("./key")&.content&.strip
+            end
+          end
+        end
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        # rubocop:disable Metrics/PerceivedComplexity
         def add_config_file_credentials(sources:, doc:)
           sources.each do |source_details|
             key = source_details.fetch(:key)
@@ -212,7 +237,7 @@ module Dependabot
               find { |n| n.attribute("key")&.value == "ClearTextPassword" }&.
               attribute("value")&.value
 
-            # Note: We have to look for plain text passwords, as we have no
+            # NOTE: We have to look for plain text passwords, as we have no
             # way of decrypting encrypted passwords. For the same reason we
             # don't fetch API keys from the nuget.config at all.
             next source_details[:token] = nil unless username && password
@@ -225,6 +250,7 @@ module Dependabot
 
           sources
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_wrapping_zero_width_chars(string)
           string.force_encoding("UTF-8").encode.

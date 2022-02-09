@@ -15,7 +15,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
-      commit_message_options: { signoff_details: signoff_details },
+      commit_message_options: { signoff_details: signoff_details, trailers: trailers },
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -42,8 +42,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
   let(:signoff_details) { nil }
+  let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
-  let(:github_redirection_service) { "github-redirect.dependabot.com" }
+  let(:github_redirection_service) { "redirect.github.com" }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -69,7 +70,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "Bump version to v1.4.0</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> "\
-    "[Fix <a href=\"https://github-redirect.dependabot.com/gocardless/"\
+    "[Fix <a href=\"https://redirect.github.com/gocardless/"\
     "business/issues/9\">#9</a>] Allow custom calendars</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> "\
@@ -79,16 +80,16 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
     "</a></li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> "\
-    "Spacing: <a href=\"https://github-redirect.dependabot.com/my/repo/"\
+    "Spacing: <a href=\"https://redirect.github.com/my/repo/"\
     "pull/5\">my/repo#5</a></li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> "\
-    "Merge pull request <a href=\"https://github-redirect.dependabot.com/"\
+    "Merge pull request <a href=\"https://redirect.github.com/"\
     "gocardless/business/issues/8\">#8</a> "\
     "from gocardless/rename-sepa-to-ecb</li>\n"\
     "<li><a href=\"https://github.com/gocardless/business/commit/"\
     "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> "\
-    "<a href=\"https://github-redirect.dependabot.com/gocardless/business/"\
+    "<a href=\"https://redirect.github.com/gocardless/business/"\
     "issues/12\">12</a> Remove <em>SEPA</em> "\
     "calendar (replaced by TARGET)</li>\n"\
     "<li>See full diff in <a href=\"https://github.com/gocardless/business/"\
@@ -210,7 +211,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("[Security] Bump business") }
         end
 
@@ -404,6 +405,18 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             end
           end
         end
+
+        context "with a vendored .gemspec" do
+          let(:files) { [gemfile, gemfile_lock, gemspec] }
+          let(:gemspec) do
+            Dependabot::DependencyFile.new(
+              name: "vendor/cache/dep/git.gemspec",
+              content: fixture("ruby", "gemspecs", "example")
+            )
+          end
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
       end
 
       context "that uses angular commits" do
@@ -434,7 +447,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("chore(deps): [security] bump") }
         end
 
@@ -477,7 +490,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("Upgrade: [Security] Bump") }
         end
       end
@@ -493,7 +506,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it { is_expected.to start_with("⬆️ Bump business") }
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("⬆️🔒 Bump business") }
         end
       end
@@ -601,7 +614,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("[Security] Update business") }
         end
 
@@ -655,7 +668,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("chore(deps): [security] update") }
         end
       end
@@ -675,7 +688,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with a security vulnerability fixed" do
-          let(:vulnerabilities_fixed) { { "business": [{}] } }
+          let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("Upgrade: [Security] Update") }
         end
       end
@@ -762,7 +775,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the right text" do
           commits = commits_details(base: "v1.4.0", head: "v1.5.0").
-                    gsub("github-redirect.dependabot.com", "github.com")
+                    gsub("redirect.github.com", "github.com")
           expect(pr_message).
             to eq(
               "Bumps [business](https://github.com/gocardless/business) "\
@@ -1182,9 +1195,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 "<blockquote>\n"\
                 "<h2>v1.6.0</h2>\n"\
                 "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
-                "@greysteil</a> and <a href=\"https://github.com/hmarr\">"\
-                "@hmarr</a> for the "\
-                "@angular/scope work - see <a href=\"https://github.com/"\
+                "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
+                "<code>@\u200Bhmarr</code></a> for the "\
+                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/"\
                 "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>."\
                 "</p>\n"\
                 "</blockquote>\n"\
@@ -1697,18 +1710,33 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         expect(pr_message).to_not include("Signed-off-by")
       end
     end
+
+    context "with custom traier" do
+      let(:trailers) { { "Changelog" => "dependency" } }
+
+      it "doesn't include git trailer" do
+        expect(pr_message).to_not include("Changelog: dependency")
+      end
+    end
   end
 
-  describe "#commit_message" do
+  describe "#commit_message", :vcr do
     subject(:commit_message) { builder.commit_message }
 
-    before do
-      allow(builder).to receive(:pr_name).and_return("PR name")
-      allow(builder).to receive(:commit_message_intro).and_return("Message")
-      allow(builder).to receive(:metadata_links).and_return("\n\nLinks")
+    let(:expected_commit_message) do
+      <<~MSG.chomp
+        Bump business from 1.4.0 to 1.5.0
+
+        Bumps [business](https://github.com/gocardless/business) from 1.4.0 to 1.5.0.
+        - [Release notes](https://github.com/gocardless/business/releases)
+        - [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)
+        - [Commits](https://github.com/gocardless/business/compare/v1.4.0...v1.5.0)
+      MSG
     end
 
-    it { is_expected.to eq("PR name\n\nMessage\n\nLinks") }
+    it "renders the expected message" do
+      is_expected.to eql(expected_commit_message)
+    end
 
     context "with a PR name that is too long" do
       before do
@@ -1776,6 +1804,44 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       end
     end
 
+    context "with single custom trailer" do
+      let(:trailers) { { "Changelog" => "dependency" } }
+
+      it "includes custom trailer" do
+        expect(commit_message).to end_with("\n\nChangelog: dependency")
+      end
+
+      context "with author details" do
+        let(:signoff_details) do
+          {
+            email: "support@dependabot.com",
+            name: "dependabot"
+          }
+        end
+
+        it "includes custom trailer and signoff line" do
+          expect(commit_message).
+            to end_with("\n\nSigned-off-by: dependabot <support@dependabot.com>\nChangelog: dependency")
+        end
+      end
+    end
+
+    context "with multiple trailers" do
+      let(:trailers) { { "Changelog" => "dependency", "Helped-by" => "dependabot" } }
+
+      it "includes custom trailers" do
+        expect(commit_message).to end_with("\n\n#{trailers.map { |k, v| "#{k}: #{v}" }.join("\n")}")
+      end
+    end
+
+    context "with incorrect trailers format" do
+      let(:trailers) { "Changelog: dependency" }
+
+      it "raises error" do
+        expect { commit_message }.to raise_error("Commit trailers must be a Hash object")
+      end
+    end
+
     context "for a repo that uses gitmoji commits" do
       before do
         allow(builder).to receive(:pr_name).and_call_original
@@ -1788,9 +1854,29 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it { is_expected.to start_with(":arrow_up: Bump ") }
 
       context "with a security vulnerability fixed" do
-        let(:vulnerabilities_fixed) { { "business": [{}] } }
+        let(:vulnerabilities_fixed) { { business: [{}] } }
         it { is_expected.to start_with(":arrow_up::lock: Bump ") }
       end
     end
+  end
+
+  describe "#message" do
+    subject(:message) { builder.message }
+
+    pr_name = "PR title"
+    pr_message = "PR message"
+    commit_message = "Commit message"
+    before do
+      allow(builder).to receive(:pr_name).and_return(pr_name)
+      allow(builder).to receive(:pr_message).and_return(pr_message)
+      allow(builder).to receive(:commit_message).and_return(commit_message)
+    end
+
+    it "returns a Message" do
+      expect(message).to be_a(Dependabot::PullRequestCreator::Message)
+    end
+    its(:pr_name) { should eq(pr_name) }
+    its(:pr_message) { should eq(pr_message) }
+    its(:commit_message) { should eq(commit_message) }
   end
 end

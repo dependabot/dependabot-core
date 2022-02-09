@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileGitPinUpdater do
     it "updates the right dependency" do
       expect(updated_content).to include(%({:plug, "1.3.3"},))
       expect(updated_content).to include(
-        %({:phoenix, github: "phoenixframework/phoenix", ref: "v1.3.0"})
+        %({:phoenix, github: "dependabot-fixtures/phoenix", ref: "v1.3.0"})
       )
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::MixfileGitPinUpdater do
         expect(updated_content).to include(%({:plug, "1.3.3"},))
         expect(updated_content).to include(
           "{:phoenix,\n"\
-          '       github: "phoenixframework/phoenix", tag: "v1.3.0"}'
+          '       github: "dependabot-fixtures/phoenix", tag: "v1.3.0"}'
         )
       end
     end

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+bundle install
+pyenv exec flake8 helpers/. --count --exclude=./.*,./python/spec/fixtures --show-source --statistics
+bundle exec rubocop .
+bundle exec rspec spec

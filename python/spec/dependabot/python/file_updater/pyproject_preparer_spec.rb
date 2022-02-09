@@ -62,6 +62,33 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
         it { is_expected.to include("default = true") }
       end
     end
+    context "with a private repository as a python_index" do
+      subject(:parsed_sources) { TomlRB.parse(replace_sources, symbolize_keys: true)[:tool][:poetry][:source] }
+      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
+      let(:credentials) do
+        [{
+          "type" => "python_index",
+          "index-url" => "https://some.internal.registry.com/pypi/"
+        }]
+      end
+
+      it { is_expected.to contain_exactly({ name: "custom", secondary: true, url: credentials[0]["index-url"] }) }
+
+      context "that includes auth details" do
+        let(:credentials) do
+          [{
+            "type" => "python_index",
+            "index-url" => "https://some.internal.registry.com/pypi/",
+            "token" => "username:password"
+          }]
+        end
+
+        it {
+          is_expected.to contain_exactly({ name: "custom", secondary: true,
+                                           url: "https://username:password@some.internal.registry.com/pypi/" })
+        }
+      end
+    end
   end
 
   describe "#sanitize" do
@@ -137,17 +164,56 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("geopy = \"^1.13\"\n") }
     end
 
-    context "with directory dependencies" do
+    context "with directory dependency" do
       let(:dependencies) { [] }
 
-      let(:pyproject_lock_fixture_name) { "path_dependency.lock" }
-      let(:pyproject_fixture_name) { "path_dependency.toml" }
+      let(:pyproject_lock_fixture_name) { "dir_dependency.lock" }
+      let(:pyproject_fixture_name) { "dir_dependency.toml" }
 
       it { is_expected.to include("pytest = \"3.7.4\"\n") }
       it "does not include the version for path deps" do
         expect(freeze_top_level_dependencies_except).to_not include(
           "path = \"../toml\"\n"\
           "version = \"0.10.0\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"../toml\"\n"
+        )
+      end
+    end
+
+    context "with file dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "file_dependency.lock" }
+      let(:pyproject_fixture_name) { "file_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+      it "does not include the version for path deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "path = \"toml-8.2.54.tar.gz\"\n"\
+          "version = \"8.2.54\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"toml-8.2.54.tar.gz\"\n"
+        )
+      end
+    end
+
+    context "with url dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "url_dependency.lock" }
+      let(:pyproject_fixture_name) { "url_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"6.2.4\"\n") }
+      it "does not include the version for url deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n"\
+          "version = \"0.10.2\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n"
         )
       end
     end

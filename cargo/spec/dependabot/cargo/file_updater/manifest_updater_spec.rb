@@ -65,6 +65,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         it { is_expected.to include(%(business_time = "0.1.12")) }
       end
 
+      context "with dependencies that include whitespace" do
+        let(:manifest_fixture_name) { "whitespace_names" }
+
+        it { is_expected.to include(%(time = "0.1.38")) }
+        it { is_expected.to include(%(regex = "0.1.41")) }
+        it { is_expected.to_not include(%("time" = "0.1.12")) }
+      end
+
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         it { is_expected.to include(%(time = "<= 0.1.38")) }
@@ -95,6 +103,35 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         it "includes the new requirement" do
           expect(updated_manifest_content).to include(
             %(utf8-ranges = { version = "1.0.0", optional = true })
+          )
+        end
+      end
+
+      context "with a dependency name that includes the version range" do
+        let(:manifest_fixture_name) { "version_in_name" }
+        let(:dependency_name) { "curve25519-dalek" }
+        let(:dependency_version) { "3" }
+        let(:dependency_previous_version) { "2" }
+        let(:requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "3",
+            groups: [],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "Cargo.toml",
+            requirement: "2",
+            groups: [],
+            source: nil
+          }]
+        end
+
+        it "includes the new requirement" do
+          expect(updated_manifest_content).to include(
+            %(curve25519-dalek = "3")
           )
         end
       end
@@ -233,6 +270,30 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
             to include(%([dependencies.gtk]\nversion = "0.4.0"\nfeatures))
           expect(updated_manifest_content).
             to include(%([dependencies.pango]\nversion = "0.3.0"\n))
+        end
+      end
+
+      context "with a version requirement" do
+        context "with a target-specific dependency" do
+          let(:manifest_fixture_name) { "version_requirement" }
+          let(:previous_requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "^0.1.38",
+              groups: [],
+              source: nil
+            }]
+          end
+          let(:requirements) do
+            [{
+              file: "Cargo.toml",
+              requirement: "^0.1.40",
+              groups: [],
+              source: nil
+            }]
+          end
+
+          it { is_expected.to include(%(time = "^0.1.40")) }
         end
       end
     end

@@ -15,6 +15,8 @@ module Dependabot
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
+        # regex to match a team mention on github
+        TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}.freeze
         # End of string
         EOS_REGEX = /\z/.freeze
         COMMONMARKER_OPTIONS = %i(
@@ -35,8 +37,10 @@ module Dependabot
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )
 
+          sanitize_team_mentions(doc)
           sanitize_mentions(doc)
           sanitize_links(doc)
+
           mode = unsafe ? :UNSAFE : :DEFAULT
           doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
@@ -45,9 +49,13 @@ module Dependabot
 
         def sanitize_mentions(doc)
           doc.walk do |node|
-            if !parent_node_link?(node) && node.type == :text &&
+            if node.type == :text &&
                node.string_content.match?(MENTION_REGEX)
-              nodes = build_mention_nodes(node.string_content)
+              nodes = if parent_node_link?(node)
+                        build_mention_link_text_nodes(node.string_content)
+                      else
+                        build_mention_nodes(node.string_content)
+                      end
 
               nodes.each do |n|
                 node.insert_before(n)
@@ -58,7 +66,26 @@ module Dependabot
           end
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
+        # When we come across something that looks like a team mention (e.g. @dependabot/reviewers),
+        # we replace it with a text node.
+        # This is because there are ecosystems that have packages that follow the same pattern
+        # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
+        # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
+        def sanitize_team_mentions(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(TEAM_MENTION_REGEX)
+
+              nodes = build_team_mention_nodes(node.string_content)
+
+              nodes.each do |n|
+                node.insert_before(n)
+              end
+              node.delete
+            end
+          end
+        end
+
         def sanitize_links(doc)
           doc.walk do |node|
             if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
@@ -81,11 +108,10 @@ module Dependabot
             end
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def replace_github_host(text)
           text.gsub(
-            "github.com", github_redirection_service || "github.com"
+            /(www\.)?github.com/, github_redirection_service || "github.com"
           )
         end
 
@@ -115,13 +141,51 @@ module Dependabot
           nodes
         end
 
+        def build_team_mention_nodes(text)
+          nodes = []
+
+          scan = StringScanner.new(text)
+          until scan.eos?
+            line = scan.scan_until(TEAM_MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(TEAM_MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes += build_mention_link_text_nodes(mention.to_s)
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def build_mention_link_text_nodes(text)
+          code_node = CommonMarker::Node.new(:code)
+          code_node.string_content = insert_zero_width_space_in_mention(text)
+          [code_node]
+        end
+
         def create_link_node(url, text)
           link_node = CommonMarker::Node.new(:link)
-          text_node = CommonMarker::Node.new(:text)
+          code_node = CommonMarker::Node.new(:code)
           link_node.url = url
-          text_node.string_content = text
-          link_node.append_child(text_node)
+          code_node.string_content = insert_zero_width_space_in_mention(text)
+          link_node.append_child(code_node)
           link_node
+        end
+
+        # NOTE: Add a zero-width space between the @ and the username to prevent
+        # email replies on dependabot pull requests triggering notifications to
+        # users who've been mentioned in changelogs etc. PR email replies parse
+        # the content of the pull request body in plain text.
+        def insert_zero_width_space_in_mention(mention)
+          mention.sub("@", "@\u200B").encode("utf-8")
         end
 
         def parent_node_link?(node)

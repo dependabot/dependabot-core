@@ -37,9 +37,7 @@ module Dependabot
         fetched_files = fetched_files.uniq
 
         if project_files.none? && packages_config_files.none?
-          if @missing_sln_project_file_errors&.any?
-            raise @missing_sln_project_file_errors.first
-          end
+          raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
 
           raise(
             Dependabot::DependencyFileNotFound,
@@ -82,6 +80,7 @@ module Dependabot
           end.compact
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def sln_file_names
         sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
         src_dir = repo_contents.any? { |f| f.name == "src" && f.type == "dir" }
@@ -98,6 +97,7 @@ module Dependabot
 
         sln_files.map(&:name)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
         return @directory_build_files if @directory_build_files_checked

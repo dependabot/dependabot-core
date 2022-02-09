@@ -5,6 +5,7 @@ require "nokogiri"
 
 require "dependabot/nuget/version"
 require "dependabot/nuget/requirement"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/nuget/update_checker"
 require "dependabot/shared_helpers"
 
@@ -42,9 +43,12 @@ module Dependabot
             begin
               possible_versions = versions
               possible_versions = filter_prereleases(possible_versions)
-              possible_versions = filter_vulnerable_versions(possible_versions)
+              possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+                possible_versions, security_advisories
+              )
               possible_versions = filter_ignored_versions(possible_versions)
               possible_versions = filter_lower_versions(possible_versions)
+
               possible_versions.min_by { |hash| hash.fetch(:version) }
             end
         end
@@ -75,33 +79,24 @@ module Dependabot
               reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
           end
 
-          if @raise_on_ignored && filtered.empty? && possible_versions.any?
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
+             filter_lower_versions(possible_versions).any?
             raise AllVersionsIgnored
           end
 
           filtered
         end
 
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
-          end
-
-          versions_array
-        end
-
         def filter_lower_versions(possible_versions)
+          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
+
           possible_versions.select do |v|
             v.fetch(:version) > version_class.new(dependency.version)
           end
         end
 
         def parse_requirement_string(string)
-          return string if string.match?(NUGET_RANGE_REGEX)
+          return [string] if string.match?(NUGET_RANGE_REGEX)
 
           string.split(",").map(&:strip)
         end
@@ -111,17 +106,16 @@ module Dependabot
             listing.
               fetch("versions", []).
               map do |v|
-                nuspec_url =
-                  listing.fetch("listing_details").
-                  fetch(:versions_url).
+                listing_details = listing.fetch("listing_details")
+                nuspec_url = listing_details.
+                             fetch(:versions_url, nil)&.
                   gsub(/index\.json$/, "#{v}/#{sanitized_name}.nuspec")
 
                 {
                   version: version_class.new(v),
                   nuspec_url: nuspec_url,
                   source_url: nil,
-                  repo_url:
-                    listing.fetch("listing_details").fetch(:repository_url)
+                  repo_url: listing_details.fetch(:repository_url)
                 }
               end
           end
@@ -212,13 +206,8 @@ module Dependabot
           @v2_nuget_listings ||=
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
-            map do |url_details|
-              response = Excon.get(
-                url_details[:versions_url],
-                headers: url_details[:auth_header],
-                idempotent: true,
-                **excon_defaults
-              )
+            flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
+            map do |url_details, response|
               next unless response.status == 200
 
               {
@@ -226,6 +215,39 @@ module Dependabot
                 "listing_details" => url_details
               }
             end.compact
+        end
+
+        def fetch_paginated_v2_nuget_listings(url_details, results = {})
+          response = Excon.get(
+            url_details[:versions_url],
+            idempotent: true,
+            **SharedHelpers.excon_defaults(excon_options.merge(headers: url_details[:auth_header]))
+          )
+
+          # NOTE: Short circuit if we get a circular next link
+          return results.to_a if results.key?(url_details)
+
+          results[url_details] = response
+
+          if (link_href = fetch_v2_next_link_href(response.body))
+            url_details = url_details.dup
+            url_details[:versions_url] = link_href
+            fetch_paginated_v2_nuget_listings(url_details, results)
+          end
+
+          results.to_a
+        end
+
+        def fetch_v2_next_link_href(xml_body)
+          doc = Nokogiri::XML(xml_body)
+          doc.remove_namespaces!
+          link_node = doc.xpath("/feed/link").find do |node|
+            rel = node.attribute("rel").value.strip
+            rel == "next"
+          end
+          link_node.attribute("href").value.strip if link_node
+        rescue Nokogiri::XML::XPath::SyntaxError
+          nil
         end
 
         def versions_for_v3_repository(repository_details)
@@ -237,9 +259,10 @@ module Dependabot
           elsif repository_details[:versions_url]
             response = Excon.get(
               repository_details[:versions_url],
-              headers: repository_details[:auth_header],
               idempotent: true,
-              **excon_defaults
+              **SharedHelpers.excon_defaults(
+                excon_options.merge(headers: repository_details[:auth_header])
+              )
             )
             return unless response.status == 200
 
@@ -251,9 +274,10 @@ module Dependabot
         def fetch_versions_from_search_url(repository_details)
           response = Excon.get(
             repository_details[:search_url],
-            headers: repository_details[:auth_header],
             idempotent: true,
-            **excon_defaults
+            **SharedHelpers.excon_defaults(
+              excon_options.merge(headers: repository_details[:auth_header])
+            )
           )
           return unless response.status == 200
 
@@ -301,16 +325,16 @@ module Dependabot
             gsub(/[\u200B-\u200D\uFEFF]\Z/, "")
         end
 
-        def excon_defaults
+        def excon_options
           # For large JSON files we sometimes need a little longer than for
           # other languages. For example, see:
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
           # q=microsoft.aspnetcore.mvc&prerelease=true
-          SharedHelpers.excon_defaults.merge(
+          {
             connect_timeout: 30,
             write_timeout: 30,
             read_timeout: 30
-          )
+          }
         end
       end
     end

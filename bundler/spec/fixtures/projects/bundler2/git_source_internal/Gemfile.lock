@@ -1,0 +1,21 @@
+GIT
+  remote: git@github.com:dependabot-fixtures/parallel
+  revision: 5fa4406bcf0b3109f645550ca799fc7570501870
+  ref: v1.12.0
+  specs:
+    parallel (1.12.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    statesman (1.2.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  parallel!
+  statesman (~> 1.2.0)
+
+BUNDLED WITH
+   2.2.0

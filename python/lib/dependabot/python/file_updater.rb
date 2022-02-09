@@ -19,6 +19,7 @@ module Dependabot
           /.*\.txt$/,
           /.*\.in$/,
           /^setup\.py$/,
+          /^setup\.cfg$/,
           /^pyproject\.toml$/,
           /^pyproject\.lock$/
         ]
@@ -44,6 +45,7 @@ module Dependabot
 
       private
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependencies.flat_map(&:requirements)
         changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements)).
@@ -64,6 +66,7 @@ module Dependabot
 
         :requirements
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
         return :pipfile if pipfile_lock
@@ -111,8 +114,9 @@ module Dependabot
         return if pipfile
         return if pyproject
         return if get_original_file("setup.py")
+        return if get_original_file("setup.cfg")
 
-        raise "No requirements.txt or setup.py!"
+        raise "Missing required files!"
       end
 
       def pipfile

@@ -49,6 +49,12 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
     before do
       stub_request(:get, maven_url).to_return(status: 200, body: maven_response)
+
+      stub_request(:get, "https://example.com/status").to_return(
+        status: 200,
+        body: "Not GHES",
+        headers: {}
+      )
     end
 
     context "when there is a github link in the maven response" do
@@ -75,6 +81,28 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       end
       let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
       let(:dependency_groups) { ["plugins"] }
+
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      it "caches the call to maven" do
+        2.times { source_url }
+        expect(WebMock).to have_requested(:get, maven_url).once
+      end
+    end
+
+    context "with a kotlin plugin dependency" do
+      let(:dependency_name) { "jvm" }
+      let(:dependency_version) { "1.1.1" }
+      let(:dependency_source) do
+        { type: "maven_repo", url: "https://plugins.gradle.org/m2" }
+      end
+      let(:maven_url) do
+        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin/1.1.1/"\
+        "org.jetbrains.kotlin.jvm.gradle.plugin-1.1.1.pom"
+      end
+      let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
+      let(:dependency_groups) { %w(plugins kotlin) }
 
       it { is_expected.to eq("https://github.com/mockito/mockito") }
 
@@ -150,7 +178,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
           end
 
           context "and does have a subdirectory with its name" do
-            let(:repo_contents_fixture_nm) { "contents_java_with_subdir.json" }
+            let(:repo_contents_fixture_nm) { "contents_java.json" }
             it { is_expected.to eq("https://github.com/square/unrelated_name") }
           end
 
@@ -246,6 +274,78 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
               {
                 "type" => "maven_repository",
                 "url" => "https://custom.registry.org/maven2",
+                "username" => "dependabot",
+                "password" => "dependabotPassword"
+              }
+            ]
+          end
+          before do
+            stub_request(:get, maven_url).to_return(status: 404)
+            stub_request(:get, maven_url).
+              with(basic_auth: %w(dependabot dependabotPassword)).
+              to_return(status: 200, body: maven_response)
+          end
+
+          it { is_expected.to eq("https://github.com/mockito/mockito") }
+        end
+      end
+    end
+
+    context "when using a gitlab maven repository" do
+      let(:dependency_source) do
+        { type: "maven_repo", url: "https://gitlab.com/api/v4/groups/some-group/-/packages/maven" }
+      end
+      let(:maven_url) do
+        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/"\
+        "guava/23.3-jre/guava-23.3-jre.pom"
+      end
+      let(:maven_response) do
+        fixture("poms", "mockito-core-2.11.0.xml")
+      end
+
+      before do
+        stub_request(:get, maven_url).
+          to_return(status: 200, body: maven_response)
+      end
+      it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+      context "with credentials" do
+        let(:credentials) do
+          [
+            {
+              "type" => "git_source",
+              "host" => "gitlab.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            },
+            {
+              "type" => "maven_repository",
+              "url" => "https://gitlab.com/api/v4/groups/some-group/-/packages/maven"
+            }
+          ]
+        end
+
+        before do
+          stub_request(:get, maven_url).to_return(status: 404)
+          stub_request(:get, maven_url).
+            with(headers: { "Private-Token" => "token" }).
+            to_return(status: 200, body: maven_response)
+        end
+
+        it { is_expected.to eq("https://github.com/mockito/mockito") }
+
+        context "that include a username and password" do
+          let(:credentials) do
+            [
+              {
+                "type" => "git_source",
+                "host" => "gitlab.com",
+                "username" => "x-access-token",
+                "password" => "token"
+              },
+              {
+                "type" => "maven_repository",
+                "url" => "https://gitlab.com/api/v4/groups/some-group/-/packages/maven",
                 "username" => "dependabot",
                 "password" => "dependabotPassword"
               }

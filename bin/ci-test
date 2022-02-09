@@ -1,0 +1,57 @@
+#!/bin/bash -e
+#/ usage: ci-test SUITE
+#/ simulate the process followed by ~/.github/workflows/ci.yml
+
+function print_usage() {
+  grep ^#/ "$0" | cut -c4-
+}
+
+function handle_args() {
+  export SUITE=$1
+  case $SUITE in
+    bundler1 | bundler2)
+      export MODULE=bundler
+      ;;
+    "")
+      print_usage
+      exit 1
+      ;;
+    *)
+      export MODULE=$SUITE
+  esac
+
+  if ! [ -d "$MODULE" ]; then
+    print_usage
+    echo "module not found, try:"
+    for m in */*.gemspec; do
+      [[ "$m" == "omnibus" ]] && continue
+      echo -n "  "; dirname "$m"
+    done
+    exit 1
+  fi
+}
+
+function build() {
+  export DOCKER_BUILDKIT=1
+  export DOCKER_SCAN_SUGGEST=false
+  export CORE=dependabot/dependabot-core
+  export CI=dependabot/dependabot-core-ci
+
+  set -x
+  docker build -qt $CORE .
+  docker build -qt $CI -f Dockerfile.ci .
+  docker run --rm \
+    -e "CI=true" \
+    -e "SUITE_NAME=$SUITE" \
+    -e "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
+    -it $CI \
+    bash -c \
+    "cd /home/dependabot/dependabot-core/$MODULE && ./script/ci-test"
+}
+
+function main() {
+  handle_args "$@"
+  build
+}
+
+main "$@"

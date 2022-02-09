@@ -52,6 +52,10 @@ module Dependabot
               next if git_or_path_requirement?(req)
               next if pipfile_lock && !dependency_version(dep_name, req, group)
 
+              # Empty requirements are not allowed in Dependabot::Dependency and
+              # equivalent to "*" (latest available version)
+              req = "*" if req == ""
+
               dependencies <<
                 Dependency.new(
                   name: normalised_name(dep_name),

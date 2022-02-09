@@ -21,10 +21,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::RequirementsUpdater do
       source: nil
     }
   end
-  let(:composer_json_req_string) { "^1.4.0" }
 
   let(:update_strategy) { :bump_versions }
-  let(:latest_resolvable_version) { "1.5.0" }
 
   describe "#updated_requirements" do
     subject { updater.updated_requirements.first }

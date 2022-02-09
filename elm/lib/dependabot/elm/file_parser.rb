@@ -16,34 +16,12 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
 
-        dependency_set += elm_package_dependencies if elm_package
         dependency_set += elm_json_dependencies if elm_json
 
         dependency_set.dependencies.sort_by(&:name)
       end
 
       private
-
-      def elm_package_dependencies
-        dependency_set = DependencySet.new
-
-        parsed_package_file.fetch("dependencies").each do |name, req|
-          dependency_set <<
-            Dependency.new(
-              name: name,
-              version: version_for(req)&.to_s,
-              requirements: [{
-                requirement: req, # 4.0 <= v <= 4.0
-                groups: [], # we don't have this (its dev vs non-dev)
-                source: nil, # elm-package only has elm-package sources
-                file: "elm-package.json"
-              }],
-              package_manager: "elm"
-            )
-        end
-
-        dependency_set
-      end
 
       # For docs on elm.json, see:
       # https://github.com/elm/compiler/blob/master/docs/elm.json/application.md
@@ -70,7 +48,8 @@ module Dependabot
                 name: name, group: dep_type, requirement: req, direct: true
               )
             end
-          else raise "Unexpected repo type for Elm repo: #{repo_type}"
+          else
+            raise "Unexpected repo type for Elm repo: #{repo_type}"
           end
         end
 
@@ -98,9 +77,9 @@ module Dependabot
       end
 
       def check_required_files
-        return if elm_json || elm_package
+        return if elm_json
 
-        raise "No elm.json or elm-package.json!"
+        raise "No elm.json"
       end
 
       def version_for(version_requirement)
@@ -111,20 +90,10 @@ module Dependabot
         req.requirements.first.last
       end
 
-      def parsed_package_file
-        @parsed_package_file ||= JSON.parse(elm_package.content)
-      rescue JSON::ParserError
-        raise Dependabot::DependencyFileNotParseable, elm_package.path
-      end
-
       def parsed_elm_json
         @parsed_elm_json ||= JSON.parse(elm_json.content)
       rescue JSON::ParserError
         raise Dependabot::DependencyFileNotParseable, elm_json.path
-      end
-
-      def elm_package
-        @elm_package ||= get_original_file("elm-package.json")
       end
 
       def elm_json

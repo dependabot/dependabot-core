@@ -211,18 +211,18 @@ RSpec.describe Dependabot::Python::RequirementParser do
       let(:line) { "luigi == 0.1.0, <= 1" }
       its([:requirements]) do
         is_expected.to eq([
-                            { comparison: "==", version: "0.1.0" },
-                            { comparison: "<=", version: "1" }
-                          ])
+          { comparison: "==", version: "0.1.0" },
+          { comparison: "<=", version: "1" }
+        ])
       end
 
       context "with a comment" do
         let(:line) { "luigi == 0.1.0, <= 1 # some comment" }
         its([:requirements]) do
           is_expected.to eq([
-                              { comparison: "==", version: "0.1.0" },
-                              { comparison: "<=", version: "1" }
-                            ])
+            { comparison: "==", version: "0.1.0" },
+            { comparison: "<=", version: "1" }
+          ])
         end
       end
 
@@ -230,9 +230,9 @@ RSpec.describe Dependabot::Python::RequirementParser do
         let(:line) { "luigi (>0.1.0,<2)" }
         its([:requirements]) do
           is_expected.to eq([
-                              { comparison: ">", version: "0.1.0" },
-                              { comparison: "<", version: "2" }
-                            ])
+            { comparison: ">", version: "0.1.0" },
+            { comparison: "<", version: "2" }
+          ])
         end
       end
     end

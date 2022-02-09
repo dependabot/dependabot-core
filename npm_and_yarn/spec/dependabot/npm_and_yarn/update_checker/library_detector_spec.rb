@@ -7,38 +7,34 @@ require "dependabot/npm_and_yarn/update_checker/library_detector"
 RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
   subject(:finder) { described_class.new(package_json_file: package_json_file) }
   let(:package_json_file) do
-    Dependabot::DependencyFile.new(
-      name: "package.json",
-      content: fixture("package_files", package_json_fixture_name)
-    )
+    project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
-  let(:package_json_fixture_name) { "package.json" }
 
   describe "library?" do
     subject { finder.library? }
 
     context "with private set to true" do
-      let(:package_json_fixture_name) { "workspaces.json" }
+      let(:project_name) { "npm7/workspaces" }
       it { is_expected.to eq(false) }
     end
 
     context "with no version" do
-      let(:package_json_fixture_name) { "app_no_version.json" }
+      let(:project_name) { "npm7/app_no_version" }
       it { is_expected.to eq(false) }
     end
 
     context "with {{ }} in the name" do
-      let(:package_json_fixture_name) { "package.json" }
+      let(:project_name) { "npm7/simple" }
       it { is_expected.to eq(false) }
     end
 
     context "with space in the name" do
-      let(:package_json_fixture_name) { "package_with_space_in_name.json" }
+      let(:project_name) { "npm7/package_with_space_in_name" }
       it { is_expected.to eq(false) }
     end
 
     context "with a library package.json" do
-      let(:package_json_fixture_name) { "etag.json" }
+      let(:project_name) { "npm7/library" }
 
       context "not listed on npm" do
         before do

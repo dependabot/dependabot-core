@@ -13,6 +13,7 @@ module Dependabot
       require_relative "update_checker/requirements_updater"
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/latest_version_finder"
+      require_relative "update_checker/conflicting_dependency_resolver"
 
       def latest_version
         return latest_version_for_git_dependency if git_dependency?
@@ -24,6 +25,11 @@ module Dependabot
         return latest_resolvable_version_for_git_dependency if git_dependency?
 
         latest_resolvable_version_details&.fetch(:version)
+      end
+
+      def lowest_security_fix_version
+        latest_version_finder(remove_git_source: false).
+          lowest_security_fix_version
       end
 
       def lowest_resolvable_security_fix_version
@@ -94,12 +100,22 @@ module Dependabot
 
       def requirements_update_strategy
         # If passed in as an option (in the base class) honour that option
-        if @requirements_update_strategy
-          return @requirements_update_strategy.to_sym
-        end
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
         # Otherwise, widen ranges for libraries and bump versions for apps
         dependency.version.nil? ? :bump_versions_if_necessary : :bump_versions
+      end
+
+      def conflicting_dependencies
+        ConflictingDependencyResolver.new(
+          dependency_files: dependency_files,
+          repo_contents_path: repo_contents_path,
+          credentials: credentials,
+          options: options
+        ).conflicting_dependencies(
+          dependency: dependency,
+          target_version: lowest_security_fix_version
+        )
       end
 
       private
@@ -125,9 +141,7 @@ module Dependabot
       end
 
       def preferred_resolvable_version_details
-        if vulnerable?
-          return { version: lowest_resolvable_security_fix_version }
-        end
+        return { version: lowest_resolvable_security_fix_version } if vulnerable?
 
         latest_resolvable_version_details
       end
@@ -145,10 +159,12 @@ module Dependabot
             ForceUpdater.new(
               dependency: dependency,
               dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               target_version: version,
               requirements_update_strategy: requirements_update_strategy,
-              update_multiple_dependencies: false
+              update_multiple_dependencies: false,
+              options: options
             ).updated_dependencies
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -165,10 +181,12 @@ module Dependabot
             VersionResolver.new(
               dependency: dependency,
               unprepared_dependency_files: dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
-              replacement_git_pin: tag
+              replacement_git_pin: tag,
+              options: options
             ).latest_resolvable_version_details
             true
           rescue Dependabot::DependencyFileNotResolvable
@@ -201,9 +219,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return git_commit_checker.head_commit_for_current_branch
-        end
+        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -227,9 +243,7 @@ module Dependabot
 
         # Otherwise, if the gem isn't pinned, the latest version is just the
         # latest commit for the specified branch.
-        unless git_commit_checker.pinned?
-          return latest_resolvable_commit_with_unchanged_git_source
-        end
+        return latest_resolvable_commit_with_unchanged_git_source unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag. The latest version will then be the SHA
@@ -325,9 +339,11 @@ module Dependabot
           ForceUpdater.new(
             dependency: dependency,
             dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
             credentials: credentials,
             target_version: latest_version,
-            requirements_update_strategy: requirements_update_strategy
+            requirements_update_strategy: requirements_update_strategy,
+            options: options
           )
       end
 
@@ -343,18 +359,18 @@ module Dependabot
         @version_resolver ||= {}
         @version_resolver[remove_git_source] ||= {}
         @version_resolver[remove_git_source][unlock_requirement] ||=
-          begin
-            VersionResolver.new(
-              dependency: dependency,
-              unprepared_dependency_files: dependency_files,
-              credentials: credentials,
-              ignored_versions: ignored_versions,
-              raise_on_ignored: raise_on_ignored,
-              remove_git_source: remove_git_source,
-              unlock_requirement: unlock_requirement,
-              latest_allowable_version: latest_version
-            )
-          end
+          VersionResolver.new(
+            dependency: dependency,
+            unprepared_dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
+            remove_git_source: remove_git_source,
+            unlock_requirement: unlock_requirement,
+            latest_allowable_version: latest_version,
+            options: options
+          )
       end
 
       def latest_version_finder(remove_git_source:)
@@ -369,10 +385,12 @@ module Dependabot
             LatestVersionFinder.new(
               dependency: dependency,
               dependency_files: prepared_dependency_files,
+              repo_contents_path: repo_contents_path,
               credentials: credentials,
               ignored_versions: ignored_versions,
               raise_on_ignored: raise_on_ignored,
-              security_advisories: security_advisories
+              security_advisories: security_advisories,
+              options: options
             )
           end
       end

@@ -16,7 +16,7 @@ module Dependabot
       # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",")
+          req_string.split(",").map(&:strip)
         end
 
         super(requirements)

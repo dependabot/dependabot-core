@@ -2,18 +2,22 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
-  echo "usage: $0 INSTALL_DIR"
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/terraform"
 
 if [ ! -d "$install_dir/bin" ]; then
   mkdir -p "$install_dir/bin"
 fi
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
-github_url="https://github.com/kvz/json2hcl"
-url="${github_url}/releases/download/v0.0.6/json2hcl_v0.0.6_${os}_amd64"
-wget -O "$install_dir/bin/json2hcl" "$url"
-chmod +x "$install_dir/bin/json2hcl"
+
+hcl2json_checksum="24068f1e25a34d8f8ca763f34fce11527472891bfa834d1504f665855021d5d4"
+hcl2json_url="https://github.com/tmccombs/hcl2json/releases/download/v0.3.3/hcl2json_${os}_amd64"
+hcl2json_path="$install_dir/bin/hcl2json"
+curl -sSLfo "$hcl2json_path" "$hcl2json_url"
+echo "$hcl2json_checksum  $hcl2json_path" | sha256sum -c
+chmod +x "$install_dir/bin/hcl2json"

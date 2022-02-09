@@ -9,15 +9,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
     described_class.new(lockfile: yarn_lockfile)
   end
   let(:yarn_lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "yarn.lock",
-      content: yarn_lockfile_content
-    )
+    project_dependency_files(project_name).find { |f| f.name == "yarn.lock" }
   end
-  let(:yarn_lockfile_content) do
-    fixture("yarn_lockfiles", yarn_lockfile_fixture_name)
-  end
-  let(:yarn_lockfile_fixture_name) { "other_package.lock" }
+  let(:project_name) { "yarn/other_package" }
 
   describe "#parse" do
     subject(:lockfile) { yarn_lockfile_parser.parse }
@@ -38,7 +32,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
     end
 
     context "with multiple requirements sharing a version resolution" do
-      let(:yarn_lockfile_fixture_name) { "yarn_file_path_resolutions.lock" }
+      let(:project_name) { "yarn/file_path_resolutions" }
 
       it "expands lockfile requirements sharing the same version resolution" do
         first = lockfile.find { |o| o.first == "sprintf-js@~1.0.2" }
@@ -55,7 +49,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
     end
 
     context "with invalid lockfile" do
-      let(:yarn_lockfile_fixture_name) { "bad_content.lock" }
+      let(:project_name) { "yarn/bad_content" }
 
       it "handles the error" do
         expect(lockfile).to eq({})

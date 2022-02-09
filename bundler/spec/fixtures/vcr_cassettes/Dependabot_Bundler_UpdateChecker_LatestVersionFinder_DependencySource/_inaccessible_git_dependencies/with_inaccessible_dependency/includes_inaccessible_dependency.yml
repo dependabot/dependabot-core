@@ -1,0 +1,35 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://github.com/no-exist-sorry/prius.git/info/refs?service=git-upload-pack
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - dependabot-core/0.153.0 excon/0.82.0 ruby/2.7.1 (x86_64-linux-gnu) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 401
+      message: Authorization Required
+    headers:
+      Server:
+      - GitHub Babel 2.0
+      Content-Type:
+      - text/plain
+      Content-Security-Policy:
+      - default-src 'none'; sandbox
+      Content-Length:
+      - '21'
+      Www-Authenticate:
+      - Basic realm="GitHub"
+      X-Github-Request-Id:
+      - CA09:3FFE:48411:8826C:60C8F0D7
+      X-Frame-Options:
+      - DENY
+    body:
+      encoding: ASCII-8BIT
+      string: Repository not found.
+  recorded_at: Tue, 15 Jun 2021 18:26:32 GMT
+recorded_with: VCR 6.0.0

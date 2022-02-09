@@ -133,6 +133,54 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "when the user has asked for a version type and it's available" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/1.4.12-java7/xstream-1.4.12-java7.jar"
+      end
+      let(:dependency_version) { "1.4.11-java7" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
+
+      context "and the type is native-mt" do
+        let(:dependency_version) { "1.4.11-native-mt" }
+        let(:maven_central_version_files_url) do
+          "https://repo.maven.apache.org/maven2/"\
+          "com/thoughtworks/xstream/"\
+          "xstream/1.4.12-native-mt/xstream-1.4.12-native-mt.jar"
+        end
+        its([:version]) do
+          is_expected.to eq(version_class.new("1.4.12-native-mt"))
+        end
+      end
+    end
+
+    context "when a version type is available that wasn't requested" do
+      let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
+      let(:dependency_version) { "1.4.11.1" }
+
+      let(:maven_central_metadata_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+      end
+      let(:maven_central_releases) do
+        fixture("maven_central_metadata", "with_version_type_releases.xml")
+      end
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/thoughtworks/xstream/xstream/1.4.12/xstream-1.4.12.jar"
+      end
+      let(:dependency_version) { "1.4.11.1" }
+      its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
+    end
+
     context "when there are date-based versions" do
       let(:dependency_version) { "3.1" }
       let(:dependency_name) { "commons-collections:commons-collections" }
@@ -175,6 +223,44 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       end
     end
 
+    context "raise_on_ignored when later versions are allowed" do
+      let(:raise_on_ignored) { true }
+      it "doesn't raise an error" do
+        expect { subject }.to_not raise_error
+      end
+    end
+
+    context "when already on the latest version" do
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
+    context "when the user has asked to ignore all later versions" do
+      let(:ignored_versions) { ["> 22.0"] }
+      let(:dependency_version) { "22.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/22.0/guava-22.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
     context "when the user has asked to ignore a major version" do
       let(:ignored_versions) { ["[23.0,24)"] }
       let(:dependency_version) { "17.0" }
@@ -186,6 +272,19 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         fixture("maven_central_version_files", "guava-22.0.html")
       end
       its([:version]) { is_expected.to eq(version_class.new("22.0")) }
+    end
+
+    context "when the user has asked to ignore several major versions" do
+      let(:ignored_versions) { ["[23.0,24),[22.0,23)"] }
+      let(:dependency_version) { "17.0" }
+      let(:maven_central_version_files_url) do
+        "https://repo.maven.apache.org/maven2/"\
+        "com/google/guava/guava/21.0/guava-21.0.jar"
+      end
+      let(:maven_central_version_files) do
+        fixture("maven_central_version_files", "guava-22.0.html")
+      end
+      its([:version]) { is_expected.to eq(version_class.new("21.0")) }
     end
 
     context "when a version range is specified using Ruby syntax" do
@@ -241,6 +340,41 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         is_expected.to eq("https://private.registry.org/repo")
       end
 
+      context "that is a gitlab maven repository" do
+        let(:credentials) do
+          [
+            {
+              "type" => "maven_repository",
+              "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+            },
+            {
+              "type" => "git_source",
+              "host" => "private.registry.org",
+              "username" => "x-access-token",
+              "password" => "customToken"
+            }
+          ]
+        end
+
+        let(:private_registry_metadata_url) do
+          "https://private.registry.org/api/v4/groups/-/packages/maven/"\
+          "com/google/guava/guava/maven-metadata.xml"
+        end
+
+        before do
+          stub_request(:get, maven_central_metadata_url).
+            to_return(status: 404)
+          stub_request(:get, private_registry_metadata_url).
+            with(headers: { "Private-Token" => "customToken" }).
+            to_return(status: 200, body: maven_central_releases)
+        end
+
+        its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+        its([:source_url]) do
+          is_expected.to eq("https://private.registry.org/api/v4/groups/-/packages/maven")
+        end
+      end
+
       context "but no auth details" do
         let(:credentials) do
           [{
@@ -269,9 +403,86 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             error_class = Dependabot::PrivateSourceAuthenticationFailure
             expect { subject }.
               to raise_error(error_class) do |error|
-                expect(error.source).to eq("https://private.registry.org/repo")
-              end
+              expect(error.source).to eq("https://private.registry.org/repo")
+            end
           end
+        end
+      end
+    end
+
+    context "with multiple repositories from credentials" do
+      let(:credentials) do
+        [
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/",
+            "username" => "dependabot",
+            "password" => "dependabotPassword"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo/"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/repo2/",
+            "username" => "dependabot2",
+            "password" => "dependabotPassword2"
+          },
+          {
+            "type" => "maven_repository",
+            "url" => "https://private.registry.org/api/v4/groups/-/packages/maven/"
+          },
+          {
+            "type" => "git_source",
+            "host" => "private.registry.org",
+            "username" => "x-access-token",
+            "password" => "customToken"
+          }
+        ]
+      end
+
+      let(:private_registry_metadata_url) do
+        "https://private.registry.org/repo/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:second_repo) do
+        "https://private.registry.org/repo2/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      let(:gitlab_maven_repo) do
+        "https://private.registry.org/api/v4/groups/-/packages/maven/"\
+        "com/google/guava/guava/maven-metadata.xml"
+      end
+
+      before do
+        stub_request(:get, maven_central_metadata_url).
+          to_return(status: 404)
+        stub_request(:get, second_repo).
+          with(basic_auth: %w(dependabot2 dependabotPassword2)).
+          to_return(status: 404)
+        stub_request(:get, gitlab_maven_repo).
+          with(headers: { "Private-Token" => "customToken" }).
+          to_return(status: 404)
+        stub_request(:get, private_registry_metadata_url).
+          with(basic_auth: %w(dependabot dependabotPassword)).
+          to_return(status: 200, body: maven_central_releases)
+      end
+
+      its([:version]) { is_expected.to eq(version_class.new("23.6-jre")) }
+      its([:source_url]) do
+        is_expected.to eq("https://private.registry.org/repo")
+      end
+    end
+
+    context "with an invalid repository url specified" do
+      let(:dependency_files) { project_dependency_files("invalid_repository_url") }
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to start_with("bad URI(is not URI?): \"http://host:port/content/groups/public")
         end
       end
     end
@@ -396,6 +607,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:raise_on_ignored) { true }
         it "raises an error" do
           expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+    end
+
+    context "when the dependency version isn't known" do
+      let(:dependency_version) { nil }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
         end
       end
     end

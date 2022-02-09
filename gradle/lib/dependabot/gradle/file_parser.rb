@@ -18,6 +18,8 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require_relative "file_parser/property_value_finder"
 
+      SUPPORTED_BUILD_FILE_NAMES = %w(build.gradle build.gradle.kts settings.gradle settings.gradle.kts).freeze
+
       PROPERTY_REGEX =
         /
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
@@ -34,8 +36,7 @@ module Dependabot
         /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/.freeze
       DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/.freeze
       PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/.freeze
-      PLUGIN_BLOCK_ENTRY_REGEX =
-        /id\s+"(?<id>#{PART})"\s+version\s+"(?<version>#{VSN_PART})"/.freeze
+      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/.freeze
 
       def parse
         dependency_set = DependencySet.new
@@ -48,10 +49,24 @@ module Dependabot
         dependency_set.dependencies
       end
 
+      def self.find_include_names(buildfile)
+        return [] unless buildfile
+
+        buildfile.content.
+          scan(/apply(\(| )\s*from(\s+=|:)\s+['"]([^'"]+)['"]/).
+          map { |match| match[2] }
+      end
+
+      def self.find_includes(buildfile, dependency_files)
+        FileParser.find_include_names(buildfile).
+          map { |f| dependency_files.find { |bf| bf.name == f } }.
+          compact
+      end
+
       private
 
       def map_value_regex(key)
-        /(?:^|\s|,|\()#{Regexp.quote(key)}:\s*['"](?<value>[^'"]+)['"]/
+        /(?:^|\s|,|\()#{Regexp.quote(key)}(\s*=|:)\s*['"](?<value>[^'"]+)['"]/
       end
 
       def buildfile_dependencies(buildfile)
@@ -146,19 +161,24 @@ module Dependabot
 
         plugin_blocks.each do |blk|
           blk.lines.each do |line|
-            name    = line.match(/id\s+['"](?<id>#{PART})['"]/)&.
-                      named_captures&.fetch("id")
-            version = line.match(/version\s+['"](?<version>#{VSN_PART})['"]/)&.
-                      named_captures&.fetch("version")
+            name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/
+            name = line.match(name_regex)&.named_captures&.fetch("id")
+            version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/
+            version = line.match(version_regex)&.named_captures&.
+                fetch("version")
             next unless name && version
 
-            details = { name: name, group: "plugins", version: version }
+            details = { name: name, group: "plugins", extra_groups: extra_groups(line), version: version }
             dep = dependency_from(details_hash: details, buildfile: buildfile)
             dependency_set << dep if dep
           end
         end
 
         dependency_set
+      end
+
+      def extra_groups(line)
+        line.match(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/) ? ["kotlin"] : []
       end
 
       def argument_from_string(string, arg_name)
@@ -172,14 +192,17 @@ module Dependabot
         group   = evaluated_value(details_hash[:group], buildfile)
         name    = evaluated_value(details_hash[:name], buildfile)
         version = evaluated_value(details_hash[:version], buildfile)
+        extra_groups = details_hash[:extra_groups] || []
 
         dependency_name =
           if group == "plugins" then name
-          else "#{group}:#{name}"
+          else
+            "#{group}:#{name}"
           end
         groups =
-          if group == "plugins" then ["plugins"]
-          else []
+          if group == "plugins" then ["plugins"] + extra_groups
+          else
+            []
           end
         source =
           source_from(group, name, version)
@@ -204,7 +227,7 @@ module Dependabot
       end
 
       def source_from(group, name, version)
-        return nil unless group&.start_with?("com.github")
+        return nil unless group&.start_with?("com.github") && version.match?(/\A[0-9a-f]{40}\Z/)
 
         account = group.sub("com.github.", "")
 
@@ -225,9 +248,7 @@ module Dependabot
         return unless version_property_name || in_dependency_set
 
         metadata = {}
-        if version_property_name
-          metadata[:property_name] = version_property_name
-        end
+        metadata[:property_name] = version_property_name if version_property_name
         if in_dependency_set
           metadata[:dependency_set] = {
             group: details_hash[:group],
@@ -288,23 +309,27 @@ module Dependabot
       end
 
       def buildfiles
-        @buildfiles ||=
-          dependency_files.select { |f| f.name.end_with?("build.gradle") }
+        @buildfiles ||= dependency_files.select do |f|
+          f.name.end_with?(*SUPPORTED_BUILD_FILE_NAMES)
+        end
       end
 
       def script_plugin_files
         @script_plugin_files ||=
           buildfiles.flat_map do |buildfile|
-            buildfile.content.
-              scan(/apply from:\s+['"]([^'"]+)['"]/).flatten.
-              map { |f| dependency_files.find { |bf| bf.name == f } }.
-              compact
+            FileParser.find_includes(buildfile, dependency_files)
           end.
           uniq
       end
 
       def check_required_files
-        raise "No build.gradle!" unless get_original_file("build.gradle")
+        raise "No build.gradle or build.gradle.kts!" if dependency_files.empty?
+      end
+
+      def original_file
+        dependency_files.find do |f|
+          SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+        end
       end
     end
   end

@@ -132,13 +132,13 @@ module Dependabot
               sha: file.content
             }
           else
-            content = if file.binary?
+            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
+                        { sha: nil }
+                      elsif file.binary?
                         sha = github_client_for_source.create_blob(
                           source.repo, file.content, "base64"
                         )
                         { sha: sha }
-                      elsif file.deleted?
-                        { sha: nil }
                       else
                         { content: file.content }
                       end
@@ -173,7 +173,8 @@ module Dependabot
 
         if e.message.match?(/protected branch/i) ||
            e.message.match?(/not authorized to push/i) ||
-           e.message.match?(/must not contain merge commits/)
+           e.message.match?(/must not contain merge commits/) ||
+           e.message.match?(/required status check/i)
           raise BranchProtected
         end
 

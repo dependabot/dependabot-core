@@ -104,16 +104,19 @@ async function updateDependencyFiles(directory, dependencies) {
   const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
-
+  let requiredVersions = [];
   for (let dep of dependencies) {
     for (let reqs of dep.requirements) {
+      if (requiredVersions.indexOf(reqs.requirement) > -1) {
+          continue;
+      }
       updateRunResults = Object.assign(
         updateRunResults,
         await updateDependencyFile(directory, dep.name, dep.version, reqs)
       );
+      requiredVersions.push(reqs.requirement);
     }
   }
-
   return updateRunResults;
 }
 
@@ -142,6 +145,7 @@ async function updateDependencyFile(
     cwd: path.join(directory, path.dirname(requirements.file)),
     nonInteractive: true,
     enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 

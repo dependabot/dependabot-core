@@ -16,19 +16,22 @@ module Dependabot
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
-        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/.freeze
+        /[[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]]/.freeze
       DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
       REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/.freeze
 
-      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/.freeze
+      NAME_COMPONENT = /[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*/.freeze
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
+      ARG = /ARG/i.freeze
       FROM = /FROM/i.freeze
+      PLATFORM = /--platform=(?<platform>\S+)/.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
       NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
       FROM_LINE =
-        %r{^#{FROM}\s+(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}.freeze
+        %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
+          #{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x.freeze
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
 
@@ -36,13 +39,20 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dockerfiles.each do |dockerfile|
+          args = {}
           dockerfile.content.each_line do |line|
+            if ARG.match(line)
+              key_value = line.delete_prefix("ARG ").split("=")
+              next if key_value.count != 2 # The ARG has no default value that we can set
+
+              args[key_value[0]] = key_value[1].delete_suffix("\n")
+              next
+            end
+            line = replace_args(line, args)
             next unless FROM_LINE.match?(line)
 
             parsed_from_line = FROM_LINE.match(line).named_captures
-            if parsed_from_line["registry"] == "docker.io"
-              parsed_from_line["registry"] = nil
-            end
+            parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
             version = version_from(parsed_from_line)
             next unless version
@@ -66,6 +76,13 @@ module Dependabot
 
       private
 
+      def replace_args(line, args)
+        line.gsub(/\${?\w+}?/) do |s|
+          escaped = s.delete_prefix("$").delete_prefix("{").delete_suffix("}")
+          args[escaped]
+        end
+      end
+
       def dockerfiles
         # The Docker file fetcher only fetches Dockerfiles, so no need to
         # filter here
@@ -85,17 +102,11 @@ module Dependabot
       def source_from(parsed_from_line)
         source = {}
 
-        if parsed_from_line.fetch("registry")
-          source[:registry] = parsed_from_line.fetch("registry")
-        end
+        source[:registry] = parsed_from_line.fetch("registry") if parsed_from_line.fetch("registry")
 
-        if parsed_from_line.fetch("tag")
-          source[:tag] = parsed_from_line.fetch("tag")
-        end
+        source[:tag] = parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
 
-        if parsed_from_line.fetch("digest")
-          source[:digest] = parsed_from_line.fetch("digest")
-        end
+        source[:digest] = parsed_from_line.fetch("digest") if parsed_from_line.fetch("digest")
 
         source
       end

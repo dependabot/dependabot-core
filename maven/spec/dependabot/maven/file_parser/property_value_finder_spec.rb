@@ -152,5 +152,17 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("2.7") }
       end
     end
+
+    context "with a pom that contains invalid xml" do
+      let(:dependency_files) { project_dependency_files("invalid_version_ref") }
+      let(:property_name) { "guava.version`" }
+      let(:callsite_pom) { dependency_files.find { |f| f.name == "pom.xml" } }
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+          expect(error.message).to eq("ERROR: Invalid expression: /project/guava.version`")
+        end
+      end
+    end
   end
 end

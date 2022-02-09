@@ -31,7 +31,7 @@ module Dependabot
         def fetch_latest_resolvable_version
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
-              write_temporary_dependency_files
+              write_temporary_sanitized_dependency_files
               FileUtils.cp(
                 elixir_helper_check_update_path,
                 "check_update.exs"
@@ -43,9 +43,7 @@ module Dependabot
             end
 
           return if latest_resolvable_version.nil?
-          if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
-            return latest_resolvable_version
-          end
+          return latest_resolvable_version if latest_resolvable_version.match?(/^[0-9a-f]{40}$/)
 
           version_class.new(latest_resolvable_version)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -76,8 +74,10 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, org if org
           end
 
-          # TODO: This isn't pretty. It would be much nicer to catch the
-          # warnings as part of the Elixir module.
+          # TODO: Catch the warnings as part of the Elixir module. This happens
+          # when elixir throws warnings from the manifest files that end up in
+          # stdout and cause run_helper_subprocess to fail parsing the result as
+          # JSON.
           return error_result(error) if includes_result?(error)
 
           # Ignore dependencies which don't resolve due to mis-matching
@@ -103,15 +103,14 @@ module Dependabot
           result = error.message&.split("\n")&.last
           return false unless result
 
-          JSON.parse(error.message&.split("\n")&.last)["result"]
-          true
+          JSON.parse(error.message&.split("\n")&.last).key?("result")
         rescue JSON::ParserError
           false
         end
 
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
-            write_temporary_dependency_files(prepared: false)
+            write_temporary_sanitized_dependency_files(prepared: false)
             FileUtils.cp(
               elixir_helper_check_update_path,
               "check_update.exs"
@@ -124,23 +123,25 @@ module Dependabot
 
           true
         rescue SharedHelpers::HelperSubprocessFailed => e
+          # TODO: Catch the warnings as part of the Elixir module. This happens
+          # when elixir throws warnings from the manifest files that end up in
+          # stdout and cause run_helper_subprocess to fail parsing the result as
+          # JSON.
+          return error_result(e) if includes_result?(e)
+
           raise Dependabot::DependencyFileNotResolvable, e.message
         end
 
-        def write_temporary_dependency_files(prepared: true)
+        def write_temporary_sanitized_dependency_files(prepared: true)
           files = if prepared then prepared_dependency_files
-                  else original_dependency_files
+                  else
+                    original_dependency_files
                   end
 
           files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-
-            if file.name.end_with?("mix.exs")
-              File.write(path, sanitize_mixfile(file.content))
-            else
-              File.write(path, file.content)
-            end
+            File.write(path, sanitize_mixfile(file.content))
           end
         end
 

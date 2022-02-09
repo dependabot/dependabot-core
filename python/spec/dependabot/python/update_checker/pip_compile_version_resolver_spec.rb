@@ -219,7 +219,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { subject }.
               to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message).
-                  to start_with("Could not find a version that matches boto3")
+                  to include("Could not find a version that matches boto3")
               end
           end
         end
@@ -245,7 +245,35 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to start_with("Could not find a version that matches boto3")
+              to include("Could not find a version that matches boto3")
+          end
+      end
+    end
+
+    context "with an unresolvable project" do
+      let(:dependency_files) { project_dependency_files("unresolvable") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jupyter-server",
+          version: "0.1.1",
+          requirements: dependency_requirements,
+          package_manager: "pip"
+        )
+      end
+      let(:dependency_requirements) do
+        [{
+          file: "requirements.in",
+          requirement: nil,
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a helpful error", :slow do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+            expect(error.message).
+              to include("Could not find a version that matches jupyter-server")
           end
       end
     end
@@ -309,7 +337,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
 
-    context "with an import of the setup.py" do
+    context "with an import of the setup.py", :slow do
       let(:dependency_files) do
         [manifest_file, generated_file, setup_file, pyproject]
       end
@@ -347,84 +375,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "with a Python 2.7 library" do
-      let(:manifest_fixture_name) { "legacy_python.in" }
-      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
+    context "with native dependencies that are not pre-built", :slow do
+      let(:manifest_fixture_name) { "native_dependencies.in" }
+      let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
+      let(:dependency_name) { "cryptography" }
+      let(:dependency_version) { "2.2.2" }
+      let(:updated_requirement) { "> 3.0.0, < 3.3" }
 
-      let(:dependency_name) { "wsgiref" }
-      let(:dependency_version) { "0.1.1" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "<=0.1.2",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:updated_requirement) { ">= 0.1.1, <= 2.0.0" }
-
-      it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-
-      context "that uses markers correctly (so raises a different error)" do
-        let(:manifest_fixture_name) { "legacy_python_2.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
-
-        let(:dependency_name) { "astroid" }
-        let(:dependency_version) { "1.6.4" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "<2",
-            groups: [],
-            source: nil
-          }]
-        end
-
-        it { is_expected.to eq(Gem::Version.new("1.6.6")) }
-      end
-
-      context "that has swapped syntax in the latest setup.py" do
-        let(:manifest_fixture_name) { "legacy_python_3.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_3.txt" }
-
-        let(:dependency_name) { "django-adv-cache-tag" }
-        let(:dependency_version) { "0.2.1" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "==0.2.1",
-            groups: [],
-            source: nil
-          }]
-        end
-
-        it { is_expected.to be_nil }
-      end
-
-      context "that has a .python-version file" do
-        let(:dependency_files) do
-          [manifest_file, generated_file, python_version_file]
-        end
-        let(:python_version_file) do
-          Dependabot::DependencyFile.new(
-            name: ".python-version",
-            content: "2.7.18\n"
-          )
-        end
-
-        it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-
-        context "that has a bad version in it" do
-          let(:python_version_file) do
-            Dependabot::DependencyFile.new(
-              name: ".python-version",
-              content: "rubbish\n"
-            )
-          end
-
-          it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-        end
-      end
+      it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
   end
 
@@ -480,7 +438,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to start_with("Could not find a version that matches boto3")
+                to include("Could not find a version that matches boto3")
             end
         end
       end

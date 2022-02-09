@@ -107,6 +107,24 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
               to include('@version String.trim({:ok, "0.0.1"})')
           end
         end
+
+        context "when file loading is done with pipes" do
+          let(:mixfile_fixture_name) { "loads_file_with_pipes" }
+
+          it "removes the call to load the file" do
+            expect(prepared_mixfile.content).
+              to include('@version {:ok, "0.0.1"} |> String.trim()')
+          end
+        end
+
+        context "when file loading is done with pipes and a !" do
+          let(:mixfile_fixture_name) { "loads_file_with_pipes_and_bang" }
+
+          it "removes the call to load the file" do
+            expect(prepared_mixfile.content).
+              to include('@version "0.0.1" |> String.trim()')
+          end
+        end
       end
 
       context "with unlock_requirement set to false" do
@@ -172,7 +190,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: "v1.2.0"
             }
@@ -181,7 +199,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
 
         it "updates the pin" do
           expect(prepared_mixfile.content).to include(
-            '{:phoenix, ">= 0", github: "phoenixframework/phoenix", '\
+            '{:phoenix, ">= 0", github: "dependabot-fixtures/phoenix", '\
             'ref: "v1.2.1"}'
           )
         end
@@ -191,7 +209,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker::FilePreparer do
 
           it "updates the pin" do
             expect(prepared_mixfile.content).to include(
-              '{:phoenix, ">= 0", github: "phoenixframework/phoenix", '\
+              '{:phoenix, ">= 0", github: "dependabot-fixtures/phoenix", '\
               "ref: \'v1.2.1\'}"
             )
           end

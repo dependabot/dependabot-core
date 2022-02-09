@@ -187,6 +187,30 @@ RSpec.describe Dependabot::Cargo::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(Gem::Version.new("0.1.39"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "cargo",
+            vulnerable_versions: ["<= 0.1.39"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("0.1.40"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject { checker.latest_resolvable_version }
 

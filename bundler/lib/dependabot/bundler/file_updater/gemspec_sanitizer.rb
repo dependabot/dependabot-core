@@ -100,9 +100,7 @@ module Dependabot
           def replace_version_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_to_version_constant?(node)
-              return replace_constant(node)
-            end
+            return replace_constant(node) if node_assigns_to_version_constant?(node)
 
             node.children.each { |child| replace_version_assignments(child) }
           end
@@ -110,9 +108,7 @@ module Dependabot
           def replace_version_constant_references(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_is_version_constant?(node)
-              return replace(node.loc.expression, %("#{replacement_version}"))
-            end
+            return replace(node.loc.expression, %("#{replacement_version}")) if node_is_version_constant?(node)
 
             node.children.each do |child|
               replace_version_constant_references(child)
@@ -122,9 +118,7 @@ module Dependabot
           def replace_file_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_files_to_var?(node)
-              return replace_file_assignment(node)
-            end
+            return replace_file_assignment(node) if node_assigns_files_to_var?(node)
 
             node.children.each { |child| replace_file_assignments(child) }
           end
@@ -132,9 +126,7 @@ module Dependabot
           def replace_require_paths_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if node_assigns_require_paths?(node)
-              return replace_require_paths_assignment(node)
-            end
+            return replace_require_paths_assignment(node) if node_assigns_require_paths?(node)
 
             node.children.each do |child|
               replace_require_paths_assignments(child)
@@ -242,11 +234,8 @@ module Dependabot
           def remove_unnecessary_assignments(node)
             return unless node.is_a?(Parser::AST::Node)
 
-            if unnecessary_assignment?(node) &&
-               node.children.last&.location&.respond_to?(:heredoc_end)
-              range_to_remove = node.loc.expression.join(
-                node.children.last.location.heredoc_end
-              )
+            if unnecessary_assignment?(node) && node_includes_heredoc?(node)
+              range_to_remove = node.loc.expression.join(find_heredoc_end_range(node))
               return replace(range_to_remove, '"sanitized"')
             elsif unnecessary_assignment?(node)
               return replace(node.loc.expression, '"sanitized"')
@@ -255,6 +244,30 @@ module Dependabot
             node.children.each do |child|
               remove_unnecessary_assignments(child)
             end
+          end
+
+          def node_includes_heredoc?(node)
+            find_heredoc_end_range(node)
+          end
+
+          # Performs a depth-first search for the first heredoc in the given
+          # Parser::AST::Node.
+          #
+          # Returns a Parser::Source::Range identifying the location of the end
+          #   of the heredoc, or nil if no heredoc was found.
+          def find_heredoc_end_range(node)
+            return unless node.is_a?(Parser::AST::Node)
+
+            node.children.each do |child|
+              next unless child.is_a?(Parser::AST::Node)
+
+              return child.location.heredoc_end if child.location.respond_to?(:heredoc_end)
+
+              range = find_heredoc_end_range(child)
+              return range if range
+            end
+
+            nil
           end
 
           def unnecessary_assignment?(node)
@@ -294,22 +307,11 @@ module Dependabot
           def replace_constant(node)
             case node.children.last&.type
             when :str, :int then nil # no-op
-            when :float, :const, :send, :lvar, :if
+            when :float, :const, :send, :lvar, :if, :dstr
               replace(
                 node.children.last.loc.expression,
                 %("#{replacement_version}")
               )
-            when :dstr
-              node.children.last.children.
-                select { |n| n.type == :begin }.
-                flat_map(&:children).
-                select { |n| node_is_version_constant?(n) }.
-                each do |n|
-                  replace(
-                    n.loc.expression,
-                    %("#{replacement_version}")
-                  )
-                end
             else
               raise "Unexpected node type #{node.children.last&.type}"
             end

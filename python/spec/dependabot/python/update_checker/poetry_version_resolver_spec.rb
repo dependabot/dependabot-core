@@ -138,12 +138,12 @@ RSpec.describe namespace::PoetryVersionResolver do
       let(:pyproject_fixture_name) { "python_2.toml" }
       let(:lockfile_fixture_name) { "python_2.lock" }
 
-      it "resolves version" do
-        is_expected.to eq(Gem::Version.new("2.18.4"))
+      it "raises an error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable)
       end
     end
 
-    context "with a dependency file that includes a git dependency" do
+    context "with a dependency file that includes a git dependency", :slow do
       let(:pyproject_fixture_name) { "git_dependency.toml" }
       let(:lockfile_fixture_name) { "git_dependency.lock" }
       let(:dependency_name) { "pytest" }
@@ -204,7 +204,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.15.1")) }
     end
 
-    context "resolvable only if git references are preserved" do
+    context "resolvable only if git references are preserved", :slow do
       let(:pyproject_fixture_name) { "git_conflict.toml" }
       let(:lockfile_fixture_name) { "git_conflict.lock" }
       let(:dependency_name) { "django-widget-tweaks" }
@@ -230,7 +230,7 @@ RSpec.describe namespace::PoetryVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to include("depends on black (^18) which doesn't match any")
+              to include("depends on black (^18) which doesn't match any versions")
           end
       end
 
@@ -243,7 +243,7 @@ RSpec.describe namespace::PoetryVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to include("Package croniter (0.3.26) not found")
+                to include("depends on croniter (0.3.26) which doesn't match any versions")
             end
         end
       end
@@ -292,8 +292,9 @@ RSpec.describe namespace::PoetryVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+              puts error.message
               expect(error.message).
-                to include("depends on black (^18) which doesn't match any")
+                to include("depends on black (^18) which doesn't match any versions")
             end
         end
       end

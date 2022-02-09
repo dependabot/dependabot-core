@@ -52,12 +52,39 @@ RSpec.describe Dependabot::Python::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
   before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
+    context "with a relative project path" do
+      let(:dependency_files) { project_dependency_files("poetry/relative_path") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mypy",
+          version: "0.910",
+          previous_version: "0.812",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.910",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.812",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      specify { expect(updated_files.count).to eq(2) }
+    end
 
     context "with a Pipfile and Pipfile.lock" do
       let(:dependency_files) { [pipfile, lockfile] }
@@ -238,7 +265,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }
         let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib/" }
 
         let(:dependency_name) { "urllib" }
         let(:dependency_version) { "1.22" }

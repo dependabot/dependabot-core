@@ -1,0 +1,19 @@
+{
+    "objectId":"treeobjectid",
+    "gitObjectType":"tree",
+    "commitId":"9c8376e9b2e943c2c72fac4b239876f377f0305a",
+    "path":"/files/are/here",
+    "isFolder":true,
+    "url":"https://dev.azure.com/org/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/items?path=files%2Fare%2Fhere&versionType=Commit&version=9c8376e9b2e943c2c72fac4b239876f377f0305a&versionOptions=None",
+    "_links":{
+       "self":{
+          "href":"https://dev.azure.com/org/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/items?path=files%2Fare%2Fhere&versionType=Commit&version=9c8376e9b2e943c2c72fac4b239876f377f0305a&versionOptions=None"
+       },
+       "repository":{
+          "href":"https://dev.azure.com/org/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d"
+       },
+       "tree":{
+          "href":"https://dev.azure.com/org/e853b87d-318c-4879-bedc-5855f3483b54/_apis/git/repositories/97faf8b7-6265-4fd5-b5e8-16abad20f98d/trees/c3f6adf854087e2bb23b91f7a16a539af23b63bf"
+       }
+    }
+ }

@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+gem 'statesman'
+
+source 'https://SECRET_CODES@repo.fury.io/greysteil/' do
+  gem 'business'
+end

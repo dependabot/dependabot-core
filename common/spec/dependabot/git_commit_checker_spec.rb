@@ -58,6 +58,27 @@ RSpec.describe Dependabot::GitCommitChecker do
       it { is_expected.to eq(false) }
     end
 
+    context "with a non-git dependency that has multiple sources" do
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ]
+      end
+
+      it { is_expected.to eq(false) }
+    end
+
     context "with a git dependency" do
       let(:source) do
         {
@@ -107,7 +128,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "with multiple source types" do
-          let(:s2) { { type: "path" } }
+          let(:s2) { { type: "git", url: "https://github.com/dependabot/dependabot-core" } }
 
           it "raises a helpful error" do
             expect { checker.git_dependency? }.
@@ -169,7 +190,16 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "but GitHub returns a 404" do
-          before { stub_request(:get, service_pack_url).to_return(status: 404) }
+          let(:url) { "https://github.com/gocardless/business.git" }
+
+          before do
+            stub_request(:get, service_pack_url).to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+          end
+
           it { is_expected.to eq(false) }
         end
 
@@ -412,6 +442,12 @@ RSpec.describe Dependabot::GitCommitChecker do
             git_url = "https://github.com/gocardless/business.git"
             stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
               to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).
+              with(anything, "git ls-remote #{git_url}").
+              and_return(["", "", exit_status])
           end
           let(:ref) { "my_ref" }
 
@@ -608,10 +644,16 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "that results in a 403" do
+        let(:url) { "https://github.com/gocardless/business.git" }
+
         before do
           stub_request(:get, git_url).
             with(headers: { "Authorization" => auth_header }).
             to_return(status: 403)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
         end
 
         it "raises a helpful error" do
@@ -863,7 +905,15 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "but GitHub returns a 404" do
-      before { stub_request(:get, service_pack_url).to_return(status: 404) }
+      let(:url) { "https://github.com/gocardless/business.git" }
+
+      before do
+        stub_request(:get, service_pack_url).to_return(status: 404)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+      end
 
       it "raises a helpful error" do
         expect { checker.local_tag_for_latest_version }.
@@ -920,9 +970,46 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
+        context "raise_on_ignored when later versions are allowed" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+
+        context "already on the latest version" do
+          let(:version) { "1.13.0" }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "doesn't raise an error" do
+              expect { subject }.to_not raise_error
+            end
+          end
+        end
+
+        context "all later versions ignored" do
+          let(:version) { "1.0.0" }
+          let(:ignored_versions) { ["> 1.0.0"] }
+          its([:tag]) { is_expected.to eq("v1.0.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "raises an error" do
+              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            end
+          end
+        end
+
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }
+        end
+
+        context "multiple ignore conditions" do
+          let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
         end
 
         context "all versions ignored" do
@@ -951,6 +1038,65 @@ RSpec.describe Dependabot::GitCommitChecker do
 
           its([:tag]) { is_expected.to eq("tags/v1.13.0") }
         end
+      end
+    end
+  end
+
+  describe "#local_tag_for_pinned_version" do
+    subject { checker.local_tag_for_pinned_version }
+
+    context "with a git commit pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: source_commit
+        }
+      end
+
+      let(:repo_url) { "https://github.com/actions/checkout.git" }
+      let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "actions-checkout" }
+
+      context "that is a tag" do
+        let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
+
+        it { is_expected.to eq("v2.3.3") }
+      end
+
+      context "that is not a tag" do
+        let(:source_commit) { "25a956c84d5dd820d28caab9f86b8d183aeeff3d" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is an invalid tag" do
+        let(:source_commit) { "18217bbd6de24e775799c3d99058f167ad168624" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not found" do
+        let(:source_commit) { "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is multiple tags" do
+        let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
+
+        it { is_expected.to eq("v2.3.4") }
       end
     end
   end
@@ -991,10 +1137,16 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "that results in a 403" do
+      let(:url) { "https://github.com/gocardless/business.git" }
+
       before do
         stub_request(:get, git_url).
           with(headers: { "Authorization" => auth_header }).
           to_return(status: 403)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it { is_expected.to eq(false) }

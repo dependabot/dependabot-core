@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ### SYSTEM DEPENDENCIES
 
 ENV DEBIAN_FRONTEND="noninteractive" \
@@ -9,7 +11,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
 # Everything from `make` onwards in apt-get install is only installed to ensure
 # Python support works with all packages (which may require specific libraries
 # at install time).
-
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -19,8 +20,9 @@ RUN apt-get update \
     bzr \
     mercurial \
     gnupg2 \
+    ca-certificates \
     curl \
-    wget \
+    file \
     zlib1g-dev \
     liblzma-dev \
     tzdata \
@@ -28,6 +30,7 @@ RUN apt-get update \
     unzip \
     locales \
     openssh-client \
+    software-properties-common \
     make \
     libpq-dev \
     libssl-dev \
@@ -46,49 +49,67 @@ RUN apt-get update \
     libxmlsec1-dev \
     libgeos-dev \
     python3-enchant \
-  && locale-gen en_US.UTF-8
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt
 
 
 ### RUBY
 
-# Install Ruby 2.6.6, update RubyGems, and install Bundler
+# Install Ruby 2.7, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-RUN apt-get install -y software-properties-common \
-  && apt-add-repository ppa:brightbox/ruby-ng \
+# Disable the outdated rubygems installation from being loaded
+ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
+# Allow gem installs as the dependabot user
+ENV BUNDLE_PATH=".bundle" \
+    BUNDLE_BIN=".bundle/bin"
+ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
+RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
-  && apt-get install -y ruby2.6 ruby2.6-dev \
-  && gem update --system 3.0.3 \
-  && gem install bundler -v 1.17.3 --no-document
+  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
+  && gem update --system 3.2.20 \
+  && gem install bundler -v 1.17.3 --no-document \
+  && gem install bundler -v 2.2.33 --no-document \
+  && rm -rf /var/lib/gems/2.7.0/cache/* \
+  && rm -rf /var/lib/apt/lists/*
 
 
 ### PYTHON
 
-# Install Python 2.7 and 3.8 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 3.10 with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
-RUN git clone https://github.com/pyenv/pyenv.git /usr/local/.pyenv \
-  && cd /usr/local/.pyenv && git checkout v1.2.20 && cd - \
-  && pyenv install 3.8.5 \
-  && pyenv install 2.7.18 \
-  && pyenv global 3.8.5
+RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
+USER dependabot
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.2 \
+  && pyenv global 3.10.2 \
+  && rm -Rf /tmp/python-build*
+USER root
 
 
 ### JAVASCRIPT
 
-# Install Node 10.0 and Yarn
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash - \
-  && apt-get install -y nodejs \
-  && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
-  && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-  && apt-get update && apt-get install -y yarn
+# Install Node 14.0 and npm v7
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install -g npm@v7.21.0 \
+  && rm -rf ~/.npm
 
 
 ### ELM
 
-# Install Elm 0.18 and Elm 0.19
+# Install Elm 0.19
 ENV PATH="$PATH:/node_modules/.bin"
-RUN npm install elm@0.18.0 \
-  && wget "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz
@@ -98,10 +119,11 @@ RUN npm install elm@0.18.0 \
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
-  && apt-get install -y \
+  && apt-get install -y --no-install-recommends \
     php7.4 \
     php7.4-apcu \
     php7.4-bcmath \
@@ -127,59 +149,103 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-tidy \
     php7.4-xml \
     php7.4-zip \
-    php7.4-zmq
+    php7.4-zmq \
+  && rm -rf /var/lib/apt/lists/*
+USER dependabot
+# Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
+# with historic data (we don't care about package files here)
+RUN mkdir /tmp/composer-cache \
+  && cd /tmp/composer-cache \
+  && echo '{"require":{"psr/log": "^1.1.3"}}' > composer.json \
+  && composer update --no-scripts --dry-run \
+  && cd /tmp \
+  && rm -rf /home/dependabot/.cache/composer/files \
+  && rm -rf /tmp/composer-cache
+USER root
 
 
 ### GO
 
-# Install Go and dep
-RUN curl https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz | tar -xz -C /opt \
-  && wget -O /opt/go/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-amd64 \
-  && chmod +x /opt/go/bin/dep \
-  && mkdir /opt/go/gopath
-ENV PATH=/opt/go/bin:$PATH GOPATH=/opt/go/gopath
+# Install Go
+ARG GOLANG_VERSION=1.17.5
+ARG GOLANG_CHECKSUM=bd78114b0d441b029c8fe0341f4910370925a4d270a6a590668840675b0c653e
+ENV PATH=/opt/go/bin:$PATH
+RUN cd /tmp \
+  && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
+  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
+  && tar -xzf go.tar.gz -C /opt \
+  && rm go.tar.gz
 
 
 ### ELIXIR
 
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
-RUN wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
-  && dpkg -i erlang-solutions_1.0_all.deb \
+# https://github.com/elixir-lang/elixir/releases
+ARG ELIXIR_VERSION=v1.12.3
+ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
+# This version is currently pinned to OTP 23, due to an issue that we only hit
+# in production, where traffic is routed through a proxy that OTP 24 doesn't
+# play nice with.
+ARG ERLANG_VERSION=1:23.3.4.5-1
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
+  && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
-  && apt-get install -y esl-erlang \
-  && wget https://github.com/elixir-lang/elixir/releases/download/v1.9.1/Precompiled.zip \
+  && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
+  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
+  && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip \
-  && mix local.hex --force
+  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
+  && mix local.hex --force \
+  && rm -rf /var/lib/apt/lists/*
 
 
 ### RUST
 
-# Install Rust 1.37.0
+# Install Rust 1.58.0
 ENV RUSTUP_HOME=/opt/rust \
+  CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
-RUN export CARGO_HOME=/opt/rust ; curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
+USER dependabot
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
 
 
-### NEW NATIVE HELPERS
+### Terraform
 
-COPY composer/helpers /opt/composer/helpers
-COPY dep/helpers /opt/dep/helpers
-COPY go_modules/helpers /opt/go_modules/helpers
-COPY hex/helpers /opt/hex/helpers
-COPY npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY python/helpers /opt/python/helpers
-COPY terraform/helpers /opt/terraform/helpers
+USER root
+ARG TERRAFORM_VERSION=1.0.11
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
+RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+  && apt-get update -y \
+  && apt-get install -y --no-install-recommends terraform=${TERRAFORM_VERSION} \
+  && terraform -help \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --chown=dependabot:dependabot LICENSE /home/dependabot
+COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
+COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
+COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin:/opt/dep/bin" \
+  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
   MIX_HOME="/opt/hex/mix"
 
-RUN bash /opt/terraform/helpers/build /opt/terraform && \
-  bash /opt/python/helpers/build /opt/python && \
-  bash /opt/dep/helpers/build /opt/dep && \
-  bash /opt/go_modules/helpers/build /opt/go_modules && \
-  bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn && \
-  bash /opt/hex/helpers/build /opt/hex && \
-  bash /opt/composer/helpers/build /opt/composer
+USER dependabot
+RUN bash /opt/bundler/helpers/v1/build
+RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build
+RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/go_modules/helpers/build
+RUN bash /opt/hex/helpers/build
+RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/python/helpers/build
+RUN bash /opt/terraform/helpers/build
+
+ENV HOME="/home/dependabot"
+
+WORKDIR ${HOME}

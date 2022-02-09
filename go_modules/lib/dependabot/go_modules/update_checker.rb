@@ -10,20 +10,21 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class UpdateChecker < Dependabot::UpdateCheckers::Base
+      require_relative "update_checker/latest_version_finder"
+
       def latest_resolvable_version
         # We don't yet support updating indirect dependencies for go_modules
         #
         # To update indirect dependencies we'll need to promote the indirect
         # dependency to the go.mod file forcing the resolver to pick this
-        # version (possibly as # indirect)
+        # version (possibly as `// indirect`)
         unless dependency.top_level?
           return unless dependency.version
 
           return version_class.new(dependency.version)
         end
 
-        @latest_resolvable_version ||=
-          version_class.new(find_latest_resolvable_version.gsub(/^v/, ""))
+        latest_version_finder.latest_version
       end
 
       # This is currently used to short-circuit latest_resolvable_version,
@@ -31,6 +32,22 @@ module Dependabot
       # resolvability. As this is quite quick in Go anyway, we just alias.
       def latest_version
         latest_resolvable_version
+      end
+
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        unless dependency.top_level?
+          return unless dependency.version
+
+          return version_class.new(dependency.version)
+        end
+
+        lowest_security_fix_version
+      end
+
+      def lowest_security_fix_version
+        latest_version_finder.lowest_security_fix_version
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -46,40 +63,17 @@ module Dependabot
 
       private
 
-      def find_latest_resolvable_version
-        SharedHelpers.in_a_temporary_directory do
-          SharedHelpers.with_git_configured(credentials: credentials) do
-            File.write("go.mod", go_mod.content)
-
-            # Turn off the module proxy for now, as it's causing issues with
-            # private git dependencies
-            env = { "GOPRIVATE" => "*" }
-
-            SharedHelpers.run_helper_subprocess(
-              command: NativeHelpers.helper_path,
-              env: env,
-              function: "getUpdatedVersion",
-              args: {
-                dependency: {
-                  name: dependency.name,
-                  version: "v" + dependency.version,
-                  indirect: dependency.requirements.empty?
-                }
-              }
-            )
-          end
-        end
-      rescue SharedHelpers::HelperSubprocessFailed => e
-        retry_count ||= 0
-        retry_count += 1
-        retry if transitory_failure?(e) && retry_count < 2
-        raise
-      end
-
-      def transitory_failure?(error)
-        return true if error.message.include?("EOF")
-
-        error.message.include?("Internal Server Error")
+      def latest_version_finder
+        @latest_version_finder ||=
+          LatestVersionFinder.new(
+            dependency: dependency,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: ignored_versions,
+            security_advisories: security_advisories,
+            raise_on_ignored: raise_on_ignored,
+            goprivate: options.fetch(:goprivate, "*")
+          )
       end
 
       def latest_version_resolvable_with_full_unlock?
@@ -104,10 +98,8 @@ module Dependabot
 
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
-        # (if that's what the parser picked up) of the tag name.
-        if dependency.version&.match?(/^[0-9a-f]{40}$/)
-          return tag&.fetch(:commit_sha)
-        end
+        # (if that's what the parser picked up) or the tag name.
+        return tag&.fetch(:commit_sha) if dependency.version&.match?(/^[0-9a-f]{40}$/)
 
         tag&.fetch(:tag)
       end
@@ -118,10 +110,6 @@ module Dependabot
 
       def default_source
         { type: "default", source: dependency.name }
-      end
-
-      def go_mod
-        @go_mod ||= dependency_files.find { |f| f.name == "go.mod" }
       end
 
       def git_commit_checker

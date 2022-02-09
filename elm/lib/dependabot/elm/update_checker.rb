@@ -10,7 +10,6 @@ module Dependabot
   module Elm
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       require_relative "update_checker/requirements_updater"
-      require_relative "update_checker/elm_18_version_resolver"
       require_relative "update_checker/elm_19_version_resolver"
 
       def latest_version
@@ -55,16 +54,14 @@ module Dependabot
 
       def version_resolver
         @version_resolver ||=
-          if dependency.requirements.any? { |r| r.fetch(:file) == "elm.json" }
+          begin
+            unless dependency.requirements.any? { |r| r.fetch(:file) == "elm.json" }
+              raise Dependabot::DependencyFileNotResolvable, "No elm.json found"
+            end
+
             Elm19VersionResolver.new(
               dependency: dependency,
               dependency_files: dependency_files
-            )
-          else
-            Elm18VersionResolver.new(
-              dependency: dependency,
-              dependency_files: dependency_files,
-              candidate_versions: candidate_versions
             )
           end
       end
@@ -80,13 +77,20 @@ module Dependabot
 
       def candidate_versions
         filtered = all_versions.
-                   reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
+                   reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-        if @raise_on_ignored && filtered.empty? && all_versions.any?
+        if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(all_versions).any?
           raise AllVersionsIgnored
         end
 
         filtered
+      end
+
+      def filter_lower_versions(versions_array)
+        return versions_array unless dependency.version && version_class.correct?(dependency.version)
+
+        versions_array.
+          select { |version| version > version_class.new(dependency.version) }
       end
 
       def all_versions
@@ -119,12 +123,6 @@ module Dependabot
           map { |r| r.fetch(:requirement) }.
           map { |r| requirement_class.new(r) }.
           all? { |r| r.satisfied_by?(latest_version) }
-      end
-
-      def ignore_reqs
-        # Note: we use Gem::Requirement here because ignore conditions will
-        # be passed as Ruby ranges
-        ignored_versions.map { |req| Gem::Requirement.new(req.split(",")) }
       end
     end
   end

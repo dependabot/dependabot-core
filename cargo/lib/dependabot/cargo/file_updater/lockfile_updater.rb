@@ -38,9 +38,7 @@ module Dependabot
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
-            if updated_lockfile.include?(desired_lockfile_content)
-              next updated_lockfile
-            end
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -60,7 +58,8 @@ module Dependabot
 
         def handle_cargo_error(error)
           raise unless error.message.include?("failed to select a version") ||
-                       error.message.include?("no matching version")
+                       error.message.include?("no matching version") ||
+                       error.message.include?("unexpected end of input while parsing major version number")
           raise if error.message.include?("`#{dependency.name} ")
 
           raise Dependabot::DependencyFileNotResolvable, error.message
@@ -68,6 +67,7 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -96,6 +96,7 @@ module Dependabot
           @custom_specification = spec_options.first
           true
         end
+        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
@@ -268,9 +269,7 @@ module Dependabot
 
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
-          if parsed_manifest.dig("package", "default-run")
-            parsed_manifest["package"].delete("default-run")
-          end
+          parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 

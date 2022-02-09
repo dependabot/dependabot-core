@@ -45,5 +45,11 @@ RSpec.describe Dependabot::Nuget::FileFetcher::ImportPathsFinder do
       let(:csproj_name) { "nested/my.csproj" }
       it { is_expected.to eq(["ref/another.csproj"]) }
     end
+
+    context "when the file references another project via a Remove attribute" do
+      let(:fixture_name) { "project_reference_remove.csproj" }
+      let(:csproj_name) { "nested/my.csproj" }
+      it { is_expected.to eq([]) }
+    end
   end
 end

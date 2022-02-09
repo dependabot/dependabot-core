@@ -24,7 +24,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
   before do
     stub_request(:get, pypi_url).to_return(status: 200, body: pypi_response)
   end
-  let(:pypi_url) { "https://pypi.python.org/simple/luigi/" }
+  let(:pypi_url) { "https://pypi.org/simple/luigi/" }
   let(:pypi_response) { fixture("pypi", "pypi_simple_response.html") }
 
   let(:pipfile) do
@@ -60,7 +60,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
     subject(:index_urls) { finder.index_urls }
 
     context "without any additional indexes specified" do
-      it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
+      it { is_expected.to eq(["https://pypi.org/simple/"]) }
     end
 
     context "with a custom index-url" do
@@ -107,7 +107,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         context "that is unparseable" do
           let(:pipfile_fixture_name) { "unparseable" }
 
-          it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
+          it { is_expected.to eq(["https://pypi.org/simple/"]) }
         end
       end
 
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         context "that is unparseable" do
           let(:pyproject_fixture_name) { "unparseable.toml" }
 
-          it { is_expected.to eq(["https://pypi.python.org/simple/"]) }
+          it { is_expected.to eq(["https://pypi.org/simple/"]) }
         end
       end
 
@@ -166,7 +166,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://pypi.python.org/simple/",
+              "https://pypi.org/simple/",
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
             ]
           )
@@ -198,7 +198,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             it "gets the right index URLs" do
               expect(index_urls).to match_array(
                 [
-                  "https://pypi.python.org/simple/",
+                  "https://pypi.org/simple/",
                   "https://pypi.weasyldev.com/weasyl/source/+simple/"
                 ]
               )
@@ -216,7 +216,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               it "gets the right index URLs" do
                 expect(index_urls).to match_array(
                   [
-                    "https://pypi.python.org/simple/",
+                    "https://pypi.org/simple/",
                     "https://pypi.weasyldev.com/source/+simple/"
                   ]
                 )
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
               it "gets the right index URLs" do
                 expect(index_urls).to match_array(
                   [
-                    "https://pypi.python.org/simple/",
+                    "https://pypi.org/simple/",
                     "https://pypi.weasyldev.com/source/+simple/"
                   ]
                 )
@@ -256,7 +256,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://pypi.python.org/simple/",
+              "https://pypi.org/simple/",
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
             ]
           )
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
           it "gets the right index URLs" do
             expect(index_urls).to match_array(
               [
-                "https://pypi.python.org/simple/",
+                "https://pypi.org/simple/",
                 "https://cakebot.mycloudrepo.io/public/repositories/py/"
               ]
             )
@@ -283,7 +283,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://pypi.python.org/simple/",
+              "https://pypi.org/simple/",
               "https://some.internal.registry.com/pypi/"
             ]
           )
@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
         it "gets the right index URLs" do
           expect(index_urls).to match_array(
             [
-              "https://pypi.python.org/simple/",
+              "https://pypi.org/simple/",
               "https://pypi.weasyldev.com/weasyl/source/+simple/"
             ]
           )

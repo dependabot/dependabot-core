@@ -1,28 +1,53 @@
 # frozen_string_literal: true
 
-require "dependabot/shared_helpers"
+require "dependabot/utils"
 
 module Dependabot
   class DependabotError < StandardError
-    def initialize(msg = nil)
-      msg = sanitize_message(msg)
-      super(msg)
+    BASIC_AUTH_REGEX = %r{://(?<auth>[^:]*:[^@%\s]+(@|%40))}.freeze
+    # Remove any path segment from fury.io sources
+    FURY_IO_PATH_REGEX = %r{fury\.io/(?<path>.+)}.freeze
+
+    def initialize(message = nil)
+      super(sanitize_message(message))
     end
 
     private
 
     def sanitize_message(message)
-      return unless message
+      return message unless message.is_a?(String)
 
       path_regex =
-        Regexp.escape(SharedHelpers::BUMP_TMP_DIR_PATH) + "\/" +
-        Regexp.escape(SharedHelpers::BUMP_TMP_FILE_PREFIX) + "[^/]*"
+        Regexp.escape(Utils::BUMP_TMP_DIR_PATH) + "\/" +
+        Regexp.escape(Utils::BUMP_TMP_FILE_PREFIX) + "[a-zA-Z0-9-]*"
 
-      message.gsub(/#{path_regex}/, "dependabot_tmp_dir")
+      message = message.gsub(/#{path_regex}/, "dependabot_tmp_dir").strip
+      filter_sensitive_data(message)
+    end
+
+    def filter_sensitive_data(message)
+      replace_capture_groups(message, BASIC_AUTH_REGEX, "")
+    end
+
+    def sanitize_source(source)
+      source = filter_sensitive_data(source)
+      replace_capture_groups(source, FURY_IO_PATH_REGEX, "<redacted>")
+    end
+
+    def replace_capture_groups(string, regex, replacement)
+      return string unless string.is_a?(String)
+
+      string.scan(regex).flatten.compact.reduce(string) do |original_msg, match|
+        original_msg.gsub(match, replacement)
+      end
     end
   end
 
+  class OutOfDisk < DependabotError; end
+
   class OutOfMemory < DependabotError; end
+
+  class NotImplemented < DependabotError; end
 
   #####################
   # Repo level errors #
@@ -33,7 +58,6 @@ module Dependabot
 
     def initialize(branch_name, msg = nil)
       @branch_name = branch_name
-      msg = sanitize_message(msg)
       super(msg)
     end
   end
@@ -88,6 +112,7 @@ module Dependabot
   end
 
   class DependencyFileNotEvaluatable < DependabotError; end
+
   class DependencyFileNotResolvable < DependabotError; end
 
   #######################
@@ -98,10 +123,10 @@ module Dependabot
     attr_reader :source
 
     def initialize(source)
-      @source = source.gsub(%r{(?<=\.fury\.io)/[A-Za-z0-9]{20}(?=/)}, "")
+      @source = sanitize_source(source)
       msg = "The following source could not be reached as it requires "\
             "authentication (and any provided details were invalid or lacked "\
-            "the required permissions): #{source}"
+            "the required permissions): #{@source}"
       super(msg)
     end
   end
@@ -110,8 +135,8 @@ module Dependabot
     attr_reader :source
 
     def initialize(source)
-      @source = source.gsub(%r{(?<=\.fury\.io)/[A-Za-z0-9]{20}(?=/)}, "")
-      super("The following source timed out: #{source}")
+      @source = sanitize_source(source)
+      super("The following source timed out: #{@source}")
     end
   end
 
@@ -119,8 +144,8 @@ module Dependabot
     attr_reader :source
 
     def initialize(source)
-      @source = source.gsub(%r{(?<=\.fury\.io)/[A-Za-z0-9]{20}(?=/)}, "")
-      super("Could not verify the SSL certificate for #{source}")
+      @source = sanitize_source(source)
+      super("Could not verify the SSL certificate for #{@source}")
     end
   end
 
@@ -129,7 +154,7 @@ module Dependabot
 
     def initialize(environment_variable)
       @environment_variable = environment_variable
-      super("Missing environment variable #{environment_variable}")
+      super("Missing environment variable #{@environment_variable}")
     end
   end
 
@@ -146,10 +171,10 @@ module Dependabot
 
     def initialize(*dependency_urls)
       @dependency_urls =
-        dependency_urls.flatten.map { |uri| uri.gsub(/x-access-token.*?@/, "") }
+        dependency_urls.flatten.map { |uri| filter_sensitive_data(uri) }
 
       msg = "The following git URLs could not be retrieved: "\
-            "#{dependency_urls.join(', ')}"
+            "#{@dependency_urls.join(', ')}"
       super(msg)
     end
   end
@@ -160,7 +185,7 @@ module Dependabot
     def initialize(dependency)
       @dependency = dependency
 
-      msg = "The branch or reference specified for #{dependency} could not "\
+      msg = "The branch or reference specified for #{@dependency} could not "\
             "be retrieved"
       super(msg)
     end
@@ -172,7 +197,7 @@ module Dependabot
     def initialize(*dependencies)
       @dependencies = dependencies.flatten
       msg = "The following path based dependencies could not be retrieved: "\
-            "#{dependencies.join(', ')}"
+            "#{@dependencies.join(', ')}"
       super(msg)
     end
   end
@@ -185,8 +210,8 @@ module Dependabot
       @declared_path = declared_path
       @discovered_path = discovered_path
 
-      msg = "The module path '#{declared_path}' found in #{go_mod} doesn't "\
-            "match the actual path '#{discovered_path}' in the dependency's "\
+      msg = "The module path '#{@declared_path}' found in #{@go_mod} doesn't "\
+            "match the actual path '#{@discovered_path}' in the dependency's "\
             "go.mod"
       super(msg)
     end
@@ -194,4 +219,7 @@ module Dependabot
 
   # Raised by UpdateChecker if all candidate updates are ignored
   class AllVersionsIgnored < DependabotError; end
+
+  # Raised by FileParser if processing may execute external code in the update context
+  class UnexpectedExternalCode < DependabotError; end
 end

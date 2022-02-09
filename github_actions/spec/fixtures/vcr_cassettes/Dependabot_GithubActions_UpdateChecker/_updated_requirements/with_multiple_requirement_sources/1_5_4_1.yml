@@ -3,37 +3,13 @@
   - request:
       method: get
       uri: https://github.com/actions/checkout.git/info/refs?service=git-upload-pack
-      body:
-        encoding: US-ASCII
-        string: ''
-      headers:
-        User-Agent:
-        - excon/0.73.0
-        Accept:
-        - "*/*"
-        Authorization:
-        - Basic eC1hY2Nlc3MtdG9rZW46NDFlZTdiODA0MmEwZWNjMmFiYmNkNDViNzkwZTc1NWM0NWRkMDI5Yw==
     response:
       status:
         code: 200
         message: OK
       headers:
-        Server:
-        - GitHub Babel 2.0
         Content-Type:
         - application/x-git-upload-pack-advertisement
-        Expires:
-        - Fri, 01 Jan 1980 00:00:00 GMT
-        Pragma:
-        - no-cache
-        Cache-Control:
-        - no-cache, max-age=0, must-revalidate
-        Vary:
-        - Accept-Encoding
-        X-Frame-Options:
-        - DENY
-        X-Github-Request-Id:
-        - CF12:51BE:FDC3D:163C76:5ED78766
       body:
         encoding: ASCII-8BIT
         string: "001e# service=git-upload-pack\n00000143453ee27fca95fa9e03a24c1969a92c82e1a9b15e
