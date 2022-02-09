@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "cocoapods-core"
-require "dependabot/dependency"
-require "dependabot/file_parsers"
-require "dependabot/file_parsers/base"
+require 'cocoapods-core'
+require 'dependabot/dependency'
+require 'dependabot/file_parsers'
+require 'dependabot/file_parsers/base'
 
 module Dependabot
   module CocoaPods
     class FileParser < Dependabot::FileParsers::Base
-      require "dependabot/file_parsers/base/dependency_set"
+      require 'dependabot/file_parsers/base/dependency_set'
 
       def parse
         dependency_set = DependencySet.new
@@ -37,7 +37,7 @@ module Dependabot
                 source: dependency_requirements(dep),
                 file: podfile.name
               }],
-              package_manager: "cocoapods"
+              package_manager: 'cocoapods'
             )
         end
 
@@ -54,7 +54,7 @@ module Dependabot
               name: dep,
               version: parsed_lockfile.version(dep)&.to_s,
               requirements: [],
-              package_manager: "cocoapods"
+              package_manager: 'cocoapods'
             )
         end
 
@@ -62,8 +62,8 @@ module Dependabot
       end
 
       def check_required_files
-        raise "No Podfile!" unless podfile
-        raise "No Podfile.lock!" unless lockfile
+        raise 'No Podfile!' unless podfile
+        raise 'No Podfile.lock!' unless lockfile
       end
 
       def dependency_version(dependency_name)
@@ -83,11 +83,11 @@ module Dependabot
       end
 
       def podfile
-        @podfile ||= get_original_file("Podfile")
+        @podfile ||= get_original_file('Podfile')
       end
 
       def lockfile
-        @lockfile ||= get_original_file("Podfile.lock")
+        @lockfile ||= get_original_file('Podfile.lock')
       end
 
       def parsed_podfile
@@ -105,4 +105,4 @@ module Dependabot
   end
 end
 
-Dependabot::FileParsers.register("cocoapods", Dependabot::CocoaPods::FileParser)
+Dependabot::FileParsers.register('cocoapods', Dependabot::CocoaPods::FileParser)

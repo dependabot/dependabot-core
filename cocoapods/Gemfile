@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-gem "dependabot-common", path: "../common"
+gem 'dependabot-common', path: '../common'
 
 gemspec

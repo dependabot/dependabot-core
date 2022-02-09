@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "toml-rb"
+require 'toml-rb'
 
-require "dependabot/shared_helpers"
-require "dependabot/cocoapods/file_updater"
-require "dependabot/cocoapods/update_checker"
+require 'dependabot/shared_helpers'
+require 'dependabot/cocoapods/file_updater'
+require 'dependabot/cocoapods/update_checker'
 
 module Dependabot
   module CocoaPods
@@ -20,11 +20,11 @@ module Dependabot
 
         def updated_lockfile_content
           external_source_pods =
-            evaluated_podfile.dependencies.
-            select(&:external_source).
-            map(&:root_name).uniq
+            evaluated_podfile.dependencies
+                             .select(&:external_source)
+                             .map(&:root_name).uniq
 
-          pod_sandbox = Pod::Sandbox.new("tmp")
+          pod_sandbox = Pod::Sandbox.new('tmp')
           checkout_options =
             pod_sandbox.checkout_sources.select do |root_name, _|
               external_source_pods.include?(root_name)
@@ -53,7 +53,7 @@ module Dependabot
           # Add the correct Podfile checksum (i.e., without auth alterations)
           # and change the `COCOAPODS` version back to whatever it was before
           checksum =
-            Digest::SHA1.hexdigest(@updated_podfile_content).encode("UTF-8")
+            Digest::SHA1.hexdigest(@updated_podfile_content).encode('UTF-8')
           old_cocoapods_line =
             @lockfile.content.match(/COCOAPODS: \d\.\d\.\d.*/)[0]
 
@@ -69,7 +69,7 @@ module Dependabot
               lockfile_hash = Pod::YAMLHelper.load_string(@lockfile.content)
               parsed_lockfile = Pod::Lockfile.new(lockfile_hash)
 
-              pod_sandbox = Pod::Sandbox.new("tmp")
+              pod_sandbox = Pod::Sandbox.new('tmp')
               analyzer = Pod::Installer::Analyzer.new(
                 pod_sandbox,
                 evaluated_podfile,

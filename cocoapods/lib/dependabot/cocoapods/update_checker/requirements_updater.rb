@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "dependabot/update_checkers/base"
+require 'dependabot/update_checkers/base'
 
 module Dependabot
   module CocoaPods
@@ -17,9 +17,7 @@ module Dependabot
                        latest_version:, latest_resolvable_version:)
           @requirements = requirements
 
-          if existing_version
-            @existing_version = Gem::Version.new(existing_version)
-          end
+          @existing_version = Gem::Version.new(existing_version) if existing_version
 
           @latest_version = Gem::Version.new(latest_version) if latest_version
 
@@ -32,7 +30,7 @@ module Dependabot
         def updated_requirements
           requirements.map do |req|
             case req[:file]
-            when "Podfile" then updated_podfile_requirement(req)
+            when 'Podfile' then updated_podfile_requirement(req)
             else raise "Unexpected file name: #{req[:file]}"
             end
           end
@@ -43,7 +41,7 @@ module Dependabot
         def updated_podfile_requirement(req)
           return req unless latest_resolvable_version
 
-          original_req = Gem::Requirement.new(req[:requirement].split(","))
+          original_req = Gem::Requirement.new(req[:requirement].split(','))
 
           if original_req.satisfied_by?(latest_resolvable_version) &&
              (existing_version.nil? ||
@@ -51,7 +49,7 @@ module Dependabot
             return req
           end
 
-          new_req = req[:requirement].gsub(/<=?/, "~>")
+          new_req = req[:requirement].gsub(/<=?/, '~>')
           new_req.sub!(VERSION_REGEX) do |old_version|
             at_same_precision(latest_resolvable_version, old_version)
           end
@@ -60,8 +58,8 @@ module Dependabot
         end
 
         def at_same_precision(new_version, old_version)
-          precision = old_version.to_s.split(".").count
-          new_version.to_s.split(".").first(precision).join(".")
+          precision = old_version.to_s.split('.').count
+          new_version.to_s.split('.').first(precision).join('.')
         end
       end
     end

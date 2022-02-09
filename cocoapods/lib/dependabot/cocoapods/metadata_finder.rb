@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "excon"
-require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require 'excon'
+require 'dependabot/metadata_finders/base'
+require 'dependabot/shared_helpers'
 
 module Dependabot
   module CocoaPods
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      GITHUB_LINK_REGEX = /class="github-link".*?#{Source::SOURCE_REGEX}">/m.
-                          freeze
+      GITHUB_LINK_REGEX = /class="github-link".*?#{Source::SOURCE_REGEX}">/m
+                          .freeze
 
       private
 
@@ -33,5 +33,5 @@ module Dependabot
   end
 end
 
-Dependabot::MetadataFinders.
-  register("cocoapods", Dependabot::CocoaPods::MetadataFinder)
+Dependabot::MetadataFinders
+  .register('cocoapods', Dependabot::CocoaPods::MetadataFinder)
