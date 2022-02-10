@@ -242,7 +242,7 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-arc
 #       Hence, we clone from git and globally install it from local folder.
 #       Now it can be used with: 'dart pub global run pub ...'
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout dependency_services \
+  && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \
