@@ -4,6 +4,7 @@ require "cgi"
 require "excon"
 require "nokogiri"
 require "open3"
+require "digest"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -215,10 +216,15 @@ module Dependabot
 
       def git_dependency_name(name, source)
         git_source = Source.from_url(source[:url])
-        if source[:ref]
+        if git_source && source[:ref]
           name + "::" + git_source.provider + "::" + git_source.repo + "::" + source[:ref]
-        else
+        elsif git_source
           name + "::" + git_source.provider + "::" + git_source.repo
+        elsif source[:ref]
+          name + "::git_provider::repo_name/git_repo(" \
+          + Digest::SHA1.hexdigest(source[:url]) + ")::" + source[:ref]
+        else
+          name + "::git_provider::repo_name/git_repo(" + Digest::SHA1.hexdigest(source[:url]) + ")"
         end
       end
 

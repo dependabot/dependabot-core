@@ -16,15 +16,16 @@ module Dependabot
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
-        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/.freeze
+        /[[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]]/.freeze
       DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
       REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/.freeze
 
-      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/.freeze
+      NAME_COMPONENT = /[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*/.freeze
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
+      ARG = /ARG/i.freeze
       FROM = /FROM/i.freeze
-      PLATFORM = /--platform\=(?<platform>\S+)/.freeze
+      PLATFORM = /--platform=(?<platform>\S+)/.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
       NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
@@ -38,7 +39,16 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dockerfiles.each do |dockerfile|
+          args = {}
           dockerfile.content.each_line do |line|
+            if ARG.match(line)
+              key_value = line.delete_prefix("ARG ").split("=")
+              next if key_value.count != 2 # The ARG has no default value that we can set
+
+              args[key_value[0]] = key_value[1].delete_suffix("\n")
+              next
+            end
+            line = replace_args(line, args)
             next unless FROM_LINE.match?(line)
 
             parsed_from_line = FROM_LINE.match(line).named_captures
@@ -65,6 +75,13 @@ module Dependabot
       end
 
       private
+
+      def replace_args(line, args)
+        line.gsub(/\${?\w+}?/) do |s|
+          escaped = s.delete_prefix("$").delete_prefix("{").delete_suffix("}")
+          args[escaped]
+        end
+      end
 
       def dockerfiles
         # The Docker file fetcher only fetches Dockerfiles, so no need to

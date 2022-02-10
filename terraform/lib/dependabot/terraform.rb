@@ -28,6 +28,6 @@ Dependabot::Dependency.
       # Only modify the name if it a git source dependency
       return name unless name.include? "::"
 
-      name.split("::").first + "::" + name.split("::")[2].split("/").last
+      name.split("::").first + "::" + name.split("::")[2].split("/").last.split("(").first
     }
   )

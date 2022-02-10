@@ -95,6 +95,7 @@ docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
+  -v "$(pwd)/dry-run:$CODE_DIR/dry-run" \
   -v "$(pwd)/common/.rubocop.yml:$CODE_DIR/common/.rubocop.yml" \
   -v "$(pwd)/common/Gemfile:$CODE_DIR/common/Gemfile" \
   -v "$(pwd)/common/dependabot-common.gemspec:$CODE_DIR/common/dependabot-common.gemspec" \
@@ -105,6 +106,7 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/.rubocop.yml:$CODE_DIR/terraform/.rubocop.yml" \
   -v "$(pwd)/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
   -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
+  -v "$(pwd)/terraform/helpers:$CODE_DIR/terraform/helpers" \
   -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
   -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
@@ -135,8 +137,7 @@ docker run --rm -ti \
   -v "$(pwd)/python/.rubocop.yml:$CODE_DIR/python/.rubocop.yml" \
   -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
   -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
-  -v "$(pwd)/python/helpers:/opt/python" \
-  -v "$(pwd)/python/helpers:/opt/python/helpers" \
+  -v "$(pwd)/python/helpers:$CODE_DIR/python/helpers" \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
@@ -167,6 +168,7 @@ docker run --rm -ti \
   -v "$(pwd)/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
   -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
   -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
+  -v "$(pwd)/hex/helpers:$CODE_DIR/hex/helpers" \
   -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
   -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
   -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
@@ -186,12 +188,14 @@ docker run --rm -ti \
   -v "$(pwd)/npm_and_yarn/.rubocop.yml:$CODE_DIR/npm_and_yarn/.rubocop.yml" \
   -v "$(pwd)/npm_and_yarn/Gemfile:$CODE_DIR/npm_and_yarn/Gemfile" \
   -v "$(pwd)/npm_and_yarn/dependabot-npm_and_yarn.gemspec:$CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec" \
+  -v "$(pwd)/npm_and_yarn/helpers:$CODE_DIR/npm_and_yarn/helpers" \
   -v "$(pwd)/npm_and_yarn/lib:$CODE_DIR/npm_and_yarn/lib" \
   -v "$(pwd)/npm_and_yarn/spec:$CODE_DIR/npm_and_yarn/spec" \
   -v "$(pwd)/npm_and_yarn/script:$CODE_DIR/npm_and_yarn/script" \
   -v "$(pwd)/composer/.rubocop.yml:$CODE_DIR/composer/.rubocop.yml" \
   -v "$(pwd)/composer/Gemfile:$CODE_DIR/composer/Gemfile" \
   -v "$(pwd)/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
+  -v "$(pwd)/composer/helpers:$CODE_DIR/composer/helpers" \
   -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
   -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
   -v "$(pwd)/composer/script:$CODE_DIR/composer/script" \
@@ -201,8 +205,6 @@ docker run --rm -ti \
   -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
   -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
   -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
-  -v "$(pwd)/bundler/helpers:/opt/bundler" \
-  -v "$(pwd)/bundler/helpers:/opt/bundler/helpers" \
   -v "$(pwd)/bundler/script:$CODE_DIR/bundler/script" \
   -v "$(pwd)/omnibus/.rubocop.yml:$CODE_DIR/omnibus/.rubocop.yml" \
   -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \

@@ -50,10 +50,14 @@ module Dependabot
         # Error message from npm install:
         # npm ERR! Could not resolve dependency:
         # npm ERR! peer react@"^16.14.0" from react-dom@16.14.0
+        #
+        # or with two semver constraints:
+        # npm ERR! Could not resolve dependency:
+        # npm ERR! peer @opentelemetry/api@">=1.0.0 <1.1.0" from @opentelemetry/context-async-hooks@1.0.1
         NPM7_PEER_DEP_ERROR_REGEX =
           /
             npm\sERR!\sCould\snot\sresolve\sdependency:\n
-            npm\sERR!\speer\s(?<required_dep>\S+@\S+)\sfrom\s(?<requiring_dep>\S+@\S+)
+            npm\sERR!\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x.freeze
 
         def initialize(dependency:, credentials:, dependency_files:,

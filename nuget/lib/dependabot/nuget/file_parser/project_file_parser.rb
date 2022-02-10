@@ -39,10 +39,12 @@ module Dependabot
             req = dependency_requirement(dependency_node, project_file)
             version = dependency_version(dependency_node, project_file)
             prop_name = req_property_name(dependency_node)
+            is_dev = dependency_node.name == "DevelopmentDependency"
 
-            dependency = build_dependency(name, req, version, prop_name, project_file)
+            dependency = build_dependency(name, req, version, prop_name, project_file, dev: is_dev)
             dependency_set << dependency if dependency
           end
+
           # Look for SDK references; see:
           # https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk
           add_sdk_references(doc, dependency_set, project_file)
@@ -109,7 +111,7 @@ module Dependabot
           end
         end
 
-        def build_dependency(name, req, version, prop_name, project_file)
+        def build_dependency(name, req, version, prop_name, project_file, dev: false)
           return unless name
 
           # Exclude any dependencies specified using interpolation
@@ -118,7 +120,7 @@ module Dependabot
           requirement = {
             requirement: req,
             file: project_file.name,
-            groups: [],
+            groups: [dev ? "devDependencies" : "dependencies"],
             source: nil
           }
 

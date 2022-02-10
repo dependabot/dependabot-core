@@ -83,14 +83,14 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 
 ### PYTHON
 
-# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 3.10 with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.0 \
-  && pyenv global 3.10.0 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.2 \
+  && pyenv global 3.10.2 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.23 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -202,14 +202,13 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
 
 ### RUST
 
-# Install Rust 1.51.0
+# Install Rust 1.58.0
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
-  && rustup toolchain install 1.51.0 && rustup default 1.51.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
 
 
 ### Terraform
@@ -285,16 +284,15 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
-RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
-RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/go_modules/helpers/build /opt/go_modules
-RUN bash /opt/hex/helpers/build /opt/hex
-RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
-RUN bash /opt/python/helpers/build /opt/python
-RUN bash /opt/terraform/helpers/build /opt/terraform
-RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
-RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
+RUN bash /opt/bundler/helpers/v1/build
+RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build
+RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/go_modules/helpers/build
+RUN bash /opt/hex/helpers/build
+RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/python/helpers/build
+RUN bash /opt/terraform/helpers/build
 
 ENV HOME="/home/dependabot"
 
