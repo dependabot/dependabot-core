@@ -355,7 +355,7 @@ module Dependabot
           # In this case we want to raise a more helpful error message asking
           # people to re-generate their lockfiles (Future feature idea: add a
           # way to click-to-fix the lockfile from the issue)
-          if error_message.include?("Cannot read property 'match' of ") &&
+          if error_message.include?("Cannot read properties of undefined (reading 'match')") &&
              !resolvable_before_update?
             raise_missing_lockfile_version_resolvability_error(error_message)
           end
