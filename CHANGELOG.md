@@ -1,3 +1,7 @@
+## v0.172.2, 10 February 2022
+
+- Bump go from 1.17.5 to 1.17.7 [#4730](https://github.com/dependabot/dependabot-core/pull/4730)
+
 ## v0.172.1, 9 February 2022
 
 - Docker: Ignore ARGs without default values [#4723](https://github.com/dependabot/dependabot-core/pull/4723)
