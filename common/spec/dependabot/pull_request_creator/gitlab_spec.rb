@@ -352,7 +352,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
 
       before do
-        stub_request(:put, "#{mr_api_url}/5/approvers").
+        stub_request(:post, "#{mr_api_url}/5/approval_rules").
           to_return(
             status: 200,
             body: fixture("gitlab", "merge_request.json"),
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         creator.create
 
         expect(WebMock).
-          to have_requested(:put, "#{mr_api_url}/5/approvers")
+          to have_requested(:post, "#{mr_api_url}/5/approval_rules")
       end
 
       context "with forked project" do
@@ -374,7 +374,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           creator.create
 
           expect(WebMock).
-            to have_requested(:put, "#{mr_api_url}/5/approvers")
+            to have_requested(:post, "#{mr_api_url}/5/approval_rules")
         end
       end
     end
