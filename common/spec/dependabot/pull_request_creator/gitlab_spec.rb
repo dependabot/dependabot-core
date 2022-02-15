@@ -363,8 +363,12 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       it "adds the approvers to the MR correctly" do
         creator.create
 
-        expect(WebMock).
-          to have_requested(:post, "#{mr_api_url}/5/approval_rules")
+        expect(WebMock).to have_requested(:post, "#{mr_api_url}/5/approval_rules").with(body: {
+          name: "dependency-updates",
+          approvals_required: 1,
+          user_ids: approvers["approvers"],
+          group_ids: ""
+        })
       end
 
       context "with forked project" do
@@ -373,8 +377,12 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         it "adds the approvers to upstream project MR" do
           creator.create
 
-          expect(WebMock).
-            to have_requested(:post, "#{mr_api_url}/5/approval_rules")
+          expect(WebMock).to have_requested(:post, "#{mr_api_url}/5/approval_rules").with(body: {
+            name: "dependency-updates",
+            approvals_required: 1,
+            user_ids: approvers["approvers"],
+            group_ids: ""
+          })
         end
       end
     end
