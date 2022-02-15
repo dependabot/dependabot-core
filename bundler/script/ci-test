@@ -4,18 +4,25 @@ set -e
 
 bundle install
 bundle exec rubocop .
-bundle exec rspec spec
+
+cd helpers/v1 \
+  && BUNDLER_VERSION=1.17.3 bundle install \
+  && cd -
 
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   cd helpers/v1 \
-    && BUNDLER_VERSION=1.17.3 bundle install \
     && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
     && cd -
 fi
 
+cd helpers/v2 \
+  && BUNDLER_VERSION=2.3.8 bundle install \
+  && cd -
+
 if [[ "$SUITE_NAME" == "bundler2" ]]; then
   cd helpers/v2 \
-    && BUNDLER_VERSION=2.3.8 bundle install \
     && BUNDLER_VERSION=2.3.8 bundle exec rspec spec \
     && cd -
 fi
+
+bundle exec rspec spec
