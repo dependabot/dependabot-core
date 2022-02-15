@@ -40,8 +40,9 @@ module Dependabot
 
         dockerfiles.each do |dockerfile|
           args = {}
+          found_from = false
           dockerfile.content.each_line do |line|
-            if ARG.match(line)
+            if !found_from && ARG.match(line)
               key_value = line.delete_prefix("ARG ").split("=")
               next if key_value.count != 2 # The ARG has no default value that we can set
 
@@ -51,6 +52,7 @@ module Dependabot
             line = replace_args(line, args)
             next unless FROM_LINE.match?(line)
 
+            found_from = true
             parsed_from_line = FROM_LINE.match(line).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
