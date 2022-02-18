@@ -153,7 +153,7 @@ module Dependabot
             git_https_prefix = %r{^git::https://}
             if repo.match?(git_https_prefix)
               repo = repo.sub(git_https_prefix, "")
-              repo = repo.sub(%r{\.git$}, "")
+              repo = repo.sub(/\.git$/, "")
             end
             raise PrivateSourceAuthenticationFailure, repo
           end
