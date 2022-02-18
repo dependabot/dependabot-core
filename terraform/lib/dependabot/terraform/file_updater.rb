@@ -149,7 +149,13 @@ module Dependabot
           output = e.message
 
           if output.match?(PRIVATE_MODULE_ERROR)
-            raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+            repo = output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+            git_https_prefix = %r{^git::https://}
+            if repo.match?(git_https_prefix)
+              repo = repo.sub(git_https_prefix, "")
+              repo = repo.sub(%r{\.git$}, "")
+            end
+            raise PrivateSourceAuthenticationFailure, repo
           end
 
           raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
