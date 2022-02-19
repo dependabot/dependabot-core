@@ -96,6 +96,16 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       end
     end
 
+    context "when the user wants a pre-release with wildcard" do
+      let(:dependency_version) { "*-*" }
+      let(:dependency_requirements) do
+        [{ file: "my.csproj", requirement: "*-*", groups: ["dependencies"], source: nil }]
+      end
+      its([:version]) do
+        is_expected.to eq(version_class.new("2.2.0-preview2-26406-04"))
+      end
+    end
+
     context "when the user is using an unfound property" do
       let(:dependency_version) { "$PackageVersion_LibGit2SharpNativeBinaries" }
       its([:version]) { is_expected.to eq(version_class.new("2.1.0")) }
