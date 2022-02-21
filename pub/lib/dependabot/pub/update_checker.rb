@@ -23,7 +23,7 @@ module Dependabot
         # We ignore this solution, if any of the requirements in
         # ignored_versions satisfy the version we're proposing as an upgrade
         # target.
-        return nil if ignore_requirements.any? { |r| r.satisfied_by(new_version) }
+        return nil if ignore_requirements.any? { |r| r.satisfied_by?(new_version) }
 
         new_version
       end
