@@ -97,8 +97,8 @@ USER root
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm v7
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+# Install Node 16.0 and npm v7
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g npm@v7.21.0 \
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.24 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.5
-ARG GOLANG_CHECKSUM=bd78114b0d441b029c8fe0341f4910370925a4d270a6a590668840675b0c653e
+ARG GOLANG_VERSION=1.17.7
+ARG GOLANG_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -214,7 +214,7 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --pr
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.11
+ARG TERRAFORM_VERSION=1.1.6
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \

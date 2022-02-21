@@ -11,7 +11,7 @@ Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 ## Got feedback?
 
-Please file an issue. Bug reports, feature requests, and general feedback are all welcome.
+https://github.com/github/feedback/discussions/categories/dependabot-feedback
 
 ## Contributing to Dependabot
 
@@ -72,6 +72,7 @@ Start by pulling the developer image from the [GitHub Container Registry][ghcr-c
 
 ```shell
 $ docker pull ghcr.io/dependabot/dependabot-core-development:latest
+$ docker tag ghcr.io/dependabot/dependabot-core-development dependabot/dependabot-core-development
 $ bin/docker-dev-shell
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $

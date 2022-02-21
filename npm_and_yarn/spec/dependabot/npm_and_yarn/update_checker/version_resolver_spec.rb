@@ -34,6 +34,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:react_registry_response) do
     fixture("npm_responses", "react.json")
   end
+  let(:opentelemetry_api_registry_listing_url) { "https://registry.npmjs.org/%40opentelemetry%2Fapi" }
+  let(:opentelemetry_api_registry_response) do
+    fixture("npm_responses", "opentelemetry-api.json")
+  end
+  let(:opentelemetry_context_async_hooks_registry_listing_url) do
+    "https://registry.npmjs.org/%40opentelemetry%2Fcontext-async-hooks"
+  end
+  let(:opentelemetry_context_async_hooks_registry_response) do
+    fixture("npm_responses", "opentelemetry-context-async-hooks.json")
+  end
   before do
     stub_request(:get, react_dom_registry_listing_url).
       to_return(status: 200, body: react_dom_registry_response)
@@ -43,6 +53,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       to_return(status: 200, body: react_registry_response)
     stub_request(:get, react_registry_listing_url + "/latest").
       to_return(status: 200, body: "{}")
+    stub_request(:get, opentelemetry_api_registry_listing_url).
+      to_return(status: 200, body: opentelemetry_api_registry_response)
+    stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url).
+      to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
   end
 
   let(:credentials) do
@@ -234,6 +248,26 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
+      end
+
+      describe "updating a dependency that is a peer requirement with two semver constraints" do
+        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_two_semver_constraints") }
+        let(:latest_allowable_version) { Gem::Version.new("1.1.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@opentelemetry/api",
+            version: "1.0.4",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: ">=1.0.0 <1.1.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
       end
 
       describe "updating a dependency that is a peer requirement of multiple dependencies" do

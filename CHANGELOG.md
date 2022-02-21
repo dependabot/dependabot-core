@@ -1,3 +1,36 @@
+## v0.174.0, 18 February 2022
+
+- Bump Terraform from 1.0.11 to 1.1.6 [#4748](https://github.com/dependabot/dependabot-core/pull/4748)
+- Codecommit pr release bugfix (@dwc0011) [#4745](https://github.com/dependabot/dependabot-core/pull/4745)
+- Support depname.version = "1.2.3" syntax in TOML (@roblabla) [#4738](https://github.com/dependabot/dependabot-core/pull/4738)
+- Add `--dry-run` flag to `bump-version` script [#4736](https://github.com/dependabot/dependabot-core/pull/4736)
+
+## v0.173.0, 14 February 2022
+
+- Update node to latest LTS version (16.x) [#4733](https://github.com/dependabot/dependabot-core/pull/4733)
+- build(deps): bump poetry from 1.1.12 to 1.1.13 in /python/helpers [#4732](https://github.com/dependabot/dependabot-core/pull/4732)
+
+## v0.172.2, 10 February 2022
+
+- Bump go from 1.17.5 to 1.17.7 [#4730](https://github.com/dependabot/dependabot-core/pull/4730)
+
+## v0.172.1, 9 February 2022
+
+- Docker: Ignore ARGs without default values [#4723](https://github.com/dependabot/dependabot-core/pull/4723)
+- build(deps): bump pip-tools from 6.5.0 to 6.5.1 in /python/helpers [#4718](https://github.com/dependabot/dependabot-core/pull/4718)
+
+## v0.172.0, 9 February 2022
+
+- Verify the right version of composer is installed in helper and docker [#4716](https://github.com/dependabot/dependabot-core/pull/4716)
+- Bump composer v1 binary from 1.10.24 to 1.10.25 [#4717](https://github.com/dependabot/dependabot-core/pull/4717)
+- Docker: Support ARG FROM (@hfhbd) [#4598](https://github.com/dependabot/dependabot-core/pull/4598)
+- Fix peer dependency regex for cases with 2 semver constraints (@FaHeymann) [#4693](https://github.com/dependabot/dependabot-core/pull/4693)
+- build(deps): bump composer/composer from 2.2.5 to 2.2.6 in /composer/helpers/v2 [#4708](https://github.com/dependabot/dependabot-core/pull/4708)
+- Link to GitHub feedback discussion for Dependabot [#4714](https://github.com/dependabot/dependabot-core/pull/4714)
+- Fix Running with Docker section to find the image that was just pulled (@joshuabremerdexcom) [#4694](https://github.com/dependabot/dependabot-core/pull/4694)
+- build(deps): bump cython from 0.29.26 to 0.29.27 in /python/helpers [#4686](https://github.com/dependabot/dependabot-core/pull/4686)
+- build(deps): bump pip-tools from 6.4.0 to 6.5.0 in /python/helpers [#4706](https://github.com/dependabot/dependabot-core/pull/4706)
+
 ## v0.171.5, 7 February 2022
 
 - Optimize rust toolchain installation [#4711](https://github.com/dependabot/dependabot-core/pull/4711)
