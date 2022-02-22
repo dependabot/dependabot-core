@@ -124,32 +124,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    context "arg from" do
-      let(:dockerfile_fixture_name) { "arg_from" }
-
-      describe "no curls" do
-        subject(:dependency) { dependencies.first }
-
-        it "can solve the dependency" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("docker")
-        end
-      end
-    end
-
-    context "arg from" do
-      let(:dockerfile_fixture_name) { "arg_from_curls" }
-
-      describe "with curls" do
-        subject(:dependency) { dependencies.first }
-
-        it "can solve the dependency" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("docker")
-        end
-      end
-    end
-
     context "with a non-numeric version" do
       let(:dockerfile_body) { "FROM ubuntu:artful" }
 
