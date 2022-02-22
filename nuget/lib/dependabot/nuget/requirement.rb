@@ -89,7 +89,7 @@ module Dependabot
 
       def convert_wildcard_req(req_string)
         return ">= 0-a" if req_string == "*-*"
-        
+
         return ">= 0" if req_string.start_with?("*")
 
         defined_part = req_string.split("*").first
