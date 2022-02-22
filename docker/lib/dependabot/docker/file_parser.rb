@@ -43,8 +43,6 @@ module Dependabot
           dockerfile.content.each_line do |line|
             if ARG.match(line)
               key_value = line.delete_prefix("ARG ").split("=")
-              next if key_value.count != 2 # The ARG has no default value that we can set
-
               args[key_value[0]] = key_value[1].delete_suffix("\n")
               next
             end
