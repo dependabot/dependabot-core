@@ -107,6 +107,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         end
       end
 
+      context "with a dependency version in dotted key syntax" do
+        let(:manifest_fixture_name) { "dotted_key_version" }
+
+        it { is_expected.to include(%(time.version = "0.1.38")) }
+      end
+
       context "with a dependency name that includes the version range" do
         let(:manifest_fixture_name) { "version_in_name" }
         let(:dependency_name) { "curve25519-dalek" }
