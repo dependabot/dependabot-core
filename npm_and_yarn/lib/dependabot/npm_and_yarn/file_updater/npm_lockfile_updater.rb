@@ -476,6 +476,7 @@ module Dependabot
             updated_content = lock_deps_with_latest_reqs(updated_content)
 
             updated_content = sanitized_package_json_content(updated_content)
+
             File.write(file.name, updated_content)
           end
         end
@@ -495,6 +496,16 @@ module Dependabot
           end
         end
 
+        # Takes a JSON string and detects if it is spaces or tabs and how many
+        # levels deep it is indented.
+        def detect_indentation(json)
+          indentation = json.scan(/^\s+/).min_by(&:length)
+          indentation_size = indentation.length
+          indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
+
+          indentation_type * indentation_size
+        end
+
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 
@@ -508,7 +519,8 @@ module Dependabot
             end
           end
 
-          json.to_json
+          indent = detect_indentation(content)
+          JSON.pretty_generate(json, indent: indent)
         end
 
         def git_dependencies_to_lock
@@ -549,7 +561,8 @@ module Dependabot
             end
           end
 
-          json.to_json
+          indent = detect_indentation(content)
+          JSON.pretty_generate(json, indent: indent)
         end
 
         def replace_ssh_sources(content)
