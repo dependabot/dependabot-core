@@ -147,6 +147,14 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         ]
       end
     end
+
+    context "will not upgrade to ignored version" do
+      let(:requirements_to_unlock) { :none }
+      let(:ignored_versions) { ["1.15.0"] }
+      it "cannot update" do
+        expect(can_update).to be_falsey
+      end
+    end
   end
   context "given an outdated dependency, requiring unlock" do
     let(:dependency_name) { "retry" }
@@ -184,6 +192,16 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             }],
             "version" => "3.1.0" }
         ]
+      end
+    end
+
+    context "will not upgrade to ignored version" do
+      let(:requirements_to_unlock) { :own }
+      let(:ignored_versions) { ["3.1.0"] }
+      it "cannot update" do
+        expect(can_update).to be_falsey
+        # Ideally we could update to 3.0.0 here. This is currently a limitation
+        # of the pub dependency_services.
       end
     end
 
