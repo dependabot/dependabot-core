@@ -76,32 +76,32 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.26 --no-document \
+  && gem install bundler -v 2.2.33 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
 
 ### PYTHON
 
-# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 3.10 with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.0.6 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.9.7 \
-  && pyenv global 3.9.7 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.2 \
+  && pyenv global 3.10.2 \
   && rm -Rf /tmp/python-build*
 USER root
 
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm v7
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+# Install Node 16.0 and npm v8
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.21.0 \
+  && npm install -g npm@v8.5.1 \
   && rm -rf ~/.npm
 
 
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.9 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.0.8 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -167,8 +167,8 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.1
-ARG GOLANG_CHECKSUM=dab7d9c34361dc21ec237d584590d72500652e7c909bf082758fb63064fca0ef
+ARG GOLANG_VERSION=1.17.7
+ARG GOLANG_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -182,40 +182,39 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.2
-ARG ELIXIR_CHECKSUM=38eb2281032b0cb096ef5e61f048c5374d6fb9bf4078ab8f9526a42e16e7c661732a632b55d6072328eedf87a47e6eeb3f0e3f90bba1086239c71350f90c75e5
+ARG ELIXIR_VERSION=v1.12.3
+ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
 # This version is currently pinned to OTP 23, due to an issue that we only hit
 # in production, where traffic is routed through a proxy that OTP 24 doesn't
 # play nice with.
-ARG ERLANG_VERSION=1:23.3.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb \
-  && dpkg -i erlang-solutions_1.0_all.deb \
+ARG ERLANG_VERSION=1:23.3.4.5-1
+RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
+  && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
   && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
   && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
   && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_1.0_all.deb \
+  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
   && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
 
 ### RUST
 
-# Install Rust 1.51.0
+# Install Rust 1.58.0
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
-  && rustup toolchain install 1.51.0 && rustup default 1.51.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
 
 
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.6
+ARG TERRAFORM_VERSION=1.1.6
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
@@ -223,9 +222,7 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
 
-
-USER root
-
+COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
@@ -239,17 +236,15 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 \
-  && mkdir -p /opt/bundler/v2
-RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
-RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/go_modules/helpers/build /opt/go_modules
-RUN bash /opt/hex/helpers/build /opt/hex
-RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
-RUN bash /opt/python/helpers/build /opt/python
-RUN bash /opt/terraform/helpers/build /opt/terraform
-RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
-RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
+RUN bash /opt/bundler/helpers/v1/build
+RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build
+RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/go_modules/helpers/build
+RUN bash /opt/hex/helpers/build
+RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/python/helpers/build
+RUN bash /opt/terraform/helpers/build
 
 ENV HOME="/home/dependabot"
 

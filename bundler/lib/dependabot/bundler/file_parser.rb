@@ -145,6 +145,7 @@ module Dependabot
             NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "parsed_gemfile",
+              options: options,
               args: {
                 gemfile_name: gemfile.name,
                 lockfile_name: lockfile&.name,
@@ -175,6 +176,7 @@ module Dependabot
             NativeHelpers.run_bundler_subprocess(
               bundler_version: bundler_version,
               function: "parsed_gemspec",
+              options: options,
               args: {
                 gemspec_name: file.name,
                 lockfile_name: lockfile&.name,

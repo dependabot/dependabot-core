@@ -13,8 +13,6 @@ module Dependabot
   module Gradle
     class UpdateChecker
       class VersionFinder
-        GOOGLE_MAVEN_REPO = "https://maven.google.com"
-        GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
         KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
         TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
@@ -59,7 +57,7 @@ module Dependabot
           version_details =
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
-              next google_version_details if url == GOOGLE_MAVEN_REPO
+              next google_version_details if url == Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
 
               dependency_metadata(repository_details).css("versions > version").
                 select { |node| version_class.correct?(node.content) }.
@@ -136,10 +134,10 @@ module Dependabot
         end
 
         def google_version_details
-          url = GOOGLE_MAVEN_REPO
+          url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
 
-          dependency_metadata_url = "#{GOOGLE_MAVEN_REPO}/"\
+          dependency_metadata_url = "#{Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO}/"\
                                     "#{group_id.tr('.', '/')}/"\
                                     "group-index.xml"
 
@@ -250,7 +248,7 @@ module Dependabot
 
         def plugin_repository_details
           [{
-            "url" => GRADLE_PLUGINS_REPO,
+            "url" => Gradle::FileParser::RepositoriesFinder::GRADLE_PLUGINS_REPO,
             "auth_headers" => {}
           }] + dependency_repository_details
         end

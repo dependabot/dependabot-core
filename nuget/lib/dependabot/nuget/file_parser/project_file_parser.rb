@@ -20,6 +20,7 @@ module Dependabot
                               "ItemGroup > Dependency, "\
                               "ItemGroup > DevelopmentDependency"
 
+        PROJECT_SDK_REGEX   = %r{^([^/]+)/(\d+(?:[.]\d+(?:[.]\d+)?)?(?:[+-].*)?)$}.freeze
         PROPERTY_REGEX      = /\$\((?<property>.*?)\)/.freeze
         ITEM_REGEX          = /\@\((?<property>.*?)\)/.freeze
 
@@ -32,16 +33,21 @@ module Dependabot
 
           doc = Nokogiri::XML(project_file.content)
           doc.remove_namespaces!
+          # Look for regular package references
           doc.css(DEPENDENCY_SELECTOR).each do |dependency_node|
             name = dependency_name(dependency_node, project_file)
             req = dependency_requirement(dependency_node, project_file)
             version = dependency_version(dependency_node, project_file)
             prop_name = req_property_name(dependency_node)
+            is_dev = dependency_node.name == "DevelopmentDependency"
 
-            dependency =
-              build_dependency(name, req, version, prop_name, project_file)
+            dependency = build_dependency(name, req, version, prop_name, project_file, dev: is_dev)
             dependency_set << dependency if dependency
           end
+
+          # Look for SDK references; see:
+          # https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk
+          add_sdk_references(doc, dependency_set, project_file)
 
           dependency_set
         end
@@ -50,7 +56,62 @@ module Dependabot
 
         attr_reader :dependency_files
 
-        def build_dependency(name, req, version, prop_name, project_file)
+        def add_sdk_references(doc, dependency_set, project_file)
+          # These come in 3 flavours:
+          # - <Project Sdk="Name/Version">
+          # - <Sdk Name="Name" Version="Version" />
+          # - <Import Project="..." Sdk="Name" Version="Version" />
+          # None of these support the use of properties, nor do they allow child
+          # elements instead of attributes.
+          add_sdk_refs_from_project(doc, dependency_set, project_file)
+          add_sdk_refs_from_sdk_tags(doc, dependency_set, project_file)
+          add_sdk_refs_from_import_tags(doc, dependency_set, project_file)
+        end
+
+        def add_sdk_ref_from_project(sdk_references, dependency_set, project_file)
+          sdk_references.split(";")&.each do |sdk_reference|
+            m = sdk_reference.match(PROJECT_SDK_REGEX)
+            if m
+              dependency = build_dependency(m[1], m[2], m[2], nil, project_file)
+              dependency_set << dependency if dependency
+            end
+          end
+        end
+
+        def add_sdk_refs_from_import_tags(doc, dependency_set, project_file)
+          doc.xpath("/Project/Import").each do |import_node|
+            next unless import_node.attribute("Sdk") && import_node.attribute("Version")
+
+            name = import_node.attribute("Sdk")&.value&.strip
+            version = import_node.attribute("Version")&.value&.strip
+
+            dependency = build_dependency(name, version, version, nil, project_file)
+            dependency_set << dependency if dependency
+          end
+        end
+
+        def add_sdk_refs_from_project(doc, dependency_set, project_file)
+          doc.xpath("/Project").each do |project_node|
+            sdk_references = project_node.attribute("Sdk")&.value&.strip
+            next unless sdk_references
+
+            add_sdk_ref_from_project(sdk_references, dependency_set, project_file)
+          end
+        end
+
+        def add_sdk_refs_from_sdk_tags(doc, dependency_set, project_file)
+          doc.xpath("/Project/Sdk").each do |sdk_node|
+            next unless sdk_node.attribute("Version")
+
+            name = sdk_node.attribute("Name")&.value&.strip
+            version = sdk_node.attribute("Version")&.value&.strip
+
+            dependency = build_dependency(name, version, version, nil, project_file)
+            dependency_set << dependency if dependency
+          end
+        end
+
+        def build_dependency(name, req, version, prop_name, project_file, dev: false)
           return unless name
 
           # Exclude any dependencies specified using interpolation
@@ -59,7 +120,7 @@ module Dependabot
           requirement = {
             requirement: req,
             file: project_file.name,
-            groups: [],
+            groups: [dev ? "devDependencies" : "dependencies"],
             source: nil
           }
 

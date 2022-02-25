@@ -142,7 +142,8 @@ module Dependabot
               next r if requirement_satisfied?(r, req[:groups])
 
               if req[:groups] == ["development"] then bumped_requirements(r)
-              else widened_requirements(r)
+              else
+                widened_requirements(r)
               end
             end
 
@@ -267,7 +268,8 @@ module Dependabot
               version_to_be_permitted.segments[index] + 1
             elsif index > version_to_be_permitted.segments.count - 1
               nil
-            else 0
+            else
+              0
             end
           end.compact
 

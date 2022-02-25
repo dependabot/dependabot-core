@@ -68,7 +68,8 @@ module Dependabot
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
         elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
         elsif req_string.match?(/[<>]/) then req_string
-        else ruby_range(req_string)
+        else
+          ruby_range(req_string)
         end
       end
 
@@ -122,7 +123,8 @@ module Dependabot
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           elsif i > first_non_zero_index && i == 2 then "0.a"
-          else 0
+          else
+            0
           end
         end.join(".")
 

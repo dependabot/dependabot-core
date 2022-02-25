@@ -29,7 +29,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
       requirements: [{
         requirement: "1.1.1",
         file: "my.csproj",
-        groups: [],
+        groups: ["dependencies"],
         source: nil
       }],
       package_manager: "nuget"

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "excon"
-require "pandoc-ruby"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
@@ -17,7 +16,7 @@ module Dependabot
 
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(
-          changelog news changes history release whatsnew
+          changelog news changes history release whatsnew releases
         ).freeze
 
         attr_reader :source, :dependency, :credentials, :suggested_changelog_url
@@ -37,31 +36,10 @@ module Dependabot
         def changelog_text
           return unless full_changelog_text
 
-          pruned_text = ChangelogPruner.new(
+          ChangelogPruner.new(
             dependency: dependency,
             changelog_text: full_changelog_text
           ).pruned_text
-
-          return pruned_text unless changelog.name.end_with?(".rst")
-
-          begin
-            PandocRuby.convert(
-              pruned_text,
-              from: :rst,
-              to: :markdown,
-              wrap: :none,
-              timeout: 10
-            )
-          rescue Errno::ENOENT => e
-            raise unless e.message == "No such file or directory - pandoc"
-
-            # If pandoc isn't installed just return the rst
-            pruned_text
-          rescue RuntimeError => e
-            raise unless e.message.include?("Pandoc timed out")
-
-            pruned_text
-          end
         end
 
         def upgrade_guide_url

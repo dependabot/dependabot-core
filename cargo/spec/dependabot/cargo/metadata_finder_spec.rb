@@ -35,6 +35,14 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
   let(:dependency_name) { "bitflags" }
   let(:dependency_source) { nil }
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:crates_url) { "https://crates.io/api/v1/crates/bitflags" }

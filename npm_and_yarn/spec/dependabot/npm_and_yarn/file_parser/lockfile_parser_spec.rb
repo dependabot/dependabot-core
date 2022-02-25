@@ -310,5 +310,51 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         )
       end
     end
+
+    context "npm8 with a v3 lockfile-version" do
+      context "workspace project with a direct dependency that's installed in the workspace's node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_lockfile_v3") }
+        let(:dependency_name) { "yargs" }
+        let(:manifest_name) { "packages/build/package.json" }
+
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "16.2.0",
+            "resolved" => "https://registry.npmjs.org/yargs/-/yargs-16.2.0.tgz",
+            "integrity" =>
+            "sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw=="
+          )
+        end
+      end
+
+      context "workspace project with a direct dependency that's installed in the top-level node_modules" do
+        let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level_lockfile_v3") }
+        let(:dependency_name) { "uuid" }
+        let(:manifest_name) { "api/package.json" }
+
+        it "finds the correct dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "8.3.2",
+            "resolved" => "https://registry.npmjs.org/uuid/-/uuid-8.3.2.tgz",
+            "integrity" =>
+            "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg=="
+          )
+        end
+      end
+
+      context "for a non-workspace project" do
+        let(:dependency_files) { project_dependency_files("npm8/simple_lockfile_v3") }
+        let(:dependency_name) { "fetch-factory" }
+        let(:manifest_name) { "package.json" }
+
+        it "finds the dependency" do
+          expect(lockfile_details).to eq(
+            "version" => "0.0.1",
+            "resolved" => "https://registry.npmjs.org/fetch-factory/-/fetch-factory-0.0.1.tgz",
+            "integrity" => "sha1-4AdgWb2zHjFHx1s7jAQTO6jH4HE="
+          )
+        end
+      end
+    end
   end
 end

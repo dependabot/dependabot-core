@@ -7,6 +7,10 @@ RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
 
   describe ".in_a_temporary_directory" do
+    def existing_tmp_folders
+      Dir.glob(File.join(Dependabot::Utils::BUMP_TMP_DIR_PATH, "*"))
+    end
+
     subject(:in_a_temporary_directory) do
       Dependabot::SharedHelpers.in_a_temporary_directory { output_dir.call }
     end
@@ -19,6 +23,10 @@ RSpec.describe Dependabot::SharedHelpers do
     it "yields the path to the temporary directory created" do
       expect { |b| described_class.in_a_temporary_directory(&b) }.
         to yield_with_args(Pathname)
+    end
+
+    it "removes the temporary directory after use" do
+      expect { in_a_temporary_directory }.not_to(change { existing_tmp_folders })
     end
   end
 
@@ -179,9 +187,10 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".run_shell_command" do
     let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
+    let(:env) { nil }
 
     subject(:run_shell_command) do
-      Dependabot::SharedHelpers.run_shell_command(command)
+      Dependabot::SharedHelpers.run_shell_command(command, env: env)
     end
 
     context "when the subprocess is successful" do
@@ -210,6 +219,14 @@ RSpec.describe Dependabot::SharedHelpers do
           expect(output).not_to eq("$(ps)\n")
           expect(output).to include("PID")
         end
+      end
+    end
+
+    context "with an environment variable" do
+      let(:env) { { "TEST_ENV" => "prefix:" } }
+
+      it "is available to the command" do
+        expect(run_shell_command).to eq("prefix:output\n")
       end
     end
 

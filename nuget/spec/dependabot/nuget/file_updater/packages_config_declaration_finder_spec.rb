@@ -20,7 +20,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
     {
       requirement: declaring_requirement_string,
       file: "packages.config",
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }
   end

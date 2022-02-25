@@ -65,6 +65,14 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
         it { is_expected.to include(%(business_time = "0.1.12")) }
       end
 
+      context "with dependencies that include whitespace" do
+        let(:manifest_fixture_name) { "whitespace_names" }
+
+        it { is_expected.to include(%(time = "0.1.38")) }
+        it { is_expected.to include(%(regex = "0.1.41")) }
+        it { is_expected.to_not include(%("time" = "0.1.12")) }
+      end
+
       context "with a target-specific dependency" do
         let(:manifest_fixture_name) { "target_dependency" }
         it { is_expected.to include(%(time = "<= 0.1.38")) }
@@ -97,6 +105,12 @@ RSpec.describe Dependabot::Cargo::FileUpdater::ManifestUpdater do
             %(utf8-ranges = { version = "1.0.0", optional = true })
           )
         end
+      end
+
+      context "with a dependency version in dotted key syntax" do
+        let(:manifest_fixture_name) { "dotted_key_version" }
+
+        it { is_expected.to include(%(time.version = "0.1.38")) }
       end
 
       context "with a dependency name that includes the version range" do

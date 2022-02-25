@@ -1088,6 +1088,25 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
           )
         end
       end
+
+      context "the PR description is too long" do
+        let(:pr_description) { "a" * (described_class::MAX_PR_DESCRIPTION_LENGTH + 1) }
+
+        it "truncates the description" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:post, "#{repo_api_url}/pulls").
+            with(
+              body: {
+                base: "master",
+                head: "dependabot/bundler/business-1.5.0",
+                title: "PR name",
+                body: ->(body) { expect(body.length).to be <= described_class::MAX_PR_DESCRIPTION_LENGTH }
+              }
+            )
+        end
+      end
     end
   end
 end

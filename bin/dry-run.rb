@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# This script is does a full update run for a given repo (optionally for a
+# This script executes a full update run for a given repo (optionally for a
 # specific dependency only), and shows the proposed changes to any dependency
 # files without actually creating a pull request.
 #
@@ -38,7 +38,7 @@
 require "etc"
 unless Etc.getpwuid(Process.uid).name == "dependabot"
   puts <<~INFO
-    bin/dry-run.rb is only supported in a developerment container.
+    bin/dry-run.rb is only supported in a development container.
 
     Please use bin/docker-dev-shell first.
   INFO
@@ -68,7 +68,7 @@ Bundler.setup
 
 require "optparse"
 require "json"
-require "byebug"
+require "debug"
 require "logger"
 require "dependabot/logger"
 require "stackprof"
@@ -209,7 +209,17 @@ option_parse = OptionParser.new do |opts|
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
     $options[:updater_options] = value.split(",").map do |o|
-      [o.strip.downcase.to_sym, true]
+      if o.include?("=") # key/value pair, e.g. "goprivate=true"
+        o.split("=", 2).map.with_index do |v, i|
+          if i == 0
+            v.strip.downcase.to_sym
+          else
+            v.strip
+          end
+        end
+      else # just a key, e.g. "vendor"
+        [o.strip.downcase.to_sym, true]
+      end
     end.to_h
   end
 
@@ -468,7 +478,7 @@ fetcher_args = {
 $config_file = begin
   cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
   Dependabot::Config::File.parse(cfg_file.content)
-rescue Dependabot::DependencyFileNotFound
+rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
   Dependabot::Config::File.new(updates: [])
 end
 $update_config = $config_file.update_config(
@@ -527,7 +537,8 @@ def update_checker_for(dependency)
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignored_versions_for(dependency),
-    security_advisories: security_advisories
+    security_advisories: security_advisories,
+    options: $options[:updater_options]
   )
 end
 

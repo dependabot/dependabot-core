@@ -208,23 +208,7 @@ module Dependabot
 
         def run_npm_7_subdependency_updater
           dependency_names = sub_dependencies.map(&:name)
-          # NOTE: npm options
-          # - `--force` ignores checks for platform (os, cpu) and engines
-          # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
-          #   work around an issue in npm 6, we don't want that here
-          # - `--ignore-scripts` disables prepare and prepack scripts which are run
-          #   when installing git dependencies
-          command = [
-            "npm",
-            "update",
-            *dependency_names,
-            "--force",
-            "--dry-run",
-            "false",
-            "--ignore-scripts",
-            "--package-lock-only"
-          ].join(" ")
-          SharedHelpers.run_shell_command(command)
+          SharedHelpers.run_shell_command(NativeHelpers.npm7_subdependency_update_command(dependency_names))
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
@@ -371,7 +355,7 @@ module Dependabot
           # In this case we want to raise a more helpful error message asking
           # people to re-generate their lockfiles (Future feature idea: add a
           # way to click-to-fix the lockfile from the issue)
-          if error_message.include?("Cannot read property 'match' of ") &&
+          if error_message.include?("Cannot read properties of undefined (reading 'match')") &&
              !resolvable_before_update?
             raise_missing_lockfile_version_resolvability_error(error_message)
           end
@@ -492,6 +476,7 @@ module Dependabot
             updated_content = lock_deps_with_latest_reqs(updated_content)
 
             updated_content = sanitized_package_json_content(updated_content)
+
             File.write(file.name, updated_content)
           end
         end
@@ -511,6 +496,16 @@ module Dependabot
           end
         end
 
+        # Takes a JSON string and detects if it is spaces or tabs and how many
+        # levels deep it is indented.
+        def detect_indentation(json)
+          indentation = json.scan(/^\s+/).min_by(&:length)
+          indentation_size = indentation.length
+          indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
+
+          indentation_type * indentation_size
+        end
+
         def lock_git_deps(content)
           return content if git_dependencies_to_lock.empty?
 
@@ -524,7 +519,8 @@ module Dependabot
             end
           end
 
-          json.to_json
+          indent = detect_indentation(content)
+          JSON.pretty_generate(json, indent: indent)
         end
 
         def git_dependencies_to_lock
@@ -565,7 +561,8 @@ module Dependabot
             end
           end
 
-          json.to_json
+          indent = detect_indentation(content)
+          JSON.pretty_generate(json, indent: indent)
         end
 
         def replace_ssh_sources(content)
@@ -750,7 +747,8 @@ module Dependabot
             trimmed_url = url.gsub(/(\d+\.)*tgz$/, "")
             incorrect_url = if url.start_with?("https")
                               trimmed_url.gsub(/^https:/, "http:")
-                            else trimmed_url.gsub(/^http:/, "https:")
+                            else
+                              trimmed_url.gsub(/^http:/, "https:")
                             end
             updated_lockfile_content = updated_lockfile_content.gsub(
               /#{Regexp.quote(incorrect_url)}(?=(\d+\.)*tgz")/,

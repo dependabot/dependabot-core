@@ -20,7 +20,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       labeler: labeler,
       approvers: approvers,
       assignees: assignees,
-      milestone: milestone
+      milestone: milestone,
+      target_project_id: target_project_id
     )
   end
 
@@ -45,6 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
   let(:approvers) { nil }
   let(:assignees) { nil }
   let(:milestone) { nil }
+  let(:target_project_id) { nil }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
       source: source,
@@ -169,6 +171,20 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
 
       expect(WebMock).
         to have_requested(:post, "#{repo_api_url}/merge_requests")
+    end
+
+    context "with forked project" do
+      let(:target_project_id) { 1 }
+
+      it "pushes a commit to GitLab and creates a merge request in upstream project" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests").
+          with(
+            body: a_string_including("target_project_id=#{target_project_id}")
+          )
+      end
     end
 
     context "with a submodule" do
@@ -331,8 +347,12 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
 
     context "when a approvers has been requested" do
       let(:approvers) { { "approvers" => [1_394_555] } }
+      let(:mr_api_url) do
+        "https://gitlab.com/api/v4/projects/#{target_project_id || CGI.escape(source.repo)}/merge_requests"
+      end
+
       before do
-        stub_request(:put, "#{repo_api_url}/merge_requests/5/approvers").
+        stub_request(:put, "#{mr_api_url}/5/approvers").
           to_return(
             status: 200,
             body: fixture("gitlab", "merge_request.json"),
@@ -344,7 +364,18 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         creator.create
 
         expect(WebMock).
-          to have_requested(:put, "#{repo_api_url}/merge_requests/5/approvers")
+          to have_requested(:put, "#{mr_api_url}/5/approvers")
+      end
+
+      context "with forked project" do
+        let(:target_project_id) { 1 }
+
+        it "adds the approvers to upstream project MR" do
+          creator.create
+
+          expect(WebMock).
+            to have_requested(:put, "#{mr_api_url}/5/approvers")
+        end
       end
     end
   end

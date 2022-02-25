@@ -82,6 +82,7 @@ module Dependabot
               details = NativeHelpers.run_bundler_subprocess(
                 bundler_version: bundler_version,
                 function: "resolve_version",
+                options: options,
                 args: {
                   dependency_name: dependency.name,
                   dependency_requirements: dependency.requirements,

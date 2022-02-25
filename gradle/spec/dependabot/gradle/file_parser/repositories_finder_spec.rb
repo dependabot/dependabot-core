@@ -88,6 +88,7 @@ RSpec.describe Dependabot::Gradle::FileParser::RepositoriesFinder do
                 https://jcenter.bintray.com
                 https://dl.bintray.com/magnusja/maven
                 https://maven.google.com
+                https://plugins.gradle.org/m2
               )
             )
           end

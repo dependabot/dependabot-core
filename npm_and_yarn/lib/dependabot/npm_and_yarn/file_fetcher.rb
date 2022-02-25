@@ -123,7 +123,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz")
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -132,7 +132,7 @@ module Dependabot
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
             # Unfetchable tarballs should not be re-fetched as a package
-            unfetchable_deps << [name, path] unless path.end_with?(".tgz")
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar")
           end
         end
 
@@ -288,14 +288,16 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else [] # Invalid lerna.json, which must not be in use
+          else
+            [] # Invalid lerna.json, which must not be in use
           end
 
         paths_array.flat_map do |path|
           # The packages/!(not-this-package) syntax is unique to Yarn
           if path.include?("*") || path.include?("!(")
             expanded_paths(path)
-          else path
+          else
+            path
           end
         end
       end

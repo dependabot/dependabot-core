@@ -12,6 +12,8 @@ module Dependabot
         # we're confident we're selecting repos correctly it's wise to include
         # it as a default.
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
+        GOOGLE_MAVEN_REPO = "https://maven.google.com"
+        GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
 
         REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
 
@@ -96,11 +98,13 @@ module Dependabot
           end
 
           repository_blocks.each do |block|
-            repository_urls << "https://maven.google.com/" if block.match?(/\sgoogle\(/)
+            repository_urls << GOOGLE_MAVEN_REPO if block.match?(/\sgoogle\(/)
 
-            repository_urls << "https://repo.maven.apache.org/maven2/" if block.match?(/\smavenCentral\(/)
+            repository_urls << CENTRAL_REPO_URL if block.match?(/\smavenCentral\(/)
 
             repository_urls << "https://jcenter.bintray.com/" if block.match?(/\sjcenter\(/)
+
+            repository_urls << GRADLE_PLUGINS_REPO if block.match?(/\sgradlePluginPortal\(/)
 
             block.scan(MAVEN_REPO_REGEX) do
               repository_urls << Regexp.last_match.named_captures.fetch("url")

@@ -33,7 +33,7 @@ module Dependabot
                 requirements: [{
                   requirement: dependency_version(dependency_node),
                   file: packages_config.name,
-                  groups: [],
+                  groups: [dependency_type(dependency_node)],
                   source: nil
                 }]
               )
@@ -56,6 +56,12 @@ module Dependabot
           # specified requirement is always an exact version.
           dependency_node.attribute("version")&.value&.strip ||
             dependency_node.at_xpath("./version")&.content&.strip
+        end
+
+        def dependency_type(dependency_node)
+          val = dependency_node.attribute("developmentDependency")&.value&.strip ||
+                dependency_node.at_xpath("./developmentDependency")&.content&.strip
+          val.to_s.downcase == "true" ? "devDependencies" : "dependencies"
         end
       end
     end
