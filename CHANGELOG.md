@@ -1,3 +1,12 @@
+## v0.175.0, 25 February 2022
+
+- Update to npm 8 [#4763](https://github.com/dependabot/dependabot-core/pull/4763)
+  This includes a subtle change with how indentation in lockfiles is handled, in
+  npm 8 the indentation from the package.json file is used, whereas before the
+  package-lock.json would keep it's own indentation. Other than that 8 should be
+  mostly backwards compatible. We suggest updating to npm 8 though, as 7 is no
+  longer officially supported by the npm team.
+
 ## v0.174.1, 22 February 2022
 
 - Temporarily revert Docker arg from support [#4759](https://github.com/dependabot/dependabot-core/pull/4759)
