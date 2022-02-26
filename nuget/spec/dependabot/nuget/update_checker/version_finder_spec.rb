@@ -302,7 +302,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
       let(:dependency_name) { "FakeItEasy" }
       let(:dependency_version) { "4.7.1" }
 
-      its([:version]) { is_expected.to eq(version_class.new("7.1.0")) }
+      its([:version]) { is_expected.to eq(version_class.new("7.3.0")) }
     end
 
     context "with a custom repo in the credentials" do
