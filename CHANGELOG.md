@@ -1,3 +1,10 @@
+## v0.176.0, 28 February 2022
+
+- Beta: Dart/Flutter pub support (@sigurdm) [#4510](https://github.com/dependabot/dependabot-core/pull/4510)
+  While now available in dependabot-core, this will require some more work before we
+  can roll this out in the GitHub-hosted version of Dependabot.
+- Disable flaky bundler1 test [#4767](https://github.com/dependabot/dependabot-core/pull/4767)
+
 ## v0.175.0, 25 February 2022
 
 - Update to npm 8 [#4763](https://github.com/dependabot/dependabot-core/pull/4763)
