@@ -1,3 +1,31 @@
+## v0.176.0, 28 February 2022
+
+- Beta: Dart/Flutter pub support (@sigurdm) [#4510](https://github.com/dependabot/dependabot-core/pull/4510)
+  While now available in dependabot-core, this will require some more work before we
+  can roll this out in the GitHub-hosted version of Dependabot.
+- Disable flaky bundler1 test [#4767](https://github.com/dependabot/dependabot-core/pull/4767)
+
+## v0.175.0, 25 February 2022
+
+- Update to npm 8 [#4763](https://github.com/dependabot/dependabot-core/pull/4763)
+  This includes a subtle change with how indentation in lockfiles is handled, in
+  npm 8 the indentation from the package.json file is used, whereas before the
+  package-lock.json would keep it's own indentation. Other than that 8 should be
+  mostly backwards compatible. We suggest updating to npm 8 though, as 7 is no
+  longer officially supported by the npm team.
+
+## v0.174.1, 22 February 2022
+
+- Temporarily revert Docker arg from support [#4759](https://github.com/dependabot/dependabot-core/pull/4759)
+- Fix references to changelog path/contents in bump_version.rb [#4756](https://github.com/dependabot/dependabot-core/pull/4756)
+
+## v0.174.0, 18 February 2022
+
+- Bump Terraform from 1.0.11 to 1.1.6 [#4748](https://github.com/dependabot/dependabot-core/pull/4748)
+- Codecommit pr release bugfix (@dwc0011) [#4745](https://github.com/dependabot/dependabot-core/pull/4745)
+- Support depname.version = "1.2.3" syntax in TOML (@roblabla) [#4738](https://github.com/dependabot/dependabot-core/pull/4738)
+- Add `--dry-run` flag to `bump-version` script [#4736](https://github.com/dependabot/dependabot-core/pull/4736)
+
 ## v0.173.0, 14 February 2022
 
 - Update node to latest LTS version (16.x) [#4733](https://github.com/dependabot/dependabot-core/pull/4733)
