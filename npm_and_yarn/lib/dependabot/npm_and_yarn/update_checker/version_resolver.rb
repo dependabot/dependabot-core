@@ -56,8 +56,8 @@ module Dependabot
         # npm ERR! peer @opentelemetry/api@">=1.0.0 <1.1.0" from @opentelemetry/context-async-hooks@1.0.1
         NPM7_PEER_DEP_ERROR_REGEX =
           /
-            npm\sERR!\sCould\snot\sresolve\sdependency:\n
-            npm\sERR!\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
+            npm\s(?:WARN|ERR!)\sCould\snot\sresolve\sdependency:\n
+            npm\s(?:WARN|ERR!)\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x.freeze
 
         def initialize(dependency:, credentials:, dependency_files:,
@@ -458,10 +458,13 @@ module Dependabot
         end
 
         def run_npm7_checker(version:)
-          SharedHelpers.run_shell_command(
+          cmd =
             "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          )
-          nil
+          output = SharedHelpers.run_shell_command(cmd)
+          if output.match?(NPM7_PEER_DEP_ERROR_REGEX)
+            error_context = { command: cmd, process_exit_value: 1 }
+            raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
+          end
         rescue SharedHelpers::HelperSubprocessFailed => e
           raise if e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
         end

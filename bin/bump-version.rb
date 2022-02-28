@@ -18,11 +18,12 @@ unless `gh auth status -h github.com > /dev/null 2>&1` && $?.success?
   exit 1
 end
 
+CHANGELOG_PATH = File.join(__dir__, "..", "CHANGELOG.md")
+CHANGELOG_CONTENTS = File.read(CHANGELOG_PATH)
+
 def proposed_changes(version, _new_version)
   dependabot_team = `gh api -X GET 'orgs/dependabot/teams/reviewers/members' --jq '.[].login'`
   dependabot_team = dependabot_team.split("\n").map(&:strip) + ["dependabot"]
-  changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
-  changelog_contents = File.read(changelog_path)
 
   commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
   merge_subjects = commit_subjects.select do |s|
@@ -85,10 +86,10 @@ else
   new_changelog_contents = [
     "## v#{new_version}, #{Time.now.strftime('%e %B %Y').strip}\n",
     proposed_changes.join("\n") + "\n",
-    changelog_contents
+    CHANGELOG_CONTENTS
   ].join("\n")
 
-  File.open(changelog_path, "w") { |f| f.write(new_changelog_contents) }
+  File.open(CHANGELOG_PATH, "w") { |f| f.write(new_changelog_contents) }
   puts "☑️  CHANGELOG.md updated"
 end
 
