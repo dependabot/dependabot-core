@@ -222,6 +222,53 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
 
+
+### DART
+
+# Install Dart 
+ENV PUB_CACHE=/opt/dart/pub-cache \
+  PUB_ENVIRONMENT="dependabot" \
+  PATH="${PATH}:/opt/dart/dart-sdk/bin"
+ARG DART_VERSION=2.15.1
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
+  && mkdir -p "$PUB_CACHE" \
+  && chown dependabot:dependabot "$PUB_CACHE" \
+  && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
+  && chmod -R o+rx "/opt/dart/dart-sdk" \
+  && rm "/tmp/dart-sdk.zip" \
+  && dart --version
+# We pull the dependency_services from the dart-lang/pub repo as it is not
+# exposed from the Dart SDK (yet...).
+RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
+  && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
+  && dart pub global activate --source path /opt/dart/pub \
+  && chmod -R o+r "/opt/dart/pub" \
+  && chown -R dependabot:dependabot "$PUB_CACHE" \
+  && chown -R dependabot:dependabot /opt/dart/pub
+
+# Install Flutter
+ARG FLUTTER_VERSION=2.8.1
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
+  && tar xf "/tmp/flutter.xz" -C /opt/dart \
+  && rm "/tmp/flutter.xz" \
+  && chmod -R o+rx "/opt/dart/flutter" \
+  && chown -R dependabot:dependabot "/opt/dart/flutter" \
+  && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version" \
+  # To reduce space usage we delete all of the flutter sdk except the few
+  # things needed for pub resolutions:
+  # * The version file
+  # * The flutter sdk packages.
+  && find "/opt/dart/flutter" \
+    ! -path '/opt/dart/flutter/version' \
+    ! -path '/opt/dart/flutter/packages/*' \
+    ! -path '/opt/dart/flutter/packages' \
+    ! -path '/opt/dart/flutter/bin/cache/pkg/*' \
+    ! -path /opt/dart/flutter/bin/cache/pkg \
+    ! -path /opt/dart/flutter/bin/cache \
+    ! -path /opt/dart/flutter/bin \
+    ! -path /opt/dart/flutter \
+    -delete
+
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
