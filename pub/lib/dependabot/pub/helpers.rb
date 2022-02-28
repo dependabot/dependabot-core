@@ -60,6 +60,7 @@ module Dependabot
               stdout, stderr, status = Open3.capture3(
                 env.compact,
                 "dart",
+                "--no-analytics",
                 "pub",
                 "global",
                 "run",
