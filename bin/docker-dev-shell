@@ -146,8 +146,10 @@ docker run --rm -ti \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
   -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
   -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
-  -v "$(pwd)/nuget/script:$CODE_DIR/nuget/script" \
-  -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
+  -v "$(pwd)/cake/Gemfile:$CODE_DIR/cake/Gemfile" \
+  -v "$(pwd)/cake/dependabot-cake.gemspec:$CODE_DIR/cake/dependabot-cake.gemspec" \
+  -v "$(pwd)/cake/lib:$CODE_DIR/cake/lib" \
+  -v "$(pwd)/cake/spec:$CODE_DIR/cake/spec" \
   -v "$(pwd)/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
   -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
   -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \

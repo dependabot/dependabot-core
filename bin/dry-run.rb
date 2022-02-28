@@ -19,6 +19,7 @@
 #
 # Package managers:
 # - bundler
+# - cake
 # - pip (includes pipenv)
 # - npm_and_yarn
 # - maven
@@ -46,6 +47,7 @@ unless Etc.getpwuid(Process.uid).name == "dependabot"
 end
 
 $LOAD_PATH << "./bundler/lib"
+$LOAD_PATH << "./cake/lib"
 $LOAD_PATH << "./cargo/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
@@ -83,6 +85,7 @@ require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
 
 require "dependabot/bundler"
+require "dependabot/cake"
 require "dependabot/cargo"
 require "dependabot/composer"
 require "dependabot/docker"

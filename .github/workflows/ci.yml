@@ -21,6 +21,7 @@ jobs:
         suite:
         - { path: bundler, name: bundler1 }
         - { path: bundler, name: bundler2 }
+        - { path: cake, name: cake }
         - { path: cargo, name: cargo }
         - { path: common, name: common }
         - { path: composer, name: composer }

@@ -72,6 +72,7 @@
       "description": "What type of package manager do you want to debug?",
       "options": [
         "bundler",
+        "cake",
         "cargo",
         "composer",
         "dep",
