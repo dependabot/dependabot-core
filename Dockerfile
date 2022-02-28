@@ -237,9 +237,8 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-arc
   && chmod -R o+rx "/opt/dart/dart-sdk" \
   && rm "/tmp/dart-sdk.zip" \
   && dart --version
-# HACK: We use a patched version of "dart pub" that is not in the Dart SDK yet.
-#       Hence, we clone from git and globally install it from local folder.
-#       Now it can be used with: 'dart pub global run pub ...'
+# We pull the dependency_services from the dart-lang/pub repo as it is not
+# exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
   && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
   && dart pub global activate --source path /opt/dart/pub \
