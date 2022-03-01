@@ -58,6 +58,8 @@ module Dependabot
         end
 
         def update_wildcard_requirement(req_string)
+          return req_string if req_string == "*-*"
+
           return req_string if req_string == "*"
 
           precision = req_string.split("*").first.split(/\.|\-/).count
