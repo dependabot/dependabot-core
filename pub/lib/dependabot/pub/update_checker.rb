@@ -81,6 +81,10 @@ module Dependabot
       end
 
       def resolved_requirements_update_strategy
+        @resolved_requirements_update_strategy ||= resolve_requirements_update_strategy
+      end
+
+      def resolve_requirements_update_strategy
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
           [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
 
