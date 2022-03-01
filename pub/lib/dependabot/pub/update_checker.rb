@@ -49,7 +49,8 @@ module Dependabot
         entry = current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
         return unless entry
 
-        to_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
+          requirements
       end
 
       private
@@ -67,7 +68,7 @@ module Dependabot
           d["kind"] == "transitive"
         end
         direct_deps.map do |d|
-          to_dependency(d, requirements_update_strategy: resolved_requirements_update_strategy)
+          parse_updated_dependency(d, requirements_update_strategy: resolved_requirements_update_strategy)
         end
       end
 
@@ -83,9 +84,9 @@ module Dependabot
         raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
           [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
 
-        if requirements_update_strategy.nil? 
+        if requirements_update_strategy.nil?
           # Check for a version field in the pubspec.yaml. If it is present
-          # we assume the package is a library, and the requirement update 
+          # we assume the package is a library, and the requirement update
           # strategy is widening. Otherwise we assume it is an application, and
           # go for "bump_versions".
           pubspec = dependency_files.find { |d| d.name == "pubspec.yaml" }

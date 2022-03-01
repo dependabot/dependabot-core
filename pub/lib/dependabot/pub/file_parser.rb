@@ -15,7 +15,7 @@ module Dependabot
       def parse
         dependency_set = DependencySet.new
         list.map do |d|
-          dependency_set << to_dependency(d)
+          dependency_set << parse_listed_dependency(d)
         end
         dependency_set.dependencies.sort_by(&:name)
       end
