@@ -77,15 +77,17 @@ module Dependabot
         end
       end
 
-      def to_dependency(json)
+      def to_dependency(json, requirements_update_strategy: nil)
         params = {
           name: json["name"],
           version: json["version"],
           package_manager: "pub",
           requirements: []
         }
-        if json["kind"] != "transitive" && !json["constraint"].nil?
-          constraint = json["constraint"]
+        constraint_field = constraint_field_from_update_strategy(requirements_update_strategy)
+
+        if json["kind"] != "transitive" && !json[constraint_field].nil?
+          constraint = json[constraint_field]
           params[:requirements] << {
             requirement: constraint,
             groups: [json["kind"]],
@@ -93,6 +95,7 @@ module Dependabot
             file: "pubspec.yaml"
           }
         end
+
         if json["previousVersion"]
           params = {
             **params,
@@ -110,6 +113,21 @@ module Dependabot
           end
         end
         Dependency.new(**params)
+      end
+
+      # expects "auto" to already have been resolved to one of the other
+      # strategies.
+      def constraint_field_from_update_strategy(requirements_update_strategy)
+        case requirements_update_strategy
+        when nil
+          "constraint"
+        when "widen_ranges"
+          "constraintWidened"
+        when "bump_versions"
+          "constraintBumped"
+        when "bump_versions_if_necessary"
+          "constraintBumpedIfNeeded"
+        end
       end
 
       def dependencies_to_json(dependencies)

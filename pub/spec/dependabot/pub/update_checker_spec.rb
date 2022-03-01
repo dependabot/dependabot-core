@@ -57,7 +57,8 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       ignored_versions: ignored_versions,
       options: {
         pub_hosted_url: "http://localhost:#{@server[:Port]}"
-      }
+      },
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
@@ -73,6 +74,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     )
   end
 
+  let(:requirements_update_strategy) { nil } # nil means "auto".
   let(:dependency_name) { "retry" }
   let(:requirements) { [] }
 
@@ -116,19 +118,93 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
-      it "can update" do
-        expect(can_update).to be_truthy
-        expect(updated_dependencies).to eq [
-          { "name" => "collection",
-            "package_manager" => "pub",
-            "previous_requirements" => [],
-            # Dependabot lifts this from the original dependency.
-            "previous_version" => "0.0.0",
-            "requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^1.15.0", source: nil
-            }],
-            "version" => "1.15.0" }
-        ]
+      context "with auto-strategy" do
+        context "app (no version)" do
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "collection",
+                "package_manager" => "pub",
+                "previous_requirements" => [],
+                # Dependabot lifts this from the original dependency.
+                "previous_version" => "0.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^1.15.0", source: nil
+                }],
+                "version" => "1.15.0" }
+            ]
+          end
+        end
+        context "library (has version)" do
+          let(:project) { "can_update_library" }
+
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "collection",
+                "package_manager" => "pub",
+                "previous_requirements" => [],
+                # Dependabot lifts this from the original dependency.
+                "previous_version" => "0.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+                }],
+                "version" => "1.15.0" }
+            ]
+          end
+        end
+      end
+      context "with bump_versions strategy" do
+        let(:requirements_update_strategy) { "bump_versions" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.15.0", source: nil
+              }],
+              "version" => "1.15.0" }
+          ]
+        end
+      end
+      context "with bump_versions_if_necessary strategy" do
+        let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+              }],
+              "version" => "1.15.0" }
+          ]
+        end
+      end
+      context "with widen_ranges strategy" do
+        let(:requirements_update_strategy) { "widen_ranges" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                # No widening needed for this update.
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+              }],
+              "version" => "1.15.0" }
+          ]
+        end
       end
     end
 
@@ -161,20 +237,96 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
-      it "can update" do
-        expect(can_update).to be_truthy
-        expect(updated_dependencies).to eq [
-          { "name" => "retry",
-            "package_manager" => "pub",
-            "previous_requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
-            }],
-            "previous_version" => "2.0.0",
-            "requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
-            }],
-            "version" => "3.1.0" }
-        ]
+      context "with auto-strategy" do
+        context "app (no version)" do
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+        context "library (has version)" do
+          let(:project) { "can_update_library" }
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: ">=2.0.0 <4.0.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+      end
+      context "with bump_versions strategy" do
+        let(:requirements_update_strategy) { "bump_versions" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
+      end
+      context "with bump_versions_if_necessary strategy" do
+        let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
+      end
+      context "with widen_ranges strategy" do
+        let(:requirements_update_strategy) { "widen_ranges" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: ">=2.0.0 <4.0.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
       end
     end
 

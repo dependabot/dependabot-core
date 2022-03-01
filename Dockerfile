@@ -240,7 +240,7 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-arc
 # We pull the dependency_services from the dart-lang/pub repo as it is not
 # exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
+  && git -C /opt/dart/pub checkout fbc9732eeeed2c219a84c155f05f5b6222dccd9c \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \
