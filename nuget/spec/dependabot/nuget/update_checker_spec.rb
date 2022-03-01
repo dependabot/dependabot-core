@@ -55,8 +55,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://api-v2v3search-0.nuget.org/query"\
-    "?q=microsoft.extensions.dependencymodel&prerelease=true"
+    "https://azuresearch-usnc.nuget.org/query"\
+    "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
@@ -224,8 +224,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
-        "https://api-v2v3search-0.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "https://azuresearch-usnc.nuget.org/query"\
+        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -239,8 +239,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query"\
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -257,8 +257,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where not all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query"\
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -397,7 +397,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             to_return(status: 404)
           custom_v3_nuget_search_url =
             "https://www.myget.org/F/exceptionless/api/v3/"\
-            "query?q=microsoft.extensions.dependencymodel&prerelease=true"
+            "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
           stub_request(:get, custom_v3_nuget_search_url).
             to_return(status: 404)
 
@@ -494,8 +494,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
-        "https://api-v2v3search-0.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "https://azuresearch-usnc.nuget.org/query"\
+        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -509,8 +509,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query"\
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(

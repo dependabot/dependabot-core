@@ -329,7 +329,7 @@ module Dependabot
           # For large JSON files we sometimes need a little longer than for
           # other languages. For example, see:
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
-          # q=microsoft.aspnetcore.mvc&prerelease=true
+          # q=microsoft.aspnetcore.mvc&prerelease=true&semVerLevel=2.0.0
           {
             connect_timeout: 30,
             write_timeout: 30,
