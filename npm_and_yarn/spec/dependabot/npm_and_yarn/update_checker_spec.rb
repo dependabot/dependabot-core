@@ -81,7 +81,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "with a latest version requirement" do
-      let(:dependency_files) { project_dependency_files("npm7/latest_requirement") }
+      let(:dependency_files) { project_dependency_files("npm8/latest_requirement") }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "etag",

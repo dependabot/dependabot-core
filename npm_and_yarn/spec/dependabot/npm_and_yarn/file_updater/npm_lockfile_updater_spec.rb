@@ -61,7 +61,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
   subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
 
   describe "npm 6 specific" do
-    # NOTE: This is no longer failing in npm 7
+    # NOTE: This is no longer failing in npm 8
     context "with a corrupted npm lockfile (version missing)" do
       let(:files) { project_dependency_files("npm6/version_missing") }
 
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    # NOTE: This spec takes forever to run using npm 7
+    # NOTE: This spec takes forever to run using npm 8
     context "when a git src dependency doesn't have a valid package.json" do
       let(:files) { project_dependency_files("npm6/git_missing_version") }
 
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
-    # NOTE: This no longer raises in npm 7
+    # NOTE: This no longer raises in npm 8
     context "when there is a private git dep we don't have access to" do
       let(:files) { project_dependency_files("npm6/github_dependency_private") }
 
@@ -151,10 +151,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
-  describe "npm 7 specific" do
+  describe "npm 8 specific" do
     # NOTE: This used to raise in npm 6
     context "when there is a private git dep we don't have access to" do
-      let(:files) { project_dependency_files("npm7/github_dependency_private") }
+      let(:files) { project_dependency_files("npm8/github_dependency_private") }
 
       let(:dependency_name) { "strict-uri-encode" }
       let(:version) { "1.1.0" }
@@ -170,18 +170,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when the packages name needs sanitizing" do
-      let(:files) { project_dependency_files("npm7/simple") }
+      let(:files) { project_dependency_files("npm8/simple") }
 
       it "restores the packages name attribute" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
-        expected_updated_npm_lock_content = fixture("updated_projects", "npm7", "simple", "package-lock.json")
+        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "simple", "package-lock.json")
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
         expect(parsed_lockfile.dig("packages", "", "name")).to eq("project-name")
       end
     end
 
     context "when there's an out of date packages name attribute" do
-      let(:files) { project_dependency_files("npm7/packages_name_outdated") }
+      let(:files) { project_dependency_files("npm8/packages_name_outdated") }
       let(:dependency_name) { "etag" }
       let(:version) { "1.8.1" }
       let(:requirements) do
@@ -205,7 +205,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       it "maintains the original packages name attribute" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
         expected_updated_npm_lock_content = fixture(
-          "updated_projects", "npm7", "packages_name_outdated", "package-lock.json"
+          "updated_projects", "npm8", "packages_name_outdated", "package-lock.json"
         )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
         expect(parsed_lockfile.dig("packages", "", "name")).to eq("old-name")
@@ -213,7 +213,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
 
     context "when the original lockfile didn't have a packages name attribute" do
-      let(:files) { project_dependency_files("npm7/packages_name_missing") }
+      let(:files) { project_dependency_files("npm8/packages_name_missing") }
       let(:dependency_name) { "etag" }
       let(:version) { "1.8.1" }
       let(:requirements) do
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       it "doesn't add a packages name attribute" do
         parsed_lockfile = JSON.parse(updated_npm_lock_content)
         expected_updated_npm_lock_content = fixture(
-          "updated_projects", "npm7", "packages_name_missing", "package-lock.json"
+          "updated_projects", "npm8", "packages_name_missing", "package-lock.json"
         )
         expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
         expect(parsed_lockfile.dig("packages", "").key?("name")).to eq(false)
@@ -245,7 +245,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
-  %w(npm6 npm7).each do |npm_version|
+  %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
       let(:files) { project_dependency_files("#{npm_version}/simple") }
 
