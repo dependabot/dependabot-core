@@ -115,6 +115,9 @@ RSpec.describe Functions::DependencySource do
         stub_request(:get, registry_url + "specs.4.8.gz").
           with(basic_auth: ["SECRET_CODES", ""]).
           to_return(status: 400)
+        stub_request(:get, registry_url + "info/business").
+          with(basic_auth: ["SECRET_CODES", ""]).
+          to_return(status: 400)
       end
 
       it "blows up with a useful error" do
