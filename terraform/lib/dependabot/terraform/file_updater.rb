@@ -14,6 +14,7 @@ module Dependabot
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
       GIT_HTTPS_PREFIX = %r{^git::https://}.freeze
+      TF_PLATFORMS = "-platform=linux_amd64 -platform=darwin_amd64 -platform=windows_amd64"
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -112,7 +113,7 @@ module Dependabot
           updated_manifest_files.each { |f| File.write(f.name, f.content) }
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color")
+          SharedHelpers.run_shell_command("terraform providers lock #{TF_PLATFORMS} #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
