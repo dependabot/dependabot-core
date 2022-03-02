@@ -3,7 +3,7 @@
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/pub/helpers"
-
+require "yaml"
 module Dependabot
   module Pub
     class UpdateChecker < Dependabot::UpdateCheckers::Base
@@ -49,7 +49,8 @@ module Dependabot
         entry = current_report["singleBreaking"].find { |d| d["name"] == dependency.name }
         return unless entry
 
-        to_dependency(entry).requirements
+        parse_updated_dependency(entry, requirements_update_strategy: resolved_requirements_update_strategy).
+          requirements
       end
 
       private
@@ -67,7 +68,7 @@ module Dependabot
           d["kind"] == "transitive"
         end
         direct_deps.map do |d|
-          to_dependency(d)
+          parse_updated_dependency(d, requirements_update_strategy: resolved_requirements_update_strategy)
         end
       end
 
@@ -77,6 +78,35 @@ module Dependabot
 
       def current_report
         report.find { |d| d["name"] == dependency.name }
+      end
+
+      def resolved_requirements_update_strategy
+        @resolved_requirements_update_strategy ||= resolve_requirements_update_strategy
+      end
+
+      def resolve_requirements_update_strategy
+        raise "Unexpected requirements_update_strategy #{requirements_update_strategy}" unless
+          [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
+
+        if requirements_update_strategy.nil?
+          # Check for a version field in the pubspec.yaml. If it is present
+          # we assume the package is a library, and the requirement update
+          # strategy is widening. Otherwise we assume it is an application, and
+          # go for "bump_versions".
+          pubspec = dependency_files.find { |d| d.name == "pubspec.yaml" }
+          begin
+            parsed_pubspec = YAML.safe_load(pubspec.content, aliases: false)
+          rescue ScriptError
+            return "bump_versions"
+          end
+          if parsed_pubspec["version"].nil?
+            "bump_versions"
+          else
+            "widen_ranges"
+          end
+        else
+          requirements_update_strategy
+        end
       end
     end
   end

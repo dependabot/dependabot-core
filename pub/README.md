@@ -77,6 +77,19 @@ allows checking for available updates.
       // dependency is already a pre-release.
       "latest": "<version>",
 
+      // In the following possible upgrades are listed for different
+      // 
+      // The constraints are given in three versions, according to different
+      // strategies for updating constraint to allow the new version of a 
+      // package:
+      //
+      // * "constraintBumped": always update the constraint lower bound to match
+      //   the new version.
+      // * "constraintBumpedIfNeeded": leave the constraint if the original
+      //   constraint allows the new version.
+      // * "constraintWidened": extend only the upper bound to include the new 
+      //   version.
+
       // If it is possible to upgrade the current version without making any
       // changes in the project manifest, then this lists the set of upgrades
       // necessary to get the latest possible version of the current dependency
@@ -94,11 +107,12 @@ allows checking for available updates.
       // the manifest.
       "compatible": [
         {
-           "name":            "<package-name>",
-           "version":         "<new-version>" || null, // null, if removed
-           "kind":            "direct" || "dev" || "transitive",
-           "constraint":      "<version-constraint>" || null, // null, if transitive
-
+           "name":                     "<package-name>",
+           "version":                  "<new-version>" || null, // null, if removed
+           "kind":                     "direct" || "dev" || "transitive",
+           "constraintBumped":         "<version-constraint>" || null, // null, if transitive
+           "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
+           "constraintWidened":        "<version-constraint>" || null, // null, if transitive
            "previousVersion":    "<version>" || null, // null, if added
            "previousConstraint": null, // always 'null' in compatible solution
         },
@@ -122,13 +136,14 @@ allows checking for available updates.
       // changes for direct-dependencies are only possible if the manifest allows them.
       "singleBreaking": [
         {
-           "name":            "<package-name>",
-           "version":         "<new-version>" || null, // null, if removed
-           "kind":            "direct" || "dev" || "transitive",
-           "constraint":      "<version-constraint>" || null, // null, if transitive
-
-           "previousVersion":    "<version>" || null, // null, if added
-           "previousConstraint": "<version-constraint>" || null, // null, if transitive
+           "name":                     "<package-name>",
+           "version":                  "<new-version>" || null, // null, if removed
+           "kind":                     "direct" || "dev" || "transitive",
+           "constraintBumped":         "<version-constraint>" || null, // null, if transitive
+           "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
+           "constraintWidened":        "<version-constraint>" || null, // null, if transitive
+           "previousVersion":          "<version>" || null, // null, if added
+           "previousConstraint":       "<version-constraint>" || null, // null, if transitive
         },
         ...
       ],
@@ -150,13 +165,14 @@ allows checking for available updates.
       // This can involve breaking changes for any dependency.
       "multiBreaking": [
         {
-           "name":            "<package-name>",
-           "version":         "<new-version>" || null, // null, if removed
-           "kind":            "direct" || "dev" || "transitive",
-           "constraint":      "<version-constraint>" || null, // null, if transitive
-
-           "previousVersion":    "<version>" || null, // null, if added
-           "previousConstraint": "<version-constraint>" || null, // null, if transitive
+           "name":                     "<package-name>",
+           "version":                  "<new-version>" || null, // null, if removed
+           "kind":                     "direct" || "dev" || "transitive",
+           "constraintBumped":         "<version-constraint>" || null, // null, if transitive
+           "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
+           "constraintWidened":        "<version-constraint>" || null, // null, if transitive
+           "previousVersion":          "<version>" || null, // null, if added
+           "previousConstraint":       "<version-constraint>" || null, // null, if transitive
         },
         ...
       ],
