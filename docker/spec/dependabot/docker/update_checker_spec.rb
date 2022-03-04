@@ -413,6 +413,59 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
+    context "when the dependencies have a underscore" do
+      let(:dependency_name) { "eclipse-temurin" }
+      let(:tags_fixture_name) { "eclipse-temurin.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/library/eclipse-temurin/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        # Stub the latest version to return a different digest
+        ["17.0.2_8-jre-alpine", "latest", "prefix1_jre_11.0.16",
+         "11.0.16_suffix1_jre", "prefix2_jre_11.0.16_suffix2_jre"].each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+      end
+
+      context "followed by numbers" do
+        let(:version) { "17.0.1_12-jre-alpine" }
+        it { is_expected.to eq("17.0.2_8-jre-alpine") }
+      end
+
+      context "in the prefix" do
+        let(:version) { "prefix1_jre_11.0.14" }
+        it { is_expected.to eq("prefix1_jre_11.0.16") }
+      end
+
+      context "followed by letters (suffix)" do
+        let(:version) { "11.0.14_suffix1_jre" }
+        it { is_expected.to eq("11.0.16_suffix1_jre") }
+      end
+
+      context "in the prefix and suffix" do
+        let(:version) { "prefix2_jre_11.0.14_suffix2_jre" }
+        it { is_expected.to eq("prefix2_jre_11.0.16_suffix2_jre") }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dependency_name) { "moj/ruby" }
       let(:tags_fixture_name) { "ruby.json" }

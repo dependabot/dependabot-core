@@ -43,12 +43,12 @@ module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX =
-        /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
-      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
-      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
-      VERSION_WITH_PFX_AND_SFX =
-        /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i.
-        freeze
+        /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+)|(?:_[0-9]+))*)/i.freeze
+      PREFIX = /^(?<prefix>[a-z0-9.\-_]+(?:-|_))?/i.freeze
+      SUFFIX = /(?<suffix>(?:-|_)[a-z0-9.\-_]+)?$/i.freeze
+      VERSION_WITH_PFX = /#{PREFIX}#{VERSION_REGEX}$/i.freeze
+      VERSION_WITH_SFX = /^#{VERSION_REGEX}#{SUFFIX}/i.freeze
+      VERSION_WITH_PFX_AND_SFX = /#{PREFIX}#{VERSION_REGEX}#{SUFFIX}/i.freeze
       NAME_WITH_VERSION =
         /
           #{VERSION_WITH_PFX}|
@@ -316,7 +316,7 @@ module Dependabot
       def numeric_version_from(tag)
         return unless tag.match?(NAME_WITH_VERSION)
 
-        tag.match(NAME_WITH_VERSION).named_captures.fetch("version").downcase
+        tag.match(NAME_WITH_VERSION).named_captures.fetch("version").downcase.gsub(/_/i, ".")
       end
 
       def registry_hostname

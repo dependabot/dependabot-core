@@ -1,0 +1,17 @@
+{
+    "name": "library/eclipse-temurin",
+    "tags": [
+        "17.0.1_12-jre-windowsservercore-ltsc2022",
+        "17.0.2_8-jre-alpine",
+        "17.0.1_12-jre-alpine",
+        "17-jre-alpine",
+        "11.0.14_9-jre-alpine",
+        "11-jre-alpine",
+        "prefix1_jre_11.0.16",
+        "prefix1_jre_11.0.14",
+        "11.0.16_suffix1_jre",
+        "11.0.14_suffix1_jre",
+        "prefix2_jre_11.0.16_suffix2_jre",
+        "prefix2_jre_11.0.14_suffix2_jre"
+    ]
+}
