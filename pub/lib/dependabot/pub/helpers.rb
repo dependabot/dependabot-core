@@ -68,7 +68,7 @@ module Dependabot
                 "run",
                 "pub:dependency_services",
                 command,
-                "--verbose"
+                "--verbose",
                 stdin_data: stdin_data
               )
               raise Dependabot::DependabotError, "dart pub failed: #{stderr}\n#{stdout}" unless status.success?
