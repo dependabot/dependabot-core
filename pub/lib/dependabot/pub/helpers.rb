@@ -62,6 +62,7 @@ module Dependabot
                 "dart",
                 "--root-certs-file=/etc/ssl/certs/ca-certificates.crt",
                 "--no-analytics",
+                "--verbose",
                 "pub",
                 "global",
                 "run",
