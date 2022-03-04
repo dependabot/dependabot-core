@@ -3,7 +3,7 @@
 - Pub: use system root certificates [#4794](https://github.com/dependabot/dependabot-core/pull/4794)
 - Bump bundler to 2.3.8 [#4786](https://github.com/dependabot/dependabot-core/pull/4786)
 - pub support for requirement_update_strategy (@sigurdm) [#4778](https://github.com/dependabot/dependabot-core/pull/4778)
-- Attempt to fix *-* range handling (@Danielku15) [#4749](https://github.com/dependabot/dependabot-core/pull/4749)
+- Attempt to fix `*-*` range handling (@Danielku15) [#4749](https://github.com/dependabot/dependabot-core/pull/4749)
 - Update NuGet to fetch packages using SemVer 2 [#4255](https://github.com/dependabot/dependabot-core/pull/4255)
 - Update npm 7 references to npm 8 [#4771](https://github.com/dependabot/dependabot-core/pull/4771)
 - build(deps): bump object-path from 0.11.5 to 0.11.8 in /npm_and_yarn/helpers [#4772](https://github.com/dependabot/dependabot-core/pull/4772)
