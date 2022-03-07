@@ -60,6 +60,7 @@ module Dependabot
               stdout, stderr, status = Open3.capture3(
                 env.compact,
                 "dart",
+                "--root-certs-file=/etc/ssl/certs/ca-certificates.crt",
                 "--no-analytics",
                 "pub",
                 "global",
