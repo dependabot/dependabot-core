@@ -180,6 +180,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
       end
     end
 
+    context "when the lockfile does not have indentation" do
+      let(:files) { project_dependency_files("npm8/simple_no_indentation") }
+
+      it "defaults to npm and uses two spaces" do
+        expected_updated_npm_lock_content = fixture("updated_projects", "npm8", "simple_no_indentation",
+                                                    "package-lock.json")
+        expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+      end
+    end
+
     context "when there's an out of date packages name attribute" do
       let(:files) { project_dependency_files("npm8/packages_name_outdated") }
       let(:dependency_name) { "etag" }
