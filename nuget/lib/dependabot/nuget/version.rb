@@ -74,8 +74,26 @@ module Dependabot
 
         return -1 if prerelease_string && !other_prerelease_string
         return 1 if !prerelease_string && other_prerelease_string
+        return 0 if !prerelease_string && !other_prerelease_string
 
-        prerelease_string.<=>(other_prerelease_string)
+        split_prerelease_string = prerelease_string.split(".")
+        other_split_prerelease_string = other_prerelease_string.split(".")
+
+        split_prerelease_string.zip(other_split_prerelease_string).each do |lhs, rhs|
+          result = compare_dot_separated_part(lhs, rhs)
+          return result unless result.zero?
+        end
+
+        0
+      end
+
+      def compare_dot_separated_part(lhs, rhs)
+        return 1 if lhs.nil?
+        return -1 if rhs.nil?
+
+        return lhs.to_i <=> rhs.to_i if lhs.match?(/^\d+$/) && rhs.match?(/^\d+$/)
+
+        lhs.<=>(rhs)
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
