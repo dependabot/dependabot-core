@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+ARG TARGETARCH=amd64
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ### SYSTEM DEPENDENCIES
@@ -172,13 +174,14 @@ USER root
 
 # Install Go
 ARG GOLANG_VERSION=1.17.7
-ARG GOLANG_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
+ARG GOLANG_AMD64_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
+ARG GOLANG_ARM64_CHECKSUM=a5aa1ed17d45ee1d58b4a4099b12f8942acbd1dd09b2e9a6abb1c4898043c5f5
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
-  && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
-  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
-  && tar -xzf go.tar.gz -C /opt \
-  && rm go.tar.gz
+  && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
+  && printf "$GOLANG_AMD64_CHECKSUM go-amd64.tar.gz\n$GOLANG_ARM64_CHECKSUM go-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
+  && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
+  && rm go-${TARGETARCH}.tar.gz
 
 
 ### ELIXIR
