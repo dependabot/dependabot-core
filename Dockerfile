@@ -219,13 +219,13 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --pr
 
 USER root
 ARG TERRAFORM_VERSION=1.1.6
-RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
-RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
-  && apt-get update -y \
-  && apt-get install -y --no-install-recommends terraform=${TERRAFORM_VERSION} \
-  && terraform -help \
-  && rm -rf /var/lib/apt/lists/*
-
+ARG TERRAFORM_AMD64_CHECKSUM=3e330ce4c8c0434cdd79fe04ed6f6e28e72db44c47ae50d01c342c8a2b05d331
+ARG TERRAFORM_ARM64_CHECKSUM=a53fb63625af3572f7252b9fb61d787ab153132a8984b12f4bb84b8ee408ec53
+RUN cd /tmp \
+  && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
+  && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
+  && unzip -d /usr/local/bin terraform-${TARGETARCH}.tar.gz \
+  && rm terraform-${TARGETARCH}.tar.gz
 
 ### DART
 
