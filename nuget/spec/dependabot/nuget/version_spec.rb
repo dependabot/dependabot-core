@@ -175,39 +175,48 @@ RSpec.describe Dependabot::Nuget::Version do
 
           it { is_expected.to eq(-1) }
         end
+      end
 
-        context "with one version having a longer prerelease identifier" do
+      context "that is a blank version" do
+        let(:other_version) { described_class.new("") }
+        it { is_expected.to eq(1) }
+      end
+
+      context "that has pre-release identifiers" do
+        context "with one version having a longer dot-separated prerelease identifier" do
           let(:version_string) { "3.2.0-alpha.1" }
           let(:other_version) { "3.2.0-alpha" }
 
-          it { is_expected.to eq(-1) }
+          it { is_expected.to eq(1) }
         end
 
-        context "with a prerelease that is lexicographically shorter" do
+        context "with one that is lexicographically shorter" do
           let(:version_string) { "3.2.0-alpha0014" }
           let(:other_version) { "3.2.0-alpha.66" } # the .66 doesn't matter because alpha < alpha0014 lexicographically
 
           it { is_expected.to eq(1) }
         end
 
-        context "with a dot separated pre-release identifier containing integers" do
+        context "with a dot separated identifier containing integers" do
           let(:version_string) { "1.3.1-preview.8" }
           let(:other_version) { "1.3.1-preview.24" }
 
           it { is_expected.to eq(-1) }
         end
 
-        context "with a dot separated pre-release identifier containing integers" do
+        context "with a longer dot separated identifier containing integers" do
           let(:version_string) { "1.3.1-preview.8.2" }
           let(:other_version) { "1.3.1-preview.8.1" }
 
           it { is_expected.to eq(1) }
         end
-      end
 
-      context "that is a blank version" do
-        let(:other_version) { described_class.new("") }
-        it { is_expected.to eq(1) }
+        context "with equal dot separated integers" do
+          let(:version_string) { "1.3.1-preview.8.2" }
+          let(:other_version) { "1.3.1-preview.8.2" }
+
+          it { is_expected.to eq(0) }
+        end
       end
     end
   end

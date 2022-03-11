@@ -88,8 +88,8 @@ module Dependabot
       end
 
       def compare_dot_separated_part(lhs, rhs)
-        return 1 if lhs.nil?
-        return -1 if rhs.nil?
+        return -1 if lhs.nil?
+        return 1 if rhs.nil?
 
         return lhs.to_i <=> rhs.to_i if lhs.match?(/^\d+$/) && rhs.match?(/^\d+$/)
 
