@@ -38,6 +38,7 @@ build_image() {
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg "TARGETARCH=$(uname -m)" \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
     --cache-from "dependabot/dependabot-core:latest" \
