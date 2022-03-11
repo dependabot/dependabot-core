@@ -89,6 +89,10 @@ module Dependabot
         0
       end
 
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
+
       def compare_dot_separated_part(lhs, rhs)
         return -1 if lhs.nil?
         return 1 if rhs.nil?
@@ -97,8 +101,6 @@ module Dependabot
 
         lhs <=> rhs
       end
-
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def compare_build_info(other)
         return build_info.nil? ? 0 : 1 unless other.is_a?(Nuget::Version)
