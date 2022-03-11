@@ -234,7 +234,9 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 ARG DART_VERSION=2.15.1
-RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
+RUN DART_ARCH=${TARGETARCH} \
+  && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
+  && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
   && mkdir -p "$PUB_CACHE" \
   && chown dependabot:dependabot "$PUB_CACHE" \
   && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
@@ -256,6 +258,8 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_
   && tar xf "/tmp/flutter.xz" -C /opt/dart \
   && rm "/tmp/flutter.xz" \
   && chmod -R o+rx "/opt/dart/flutter" \
+  && rm -Rf /opt/dart/flutter/bin/cache/dart-sdk \
+  && ln -s /opt/dart/dart-sdk /opt/dart/flutter/bin/cache/dart-sdk \
   && chown -R dependabot:dependabot "/opt/dart/flutter" \
   && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version" \
   # To reduce space usage we delete all of the flutter sdk except the few
