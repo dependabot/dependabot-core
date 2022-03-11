@@ -1,3 +1,7 @@
+## v0.178.1, 11 March 2022
+
+- Fixes comparison between prerelease identifiers for NuGet [#4833](https://github.com/dependabot/dependabot-core/pull/4833)
+
 ## v0.178.0, 10 March 2022
 
 - Disable spec fetching retries which are not functioning properly [#4823](https://github.com/dependabot/dependabot-core/pull/4823)
