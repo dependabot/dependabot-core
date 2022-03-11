@@ -55,6 +55,8 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/AbcSize
       def compare_prerelease_part(other)
         release_str = @version_string.split("-").first&.split("+")&.first || ""
         prerelease_string = @version_string.
@@ -93,7 +95,7 @@ module Dependabot
 
         return lhs.to_i <=> rhs.to_i if lhs.match?(/^\d+$/) && rhs.match?(/^\d+$/)
 
-        lhs.<=>(rhs)
+        lhs <=> rhs
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
