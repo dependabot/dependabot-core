@@ -190,9 +190,9 @@ RSpec.describe Dependabot::Nuget::Version do
           it { is_expected.to eq(1) }
         end
 
-        context "with one that is lexicographically shorter" do
+        context "with one that is lexically shorter" do
           let(:version_string) { "3.2.0-alpha0014" }
-          let(:other_version) { "3.2.0-alpha.66" } # the .66 doesn't matter because alpha < alpha0014 lexicographically
+          let(:other_version) { "3.2.0-alpha.66" } # the .66 doesn't matter because alpha < alpha0014 lexically
 
           it { is_expected.to eq(1) }
         end
@@ -216,6 +216,27 @@ RSpec.describe Dependabot::Nuget::Version do
           let(:other_version) { "1.3.1-preview.8.2" }
 
           it { is_expected.to eq(0) }
+        end
+
+        context "with pre-release does not take precedence over non-pre-release" do
+          let(:version_string) { "1.0.0" }
+          let(:other_version) { "1.0.0-alpha" }
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with numeric taking lower precedence than non-numeric" do
+          let(:version_string) { "1.0.0-1" }
+          let(:other_version) { "1.0.0-alpha" }
+
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with a pre-release identifier containing hyphens" do
+          let(:version_string) { "1.0.0-1" }
+          let(:other_version) { "1.0.0-1-1" }
+
+          it { is_expected.to eq(-1) }
         end
       end
     end
