@@ -500,6 +500,8 @@ module Dependabot
         # levels deep it is indented.
         def detect_indentation(json)
           indentation = json.scan(/^\s+/).min_by(&:length)
+          return "" if indentation.nil? # let npm set the default if we can't detect any indentation
+
           indentation_size = indentation.length
           indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
 

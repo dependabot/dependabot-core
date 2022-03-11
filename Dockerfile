@@ -76,7 +76,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.33 --no-document \
+  && gem install bundler -v 2.3.8 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -184,10 +184,7 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.12.3
 ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
-# This version is currently pinned to OTP 23, due to an issue that we only hit
-# in production, where traffic is routed through a proxy that OTP 24 doesn't
-# play nice with.
-ARG ERLANG_VERSION=1:23.3.4.5-1
+ARG ERLANG_VERSION=1:24.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
@@ -225,7 +222,7 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 
 ### DART
 
-# Install Dart 
+# Install Dart
 ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
@@ -240,7 +237,7 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-arc
 # We pull the dependency_services from the dart-lang/pub repo as it is not
 # exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
+  && git -C /opt/dart/pub checkout fbc9732eeeed2c219a84c155f05f5b6222dccd9c \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \

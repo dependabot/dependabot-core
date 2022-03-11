@@ -29,6 +29,15 @@ RSpec.describe Functions::VersionResolver do
 
   let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
   let(:old_index_url) { rubygems_url + "dependencies" }
+  let(:gemfury_url) { "https://repo.fury.io/greysteil/" }
+
+  before do
+    stub_request(:get, "https://rubygems.org/quick/Marshal.4.8/statesman-1.2.1.gemspec.rz").
+      to_return(status: 200, body: fixture("rubygems_responses", "statesman-1.2.1.gemspec.rz"))
+
+    stub_request(:get, %r{quick/Marshal.4.8/business-.*.gemspec.rz}).
+      to_return(status: 200, body: fixture("rubygems_responses", "business-1.0.0.gemspec.rz"))
+  end
 
   describe "#version_details" do
     subject do
@@ -48,7 +57,6 @@ RSpec.describe Functions::VersionResolver do
       let(:requirement_string) { ">= 0" }
 
       before do
-        gemfury_url = "https://repo.fury.io/greysteil/"
         gemfury_deps_url = gemfury_url + "api/v1/dependencies"
 
         stub_request(:get, gemfury_url + "versions").

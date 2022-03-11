@@ -77,13 +77,15 @@ module Dependabot
         end
       end
 
-      def to_dependency(json)
+      # Parses a dependency as listed by `dependency_services list`.
+      def parse_listed_dependency(json)
         params = {
           name: json["name"],
           version: json["version"],
           package_manager: "pub",
           requirements: []
         }
+
         if json["kind"] != "transitive" && !json["constraint"].nil?
           constraint = json["constraint"]
           params[:requirements] << {
@@ -93,6 +95,33 @@ module Dependabot
             file: "pubspec.yaml"
           }
         end
+        Dependency.new(**params)
+      end
+
+      # Parses the updated dependencies returned by
+      # `dependency_services report`.
+      #
+      # The `requirements_update_strategy`` is
+      # used to chose the right updated constraint.
+      def parse_updated_dependency(json, requirements_update_strategy: nil)
+        params = {
+          name: json["name"],
+          version: json["version"],
+          package_manager: "pub",
+          requirements: []
+        }
+        constraint_field = constraint_field_from_update_strategy(requirements_update_strategy)
+
+        if json["kind"] != "transitive" && !json[constraint_field].nil?
+          constraint = json[constraint_field]
+          params[:requirements] << {
+            requirement: constraint,
+            groups: [json["kind"]],
+            source: nil, # TODO: Expose some information about the source
+            file: "pubspec.yaml"
+          }
+        end
+
         if json["previousVersion"]
           params = {
             **params,
@@ -110,6 +139,19 @@ module Dependabot
           end
         end
         Dependency.new(**params)
+      end
+
+      # expects "auto" to already have been resolved to one of the other
+      # strategies.
+      def constraint_field_from_update_strategy(requirements_update_strategy)
+        case requirements_update_strategy
+        when "widen_ranges"
+          "constraintWidened"
+        when "bump_versions"
+          "constraintBumped"
+        when "bump_versions_if_necessary"
+          "constraintBumpedIfNeeded"
+        end
       end
 
       def dependencies_to_json(dependencies)
