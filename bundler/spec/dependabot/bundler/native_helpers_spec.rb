@@ -11,6 +11,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
 
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
+      allow(ENV).to receive(:[]).with("DEPENDABOT_NATIVE_HELPERS_PATH").and_return("/opt")
 
       subject.run_bundler_subprocess(
         function: "noop",
