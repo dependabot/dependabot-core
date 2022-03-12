@@ -154,6 +154,23 @@ RSpec.describe Dependabot::Docker::FileParser do
           expect(dependencies).to be_empty
         end
       end
+
+      describe "with multiple args" do
+        let(:dockerfile_fixture_name) { "multiple_args" }
+
+        subject(:docker_dependency) { dependencies.first }
+        subject(:ubuntu_dependency) { dependencies.last }
+
+        it "only replaces the args before first FROM" do
+          expect(dependencies.length).to eq(2)
+
+          expect(docker_dependency).to be_a(Dependabot::Dependency)
+          expect(docker_dependency.name).to eq("docker")
+
+          expect(ubuntu_dependency).to be_a(Dependabot::Dependency)
+          expect(ubuntu_dependency.name).to eq("ubuntu")
+        end
+      end
     end
 
     context "with a non-numeric version" do
