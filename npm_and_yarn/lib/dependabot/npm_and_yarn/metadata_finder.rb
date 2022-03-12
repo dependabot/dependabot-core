@@ -131,11 +131,6 @@ module Dependabot
           return get_url(details).split("tree/master/").last.split("#").first
         end
 
-        # Special case DefinitelyTyped, which has predictable URLs.
-        # This can be removed once this PR is merged:
-        # https://github.com/Microsoft/types-publisher/pull/578
-        return dependency.name.gsub(/^@/, "") if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
 
