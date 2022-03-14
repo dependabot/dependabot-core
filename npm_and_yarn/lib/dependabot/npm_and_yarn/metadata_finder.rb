@@ -122,8 +122,6 @@ module Dependabot
       end
 
       def get_directory(details)
-        source_from_url = Source.from_url(get_url(details))
-
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
 
