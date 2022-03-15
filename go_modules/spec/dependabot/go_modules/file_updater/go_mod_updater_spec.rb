@@ -461,6 +461,56 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       end
     end
 
+    # When starting from an empty module cache, if a direct dependency has a failure during the download,
+    # go prepends a status line to the normal error string, for example:
+    #     go: downloading github.com/org/repo v1.2.3
+    #     go get: reading google.golang.org/grpc/go.mod at revision v1.33.0: unknown revision v1.33.0
+    # So the only way to test this is to clone the test scenario "for a revision that does not exist"
+    # and re-run it starting with forcing an empty go module cache.
+    #
+    # TODO: this may also mean we need similar test cases for other errors if go also prepend the error
+    # message for them... or we could just treat this as a more generic case of
+    # "go get of a dep triggers a download error when starting from an empty go module cache"
+    # since the final solution most probably will try to strip this error line out very early and then
+    # let the normal error handling take over.
+    context "when go get encounters a download error while starting with an empty go module cache" do
+      # The go.mod file contains a reference to a revision of
+      # google.golang.org/grpc that does not exist.
+      let(:project_name) { "unknown_revision" }
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) do
+        [{
+          file: "go.mod",
+          requirement: "v1.5.2",
+          groups: [],
+          source: {
+            type: "default",
+            source: "rsc.io/quote"
+          }
+        }]
+      end
+      let(:previous_requirements) { [] }
+
+      # TODO: perhaps this test should somehow be forced to be the first one run
+      # for `go_modules` as otherwise this will slow down the test runs in CI?
+      command = "go clean -modcache"
+      # TODO: set ``environment` more properly... it should pickup the global options probably.
+      environment = { "GOPRIVATE" => "*" }
+      _, stderr, status = Open3.capture3(environment, command)
+      # TODO: not sure how to fail an rspec test if hit an unexpected err here?
+      p stderr unless status.success?
+
+      it "raises the correct error" do
+        error_class = Dependabot::DependencyFileNotResolvable
+        expect { updater.updated_go_sum_content }.
+          to raise_error(error_class) do |error|
+          expect(error.message).to include("unknown revision v1.33.999")
+        end
+      end
+    end
+
     context "for a project that references a non-existing proxy" do
       let(:project_name) { "nonexisting_proxy" }
       let(:dependency_name) { "rsc.io/quote" }
