@@ -73,7 +73,9 @@ require "json"
 require "debug"
 require "logger"
 require "dependabot/logger"
-require "stackprof"
+unless RUBY_PLATFORM == "aarch64-linux-gnu"
+  require "stackprof"
+end
 
 Dependabot.logger = Logger.new($stdout)
 
