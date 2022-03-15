@@ -95,6 +95,7 @@ module Dependabot
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
+        puts env_cmd
         puts stdout
         puts stderr
       end
