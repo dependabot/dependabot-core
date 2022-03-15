@@ -168,6 +168,7 @@ USER root
 
 # Install Go
 ARG GOLANG_VERSION=1.18
+# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
 ARG GOLANG_CHECKSUM=e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
