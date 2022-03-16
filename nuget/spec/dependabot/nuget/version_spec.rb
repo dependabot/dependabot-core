@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Nuget::Version do
 
         context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
+          it { is_expected.to eq(0) }
         end
       end
 
@@ -113,12 +113,12 @@ RSpec.describe Dependabot::Nuget::Version do
 
         context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
+          it { is_expected.to eq(0) }
         end
 
         context "but the other version has build information" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
-          it { is_expected.to eq(-1) }
+          it { is_expected.to eq(0) }
         end
 
         context "and both sides have build information" do
@@ -131,17 +131,17 @@ RSpec.describe Dependabot::Nuget::Version do
 
           context "when our side is greater" do
             let(:version_string) { "1.0.0+gc.2" }
-            it { is_expected.to eq(1) }
+            it { is_expected.to eq(0) }
           end
 
           context "when our side is lower" do
             let(:version_string) { "1.0.0+gc" }
-            it { is_expected.to eq(-1) }
+            it { is_expected.to eq(0) }
           end
 
           context "when our side is longer" do
             let(:version_string) { "1.0.0+gc.1.1" }
-            it { is_expected.to eq(1) }
+            it { is_expected.to eq(0) }
           end
         end
       end
@@ -188,6 +188,14 @@ RSpec.describe Dependabot::Nuget::Version do
           let(:other_version) { "3.2.0-alpha" }
 
           it { is_expected.to eq(1) }
+        end
+
+        context "with comparison that is case insensitive" do
+          let(:version_string) { "3.2.0-alpha" }
+          let(:other_version) { "3.2.0-Alpha" }
+
+          # NuGetVersion uses case insensitive string comparisons for pre-release components.
+          it { is_expected.to eq(0) }
         end
 
         context "with one that is lexically shorter" do
