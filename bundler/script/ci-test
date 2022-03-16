@@ -2,11 +2,11 @@
 
 set -e
 
+export DEBUG_HELPERS="true"
+
 bundle install
 bundle exec rubocop .
 bundle exec rspec spec
-
-export DEBUG_HELPERS="true"
 
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   cd helpers/v1 \
