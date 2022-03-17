@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.require_path = "lib"
   spec.files        = []
 
-  spec.required_ruby_version = ">= 2.5.0"
+  spec.required_ruby_version = ">= 2.7.0"
   spec.required_rubygems_version = ">= 2.7.3"
 
   spec.add_dependency "activesupport", ">= 6.0.0"
