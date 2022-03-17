@@ -226,6 +226,13 @@ RSpec.describe Dependabot::Nuget::Version do
           it { is_expected.to eq(0) }
         end
 
+        context "with pre-release build info" do
+          let(:version_string) { "1.3.1-preview.8.2" }
+          let(:other_version) { "1.3.1-preview.8.2+123" }
+
+          it { is_expected.to eq(0) }
+        end
+
         context "with pre-release does not take precedence over non-pre-release" do
           let(:version_string) { "1.0.0" }
           let(:other_version) { "1.0.0-alpha" }
