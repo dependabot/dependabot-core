@@ -14,7 +14,7 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go (?:get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
