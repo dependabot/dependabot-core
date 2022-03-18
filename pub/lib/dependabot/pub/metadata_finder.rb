@@ -12,6 +12,9 @@ module Dependabot
 
       def look_up_source
         repo = pub_listing.dig("latest", "pubspec", "repository")
+        # The repository field did not always exist in pubspec.yaml, and some 
+        # packages specify a git repository in the "homepage" field.
+        repo ||= pub_listing.dig("latest", "pubspec", "homepage")
         return nil unless repo
 
         Source.from_url(repo)
