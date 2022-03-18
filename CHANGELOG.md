@@ -1,3 +1,15 @@
+## v0.180.0, 18 March 2022
+
+- Upgrade main Python version to 3.10.3 (@ulgens) [#4874](https://github.com/dependabot/dependabot-core/pull/4874)
+- build(deps): bump @npmcli/arborist from 4.2.1 to 5.0.3 in /npm_and_yarn/helpers [#4877](https://github.com/dependabot/dependabot-core/pull/4877)
+- Modify ENV in a friendlier way during specs (@deivid-rodriguez) [#4865](https://github.com/dependabot/dependabot-core/pull/4865)
+- Bump to `go` `1.18` (@jeffwidman) [#4853](https://github.com/dependabot/dependabot-core/pull/4853)
+- Fix Bundler 1 spec failures (@deivid-rodriguez) [#4869](https://github.com/dependabot/dependabot-core/pull/4869)
+- Require Ruby 2.7 (@deivid-rodriguez) [#4864](https://github.com/dependabot/dependabot-core/pull/4864)
+- Bugfix: Include space in regex capturing group (@jeffwidman) [#4868](https://github.com/dependabot/dependabot-core/pull/4868)
+- Get bundler specs green when run on Ruby 3.1 (@deivid-rodriguez) [#4841](https://github.com/dependabot/dependabot-core/pull/4841)
+- NuGet version comparison fix [#4862](https://github.com/dependabot/dependabot-core/pull/4862)
+
 ## v0.179.0, 16 March 2022
 
 - Bump Ubuntu to 20.04 (@jeffwidman) [#4394](https://github.com/dependabot/dependabot-core/pull/4394)
