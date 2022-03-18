@@ -34,10 +34,4 @@ RSpec.describe Dependabot::GithubActions::Version do
       expect(version).to eq(version_without_v)
     end
   end
-
-  describe "<=>" do
-    it "v2 === v2.0.0" do
-      expect(described_class.new("v2")).to eq(described_class.new("v2.0.0"))
-    end
-  end
 end
