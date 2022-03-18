@@ -13,14 +13,15 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
 
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-      allow(ENV).to receive(:[]).with("DEPENDABOT_NATIVE_HELPERS_PATH").and_return(native_helpers_path)
 
-      subject.run_bundler_subprocess(
-        function: "noop",
-        args: [],
-        bundler_version: "2.0.0",
-        options: options
-      )
+      with_env("DEPENDABOT_NATIVE_HELPERS_PATH", native_helpers_path) do
+        subject.run_bundler_subprocess(
+          function: "noop",
+          args: [],
+          bundler_version: "2.0.0",
+          options: options
+        )
+      end
     end
 
     context "with a timeout provided" do
@@ -106,6 +107,16 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
             env: anything
           )
       end
+    end
+
+    private
+
+    def with_env(key, value)
+      previous_value = ENV[key]
+      ENV[key] = value
+      yield
+    ensure
+      ENV[key] = previous_value
     end
   end
 end
