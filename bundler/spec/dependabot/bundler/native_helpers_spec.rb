@@ -9,16 +9,19 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
   describe ".run_bundler_subprocess" do
     let(:options) { {} }
 
+    let(:native_helpers_path) { "/opt" }
+
     before do
       allow(Dependabot::SharedHelpers).to receive(:run_helper_subprocess)
-      allow(ENV).to receive(:[]).with("DEPENDABOT_NATIVE_HELPERS_PATH").and_return("/opt")
 
-      subject.run_bundler_subprocess(
-        function: "noop",
-        args: [],
-        bundler_version: "2.0.0",
-        options: options
-      )
+      with_env("DEPENDABOT_NATIVE_HELPERS_PATH", native_helpers_path) do
+        subject.run_bundler_subprocess(
+          function: "noop",
+          args: [],
+          bundler_version: "2.0.0",
+          options: options
+        )
+      end
     end
 
     context "with a timeout provided" do
@@ -89,6 +92,31 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
             env: anything
           )
       end
+    end
+
+    context "with DEPENDABOT_NATIVE_HELPERS_PATH not set" do
+      let(:native_helpers_path) { nil }
+
+      it "uses the full path to the uninstalled run.rb command" do
+        expect(Dependabot::SharedHelpers).
+          to have_received(:run_helper_subprocess).
+          with(
+            command: "bundle exec ruby #{File.expand_path('../../../helpers/v2/run.rb', __dir__)}",
+            function: "noop",
+            args: [],
+            env: anything
+          )
+      end
+    end
+
+    private
+
+    def with_env(key, value)
+      previous_value = ENV[key]
+      ENV[key] = value
+      yield
+    ensure
+      ENV[key] = previous_value
     end
   end
 end

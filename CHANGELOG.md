@@ -1,3 +1,15 @@
+## v0.179.0, 16 March 2022
+
+- Bump Ubuntu to 20.04 (@jeffwidman) [#4394](https://github.com/dependabot/dependabot-core/pull/4394)
+- Use expanded path when DEPENDABOT_NATIVE_HELPERS_PATH not set (@deivid-rodriguez) [#4844](https://github.com/dependabot/dependabot-core/pull/4844)
+- Fix flaky spec failure on Bundler 1 suite (@deivid-rodriguez) [#4846](https://github.com/dependabot/dependabot-core/pull/4846)
+- Unify RSpec requirements in helpers Gemfiles to match dependabot-common (@deivid-rodriguez) [#4843](https://github.com/dependabot/dependabot-core/pull/4843)
+- Remove duplicated spec (@deivid-rodriguez) [#4839](https://github.com/dependabot/dependabot-core/pull/4839)
+- Fix webmock requirement in helpers Gemfiles to match dependabot-common (@deivid-rodriguez) [#4838](https://github.com/dependabot/dependabot-core/pull/4838)
+- Enable codeql [#4817](https://github.com/dependabot/dependabot-core/pull/4817)
+- Improve `DEBUG_HELPERS` output (@deivid-rodriguez) [#4827](https://github.com/dependabot/dependabot-core/pull/4827)
+- Fix some specs to pass outside of Docker (@deivid-rodriguez) [#4835](https://github.com/dependabot/dependabot-core/pull/4835)
+
 ## v0.178.1, 11 March 2022
 
 - Fixes comparison between prerelease identifiers for NuGet [#4833](https://github.com/dependabot/dependabot-core/pull/4833)

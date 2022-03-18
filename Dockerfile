@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -88,9 +88,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.2 \
-  && pyenv global 3.10.2 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.5 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.3 \
+  && pyenv global 3.10.3 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -167,8 +167,9 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.7
-ARG GOLANG_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
+ARG GOLANG_VERSION=1.18
+# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
+ARG GOLANG_CHECKSUM=e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \

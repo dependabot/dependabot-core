@@ -97,7 +97,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       before do
         exit_status = double(success?: false)
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+        allow(Open3).to receive(:capture3).with(anything, "go get").and_return(["", stderr, exit_status])
       end
 
       it "raises a helpful error" do

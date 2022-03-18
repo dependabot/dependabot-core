@@ -69,7 +69,7 @@ module Dependabot
         helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
         return File.join(helpers_root, "bundler") unless helpers_root.nil?
 
-        File.join(__dir__, "../../../helpers")
+        File.expand_path("../../../helpers", __dir__)
       end
     end
   end
