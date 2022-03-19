@@ -139,7 +139,7 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          /(?:^|^\s*|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
+          /(?:^|^\s*|["'])#{Regexp.escape(dep.name)}["']?(?:\s*\.version)?\s*=.*$/i
         end
 
         def feature_declaration_version_regex(dep)

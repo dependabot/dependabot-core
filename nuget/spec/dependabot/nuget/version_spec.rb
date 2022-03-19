@@ -85,7 +85,7 @@ RSpec.describe Dependabot::Nuget::Version do
 
         context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
+          it { is_expected.to eq(0) }
         end
       end
 
@@ -113,12 +113,12 @@ RSpec.describe Dependabot::Nuget::Version do
 
         context "but our version has build information" do
           let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
+          it { is_expected.to eq(0) }
         end
 
         context "but the other version has build information" do
           let(:other_version) { described_class.new("1.0.0+gc.1") }
-          it { is_expected.to eq(-1) }
+          it { is_expected.to eq(0) }
         end
 
         context "and both sides have build information" do
@@ -131,17 +131,17 @@ RSpec.describe Dependabot::Nuget::Version do
 
           context "when our side is greater" do
             let(:version_string) { "1.0.0+gc.2" }
-            it { is_expected.to eq(1) }
+            it { is_expected.to eq(0) }
           end
 
           context "when our side is lower" do
             let(:version_string) { "1.0.0+gc" }
-            it { is_expected.to eq(-1) }
+            it { is_expected.to eq(0) }
           end
 
           context "when our side is longer" do
             let(:version_string) { "1.0.0+gc.1.1" }
-            it { is_expected.to eq(1) }
+            it { is_expected.to eq(0) }
           end
         end
       end
@@ -180,6 +180,79 @@ RSpec.describe Dependabot::Nuget::Version do
       context "that is a blank version" do
         let(:other_version) { described_class.new("") }
         it { is_expected.to eq(1) }
+      end
+
+      context "that has pre-release identifiers" do
+        context "with one version having a longer dot-separated prerelease identifier" do
+          let(:version_string) { "3.2.0-alpha.1" }
+          let(:other_version) { "3.2.0-alpha" }
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with comparison that is case insensitive" do
+          let(:version_string) { "3.2.0-alpha" }
+          let(:other_version) { "3.2.0-Alpha" }
+
+          # NuGetVersion uses case insensitive string comparisons for pre-release components.
+          it { is_expected.to eq(0) }
+        end
+
+        context "with one that is lexically shorter" do
+          let(:version_string) { "3.2.0-alpha0014" }
+          let(:other_version) { "3.2.0-alpha.66" } # the .66 doesn't matter because alpha < alpha0014 lexically
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with a dot separated identifier containing integers" do
+          let(:version_string) { "1.3.1-preview.8" }
+          let(:other_version) { "1.3.1-preview.24" }
+
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with a longer dot separated identifier containing integers" do
+          let(:version_string) { "1.3.1-preview.8.2" }
+          let(:other_version) { "1.3.1-preview.8.1" }
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with equal dot separated integers" do
+          let(:version_string) { "1.3.1-preview.8.2" }
+          let(:other_version) { "1.3.1-preview.8.2" }
+
+          it { is_expected.to eq(0) }
+        end
+
+        context "with pre-release build info" do
+          let(:version_string) { "1.3.1-preview.8.2" }
+          let(:other_version) { "1.3.1-preview.8.2+123" }
+
+          it { is_expected.to eq(0) }
+        end
+
+        context "with pre-release does not take precedence over non-pre-release" do
+          let(:version_string) { "1.0.0" }
+          let(:other_version) { "1.0.0-alpha" }
+
+          it { is_expected.to eq(1) }
+        end
+
+        context "with numeric taking lower precedence than non-numeric" do
+          let(:version_string) { "1.0.0-1" }
+          let(:other_version) { "1.0.0-alpha" }
+
+          it { is_expected.to eq(-1) }
+        end
+
+        context "with a pre-release identifier containing hyphens" do
+          let(:version_string) { "1.0.0-1" }
+          let(:other_version) { "1.0.0-1-1" }
+
+          it { is_expected.to eq(-1) }
+        end
       end
     end
   end

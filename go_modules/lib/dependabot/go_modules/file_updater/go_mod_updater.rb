@@ -14,7 +14,7 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go (?:get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
@@ -162,8 +162,7 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
-          command = +"go get -d"
+          command = +"go get"
           # `go get` accepts multiple packages, each separated by a space
           dependencies.each do |dep|
             version = "v" + dep.version.sub(/^v/i, "")
@@ -195,7 +194,7 @@ module Dependabot
 
         def build_module_stubs(stub_paths)
           # Create a fake empty module for each local module so that
-          # `go get -d` works, even if some modules have been `replace`d
+          # `go get` works, even if some modules have been `replace`d
           # with a local module that we don't have access to.
           stub_paths.each do |stub_path|
             Dir.mkdir(stub_path) unless Dir.exist?(stub_path)

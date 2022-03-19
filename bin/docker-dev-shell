@@ -141,6 +141,12 @@ docker run --rm -ti \
   -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
   -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
   -v "$(pwd)/python/script:$CODE_DIR/python/script" \
+  -v "$(pwd)/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
+  -v "$(pwd)/pub/Gemfile:$CODE_DIR/pub/Gemfile" \
+  -v "$(pwd)/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
+  -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \
+  -v "$(pwd)/pub/spec:$CODE_DIR/pub/spec" \
+  -v "$(pwd)/pub/script:$CODE_DIR/pub/script" \
   -v "$(pwd)/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
   -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
   -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \

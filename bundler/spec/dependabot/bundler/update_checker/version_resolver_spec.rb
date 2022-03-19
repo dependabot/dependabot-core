@@ -138,7 +138,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         context "attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
-          let(:requirement_string) { "~> 2.2.0" }
+          let(:requirement_string) { "~> 2.3.0" }
 
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
 

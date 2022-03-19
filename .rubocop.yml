@@ -6,7 +6,7 @@ AllCops:
   - "*/bin/**/*"
   - "**/tmp/**/*"
   - "*/spec/fixtures/**/*"
-  TargetRubyVersion: 2.5
+  TargetRubyVersion: 2.7
   SuggestExtensions: false
 Gemspec/DateAssignment:
   Enabled: true
