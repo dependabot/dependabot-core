@@ -5,7 +5,6 @@ require "webmock/rspec"
 require "vcr"
 require "debug"
 require "simplecov"
-require "simplecov-console"
 require "stackprof"
 require "uri"
 
@@ -16,7 +15,7 @@ require_relative "warning_monkey_patch"
 if ENV["COVERAGE"]
   SimpleCov::Formatter::Console.output_style = "block"
   SimpleCov.formatter = if ENV["CI"]
-                          SimpleCov::Formatter::Console
+                          SimpleCov::Formatter::SimpleFormatter
                         else
                           SimpleCov::Formatter::HTMLFormatter
                         end
