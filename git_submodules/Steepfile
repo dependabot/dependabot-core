@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+target :lib do
+  signature "sig"
+  signature "../common/sig"
+
+  check "lib"
+
+  library "rubygems"
+end
