@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+target :lib do
+  signature "sig"
+
+  check "lib"
+
+  library "rubygems", "forwardable", "open3", "time"
+
+  # configure_code_diagnostics do |config|
+  #   config[Steep::Diagnostic::Ruby::MethodDefinitionMissing] = :hint
+  # end
+end
