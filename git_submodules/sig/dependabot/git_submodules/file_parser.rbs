@@ -1,0 +1,17 @@
+module Dependabot
+  module GitSubmodules
+    class FileParser < Dependabot::FileParsers::Base
+      def parse: () -> untyped
+
+      private
+
+      def absolute_url: (untyped url) -> (untyped | ::String)
+
+      def submodule_sha: (untyped path) -> untyped
+
+      def gitmodules_file: () -> untyped
+
+      def check_required_files: () -> untyped
+    end
+  end
+end

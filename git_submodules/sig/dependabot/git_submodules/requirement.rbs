@@ -1,0 +1,14 @@
+module Dependabot
+  module GitSubmodules
+    class Requirement < Gem::Requirement
+      # For consistency with other langauges, we define a requirements array.
+      # Ruby doesn't have an `OR` separator for requirements, so it always
+      # contains a single element.
+      def self.requirements_array: (untyped requirement_string) -> ::Array[untyped]
+
+      # Patches Gem::Requirement to make it accept requirement strings like
+      # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      def initialize: (*untyped requirements) -> void
+    end
+  end
+end

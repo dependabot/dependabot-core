@@ -1,0 +1,6 @@
+module Dependabot
+  module GitSubmodules
+    class Version < Gem::Version
+    end
+  end
+end

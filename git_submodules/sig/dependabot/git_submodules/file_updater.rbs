@@ -1,0 +1,17 @@
+module Dependabot
+  module GitSubmodules
+    class FileUpdater < Dependabot::FileUpdaters::Base
+      def self.updated_files_regex: () -> ::Array[untyped]
+
+      def updated_dependency_files: () -> ::Array[untyped]
+
+      private
+
+      def dependency: () -> untyped
+
+      def check_required_files: () -> untyped
+
+      def submodule: () -> untyped
+    end
+  end
+end

@@ -1,0 +1,9 @@
+module Dependabot
+  module GitSubmodules
+    class MetadataFinder < Dependabot::MetadataFinders::Base
+      private
+
+      def look_up_source: () -> untyped
+    end
+  end
+end

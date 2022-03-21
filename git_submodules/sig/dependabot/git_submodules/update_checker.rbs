@@ -1,0 +1,21 @@
+module Dependabot
+  module GitSubmodules
+    class UpdateChecker < Dependabot::UpdateCheckers::Base
+      def latest_version: () -> untyped
+
+      def latest_resolvable_version: () -> untyped
+
+      def latest_resolvable_version_with_no_unlock: () -> untyped
+
+      def updated_requirements: () -> untyped
+
+      private
+
+      def latest_version_resolvable_with_full_unlock?: () -> ::FalseClass
+
+      def updated_dependencies_after_full_unlock: () -> untyped
+
+      def fetch_latest_version: () -> untyped
+    end
+  end
+end
