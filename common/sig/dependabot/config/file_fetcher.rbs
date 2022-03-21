@@ -1,0 +1,17 @@
+module Dependabot
+  module Config
+    class FileFetcher < Dependabot::FileFetchers::Base
+      CONFIG_FILE_PATHS: untyped
+
+      def self.required_files_in?: (untyped filenames) -> untyped
+
+      def self.required_files_message: () -> ::String
+
+      def config_file: () -> untyped
+
+      private
+
+      def fetch_files: () -> untyped
+    end
+  end
+end

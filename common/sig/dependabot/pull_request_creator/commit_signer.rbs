@@ -1,0 +1,23 @@
+module Dependabot
+  class PullRequestCreator
+    class CommitSigner
+      attr_reader author_details: untyped
+
+      attr_reader commit_message: untyped
+
+      attr_reader tree_sha: untyped
+
+      attr_reader parent_sha: untyped
+
+      attr_reader signature_key: untyped
+
+      def initialize: (author_details: untyped author_details, commit_message: untyped commit_message, tree_sha: untyped tree_sha, parent_sha: untyped parent_sha, signature_key: untyped signature_key) -> void
+
+      def signature: () -> untyped
+
+      private
+
+      def commit_object: () -> untyped
+    end
+  end
+end

@@ -1,0 +1,45 @@
+module Dependabot
+  module MetadataFinders
+    class Base
+      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES: untyped
+
+      attr_reader dependency: untyped
+
+      attr_reader credentials: untyped
+
+      def initialize: (dependency: untyped dependency, credentials: untyped credentials) -> void
+
+      def source_url: () -> untyped
+
+      def homepage_url: () -> untyped
+
+      def changelog_url: () -> untyped
+
+      def changelog_text: () -> untyped
+
+      def upgrade_guide_url: () -> untyped
+
+      def upgrade_guide_text: () -> untyped
+
+      def releases_url: () -> untyped
+
+      def releases_text: () -> untyped
+
+      def commits_url: () -> untyped
+
+      def commits: () -> untyped
+
+      def maintainer_changes: () -> nil
+
+      private
+
+      def suggested_changelog_url: () -> nil
+
+      def source: () -> untyped
+
+      def look_up_source: () -> untyped
+
+      def reliable_source_directory?: () -> untyped
+    end
+  end
+end

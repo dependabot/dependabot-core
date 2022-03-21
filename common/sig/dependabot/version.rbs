@@ -1,0 +1,3 @@
+module Dependabot
+  VERSION: ::String
+end

@@ -1,0 +1,38 @@
+module Dependabot
+  module Config
+    # Filters versions that should not be considered for dependency updates
+    class IgnoreCondition
+      PATCH_VERSION_TYPE: ::String
+
+      MINOR_VERSION_TYPE: ::String
+
+      MAJOR_VERSION_TYPE: ::String
+
+      ALL_VERSIONS: ::String
+
+      attr_reader dependency_name: untyped
+
+      attr_reader versions: untyped
+
+      attr_reader update_types: untyped
+
+      def initialize: (dependency_name: untyped dependency_name, ?versions: untyped? versions, ?update_types: untyped? update_types) -> void
+
+      def ignored_versions: (untyped dependency, untyped security_updates_only) -> (untyped | ::Array[untyped])
+
+      private
+
+      def transformed_update_types: () -> untyped
+
+      def versions_by_type: (untyped dependency) -> (::Array[untyped] | untyped)
+
+      def ignore_patch: (untyped version) -> (::Array[untyped] | ::Array[::String])
+
+      def ignore_minor: (untyped version) -> (::Array[untyped] | ::Array[::String])
+
+      def ignore_major: (untyped version) -> ::Array[untyped]
+
+      def rubygems_compatible?: (untyped version) -> (::FalseClass | untyped)
+    end
+  end
+end

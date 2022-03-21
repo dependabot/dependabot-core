@@ -1,0 +1,71 @@
+module Dependabot
+  module MetadataFinders
+    class Base
+      class ReleaseFinder
+        attr_reader dependency: untyped
+
+        attr_reader credentials: untyped
+
+        attr_reader source: untyped
+
+        def initialize: (source: untyped source, dependency: untyped dependency, credentials: untyped credentials) -> void
+
+        def releases_url: () -> (nil | untyped)
+
+        def releases_text: () -> (nil | untyped)
+
+        private
+
+        def all_dep_releases: () -> untyped
+
+        def all_releases: () -> untyped
+
+        def relevant_releases: () -> (::Array[untyped] | untyped)
+
+        def releases_since_previous_version: () -> untyped
+
+        def filter_releases_using_previous_release: (untyped releases) -> untyped
+
+        def filter_releases_using_updated_release: (untyped releases) -> untyped
+
+        def filter_releases_using_previous_version: (untyped releases, conservative: untyped conservative) -> untyped
+
+        def filter_releases_using_updated_version: (untyped releases, conservative: untyped conservative) -> untyped
+
+        def updated_release: () -> untyped
+
+        def previous_release: () -> untyped
+
+        def release_for_version: (untyped version) -> (nil | untyped)
+
+        def serialize_release: (untyped release) -> untyped
+
+        def release_body_includes_title?: (untyped release) -> untyped
+
+        def version_regex: (untyped version) -> ::Regexp
+
+        def version_class: () -> untyped
+
+        def fetch_dependency_releases: () -> (::Array[untyped] | untyped)
+
+        def fetch_github_releases: () -> untyped
+
+        def fetch_gitlab_releases: () -> untyped
+
+        def previous_version: () -> untyped
+
+        def new_version: () -> untyped
+
+        def previous_ref: () -> untyped
+
+        def new_ref: () -> untyped
+
+        def ref_changed?: () -> untyped
+
+        def gitlab_client: () -> untyped
+
+        def github_client: () -> untyped
+      end
+    end
+  end
+end

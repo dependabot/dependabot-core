@@ -1,0 +1,61 @@
+module Dependabot
+  class DependencyFile
+    attr_accessor name: untyped
+
+    attr_accessor content: untyped
+
+    attr_accessor directory: untyped
+
+    attr_accessor type: untyped
+
+    attr_accessor support_file: untyped
+
+    attr_accessor symlink_target: untyped
+
+    attr_accessor content_encoding: untyped
+
+    attr_accessor operation: untyped
+
+    class ContentEncoding
+      UTF_8: ::String
+
+      BASE64: ::String
+    end
+
+    class Operation
+      UPDATE: ::String
+
+      CREATE: ::String
+
+      DELETE: ::String
+    end
+
+    def initialize: (name: untyped name, content: untyped content, ?directory: ::String directory, ?type: ::String `type`, ?support_file: bool support_file, ?symlink_target: untyped? symlink_target, ?content_encoding: untyped content_encoding, ?deleted: bool deleted, ?operation: untyped operation) -> void
+
+    def to_h: () -> untyped
+
+    def path: () -> untyped
+
+    def ==: (untyped other) -> (::FalseClass | untyped)
+
+    def hash: () -> untyped
+
+    def eql?: (untyped other) -> untyped
+
+    def support_file?: () -> untyped
+
+    def deleted: () -> untyped
+
+    def deleted=: (untyped deleted) -> untyped
+
+    def deleted?: () -> untyped
+
+    def binary?: () -> untyped
+
+    def decoded_content: () -> untyped
+
+    private
+
+    def clean_directory: (untyped directory) -> untyped
+  end
+end

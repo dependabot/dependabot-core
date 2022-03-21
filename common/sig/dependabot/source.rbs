@@ -1,0 +1,57 @@
+module Dependabot
+  class Source
+    GITHUB_SOURCE: untyped
+
+    GITHUB_ENTERPRISE_SOURCE: untyped
+
+    GITLAB_SOURCE: untyped
+
+    BITBUCKET_SOURCE: untyped
+
+    AZURE_SOURCE: untyped
+
+    CODECOMMIT_SOURCE: untyped
+
+    SOURCE_REGEX: untyped
+
+    IGNORED_PROVIDER_HOSTS: untyped
+
+    attr_accessor provider: untyped
+
+    attr_accessor repo: untyped
+
+    attr_accessor directory: untyped
+
+    attr_accessor branch: untyped
+
+    attr_accessor commit: untyped
+
+    attr_accessor hostname: untyped
+
+    attr_accessor api_endpoint: untyped
+
+    def self.from_url: (untyped url_string) -> untyped
+
+    def self.github_enterprise_from_url: (untyped url_string) -> (nil | untyped)
+
+    def self.github_enterprise?: (untyped base_url) -> untyped
+
+    def initialize: (provider: untyped provider, repo: untyped repo, ?directory: untyped? directory, ?branch: untyped? branch, ?commit: untyped? commit, ?hostname: untyped? hostname, ?api_endpoint: untyped? api_endpoint) -> void
+
+    def url: () -> untyped
+
+    def url_with_directory: () -> untyped
+
+    def organization: () -> untyped
+
+    def project: () -> untyped
+
+    def unscoped_repo: () -> untyped
+
+    private
+
+    def default_hostname: (untyped provider) -> untyped
+
+    def default_api_endpoint: (untyped provider) -> untyped
+  end
+end

@@ -1,0 +1,110 @@
+module Dependabot
+  class PullRequestCreator
+    # Dependabot programmatically creates PRs which often include a large
+    # number of links to objects on `github.com`. GitHub hydrates these into
+    # rich links that leave a 'mention' on target Issues/Pull Requests.
+    #
+    # Due to the volume and nature of Dependabot PRs, these mentions are not
+    # useful and can overwhelm maintainers, so we use a redirection service
+    # to avoid enrichment.
+    #
+    # If you wish to disable this behaviour when using Dependabot Core directly,
+    # pass a nil value when initialising this class.
+    DEFAULT_GITHUB_REDIRECTION_SERVICE: ::String
+
+    class RepoNotFound < StandardError
+    end
+
+    class RepoArchived < StandardError
+    end
+
+    class RepoDisabled < StandardError
+    end
+
+    class NoHistoryInCommon < StandardError
+    end
+
+    # AnnotationError is raised if a PR was created, but failed annotation
+    class AnnotationError < StandardError
+      attr_reader cause: untyped
+
+      attr_reader pull_request: untyped
+
+      def initialize: (untyped cause, untyped pull_request) -> void
+    end
+
+    attr_reader source: untyped
+
+    attr_reader dependencies: untyped
+
+    attr_reader files: untyped
+
+    attr_reader base_commit: untyped
+
+    attr_reader credentials: untyped
+
+    attr_reader pr_message_header: untyped
+
+    attr_reader pr_message_footer: untyped
+
+    attr_reader custom_labels: untyped
+
+    attr_reader author_details: untyped
+
+    attr_reader signature_key: untyped
+
+    attr_reader commit_message_options: untyped
+
+    attr_reader vulnerabilities_fixed: untyped
+
+    attr_reader reviewers: untyped
+
+    attr_reader assignees: untyped
+
+    attr_reader milestone: untyped
+
+    attr_reader branch_name_separator: untyped
+
+    attr_reader branch_name_prefix: untyped
+
+    attr_reader github_redirection_service: untyped
+
+    attr_reader custom_headers: untyped
+
+    attr_reader provider_metadata: untyped
+
+    def initialize: (source: untyped source, base_commit: untyped base_commit, dependencies: untyped dependencies, files: untyped files, credentials: untyped credentials, ?pr_message_header: untyped? pr_message_header, ?pr_message_footer: untyped? pr_message_footer, ?custom_labels: untyped? custom_labels, ?author_details: untyped? author_details, ?signature_key: untyped? signature_key, ?commit_message_options: ::Hash[untyped, untyped] commit_message_options, ?vulnerabilities_fixed: ::Hash[untyped, untyped] vulnerabilities_fixed, ?reviewers: untyped? reviewers, ?assignees: untyped? assignees, ?milestone: untyped? milestone, ?branch_name_separator: ::String branch_name_separator, ?branch_name_prefix: ::String branch_name_prefix, ?label_language: bool label_language, ?automerge_candidate: bool automerge_candidate, ?github_redirection_service: untyped github_redirection_service, ?custom_headers: untyped? custom_headers, ?require_up_to_date_base: bool require_up_to_date_base, ?provider_metadata: ::Hash[untyped, untyped] provider_metadata, ?message: untyped? message) -> void
+
+    def check_dependencies_have_previous_version: () -> (nil | untyped)
+
+    def create: () -> untyped
+
+    private
+
+    def label_language?: () -> untyped
+
+    def automerge_candidate?: () -> untyped
+
+    def require_up_to_date_base?: () -> untyped
+
+    def github_creator: () -> untyped
+
+    def gitlab_creator: () -> untyped
+
+    def azure_creator: () -> untyped
+
+    def bitbucket_creator: () -> untyped
+
+    def codecommit_creator: () -> untyped
+
+    def message: () -> untyped
+
+    def branch_namer: () -> untyped
+
+    def labeler: () -> untyped
+
+    def includes_security_fixes?: () -> untyped
+
+    def requirements_changed?: (untyped dependency) -> untyped
+  end
+end

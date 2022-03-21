@@ -1,0 +1,59 @@
+module Dependabot
+  class Dependency
+    def self.production_check_for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register_production_check: (untyped package_manager, untyped production_check) -> untyped
+
+    def self.display_name_builder_for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register_display_name_builder: (untyped package_manager, untyped name_builder) -> untyped
+
+    def self.name_normaliser_for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register_name_normaliser: (untyped package_manager, untyped name_builder) -> untyped
+
+    attr_reader name: untyped
+
+    attr_reader version: untyped
+
+    attr_reader requirements: untyped
+
+    attr_reader package_manager: untyped
+
+    attr_reader previous_version: untyped
+
+    attr_reader previous_requirements: untyped
+
+    attr_reader subdependency_metadata: untyped
+
+    def initialize: (name: untyped name, requirements: untyped requirements, package_manager: untyped package_manager, ?version: untyped? version, ?previous_version: untyped? previous_version, ?previous_requirements: untyped? previous_requirements, ?subdependency_metadata: untyped subdependency_metadata) -> void
+
+    def top_level?: () -> untyped
+
+    def to_h: () -> untyped
+
+    def appears_in_lockfile?: () -> untyped
+
+    def production?: () -> untyped
+
+    def subdependency_production_check: () -> untyped
+
+    def display_name: () -> untyped
+
+    def ==: (untyped other) -> untyped
+
+    def hash: () -> untyped
+
+    def eql?: (untyped other) -> untyped
+
+    private
+
+    def check_values: () -> untyped
+
+    def check_requirement_fields: () -> (nil | untyped)
+
+    def check_subdependency_metadata: () -> (nil | untyped)
+
+    def symbolize_keys: (untyped hash) -> untyped
+  end
+end

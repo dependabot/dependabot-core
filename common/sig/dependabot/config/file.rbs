@@ -1,0 +1,25 @@
+module Dependabot
+  module Config
+    # Configuration for the repository, a parsed dependabot.yaml.
+    class File
+      attr_reader updates: untyped
+
+      attr_reader registries: untyped
+
+      def initialize: (updates: untyped updates, ?registries: untyped? registries) -> void
+
+      def update_config: (untyped package_manager, ?directory: untyped? directory, ?target_branch: untyped? target_branch) -> untyped
+
+      # Parse the YAML config file
+      def self.parse: (untyped config) -> untyped
+
+      private
+
+      PACKAGE_MANAGER_LOOKUP: untyped
+
+      def ignore_conditions: (untyped cfg) -> untyped
+
+      def commit_message_options: (untyped cfg) -> untyped
+    end
+  end
+end

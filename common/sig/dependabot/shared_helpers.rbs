@@ -1,0 +1,57 @@
+module Dependabot
+  module SharedHelpers
+    GIT_CONFIG_GLOBAL_PATH: untyped
+
+    USER_AGENT: ::String
+
+    SIGKILL: ::Integer
+
+    def self.in_a_temporary_repo_directory: (?::String directory, ?untyped? repo_contents_path) { (untyped) -> untyped } -> untyped
+
+    def self.in_a_temporary_directory: (?::String directory) { (untyped) -> untyped } -> untyped
+
+    class HelperSubprocessFailed < Dependabot::DependabotError
+      attr_reader error_class: untyped
+
+      attr_reader error_context: untyped
+
+      attr_reader trace: untyped
+
+      def initialize: (message: untyped message, error_context: untyped error_context, ?error_class: untyped? error_class, ?trace: untyped? trace) -> void
+
+      def raven_context: () -> { fingerprint: ::Array[untyped], extra: untyped }
+    end
+
+    # Escapes all special characters, e.g. = & | <>
+    def self.escape_command: (untyped command) -> untyped
+
+    # rubocop:disable Metrics/MethodLength
+    def self.run_helper_subprocess: (command: untyped command, function: untyped function, args: untyped args, ?env: untyped? env, ?stderr_to_stdout: bool stderr_to_stdout, ?allow_unsafe_shell_command: bool allow_unsafe_shell_command) -> untyped
+
+    def self.excon_middleware: () -> untyped
+
+    def self.excon_headers: (?untyped? headers) -> untyped
+
+    def self.excon_defaults: (?untyped? options) -> untyped
+
+    def self.with_git_configured: (credentials: untyped credentials) { () -> untyped } -> untyped
+
+    def self.credential_helper_path: () -> untyped
+
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/PerceivedComplexity
+    def self.configure_git_to_use_https_with_credentials: (untyped credentials) -> untyped
+
+    def self.configure_git_to_use_https: (untyped host) -> untyped
+
+    def self.reset_git_repo: (untyped path) -> untyped
+
+    def self.stash_global_git_config: () -> (nil | untyped)
+
+    def self.reset_global_git_config: (untyped backup_path) -> (nil | untyped)
+
+    def self.run_shell_command: (untyped command, ?allow_unsafe_shell_command: bool allow_unsafe_shell_command, ?env: ::Hash[untyped, untyped] env) -> untyped
+
+    def self.helper_subprocess_bash_command: (command: untyped command, stdin_data: untyped stdin_data, env: untyped env) -> ::String
+  end
+end

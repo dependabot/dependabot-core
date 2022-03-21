@@ -1,0 +1,44 @@
+module Dependabot
+  class GitMetadataFetcher
+    KNOWN_HOSTS: untyped
+
+    def initialize: (url: untyped url, credentials: untyped credentials) -> void
+
+    def upload_pack: () -> untyped
+
+    def tags: () -> (::Array[untyped] | untyped)
+
+    def ref_names: () -> untyped
+
+    def head_commit_for_ref: (untyped ref) -> untyped
+
+    private
+
+    attr_reader url: untyped
+
+    attr_reader credentials: untyped
+
+    # rubocop:disable Metrics/PerceivedComplexity
+    def fetch_upload_pack_for: (untyped uri) -> untyped
+
+    def fetch_raw_upload_pack_for: (untyped uri) -> untyped
+
+    def fetch_raw_upload_pack_with_git_for: (untyped uri) -> untyped
+
+    def tags_for_upload_pack: () -> untyped
+
+    def refs_for_upload_pack: () -> untyped
+
+    def parse_refs_for_upload_pack: () -> untyped
+
+    def service_pack_uri: (untyped uri) -> untyped
+
+    def uri_with_auth: (untyped uri) -> untyped
+
+    def scheme_for_uri: (untyped uri) -> untyped
+
+    def sha_for_update_pack_line: (untyped line) -> untyped
+
+    def excon_defaults: () -> untyped
+  end
+end

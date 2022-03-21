@@ -1,0 +1,103 @@
+module Dependabot
+  class PullRequestCreator
+    # rubocop:disable Metrics/ClassLength
+    class Github
+      MAX_PR_DESCRIPTION_LENGTH: ::Integer
+
+      attr_reader source: untyped
+
+      attr_reader branch_name: untyped
+
+      attr_reader base_commit: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader files: untyped
+
+      attr_reader pr_description: untyped
+
+      attr_reader pr_name: untyped
+
+      attr_reader commit_message: untyped
+
+      attr_reader author_details: untyped
+
+      attr_reader signature_key: untyped
+
+      attr_reader custom_headers: untyped
+
+      attr_reader labeler: untyped
+
+      attr_reader reviewers: untyped
+
+      attr_reader assignees: untyped
+
+      attr_reader milestone: untyped
+
+      def initialize: (source: untyped source, branch_name: untyped branch_name, base_commit: untyped base_commit, credentials: untyped credentials, files: untyped files, commit_message: untyped commit_message, pr_description: untyped pr_description, pr_name: untyped pr_name, author_details: untyped author_details, signature_key: untyped signature_key, custom_headers: untyped custom_headers, labeler: untyped labeler, reviewers: untyped reviewers, assignees: untyped assignees, milestone: untyped milestone, require_up_to_date_base: untyped require_up_to_date_base) -> void
+
+      def create: () -> untyped
+
+      private
+
+      def require_up_to_date_base?: () -> untyped
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      def branch_exists?: (untyped name) -> untyped
+
+      def unmerged_pull_request_exists?: () -> untyped
+
+      def pull_requests_for_branch: () -> untyped
+
+      def base_commit_is_up_to_date?: () -> untyped
+
+      def create_annotated_pull_request: () -> (nil | untyped)
+
+      def repo_exists?: () -> untyped
+
+      def create_commit: () -> untyped
+
+      def commit_options: (untyped tree) -> untyped
+
+      def create_tree: () -> untyped
+
+      def create_or_update_branch: (untyped commit) -> untyped
+
+      def create_branch: (untyped commit) -> (nil | untyped)
+
+      def update_branch: (untyped commit) -> untyped
+
+      def annotate_pull_request: (untyped pull_request) -> untyped
+
+      def add_reviewers_to_pull_request: (untyped pull_request) -> untyped
+
+      def invalid_reviewer?: (untyped message) -> (::TrueClass | ::FalseClass)
+
+      def comment_with_invalid_reviewer: (untyped pull_request, untyped message) -> untyped
+
+      def add_assignees_to_pull_request: (untyped pull_request) -> untyped
+
+      def add_milestone_to_pull_request: (untyped pull_request) -> untyped
+
+      def create_pull_request: () -> untyped
+
+      def handle_pr_creation_error: (untyped error) -> (nil | untyped)
+
+      def target_branch: () -> untyped
+
+      def default_branch: () -> untyped
+
+      def git_metadata_fetcher: () -> untyped
+
+      def commit_signature: (untyped tree, untyped author_details_with_date) -> untyped
+
+      def raise_or_increment_retry_counter: (counter: untyped counter, limit: untyped limit) -> untyped
+
+      def github_client_for_source: () -> untyped
+
+      def handle_error: (untyped err) -> untyped
+
+      def raise_custom_error: (untyped base_err, untyped `type`, untyped message) -> untyped
+    end
+  end
+end

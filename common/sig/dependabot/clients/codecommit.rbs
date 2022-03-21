@@ -1,0 +1,43 @@
+module Dependabot
+  module Clients
+    class CodeCommit
+      class NotFound < StandardError
+      end
+
+      def self.for_source: (source: untyped source, credentials: untyped credentials) -> untyped
+
+      def initialize: (untyped source, untyped credentials) -> void
+
+      def fetch_commit: (untyped repo, untyped branch) -> untyped
+
+      def fetch_default_branch: (untyped repo) -> untyped
+
+      def fetch_repo_contents: (untyped repo, ?untyped? commit, ?untyped? path) -> untyped
+
+      def fetch_file_contents: (untyped repo, untyped commit, untyped path) -> untyped
+
+      def branch: (untyped branch_name) -> untyped
+
+      # work around b/c codecommit doesn't have a 'get all commits' api..
+      def fetch_commits: (untyped repo, untyped branch_name, untyped result_count) -> untyped
+
+      def commits: (untyped repo, ?untyped branch_name) -> untyped
+
+      def pull_requests: (untyped repo, untyped state, untyped branch) -> untyped
+
+      def create_branch: (untyped repo, untyped branch_name, untyped commit_id) -> untyped
+
+      def create_commit: (untyped branch_name, untyped author_name, untyped base_commit, untyped commit_message, untyped files) -> untyped
+
+      def create_pull_request: (untyped pr_name, untyped target_branch, untyped source_branch, untyped pr_description) -> untyped
+
+      private
+
+      attr_reader credentials: untyped
+
+      attr_reader source: untyped
+
+      attr_reader cc_client: untyped
+    end
+  end
+end

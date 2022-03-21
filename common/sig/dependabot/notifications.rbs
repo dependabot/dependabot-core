@@ -1,0 +1,9 @@
+module Dependabot
+  module Notifications
+    FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED: ::String
+  end
+
+  def self.instrument: (untyped name, ?::Hash[untyped, untyped] payload) -> untyped
+
+  def self.subscribe: (?untyped? pattern, ?untyped? callback) { () -> untyped } -> untyped
+end

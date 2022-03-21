@@ -1,0 +1,36 @@
+module Dependabot
+  class PullRequestUpdater
+    class BranchProtected < StandardError
+    end
+
+    attr_reader source: untyped
+
+    attr_reader files: untyped
+
+    attr_reader base_commit: untyped
+
+    attr_reader old_commit: untyped
+
+    attr_reader credentials: untyped
+
+    attr_reader pull_request_number: untyped
+
+    attr_reader author_details: untyped
+
+    attr_reader signature_key: untyped
+
+    attr_reader provider_metadata: untyped
+
+    def initialize: (source: untyped source, base_commit: untyped base_commit, old_commit: untyped old_commit, files: untyped files, credentials: untyped credentials, pull_request_number: untyped pull_request_number, ?author_details: untyped? author_details, ?signature_key: untyped? signature_key, ?provider_metadata: ::Hash[untyped, untyped] provider_metadata) -> void
+
+    def update: () -> untyped
+
+    private
+
+    def github_updater: () -> untyped
+
+    def gitlab_updater: () -> untyped
+
+    def azure_updater: () -> untyped
+  end
+end

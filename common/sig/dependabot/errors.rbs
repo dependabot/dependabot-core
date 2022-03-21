@@ -1,0 +1,132 @@
+module Dependabot
+  class DependabotError < StandardError
+    BASIC_AUTH_REGEX: untyped
+
+    # Remove any path segment from fury.io sources
+    FURY_IO_PATH_REGEX: untyped
+
+    def initialize: (?untyped? message) -> void
+
+    private
+
+    def sanitize_message: (untyped message) -> untyped
+
+    def filter_sensitive_data: (untyped message) -> untyped
+
+    def sanitize_source: (untyped source) -> untyped
+
+    def replace_capture_groups: (untyped string, untyped regex, untyped replacement) -> untyped
+  end
+
+  class OutOfDisk < DependabotError
+  end
+
+  class OutOfMemory < DependabotError
+  end
+
+  class NotImplemented < DependabotError
+  end
+
+  class BranchNotFound < DependabotError
+    attr_reader branch_name: untyped
+
+    def initialize: (untyped branch_name, ?untyped? msg) -> void
+  end
+
+  class RepoNotFound < DependabotError
+    attr_reader source: untyped
+
+    def initialize: (untyped source, ?untyped? msg) -> void
+  end
+
+  class DependencyFileNotFound < DependabotError
+    attr_reader file_path: untyped
+
+    def initialize: (untyped file_path, ?untyped? msg) -> void
+
+    def file_name: () -> untyped
+
+    def directory: () -> untyped
+  end
+
+  class DependencyFileNotParseable < DependabotError
+    attr_reader file_path: untyped
+
+    def initialize: (untyped file_path, ?untyped? msg) -> void
+
+    def file_name: () -> untyped
+
+    def directory: () -> untyped
+  end
+
+  class DependencyFileNotEvaluatable < DependabotError
+  end
+
+  class DependencyFileNotResolvable < DependabotError
+  end
+
+  class PrivateSourceAuthenticationFailure < DependabotError
+    attr_reader source: untyped
+
+    def initialize: (untyped source) -> void
+  end
+
+  class PrivateSourceTimedOut < DependabotError
+    attr_reader source: untyped
+
+    def initialize: (untyped source) -> void
+  end
+
+  class PrivateSourceCertificateFailure < DependabotError
+    attr_reader source: untyped
+
+    def initialize: (untyped source) -> void
+  end
+
+  class MissingEnvironmentVariable < DependabotError
+    attr_reader environment_variable: untyped
+
+    def initialize: (untyped environment_variable) -> void
+  end
+
+  # Useful for JS file updaters, where the registry API sometimes returns
+  # different results to the actual update process
+  class InconsistentRegistryResponse < DependabotError
+  end
+
+  class GitDependenciesNotReachable < DependabotError
+    attr_reader dependency_urls: untyped
+
+    def initialize: (*untyped dependency_urls) -> void
+  end
+
+  class GitDependencyReferenceNotFound < DependabotError
+    attr_reader dependency: untyped
+
+    def initialize: (untyped dependency) -> void
+  end
+
+  class PathDependenciesNotReachable < DependabotError
+    attr_reader dependencies: untyped
+
+    def initialize: (*untyped dependencies) -> void
+  end
+
+  class GoModulePathMismatch < DependabotError
+    attr_reader go_mod: untyped
+
+    attr_reader declared_path: untyped
+
+    attr_reader discovered_path: untyped
+
+    def initialize: (untyped go_mod, untyped declared_path, untyped discovered_path) -> void
+  end
+
+  # Raised by UpdateChecker if all candidate updates are ignored
+  class AllVersionsIgnored < DependabotError
+  end
+
+  # Raised by FileParser if processing may execute external code in the update context
+  class UnexpectedExternalCode < DependabotError
+  end
+end

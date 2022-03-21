@@ -1,0 +1,21 @@
+# TODO: in due course, these "registries" should live in a wrapper gem, not
+#       dependabot-core.
+module Dependabot
+  module Utils
+    BUMP_TMP_FILE_PREFIX: ::String
+
+    BUMP_TMP_DIR_PATH: ::String
+
+    def self.version_class_for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register_version_class: (untyped package_manager, untyped version_class) -> untyped
+
+    def self.requirement_class_for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register_requirement_class: (untyped package_manager, untyped requirement_class) -> untyped
+
+    def self.always_clone_for_package_manager?: (untyped package_manager) -> untyped
+
+    def self.register_always_clone: (untyped package_manager) -> untyped
+  end
+end

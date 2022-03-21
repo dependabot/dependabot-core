@@ -1,0 +1,5 @@
+module Dependabot
+  def self.logger: () -> untyped
+
+  def self.logger=: (untyped logger) -> untyped
+end

@@ -1,0 +1,23 @@
+module Dependabot
+  module FileUpdaters
+    class VendorUpdater
+      def initialize: (repo_contents_path: untyped repo_contents_path, vendor_dir: untyped vendor_dir) -> void
+
+      # Returns changed files in the vendor/cache folder
+      #
+      # @param base_directory [String] Update config base directory
+      # @return [Array<Dependabot::DependencyFile>]
+      def updated_vendor_cache_files: (base_directory: untyped base_directory) -> (::Array[untyped] | untyped)
+
+      private
+
+      TEXT_ENCODINGS: untyped
+
+      attr_reader repo_contents_path: untyped
+
+      attr_reader vendor_dir: untyped
+
+      def binary_file?: (untyped path) -> (::FalseClass | untyped)
+    end
+  end
+end

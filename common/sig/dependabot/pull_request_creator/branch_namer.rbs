@@ -1,0 +1,58 @@
+module Dependabot
+  class PullRequestCreator
+    class BranchNamer
+      attr_reader dependencies: untyped
+
+      attr_reader files: untyped
+
+      attr_reader target_branch: untyped
+
+      attr_reader separator: untyped
+
+      attr_reader prefix: untyped
+
+      def initialize: (dependencies: untyped dependencies, files: untyped files, target_branch: untyped target_branch, ?separator: ::String separator, ?prefix: ::String prefix) -> void
+
+      def new_branch_name: () -> untyped
+
+      private
+
+      def prefixes: () -> untyped
+
+      def package_manager: () -> untyped
+
+      def updating_a_property?: () -> untyped
+
+      def updating_a_dependency_set?: () -> untyped
+
+      def property_name: () -> untyped
+
+      def dependency_set: () -> untyped
+
+      def branch_version_suffix: () -> untyped
+
+      def sanitized_requirement: (untyped dependency) -> untyped
+
+      def new_version: (untyped dependency) -> untyped
+
+      def previous_ref: (untyped dependency) -> untyped
+
+      def new_ref: (untyped dependency) -> untyped
+
+      def ref_changed?: (untyped dependency) -> untyped
+
+      def new_library_requirement: (untyped dependency) -> untyped
+
+      # TODO: Bring this in line with existing library checks that we do in the
+      # update checkers, which are also overriden by passing an explicit
+      # `requirements_update_strategy`.
+      #
+      # TODO re-use in MessageBuilder
+      def library?: () -> untyped
+
+      def requirements_changed?: (untyped dependency) -> untyped
+
+      def sanitize_ref: (untyped ref) -> untyped
+    end
+  end
+end

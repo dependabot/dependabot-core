@@ -1,0 +1,43 @@
+module Dependabot
+  module MetadataFinders
+    class Base
+      class ChangelogPruner
+        attr_reader dependency: untyped
+
+        attr_reader changelog_text: untyped
+
+        def initialize: (dependency: untyped dependency, changelog_text: untyped changelog_text) -> void
+
+        def includes_new_version?: () -> untyped
+
+        def includes_previous_version?: () -> untyped
+
+        def pruned_text: () -> (nil | untyped)
+
+        private
+
+        def old_version_changelog_line: () -> (nil | untyped)
+
+        def new_version_changelog_line: () -> (nil | untyped)
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def changelog_line_for_version: (untyped version) -> (nil | untyped)
+
+        def changelog_contains_relevant_versions?: () -> (::TrueClass | untyped)
+
+        def versions_in_changelog_headers: () -> untyped
+
+        def new_version: () -> untyped
+
+        def previous_ref: () -> untyped
+
+        def new_ref: () -> untyped
+
+        # TODO: Refactor me so that Composer doesn't need to be special cased
+        def git_source?: () -> (::FalseClass | untyped)
+
+        def version_class: () -> untyped
+      end
+    end
+  end
+end

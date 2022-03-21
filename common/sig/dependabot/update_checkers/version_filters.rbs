@@ -1,0 +1,7 @@
+module Dependabot
+  module UpdateCheckers
+    module VersionFilters
+      def self.filter_vulnerable_versions: (untyped versions_array, untyped security_advisories) -> untyped
+    end
+  end
+end

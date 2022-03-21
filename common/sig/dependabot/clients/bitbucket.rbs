@@ -1,0 +1,73 @@
+module Dependabot
+  module Clients
+    class Bitbucket
+      class NotFound < StandardError
+      end
+
+      class Unauthorized < StandardError
+      end
+
+      class Forbidden < StandardError
+      end
+
+      def self.for_source: (source: untyped source, credentials: untyped credentials) -> untyped
+
+      def initialize: (credentials: untyped credentials) -> void
+
+      def fetch_commit: (untyped repo, untyped branch) -> untyped
+
+      def fetch_default_branch: (untyped repo) -> untyped
+
+      def fetch_repo_contents: (untyped repo, ?untyped? commit, ?untyped? path) -> untyped
+
+      def fetch_file_contents: (untyped repo, untyped commit, untyped path) -> untyped
+
+      def commits: (untyped repo, ?untyped? branch_name) -> untyped
+
+      def branch: (untyped repo, untyped branch_name) -> untyped
+
+      def pull_requests: (untyped repo, untyped source_branch, untyped target_branch) -> untyped
+
+      # rubocop:disable Metrics/ParameterLists
+      def create_commit: (untyped repo, untyped branch_name, untyped base_commit, untyped commit_message, untyped files, untyped author_details) -> untyped
+
+      # rubocop:disable Metrics/ParameterLists
+      def create_pull_request: (untyped repo, untyped pr_name, untyped source_branch, untyped target_branch, untyped pr_description, untyped _labels, ?untyped? _work_item) -> untyped
+
+      def tags: (untyped repo) -> untyped
+
+      def compare: (untyped repo, untyped previous_tag, untyped new_tag) -> untyped
+
+      def get: (untyped url) -> untyped
+
+      def post: (untyped url, untyped body, ?::String content_type) -> untyped
+
+      private
+
+      def auth_header_for: (untyped token) -> (::Hash[untyped, untyped] | ::Hash[::String, ::String])
+
+      def encode_form_parameters: (untyped parameters) -> untyped
+
+      # Takes a hash with optional `values` and `next` fields
+      # Returns an enumerator.
+      #
+      # Can be used a few ways:
+      # With GET:
+      #     paginate ({"next" => url})
+      # or
+      #     paginate(JSON.parse(get(url).body))
+      #
+      # With POST (for endpoints that provide POST methods for long query parameters)
+      #     response = post(url, body)
+      #     first_page = JSON.parse(repsonse.body)
+      #     paginate(first_page)
+      def paginate: (untyped page) -> untyped
+
+      attr_reader auth_header: untyped
+
+      attr_reader credentials: untyped
+
+      def base_url: () -> "https://api.bitbucket.org/2.0/repositories/"
+    end
+  end
+end

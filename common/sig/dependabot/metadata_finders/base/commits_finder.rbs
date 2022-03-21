@@ -1,0 +1,75 @@
+module Dependabot
+  module MetadataFinders
+    class Base
+      class CommitsFinder
+        attr_reader source: untyped
+
+        attr_reader dependency: untyped
+
+        attr_reader credentials: untyped
+
+        def initialize: (source: untyped source, dependency: untyped dependency, credentials: untyped credentials) -> void
+
+        def commits_url: () -> (nil | ::String)
+
+        def commits: () -> (::Array[untyped] | untyped)
+
+        def new_tag: () -> untyped
+
+        private
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def previous_tag: () -> untyped
+
+        def lowest_tag_satisfying_previous_requirements: () -> untyped
+
+        def version_from_tag: (untyped tag) -> (nil | untyped)
+
+        def satisfies_previous_reqs?: (untyped version) -> untyped
+
+        # TODO: Refactor me so that Composer doesn't need to be special cased
+        def git_source?: (untyped requirements) -> (::FalseClass | untyped)
+
+        def ref_changed?: () -> untyped
+
+        def previous_ref: () -> (nil | untyped)
+
+        def new_ref: () -> (nil | untyped)
+
+        def tag_matches_version?: (untyped tag, untyped version) -> (::FalseClass | untyped)
+
+        def dependency_tags: () -> untyped
+
+        def fetch_dependency_tags: () -> untyped
+
+        def github_compare_path: (untyped new_tag, untyped previous_tag) -> untyped
+
+        def bitbucket_compare_path: (untyped new_tag, untyped previous_tag) -> untyped
+
+        def gitlab_compare_path: (untyped new_tag, untyped previous_tag) -> untyped
+
+        def fetch_github_commits: () -> untyped
+
+        def fetch_bitbucket_commits: () -> untyped
+
+        def fetch_gitlab_commits: () -> untyped
+
+        def gitlab_client: () -> untyped
+
+        def github_client: () -> untyped
+
+        def bitbucket_client: () -> untyped
+
+        def part_of_monorepo?: () -> (::FalseClass | untyped)
+
+        def version_class: () -> untyped
+
+        def requirement_class: () -> untyped
+
+        def git_sha?: (untyped version) -> (::FalseClass | untyped)
+
+        def reliable_source_directory?: () -> untyped
+      end
+    end
+  end
+end

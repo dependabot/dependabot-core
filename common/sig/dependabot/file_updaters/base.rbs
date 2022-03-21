@@ -1,0 +1,33 @@
+module Dependabot
+  module FileUpdaters
+    class Base
+      attr_reader dependencies: untyped
+
+      attr_reader dependency_files: untyped
+
+      attr_reader repo_contents_path: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader options: untyped
+
+      def self.updated_files_regex: () -> untyped
+
+      def initialize: (dependencies: untyped dependencies, dependency_files: untyped dependency_files, credentials: untyped credentials, ?repo_contents_path: untyped? repo_contents_path, ?options: ::Hash[untyped, untyped] options) -> void
+
+      def updated_dependency_files: () -> untyped
+
+      private
+
+      def check_required_files: () -> untyped
+
+      def get_original_file: (untyped filename) -> untyped
+
+      def file_changed?: (untyped file) -> untyped
+
+      def requirement_changed?: (untyped file, untyped dependency) -> untyped
+
+      def updated_file: (file: untyped file, content: untyped content) -> untyped
+    end
+  end
+end

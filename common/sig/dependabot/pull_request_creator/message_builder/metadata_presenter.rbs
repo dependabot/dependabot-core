@@ -1,0 +1,61 @@
+module Dependabot
+  class PullRequestCreator
+    class MessageBuilder
+      class MetadataPresenter
+        extend Forwardable
+
+        attr_reader dependency: untyped
+
+        attr_reader source: untyped
+
+        attr_reader metadata_finder: untyped
+
+        attr_reader vulnerabilities_fixed: untyped
+
+        attr_reader github_redirection_service: untyped
+
+        def initialize: (dependency: untyped dependency, source: untyped source, metadata_finder: untyped metadata_finder, vulnerabilities_fixed: untyped vulnerabilities_fixed, github_redirection_service: untyped github_redirection_service) -> void
+
+        def to_s: () -> untyped
+
+        private
+
+        def vulnerabilities_cascade: () -> (::String | untyped)
+
+        def release_cascade: () -> (::String | untyped)
+
+        def changelog_cascade: () -> (::String | untyped)
+
+        def upgrade_guide_cascade: () -> (::String | untyped)
+
+        def commits_cascade: () -> (::String | untyped)
+
+        def maintainer_changes_cascade: () -> (::String | untyped)
+
+        def build_details_tag: (summary: untyped summary, body: untyped body) -> untyped
+
+        def serialized_vulnerability_details: (untyped details) -> untyped
+
+        def vulnerability_source_line: (untyped details) -> untyped
+
+        def vulnerability_version_range_lines: (untyped details) -> untyped
+
+        def link_issues: (text: untyped text) -> untyped
+
+        def fix_relative_links: (text: untyped text, base_url: untyped base_url) -> untyped
+
+        def quote_and_truncate: (untyped text, ?limit: ::Integer limit) -> untyped
+
+        def truncated_line: () -> ::String
+
+        def break_tag: () -> untyped
+
+        def source_provider_supports_html?: () -> untyped
+
+        def sanitize_links_and_mentions: (untyped text, ?unsafe: bool unsafe) -> untyped
+
+        def sanitize_template_tags: (untyped text) -> untyped
+      end
+    end
+  end
+end

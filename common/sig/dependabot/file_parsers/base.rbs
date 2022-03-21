@@ -1,0 +1,25 @@
+module Dependabot
+  module FileParsers
+    class Base
+      attr_reader dependency_files: untyped
+
+      attr_reader repo_contents_path: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader source: untyped
+
+      attr_reader options: untyped
+
+      def initialize: (dependency_files: untyped dependency_files, source: untyped source, ?repo_contents_path: untyped? repo_contents_path, ?credentials: untyped credentials, ?reject_external_code: bool reject_external_code, ?options: ::Hash[untyped, untyped] options) -> void
+
+      def parse: () -> untyped
+
+      private
+
+      def check_required_files: () -> untyped
+
+      def get_original_file: (untyped filename) -> untyped
+    end
+  end
+end

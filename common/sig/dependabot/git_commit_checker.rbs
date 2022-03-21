@@ -1,0 +1,89 @@
+module Dependabot
+  class GitCommitChecker
+    VERSION_REGEX: untyped
+
+    def initialize: (dependency: untyped dependency, credentials: untyped credentials, ?ignored_versions: untyped ignored_versions, ?raise_on_ignored: bool raise_on_ignored, ?requirement_class: untyped? requirement_class, ?version_class: untyped? version_class) -> void
+
+    def git_dependency?: () -> (::FalseClass | untyped)
+
+    def pinned?: () -> (::FalseClass | ::TrueClass | untyped)
+
+    def pinned_ref_looks_like_version?: () -> (::FalseClass | untyped)
+
+    def pinned_ref_looks_like_commit_sha?: () -> (::FalseClass | untyped)
+
+    def branch_or_ref_in_release?: (untyped version) -> untyped
+
+    def head_commit_for_current_branch: () -> untyped
+
+    # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/AbcSize
+    def local_tag_for_latest_version: () -> (nil | { tag: untyped, version: untyped, commit_sha: untyped, tag_sha: untyped })
+
+    def current_version: () -> (nil | untyped)
+
+    def filter_lower_versions: (untyped tags) -> untyped
+
+    def local_tag_for_pinned_version: () -> (nil | untyped)
+
+    def git_repo_reachable?: () -> untyped
+
+    private
+
+    attr_reader dependency: untyped
+
+    attr_reader credentials: untyped
+
+    attr_reader ignored_versions: untyped
+
+    def pinned_ref_in_release?: (untyped version) -> (::FalseClass | untyped)
+
+    def branch_behind_release?: (untyped version) -> (::FalseClass | untyped)
+
+    def local_upload_pack: () -> untyped
+
+    def local_tags: () -> untyped
+
+    def commit_included_in_tag?: (tag: untyped tag, commit: untyped commit, ?allow_identical: bool allow_identical) -> untyped
+
+    def github_commit_comparison_status: (untyped ref1, untyped ref2) -> untyped
+
+    def gitlab_commit_comparison_status: (untyped ref1, untyped ref2) -> untyped
+
+    def bitbucket_commit_comparison_status: (untyped ref1, untyped ref2) -> untyped
+
+    def dependency_source_details: () -> untyped
+
+    def ref_or_branch: () -> untyped
+
+    def version_tag?: (untyped tag) -> untyped
+
+    def matches_existing_prefix?: (untyped tag) -> (::TrueClass | untyped)
+
+    def listing_source_url: () -> untyped
+
+    def listing_source_repo: () -> (nil | untyped)
+
+    def listing_tag_for_version: (untyped version) -> untyped
+
+    def listing_tags: () -> untyped
+
+    def listing_upload_pack: () -> (nil | untyped)
+
+    def ignore_requirements: () -> untyped
+
+    def wants_prerelease?: () -> (::FalseClass | untyped)
+
+    def tag_included_in_ignore_requirements?: (untyped tag) -> untyped
+
+    def tag_is_prerelease?: (untyped tag) -> untyped
+
+    def version_class: () -> untyped
+
+    def requirement_class: () -> untyped
+
+    def local_repo_git_metadata_fetcher: () -> untyped
+
+    def listing_repo_git_metadata_fetcher: () -> untyped
+  end
+end

@@ -1,0 +1,45 @@
+module Dependabot
+  class PullRequestCreator
+    class Azure
+      attr_reader source: untyped
+
+      attr_reader branch_name: untyped
+
+      attr_reader base_commit: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader files: untyped
+
+      attr_reader commit_message: untyped
+
+      attr_reader pr_description: untyped
+
+      attr_reader pr_name: untyped
+
+      attr_reader author_details: untyped
+
+      attr_reader labeler: untyped
+
+      attr_reader work_item: untyped
+
+      def initialize: (source: untyped source, branch_name: untyped branch_name, base_commit: untyped base_commit, credentials: untyped credentials, files: untyped files, commit_message: untyped commit_message, pr_description: untyped pr_description, pr_name: untyped pr_name, author_details: untyped author_details, labeler: untyped labeler, ?work_item: untyped? work_item) -> void
+
+      def create: () -> (nil | untyped)
+
+      private
+
+      def azure_client_for_source: () -> untyped
+
+      def branch_exists?: () -> untyped
+
+      def pull_request_exists?: () -> untyped
+
+      def create_commit: () -> untyped
+
+      def create_pull_request: () -> untyped
+
+      def default_branch: () -> untyped
+    end
+  end
+end

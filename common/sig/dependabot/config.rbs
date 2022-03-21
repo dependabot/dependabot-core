@@ -1,0 +1,6 @@
+module Dependabot
+  module Config
+    class InvalidConfigError < StandardError
+    end
+  end
+end

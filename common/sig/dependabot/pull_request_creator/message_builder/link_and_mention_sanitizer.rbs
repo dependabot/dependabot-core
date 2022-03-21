@@ -1,0 +1,60 @@
+module Dependabot
+  class PullRequestCreator
+    class MessageBuilder
+      class LinkAndMentionSanitizer
+        GITHUB_USERNAME: untyped
+
+        GITHUB_REF_REGEX: untyped
+
+        MENTION_REGEX: untyped
+
+        # regex to match a team mention on github
+        TEAM_MENTION_REGEX: untyped
+
+        # End of string
+        EOS_REGEX: untyped
+
+        COMMONMARKER_OPTIONS: untyped
+
+        COMMONMARKER_EXTENSIONS: untyped
+
+        attr_reader github_redirection_service: untyped
+
+        def initialize: (github_redirection_service: untyped github_redirection_service) -> void
+
+        def sanitize_links_and_mentions: (text: untyped text, ?unsafe: bool unsafe) -> untyped
+
+        private
+
+        def sanitize_mentions: (untyped doc) -> untyped
+
+        # When we come across something that looks like a team mention (e.g. @dependabot/reviewers),
+        # we replace it with a text node.
+        # This is because there are ecosystems that have packages that follow the same pattern
+        # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
+        # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
+        def sanitize_team_mentions: (untyped doc) -> untyped
+
+        def sanitize_links: (untyped doc) -> untyped
+
+        def replace_github_host: (untyped text) -> untyped
+
+        def build_mention_nodes: (untyped text) -> untyped
+
+        def build_team_mention_nodes: (untyped text) -> untyped
+
+        def build_mention_link_text_nodes: (untyped text) -> ::Array[untyped]
+
+        def create_link_node: (untyped url, untyped text) -> untyped
+
+        # NOTE: Add a zero-width space between the @ and the username to prevent
+        # email replies on dependabot pull requests triggering notifications to
+        # users who've been mentioned in changelogs etc. PR email replies parse
+        # the content of the pull request body in plain text.
+        def insert_zero_width_space_in_mention: (untyped mention) -> untyped
+
+        def parent_node_link?: (untyped node) -> untyped
+      end
+    end
+  end
+end

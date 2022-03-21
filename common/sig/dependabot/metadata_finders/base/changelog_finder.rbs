@@ -1,0 +1,89 @@
+module Dependabot
+  module MetadataFinders
+    class Base
+      class ChangelogFinder
+        # Earlier entries are preferred
+        CHANGELOG_NAMES: untyped
+
+        attr_reader source: untyped
+
+        attr_reader dependency: untyped
+
+        attr_reader credentials: untyped
+
+        attr_reader suggested_changelog_url: untyped
+
+        def initialize: (source: untyped source, dependency: untyped dependency, credentials: untyped credentials, ?suggested_changelog_url: untyped? suggested_changelog_url) -> void
+
+        def changelog_url: () -> untyped
+
+        def changelog_text: () -> (nil | untyped)
+
+        def upgrade_guide_url: () -> untyped
+
+        def upgrade_guide_text: () -> (nil | untyped)
+
+        private
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def changelog: () -> (nil | untyped)
+
+        def changelog_from_suggested_url: () -> untyped
+
+        def default_branch_changelog: () -> (nil | untyped)
+
+        def relevant_tag_changelog: () -> (nil | untyped)
+
+        def changelog_from_ref: (untyped ref) -> untyped
+
+        # rubocop:disable Metrics/PerceivedComplexity
+        def select_best_changelog: (untyped files) -> (untyped | nil)
+
+        def tag_for_new_version: () -> untyped
+
+        def full_changelog_text: () -> (nil | untyped)
+
+        def fetch_file_text: (untyped file) -> (nil | untyped)
+
+        def fetch_github_file: (untyped file) -> untyped
+
+        def fetch_gitlab_file: (untyped file) -> untyped
+
+        def fetch_bitbucket_file: (untyped file) -> untyped
+
+        def upgrade_guide: () -> (nil | untyped)
+
+        def dependency_file_list: (?untyped? ref) -> untyped
+
+        def fetch_dependency_file_list: (untyped ref) -> untyped
+
+        def fetch_github_file_list: (untyped ref) -> untyped
+
+        def fetch_bitbucket_file_list: () -> untyped
+
+        def fetch_gitlab_file_list: () -> untyped
+
+        def new_version: () -> untyped
+
+        def previous_ref: () -> untyped
+
+        def new_ref: () -> untyped
+
+        def ref_changed?: () -> untyped
+
+        # TODO: Refactor me so that Composer doesn't need to be special cased
+        def git_source?: () -> (::FalseClass | untyped)
+
+        def major_version_upgrade?: () -> (::FalseClass | untyped)
+
+        def gitlab_client: () -> untyped
+
+        def github_client: () -> untyped
+
+        def bitbucket_client: () -> untyped
+
+        def default_bitbucket_branch: () -> untyped
+      end
+    end
+  end
+end

@@ -1,0 +1,7 @@
+module Dependabot
+  module FileParsers
+    def self.for_package_manager: (untyped package_manager) -> untyped
+
+    def self.register: (untyped package_manager, untyped file_parser) -> untyped
+  end
+end

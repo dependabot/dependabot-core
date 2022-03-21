@@ -1,0 +1,104 @@
+# rubocop:disable Metrics/ClassLength
+module Dependabot
+  module FileFetchers
+    class Base
+      attr_reader source: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader repo_contents_path: untyped
+
+      CLIENT_NOT_FOUND_ERRORS: untyped
+
+      def self.required_files_in?: (untyped _filename_array) -> untyped
+
+      def self.required_files_message: () -> untyped
+
+      # Creates a new FileFetcher for retrieving `DependencyFile`s.
+      #
+      # Files are typically grabbed individually via the source's API.
+      # repo_contents_path is an optional empty directory that will be used
+      # to clone the entire source repository on first read.
+      #
+      # If provided, file _data_ will be loaded from the clone.
+      # Submodules and directory listings are _not_ currently supported
+      # by repo_contents_path and still use an API trip.
+      def initialize: (source: untyped source, credentials: untyped credentials, ?repo_contents_path: untyped? repo_contents_path) -> void
+
+      def repo: () -> untyped
+
+      def directory: () -> untyped
+
+      def target_branch: () -> untyped
+
+      def files: () -> untyped
+
+      def commit: () -> untyped
+
+      # Returns the path to the cloned repo
+      def clone_repo_contents: () -> untyped
+
+      private
+
+      def fetch_file_if_present: (untyped filename, ?fetch_submodules: bool fetch_submodules) -> untyped
+
+      def load_cloned_file_if_present: (untyped filename) -> untyped
+
+      def fetch_file_from_host: (untyped filename, ?type: ::String `type`, ?fetch_submodules: bool fetch_submodules) -> untyped
+
+      def repo_contents: (?dir: ::String dir, ?ignore_base_directory: bool ignore_base_directory, ?raise_errors: bool raise_errors, ?fetch_submodules: bool fetch_submodules) -> untyped
+
+      def _fetch_repo_contents: (untyped path, ?fetch_submodules: bool fetch_submodules, ?raise_errors: bool raise_errors) -> untyped
+
+      def _fetch_repo_contents_fully_specified: (untyped provider, untyped repo, untyped path, untyped commit) -> untyped
+
+      def _github_repo_contents: (untyped repo, untyped path, untyped commit) -> untyped
+
+      def _cloned_repo_contents: (untyped relative_path) -> (::Array[untyped] | untyped)
+
+      def update_linked_paths: (untyped repo, untyped path, untyped commit, untyped github_response) -> untyped
+
+      def _build_github_file_struct: (untyped file) -> untyped
+
+      def _gitlab_repo_contents: (untyped repo, untyped path, untyped commit) -> untyped
+
+      def _azure_repo_contents: (untyped path, untyped commit) -> untyped
+
+      def _bitbucket_repo_contents: (untyped repo, untyped path, untyped commit) -> untyped
+
+      def _codecommit_repo_contents: (untyped repo, untyped path, untyped commit) -> untyped
+
+      def _full_specification_for: (untyped path, fetch_submodules: untyped fetch_submodules) -> untyped
+
+      def _fetch_file_content: (untyped path, ?fetch_submodules: bool fetch_submodules) -> untyped
+
+      def _fetch_file_content_fully_specified: (untyped provider, untyped repo, untyped path, untyped commit) -> untyped
+
+      # rubocop:disable Metrics/AbcSize
+      def _fetch_file_content_from_github: (untyped path, untyped repo, untyped commit) -> untyped
+
+      def default_branch_for_repo: () -> untyped
+
+      # Update the @linked_paths hash by exploiting a side-effect of
+      # recursively calling `repo_contents` for each directory up the tree
+      # until a submodule or symlink is found
+      def _find_linked_dirs: (untyped path) -> (nil | untyped)
+
+      def _linked_dir_for: (untyped path) -> untyped
+
+      def _clone_repo_contents: (target_directory: untyped target_directory) -> untyped
+
+      def client_for_provider: () -> untyped
+
+      def github_client: () -> untyped
+
+      def gitlab_client: () -> untyped
+
+      def azure_client: () -> untyped
+
+      def bitbucket_client: () -> untyped
+
+      def codecommit_client: () -> untyped
+    end
+  end
+end

@@ -1,0 +1,108 @@
+module Dependabot
+  class PullRequestCreator
+    class PrNamePrefixer
+      ANGULAR_PREFIXES: untyped
+
+      ESLINT_PREFIXES: untyped
+
+      GITMOJI_PREFIXES: untyped
+
+      def initialize: (source: untyped source, dependencies: untyped dependencies, credentials: untyped credentials, ?security_fix: bool security_fix, ?commit_message_options: ::Hash[untyped, untyped] commit_message_options) -> void
+
+      def pr_name_prefix: () -> untyped
+
+      def capitalize_first_word?: () -> untyped
+
+      private
+
+      attr_reader source: untyped
+
+      attr_reader dependencies: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader commit_message_options: untyped
+
+      def security_fix?: () -> untyped
+
+      def commit_prefix: () -> untyped
+
+      def prefix_from_explicitly_provided_details: () -> (nil | untyped)
+
+      def explicitly_provided_prefix_string: () -> untyped
+
+      def prefix_for_last_dependabot_commit_style: () -> untyped
+
+      def security_prefix: () -> (::String | untyped)
+
+      def build_commit_prefix_from_previous_commits: () -> untyped
+
+      def scope: () -> untyped
+
+      def capitalise_first_word_from_last_dependabot_commit_style: () -> untyped
+
+      def capitalise_first_word_from_previous_commits: () -> (::TrueClass | ::FalseClass | untyped)
+
+      def last_dependabot_commit_style: () -> (nil | :gitmoji | :conventional_prefix | :conventional_prefix_with_scope)
+
+      def last_dependabot_commit_prefix: () -> untyped
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      def using_angular_commit_messages?: () -> (::FalseClass | ::TrueClass)
+
+      def using_eslint_commit_messages?: () -> (::FalseClass | untyped)
+
+      def using_prefixed_commit_messages?: () -> (::FalseClass | untyped)
+
+      def angular_commit_prefix: () -> untyped
+
+      def capitalize_angular_commit_prefix?: () -> untyped
+
+      def using_gitmoji_commit_messages?: () -> (::FalseClass | untyped)
+
+      def recent_commit_messages: () -> untyped
+
+      def dependabot_email: () -> "support@dependabot.com"
+
+      def recent_github_commit_messages: () -> untyped
+
+      def recent_gitlab_commit_messages: () -> untyped
+
+      def recent_azure_commit_messages: () -> untyped
+
+      def recent_bitbucket_commit_messages: () -> untyped
+
+      def recent_codecommit_commit_messages: () -> untyped
+
+      def last_dependabot_commit_message: () -> untyped
+
+      def last_github_dependabot_commit_message: () -> untyped
+
+      def recent_github_commits: () -> untyped
+
+      def last_gitlab_dependabot_commit_message: () -> untyped
+
+      def last_azure_dependabot_commit_message: () -> untyped
+
+      def last_bitbucket_dependabot_commit_message: () -> untyped
+
+      def last_codecommit_dependabot_commit_message: () -> untyped
+
+      def azure_commit_author_email: (untyped commit) -> untyped
+
+      def bitbucket_commit_author_email: (untyped commit) -> untyped
+
+      def github_client_for_source: () -> untyped
+
+      def gitlab_client_for_source: () -> untyped
+
+      def azure_client_for_source: () -> untyped
+
+      def bitbucket_client_for_source: () -> untyped
+
+      def codecommit_client_for_source: () -> untyped
+
+      def package_manager: () -> untyped
+    end
+  end
+end

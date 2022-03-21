@@ -1,0 +1,79 @@
+module Dependabot
+  module Clients
+    class Azure
+      class NotFound < StandardError
+      end
+
+      class InternalServerError < StandardError
+      end
+
+      class ServiceNotAvailable < StandardError
+      end
+
+      class BadGateway < StandardError
+      end
+
+      class Unauthorized < StandardError
+      end
+
+      class Forbidden < StandardError
+      end
+
+      class TagsCreationForbidden < StandardError
+      end
+
+      RETRYABLE_ERRORS: untyped
+
+      MAX_PR_DESCRIPTION_LENGTH: ::Integer
+
+      def self.for_source: (source: untyped source, credentials: untyped credentials) -> untyped
+
+      def initialize: (untyped source, untyped credentials, ?max_retries: ::Integer max_retries) -> void
+
+      def fetch_commit: (untyped _repo, untyped branch) -> untyped
+
+      def fetch_default_branch: (untyped _repo) -> untyped
+
+      def fetch_repo_contents: (?untyped? commit, ?untyped? path) -> untyped
+
+      def fetch_repo_contents_treeroot: (?untyped? commit, ?untyped? path) -> untyped
+
+      def fetch_file_contents: (untyped commit, untyped path) -> untyped
+
+      def commits: (?untyped? branch_name) -> untyped
+
+      def branch: (untyped branch_name) -> untyped
+
+      def pull_requests: (untyped source_branch, untyped target_branch) -> untyped
+
+      def create_commit: (untyped branch_name, untyped base_commit, untyped commit_message, untyped files, untyped author_details) -> untyped
+
+      # rubocop:disable Metrics/ParameterLists
+      def create_pull_request: (untyped pr_name, untyped source_branch, untyped target_branch, untyped pr_description, untyped labels, ?untyped? work_item) -> untyped
+
+      def pull_request: (untyped pull_request_id) -> untyped
+
+      def update_ref: (untyped branch_name, untyped old_commit, untyped new_commit) -> untyped
+
+      def get: (untyped url) -> untyped
+
+      def post: (untyped url, untyped json) -> untyped
+
+      private
+
+      def retry_connection_failures: () { () -> untyped } -> untyped
+
+      def auth_header_for: (untyped token) -> (::Hash[untyped, untyped] | untyped)
+
+      def truncate_pr_description: (untyped pr_description) -> untyped
+
+      def tags_creation_forbidden?: (untyped response) -> (nil | untyped)
+
+      attr_reader auth_header: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader source: untyped
+    end
+  end
+end

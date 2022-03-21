@@ -1,0 +1,34 @@
+module Dependabot
+  module Config
+    # Configuration for a single ecosystem
+    class UpdateConfig
+      attr_reader commit_message_options: untyped
+
+      attr_reader ignore_conditions: untyped
+
+      def initialize: (?ignore_conditions: untyped? ignore_conditions, ?commit_message_options: untyped? commit_message_options) -> void
+
+      def ignored_versions_for: (untyped dependency, ?security_updates_only: bool security_updates_only) -> untyped
+
+      def self.wildcard_match?: (untyped wildcard_string, untyped candidate_string) -> (::FalseClass | untyped)
+
+      private
+
+      def name_normaliser_for: (untyped dep) -> untyped
+
+      class CommitMessageOptions
+        attr_reader prefix: untyped
+
+        attr_reader prefix_development: untyped
+
+        attr_reader include: untyped
+
+        def initialize: (prefix: untyped prefix, prefix_development: untyped prefix_development, include: untyped `include`) -> void
+
+        def include_scope?: () -> untyped
+
+        def to_h: () -> { prefix: untyped, prefix_development: untyped, include_scope: untyped }
+      end
+    end
+  end
+end

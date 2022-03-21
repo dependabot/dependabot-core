@@ -1,0 +1,106 @@
+module Dependabot
+  module UpdateCheckers
+    class Base
+      attr_reader dependency: untyped
+
+      attr_reader dependency_files: untyped
+
+      attr_reader repo_contents_path: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader ignored_versions: untyped
+
+      attr_reader raise_on_ignored: untyped
+
+      attr_reader security_advisories: untyped
+
+      attr_reader requirements_update_strategy: untyped
+
+      attr_reader options: untyped
+
+      def initialize: (dependency: untyped dependency, dependency_files: untyped dependency_files, credentials: untyped credentials, ?repo_contents_path: untyped? repo_contents_path, ?ignored_versions: untyped ignored_versions, ?raise_on_ignored: bool raise_on_ignored, ?security_advisories: untyped security_advisories, ?requirements_update_strategy: untyped? requirements_update_strategy, ?options: ::Hash[untyped, untyped] options) -> void
+
+      def up_to_date?: () -> untyped
+
+      def can_update?: (requirements_to_unlock: untyped requirements_to_unlock) -> (::FalseClass | untyped)
+
+      def updated_dependencies: (requirements_to_unlock: untyped requirements_to_unlock) -> (::Array[untyped] | untyped)
+
+      def latest_version: () -> untyped
+
+      def preferred_resolvable_version: () -> untyped
+
+      def latest_resolvable_version: () -> untyped
+
+      # Lowest available security fix version not checking resolvability
+      # @return [Dependabot::<package manager>::Version, #to_s] version class
+      def lowest_security_fix_version: () -> untyped
+
+      def lowest_resolvable_security_fix_version: () -> untyped
+
+      def latest_resolvable_version_with_no_unlock: () -> untyped
+
+      # Finds any dependencies in the lockfile that have a subdependency on the
+      # given dependency that do not satisfy the target_version.
+      # @return [Array<Hash{String => String}]
+      #   name [String] the blocking dependencies name
+      #   version [String] the version of the blocking dependency
+      #   requirement [String] the requirement on the target_dependency
+      def conflicting_dependencies: () -> ::Array[untyped]
+
+      def latest_resolvable_previous_version: (untyped _updated_version) -> untyped
+
+      def updated_requirements: () -> untyped
+
+      def version_class: () -> untyped
+
+      def requirement_class: () -> untyped
+
+      # For some langauges, the manifest file may be constructed such that
+      # Dependabot has no way to update it (e.g., if it fetches its versions
+      # from a web API). This method is overridden in those cases.
+      def requirements_unlocked_or_can_be?: () -> ::TrueClass
+
+      def vulnerable?: () -> (::FalseClass | untyped)
+
+      def ignore_requirements: () -> untyped
+
+      private
+
+      def latest_version_resolvable_with_full_unlock?: () -> untyped
+
+      def updated_dependency_without_unlock: () -> untyped
+
+      def updated_dependency_with_own_req_unlock: () -> untyped
+
+      def updated_dependencies_after_full_unlock: () -> untyped
+
+      def version_up_to_date?: () -> untyped
+
+      def version_can_update?: (requirements_to_unlock: untyped requirements_to_unlock) -> untyped
+
+      def existing_version_is_sha?: () -> (::FalseClass | untyped)
+
+      def sha1_version_up_to_date?: () -> untyped
+
+      def sha1_version_can_update?: (requirements_to_unlock: untyped requirements_to_unlock) -> (::FalseClass | untyped)
+
+      def numeric_version_up_to_date?: () -> (::FalseClass | ::TrueClass | untyped)
+
+      def numeric_version_can_update?: (requirements_to_unlock: untyped requirements_to_unlock) -> (::FalseClass | untyped)
+
+      def preferred_version_resolvable_with_unlock?: () -> (::FalseClass | untyped)
+
+      def requirements_up_to_date?: () -> untyped
+
+      def can_compare_requirements?: () -> untyped
+
+      def changed_requirements: () -> untyped
+
+      def version_from_requirements: () -> untyped
+
+      def requirements_can_update?: () -> (::FalseClass | untyped)
+    end
+  end
+end

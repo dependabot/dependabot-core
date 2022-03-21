@@ -1,0 +1,23 @@
+module Dependabot
+  module Clients
+    class GitlabWithRetries
+      RETRYABLE_ERRORS: untyped
+
+      def self.for_source: (source: untyped source, credentials: untyped credentials) -> untyped
+
+      def self.for_gitlab_dot_com: (credentials: untyped credentials) -> untyped
+
+      def fetch_commit: (untyped repo, untyped branch) -> untyped
+
+      def fetch_default_branch: (untyped repo) -> untyped
+
+      def initialize: (?max_retries: ::Integer max_retries, **untyped args) -> void
+
+      def method_missing: (untyped method_name, *untyped args) { () -> untyped } -> untyped
+
+      def respond_to_missing?: (untyped method_name, ?bool include_private) -> untyped
+
+      def retry_connection_failures: () { () -> untyped } -> untyped
+    end
+  end
+end

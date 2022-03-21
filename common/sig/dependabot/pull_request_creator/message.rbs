@@ -1,0 +1,14 @@
+module Dependabot
+  class PullRequestCreator
+    # Message is a static alternative to MessageBuilder
+    class Message
+      attr_reader commit_message: untyped
+
+      attr_reader pr_name: untyped
+
+      attr_reader pr_message: untyped
+
+      def initialize: (?commit_message: untyped? commit_message, ?pr_name: untyped? pr_name, ?pr_message: untyped? pr_message) -> void
+    end
+  end
+end

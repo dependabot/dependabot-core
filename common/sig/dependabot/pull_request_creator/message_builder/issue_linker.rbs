@@ -1,0 +1,19 @@
+module Dependabot
+  class PullRequestCreator
+    class MessageBuilder
+      class IssueLinker
+        REPO_REGEX: untyped
+
+        TAG_REGEX: untyped
+
+        ISSUE_LINK_REGEXS: untyped
+
+        attr_reader source_url: untyped
+
+        def initialize: (source_url: untyped source_url) -> void
+
+        def link_issues: (text: untyped text) -> untyped
+      end
+    end
+  end
+end

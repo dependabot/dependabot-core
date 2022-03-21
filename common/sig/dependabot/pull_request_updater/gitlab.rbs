@@ -1,0 +1,40 @@
+module Dependabot
+  class PullRequestUpdater
+    class Gitlab
+      attr_reader source: untyped
+
+      attr_reader files: untyped
+
+      attr_reader base_commit: untyped
+
+      attr_reader old_commit: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader pull_request_number: untyped
+
+      attr_reader target_project_id: untyped
+
+      def initialize: (source: untyped source, base_commit: untyped base_commit, old_commit: untyped old_commit, files: untyped files, credentials: untyped credentials, pull_request_number: untyped pull_request_number, target_project_id: untyped target_project_id) -> void
+
+      def update: () -> (nil | untyped)
+
+      private
+
+      def merge_request_exists?: () -> untyped
+
+      def merge_request: () -> untyped
+
+      def gitlab_client_for_source: () -> untyped
+
+      def branch_exists?: (untyped name) -> untyped
+
+      def commit_being_updated: () -> untyped
+
+      # @param [DependencyFile] file
+      def file_action: (untyped file) -> untyped
+
+      def create_commit: () -> untyped
+    end
+  end
+end

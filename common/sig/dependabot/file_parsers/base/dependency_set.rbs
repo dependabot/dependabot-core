@@ -1,0 +1,23 @@
+module Dependabot
+  module FileParsers
+    class Base
+      class DependencySet
+        def initialize: (?untyped dependencies, ?case_sensitive: bool case_sensitive) -> void
+
+        attr_reader dependencies: untyped
+
+        def <<: (untyped dep) -> untyped
+
+        def +: (untyped other) -> untyped
+
+        private
+
+        def case_sensitive?: () -> untyped
+
+        def dependency_for_name: (untyped name) -> untyped
+
+        def combined_dependency: (untyped old_dep, untyped new_dep) -> untyped
+      end
+    end
+  end
+end

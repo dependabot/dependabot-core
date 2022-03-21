@@ -1,0 +1,37 @@
+module Dependabot
+  class SecurityAdvisory
+    attr_reader dependency_name: untyped
+
+    attr_reader package_manager: untyped
+
+    attr_reader vulnerable_versions: untyped
+
+    attr_reader safe_versions: untyped
+
+    def initialize: (dependency_name: untyped dependency_name, package_manager: untyped package_manager, ?vulnerable_versions: untyped vulnerable_versions, ?safe_versions: untyped safe_versions) -> void
+
+    def vulnerable?: (untyped version) -> (::FalseClass | ::TrueClass | untyped)
+
+    # Check if the advisory is fixed by the updated dependency
+    #
+    # @param dependency [Dependabot::Dependency] Updated dependency
+    # @return [Boolean]
+    def fixed_by?: (untyped dependency) -> (::FalseClass | untyped)
+
+    # Check if the version is affected by the advisory
+    #
+    # @param version [Dependabot::<Package Manager>::Version] version class
+    # @return [Boolean]
+    def affects_version?: (untyped version) -> (::FalseClass | ::TrueClass | untyped)
+
+    private
+
+    def convert_string_version_requirements: () -> untyped
+
+    def check_version_requirements: () -> untyped
+
+    def version_class: () -> untyped
+
+    def requirement_class: () -> untyped
+  end
+end

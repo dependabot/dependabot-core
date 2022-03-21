@@ -1,0 +1,115 @@
+module Dependabot
+  class PullRequestCreator
+    class Labeler
+      DEPENDENCIES_LABEL_REGEX: untyped
+
+      DEFAULT_DEPENDENCIES_LABEL: ::String
+
+      DEFAULT_SECURITY_LABEL: ::String
+
+      attr_reader self.package_manager_labels: untyped
+
+      def self.label_details_for_package_manager: (untyped package_manager) -> untyped
+
+      def self.register_label_details: (untyped package_manager, untyped label_details) -> untyped
+
+      def initialize: (source: untyped source, custom_labels: untyped custom_labels, credentials: untyped credentials, dependencies: untyped dependencies, includes_security_fixes: untyped includes_security_fixes, label_language: untyped label_language, automerge_candidate: untyped automerge_candidate) -> void
+
+      def create_default_labels_if_required: () -> untyped
+
+      def labels_for_pr: () -> untyped
+
+      def label_pull_request: (untyped pull_request_number) -> untyped
+
+      private
+
+      attr_reader source: untyped
+
+      attr_reader custom_labels: untyped
+
+      attr_reader credentials: untyped
+
+      attr_reader dependencies: untyped
+
+      def label_language?: () -> untyped
+
+      def includes_security_fixes?: () -> untyped
+
+      def automerge_candidate?: () -> untyped
+
+      def update_type: () -> (nil | untyped)
+
+      def precision: () -> untyped
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      def version: (untyped dep) -> untyped
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      def previous_version: (untyped dep) -> untyped
+
+      def create_default_dependencies_label_if_required: () -> (nil | untyped)
+
+      def create_default_security_label_if_required: () -> (nil | untyped)
+
+      def create_default_language_label_if_required: () -> (nil | untyped)
+
+      def default_labels_for_pr: () -> untyped
+
+      # Find the exact match first and then fallback to *dependenc* label
+      def default_dependencies_label: () -> untyped
+
+      def dependencies_label_exists?: () -> untyped
+
+      def security_label_exists?: () -> untyped
+
+      # Find the exact match first and then fallback to * security* label
+      def security_label: () -> untyped
+
+      def label_update_type?: () -> (::FalseClass | untyped)
+
+      def semver_label: () -> (nil | untyped)
+
+      def automerge_label: () -> untyped
+
+      def language_label_exists?: () -> untyped
+
+      def language_label: () -> untyped
+
+      def labels: () -> untyped
+
+      def fetch_github_labels: () -> untyped
+
+      def fetch_gitlab_labels: () -> untyped
+
+      def fetch_azure_labels: () -> untyped
+
+      def create_dependencies_label: () -> untyped
+
+      def create_security_label: () -> untyped
+
+      def create_language_label: () -> untyped
+
+      def create_github_dependencies_label: () -> untyped
+
+      def create_gitlab_dependencies_label: () -> untyped
+
+      def create_github_security_label: () -> untyped
+
+      def create_gitlab_security_label: () -> untyped
+
+      def create_github_language_label: () -> untyped
+
+      def default_description_for: (untyped language) -> ::String
+
+      def create_gitlab_language_label: () -> untyped
+
+      def github_client_for_source: () -> untyped
+
+      def gitlab_client_for_source: () -> untyped
+
+      def package_manager: () -> untyped
+
+      def version_class: () -> untyped
+    end
+  end
+end
