@@ -1,6 +1,6 @@
 # Opt in to Rubygems 4 behaviour
 module Gem
   class Version
-    def self.correct?: (untyped version) -> (::FalseClass | untyped)
+    def self.correct?: (self version) -> bool | ...
   end
 end
