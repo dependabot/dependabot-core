@@ -5,7 +5,7 @@ target :lib do
 
   check "lib"
 
-  library "rubygems", "forwardable", "open3", "time"
+  library "rubygems", "forwardable", "time"
 
   # configure_code_diagnostics do |config|
   #   config[Steep::Diagnostic::Ruby::MethodDefinitionMissing] = :hint
