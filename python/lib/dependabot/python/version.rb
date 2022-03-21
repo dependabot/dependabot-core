@@ -10,10 +10,11 @@ require "rubygems_version_patch"
 module Dependabot
   module Python
     class Version < Gem::Version
+      attr_reader :epoch
       attr_reader :local_version
       attr_reader :post_release_version
 
-      VERSION_PATTERN = 'v?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+      VERSION_PATTERN = 'v?([0-9]+!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
@@ -29,6 +30,11 @@ module Dependabot
         version, @local_version = version.split("+")
         version ||= ""
         version = version.gsub(/^v/, "")
+        if version.include?("!")
+          @epoch, version = version.split("!")
+        else
+          @epoch = "0"
+        end
         version = normalise_prerelease(version)
         version, @post_release_version = version.split(/\.r(?=\d)/)
         version ||= ""
@@ -45,12 +51,30 @@ module Dependabot
       end
 
       def <=>(other)
+        epoch_comparison = epoch_comparison(other)
+        return epoch_comparison unless epoch_comparison.zero?
+
         version_comparison = old_comp(other)
         return version_comparison unless version_comparison.zero?
 
-        return post_version_comparison(other) unless post_version_comparison(other).zero?
+        post_version_comparison = post_version_comparison(other)
+        return post_version_comparison unless post_version_comparison.zero?
 
         local_version_comparison(other)
+      end
+
+      def epoch_comparison(other)
+        unless other.is_a?(Python::Version) && other.epoch
+          return epoch.to_i.zero? ? 0 : 1
+        end
+
+        return -1 if epoch.nil?
+
+        # Epoch versions should only ever be a single number, so we can
+        # just string-comparison them.
+        return 0 if epoch.to_i == other.epoch.to_i
+
+        epoch.to_i > other.epoch.to_i ? 1 : -1
       end
 
       def post_version_comparison(other)
