@@ -7,7 +7,7 @@ on:
     branches:
       - "main"
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
 permissions:
   contents: read
   packages: write
@@ -19,25 +19,26 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-        - { path: bundler, name: bundler1 }
-        - { path: bundler, name: bundler2 }
-        - { path: cargo, name: cargo }
-        - { path: common, name: common }
-        - { path: composer, name: composer }
-        - { path: docker, name: docker }
-        - { path: elm, name: elm }
-        - { path: git_submodules, name: git_submodules }
-        - { path: github_actions, name: github_actions }
-        - { path: go_modules, name: go_modules }
-        - { path: gradle, name: gradle }
-        - { path: hex, name: hex }
-        - { path: maven, name: maven }
-        - { path: npm_and_yarn, name: npm_and_yarn }
-        - { path: nuget, name: nuget }
-        - { path: omnibus, name: omnibus }
-        - { path: python, name: python }
-        - { path: python, name: python_slow }
-        - { path: terraform, name: terraform }
+          - { path: bundler, name: bundler1 }
+          - { path: bundler, name: bundler2 }
+          - { path: cargo, name: cargo }
+          - { path: common, name: common }
+          - { path: composer, name: composer }
+          - { path: docker, name: docker }
+          - { path: elm, name: elm }
+          - { path: git_submodules, name: git_submodules }
+          - { path: github_actions, name: github_actions }
+          - { path: go_modules, name: go_modules }
+          - { path: gradle, name: gradle }
+          - { path: hex, name: hex }
+          - { path: maven, name: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn }
+          - { path: nuget, name: nuget }
+          - { path: omnibus, name: omnibus }
+          - { path: python, name: python }
+          - { path: python, name: python_slow }
+          - { path: pub, name: pub }
+          - { path: terraform, name: terraform }
     env:
       BASE_IMAGE: ubuntu:18.04
       CORE_IMAGE: dependabot/dependabot-core
@@ -57,6 +58,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
+            -t "$CORE_IMAGE:latest" \
             -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \

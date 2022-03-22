@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -76,32 +76,32 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.33 --no-document \
+  && gem install bundler -v 2.3.8 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
 
 ### PYTHON
 
-# Install Python 2.7 and 3.9 with pyenv. Using pyenv lets us support multiple Pythons
+# Install Python 3.10 with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.2 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.0 \
-  && pyenv global 3.10.0 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.5 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.3 \
+  && pyenv global 3.10.3 \
   && rm -Rf /tmp/python-build*
 USER root
 
 
 ### JAVASCRIPT
 
-# Install Node 14.0 and npm v7
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+# Install Node 16.0 and npm v8
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v7.21.0 \
+  && npm install -g npm@v8.5.1 \
   && rm -rf ~/.npm
 
 
@@ -119,8 +119,8 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.23 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.2.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -167,8 +167,9 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.5
-ARG GOLANG_CHECKSUM=bd78114b0d441b029c8fe0341f4910370925a4d270a6a590668840675b0c653e
+ARG GOLANG_VERSION=1.18
+# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
+ARG GOLANG_CHECKSUM=e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -184,10 +185,7 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.12.3
 ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
-# This version is currently pinned to OTP 23, due to an issue that we only hit
-# in production, where traffic is routed through a proxy that OTP 24 doesn't
-# play nice with.
-ARG ERLANG_VERSION=1:23.3.4.5-1
+ARG ERLANG_VERSION=1:24.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
@@ -202,26 +200,72 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
 
 ### RUST
 
-# Install Rust 1.51.0
+# Install Rust 1.58.0
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y \
-  && rustup toolchain install 1.51.0 && rustup default 1.51.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
 
 
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.0.11
+ARG TERRAFORM_VERSION=1.1.6
 RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
 RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
   && apt-get update -y \
   && apt-get install -y --no-install-recommends terraform=${TERRAFORM_VERSION} \
   && terraform -help \
   && rm -rf /var/lib/apt/lists/*
+
+
+### DART
+
+# Install Dart
+ENV PUB_CACHE=/opt/dart/pub-cache \
+  PUB_ENVIRONMENT="dependabot" \
+  PATH="${PATH}:/opt/dart/dart-sdk/bin"
+ARG DART_VERSION=2.15.1
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
+  && mkdir -p "$PUB_CACHE" \
+  && chown dependabot:dependabot "$PUB_CACHE" \
+  && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
+  && chmod -R o+rx "/opt/dart/dart-sdk" \
+  && rm "/tmp/dart-sdk.zip" \
+  && dart --version
+# We pull the dependency_services from the dart-lang/pub repo as it is not
+# exposed from the Dart SDK (yet...).
+RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
+  && git -C /opt/dart/pub checkout fbc9732eeeed2c219a84c155f05f5b6222dccd9c \
+  && dart pub global activate --source path /opt/dart/pub \
+  && chmod -R o+r "/opt/dart/pub" \
+  && chown -R dependabot:dependabot "$PUB_CACHE" \
+  && chown -R dependabot:dependabot /opt/dart/pub
+
+# Install Flutter
+ARG FLUTTER_VERSION=2.8.1
+RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
+  && tar xf "/tmp/flutter.xz" -C /opt/dart \
+  && rm "/tmp/flutter.xz" \
+  && chmod -R o+rx "/opt/dart/flutter" \
+  && chown -R dependabot:dependabot "/opt/dart/flutter" \
+  && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version" \
+  # To reduce space usage we delete all of the flutter sdk except the few
+  # things needed for pub resolutions:
+  # * The version file
+  # * The flutter sdk packages.
+  && find "/opt/dart/flutter" \
+    ! -path '/opt/dart/flutter/version' \
+    ! -path '/opt/dart/flutter/packages/*' \
+    ! -path '/opt/dart/flutter/packages' \
+    ! -path '/opt/dart/flutter/bin/cache/pkg/*' \
+    ! -path /opt/dart/flutter/bin/cache/pkg \
+    ! -path /opt/dart/flutter/bin/cache \
+    ! -path /opt/dart/flutter/bin \
+    ! -path /opt/dart/flutter \
+    -delete
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
@@ -237,16 +281,15 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN mkdir -p /opt/bundler/v1 /opt/bundler/v2
-RUN bash /opt/bundler/helpers/v1/build /opt/bundler/v1
-RUN bash /opt/bundler/helpers/v2/build /opt/bundler/v2
-RUN bash /opt/go_modules/helpers/build /opt/go_modules
-RUN bash /opt/hex/helpers/build /opt/hex
-RUN bash /opt/npm_and_yarn/helpers/build /opt/npm_and_yarn
-RUN bash /opt/python/helpers/build /opt/python
-RUN bash /opt/terraform/helpers/build /opt/terraform
-RUN bash /opt/composer/helpers/v1/build /opt/composer/v1
-RUN bash /opt/composer/helpers/v2/build /opt/composer/v2
+RUN bash /opt/bundler/helpers/v1/build
+RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build
+RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/go_modules/helpers/build
+RUN bash /opt/hex/helpers/build
+RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/python/helpers/build
+RUN bash /opt/terraform/helpers/build
 
 ENV HOME="/home/dependabot"
 

@@ -131,7 +131,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
           to raise_error do |error|
             expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
             expect(error.message).
-              to include("version for the requirement `regex = \"=99.0.0\"`")
+              to include("version for the requirement `regex = \"^99.0.0\"`")
           end
       end
 
@@ -232,7 +232,11 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       let(:lockfile_fixture_name) { "blank_version" }
       let(:string_req) { nil }
 
-      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+      it "raises a DependencyFileNotResolvable error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
+          expect(error.message).to include("unexpected end of input while parsing major version")
+        end
+      end
     end
 
     context "with an optional dependency" do
@@ -511,7 +515,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:manifest) do
           Dependabot::DependencyFile.new(
             name: "../../Cargo.toml",
-            content: fixture("manifests", "blank_version"),
+            content: fixture("manifests", "default_run"),
             directory: "/lib/sub_crate"
           )
         end

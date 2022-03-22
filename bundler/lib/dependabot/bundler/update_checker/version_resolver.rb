@@ -139,7 +139,8 @@ module Dependabot
         end
 
         def ruby_lock_error?(error)
-          return false unless error.message.include?(" for gem \"ruby\0\"")
+          return false unless error.message.include?(" for the Ruby\0 version") || # Bundler 2
+                              error.message.include?(" for gem \"ruby\0\"") # Bundler 1
           return false if @gemspec_ruby_unlocked
 
           dependency_files.any? { |f| f.name.end_with?(".gemspec") }

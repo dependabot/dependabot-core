@@ -4,8 +4,8 @@ module Dependabot
   module NpmAndYarn
     module Helpers
       def self.npm_version(lockfile_content)
-        return "npm7" unless lockfile_content
-        return "npm7" if JSON.parse(lockfile_content)["lockfileVersion"] == 2
+        return "npm8" unless lockfile_content
+        return "npm8" if JSON.parse(lockfile_content)["lockfileVersion"] >= 2
 
         "npm6"
       rescue JSON::ParserError

@@ -34,6 +34,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   let(:react_registry_response) do
     fixture("npm_responses", "react.json")
   end
+  let(:opentelemetry_api_registry_listing_url) { "https://registry.npmjs.org/%40opentelemetry%2Fapi" }
+  let(:opentelemetry_api_registry_response) do
+    fixture("npm_responses", "opentelemetry-api.json")
+  end
+  let(:opentelemetry_context_async_hooks_registry_listing_url) do
+    "https://registry.npmjs.org/%40opentelemetry%2Fcontext-async-hooks"
+  end
+  let(:opentelemetry_context_async_hooks_registry_response) do
+    fixture("npm_responses", "opentelemetry-context-async-hooks.json")
+  end
   before do
     stub_request(:get, react_dom_registry_listing_url).
       to_return(status: 200, body: react_dom_registry_response)
@@ -43,6 +53,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       to_return(status: 200, body: react_registry_response)
     stub_request(:get, react_registry_listing_url + "/latest").
       to_return(status: 200, body: "{}")
+    stub_request(:get, opentelemetry_api_registry_listing_url).
+      to_return(status: 200, body: opentelemetry_api_registry_response)
+    stub_request(:get, opentelemetry_context_async_hooks_registry_listing_url).
+      to_return(status: 200, body: opentelemetry_context_async_hooks_registry_response)
   end
 
   let(:credentials) do
@@ -57,9 +71,31 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
 
-    context "with a npm 7 package-lock.json" do
+    context "with an npm 8 package-lock.json using the v3 lockfile format" do
       context "updating a dependency without peer dependency issues" do
-        let(:dependency_files) { project_dependency_files("npm7/package-lock") }
+        let(:dependency_files) { project_dependency_files("npm8/package-lock-v3") }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+    end
+
+    context "with a npm 8 package-lock.json" do
+      context "updating a dependency without peer dependency issues" do
+        let(:dependency_files) { project_dependency_files("npm8/package-lock") }
         let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -79,7 +115,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       describe "updating a dependency with a peer requirement" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -99,7 +135,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       describe "updating a dependency with a peer requirement and some badly written peer dependency requirements" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -122,7 +158,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       describe "updating a dependency with a peer requirement that has (old) peer requirements that aren't included" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_changed") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency_changed") }
         let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -159,7 +195,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
 
       describe "updating a dependency with a peer requirement that previously had the peer dep as a normal dep" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_switch") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency_switch") }
         let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -190,12 +226,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
           ).to_return(status: 200, body: "{}")
         end
 
-        # NOTE: npm 7 automatically installs the peer requirement react and react-dom :tada:
+        # NOTE: npm 8 automatically installs the peer requirement react and react-dom :tada:
         it { is_expected.to eq(Gem::Version.new("2.5.4")) }
       end
 
       describe "updating a dependency that is a peer requirement" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -214,8 +250,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         it { is_expected.to eq(Gem::Version.new("15.6.2")) }
       end
 
+      describe "updating a dependency that is a peer requirement with two semver constraints" do
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency_two_semver_constraints") }
+        let(:latest_allowable_version) { Gem::Version.new("1.1.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@opentelemetry/api",
+            version: "1.0.4",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: ">=1.0.0 <1.1.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
+      end
+
       describe "updating a dependency that is a peer requirement of multiple dependencies" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_multiple") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency_multiple") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -932,8 +988,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it { is_expected.to eq(false) }
     end
 
-    context "npm 7: updating a tightly coupled monorepo dep" do
-      let(:dependency_files) { project_dependency_files("npm7/monorepo_dep_multiple") }
+    context "npm 8: updating a tightly coupled monorepo dep" do
+      let(:dependency_files) { project_dependency_files("npm8/monorepo_dep_multiple") }
       let(:latest_allowable_version) { Gem::Version.new("2.5.21") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -977,8 +1033,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "npm 7: updating a dependency that is a peer requirement" do
-      let(:dependency_files) { project_dependency_files("npm7/peer_dependency_multiple") }
+    context "npm 8: updating a dependency that is a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm8/peer_dependency_multiple") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -997,7 +1053,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       it { is_expected.to eq(true) }
 
       context "of multiple dependencies" do
-        let(:dependency_files) { project_dependency_files("npm7/peer_dependency_multiple") }
+        let(:dependency_files) { project_dependency_files("npm8/peer_dependency_multiple") }
         let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -1033,8 +1089,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "npm 7: updating a dependency with a peer requirement" do
-      let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+    context "npm 8: updating a dependency with a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm8/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -1190,8 +1246,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
-    context "npm 7: updating a dependency that is a peer requirement" do
-      let(:dependency_files) { project_dependency_files("npm7/peer_dependency") }
+    context "npm 8: updating a dependency that is a peer requirement" do
+      let(:dependency_files) { project_dependency_files("npm8/peer_dependency") }
       let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
       let(:dependency) do
         Dependabot::Dependency.new(

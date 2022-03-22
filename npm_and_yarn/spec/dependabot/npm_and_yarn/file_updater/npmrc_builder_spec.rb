@@ -577,7 +577,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
 
         context "with scoped registry configured in npmrc" do
-          let(:dependency_files) { project_dependency_files("npm7/scoped_private_source_with_npmrc") }
+          let(:dependency_files) { project_dependency_files("npm8/scoped_private_source_with_npmrc") }
 
           let(:credentials) do
             [{

@@ -52,6 +52,7 @@ module Dependabot
         "nuget" => "nuget",
         "npm" => "npm_and_yarn",
         "pip" => "pip",
+        "pub" => "pub",
         "terraform" => "terraform"
       }.freeze
 
