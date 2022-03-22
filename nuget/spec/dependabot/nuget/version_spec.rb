@@ -84,6 +84,10 @@ RSpec.describe Dependabot::Nuget::Version do
       "1.0.0-beta-extra-hyphens",
       "1.0.0-rc.1",
       "1.0.0",
+      "1.0.0.1-pre",
+      "1.0.0.1-pre.2",
+      "1.0.0.1",
+      "1.0.0.2",
       "1.1.0"
     ]
     sorted_versions.combination(2).each do |lhs, rhs|
