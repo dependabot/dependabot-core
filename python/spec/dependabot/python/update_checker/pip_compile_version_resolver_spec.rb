@@ -301,7 +301,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         it "raises a helpful error" do
           expect { subject }.
             to raise_error(Dependabot::GitDependencyReferenceNotFound) do |err|
-              expect(err.dependency).to eq("pythonfinder")
+              expect(err.dependency).to eq("v15.1.2")
             end
         end
       end

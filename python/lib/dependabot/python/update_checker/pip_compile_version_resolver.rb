@@ -25,9 +25,9 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone --filter=blob:none -q (?<url>[^\s]+).* /.freeze
+          /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
+          /WARNING:pip\._internal\.vcs\.git:Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
 
@@ -143,9 +143,9 @@ module Dependabot
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
-            raise GitDependencyReferenceNotFound, name
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                  named_captures.fetch("tag")
+            raise GitDependencyReferenceNotFound, tag
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
