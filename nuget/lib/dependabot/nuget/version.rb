@@ -76,7 +76,10 @@ module Dependabot
         split_prerelease_string = prerelease_string.split(".")
         other_split_prerelease_string = other_prerelease_string.split(".")
 
-        split_prerelease_string.zip(other_split_prerelease_string).each do |lhs, rhs|
+        length = [split_prerelease_string.length, other_split_prerelease_string.length].max - 1
+        (0..length).to_a.each do |index|
+          lhs = split_prerelease_string[index]
+          rhs = other_split_prerelease_string[index]
           result = compare_dot_separated_part(lhs, rhs)
           return result unless result.zero?
         end
