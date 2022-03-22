@@ -12,5 +12,6 @@ hex/* @dependabot/erlang-reviewers
 maven/* @dependabot/java-reviewers
 npm_and_yarn/* @dependabot/javascript-reviewers
 nuget/* @dependabot/dotnet-reviewers
+pub/* @dependabot/dart-reviewers
 python/* @dependabot/python-reviewers
 terraform/* @dependabot/terraform-reviewers
