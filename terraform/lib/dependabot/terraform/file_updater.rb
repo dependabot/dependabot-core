@@ -94,6 +94,56 @@ module Dependabot
         end
       end
 
+      # Guess the architecture(s) this terraform project was built with
+      def lookup_hash_architecture
+        new_req = dependency.requirements.first
+
+        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        return unless new_req[:source][:type] == "provider"
+
+        content = lock_file.content.dup
+        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        declaration_regex = lockfile_declaration_regex(provider_source)
+
+        # A terraform hash is an array of strings separated by newlines (/m)
+        # We capture the hashes object from the lockfile dependency
+        hashes_object_regex = /hashes\s*=\s*.*\]/m
+
+        # And set up a positive look ahead to capture the hash string
+        # which is enclosed in quotes
+        hashes_string_regex = /(?<=\").*(?=\")/
+
+        hashes = content.match(declaration_regex).to_s \
+          .match(hashes_object_regex).to_s \
+          .split("\n").map {
+            |hash| hash.match(hashes_string_regex) 
+          } \
+          .compact
+
+        architectures = [
+          "linux_arm64",
+          "linux_amd64",
+          "darwin_amd64",
+          "windows_amd64",
+        ]
+        # look up all the hashes for the current dependency
+        SharedHelpers.in_a_temporary_directory do
+        
+          # Have to fetch these "one at a time" and save them to be able to 
+          # compare which hashes came from which architecture
+          for arch in architectures.each do
+            # save these
+            debugger
+
+            SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color -platform=#{arch}")
+          end
+        end
+      end
+
+      def architecture_type
+        @architecture_type ||= lookup_hash_architecture || "linux_amd64"
+      end
+
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
         return if lock_file.nil?
 
@@ -106,13 +156,18 @@ module Dependabot
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
+        architecture_types = lookup_hash_architecture
+
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           # Update the provider requirements in case the previous requirement doesn't allow the new version
           updated_manifest_files.each { |f| File.write(f.name, f.content) }
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color")
+
+          # This is where we need to set the platform architecture hash type
+          # Something like `terraform providers lock <source> -no-color -platform=linux_amd64`
+          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color -platform=#{architecture_type}")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
