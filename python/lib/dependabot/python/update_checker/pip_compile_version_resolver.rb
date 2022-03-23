@@ -27,7 +27,7 @@ module Dependabot
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          /WARNING:pip\._internal\.vcs\.git:Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
+          /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
 
