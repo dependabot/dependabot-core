@@ -161,7 +161,6 @@ module Dependabot
 
           raise
         end
-
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
