@@ -120,24 +120,58 @@ module Dependabot
           } \
           .compact
 
+
         architectures = [
           "linux_arm64",
           "linux_amd64",
           "darwin_amd64",
           "windows_amd64",
         ]
-        # look up all the hashes for the current dependency
-        SharedHelpers.in_a_temporary_directory do
-        
-          # Have to fetch these "one at a time" and save them to be able to 
-          # compare which hashes came from which architecture
-          for arch in architectures.each do
-            # save these
-            debugger
 
-            SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color -platform=#{arch}")
+        architecture_hashes = {}
+        base_dir = dependency_files.first.directory
+        lockfile_hash_removed = content.sub(hashes_object_regex, "")
+
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          for arch in architectures.each do
+            # Terraform will update the lockfile in place so we should use a fresh lockfile for each lookup
+            File.write(".terraform.lock.hcl", lockfile_hash_removed)
+            SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
+
+            updated_lockfile = File.read(".terraform.lock.hcl")
+            updated_dependency = updated_lockfile.scan(declaration_regex).first
+
+            updated_hashes = updated_dependency.match(hashes_object_regex).to_s \
+              .split("\n").map {
+                |hash| hash.match(hashes_string_regex)
+              }.compact
+
+            architecture_hashes[arch.to_sym] = updated_hashes unless updated_hashes.nil?
+
+            File.delete(".terraform.lock.hcl")
           end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
+          raise if @retrying_lock || !e.message.include?("terraform init")
+
+          # NOTE: Modules need to be installed before terraform can update the
+          # lockfile
+          @retrying_lock = true
+          run_terraform_init
+          retry
         end
+        
+        present_hashes = []
+        # architecture_hashes is populated, now we compare to see which 
+        # architecture(s) is present in the original lockfile
+        architecture_hashes.each do |arch, arch_hash|
+          present_hashes.append(arch) if hashes == arch_hash
+        end
+
+        present_hashes.to_a
       end
 
       def architecture_type
@@ -156,7 +190,7 @@ module Dependabot
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        architecture_types = lookup_hash_architecture
+        architecture = architecture_type
 
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
@@ -165,9 +199,8 @@ module Dependabot
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
-          # This is where we need to set the platform architecture hash type
-          # Something like `terraform providers lock <source> -no-color -platform=linux_amd64`
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color -platform=#{architecture_type}")
+          platforms = architecture.map { |arch| "-platform=#{arch}" }.join(" ")
+          SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
