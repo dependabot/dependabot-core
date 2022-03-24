@@ -143,8 +143,12 @@ module Dependabot
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                  named_captures.fetch("tag")
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            constraints_section = error.message.split("Finding the best candidates:").first
+            egg_regex = /#{Regexp.escape(tag)}#egg=(?<name>\S+)/
+            name_match = constraints_section.scan(egg_regex)
+            raise GitDependencyReferenceNotFound, name_match.first.first if name_match.length == 1
+
             raise GitDependencyReferenceNotFound, tag
           end
 
