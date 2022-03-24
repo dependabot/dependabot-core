@@ -163,12 +163,16 @@ module Dependabot
           run_terraform_init
           retry
         end
-        
+
         present_hashes = []
         # architecture_hashes is populated, now we compare to see which 
         # architecture(s) is present in the original lockfile
-        architecture_hashes.each do |arch, arch_hash|
-          present_hashes.append(arch) if hashes == arch_hash
+        for hash in hashes.map { |h| h.to_s.match(/^h1:/) ? h.to_s : nil }.compact do
+          architecture_hashes.each do |arch, arch_hash|
+            for other_hash in arch_hash.map { |a| a.to_s.match(/^h1:/) ? a.to_s : nil }.compact do
+              present_hashes.append(arch) if hash == other_hash 
+            end
+          end
         end
 
         present_hashes.to_a
