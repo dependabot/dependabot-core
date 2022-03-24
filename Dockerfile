@@ -227,7 +227,7 @@ RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(ls
 ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
-ARG DART_VERSION=2.15.1
+ARG DART_VERSION=2.16.2
 RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
   && mkdir -p "$PUB_CACHE" \
   && chown dependabot:dependabot "$PUB_CACHE" \
@@ -245,7 +245,7 @@ RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
   && chown -R dependabot:dependabot /opt/dart/pub
 
 # Install Flutter
-ARG FLUTTER_VERSION=2.8.1
+ARG FLUTTER_VERSION=2.10.3
 RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
   && tar xf "/tmp/flutter.xz" -C /opt/dart \
   && rm "/tmp/flutter.xz" \
