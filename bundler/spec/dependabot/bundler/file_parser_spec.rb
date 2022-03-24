@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency", :bundler_v2_only do
+      describe "a github dependency" do
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
@@ -220,31 +220,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/business.git",
-              branch: "master",
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:version) do
-          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
-        end
-      end
-
-      describe "a github dependency", :bundler_v1_only do
-        let(:dependency_files) { bundler_project_dependency_files("github_source") }
-
-        subject { dependencies.find { |d| d.name == "business" } }
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "git://github.com/dependabot-fixtures/business.git",
               branch: "master",
               ref: "master"
             },

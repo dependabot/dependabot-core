@@ -1,3 +1,46 @@
+## v0.180.1, 23 March 2022
+
+- Npm: Handle `.tar.gz` extensions for path dependencies [#4889](https://github.com/dependabot/dependabot-core/pull/4889)
+- Update pub dependency_service (@sigurdm) [#4890](https://github.com/dependabot/dependabot-core/pull/4890)
+- fixed a bug and improved testing around NuGet version compare [#4881](https://github.com/dependabot/dependabot-core/pull/4881)
+- Fix Ruby version conflict error detection for new Bundler versions (@deivid-rodriguez) [#4820](https://github.com/dependabot/dependabot-core/pull/4820)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.4.0 to 3.8.0 in /composer/helpers/v2 [#4883](https://github.com/dependabot/dependabot-core/pull/4883)
+- Reenable commented out failing specs (@deivid-rodriguez) [#4882](https://github.com/dependabot/dependabot-core/pull/4882)
+- Update Gitlab approvers logic on pr creation (@andrcuns) [#4747](https://github.com/dependabot/dependabot-core/pull/4747)
+- build(deps): update gitlab requirement from = 4.17.0 to = 4.18.0 in /common [#4872](https://github.com/dependabot/dependabot-core/pull/4872)
+- build(deps-dev): bump phpstan/phpstan from 1.4.2 to 1.4.10 in /composer/helpers/v1 [#4850](https://github.com/dependabot/dependabot-core/pull/4850)
+- Improve file_fetcher for GitHub Actions (@JonasAlfredsson) [#4815](https://github.com/dependabot/dependabot-core/pull/4815)
+- build(deps-dev): bump phpstan/phpstan from 1.4.2 to 1.4.10 in /composer/helpers/v2 [#4849](https://github.com/dependabot/dependabot-core/pull/4849)
+- build(deps): update faraday requirement from = 1.7.0 to = 1.10.0 in /common [#4871](https://github.com/dependabot/dependabot-core/pull/4871)
+- build(deps-dev): update rubocop requirement from ~> 1.23.0 to ~> 1.26.0 in /common [#4870](https://github.com/dependabot/dependabot-core/pull/4870)
+- build(deps): bump composer/composer from 2.2.6 to 2.2.9 in /composer/helpers/v2 [#4861](https://github.com/dependabot/dependabot-core/pull/4861)
+- build(deps-dev): bump prettier from 2.5.1 to 2.6.0 in /npm_and_yarn/helpers [#4880](https://github.com/dependabot/dependabot-core/pull/4880)
+- pub metadata_finder: Fall back to `homepage` if `repository` is not present (@sigurdm) [#4879](https://github.com/dependabot/dependabot-core/pull/4879)
+
+## v0.180.0, 18 March 2022
+
+- Upgrade main Python version to 3.10.3 (@ulgens) [#4874](https://github.com/dependabot/dependabot-core/pull/4874)
+- build(deps): bump @npmcli/arborist from 4.2.1 to 5.0.3 in /npm_and_yarn/helpers [#4877](https://github.com/dependabot/dependabot-core/pull/4877)
+- Modify ENV in a friendlier way during specs (@deivid-rodriguez) [#4865](https://github.com/dependabot/dependabot-core/pull/4865)
+- Bump to `go` `1.18` (@jeffwidman) [#4853](https://github.com/dependabot/dependabot-core/pull/4853)
+- Fix Bundler 1 spec failures (@deivid-rodriguez) [#4869](https://github.com/dependabot/dependabot-core/pull/4869)
+- Require Ruby 2.7 (@deivid-rodriguez) [#4864](https://github.com/dependabot/dependabot-core/pull/4864)
+- Bugfix: Include space in regex capturing group (@jeffwidman) [#4868](https://github.com/dependabot/dependabot-core/pull/4868)
+- Get bundler specs green when run on Ruby 3.1 (@deivid-rodriguez) [#4841](https://github.com/dependabot/dependabot-core/pull/4841)
+- NuGet version comparison fix [#4862](https://github.com/dependabot/dependabot-core/pull/4862)
+
+## v0.179.0, 16 March 2022
+
+- Bump Ubuntu to 20.04 (@jeffwidman) [#4394](https://github.com/dependabot/dependabot-core/pull/4394)
+- Use expanded path when DEPENDABOT_NATIVE_HELPERS_PATH not set (@deivid-rodriguez) [#4844](https://github.com/dependabot/dependabot-core/pull/4844)
+- Fix flaky spec failure on Bundler 1 suite (@deivid-rodriguez) [#4846](https://github.com/dependabot/dependabot-core/pull/4846)
+- Unify RSpec requirements in helpers Gemfiles to match dependabot-common (@deivid-rodriguez) [#4843](https://github.com/dependabot/dependabot-core/pull/4843)
+- Remove duplicated spec (@deivid-rodriguez) [#4839](https://github.com/dependabot/dependabot-core/pull/4839)
+- Fix webmock requirement in helpers Gemfiles to match dependabot-common (@deivid-rodriguez) [#4838](https://github.com/dependabot/dependabot-core/pull/4838)
+- Enable codeql [#4817](https://github.com/dependabot/dependabot-core/pull/4817)
+- Improve `DEBUG_HELPERS` output (@deivid-rodriguez) [#4827](https://github.com/dependabot/dependabot-core/pull/4827)
+- Fix some specs to pass outside of Docker (@deivid-rodriguez) [#4835](https://github.com/dependabot/dependabot-core/pull/4835)
+
 ## v0.178.1, 11 March 2022
 
 - Fixes comparison between prerelease identifiers for NuGet [#4833](https://github.com/dependabot/dependabot-core/pull/4833)

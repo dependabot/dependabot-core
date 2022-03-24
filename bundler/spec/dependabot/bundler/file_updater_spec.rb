@@ -646,7 +646,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               new_lock.find { |l| l.include?("dependabot-fixtures/business") }
 
             new_revision_line =
-              new_lock[new_lock.find_index(original_remote_line) + 1]
+              new_lock[new_lock.find_index(new_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).to eq(original_revision_line)
@@ -805,7 +805,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             new_remote_line =
               new_lock.find { |l| l.include?("elasticsearch-ruby") }
             new_revision_line =
-              new_lock[new_lock.find_index(original_remote_line) + 1]
+              new_lock[new_lock.find_index(new_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).not_to eq(original_revision_line)

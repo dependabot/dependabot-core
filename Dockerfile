@@ -90,9 +90,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.2 \
-  && pyenv global 3.10.2 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.5 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.3 \
+  && pyenv global 3.10.3 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -126,7 +126,7 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.2.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -173,9 +173,11 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.7
-ARG GOLANG_AMD64_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
-ARG GOLANG_ARM64_CHECKSUM=a5aa1ed17d45ee1d58b4a4099b12f8942acbd1dd09b2e9a6abb1c4898043c5f5
+ARG GOLANG_VERSION=1.18
+# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
+ARG GOLANG_AMD64_CHECKSUM=e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
+ARG GOLANG_ARM64_CHECKSUM=7ac7b396a691e588c5fb57687759e6c4db84a2a3bbebb0765f4b38e5b1c5b00e
+
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
   && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
@@ -246,7 +248,7 @@ RUN DART_ARCH=${TARGETARCH} \
 # We pull the dependency_services from the dart-lang/pub repo as it is not
 # exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout fbc9732eeeed2c219a84c155f05f5b6222dccd9c \
+  && git -C /opt/dart/pub checkout 3082796f8ba9b3f509265ac3a223312fb5033988 \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \
