@@ -120,7 +120,7 @@ RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binari
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.2.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -238,7 +238,7 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-arc
 # We pull the dependency_services from the dart-lang/pub repo as it is not
 # exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout fbc9732eeeed2c219a84c155f05f5b6222dccd9c \
+  && git -C /opt/dart/pub checkout 3082796f8ba9b3f509265ac3a223312fb5033988 \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \

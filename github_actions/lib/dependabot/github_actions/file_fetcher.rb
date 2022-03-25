@@ -13,7 +13,7 @@ module Dependabot
       end
 
       def self.required_files_message
-        "Repo must contain a .github/workflows directory with YAML files or an action.yml in the root"
+        "Repo must contain a .github/workflows directory with YAML files or an action.yml file"
       end
 
       private
@@ -28,7 +28,7 @@ module Dependabot
         if incorrectly_encoded_workflow_files.none?
           raise(
             Dependabot::DependencyFileNotFound,
-            File.join(directory, ".github/workflows/<anything>.yml")
+            File.join(directory, "action.yml") + " or /.github/workflows/<anything>.yml"
           )
         else
           raise(
@@ -39,11 +39,18 @@ module Dependabot
       end
 
       def workflow_files
-        @workflow_files ||=
+        return @workflow_files if defined? @workflow_files
+
+        @workflow_files = [fetch_file_if_present("action.yml"), fetch_file_if_present("action.yaml")].compact
+
+        # In the special case where the root directory is defined we also scan
+        # the .github/workflows/ folder.
+        return @workflow_files unless directory == "/"
+
+        @workflow_files +=
           repo_contents(dir: ".github/workflows", raise_errors: false).
           select { |f| f.type == "file" && f.name.match?(/\.ya?ml$/) }.
-          map { |f| fetch_file_from_host(".github/workflows/#{f.name}") } \
-          + [fetch_file_if_present("action.yml"), fetch_file_if_present("action.yaml")].compact
+          map { |f| fetch_file_from_host(".github/workflows/#{f.name}") }
       end
 
       def referenced_local_workflow_files

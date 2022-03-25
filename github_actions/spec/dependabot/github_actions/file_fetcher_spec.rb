@@ -236,4 +236,37 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
   end
+
+  context "with a repo containing a composite action file in a subdirectory" do
+    let(:composite_action_file_fixture) do
+      fixture("github", "contents_githubaction_composite_file.json")
+    end
+    let(:directory) { "action/subdir" }
+
+    before do
+      stub_request(:get, url + "action/subdir?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_githubaction_repo_base_subdir.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(
+        :get,
+        File.join(url, "action/subdir/action.yaml?ref=sha")
+      ).with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: composite_action_file_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "fetches the composite action file" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(action.yaml)
+        )
+    end
+  end
 end
