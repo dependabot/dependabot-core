@@ -113,18 +113,16 @@ module Dependabot
         # which is enclosed in quotes
         hashes_string_regex = /(?<=\").*(?=\")/
 
-        hashes = content.match(declaration_regex).to_s. \
-                 match(hashes_object_regex).to_s. \
-                 split("\n").map do |hash|
-          hash.match(hashes_string_regex)
-        end. \
-                 compact
+        hashes = content.match(declaration_regex).to_s.
+                 match(hashes_object_regex).to_s.
+                 split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+                 select { |h| h&.match?(/^h1:/) }
 
         architectures = %w(
-          linux_arm64
           linux_amd64
           darwin_amd64
           windows_amd64
+          linux_arm64
         )
 
         architecture_hashes = {}
@@ -132,22 +130,24 @@ module Dependabot
         lockfile_hash_removed = content.sub(hashes_object_regex, "")
 
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-          architectures.each.each do |arch|
+          architectures.each do |arch|
             # Terraform will update the lockfile in place so we should use a fresh lockfile for each lookup
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
+
             SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
 
             updated_lockfile = File.read(".terraform.lock.hcl")
             updated_dependency = updated_lockfile.scan(declaration_regex).first
 
-            updated_hashes = updated_dependency.match(hashes_object_regex).to_s. \
-                             split("\n").map do |hash|
-              hash.match(hashes_string_regex)
-            end.compact
+            updated_hashes = updated_dependency.match(hashes_object_regex).to_s.
+              split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+                             select { |a| a&.match?(/^h1:/) }
 
             architecture_hashes[arch.to_sym] = updated_hashes unless updated_hashes.nil?
 
             File.delete(".terraform.lock.hcl")
+
+            break if architecture_hashes.count == hashes.count
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
@@ -166,9 +166,9 @@ module Dependabot
         present_hashes = []
         # architecture_hashes is populated, now we compare to see which
         # architecture(s) is present in the original lockfile
-        hashes.map { |h| h.to_s.match(/^h1:/) ? h.to_s : nil }.compact.each do |hash|
+        hashes.each do |hash|
           architecture_hashes.each do |arch, arch_hash|
-            arch_hash.map { |a| a.to_s.match(/^h1:/) ? a.to_s : nil }.compact.each do |other_hash|
+            arch_hash.select { |a| a.match?(/^h1:/) }.each do |other_hash|
               present_hashes.append(arch) if hash == other_hash
             end
           end
