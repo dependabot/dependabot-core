@@ -963,6 +963,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
     context "when using a lockfile that requires access to an unreachable module" do
       let(:project_name) { "lockfile_unreachable_module" }
       let(:dependencies) do

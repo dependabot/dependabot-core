@@ -118,6 +118,8 @@ module Dependabot
                  split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
                  select { |h| h&.match?(/^h1:/) }
 
+        # These are ordered in assumed popularity
+        # We try to exit early if we have detected all of the hashes
         architectures = %w(
           linux_amd64
           darwin_amd64
@@ -140,7 +142,7 @@ module Dependabot
             updated_dependency = updated_lockfile.scan(declaration_regex).first
 
             updated_hashes = updated_dependency.match(hashes_object_regex).to_s.
-              split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+                             split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
                              select { |a| a&.match?(/^h1:/) }
 
             architecture_hashes[arch.to_sym] = updated_hashes unless updated_hashes.nil?
@@ -193,8 +195,6 @@ module Dependabot
         declaration_regex = lockfile_declaration_regex(provider_source)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
-        architecture = architecture_type
-
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           # Update the provider requirements in case the previous requirement doesn't allow the new version
@@ -202,7 +202,7 @@ module Dependabot
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
-          platforms = architecture.map { |arch| "-platform=#{arch}" }.join(" ")
+          platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
           SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
