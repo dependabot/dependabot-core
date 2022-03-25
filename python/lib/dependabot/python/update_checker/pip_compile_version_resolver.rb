@@ -30,6 +30,8 @@ module Dependabot
           /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
+        # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -146,11 +148,13 @@ module Dependabot
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
             constraints_section = error.message.split("Finding the best candidates:").first
-            egg_regex = /#{Regexp.escape(tag)}#egg=(\S+)/
+            egg_regex = /#{Regexp.escape(tag)}#egg=(#{PYTHON_PACKAGE_NAME_REGEX})/
             name_match = constraints_section.scan(egg_regex)
+
+            # We can determine the name of the package from another part of the logger output if it has a unique tag
             raise GitDependencyReferenceNotFound, name_match.first.first if name_match.length == 1
 
-            raise GitDependencyReferenceNotFound, tag
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
