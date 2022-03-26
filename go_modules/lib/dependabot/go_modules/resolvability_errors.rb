@@ -12,7 +12,19 @@ module Dependabot
 
       sig { params(message: String, goprivate: T.untyped).void }
       def self.handle(message, goprivate:)
+        # TODO: currently this matches last. Instead, if more than one match, and they
+        # aren't identical, then don't try to be clever with GitDependenciesNotReachable
+        # but instead raise DependencyFileNotResolvable and report the whole error.
+        # This would have resulted in a more obvious error message for #4625
         mod_path = message.scan(GITHUB_REPO_REGEX).last
+        if mod_path
+          # TODO: if mod_path doesn't look like a URL, don't continue, but instead raise
+          # DependencyFileNotResolvable and report the whole error.
+          # This would have resulted in a more obvious error message for #4625
+          # How to implement this though?
+          # * Ruby has no built-in URL parsing, and no great alternatives in https://stackoverflow.com/q/1805761/770425...
+          # Not sure what Dependabot team policy is on using 3rd-party gems?
+          # Alternatively a basic sanity check of "it should not contain whitespace" may suffice for now... ??
         unless mod_path && message.include?("If this is a private repository")
           raise Dependabot::DependencyFileNotResolvable, message
         end
