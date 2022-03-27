@@ -582,12 +582,22 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         "https://gitlab.com/org/business.git/info/refs"\
         "?service=git-upload-pack"
       end
+      let(:gitlab_repo_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness"
+      end
 
       let(:source) do
         Dependabot::Source.new(
           provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
+      end
+
+      before do
+        stub_request(:get, gitlab_repo_url).
+          to_return(status: 200,
+                    body: fixture("gitlab", "bump_repo.json"),
+                    headers: { "Content-Type" => "application/json" })
       end
 
       context "with old and new tags" do
