@@ -23,6 +23,7 @@ module Dependabot
         def commits_url
           return unless source
           return if source.provider == "azure" # TODO: Fetch Azure commits
+          return if source.provider == "codecommit" # TODO: Fetch Codecommit commits
 
           path =
             case source.provider
@@ -44,6 +45,7 @@ module Dependabot
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
           when "azure" then [] # TODO: Fetch Azure commits
+          when "codecommit" then [] # TODO: Fetch Codecommit commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
