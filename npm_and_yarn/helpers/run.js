@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+const process = require('process');
+
 function output(obj) {
   process.stdout.write(JSON.stringify(obj));
 }
