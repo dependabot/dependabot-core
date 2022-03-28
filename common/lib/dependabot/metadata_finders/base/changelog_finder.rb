@@ -167,7 +167,7 @@ module Dependabot
               when "github" then fetch_github_file(file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
-              when "codecommit" then None # TODO: git file from codecommit
+              when "codecommit" then nil # TODO: git file from codecommit
               else raise "Unsupported provider '#{provider}'"
               end
           end

@@ -217,7 +217,7 @@ module Dependabot
         when "github" then github_commit_comparison_status(tag, commit)
         when "gitlab" then gitlab_commit_comparison_status(tag, commit)
         when "bitbucket" then bitbucket_commit_comparison_status(tag, commit)
-        when "codecommit" then None # TODO: get codecommit comparison status
+        when "codecommit" then nil # TODO: get codecommit comparison status
         else raise "Unknown source"
         end
 
