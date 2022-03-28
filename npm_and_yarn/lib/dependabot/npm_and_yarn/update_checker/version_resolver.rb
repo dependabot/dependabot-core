@@ -54,10 +54,10 @@ module Dependabot
         # or with two semver constraints:
         # npm ERR! Could not resolve dependency:
         # npm ERR! peer @opentelemetry/api@">=1.0.0 <1.1.0" from @opentelemetry/context-async-hooks@1.0.1
-        NPM7_PEER_DEP_ERROR_REGEX =
+        NPM8_PEER_DEP_ERROR_REGEX =
           /
-            npm\sERR!\sCould\snot\sresolve\sdependency:\n
-            npm\sERR!\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
+            npm\s(?:WARN|ERR!)\sCould\snot\sresolve\sdependency:\n
+            npm\s(?:WARN|ERR!)\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
           /x.freeze
 
         def initialize(dependency:, credentials:, dependency_files:,
@@ -258,8 +258,8 @@ module Dependabot
                 e.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
-              elsif e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
-                e.message.scan(NPM7_PEER_DEP_ERROR_REGEX) do
+              elsif e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+                e.message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
               elsif e.message.match?(YARN_PEER_DEP_ERROR_REGEX)
@@ -440,7 +440,7 @@ module Dependabot
               end
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(package_lock&.content)
 
-              return run_npm7_checker(version: version) if npm_version == "npm7"
+              return run_npm8_checker(version: version) if npm_version == "npm8"
 
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
@@ -457,13 +457,16 @@ module Dependabot
           end
         end
 
-        def run_npm7_checker(version:)
-          SharedHelpers.run_shell_command(
+        def run_npm8_checker(version:)
+          cmd =
             "npm install #{version_install_arg(version: version)} --package-lock-only --dry-run=true --ignore-scripts"
-          )
-          nil
+          output = SharedHelpers.run_shell_command(cmd)
+          if output.match?(NPM8_PEER_DEP_ERROR_REGEX)
+            error_context = { command: cmd, process_exit_value: 1 }
+            raise SharedHelpers::HelperSubprocessFailed.new(message: output, error_context: error_context)
+          end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise if e.message.match?(NPM7_PEER_DEP_ERROR_REGEX)
+          raise if e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
         end
 
         def version_install_arg(version:)

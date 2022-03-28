@@ -35,6 +35,7 @@ COPY --chown=dependabot:dependabot maven/Gemfile maven/dependabot-maven.gemspec 
 COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec ${CODE_DIR}/npm_and_yarn/
 COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec ${CODE_DIR}/nuget/
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
+COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \

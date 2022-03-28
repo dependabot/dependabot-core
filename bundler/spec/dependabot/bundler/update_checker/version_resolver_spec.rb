@@ -85,17 +85,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         let(:dependency_files) { bundler_project_dependency_files("subdependency") }
         its([:version]) { is_expected.to eq(Gem::Version.new("0.7.0")) }
 
-        # TODO: https://github.com/dependabot/dependabot-core/issues/2364
-        # context "that will be removed if other sub-dependencies are updated" do
-        #   let(:gemfile_fixture_name) { "subdependency_change" }
-        #   let(:lockfile_fixture_name) { "subdependency_change.lock" }
-        #   let(:dependency_name) { "nokogiri" }
-        #   let(:requirements) { [] }
+        context "that will be removed if other sub-dependencies are updated" do
+          let(:gemfile_fixture_name) { "subdependency_change" }
+          let(:lockfile_fixture_name) { "subdependency_change.lock" }
+          let(:dependency_name) { "nokogiri" }
+          let(:requirements) { [] }
 
-        #   pending "is updated" do
-        #     expect(subject.version).to eq(Gem::Version.new("1.10.9"))
-        #   end
-        # end
+          pending "is updated, skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+            expect(subject.version).to eq(Gem::Version.new("1.10.9"))
+          end
+        end
       end
 
       context "with a Bundler v1 version specified", :bundler_v1_only do
@@ -118,15 +117,16 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             its([:version]) { is_expected.to eq(Gem::Version.new("1.16.3")) }
           end
 
-          # TODO: https://github.com/dependabot/dependabot-core/issues/2364
-          # context "and required by another dependency" do
-          #   let(:gemfile_fixture_name) { "bundler_specified_and_required" }
-          #   let(:lockfile_fixture_name) do
-          #     "bundler_specified_and_required.lock"
-          #   end
+          context "and required by another dependency" do
+            let(:gemfile_fixture_name) { "bundler_specified_and_required" }
+            let(:lockfile_fixture_name) do
+              "bundler_specified_and_required.lock"
+            end
 
-          #   pending { is_expected.to be_nil }
-          # end
+            pending "skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+              is_expected.to be_nil
+            end
+          end
         end
       end
 
@@ -138,7 +138,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
 
         context "attempting to update Bundler" do
           let(:dependency_name) { "bundler" }
-          let(:requirement_string) { "~> 2.2.0" }
+          let(:requirement_string) { "~> 2.3.0" }
 
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
 
@@ -432,25 +432,26 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         it { is_expected.to be_nil }
       end
 
-      # TODO: https://github.com/dependabot/dependabot-core/issues/2364
-      # context "with an implicit pre-release requirement" do
-      #   let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
-      #   let(:gemspec_fixture_name) { "implicit_pre" }
-      #   let(:latest_allowable_version) { "6.0.3.1" }
+      context "with an implicit pre-release requirement" do
+        let(:gemfile_fixture_name) { "imports_gemspec_implicit_pre" }
+        let(:gemspec_fixture_name) { "implicit_pre" }
+        let(:latest_allowable_version) { "6.0.3.1" }
 
-      #   let(:unlock_requirement) { true }
-      #   let(:current_version) { nil }
-      #   let(:dependency_name) { "activesupport" }
-      #   let(:requirements) do
-      #     [{
-      #       file: "example.gemspec",
-      #       requirement: ">= 6.0",
-      #       groups: [],
-      #       source: nil
-      #     }]
-      #   end
-      #   pending { is_expected.to be_nil }
-      # end
+        let(:unlock_requirement) { true }
+        let(:current_version) { nil }
+        let(:dependency_name) { "activesupport" }
+        let(:requirements) do
+          [{
+            file: "example.gemspec",
+            requirement: ">= 6.0",
+            groups: [],
+            source: nil
+          }]
+        end
+        pending "skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+          is_expected.to be_nil
+        end
+      end
 
       context "when an old required ruby is specified in the gemspec" do
         let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_old_required_ruby_no_lockfile") }
@@ -462,15 +463,15 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             to eq(Gem::Version.new("2.0.1"))
         end
 
-        context "that isn't satisfied by the dependencies", :bundler_v2_only do
+        context "that isn't satisfied by the dependencies" do
           let(:dependency_files) do
             bundler_project_dependency_files("imports_gemspec_version_clash_old_required_ruby_no_lockfile")
           end
           let(:current_version) { "3.0.1" }
 
-          it "raises a DependencyFileNotResolvable error" do
-            expect { subject }.
-              to raise_error(Dependabot::DependencyFileNotResolvable)
+          it "ignores the minimum ruby version in the gemspec" do
+            expect(resolver.latest_resolvable_version_details[:version]).
+              to eq(Gem::Version.new("7.2.0"))
           end
         end
       end

@@ -32,6 +32,7 @@
 # - submodules
 # - docker
 # - terraform
+# - pub
 # - cocoapods
 
 # rubocop:disable Style/GlobalVars
@@ -62,6 +63,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
+$LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
@@ -99,6 +101,7 @@ require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
+require "dependabot/pub"
 require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update

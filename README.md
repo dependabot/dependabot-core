@@ -95,6 +95,9 @@ $ bin/dry-run.rb go_modules rsc/quote
 ...
 ```
 
+Note: If the dependency files are not in the top-level directory, then you must
+also pass the path to the subdirectory as an argument: `--dir /<subdirectory>`.
+
 ### Running the tests
 
 Run the tests by running `rspec spec` inside each of the packages, e.g.

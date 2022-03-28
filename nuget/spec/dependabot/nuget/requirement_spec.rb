@@ -24,6 +24,11 @@ RSpec.describe Dependabot::Nuget::Requirement do
         let(:requirement_string) { "1.1-*" }
         it { is_expected.to eq(described_class.new("~> 1.1-a")) }
       end
+
+      context "specifying highest version and pre-release versions" do
+        let(:requirement_string) { "*-*" }
+        it { is_expected.to eq(described_class.new(">= 0-a")) }
+      end
     end
 
     context "with a range requirement" do

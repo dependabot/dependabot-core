@@ -80,6 +80,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           to eq("https://dev.azure.com/saigkill/_git/hoe-manns/tags")
       end
     end
+
+    context "with a codecommit source" do
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "codecommit",
+          repo: "repos/#{dependency_name}"
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#releases_text" do

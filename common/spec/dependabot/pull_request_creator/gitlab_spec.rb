@@ -173,6 +173,20 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         to have_requested(:post, "#{repo_api_url}/merge_requests")
     end
 
+    context "with reviewers" do
+      let(:approvers) { { "reviewers" => [1_394_555] } }
+
+      it "pushes a commit to GitLab and creates a merge request with assigned reviewers" do
+        creator.create
+
+        expect(WebMock).
+          to have_requested(:post, "#{repo_api_url}/merge_requests").
+          with(
+            body: a_string_including("reviewer_ids%5B%5D=#{approvers['reviewers'].first}")
+          )
+      end
+    end
+
     context "with forked project" do
       let(:target_project_id) { 1 }
 
@@ -352,7 +366,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       end
 
       before do
-        stub_request(:put, "#{mr_api_url}/5/approvers").
+        stub_request(:post, "#{mr_api_url}/5/approval_rules").
           to_return(
             status: 200,
             body: fixture("gitlab", "merge_request.json"),
@@ -364,7 +378,13 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
         creator.create
 
         expect(WebMock).
-          to have_requested(:put, "#{mr_api_url}/5/approvers")
+          to have_requested(:post, "#{mr_api_url}/5/approval_rules").
+          with(body: {
+            name: "dependency-updates",
+            approvals_required: 1,
+            user_ids: approvers["approvers"],
+            group_ids: ""
+          })
       end
 
       context "with forked project" do
@@ -374,7 +394,13 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
           creator.create
 
           expect(WebMock).
-            to have_requested(:put, "#{mr_api_url}/5/approvers")
+            to have_requested(:post, "#{mr_api_url}/5/approval_rules").
+            with(body: {
+              name: "dependency-updates",
+              approvals_required: 1,
+              user_ids: approvers["approvers"],
+              group_ids: ""
+            })
         end
       end
     end

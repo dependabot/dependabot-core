@@ -16,7 +16,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
   let(:package_json) do
     project_dependency_files(project_name).find { |f| f.name == "package.json" }
   end
-  let(:project_name) { "npm7/simple" }
+  let(:project_name) { "npm8/simple" }
 
   let(:dependencies) { [dependency] }
   let(:dependency) do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:project_name) { "npm7/minor_version_specified" }
+      let(:project_name) { "npm8/minor_version_specified" }
 
       its(:content) { is_expected.to include '"fetch-factory": "0.2.x"' }
     end
@@ -91,10 +91,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:project_name) { "npm7/minor_version_specified" }
+      let(:project_name) { "npm8/minor_version_specified" }
 
       its(:content) do
-        is_expected.to eq(fixture("projects", "npm7", "minor_version_specified", "package.json"))
+        is_expected.to eq(fixture("projects", "npm8", "minor_version_specified", "package.json"))
       end
 
       context "except for the source" do
@@ -122,7 +122,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
         end
 
         its(:content) do
-          is_expected.to eq(fixture("projects", "npm7", "minor_version_specified", "package.json"))
+          is_expected.to eq(fixture("projects", "npm8", "minor_version_specified", "package.json"))
         end
       end
     end
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:project_name) { "npm7/simple" }
+      let(:project_name) { "npm8/simple" }
 
       it "updates the existing development declaration" do
         parsed_file = JSON.parse(updated_package_json.content)
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "updating multiple dependencies" do
-      let(:project_name) { "npm7/simple" }
+      let(:project_name) { "npm8/simple" }
       let(:dependencies) do
         [
           Dependabot::Dependency.new(
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       end
 
       context "with identical versions" do
-        let(:project_name) { "npm7/duplicate_identical" }
+        let(:project_name) { "npm8/duplicate_identical" }
 
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
           }]
         )
       end
-      let(:project_name) { "npm7/dev_and_peer_dependency" }
+      let(:project_name) { "npm8/dev_and_peer_dependency" }
 
       it "updates both declarations" do
         parsed_file = JSON.parse(updated_package_json.content)
@@ -320,7 +320,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "with a git dependency" do
-      let(:project_name) { "npm7/github_dependency" }
+      let(:project_name) { "npm8/github_dependency" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "is-number",
@@ -354,7 +354,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
       its(:content) { is_expected.to include("jonschlinkert/is-number#4.0.0") }
 
       context "that specifies a semver requirement" do
-        let(:project_name) { "npm7/github_dependency_semver" }
+        let(:project_name) { "npm8/github_dependency_semver" }
         let(:dependency) do
           Dependabot::Dependency.new(
             name: "is-number",
@@ -400,7 +400,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "with a path-based dependency" do
-      let(:project_name) { "npm7/path_dependency" }
+      let(:project_name) { "npm8/path_dependency" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "lodash",
@@ -428,7 +428,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::PackageJsonUpdater do
     end
 
     context "with non-standard whitespace" do
-      let(:project_name) { "npm7/non_standard_whitespace" }
+      let(:project_name) { "npm8/non_standard_whitespace" }
 
       its(:content) do
         is_expected.to include %("*.js": ["eslint --fix", "git add"])

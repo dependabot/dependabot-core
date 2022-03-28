@@ -14,7 +14,7 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      def self.npm7_subdependency_update_command(dependency_names)
+      def self.npm8_subdependency_update_command(dependency_names)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to

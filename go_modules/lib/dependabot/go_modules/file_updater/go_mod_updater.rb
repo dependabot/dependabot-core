@@ -14,31 +14,31 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go (?:get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
+          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
           /module .* found \(.*\), but does not contain package/m.freeze,
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
-          /go: .*: invalid pseudo-version/m.freeze,
+          /go(?: get)?: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze,
+          /go(?: get)?: .*: unknown revision/m.freeze,
           # Package pointing to a proxy that 404s
-          /go: .*: unrecognized import path/m.freeze
+          /go(?: get)?: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
 
@@ -162,8 +162,7 @@ module Dependabot
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
 
-          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
-          command = +"go get -d"
+          command = +"go get"
           # `go get` accepts multiple packages, each separated by a space
           dependencies.each do |dep|
             version = "v" + dep.version.sub(/^v/i, "")
@@ -195,7 +194,7 @@ module Dependabot
 
         def build_module_stubs(stub_paths)
           # Create a fake empty module for each local module so that
-          # `go get -d` works, even if some modules have been `replace`d
+          # `go get` works, even if some modules have been `replace`d
           # with a local module that we don't have access to.
           stub_paths.each do |stub_path|
             Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
