@@ -261,10 +261,7 @@ RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_
   && tar xf "/tmp/flutter.xz" -C /opt/dart \
   && rm "/tmp/flutter.xz" \
   && chmod -R o+rx "/opt/dart/flutter" \
-  && rm -Rf /opt/dart/flutter/bin/cache/dart-sdk \
-  && ln -s /opt/dart/dart-sdk /opt/dart/flutter/bin/cache/dart-sdk \
   && chown -R dependabot:dependabot "/opt/dart/flutter" \
-  && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version" \
   # To reduce space usage we delete all of the flutter sdk except the few
   # things needed for pub resolutions:
   # * The version file
