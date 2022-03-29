@@ -90,7 +90,7 @@ RSpec.describe Dependabot::Python::Version do
       "1.post2",
       "1.post2+gc1",
       "1.0.0.post11",
-      "1.0.1",
+      "1.0.2",
       "1.0.11",
       "2016.1",
       "1!0.1.0",
