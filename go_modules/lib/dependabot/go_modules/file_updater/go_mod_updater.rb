@@ -21,24 +21,24 @@ module Dependabot
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
+          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
           /module .* found \(.*\), but does not contain package/m.freeze,
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
-          /go: .*: invalid pseudo-version/m.freeze,
+          /go(?: get)?: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze,
+          /go(?: get)?: .*: unknown revision/m.freeze,
           # Package pointing to a proxy that 404s
-          /go: .*: unrecognized import path/m.freeze
+          /go(?: get)?: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
 
