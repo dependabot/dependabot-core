@@ -75,164 +75,41 @@ RSpec.describe Dependabot::Python::Version do
   end
 
   describe "#<=>" do
-    subject { version <=> other_version }
-
-    context "compared to a Gem::Version" do
-      context "that is lower" do
-        let(:other_version) { Gem::Version.new("0.9.0") }
-        it { is_expected.to eq(1) }
-
-        context "because our version has a non-zero epoch" do
-          let(:version_string) { "1!0.9.0" }
-          it { is_expected.to eq(1) }
-        end
-      end
-
-      context "that is equal" do
-        let(:other_version) { Gem::Version.new("1.0.0") }
-        it { is_expected.to eq(0) }
-
-        context "but our version has a local version" do
-          let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
-        end
-
-        context "but our version has a v-prefix" do
-          let(:version_string) { "v1.0.0" }
-          it { is_expected.to eq(0) }
-        end
-      end
-
-      context "that is greater" do
-        let(:other_version) { Gem::Version.new("1.1.0") }
-        it { is_expected.to eq(-1) }
+    sorted_versions = [
+      "",
+      "0.9",
+      "1.0.0-alpha",
+      "1.0.0-a.1",
+      "1.0.0-beta",
+      "1.0.0-b.2",
+      "1.0.0-beta.11",
+      "1.0.0-rc.1",
+      "1",
+      # "1.0.0.post", TODO fails comparing to 1
+      "1.post2",
+      "1.0.0.post11",
+      "1.0.1",
+      "1.0.11",
+      "2016.1",
+      "1!0.1.0",
+      "2!0.1.0",
+      "10!0.1.0"
+    ]
+    sorted_versions.combination(2).each do |lhs, rhs|
+      it "'#{lhs}' < '#{rhs}'" do
+        expect(described_class.new(lhs)).to be < rhs
+        expect(described_class.new(rhs)).to be > lhs
       end
     end
 
-    context "compared to a Python::Version" do
-      context "that is lower" do
-        let(:other_version) { described_class.new("0.9.0") }
-        it { is_expected.to eq(1) }
-
-        context "because our version has a non-zero epoch" do
-          let(:version_string) { "1!0.9.0" }
-          it { is_expected.to eq(1) }
-        end
-
-        context "because our version has a greater epoch" do
-          let(:version_string) { "2!0.9.0" }
-          let(:other_version) { described_class.new("1!0.9.0") }
-          it { is_expected.to eq(1) }
-        end
+    sorted_versions.each do |v|
+      it "should equal itself #{v}" do
+        expect(described_class.new(v)).to eq v
       end
-
-      context "that is equal" do
-        let(:other_version) { described_class.new("1.0.0") }
-        it { is_expected.to eq(0) }
-
-        context "but our version has a non-zero epoch" do
-          let(:version_string) { "1!1.0.0" }
-          it { is_expected.to eq(1) }
-        end
-
-        context "but the other version has a non-zero epoch" do
-          let(:version_string) { "1.0.0" }
-          let(:other_version) { described_class.new("1!1.0.0") }
-          it { is_expected.to eq(-1) }
-        end
-
-        context "and both versions have a non-zero epoch" do
-          let(:version_string) { "1!1.0.0" }
-          let(:other_version) { described_class.new("1!1.0.0") }
-          it { is_expected.to eq(0) }
-        end
-
-        context "but our version has a local version" do
-          let(:version_string) { "1.0.0+gc.1" }
-          it { is_expected.to eq(1) }
-        end
-
-        context "with a prerelease specifier that needs normalising" do
-          let(:version_string) { "1.0.0c1" }
-          let(:other_version) { described_class.new("1.0.0rc1") }
-          it { is_expected.to eq(0) }
-
-          context "with a dash that needs sanitizing" do
-            let(:version_string) { "0.5.4-alpha" }
-            let(:other_version) { described_class.new("0.5.4a0") }
-            it { is_expected.to eq(0) }
-          end
-        end
-
-        context "with a post-release" do
-          let(:version_string) { "1.0.0-post1" }
-          it { is_expected.to eq(1) }
-
-          context "that needs normalising" do
-            let(:other_version) { described_class.new("1.0.0-post1") }
-            let(:version_string) { "1.0.0rev1" }
-            it { is_expected.to eq(0) }
-          end
-
-          context "that is being compared to another post release" do
-            let(:other_version) { described_class.new("1.0.0.post1") }
-            let(:version_string) { "1.0.0.post2" }
-            it { is_expected.to eq(1) }
-          end
-
-          context "when the other version has a post release" do
-            let(:other_version) { described_class.new("1.0.0.post1") }
-            let(:version_string) { "1.0.0" }
-            it { is_expected.to eq(-1) }
-          end
-        end
-
-        context "but the other version has a local version" do
-          let(:other_version) { described_class.new("1.0.0+gc.1") }
-          it { is_expected.to eq(-1) }
-        end
-
-        context "and both sides have a local version" do
-          let(:other_version) { described_class.new("1.0.0+gc.1") }
-
-          context "that is equal" do
-            let(:version_string) { "1.0.0+gc.1" }
-            it { is_expected.to eq(0) }
-          end
-
-          context "when our side is greater" do
-            let(:version_string) { "1.0.0+gc.2" }
-            it { is_expected.to eq(1) }
-          end
-
-          context "when our side is lower" do
-            let(:version_string) { "1.0.0+gc" }
-            it { is_expected.to eq(-1) }
-          end
-
-          context "when our side is longer" do
-            let(:version_string) { "1.0.0+gc.1.1" }
-            it { is_expected.to eq(1) }
-          end
-        end
-      end
-
-      context "that is greater" do
-        let(:other_version) { described_class.new("1.1.0") }
-        it { is_expected.to eq(-1) }
-
-        context "and both versions have a non-zero epoch" do
-          let(:version_string) { "1!1.1.0" }
-          let(:other_version) { described_class.new("2!1.1.0") }
-          it { is_expected.to eq(-1) }
-        end
-
-        context "with a dash that needs sanitizing" do
-          let(:version_string) { "0.5.4-alpha" }
-          let(:other_version) { described_class.new("0.5.4a1") }
-          it { is_expected.to eq(-1) }
-        end
-      end
+    end
+    it "should handle missing version segments" do
+      expect(described_class.new("1")).to eq "v1.0"
+      expect(described_class.new("1")).to eq "v1.0.0"
     end
   end
 

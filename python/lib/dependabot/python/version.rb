@@ -14,7 +14,7 @@ module Dependabot
       attr_reader :local_version
       attr_reader :post_release_version
 
-      VERSION_PATTERN = 'v?([0-9]+!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+      VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
@@ -51,6 +51,8 @@ module Dependabot
       end
 
       def <=>(other)
+        other = Version.new(other.to_s) unless other.is_a?(Python::Version)
+
         epoch_comparison = epoch_comparison(other)
         return epoch_comparison unless epoch_comparison.zero?
 
@@ -63,39 +65,23 @@ module Dependabot
         local_version_comparison(other)
       end
 
+      private
+
       def epoch_comparison(other)
-        unless other.is_a?(Python::Version) && other.epoch
-          return epoch.to_i.zero? ? 0 : 1
-        end
-
-        return -1 if epoch.nil?
-
-        # Epoch versions should only ever be a single number, so we can
-        # just string-comparison them.
-        return 0 if epoch.to_i == other.epoch.to_i
-
-        epoch.to_i > other.epoch.to_i ? 1 : -1
+        epoch.to_i - other.epoch.to_i
       end
 
       def post_version_comparison(other)
-        unless other.is_a?(Python::Version) && other.post_release_version
+        unless other.post_release_version
           return post_release_version.nil? ? 0 : 1
         end
 
         return -1 if post_release_version.nil?
 
-        # Post release versions should only ever be a single number, so we can
-        # just string-comparison them.
-        return 0 if post_release_version.to_i == other.post_release_version.to_i
-
-        post_release_version.to_i > other.post_release_version.to_i ? 1 : -1
+        post_release_version.to_i - other.post_release_version.to_i
       end
 
       def local_version_comparison(other)
-        unless other.is_a?(Python::Version)
-          return local_version.nil? ? 0 : 1
-        end
-
         # Local version comparison works differently in Python: `1.0.beta`
         # compares as greater than `1.0`. To accommodate, we make the
         # strings the same length before comparing.
@@ -112,8 +98,6 @@ module Dependabot
 
         lhsegments.count <=> rhsegments.count
       end
-
-      private
 
       def normalise_prerelease(version)
         # Python has reserved words for release states, which are treated
