@@ -195,7 +195,7 @@ module Dependabot
           case source.provider
           when "github" then fetch_github_releases
           # Bitbucket doesn't support releases and Azure can't list API for annotated tags
-          when "bitbucket", "azure" then []
+          when "bitbucket", "azure", "codecommit" then []
           when "gitlab" then fetch_gitlab_releases
           else raise "Unexpected repo provider '#{source.provider}'"
           end
