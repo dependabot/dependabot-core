@@ -36,9 +36,18 @@ fi
 build_image() {
   export BUILT_IMAGE=true
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
+
+  local TARGETARCH;
+  case "$(uname -m)"
+  in
+    amd64 | x86_64) TARGETARCH=amd64 ;;
+    arm64 | aarch64) TARGETARCH=arm64 ;;
+    *) TARGETARCH=amd64 ;;
+  esac
+
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --build-arg "TARGETARCH=$(uname -m)" \
+    --build-arg "TARGETARCH=${TARGETARCH}" \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
     --cache-from "dependabot/dependabot-core:latest" \
