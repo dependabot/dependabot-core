@@ -200,13 +200,13 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
 
 ### RUST
 
-# Install Rust 1.58.0
+# Install Rust 1.59.0
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.59.0 --profile minimal
 
 
 ### Terraform
