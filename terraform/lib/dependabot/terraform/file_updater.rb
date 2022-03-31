@@ -31,6 +31,7 @@ module Dependabot
 
           updated_files << updated_file(file: file, content: updated_content)
         end
+        debugger
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
         if updated_lockfile_content && lock_file.content != updated_lockfile_content
@@ -94,32 +95,31 @@ module Dependabot
         end
       end
 
-      # Guess the architecture(s) this terraform project was built with
-      def lookup_hash_architecture
+      def extract_terraform_hashes(content, declaration_regex)
+        hashes = content.match(declaration_regex).to_s.
+                 match(hashes_object_regex).to_s.
+                 split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+                 select { |h| h&.match?(/^h1:/) }
+      end
+
+      def lockfile_details(new_req)
+        content = lock_file.content.dup
+        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        declaration_regex = lockfile_declaration_regex(provider_source)
+
+        return content, provider_source, declaration_regex
+      end
+
+      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         new_req = dependency.requirements.first
 
         # NOTE: Only providers are inlcuded in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
-        content = lock_file.content.dup
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
-        declaration_regex = lockfile_declaration_regex(provider_source)
-
-        # A terraform hash is an array of strings separated by newlines (/m)
-        # We capture the hashes object from the lockfile dependency
-        hashes_object_regex = /hashes\s*=\s*.*\]/m
-
-        # And set up a positive look ahead to capture the hash string
-        # which is enclosed in quotes
-        hashes_string_regex = /(?<=\").*(?=\")/
-
-        hashes = content.match(declaration_regex).to_s.
-                 match(hashes_object_regex).to_s.
-                 split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
-                 select { |h| h&.match?(/^h1:/) }
+        content, provider_source, declaration_regex = lockfile_details(new_req)
+        hashes = extract_terraform_hashes(content, declaration_regex)
 
         # These are ordered in assumed popularity
-        # We try to exit early if we have detected all of the hashes
         architectures = %w(
           linux_amd64
           darwin_amd64
@@ -133,23 +133,17 @@ module Dependabot
 
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
           architectures.each do |arch|
-            # Terraform will update the lockfile in place so we should use a fresh lockfile for each lookup
+            # Terraform will update the lockfile in place so we use a fresh lockfile for each lookup
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
 
             SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
 
             updated_lockfile = File.read(".terraform.lock.hcl")
-            updated_dependency = updated_lockfile.scan(declaration_regex).first
-
-            updated_hashes = updated_dependency.match(hashes_object_regex).to_s.
-                             split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
-                             select { |a| a&.match?(/^h1:/) }
-
+            updated_hashes = extract_terraform_hashes(updated_lockfile, declaration_regex) 
             architecture_hashes[arch.to_sym] = updated_hashes unless updated_hashes.nil?
 
             File.delete(".terraform.lock.hcl")
 
-            break if architecture_hashes.count == hashes.count
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
@@ -180,7 +174,7 @@ module Dependabot
       end
 
       def architecture_type
-        @architecture_type ||= lookup_hash_architecture || "linux_amd64"
+        @architecture_type ||= lookup_hash_architecture.empty? ? "linux_amd64" : lookup_hash_architecture
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
@@ -190,9 +184,7 @@ module Dependabot
         # NOTE: Only providers are inlcuded in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
-        content = lock_file.content.dup
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
-        declaration_regex = lockfile_declaration_regex(provider_source)
+        content, provider_source, declaration_regex = lockfile_details(new_req)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
         base_dir = dependency_files.first.directory
@@ -203,6 +195,7 @@ module Dependabot
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
           platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
+          debugger
           SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source} -no-color")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
@@ -267,6 +260,14 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def hashes_object_regex
+        /hashes\s*=\s*.*\]/m
+      end
+
+      def hashes_string_regex
+        /(?<=\").*(?=\")/
       end
 
       def provider_declaration_regex

@@ -836,7 +836,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
               version     = "3.45.0"
-              constraints = ">= 3.42.0, < 3.46.0"
+              constraints = ">= 3.37.0, < 3.46.0"
           DEP
         )
       end
@@ -930,7 +930,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
           <<~DEP
             provider "registry.terraform.io/hashicorp/aws" {
               version     = "3.45.0"
-              constraints = ">= 3.42.0, < 3.46.0"
+              constraints = ">= 3.37.0, < 3.46.0"
           DEP
         )
       end
@@ -1506,6 +1506,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         provider_files.each do |file|
           expect(file.content).to include("version = \"0.0.10\"")
         end
+
         expect(lockfile.content).to include(
           <<~DEP
             provider "registry.terraform.io/mongey/confluentcloud" {
