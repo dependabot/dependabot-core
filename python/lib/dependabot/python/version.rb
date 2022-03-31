@@ -68,7 +68,7 @@ module Dependabot
       private
 
       def epoch_comparison(other)
-        epoch.to_i - other.epoch.to_i
+        epoch.to_i <=> other.epoch.to_i
       end
 
       def post_version_comparison(other)
@@ -78,7 +78,7 @@ module Dependabot
 
         return -1 if post_release_version.nil?
 
-        post_release_version.to_i - other.post_release_version.to_i
+        post_release_version.to_i <=> other.post_release_version.to_i
       end
 
       def local_version_comparison(other)
