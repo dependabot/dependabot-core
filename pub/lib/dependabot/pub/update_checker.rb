@@ -10,7 +10,13 @@ module Dependabot
       include Dependabot::Pub::Helpers
 
       def latest_version
-        Dependabot::Pub::Version.new(current_report["latest"])
+        version = Dependabot::Pub::Version.new(current_report["latest"])
+
+        return version if ignore_requirements.none? { |r| r.satisfied_by?(version) }
+        return version if version == version_class.new(dependency.version)
+        return nil unless @raise_on_ignored
+
+        raise AllVersionsIgnored
       end
 
       def latest_resolvable_version_with_no_unlock
