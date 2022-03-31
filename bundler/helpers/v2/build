@@ -22,6 +22,6 @@ cd "$install_dir"
 
 # NOTE: Sets `BUNDLED WITH` to match the installed v2 version in Gemfile.lock
 # forcing specs and native helpers to run with the same version
-BUNDLER_VERSION=2.3.8 bundle config --local path ".bundle"
-BUNDLER_VERSION=2.3.8 bundle config --local without "test"
-BUNDLER_VERSION=2.3.8 bundle install
+BUNDLER_VERSION=2.3.9 bundle config --local path ".bundle"
+BUNDLER_VERSION=2.3.9 bundle config --local without "test"
+BUNDLER_VERSION=2.3.9 bundle install
