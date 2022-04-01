@@ -14,7 +14,6 @@ module Dependabot
       attr_reader :local_version
       attr_reader :post_release_version
 
-
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
       VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
