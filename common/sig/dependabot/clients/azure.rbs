@@ -22,7 +22,7 @@ module Dependabot
       class TagsCreationForbidden < StandardError
       end
 
-      RETRYABLE_ERRORS: untyped
+      RETRYABLE_ERRORS: Array[singleton(StandardError)]
 
       MAX_PR_DESCRIPTION_LENGTH: ::Integer
 

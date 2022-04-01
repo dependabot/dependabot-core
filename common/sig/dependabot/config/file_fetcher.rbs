@@ -1,9 +1,9 @@
 module Dependabot
   module Config
     class FileFetcher < Dependabot::FileFetchers::Base
-      CONFIG_FILE_PATHS: untyped
+      CONFIG_FILE_PATHS: ::Array[::String]
 
-      def self.required_files_in?: (untyped filenames) -> untyped
+      def self.required_files_in?: (::Array[String] filenames) -> bool
 
       def self.required_files_message: () -> ::String
 
