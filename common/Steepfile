@@ -7,7 +7,8 @@ target :lib do
 
   library "rubygems", "forwardable", "time"
 
-  # configure_code_diagnostics do |config|
-  #   config[Steep::Diagnostic::Ruby::MethodDefinitionMissing] = :hint
-  # end
+  configure_code_diagnostics do |config|
+    config[Steep::Diagnostic::Ruby::UnexpectedJump] = :hint
+    # config[Steep::Diagnostic::Ruby::MethodDefinitionMissing] = :hint
+  end
 end
