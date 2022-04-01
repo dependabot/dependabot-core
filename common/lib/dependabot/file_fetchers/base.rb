@@ -25,10 +25,15 @@ module Dependabot
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
+      # Checks an array of filenames (string) and returns a boolean
+      # describing whether the language-specific dependency files
+      # required for an update run are present.
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
       end
 
+      # Returns a static error message which can be displayed to a user
+      # if `.required_files_in?` returns `false`.
       def self.required_files_message
         raise NotImplementedError
       end
@@ -61,10 +66,17 @@ module Dependabot
         source.branch
       end
 
+      # Fetches the language-specific dependency files for
+      # the repo this instance was created with.
+      # Returns an array of `Dependabot::DependencyFile` instances.
       def files
         @files ||= fetch_files
       end
 
+      # Returns the commit SHA-1 hash at the time
+      # the dependency files were fetched.
+      # If called before files, the returned value
+      # will be used in subsequent calls to files.
       def commit
         return source.commit if source.commit
 

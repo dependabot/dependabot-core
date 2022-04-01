@@ -2,17 +2,17 @@
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader source: untyped
+      attr_reader source: Dependabot::Source
 
-      attr_reader credentials: untyped
+      attr_reader credentials: ::Array[::Hash[::String, ::String]]
 
-      attr_reader repo_contents_path: untyped
+      attr_reader repo_contents_path: ::String
 
-      CLIENT_NOT_FOUND_ERRORS: untyped
+      CLIENT_NOT_FOUND_ERRORS: Array[singleton(::StandardError)]
 
-      def self.required_files_in?: (untyped _filename_array) -> untyped
+      def self.required_files_in?: (::Array[::String] _filename_array) -> bool
 
-      def self.required_files_message: () -> untyped
+      def self.required_files_message: () -> ::String
 
       # Creates a new FileFetcher for retrieving `DependencyFile`s.
       #
@@ -23,20 +23,21 @@ module Dependabot
       # If provided, file _data_ will be loaded from the clone.
       # Submodules and directory listings are _not_ currently supported
       # by repo_contents_path and still use an API trip.
-      def initialize: (source: untyped source, credentials: untyped credentials, ?repo_contents_path: untyped? repo_contents_path) -> void
+      def initialize: (source: Dependabot::Source source,
+                       credentials: ::Array[::Hash[::String, ::String]] credentials,
+                       ?repo_contents_path: ::String? repo_contents_path) -> void
 
-      def repo: () -> untyped
+      def repo: () -> ::String
 
-      def directory: () -> untyped
+      def directory: () -> ::String
 
-      def target_branch: () -> untyped
+      def target_branch: () -> ::String?
 
-      def files: () -> untyped
+      def files: () -> ::Array[Dependabot::DependencyFile]
 
-      def commit: () -> untyped
+      def commit: () -> ::String
 
-      # Returns the path to the cloned repo
-      def clone_repo_contents: () -> untyped
+      def clone_repo_contents: () -> ::String
 
       private
 
