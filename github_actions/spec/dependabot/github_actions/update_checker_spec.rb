@@ -277,7 +277,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     context "given a dependency with multiple git refs", :vcr do
       include_context "with multiple git sources"
 
-      it { is_expected.to eq(Gem::Version.new("2.2.0")) }
+      it "returns the expected value" do
+        expect(subject).to eq(Gem::Version.new("2.2.0"))
+      end
     end
   end
 
