@@ -453,7 +453,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }]
       end
 
-      it { is_expected.to eq(expected_requirements) }
+      it "returns the expected value" do
+        expect(subject).to eq(expected_requirements)
+      end
     end
   end
 end
