@@ -190,7 +190,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           )
         end
 
-        it { is_expected.to be_falsey }
+        it "returns the expected value" do
+          expect(subject).to be_falsey
+        end
       end
     end
   end
