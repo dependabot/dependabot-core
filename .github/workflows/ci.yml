@@ -99,10 +99,3 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm "$CORE_CI_IMAGE:branch--$BRANCH_REF" bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
-  lint:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
-      - run: ./bin/lint
