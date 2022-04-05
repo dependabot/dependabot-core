@@ -157,7 +157,12 @@ module Dependabot
           tmp_go_file = "#{SecureRandom.hex}.go"
 
           package = Dir.glob("[^\._]*.go").any? do |path|
-            !File.read(path).include?("// +build")
+            # The build syntax changed from 1.16-1.18:
+            # https://go.dev/design/draft-gobuild
+            # https://go.dev/doc/go1.18#go-command
+            # old syntax: // +build
+            # new syntax: //go:build
+            !File.read(path).include?("/(\/\/ \+build)|(\/\/go:build)/".freeze)
           end
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
