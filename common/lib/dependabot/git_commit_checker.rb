@@ -87,13 +87,8 @@ module Dependabot
     end
 
     def local_tags_for_latest_version_commit_sha
-      tags = allowed_tags
-      max_tag = tags.
-                max_by do |t|
-        version = t.name.match(VERSION_REGEX).named_captures.
-                  fetch("version")
-        version_class.new(version)
-      end
+      tags = allowed_version_tags
+      max_tag = max_version_tag(tags)
 
       return [] unless max_tag
 
@@ -111,12 +106,7 @@ module Dependabot
     end
 
     def local_tag_for_latest_version
-      tag = allowed_tags.
-            max_by do |t|
-              version = t.name.match(VERSION_REGEX).named_captures.
-                        fetch("version")
-              version_class.new(version)
-            end
+      tag = max_version_tag(allowed_version_tags)
 
       return unless tag
 
@@ -129,7 +119,16 @@ module Dependabot
       }
     end
 
-    def allowed_tags
+    def max_version_tag(tags)
+      tags.
+        max_by do |t|
+        version = t.name.match(VERSION_REGEX).named_captures.
+                  fetch("version")
+        version_class.new(version)
+      end
+    end
+
+    def allowed_version_tags
       tags =
         local_tags.
         select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
