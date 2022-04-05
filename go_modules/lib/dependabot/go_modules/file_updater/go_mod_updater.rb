@@ -162,7 +162,7 @@ module Dependabot
             # https://go.dev/doc/go1.18#go-command
             # old syntax: // +build
             # new syntax: //go:build
-            !File.read(path).include?("/(\/\/ \+build)|(\/\/go:build)/".freeze)
+            !File.read(path).include?("/(\/\/ \+build)|(\/\/go:build)/")
           end
 
           File.write(tmp_go_file, "package dummypkg\n") unless package
