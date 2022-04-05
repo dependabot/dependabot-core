@@ -133,7 +133,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "1c24df3" }
 
         let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-        let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+        let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
         before do
           stub_request(:get, comparison_url).
             to_return(
@@ -237,13 +237,37 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1.1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
       end
+
+      context "that is a major-minor tag of a previous version" do
+        let(:reference) { "v1.0" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1.1")) }
+      end
+    end
+
+    context "given a dependency with a tag reference with a major version upgrade available" do
+      let(:upload_pack_fixture) { "setup-node-v2" }
+
+      context "using the major version" do
+        let(:reference) { "v1" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("2")) }
+      end
+
+      context "using the major minor version" do
+        let(:reference) { "v1.0" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1")) }
+      end
+
+      context "using the full version" do
+        let(:reference) { "v1.0.0" }
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("2.1.3")) }
+      end
     end
 
     context "given a git commit SHA" do
       let(:reference) { "1c24df3" }
 
       let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-      let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+      let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
       before do
         stub_request(:get, comparison_url).
           to_return(
@@ -302,7 +326,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       let(:reference) { "1c24df3" }
 
       let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-      let(:comparison_url) { repo_url + "/compare/v1.1.0...1c24df3" }
+      let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
       before do
         stub_request(:get, comparison_url).
           to_return(
@@ -363,7 +387,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         context "and the previous version is a short SHA" do
           let(:reference) { "5273d0df" }
-          let(:comparison_url) { repo_url + "/compare/v1.1.0...5273d0df" }
+          let(:comparison_url) { repo_url + "/compare/v1.1...5273d0df" }
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -414,6 +438,70 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
               type: "git",
               url: "https://github.com/actions/setup-node",
               ref: "v1.0.4",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+
+        it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "given a dependency with a tag reference with a major version upgrade available" do
+      let(:upload_pack_fixture) { "setup-node-v2" }
+
+      context "using the major version" do
+        let(:reference) { "v1" }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v2",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+
+        it { is_expected.to eq(expected_requirements) }
+      end
+
+      context "using the major minor version" do
+        let(:reference) { "v1.0" }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v2.1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+
+        it { is_expected.to eq(expected_requirements) }
+      end
+
+      context "using the full version" do
+        let(:reference) { "v1.0.0" }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v2.1.3",
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
