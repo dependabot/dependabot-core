@@ -263,6 +263,50 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "given a dependency with a tag reference when an update with the same precision is not available" do
+      let(:latest_versions) { [] }
+
+      before do
+        version_tags = latest_versions.map do |v|
+          {
+            tag: v,
+            version: Dependabot::GithubActions::Version.new(v)
+          }
+        end
+
+        allow_any_instance_of(Dependabot::GitCommitChecker).
+          to receive(:local_tags_for_latest_version_commit_sha).
+          and_return(version_tags)
+      end
+
+      context "using the major version" do
+        let(:reference) { "v1" }
+        let(:latest_versions) { ["2.1", "2.1.0"] }
+
+        it "chooses the closest precision version" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        end
+      end
+
+      context "using the major minor version" do
+        let(:reference) { "v1.0" }
+        let(:latest_versions) { ["2", "2.1.0"] }
+
+        it "choses the lower precision version when equidistant" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("2"))
+        end
+      end
+
+      context "using the full version" do
+        let(:reference) { "v1.0.0" }
+        let(:latest_versions) { ["2", "2.1"] }
+
+        it "chooses the closest precision version" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        end
+      end
+    end
+
     context "given a git commit SHA" do
       let(:reference) { "1c24df3" }
 
