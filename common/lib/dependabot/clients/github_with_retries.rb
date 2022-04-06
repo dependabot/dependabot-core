@@ -5,10 +5,11 @@ require "octokit"
 module Dependabot
   module Clients
     class GithubWithRetries
+      OPEN_TIMEOUT_IN_SECONDS = ENV["OPEN_TIMEOUT_IN_SECONDS"] || 2
       DEFAULT_CLIENT_ARGS = {
         connection_options: {
           request: {
-            open_timeout: 2,
+            open_timeout: OPEN_TIMEOUT_IN_SECONDS.to_i,
             timeout: 5
           }
         }
