@@ -1256,6 +1256,7 @@ RSpec.describe Dependabot::Python::FileParser do
           subject(:dependency) { dependencies.first }
 
           it "has the right details" do
+            # requests is only in version_not_specified.toml
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
@@ -1274,13 +1275,19 @@ RSpec.describe Dependabot::Python::FileParser do
           subject(:dependency) { dependencies[1] }
 
           it "has the right details" do
+            # pytest is in both files, it picks version to be the lowest
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("pytest")
-            expect(dependency.version).to be_nil
+            expect(dependency.version).to eq("3.4.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "*",
                 file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }, {
+                requirement: "==3.4.0",
+                file: "requirements.txt",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -1292,6 +1299,7 @@ RSpec.describe Dependabot::Python::FileParser do
           subject(:dependency) { dependencies[2] }
 
           it "has the right details" do
+            # psycopg2 only exists in version_specified.txt
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("psycopg2")
             expect(dependency.version).to eq("2.6.1")
