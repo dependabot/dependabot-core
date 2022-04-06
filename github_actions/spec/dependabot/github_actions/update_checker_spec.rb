@@ -269,7 +269,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       before do
         version_tags = latest_versions.map do |v|
           {
-            tag: v,
+            tag: "v#{v}",
             version: Dependabot::GithubActions::Version.new(v)
           }
         end
@@ -302,6 +302,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:latest_versions) { ["2", "2.1"] }
 
         it "chooses the closest precision version" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        end
+      end
+
+      context "when a lower version is tagged to the same commit" do
+        let(:reference) { "v1.0.0" }
+        let(:latest_versions) { ["1.0.5", "2", "2.1"] }
+
+        it "chooses the closest precision of the latest version" do
           expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
         end
       end
