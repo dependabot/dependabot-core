@@ -78,7 +78,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.9 --no-document \
+  && gem install bundler -v 2.3.10 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -126,7 +126,7 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.2.9 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.3.3 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
