@@ -92,10 +92,6 @@ module Dependabot
         git_dependency?
       end
 
-      def library?
-        dependency_files.none? { |f| f.type == "package_main" }
-      end
-
       def version_from_tag(tag)
         # To compare with the current version we either use the commit SHA
         # (if that's what the parser picked up) or the tag name.

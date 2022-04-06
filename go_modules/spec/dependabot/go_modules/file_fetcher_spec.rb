@@ -59,15 +59,4 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
         to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
-
-  context "for an application" do
-    let(:repo) { "dependabot-fixtures/go-modules-app" }
-
-    it "fetches the main.go, too" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to include("main.go")
-      expect(file_fetcher_instance.files.
-        find { |f| f.name == "main.go" }.type).to eq("package_main")
-    end
-  end
 end
