@@ -10,10 +10,12 @@ require "rubygems_version_patch"
 module Dependabot
   module Python
     class Version < Gem::Version
+      attr_reader :epoch
       attr_reader :local_version
       attr_reader :post_release_version
 
-      VERSION_PATTERN = 'v?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
+      # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+      VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
@@ -29,6 +31,11 @@ module Dependabot
         version, @local_version = version.split("+")
         version ||= ""
         version = version.gsub(/^v/, "")
+        if version.include?("!")
+          @epoch, version = version.split("!")
+        else
+          @epoch = "0"
+        end
         version = normalise_prerelease(version)
         version, @post_release_version = version.split(/\.r(?=\d)/)
         version ||= ""
@@ -45,33 +52,37 @@ module Dependabot
       end
 
       def <=>(other)
+        other = Version.new(other.to_s) unless other.is_a?(Python::Version)
+
+        epoch_comparison = epoch_comparison(other)
+        return epoch_comparison unless epoch_comparison.zero?
+
         version_comparison = super(other)
         return version_comparison unless version_comparison.zero?
 
-        return post_version_comparison(other) unless post_version_comparison(other).zero?
+        post_version_comparison = post_version_comparison(other)
+        return post_version_comparison unless post_version_comparison.zero?
 
         local_version_comparison(other)
       end
 
+      private
+
+      def epoch_comparison(other)
+        epoch.to_i <=> other.epoch.to_i
+      end
+
       def post_version_comparison(other)
-        unless other.is_a?(Python::Version) && other.post_release_version
+        unless other.post_release_version
           return post_release_version.nil? ? 0 : 1
         end
 
         return -1 if post_release_version.nil?
 
-        # Post release versions should only ever be a single number, so we can
-        # just string-comparison them.
-        return 0 if post_release_version.to_i == other.post_release_version.to_i
-
-        post_release_version.to_i > other.post_release_version.to_i ? 1 : -1
+        post_release_version.to_i <=> other.post_release_version.to_i
       end
 
       def local_version_comparison(other)
-        unless other.is_a?(Python::Version)
-          return local_version.nil? ? 0 : 1
-        end
-
         # Local version comparison works differently in Python: `1.0.beta`
         # compares as greater than `1.0`. To accommodate, we make the
         # strings the same length before comparing.
@@ -88,8 +99,6 @@ module Dependabot
 
         lhsegments.count <=> rhsegments.count
       end
-
-      private
 
       def normalise_prerelease(version)
         # Python has reserved words for release states, which are treated
