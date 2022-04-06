@@ -50,4 +50,22 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
       its(:name) { is_expected.to eq("Gemfile") }
     end
   end
+
+  describe ".open_timeout_in_seconds" do
+    context "when DEPENDABOT_OPEN_TIMEOUT_IN_SECONDS is set" do
+      it "returns the provided value" do
+        override_value = 10
+        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_OPEN_TIMEOUT_IN_SECONDS" => override_value))
+
+        expect(described_class.open_timeout_in_seconds).to eq(override_value)
+      end
+    end
+
+    context "when ENV does not provide an override" do
+      it "falls back to a default value" do
+        expect(described_class.open_timeout_in_seconds).
+          to eq(described_class::DEFAULT_OPEN_TIMEOUT_IN_SECONDS)
+      end
+    end
+  end
 end
