@@ -23,7 +23,7 @@ module Dependabot
 
         # The Central Repository is included in the Super POM, which is
         # always inherited from.
-        CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
+        CENTRAL_REPO_URL = ENV['SETTINGS_CENTRAL_REPO_URL'] || "https://repo.maven.apache.org/maven2"
 
         def initialize(dependency_files:, evaluate_properties: true)
           @dependency_files = dependency_files
