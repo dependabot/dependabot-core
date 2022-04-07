@@ -316,6 +316,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "given a dependency with a tag reference and a branch similar to the tag" do
+      let(:upload_pack_fixture) { "download-artifact" }
+      let(:reference) { "v2" }
+
+      it { is_expected.to eq(Dependabot::GithubActions::Version.new("3")) }
+    end
+
     context "given a git commit SHA" do
       let(:reference) { "1c24df3" }
 
