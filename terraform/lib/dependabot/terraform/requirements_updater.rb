@@ -117,7 +117,7 @@ module Dependabot
 
       def update_range(req_string)
         requirement_class.new(req_string).requirements.flat_map do |r|
-          next r if r.satisfied_by?(latest_version)
+          next r.to_s if r.satisfied_by?(latest_version)
 
           case op = r.requirements.first.first
           when "<", "<=" then [update_greatest_version(r, latest_version)]
