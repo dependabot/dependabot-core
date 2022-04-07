@@ -212,7 +212,7 @@ module Dependabot
           elsif new_tag
             "commits/#{new_tag}"
           else
-            "commits/master"
+            "commits/#{default_gitlab_branch}"
           end
         end
 
@@ -322,6 +322,11 @@ module Dependabot
         def reliable_source_directory?
           MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
             include?(dependency.package_manager)
+        end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
         end
       end
     end

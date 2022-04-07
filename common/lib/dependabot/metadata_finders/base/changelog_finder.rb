@@ -273,6 +273,7 @@ module Dependabot
         end
 
         def fetch_gitlab_file_list
+          branch = default_gitlab_branch
           gitlab_client.repo_tree(source.repo).map do |file|
             type = case file.type
                    when "blob" then "file"
@@ -283,8 +284,8 @@ module Dependabot
               name: file.name,
               type: type,
               size: 100, # GitLab doesn't return file size
-              html_url: "#{source.url}/blob/master/#{file.path}",
-              download_url: "#{source.url}/raw/master/#{file.path}"
+              html_url: "#{source.url}/blob/#{branch}/#{file.path}",
+              download_url: "#{source.url}/raw/#{branch}/#{file.path}"
             )
           end
         rescue Gitlab::Error::NotFound
@@ -356,6 +357,11 @@ module Dependabot
         def default_bitbucket_branch
           @default_bitbucket_branch ||=
             bitbucket_client.fetch_default_branch(source.repo)
+        end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
         end
       end
     end
