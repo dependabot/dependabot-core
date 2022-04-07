@@ -162,6 +162,12 @@ module Dependabot
             searchText: search_text,
             "$skip": (current_page_number - 1) * page_limit,
             "$top": page_limit,
+            "$orderBy": [
+              {
+                field: "path",
+                sortOrder: "ASC"
+              }
+            ],
             filters: {
               Project: [CGI.unescape(repo_project_name)],
               Repository: [CGI.unescape(repo_name)],

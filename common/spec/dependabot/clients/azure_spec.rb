@@ -343,6 +343,12 @@ RSpec.describe Dependabot::Clients::Azure do
                    "searchText" => search_text,
                    "$skip" => 0,
                    "$top" => 1000,
+                   "$orderBy": [
+                     {
+                       field: "path",
+                       sortOrder: "ASC"
+                     }
+                   ],
                    "filters" => {
                      "Project" => [CGI.unescape(project_name)],
                      "Repository" => [CGI.unescape(repo_name)],
@@ -359,6 +365,12 @@ RSpec.describe Dependabot::Clients::Azure do
                    "searchText" => search_text,
                    "$skip" => 1000,
                    "$top" => 1000,
+                   "$orderBy": [
+                     {
+                       field: "path",
+                       sortOrder: "ASC"
+                     }
+                   ],
                    "filters" => {
                      "Project" => [CGI.unescape(project_name)],
                      "Repository" => [CGI.unescape(repo_name)],
@@ -386,6 +398,12 @@ RSpec.describe Dependabot::Clients::Azure do
                    "searchText" => search_text,
                    "$skip" => 0,
                    "$top" => 1000,
+                   "$orderBy": [
+                     {
+                       field: "path",
+                       sortOrder: "ASC"
+                     }
+                   ],
                    "filters" => {
                      "Project" => [CGI.unescape(project_name)],
                      "Repository" => [CGI.unescape(repo_name)],
@@ -413,6 +431,12 @@ RSpec.describe Dependabot::Clients::Azure do
                    "searchText" => search_text,
                    "$skip" => 0,
                    "$top" => 1000,
+                   "$orderBy": [
+                     {
+                       field: "path",
+                       sortOrder: "ASC"
+                     }
+                   ],
                    "filters" => {
                      "Project" => [CGI.unescape(project_name)],
                      "Repository" => [CGI.unescape(repo_name)],
