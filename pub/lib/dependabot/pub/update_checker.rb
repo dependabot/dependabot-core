@@ -105,7 +105,7 @@ module Dependabot
           rescue ScriptError
             return "bump_versions"
           end
-          if parsed_pubspec["version"].nil?
+          if parsed_pubspec["version"].nil? || parsed_pubspec["publish_to"] == "none"
             "bump_versions"
           else
             "widen_ranges"
