@@ -171,19 +171,32 @@ module Dependabot
                 "cargo config"
         end
 
-        source = Source.from_url(index_url)
-        registry_fetcher = RegistryFetcher.new(
-          source: source,
-          credentials: credentials
-        )
+        # Use known values from crates.microsoft.com rather than
+        # querying them, which avoids having to handle authentication
+        # and the unusual "sparse+..." URL.
+        if index_url == "sparse+https://crates.microsoft.com/index/"
+          {
+            type: "registry",
+            name: registry_name,
+            index: index_url,
+            dl: "https://crates.microsoft.com/api/v1/crates",
+            api: "https://crates.microsoft.com"
+          }
+        else
+          source = Source.from_url(index_url)
+          registry_fetcher = RegistryFetcher.new(
+            source: source,
+            credentials: credentials
+          )
 
-        {
-          type: "registry",
-          name: registry_name,
-          index: index_url,
-          dl: registry_fetcher.dl,
-          api: registry_fetcher.api
-        }
+          {
+            type: "registry",
+            name: registry_name,
+            index: index_url,
+            dl: registry_fetcher.dl,
+            api: registry_fetcher.api
+          }
+        end
       end
 
       # Looks up dotted key name in cargo config

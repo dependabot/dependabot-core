@@ -34,7 +34,13 @@ module Dependabot
       end
 
       def config_json
-        @config_json ||= fetch_file_from_host("config.json")
+        # Treat crates.microsoft.com as a special case and return known values
+        # rather than querying config.json to avoid having to deal with authentication.
+        if source == "sparse+https://crates.microsoft.com/index/config.json"
+          @config_json = '{"dl":"https://crates.microsoft.com/api/v1/crates","api":"https://crates.microsoft.com","always-auth":true}'
+        else
+          @config_json ||= fetch_file_from_host("config.json")
+        end
       end
     end
   end

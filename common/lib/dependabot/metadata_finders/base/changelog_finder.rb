@@ -188,13 +188,18 @@ module Dependabot
 
           unless @file_text.key?(file.download_url)
             provider = Source.from_url(file.html_url).provider
-            @file_text[file.download_url] =
-              case provider
-              when "github" then fetch_github_file(file)
-              when "gitlab" then fetch_gitlab_file(file)
-              when "bitbucket" then fetch_bitbucket_file(file)
-              else raise "Unsupported provider '#{provider}'"
-              end
+            begin
+              @file_text[file.download_url] =
+                case provider
+                when "github" then fetch_github_file(file)
+                when "gitlab" then fetch_gitlab_file(file)
+                when "bitbucket" then fetch_bitbucket_file(file)
+                else raise "Unsupported provider '#{provider}'"
+                end
+            rescue StandardError => e
+              puts "Failed to read changelog: #{e.inspect}"
+              @file_text[file.download_url] = "<failed to download>"
+            end
           end
 
           return unless @file_text[file.download_url].valid_encoding?

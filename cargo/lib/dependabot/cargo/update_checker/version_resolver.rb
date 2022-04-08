@@ -132,7 +132,10 @@ module Dependabot
         def run_cargo_command(command)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
+          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
+          # environment variables.
+          env = ENV.select{ |key, value| key.match(/^CARGO_REGISTRIES_/) }
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo

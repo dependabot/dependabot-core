@@ -80,9 +80,19 @@ module Dependabot
 
           info = dependency.requirements.map { |r| r[:source] }.compact.first
           dl = info && info[:dl] || CRATES_IO_DL
+
+          # Default request headers
+          hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
+
+          # crates.microsoft.com requires an auth token
+          if dl == "https://crates.microsoft.com/api/v1/crates"
+            raise "Must specify CARGO_REGISTRIES_CRATES_MS_TOKEN" if ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"].nil?
+            hdrs["Authorization"] = ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"]
+          end
+
           response = Excon.get(
             "#{dl}/#{dependency.name}",
-            headers: { "User-Agent" => "Dependabot (dependabot.com)" },
+            headers: hdrs,
             idempotent: true,
             **SharedHelpers.excon_defaults
           )
