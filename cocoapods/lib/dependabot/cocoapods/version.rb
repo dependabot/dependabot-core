@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'cocoapods-core'
+require "cocoapods-core"
 
 module Dependabot
   module CocoaPods
@@ -21,5 +21,5 @@ module Dependabot
   end
 end
 
-Dependabot::Utils
-  .register_version_class('cocoapods', Dependabot::CocoaPods::Version)
+Dependabot::Utils.
+  register_version_class("cocoapods", Dependabot::CocoaPods::Version)

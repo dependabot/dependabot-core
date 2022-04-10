@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-require 'dependabot/file_updaters'
-require 'dependabot/file_updaters/base'
+require "dependabot/file_updaters"
+require "dependabot/file_updaters/base"
 
 module Dependabot
   module CocoaPods
     class FileUpdater < Dependabot::FileUpdaters::Base
-      require_relative 'file_updater/podfile_updater'
-      require_relative 'file_updater/lockfile_updater'
+      require_relative "file_updater/podfile_updater"
+      require_relative "file_updater/lockfile_updater"
 
       WORD = %r{[a-zA-Z0-9\-_./]+}.freeze
       POD_NAME = /(('|")(?<q_name>#{WORD})('|")|(?<name>#{WORD}))/.freeze
@@ -52,16 +52,16 @@ module Dependabot
       private
 
       def check_required_files
-        raise 'No Podfile!' unless podfile
-        raise 'No Podfile.lock!' unless lockfile
+        raise "No Podfile!" unless podfile
+        raise "No Podfile.lock!" unless lockfile
       end
 
       def podfile
-        @podfile ||= get_original_file('Podfile')
+        @podfile ||= get_original_file("Podfile")
       end
 
       def lockfile
-        @lockfile ||= get_original_file('Podfile.lock')
+        @lockfile ||= get_original_file("Podfile.lock")
       end
 
       def updated_podfile_content
@@ -83,5 +83,5 @@ module Dependabot
   end
 end
 
-Dependabot::FileUpdaters
-  .register('cocoapods', Dependabot::CocoaPods::FileUpdater)
+Dependabot::FileUpdaters.
+  register("cocoapods", Dependabot::CocoaPods::FileUpdater)

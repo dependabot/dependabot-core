@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require 'cocoapods'
-require 'dependabot/update_checkers'
-require 'dependabot/update_checkers/base'
-require 'dependabot/shared_helpers'
-require 'dependabot/errors'
-require 'dependabot/cocoapods/file_updater'
-require 'dependabot/cocoapods/update_checker/requirements_updater'
+require "cocoapods"
+require "dependabot/update_checkers"
+require "dependabot/update_checkers/base"
+require "dependabot/shared_helpers"
+require "dependabot/errors"
+require "dependabot/cocoapods/file_updater"
+require "dependabot/cocoapods/update_checker/requirements_updater"
 
 module Dependabot
   module CocoaPods
@@ -60,8 +60,8 @@ module Dependabot
       end
 
       def updated_dependencies_after_full_unlock
-        version_resolver.dependency_updates_from_full_unlock
-                        .map { |update_details| build_updated_dependency(update_details) }
+        version_resolver.dependency_updates_from_full_unlock.
+          map { |update_details| build_updated_dependency(update_details) }
       end
 
       def pod_analyzer
@@ -74,7 +74,7 @@ module Dependabot
             evaluated_podfile =
               Pod::Podfile.from_ruby(nil, podfile_for_update_check)
 
-            pod_sandbox = Pod::Sandbox.new('tmp')
+            pod_sandbox = Pod::Sandbox.new("tmp")
 
             analyzer = Pod::Installer::Analyzer.new(
               pod_sandbox,
@@ -95,15 +95,15 @@ module Dependabot
       end
 
       def lockfile
-        lockfile = dependency_files.find { |f| f.name == 'Podfile.lock' }
-        raise 'No Podfile.lock!' unless lockfile
+        lockfile = dependency_files.find { |f| f.name == "Podfile.lock" }
+        raise "No Podfile.lock!" unless lockfile
 
         lockfile
       end
 
       def podfile
-        podfile = dependency_files.find { |f| f.name == 'Podfile' }
-        raise 'No Podfile!' unless podfile
+        podfile = dependency_files.find { |f| f.name == "Podfile" }
+        raise "No Podfile!" unless podfile
 
         podfile
       end
@@ -122,14 +122,14 @@ module Dependabot
       def remove_dependency_requirement(podfile_content)
         regex = Dependabot::CocoaPods::FileUpdater::POD_CALL
 
-        podfile_content
-          .to_enum(:scan, regex)
-          .find { Regexp.last_match[:name] == dependency.name }
+        podfile_content.
+          to_enum(:scan, regex).
+          find { Regexp.last_match[:name] == dependency.name }
 
         original_pod_declaration_string = Regexp.last_match.to_s
         updated_pod_declaration_string =
-          original_pod_declaration_string
-          .sub(/,[ \t]*#{Dependabot::CocoaPods::FileUpdater::REQUIREMENTS}/, '')
+          original_pod_declaration_string.
+          sub(/,[ \t]*#{Dependabot::CocoaPods::FileUpdater::REQUIREMENTS}/, "")
 
         podfile_content.gsub(
           original_pod_declaration_string,
@@ -138,11 +138,11 @@ module Dependabot
       end
 
       def replace_ssh_links_with_https(content)
-        content.gsub('git@github.com:', 'https://github.com/')
+        content.gsub("git@github.com:", "https://github.com/")
       end
     end
   end
 end
 
-Dependabot::UpdateCheckers
-  .register('cocoapods', Dependabot::CocoaPods::UpdateChecker)
+Dependabot::UpdateCheckers.
+  register("cocoapods", Dependabot::CocoaPods::UpdateChecker)

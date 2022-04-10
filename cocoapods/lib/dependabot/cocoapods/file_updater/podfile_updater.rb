@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'dependabot/cocoapods/file_updater'
+require "dependabot/cocoapods/file_updater"
 
 module Dependabot
   module CocoaPods
@@ -12,8 +12,8 @@ module Dependabot
         end
 
         def updated_podfile_content
-          dependencies.select { |dep| requirement_changed?(podfile, dep) }
-                      .reduce(podfile.content.dup) do |_content, dep|
+          dependencies.select { |dep| requirement_changed?(podfile, dep) }.
+            reduce(podfile.content.dup) do |_content, dep|
             match = podfile.content.to_enum(:scan, POD_CALL).find do
               Regexp.last_match[:q_name] == dep.name ||
                 Regexp.last_match[:name] == dep.name
@@ -40,12 +40,12 @@ module Dependabot
         attr_reader :dependencies, :podfile
 
         def update_pod_declaration_string(original_string, dep)
-          original_string
-            .sub(REQUIREMENT) do |old_reqs|
+          original_string.
+            sub(REQUIREMENT) do |old_reqs|
             old_version = old_reqs.match(POD_VERSION)[0]
 
-            precision = old_version.split('.').count
-            new_version = dep.version.split('.').first(precision).join('.')
+            precision = old_version.split(".").count
+            new_version = dep.version.split(".").first(precision).join(".")
 
             old_reqs.sub(old_version, new_version)
           end
