@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Python::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(4) }
+    its(:length) { is_expected.to eq(5) }
 
     context "with a version specified" do
       describe "the first dependency" do
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with jinja templates" do
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -478,7 +478,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       it "has the right details" do
         expect(dependencies).to match_array(
@@ -700,6 +700,17 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.4.1",
                 file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "attrs",
+              version: "18.0.0",
+              requirements: [{
+                requirement: "==18.0.0",
+                file: "more_requirements.txt",
                 groups: ["dependencies"],
                 source: nil
               }],
@@ -1161,7 +1172,7 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(5) }
+        its(:length) { is_expected.to eq(6) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
@@ -1250,7 +1261,7 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(5) }
+        its(:length) { is_expected.to eq(6) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
