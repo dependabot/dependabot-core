@@ -1313,6 +1313,26 @@ RSpec.describe Dependabot::Python::FileParser do
             )
           end
         end
+
+        describe "a dependency in requirements.txt that only exists in the lockfile" do
+          subject(:dependency) { dependencies.find { |d| d.name == "attrs" } }
+
+          it "has the right details" do
+            # attrs2 exists in version_not_specified.lock and version_specified.txt
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("attrs")
+            expect(dependency.version).to eq("18.0.0")
+            # it only has 1 requirement since it isn't in version_not_specified.toml
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==18.0.0",
+                file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
       end
     end
 
