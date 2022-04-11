@@ -47,7 +47,7 @@ jobs:
       CODE_DIR: /home/dependabot/dependabot-core
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Prepare BRANCH_REF environment variable
         run: echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
       - name: Log in to GHCR
@@ -103,6 +103,6 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
       - run: ./bin/lint

@@ -258,6 +258,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             ]
           end
         end
+        context "app (version but publish_to: none)" do
+          let(:project) { "can_update_publish_to_none" }
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
         context "library (has version)" do
           let(:project) { "can_update_library" }
           it "can update" do
