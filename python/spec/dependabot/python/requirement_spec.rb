@@ -139,9 +139,13 @@ RSpec.describe Dependabot::Python::Requirement do
       it { is_expected.to eq([Gem::Requirement.new("1.2.1")]) }
     end
 
-    context "wrapped in parentheses" do
-      let(:requirement_string) { "(1.2.1)" }
-      it { is_expected.to eq([Gem::Requirement.new("1.2.1")]) }
+    context "with a illformed parentheses" do
+      let(:requirement_string) { "(== 1.2).1'" }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Gem::Requirement::BadRequirementError)
+      end
     end
 
     context "with an || requirement" do

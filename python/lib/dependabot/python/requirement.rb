@@ -20,7 +20,7 @@ module Dependabot
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
-      PARENS_PATTERN = /\A*\(([^)]+)\)*\z/.freeze
+      PARENS_PATTERN = /\A\(([^)]+)\)\z/.freeze
 
       def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
