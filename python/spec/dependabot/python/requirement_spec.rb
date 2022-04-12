@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Python::Requirement do
     end
 
     context "with a illformed parentheses" do
-      let(:requirement_string) { "(== 1.2).1'" }
+      let(:requirement_string) { "(== 1.2).1" }
 
       it "raises a helpful error" do
         expect { subject }.
@@ -189,6 +189,15 @@ RSpec.describe Dependabot::Python::Requirement do
           to match_array(
             [Gem::Requirement.new("1.2.1"), Gem::Requirement.new(">= 1.5.0")]
           )
+      end
+    end
+
+    context "with illformed parentheses inside an || requirement" do
+      let(:requirement_string) { "1.2.1) || >= 1.5.0" }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Gem::Requirement::BadRequirementError)
       end
     end
   end
