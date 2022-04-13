@@ -55,10 +55,6 @@ module Dependabot
           # Sometimes custom registries are flaky. We don't want to make that
           # our problem, so we quietly return `nil` here.
         end
-        
-        def types_found
-          
-        end
 
         def lowest_security_fix_version
           return unless valid_npm_details?
