@@ -12,7 +12,49 @@ module Dependabot
       def look_up_source
         return Source.from_url(dependency_source_url) if dependency_source_url
 
-        look_up_source_in_nuspec(dependency_nuspec_file)
+        src_repo = look_up_source_in_nuspec(dependency_nuspec_file)
+        return src_repo if src_repo
+
+        src_repo_from_project
+      end
+
+      def src_repo_from_project
+        source = dependency.requirements.find { |r| r&.fetch(:source) }&.fetch(:source)
+        return unless source
+
+        response = Excon.get(
+          source.fetch(:url), # e.g. https://nuget.pkg.github.com/ORG/index.json
+          idempotent: true,
+          **SharedHelpers.excon_defaults(headers: auth_header)
+        )
+        return unless response.status == 200
+
+        # e.g. https://nuget.pkg.github.com/ORG/query
+        search_base = JSON.parse(response.body).
+          fetch("resources", []).
+          find { |r| r.fetch("@type") == "SearchQueryService" }&.
+          fetch("@id")
+        return unless search_base
+
+        puts "search #{search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"}"
+
+        response = Excon.get(
+          search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
+          idempotent: true,
+          **SharedHelpers.excon_defaults(headers: auth_header)
+        )
+        return unless response.status == 200
+
+        JSON.parse(response.body).fetch("data", []).each do |searchResult|
+          next unless searchResult["id"].downcase == dependency.name.downcase
+
+          if searchResult.fetch("projectUrl")
+            return Source.from_url(searchResult.fetch("projectUrl"))
+          end
+          if searchResult.fetch("licenseUrl")
+            return Source.from_url(searchResult.fetch("licenseUrl"))
+          end
+        end
       end
 
       def look_up_source_in_nuspec(nuspec)
@@ -56,6 +98,7 @@ module Dependabot
       end
 
       def dependency_nuspec_url
+        puts "dependency.requirements #{dependency.requirements}"
         source = dependency.requirements.
                  find { |r| r&.fetch(:source) }&.fetch(:source)
 
