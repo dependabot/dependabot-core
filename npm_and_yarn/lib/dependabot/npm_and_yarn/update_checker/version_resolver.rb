@@ -224,13 +224,13 @@ module Dependabot
           updates
         end
 
-        #TODO: Replace this with @landongrindheim's work.  Just a dummy placeholder to force something to work.
+        # TODO: Replace this with @landongrindheim's work.  Just a dummy placeholder to force something to work.
         def convert_to_types(dep_name)
           "@types/#{dep_name}"
         end
 
         def types_update_available?
-          #TODO: This should probably actually check if there is an updated version
+          # TODO: This should probably actually check if there is an updated version
           #      along with just the existence of the dependency.
           types_name = convert_to_types(dependency.name)
           types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name }
