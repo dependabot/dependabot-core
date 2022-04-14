@@ -1212,6 +1212,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:registry_response) do
       fixture("npm_responses", "jquery.json")
     end
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
+    let(:types_response) do
+      fixture("npm_responses", "types_jquery.json")
+    end
     before do
       stub_request(:get, registry_listing_url).
         to_return(status: 200, body: registry_response)
@@ -1219,6 +1223,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         to_return(status: 200, body: "{}")
       stub_request(:get, registry_listing_url + "/3.6.0").
         to_return(status: 200)
+      stub_request(:get, types_listing_url).
+        to_return(status: 200, body: types_response)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
@@ -1237,8 +1243,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
-    xit "returns 2 dependencies when @types exists" do
-      updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+    it "returns 2 dependencies when @types exists" do
+      updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("3.6.0")
       expect(updated_deps.length).to eq(2)
       expect(updated_deps.last.version).to eq("3.5.14")
@@ -1285,6 +1291,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     let(:registry_response) do
       fixture("npm_responses", "node-forge.json")
     end
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fnode-forge" }
+    let(:types_response) do
+      fixture("npm_responses", "types_node-forge.json")
+    end
     before do
       stub_request(:get, registry_listing_url).
         to_return(status: 200, body: registry_response)
@@ -1292,6 +1302,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         to_return(status: 200, body: "{}")
       stub_request(:get, registry_listing_url + "/1.3.1").
         to_return(status: 200)
+      stub_request(:get, types_listing_url).
+        to_return(status: 200, body: types_response)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
@@ -1310,8 +1322,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
-    xit "returns 2 dependencies when @types in dependencies" do
-      updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+    it "returns 2 dependencies when @types in dependencies" do
+      updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("1.3.1")
       expect(updated_deps.length).to eq(2)
       expect(updated_deps.last.version).to eq("1.0.1")

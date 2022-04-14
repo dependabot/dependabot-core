@@ -74,6 +74,7 @@ module Dependabot
         def latest_resolvable_version
           return latest_allowable_version if git_dependency?(dependency)
           return if part_of_tightly_locked_monorepo?
+          return if types_update_available?
 
           return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
@@ -122,6 +123,7 @@ module Dependabot
               )
             }
           end
+          updates << updated_types_dependencies if types_update_available?
           updates.uniq
         end
 
@@ -220,6 +222,40 @@ module Dependabot
           end
 
           updates
+        end
+
+        #TODO: Replace this with @landongrindheim's work.  Just a dummy placeholder to force something to work.
+        def convert_to_types(dep_name)
+          "@types/#{dep_name}"
+        end
+
+        def types_update_available?
+          #TODO: This should probably actually check if there is an updated version
+          #      along with just the existence of the dependency.
+          types_name = convert_to_types(dependency.name)
+          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name }
+          return false unless types_dep_to_update
+
+          true
+        end
+
+        def updated_types_dependencies
+          types_name = convert_to_types(dependency.name)
+          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name }
+          return unless types_dep_to_update
+
+          updated_version =
+            latest_version_finder(types_dep_to_update).
+            possible_versions.
+            find { |v| v <= latest_allowable_version }
+
+          {
+            dependency: types_dep_to_update,
+            version: updated_version,
+            previous_version: resolve_latest_previous_version(
+              types_dep_to_update, updated_version
+            )
+          }
         end
 
         def peer_dependency_errors
