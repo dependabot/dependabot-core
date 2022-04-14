@@ -29,15 +29,14 @@ module Dependabot
         )
         return unless response.status == 200
 
-        # e.g. https://nuget.pkg.github.com/ORG/query
+        # Extract the query url e.g. https://nuget.pkg.github.com/ORG/query
         search_base = JSON.parse(response.body).
           fetch("resources", []).
           find { |r| r.fetch("@type") == "SearchQueryService" }&.
           fetch("@id")
         return unless search_base
 
-        puts "search #{search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0"}"
-
+        # Query for the package
         response = Excon.get(
           search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
           idempotent: true,
@@ -45,14 +44,17 @@ module Dependabot
         )
         return unless response.status == 200
 
+        # Find a projectUrl or licenseUrl that look like a source URL
         JSON.parse(response.body).fetch("data", []).each do |searchResult|
           next unless searchResult["id"].downcase == dependency.name.downcase
 
           if searchResult.fetch("projectUrl")
-            return Source.from_url(searchResult.fetch("projectUrl"))
+            source = Source.from_url(searchResult.fetch("projectUrl"))
+            return source unless source.repo.nil?
           end
           if searchResult.fetch("licenseUrl")
-            return Source.from_url(searchResult.fetch("licenseUrl"))
+            source = Source.from_url(searchResult.fetch("licenseUrl"))
+            return source unless source.repo.nil?
           end
         end
       end
