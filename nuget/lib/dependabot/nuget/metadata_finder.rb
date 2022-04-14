@@ -100,7 +100,6 @@ module Dependabot
       end
 
       def dependency_nuspec_url
-        puts "dependency.requirements #{dependency.requirements}"
         source = dependency.requirements.
                  find { |r| r&.fetch(:source) }&.fetch(:source)
 
