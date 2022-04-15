@@ -22,8 +22,20 @@ module Dependabot
         @name  = match[:name]
       end
 
+      def to_s
+        if scoped?
+          "@#{@scope}/#{@name}"
+        else
+          @name.to_s
+        end
+      end
+
+      def <=>(other)
+        to_s <=> other.to_s
+      end
+
       def types_package
-        return if types_package?
+        return self if types_package?
 
         if scoped?
           "@types/#{@scope}__#{@name}"
