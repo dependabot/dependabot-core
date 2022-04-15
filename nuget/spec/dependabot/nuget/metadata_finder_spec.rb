@@ -146,14 +146,18 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
       context "that requires authentication" do
         before do
           stub_request(:get, nuget_url).to_return(status: 404)
-          stub_request(:get, nuget_url).
-            with(basic_auth: %w(my passw0rd)).
-            to_return(status: 200, body: nuget_response)
+          stub_request(:get, 'https://www.myget.org/F/exceptionless/api/v3/index.json').to_return(status: 404)
         end
 
         it { is_expected.to be_nil }
 
         context "with details in the credentials" do
+          before do
+            stub_request(:get, nuget_url).
+              with(basic_auth: %w(my passw0rd)).
+              to_return(status: 200, body: nuget_response)
+          end
+
           let(:credentials) do
             [{
               "type" => "git_source",
@@ -170,6 +174,22 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
           it { is_expected.to eq("https://github.com/dotnet/core-setup") }
         end
+      end
+
+      context "that doesn't support .nuspec routes" do
+        before do
+          # registry doesn't support .nuspec route, so returns 404
+          stub_request(:get, nuget_url).to_return(status: 404)
+          # fallback begins by getting the search URL from the index
+          stub_request(:get, 'https://www.myget.org/F/exceptionless/api/v3/index.json').
+            to_return(status: 200, body: fixture('nuspecs', 'index.json'))
+          # next query for the package at the search URL returned
+          stub_request(:get, 'https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0').
+            to_return(status: 200, body: fixture("nuspecs", "microsoft.extensions.depdencymodel-results.json"))
+        end
+
+        # data was extracted from the projectUrl in the search results
+        it { is_expected.to eq 'https://github.com/dotnet/core-setup' }
       end
     end
   end
