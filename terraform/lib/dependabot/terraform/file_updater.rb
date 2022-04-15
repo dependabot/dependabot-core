@@ -95,10 +95,10 @@ module Dependabot
       end
 
       def extract_provider_h1_hashes(content, declaration_regex)
-        hashes = content.match(declaration_regex).to_s.
-                 match(hashes_object_regex).to_s.
-                 split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
-                 select { |h| h&.match?(/^h1:/) }
+        content.match(declaration_regex).to_s.
+          match(hashes_object_regex).to_s.
+          split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+          select { |h| h&.match?(/^h1:/) }
       end
 
       def lockfile_details(new_req)
@@ -106,10 +106,10 @@ module Dependabot
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
         declaration_regex = lockfile_declaration_regex(provider_source)
 
-        return content, provider_source, declaration_regex
+        [content, provider_source, declaration_regex]
       end
 
-      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
         new_req = dependency.requirements.first
 
         # NOTE: Only providers are inlcuded in the lockfile, modules are not
@@ -128,7 +128,6 @@ module Dependabot
           linux_arm64
         )
 
-        architecture_hashes = {}
         base_dir = dependency_files.first.directory
         lockfile_hash_removed = content.sub(hashes_object_regex, "")
 
@@ -146,8 +145,8 @@ module Dependabot
             SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
 
             updated_lockfile = File.read(".terraform.lock.hcl")
-            updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex) 
-            return if updated_hashes.nil?
+            updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex)
+            next if updated_hashes.nil?
 
             # Check if the architecture is present in the original lockfile
             hashes.each do |hash|
@@ -178,7 +177,7 @@ module Dependabot
         @architecture_type ||= lookup_hash_architecture.empty? ? [:linux_amd64] : lookup_hash_architecture
       end
 
-      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
+      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
