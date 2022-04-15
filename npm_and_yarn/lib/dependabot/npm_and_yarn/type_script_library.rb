@@ -3,61 +3,43 @@
 module Dependabot
   module NpmAndYarn
     class TypeScriptLibrary
-      INVALID_CHARACTERS_REGEX = /[~()'!\*[[:space:]]]/.freeze
-      MAX_PACKAGE_NAME_LENGTH  = 214
-      TYPES_ORG                = "@types/"
+      DEFINITELY_TYPED_SCOPE = /types/i
+      PACKAGE_NAME_REGEX     = %r{
+          \A                                         # beginning of string
+          (?=.{1,214}\z)                             # enforce length (1 - 214)
+          (@(?<scope>[a-z0-9\-~][a-z0-9\-\._~]*)\/)? # capture 'scope' if present
+          (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
+          \z                                         # end of string
+      }xi.freeze                                     # multi-line/case-insensitive
 
-      def initialize(package_name)
-        @package_name = package_name.to_s
+      class InvalidPackageName < StandardError; end
+
+      def initialize(string)
+        match = PACKAGE_NAME_REGEX.match(string.to_s)
+        raise InvalidPackageName unless match
+
+        @scope = match[:scope]
+        @name  = match[:name]
       end
 
       def types_package
-        return "" if !valid?
+        return if types_package?
 
-        case
-        when scoped_library?
-          "@types/#{scoped_name}"
-        when types_package?
-          package_name
+        if scoped?
+          "@types/#{@scope}__#{@name}"
         else
-          "@types/#{package_name}"
+          "@types/#{@name}"
         end
       end
 
       private
 
-      attr_reader :package_name
-
-      def valid?
-        valid_length? && lowercased? && characters_valid?
-      end
-
-      def valid_length?
-        package_name.length.positive? &&
-          package_name.length <= MAX_PACKAGE_NAME_LENGTH
-      end
-
-      def lowercased?
-        package_name == package_name.downcase
-      end
-
-      def characters_valid?
-        !package_name.start_with?("_", ".") &&
-          !package_name.match?(INVALID_CHARACTERS_REGEX)
-      end
-
-      def scoped_library?
-        package_name.start_with?("@") && !types_package?
+      def scoped?
+        !@scope.nil?
       end
 
       def types_package?
-        package_name.start_with?(TYPES_ORG)
-      end
-
-      def scoped_name
-        scoped_name_without_at = package_name.delete_prefix("@")
-        scope, package = scoped_name_without_at.split("/")
-        "#{scope}__#{package}"
+        DEFINITELY_TYPED_SCOPE.match?(@scope)
       end
     end
   end
