@@ -3,7 +3,7 @@
 module Dependabot
   module NpmAndYarn
     class PackageName
-      DEFINITELY_TYPED_SCOPE = /types/i
+      DEFINITELY_TYPED_SCOPE = /types/i.freeze
       PACKAGE_NAME_REGEX     = %r{
           \A                                         # beginning of string
           (?=.{1,214}\z)                             # enforce length (1 - 214)

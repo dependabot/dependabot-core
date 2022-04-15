@@ -71,13 +71,13 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
       second = described_class.new("second")
       third  = described_class.new("third")
 
-      expect([ third, second, first ].sort).to eq([ first, second, third ])
+      expect([third, second, first].sort).to eq([first, second, third])
     end
 
     it "allows for comparison with types packages" do
       library = described_class.new("my-library")
 
-      expect([ library, library.types_package ].sort).to eq([ library.types_package, library ])
+      expect([library, library.types_package].sort).to eq([library.types_package, library])
     end
   end
 end
