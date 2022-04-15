@@ -31,7 +31,6 @@ module Dependabot
 
           updated_files << updated_file(file: file, content: updated_content)
         end
-        debugger
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
         if updated_lockfile_content && lock_file.content != updated_lockfile_content
@@ -95,7 +94,7 @@ module Dependabot
         end
       end
 
-      def extract_terraform_hashes(content, declaration_regex)
+      def extract_provider_h1_hashes(content, declaration_regex)
         hashes = content.match(declaration_regex).to_s.
                  match(hashes_object_regex).to_s.
                  split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
@@ -116,14 +115,16 @@ module Dependabot
         # NOTE: Only providers are inlcuded in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
+        architectures = []
         content, provider_source, declaration_regex = lockfile_details(new_req)
-        hashes = extract_terraform_hashes(content, declaration_regex)
+        hashes = extract_provider_h1_hashes(content, declaration_regex)
 
         # These are ordered in assumed popularity
-        architectures = %w(
+        possible_architectures = %w(
           linux_amd64
           darwin_amd64
           windows_amd64
+          darwin_arm64
           linux_arm64
         )
 
@@ -131,19 +132,31 @@ module Dependabot
         base_dir = dependency_files.first.directory
         lockfile_hash_removed = content.sub(hashes_object_regex, "")
 
+        # This runs in the same directory as the actual lockfile update so
+        # the platform must be determined before the updated manifest files
+        # are written to disk
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-          architectures.each do |arch|
+          possible_architectures.each do |arch|
+            # Exit early if we have detected all of the architectures present
+            break if architectures.count == hashes.count
+
             # Terraform will update the lockfile in place so we use a fresh lockfile for each lookup
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
 
             SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
 
             updated_lockfile = File.read(".terraform.lock.hcl")
-            updated_hashes = extract_terraform_hashes(updated_lockfile, declaration_regex) 
-            architecture_hashes[arch.to_sym] = updated_hashes unless updated_hashes.nil?
+            updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex) 
+            return if updated_hashes.nil?
+
+            # Check if the architecture is present in the original lockfile
+            hashes.each do |hash|
+              updated_hashes.select { |h| h.match?(/^h1:/) }.each do |updated_hash|
+                architectures.append(arch.to_sym) if hash == updated_hash
+              end
+            end
 
             File.delete(".terraform.lock.hcl")
-
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
           if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
@@ -152,29 +165,17 @@ module Dependabot
           end
           raise if @retrying_lock || !e.message.include?("terraform init")
 
-          # NOTE: Modules need to be installed before terraform can update the
-          # lockfile
+          # NOTE: Modules need to be installed before terraform can update the lockfile
           @retrying_lock = true
           run_terraform_init
           retry
         end
 
-        present_hashes = []
-        # architecture_hashes is populated, now we compare to see which
-        # architecture(s) is present in the original lockfile
-        hashes.each do |hash|
-          architecture_hashes.each do |arch, arch_hash|
-            arch_hash.select { |a| a.match?(/^h1:/) }.each do |other_hash|
-              present_hashes.append(arch) if hash == other_hash
-            end
-          end
-        end
-
-        present_hashes.to_a
+        architectures.to_a
       end
 
       def architecture_type
-        @architecture_type ||= lookup_hash_architecture.empty? ? "linux_amd64" : lookup_hash_architecture
+        @architecture_type ||= lookup_hash_architecture.empty? ? [:linux_amd64] : lookup_hash_architecture
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
@@ -189,14 +190,15 @@ module Dependabot
 
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Determine the provider using the original manifest files
+          platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
+
           # Update the provider requirements in case the previous requirement doesn't allow the new version
           updated_manifest_files.each { |f| File.write(f.name, f.content) }
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
-          platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
-          debugger
-          SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source} -no-color")
+          SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source}")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
@@ -214,8 +216,7 @@ module Dependabot
           end
           raise if @retrying_lock || !e.message.include?("terraform init")
 
-          # NOTE: Modules need to be installed before terraform can update the
-          # lockfile
+          # NOTE: Modules need to be installed before terraform can update the lockfile
           @retrying_lock = true
           run_terraform_init
           retry
