@@ -15,6 +15,9 @@ module Dependabot
         src_repo = look_up_source_in_nuspec(dependency_nuspec_file)
         return src_repo if src_repo
 
+        # Fallback to getting source from the search result's projectUrl or licenseUrl.
+        # GitHub Packages doesn't support getting the `.nuspec`, switch to getting
+        # that instead once it is supported.
         src_repo_from_project
       end
 
@@ -22,21 +25,18 @@ module Dependabot
         source = dependency.requirements.find { |r| r&.fetch(:source) }&.fetch(:source)
         return unless source
 
+        # Query the service index e.g. https://nuget.pkg.github.com/ORG/index.json
         response = Excon.get(
-          source.fetch(:url), # e.g. https://nuget.pkg.github.com/ORG/index.json
+          source.fetch(:url),
           idempotent: true,
           **SharedHelpers.excon_defaults(headers: auth_header)
         )
         return unless response.status == 200
 
         # Extract the query url e.g. https://nuget.pkg.github.com/ORG/query
-        search_base = JSON.parse(response.body).
-          fetch("resources", []).
-          find { |r| r.fetch("@type") == "SearchQueryService" }&.
-          fetch("@id")
+        search_base = extract_search_url(response.body)
         return unless search_base
 
-        # Query for the package
         response = Excon.get(
           search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
           idempotent: true,
@@ -45,15 +45,26 @@ module Dependabot
         return unless response.status == 200
 
         # Find a projectUrl or licenseUrl that look like a source URL
-        JSON.parse(response.body).fetch("data", []).each do |searchResult|
-          next unless searchResult["id"].downcase == dependency.name.downcase
+        extract_source_repo(response.body)
+      end
 
-          if searchResult.fetch("projectUrl")
-            source = Source.from_url(searchResult.fetch("projectUrl"))
+      def extract_search_url(body)
+        JSON.parse(body).
+          fetch("resources", []).
+          find { |r| r.fetch("@type") == "SearchQueryService" }&.
+          fetch("@id")
+      end
+
+      def extract_source_repo(body)
+        JSON.parse(body).fetch("data", []).each do |search_result|
+          next unless search_result["id"].downcase == dependency.name.downcase
+
+          if search_result.fetch("projectUrl")
+            source = Source.from_url(search_result.fetch("projectUrl"))
             return source unless source.repo.nil?
           end
-          if searchResult.fetch("licenseUrl")
-            source = Source.from_url(searchResult.fetch("licenseUrl"))
+          if search_result.fetch("licenseUrl")
+            source = Source.from_url(search_result.fetch("licenseUrl"))
             return source unless source.repo.nil?
           end
         end
