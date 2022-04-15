@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/npm_and_yarn/type_script_library"
+require "dependabot/npm_and_yarn/package_name"
 
-RSpec.describe Dependabot::NpmAndYarn::TypeScriptLibrary do
+RSpec.describe Dependabot::NpmAndYarn::PackageName do
   describe "initialization" do
     it "raises a meaningful error if the input is not a valid package name" do
       expect { described_class.new("🤷") }.to raise_error(described_class::InvalidPackageName)

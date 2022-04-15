@@ -2,7 +2,7 @@
 
 module Dependabot
   module NpmAndYarn
-    class TypeScriptLibrary
+    class PackageName
       DEFINITELY_TYPED_SCOPE = /types/i
       PACKAGE_NAME_REGEX     = %r{
           \A                                         # beginning of string
