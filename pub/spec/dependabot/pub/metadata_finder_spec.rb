@@ -9,9 +9,9 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
   it_behaves_like "a dependency metadata finder"
 
   before do
-    stub_request(:get, "https://pub.dev/api/packages/retry").to_return(
+    stub_request(:get, "https://pub.dev/api/packages/#{dependency.name}").to_return(
       status: 200,
-      body: fixture("pub_dev_responses/simple/retry.json"),
+      body: fixture("pub_dev_responses/simple/#{dependency.name}.json"),
       headers: {}
     )
   end
@@ -46,6 +46,25 @@ RSpec.describe Dependabot::Pub::MetadataFinder do
   describe "#source_url" do
     it "finds the repository" do
       expect(finder.source_url).to eq "https://github.com/google/dart-neats"
+    end
+  end
+
+  describe "#source_url" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "protobuf",
+        version: "2.0.1",
+        requirements: [{
+          file: "pubspec.yaml",
+          requirement: "~3.0.0",
+          groups: [],
+          source: nil
+        }],
+        package_manager: "pub"
+      )
+    end
+    it "falls back to the homepage field" do
+      expect(finder.source_url).to eq "https://github.com/dart-lang/protobuf"
     end
   end
 end

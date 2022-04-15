@@ -2,3 +2,4 @@ psycopg2==2.6.1
 luigi==2.2.0
 pytest==3.4.0
 aiocache[redis]==0.10.0
+attrs==18.0.0

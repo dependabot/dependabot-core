@@ -58,21 +58,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       options: {
         pub_hosted_url: "http://localhost:#{@server[:Port]}"
       },
+      raise_on_ignored: raise_on_ignored,
       requirements_update_strategy: requirements_update_strategy
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
 
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
       # This version is ignored by dependency_services, but will be seen by base
-      version: "0.0.0",
+      version: dependency_version,
       requirements: requirements,
       package_manager: "pub"
     )
   end
+  let(:dependency_version) { "0.0.0" }
 
   let(:requirements_update_strategy) { nil } # nil means "auto".
   let(:dependency_name) { "retry" }
@@ -239,6 +242,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       let(:requirements_to_unlock) { :all }
       context "with auto-strategy" do
         context "app (no version)" do
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+        context "app (version but publish_to: none)" do
+          let(:project) { "can_update_publish_to_none" }
           it "can update" do
             expect(can_update).to be_truthy
             expect(updated_dependencies).to eq [
@@ -444,6 +465,51 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       it "can update" do
         expect(checker.latest_version.to_s).to eq "1.0.0"
         expect(can_update).to be_falsey
+      end
+    end
+  end
+
+  context "when raise_on_ignored is true" do
+    let(:raise_on_ignored) { true }
+
+    context "when later versions are allowed" do
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.14.13" }
+      let(:ignored_versions) { ["< 1.14.13"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:dependency_name) { "path" }
+      let(:dependency_version) { "1.8.0" }
+      let(:ignored_versions) { ["> 1.8.0"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version but it's ignored" do
+      let(:dependency_name) { "path" }
+      let(:dependency_version) { "1.8.0" }
+      let(:ignored_versions) { [">= 0"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.14.13" }
+      let(:ignored_versions) { ["> 1.14.13"] }
+      let(:raise_on_ignored) { true }
+
+      it "raises an error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
     end
   end
