@@ -31,17 +31,22 @@ module Dependabot
       end
 
       def <=>(other)
-        to_s <=> other.to_s
+        to_s.casecmp(other.to_s)
       end
 
-      def types_package
+      def eql?(other)
+        to_s.eql?(other.to_s)
+      end
+
+      def types_package_name
         return self if types_package?
 
-        if scoped?
-          "@types/#{@scope}__#{@name}"
-        else
-          "@types/#{@name}"
-        end
+        @types_package_name ||=
+          if scoped?
+            self.class.new("@types/#{@scope}__#{@name}")
+          else
+            self.class.new("@types/#{@name}")
+          end
       end
 
       private

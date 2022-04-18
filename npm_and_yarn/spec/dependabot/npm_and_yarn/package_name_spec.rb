@@ -35,22 +35,22 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
     end
   end
 
-  describe "#types_package" do
+  describe "#types_package_name" do
     it "returns the corresponding types package name" do
       lodash       = "lodash"
       lodash_types = "@types/lodash"
 
-      types_package = described_class.new(lodash).types_package
+      types_package_name = described_class.new(lodash).types_package_name
 
-      expect(types_package).to eq(lodash_types)
+      expect(types_package_name.to_s).to eq(lodash_types)
     end
 
     it "returns self if it is already a types package" do
       stereo_types = "@types/stereo"
 
-      types_package = described_class.new(stereo_types).types_package
+      types_package_name = described_class.new(stereo_types).types_package_name
 
-      expect(types_package.to_s).to eq(stereo_types)
+      expect(types_package_name.to_s).to eq(stereo_types)
     end
 
     context "when given a scoped dependency name" do
@@ -58,10 +58,39 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
         babel_core       = "@babel/core"
         babel_core_types = "@types/babel__core"
 
-        types_package = described_class.new(babel_core).types_package
+        types_package_name = described_class.new(babel_core).types_package_name
 
-        expect(types_package).to eq(babel_core_types)
+        expect(types_package_name.to_s).to eq(babel_core_types)
       end
+    end
+  end
+
+  describe "#eql?" do
+    it "compares the string representation of the package name" do
+      package       = described_class.new("package")
+      package_again = described_class.new("package")
+
+      equality_check = package.eql?(package_again)
+
+      expect(equality_check).to be true
+    end
+
+    it "returns true for equivalent package names" do
+      react       = described_class.new("react")
+      react_again = described_class.new("react")
+
+      equality_check = react.eql?(react_again)
+
+      expect(equality_check).to be true
+    end
+
+    it "returns false for non-equivalent package names" do
+      react = described_class.new("react")
+      vue   = described_class.new("vue")
+
+      equality_check = react.eql?(vue)
+
+      expect(equality_check).to be false
     end
   end
 
@@ -74,10 +103,19 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
       expect([third, second, first].sort).to eq([first, second, third])
     end
 
+    it "ignores case" do
+      package_name_string = "jquery"
+      all_caps  = described_class.new(package_name_string.upcase)
+      all_lower = described_class.new(package_name_string.downcase)
+
+      expect(all_lower <=> all_caps).to be_zero
+    end
+
     it "allows for comparison with types packages" do
       library = described_class.new("my-library")
 
-      expect([library, library.types_package].sort).to eq([library.types_package, library])
+      expect([library, library.types_package_name].sort).
+        to eq([library.types_package_name, library])
     end
   end
 end
