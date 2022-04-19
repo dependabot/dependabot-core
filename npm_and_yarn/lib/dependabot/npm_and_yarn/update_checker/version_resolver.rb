@@ -9,6 +9,7 @@ require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/package_name"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
@@ -224,24 +225,17 @@ module Dependabot
           updates
         end
 
-        # TODO: Replace this with @landongrindheim's work.  Just a dummy placeholder to force something to work.
-        def convert_to_types(dep_name)
-          "@types/#{dep_name}"
-        end
-
         def types_update_available?
           # TODO: This should probably actually check if there is an updated version
           #      along with just the existence of the dependency.
-          types_name = convert_to_types(dependency.name)
-          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name }
-          return false unless types_dep_to_update
-
-          true
+          types_name = PackageName.new(dependency.name).types_package_name
+          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name.to_s }
+          return true if types_dep_to_update
         end
 
         def updated_types_dependencies
-          types_name = convert_to_types(dependency.name)
-          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name }
+          types_name = PackageName.new(dependency.name).types_package_name
+          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name.to_s }
           return unless types_dep_to_update
 
           updated_version =
