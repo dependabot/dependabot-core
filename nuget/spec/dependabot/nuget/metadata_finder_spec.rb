@@ -197,7 +197,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
             stub_request(:get, nuget_url).to_return(status: 500)
             # it falls back to get search URL from the index, but it fails too
             stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
-              to_return(status: 500, body: 'internal server error')
+              to_return(status: 500, body: "internal server error")
           end
 
           it { is_expected.to be_nil }
@@ -212,7 +212,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
               to_return(status: 200, body: fixture("nuspecs", "index.json"))
             # oops, we're a little overloaded
             stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0").
-              to_return(status: 503, body: '')
+              to_return(status: 503, body: "")
           end
 
           it { is_expected.to be_nil }
