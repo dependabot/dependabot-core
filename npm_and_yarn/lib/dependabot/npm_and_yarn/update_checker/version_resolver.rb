@@ -225,29 +225,30 @@ module Dependabot
           updates
         end
 
+        def types_package
+          types_package_name = PackageName.new(dependency.name).types_package_name.to_s
+          top_level_dependencies.find { |d| d.name == types_package_name }
+        end
+
         def types_update_available?
           # TODO: This should probably actually check if there is an updated version
           #      along with just the existence of the dependency.
-          types_name = PackageName.new(dependency.name).types_package_name
-          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name.to_s }
-          return true if types_dep_to_update
+          !types_package.nil?
         end
 
         def updated_types_dependencies
-          types_name = PackageName.new(dependency.name).types_package_name
-          types_dep_to_update = top_level_dependencies.find { |d| d.name == types_name.to_s }
-          return unless types_dep_to_update
+          return unless types_update_available?
 
           updated_version =
-            latest_version_finder(types_dep_to_update).
+            latest_version_finder(types_package).
             possible_versions.
             find { |v| v <= latest_allowable_version }
 
           {
-            dependency: types_dep_to_update,
+            dependency: types_package,
             version: updated_version,
             previous_version: resolve_latest_previous_version(
-              types_dep_to_update, updated_version
+              types_package, updated_version
             )
           }
         end
