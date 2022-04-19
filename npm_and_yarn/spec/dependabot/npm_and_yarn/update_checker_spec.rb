@@ -1280,7 +1280,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         source: nil
       }]
     end
-    it "returns 1 dependencies when @types does not exist" do
+    it "returns 1 dependency when @types does not exist" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
       expect(updated_deps.first.version).to eq("3.6.0")
       expect(updated_deps.length).to eq(1)
