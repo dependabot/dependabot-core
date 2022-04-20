@@ -27,34 +27,46 @@ module Dependabot
       private
 
       def fetch_files
-        dir = "."
-        fetched_files = [buildfile(dir), settings_file(dir)].compact
-        fetched_files += subproject_buildfiles(dir)
-        fetched_files += dependency_script_plugins(dir)
-        check_required_files_present(fetched_files)
-        fetched_files
+        files = all_buildfiles_in_build(".")
+        check_required_files_present(files)
+        files
+      end
+
+      def all_buildfiles_in_build(root_dir)
+        files = [buildfile(root_dir), settings_file(root_dir)].compact
+        files += subproject_buildfiles(root_dir)
+        files += dependency_script_plugins(root_dir)
+        files += included_builds(root_dir).
+          flat_map { |dir| all_buildfiles_in_build(dir) }
+      end
+
+      def included_builds(root_dir)
+        return [] unless settings_file(root_dir)
+
+        SettingsFileParser.
+          new(settings_file: settings_file(root_dir)).
+          included_build_paths.
+          map { |p| File.join(root_dir, p) }
       end
 
       def subproject_buildfiles(root_dir)
         return [] unless settings_file(root_dir)
 
-        @subproject_buildfiles ||= begin
-          subproject_paths =
-            SettingsFileParser.
-            new(settings_file: settings_file(root_dir)).
-            subproject_paths
+        subproject_paths =
+          SettingsFileParser.
+          new(settings_file: settings_file(root_dir)).
+          subproject_paths
 
-          subproject_paths.filter_map do |path|
-            if @buildfile_name
-              fetch_file_from_host(File.join(path, @buildfile_name))
-            else
-              buildfile(path)
-            end
-          rescue Dependabot::DependencyFileNotFound
-            # Gradle itself doesn't worry about missing subprojects, so we don't
-            nil
+        subproject_paths.map do |path|
+          if @buildfile_name
+            fetch_file_from_host(File.join(root_dir, path, @buildfile_name))
+          else
+            buildfile(File.join(root_dir, path))
           end
-        end
+        rescue Dependabot::DependencyFileNotFound
+          # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
+        end.compact
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -67,6 +79,7 @@ module Dependabot
           reject { |path| !path.include?("/") && path.split(".").count > 2 }.
           select { |filename| filename.include?("dependencies") }.
           map { |path| path.gsub("$rootDir", ".") }.
+          map { |path| File.join(root_dir, path) }.
           uniq
 
         dependency_plugin_paths.filter_map do |path|
@@ -96,34 +109,33 @@ module Dependabot
       end
 
       def buildfile(dir)
-        file = first_present_file(dir, SUPPORTED_BUILD_FILE_NAMES)
-        @buildfile_name = file.name if file
+        file = find_first(dir, SUPPORTED_BUILD_FILE_NAMES) || return
+        @buildfile_name ||= File.basename(file.name)
         file
       end
 
       def settings_file(dir)
-        first_present_file(dir, SUPPORTED_SETTINGS_FILE_NAMES)
+        find_first(dir, SUPPORTED_SETTINGS_FILE_NAMES)
       end
 
-      def first_present_file(dir, supported_names)
-        paths = supported_names.map { |name| File.join(dir, name) }
-        paths.each do |path|
-          return cache[path] if cache.include? path
-        end
-        fetch_first_present_file(paths)
+      def find_first(dir, supported_names)
+        paths = supported_names.
+          map { |name| File.join(dir, name) }.
+          each do |path|
+            return cached_files[path] || next
+          end
+        fetch_first_if_present(paths)
       end
 
-      def cache
+      def cached_files
         @cached_files ||= Hash.new
       end
 
-      def fetch_first_present_file(paths)
+      def fetch_first_if_present(paths)
         paths.each do |path|
-          file = fetch_file_if_present(path)
-          if file
-            cache[path] = file
-            return file
-          end
+          file = fetch_file_if_present(path) || next
+          cached_files[path] = file
+          return file
         end
         nil
       end

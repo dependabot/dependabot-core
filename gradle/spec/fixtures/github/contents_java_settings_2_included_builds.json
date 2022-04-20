@@ -1,0 +1,18 @@
+{
+  "name": "settings.gradle",
+  "path": "settings.gradle",
+  "sha": "e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+  "size": 15,
+  "url": "https://api.github.com/repos/git/git/contents/settings.gradle?ref=develop",
+  "html_url": "https://github.com/git/git/blob/develop/settings.gradle",
+  "git_url": "https://api.github.com/repos/git/git/git/blobs/e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+  "download_url": "https://raw.githubusercontent.com/git/git/develop/settings.gradle",
+  "type": "file",
+  "content": "aW5jbHVkZUJ1aWxkICcuL2luY2x1ZGVkJwppbmNsdWRlQnVpbGQgIi4vaW5jbHVkZWQyLyIKCmluY2x1ZGUgJzphcHAnCg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/git/git/contents/settings.gradle?ref=develop",
+    "git": "https://api.github.com/repos/git/git/git/blobs/e7b4def49cb53d9aa04228dd3edb14c9e635e003",
+    "html": "https://github.com/git/git/blob/develop/settings.gradle"
+  }
+}
