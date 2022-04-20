@@ -231,19 +231,18 @@ module Dependabot
         end
 
         def types_update_available?
-          # TODO: This should probably actually check if there is an updated version
-          #      along with just the existence of the dependency.
-          !types_package.nil?
+          return false if types_package.nil?
+
+          latest_version = latest_version_finder(types_package).latest_version_from_registry
+          (version_class.new(types_package.version) < latest_version && # there is a newer version of types package
+          latest_version.segments[0] <= latest_allowable_version.segments[0]) # and not greater than original package
         end
 
         def updated_types_dependencies
           return unless types_update_available?
 
           updated_version =
-            latest_version_finder(types_package).
-            possible_versions.
-            find { |v| v <= latest_allowable_version }
-
+            latest_version_finder(types_package).latest_version_from_registry
           {
             dependency: types_package,
             version: updated_version,

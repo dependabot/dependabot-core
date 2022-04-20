@@ -1225,6 +1225,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         to_return(status: 200)
       stub_request(:get, types_listing_url).
         to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest").
+        to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/3.3.10").
+        to_return(status: 200)
+      stub_request(:get, types_listing_url + "/3.5.14").
+        to_return(status: 200)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
@@ -1286,6 +1292,52 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(1)
     end
   end
+  context "when no update to @types available" do
+    let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
+    let(:registry_response) do
+      fixture("npm_responses", "jquery.json")
+    end
+    let(:types_listing_url) { "https://registry.yarnpkg.com/@types%2Fjquery" }
+    let(:types_response) do
+      fixture("npm_responses", "types_jquery.json")
+    end
+    before do
+      stub_request(:get, registry_listing_url).
+        to_return(status: 200, body: registry_response)
+      stub_request(:get, registry_listing_url + "/latest").
+        to_return(status: 200, body: "{}")
+      stub_request(:get, registry_listing_url + "/3.6.0").
+        to_return(status: 200)
+      stub_request(:get, types_listing_url).
+        to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest").
+        to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/3.5.14").
+        to_return(status: 200)
+    end
+    let(:dependency_files) { project_dependency_files("yarn/ts_no_type_update") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "jquery",
+        version: "3.5",
+        requirements: dependency_requirements,
+        package_manager: "npm_and_yarn"
+      )
+    end
+    let(:dependency_requirements) do
+      [{
+        file: "package.json",
+        requirement: "^3.5",
+        groups: [],
+        source: nil
+      }]
+    end
+    it "only updates original package" do
+      updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+      expect(updated_deps.first.version).to eq("3.6.0")
+      expect(updated_deps.length).to eq(1)
+    end
+  end
   context "updates if types is normal dependency" do
     let(:registry_listing_url) { "https://registry.npmjs.org/node-forge" }
     let(:registry_response) do
@@ -1304,6 +1356,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         to_return(status: 200)
       stub_request(:get, types_listing_url).
         to_return(status: 200, body: types_response)
+      stub_request(:get, types_listing_url + "/latest").
+        to_return(status: 200, body: "{}")
+      stub_request(:get, types_listing_url + "/1.0.0").
+        to_return(status: 200)
+      stub_request(:get, types_listing_url + "/1.0.1").
+        to_return(status: 200)
     end
     let(:dependency_files) { project_dependency_files("yarn/ts_fully_typed") }
     let(:dependency) do
