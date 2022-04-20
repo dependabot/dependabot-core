@@ -65,7 +65,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           to match_array(%w(build.gradle settings.gradle app/build.gradle))
       end
 
-      context "when the subproject can't fe found" do
+      context "when the subproject can't be found" do
         before do
           stub_request(:get, File.join(url, "app/build.gradle?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
