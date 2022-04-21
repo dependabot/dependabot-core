@@ -11,12 +11,12 @@ module Dependabot
           (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
           \z                                         # end of string
       }xi.freeze                                     # multi-line/case-insensitive
-      SCOPED_TYPES_PACKAGE_REGEX = %r{
+      TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
           @#{DEFINITELY_TYPED_SCOPE}\/               # starts with @types/
-          (?<scope>.+)                               # capture scope
-          __                                         # scoped name separator
+          ((?<scope>.+)__)?                          # capture scope
           (?<name>.+)                                # capture name
+          \z                                         # end of string
       }xi.freeze                                     # multi-line/case-insensitive
 
       class InvalidPackageName < StandardError; end
@@ -49,10 +49,13 @@ module Dependabot
         return self unless types_package?
 
         @library_name ||=
-          if scoped_types_package?
-            self.class.new(unscoped_types_package_name)
-          else
-            self.class.new(@name.to_s)
+          begin
+            match = TYPES_PACKAGE_NAME_REGEX.match(to_s)
+            if match[:scope]
+              self.class.new("@#{match[:scope]}/#{match[:name]}")
+            else
+              self.class.new(match[:name].to_s)
+            end
           end
       end
 
@@ -71,17 +74,6 @@ module Dependabot
 
       def scoped?
         !@scope.nil?
-      end
-
-      def scoped_types_package?
-        SCOPED_TYPES_PACKAGE_REGEX.match?(to_s)
-      end
-
-      def unscoped_types_package_name
-        match = SCOPED_TYPES_PACKAGE_REGEX.match(to_s)
-        raise InvalidPackageName unless match
-
-        "@#{match[:scope]}/#{match[:name]}"
       end
 
       def types_package?
