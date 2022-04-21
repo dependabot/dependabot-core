@@ -74,11 +74,11 @@ module Dependabot
       end
 
       def scoped_types_package?
-        SCOPED_TYPES_PACKAGE_REGEX.match?(self.to_s)
+        SCOPED_TYPES_PACKAGE_REGEX.match?(to_s)
       end
 
       def unscoped_types_package_name
-        match = SCOPED_TYPES_PACKAGE_REGEX.match(self.to_s)
+        match = SCOPED_TYPES_PACKAGE_REGEX.match(to_s)
         raise InvalidPackageName unless match
 
         "@#{match[:scope]}/#{match[:name]}"
