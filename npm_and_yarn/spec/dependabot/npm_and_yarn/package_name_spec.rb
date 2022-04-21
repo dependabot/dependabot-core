@@ -65,6 +65,36 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
     end
   end
 
+  describe "#library_name" do
+    it "returns self if it is not a types package" do
+      jquery = "jquery"
+
+      library_name = described_class.new(jquery).library_name.to_s
+
+      expect(library_name).to eq(jquery)
+    end
+
+    it "returns the corresponding library for a types package" do
+      lodash_types = "@types/lodash"
+      lodash       = "lodash"
+
+      library_name = described_class.new(lodash_types).library_name
+
+      expect(library_name.to_s).to eq(lodash)
+    end
+
+    context "when it is a scoped types package" do
+      it "returns the type packages scoped name" do
+        babel_core_types = "@types/babel__core"
+        babel_core       = "@babel/core"
+
+        library_name = described_class.new(babel_core_types).library_name
+
+        expect(library_name.to_s).to eq(babel_core)
+      end
+    end
+  end
+
   describe "#eql?" do
     it "compares the string representation of the package name" do
       package       = described_class.new("package")
