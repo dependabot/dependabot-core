@@ -76,6 +76,7 @@ module Dependabot
           return latest_allowable_version if git_dependency?(dependency)
           return if part_of_tightly_locked_monorepo?
           return if types_update_available?
+          return if types_and_original_updated?
 
           return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
@@ -96,6 +97,7 @@ module Dependabot
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
           return if newly_broken_peer_reqs_from_dep.any?
+          return if types_and_original_updated?
 
           updates = [{
             dependency: dependency,
@@ -230,12 +232,26 @@ module Dependabot
           top_level_dependencies.find { |d| d.name == types_package_name }
         end
 
+        def original_package
+          original_package_name = PackageName.new(dependency.name).library_name.to_s
+          return nil if original_package_name == dependency.name
+
+          top_level_dependencies.find { |d| d.name == original_package_name }
+        end
+
         def types_update_available?
           return false if types_package.nil?
 
           latest_version = latest_version_finder(types_package).latest_version_from_registry
           (version_class.new(types_package.version) < latest_version && # there is a newer version of types package
           latest_version.segments[0] <= latest_allowable_version.segments[0]) # and not greater than original package
+        end
+
+        def types_and_original_updated?
+          return false if original_package.nil?
+
+          latest_version = latest_version_finder(original_package).latest_version_from_registry
+          version_class.new(original_package.version) < latest_version
         end
 
         def updated_types_dependencies

@@ -1243,13 +1243,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
     let(:dependency_requirements) do
       [{
-        file: "package.json",
-        requirement: "^3.4",
+        file: "yarn.lock",
+        requirement: "3.4",
         groups: [],
         source: nil
       }]
     end
     it "returns 2 dependencies when @types exists" do
+      expect(checker.can_update?(requirements_to_unlock: :own)).to be(false)
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.first.version).to eq("3.6.0")
       expect(updated_deps.length).to eq(2)
