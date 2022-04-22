@@ -76,7 +76,7 @@ ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
-  && gem update --system 3.3.11 \
+  && gem update --system 3.3.11 --no-document \
   && gem install bundler -v 1.17.3 --no-document \
   && gem install bundler -v 2.3.12 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
