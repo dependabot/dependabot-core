@@ -439,6 +439,27 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      context "with an imported gemspec that specifies a minimum Ruby version not satisfied by the running Ruby" do
+        let(:dependency_files) { bundler_project_dependency_files("unsatisfied_required_ruby_version") }
+
+        before do
+          require "dependabot/bundler/file_updater/ruby_requirement_setter"
+
+          stub_const(
+            "#{described_class}::RubyRequirementSetter::RUBY_VERSIONS",
+            described_class::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include("business (1.5.0)")
+        end
+
+        it "doesn't add in a RUBY VERSION" do
+          expect(file.content).not_to include("RUBY VERSION")
+        end
+      end
+
       context "when the Gemfile specifies a Ruby version" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby_in_lockfile") }
 
