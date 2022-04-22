@@ -1,4 +1,4 @@
-* @dependabot/reviewers
+* @dependabot/maintainers
 
 # Ecosystems
 bundler/* @dependabot/ruby-reviewers
