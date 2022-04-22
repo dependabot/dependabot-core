@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 ALLOW_PATTERNS = [
-  # Ignore parser warnings for ruby 2.7 minor version mismatches
-  # TODO: Fix these by upgrading to ruby 2.7.3 (requires ubuntu upgrade)
+  # Ignore parser warnings for ruby 2.7 minor version mismatches.
+  # This is a recurring issue that occurs whenever the parser gets
+  # ahead of our installed ruby version.
   %r{parser/current is loading parser/ruby27},
   /2.7.\d-compliant syntax, but you are running 2.7.\d/,
   %r{whitequark/parser}
