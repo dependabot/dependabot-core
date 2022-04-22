@@ -186,6 +186,11 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
         end
       end
 
+      context "with a case statement" do
+        let(:content) { %(gem "business",  case true\n when true\n "1.0.0"\n else\n "1.2.0"\n end) }
+        it { is_expected.to eq(content) }
+      end
+
       context "with a conditional" do
         let(:content) { %(gem "business", ENV["ROUGE"] if ENV["ROUGE"]) }
         it { is_expected.to eq(content) }

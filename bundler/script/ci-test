@@ -15,7 +15,7 @@ fi
 
 if [[ "$SUITE_NAME" == "bundler2" ]]; then
   cd helpers/v2 \
-    && BUNDLER_VERSION=2.3.8 bundle install \
-    && BUNDLER_VERSION=2.3.8 bundle exec rspec spec \
+    && BUNDLER_VERSION=2.3.12 bundle install \
+    && BUNDLER_VERSION=2.3.12 bundle exec rspec spec \
     && cd -
 fi
