@@ -11,6 +11,13 @@ module Dependabot
           (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
           \z                                         # end of string
       }xi.freeze                                     # multi-line/case-insensitive
+      TYPES_PACKAGE_NAME_REGEX = %r{
+          \A                                         # beginning of string
+          @#{DEFINITELY_TYPED_SCOPE}\/               # starts with @types/
+          ((?<scope>.+)__)?                          # capture scope
+          (?<name>.+)                                # capture name
+          \z                                         # end of string
+      }xi.freeze                                     # multi-line/case-insensitive
 
       class InvalidPackageName < StandardError; end
 
@@ -36,6 +43,20 @@ module Dependabot
 
       def eql?(other)
         to_s.eql?(other.to_s)
+      end
+
+      def library_name
+        return self unless types_package?
+
+        @library_name ||=
+          begin
+            match = TYPES_PACKAGE_NAME_REGEX.match(to_s)
+            if match[:scope]
+              self.class.new("@#{match[:scope]}/#{match[:name]}")
+            else
+              self.class.new(match[:name].to_s)
+            end
+          end
       end
 
       def types_package_name
