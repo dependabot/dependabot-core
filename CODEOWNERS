@@ -8,7 +8,7 @@ docker/* @dependabot/docker-reviewers
 elm/* @dependabot/elm-reviewers
 go_modules/* @dependabot/go-reviewers
 gradle/* @dependabot/java-reviewers
-hex/* @dependabot/erlang-reviewers
+hex/* @dependabot/elixir-reviewers
 maven/* @dependabot/java-reviewers
 npm_and_yarn/* @dependabot/javascript-reviewers
 nuget/* @dependabot/dotnet-reviewers
