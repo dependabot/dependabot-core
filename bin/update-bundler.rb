@@ -19,8 +19,6 @@ def update_file(filename)
 end
 
 update_file("Dockerfile")
-update_file("bundler/helpers/v2/build")
 update_file("bundler/lib/dependabot/bundler/helpers.rb")
 update_file("bundler/spec/dependabot/bundler/helper_spec.rb")
-update_file("bundler/script/ci-test")
 update_file("bundler/spec/spec_helper.rb")
