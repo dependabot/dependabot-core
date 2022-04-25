@@ -2,6 +2,7 @@
 
 require "dependabot/hex/version"
 require "dependabot/hex/update_checker"
+require "dependabot/hex/credential_helpers"
 require "dependabot/hex/native_helpers"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/shared_helpers"
@@ -32,10 +33,7 @@ module Dependabot
           latest_resolvable_version =
             SharedHelpers.in_a_temporary_directory do
               write_temporary_sanitized_dependency_files
-              FileUtils.cp(
-                elixir_helper_check_update_path,
-                "check_update.exs"
-              )
+              FileUtils.cp(elixir_helper_check_update_path, "check_update.exs")
 
               SharedHelpers.with_git_configured(credentials: credentials) do
                 run_elixir_update_checker
@@ -55,23 +53,31 @@ module Dependabot
             env: mix_env,
             command: "mix run #{elixir_helper_path}",
             function: "get_latest_resolvable_version",
-            args: [Dir.pwd,
-                   dependency.name,
-                   organization_credentials],
+            args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)],
             stderr_to_stdout: true
           )
         end
 
         def handle_hex_errors(error)
-          if error.message.include?("No authenticated organization found")
-            org = error.message.match(/found for ([a-z_]+)\./).captures.first
-            raise Dependabot::PrivateSourceAuthenticationFailure, org
+          if (match = error.message.match(/No authenticated organization found for (?<repo>[a-z_]+)\./))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
           end
 
-          if error.message.include?("Failed to fetch record for")
-            org_match = error.message.match(%r{for 'hexpm:([a-z_]+)/})
-            org = org_match&.captures&.first
-            raise Dependabot::PrivateSourceAuthenticationFailure, org if org
+          if (match = error.message.match(/Public key fingerprint mismatch for repo "(?<repo>[a-z_]+)"/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
+          end
+
+          if (match = error.message.match(/Missing credentials for "(?<repo>[a-z_]+)"/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
+          end
+
+          if (match = error.message.match(/Downloading public key for repo "(?<repo>[a-z_]+)"/))
+            raise Dependabot::PrivateSourceAuthenticationFailure, match[:repo]
+          end
+
+          if (match = error.message.match(/Failed to fetch record for '(?<repo>[a-z_]+)(?::(?<org>[a-z_]+))?/))
+            name = match[:org] || match[:repo]
+            raise Dependabot::PrivateSourceAuthenticationFailure, name
           end
 
           # TODO: Catch the warnings as part of the Elixir module. This happens
@@ -170,12 +176,6 @@ module Dependabot
 
         def elixir_helper_check_update_path
           File.join(NativeHelpers.hex_helpers_dir, "lib/check_update.exs")
-        end
-
-        def organization_credentials
-          credentials.
-            select { |cred| cred["type"] == "hex_organization" }.
-            flat_map { |cred| [cred["organization"], cred.fetch("token", "")] }
         end
       end
     end

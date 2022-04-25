@@ -4,8 +4,9 @@ require "dependabot/hex/file_updater"
 require "dependabot/hex/file_updater/mixfile_updater"
 require "dependabot/hex/file_updater/mixfile_sanitizer"
 require "dependabot/hex/file_updater/mixfile_requirement_updater"
-require "dependabot/hex/version"
+require "dependabot/hex/credential_helpers"
 require "dependabot/hex/native_helpers"
+require "dependabot/hex/version"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -29,7 +30,7 @@ module Dependabot
                   env: mix_env,
                   command: "mix run #{elixir_helper_path}",
                   function: "get_updated_lockfile",
-                  args: [Dir.pwd, dependency.name, organization_credentials]
+                  args: [Dir.pwd, dependency.name, CredentialHelpers.hex_credentials(credentials)]
                 )
               end
             end
@@ -130,11 +131,6 @@ module Dependabot
 
         def lockfile
           @lockfile ||= dependency_files.find { |f| f.name == "mix.lock" }
-        end
-
-        def organization_credentials
-          credentials.select { |cred| cred["type"] == "hex_organization" }.
-            flat_map { |cred| [cred["organization"], cred.fetch("token", "")] }
         end
       end
     end
