@@ -230,30 +230,38 @@ module Dependabot
         end
 
         def types_package
-          types_package_name = PackageName.new(dependency.name).types_package_name.to_s
-          top_level_dependencies.find { |d| d.name == types_package_name }
+          @types_package ||= begin
+            types_package_name = PackageName.new(dependency.name).types_package_name.to_s
+            top_level_dependencies.find { |d| d.name == types_package_name }
+          end
         end
 
         def original_package
           original_package_name = PackageName.new(dependency.name).library_name.to_s
           return nil if original_package_name == dependency.name
 
-          top_level_dependencies.find { |d| d.name == original_package_name }
+          @original_package ||= top_level_dependencies.find { |d| d.name == original_package_name }
         end
 
         def types_update_available?
           return false if types_package.nil?
 
           latest_version = latest_version_finder(types_package).latest_version_from_registry
-          (version_class.new(types_package.version) < latest_version && # there is a newer version of types package
-          latest_version.segments[0] <= latest_allowable_version.segments[0]) # and not greater than original package
+          return false unless latest_version.segments.first <= latest_allowable_version.segments.first
+
+          types_package_version = version_class.new(types_package.version) 
+          return false unless types_package_version < latest_version
+
+          true
         end
 
         def types_and_original_updated?
           return false if original_package.nil?
 
           latest_version = latest_version_finder(original_package).latest_version_from_registry
-          version_class.new(original_package.version) < latest_version
+          original_package_version = version_class.new(original_package.version) 
+
+          original_package_version < latest_version
         end
 
         def updated_types_dependencies
@@ -261,6 +269,7 @@ module Dependabot
 
           updated_version =
             latest_version_finder(types_package).latest_version_from_registry
+
           {
             dependency: types_package,
             version: updated_version,
