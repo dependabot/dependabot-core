@@ -36,7 +36,7 @@ module Dependabot
       def self.run_bundler_subprocess(function:, args:, bundler_version:, options: {})
         # Run helper suprocess with all bundler-related ENV variables removed
         bundler_major_version = bundler_version.split(".").first
-        helpers_path = versioned_helper_path(bundler_version: bundler_major_version)
+        helpers_path = versioned_helper_path(bundler_major_version)
         ::Bundler.with_original_env do
           command = BundleCommand.
                     new(options[:timeout_per_operation_seconds]).
@@ -47,7 +47,7 @@ module Dependabot
             args: args,
             env: {
               # Bundler will pick the matching installed major version
-              "BUNDLER_VERSION" => bundler_version,
+              "BUNDLER_VERSION" => installed_bundler_version(bundler_major_version),
               "BUNDLE_GEMFILE" => File.join(helpers_path, "Gemfile"),
               # Prevent the GEM_HOME from being set to a folder owned by root
               "GEM_HOME" => File.join(helpers_path, ".bundle")
@@ -61,8 +61,15 @@ module Dependabot
         end
       end
 
-      def self.versioned_helper_path(bundler_version:)
-        File.join(native_helpers_root, "v#{bundler_version}")
+      def self.versioned_helper_path(bundler_major_version)
+        File.join(native_helpers_root, "v#{bundler_major_version}")
+      end
+
+      # Maps the major version unto the specific version we have installed
+      def self.installed_bundler_version(bundler_major_version)
+        return Helpers::V1 if bundler_major_version == "1"
+
+        Helpers::V2
       end
 
       def self.native_helpers_root
