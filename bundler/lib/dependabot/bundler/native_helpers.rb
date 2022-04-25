@@ -67,7 +67,7 @@ module Dependabot
 
       # Maps the major version unto the specific version we have installed
       def self.installed_bundler_version(bundler_major_version)
-        return Helpers::V1 if bundler_major_version == '1'
+        return Helpers::V1 if bundler_major_version == "1"
 
         Helpers::V2
       end
