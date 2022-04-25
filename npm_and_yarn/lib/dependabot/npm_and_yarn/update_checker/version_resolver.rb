@@ -93,6 +93,7 @@ module Dependabot
           resolve_latest_previous_version(dependency, updated_version)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
@@ -129,6 +130,7 @@ module Dependabot
           updates << updated_types_dependencies if types_update_available?
           updates.uniq
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
