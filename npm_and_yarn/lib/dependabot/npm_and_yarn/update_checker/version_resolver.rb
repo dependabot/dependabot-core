@@ -249,7 +249,7 @@ module Dependabot
           latest_version = latest_version_finder(types_package).latest_version_from_registry
           return false unless latest_version.segments.first <= latest_allowable_version.segments.first
 
-          types_package_version = version_class.new(types_package.version) 
+          types_package_version = version_class.new(types_package.version)
           return false unless types_package_version < latest_version
 
           true
@@ -259,7 +259,7 @@ module Dependabot
           return false if original_package.nil?
 
           latest_version = latest_version_finder(original_package).latest_version_from_registry
-          original_package_version = version_class.new(original_package.version) 
+          original_package_version = version_class.new(original_package.version)
 
           original_package_version < latest_version
         end
