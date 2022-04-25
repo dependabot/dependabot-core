@@ -59,11 +59,11 @@ module Dependabot
         JSON.parse(body).fetch("data", []).each do |search_result|
           next unless search_result["id"].downcase == dependency.name.downcase
 
-          if search_result.key?("projectUrl")
+          if search_result.fetch("projectUrl")
             source = Source.from_url(search_result.fetch("projectUrl"))
             return source unless source.repo.nil?
           end
-          if search_result.key?("licenseUrl")
+          if search_result.fetch("licenseUrl")
             source = Source.from_url(search_result.fetch("licenseUrl"))
             return source unless source.repo.nil?
           end
