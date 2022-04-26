@@ -37,12 +37,16 @@ module Dependabot
         end
       end
 
-      def <=>(other)
-        to_s.casecmp(other.to_s)
+      def eql?(other)
+        self.class == other.class && self == other
       end
 
-      def eql?(other)
-        to_s.eql?(other.to_s)
+      def hash
+        to_s.hash
+      end
+
+      def <=>(other)
+        to_s.casecmp(other.to_s)
       end
 
       def library_name
