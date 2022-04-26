@@ -50,7 +50,7 @@ module Dependabot
       end
 
       def library_name
-        return self unless types_package?
+        return unless types_package?
 
         @library_name ||=
           begin
@@ -64,7 +64,7 @@ module Dependabot
       end
 
       def types_package_name
-        return self if types_package?
+        return if types_package?
 
         @types_package_name ||=
           if scoped?

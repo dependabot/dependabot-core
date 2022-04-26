@@ -231,16 +231,16 @@ module Dependabot
 
         def types_package
           @types_package ||= begin
-            types_package_name = PackageName.new(dependency.name).types_package_name.to_s
-            top_level_dependencies.find { |d| d.name == types_package_name }
+            types_package_name = PackageName.new(dependency.name).types_package_name
+            top_level_dependencies.find { |d| types_package_name == d.name } if types_package_name
           end
         end
 
         def original_package
-          original_package_name = PackageName.new(dependency.name).library_name.to_s
-          return nil if original_package_name == dependency.name
-
-          @original_package ||= top_level_dependencies.find { |d| d.name == original_package_name }
+          @original_package ||= begin
+            original_package_name = PackageName.new(dependency.name).library_name
+            top_level_dependencies.find { |d| original_package_name == d.name } if original_package_name
+          end
         end
 
         def types_update_available?
