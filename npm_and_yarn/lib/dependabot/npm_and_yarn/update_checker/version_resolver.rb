@@ -127,7 +127,7 @@ module Dependabot
               )
             }
           end
-          updates << updated_types_dependencies if types_update_available?
+          updates += updated_types_dependencies if types_update_available?
           updates.uniq
         end
         # rubocop:enable Metrics/PerceivedComplexity
@@ -270,13 +270,13 @@ module Dependabot
           updated_version =
             latest_version_finder(types_package).latest_version_from_registry
 
-          {
+          [{
             dependency: types_package,
             version: updated_version,
             previous_version: resolve_latest_previous_version(
               types_package, updated_version
             )
-          }
+          }]
         end
 
         def peer_dependency_errors
