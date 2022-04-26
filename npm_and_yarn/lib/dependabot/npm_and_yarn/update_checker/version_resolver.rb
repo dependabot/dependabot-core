@@ -247,7 +247,7 @@ module Dependabot
           return false if types_package.nil?
 
           latest_version = latest_version_finder(types_package).latest_version_from_registry
-          return false unless latest_version.segments.first <= latest_allowable_version.segments.first
+          return false unless latest_version.backwards_compatible_with?(latest_allowable_version)
 
           types_package_version = version_class.new(types_package.version)
           return false unless types_package_version < latest_version
