@@ -42,7 +42,7 @@ module Dependabot
       end
 
       def hash
-        to_s.hash
+        to_s.downcase.hash
       end
 
       def <=>(other)
