@@ -34,6 +34,27 @@ module Dependabot
         super
       end
 
+      def major
+        @major ||= segments[0] || 0
+      end
+
+      def minor
+        @minor ||= segments[1] || 0
+      end
+
+      def patch
+        @patch ||= segments[2] || 0
+      end
+
+      def backwards_compatible_with?(other)
+        case major
+        when 0
+          self == other
+        else
+          major == other.major && minor >= other.minor
+        end
+      end
+
       def to_s
         @version_string
       end

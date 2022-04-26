@@ -64,6 +64,189 @@ RSpec.describe Dependabot::NpmAndYarn::Version do
     end
   end
 
+  describe "#major" do
+    subject { version.major }
+
+    context "with major, minor, patch, and prerelease" do
+      let(:version_string) { "1.2.3.pre1" }
+      it { is_expected.to eq 1 }
+    end
+
+    context "with major, minor, and patch" do
+      let(:version_string) { "1.2.3" }
+      it { is_expected.to eq 1 }
+    end
+
+    context "with major and minor" do
+      let(:version_string) { "1.2" }
+      it { is_expected.to eq 1 }
+    end
+
+    context "with major" do
+      let(:version_string) { "1" }
+      it { is_expected.to eq 1 }
+    end
+
+    context "with blank" do
+      let(:version_string) { "" }
+      it { is_expected.to eq 0 }
+    end
+  end
+
+  describe "#minor" do
+    subject { version.minor }
+
+    context "with major, minor, patch, and prerelease" do
+      let(:version_string) { "1.2.3.pre1" }
+      it { is_expected.to eq 2 }
+    end
+
+    context "with major, minor, and patch" do
+      let(:version_string) { "1.2.3" }
+      it { is_expected.to eq 2 }
+    end
+
+    context "with major and minor" do
+      let(:version_string) { "1.2" }
+      it { is_expected.to eq 2 }
+    end
+
+    context "with major" do
+      let(:version_string) { "1" }
+      it { is_expected.to eq 0 }
+    end
+
+    context "with blank" do
+      let(:version_string) { "" }
+      it { is_expected.to eq 0 }
+    end
+  end
+
+  describe "#patch" do
+    subject { version.patch }
+
+    context "with major, minor, patch, and prerelease" do
+      let(:version_string) { "1.2.3.pre1" }
+      it { is_expected.to eq 3 }
+    end
+
+    context "with major, minor, and patch" do
+      let(:version_string) { "1.2.3" }
+      it { is_expected.to eq 3 }
+    end
+
+    context "with major and minor" do
+      let(:version_string) { "1.2" }
+      it { is_expected.to eq 0 }
+    end
+
+    context "with major" do
+      let(:version_string) { "1" }
+      it { is_expected.to eq 0 }
+    end
+
+    context "with blank" do
+      let(:version_string) { "" }
+      it { is_expected.to eq 0 }
+    end
+  end
+
+  describe "#backwards_compatible_with?" do
+    subject { version.backwards_compatible_with?(other_version) }
+    let(:other_version) { described_class.new(other_version_string) }
+
+    context "comparing same version" do
+      let(:version_string) { "1.2.3.pre1" }
+      let(:other_version_string) { version_string }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing same version with different prerelease" do
+      let(:version_string) { "1.2.3.pre1" }
+      let(:other_version_string) { "1.2.3.pre2" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with later patch" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.2.4" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with earlier patch" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.2.2" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with zero patch" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.2.0" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with omitted patch" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.2" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with earlier minor" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.1" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing version with later minor" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "1.3" }
+
+      it { is_expected.to eq false }
+    end
+
+    context "comparing version with earlier major" do
+      let(:version_string) { "2.3.4" }
+      let(:other_version_string) { "1.2.3" }
+
+      it { is_expected.to eq false }
+    end
+
+    context "comparing version with later major" do
+      let(:version_string) { "1.2.3" }
+      let(:other_version_string) { "2.3.4" }
+
+      it { is_expected.to eq false }
+    end
+
+    context "comparing same versions with zero major" do
+      let(:version_string) { "0.2.1" }
+      let(:other_version_string) { "0.2.1" }
+
+      it { is_expected.to eq true }
+    end
+
+    context "comparing earlier version with zero major" do
+      let(:version_string) { "0.2.1" }
+      let(:other_version_string) { "0.2.0" }
+
+      it { is_expected.to eq false }
+    end
+
+    context "comparing later version with zero major" do
+      let(:version_string) { "0.2.1" }
+      let(:other_version_string) { "0.2.2" }
+
+      it { is_expected.to eq false }
+    end
+  end
+
   describe "compatibility with Gem::Requirement" do
     subject { requirement.satisfied_by?(version) }
     let(:requirement) { Gem::Requirement.new(">= 1.0.0") }
