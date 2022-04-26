@@ -1255,6 +1255,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(updated_deps.length).to eq(2)
       expect(updated_deps.last.version).to eq("3.5.14")
     end
+    context "with a security advisory" do
+      before do
+        stub_request(:get, registry_listing_url + "/3.4.1").
+          to_return(status: 200)
+      end
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "jquery",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["<=3.4.0"]
+          )
+        ]
+      end
+      it "returns both dependencies for update" do
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+        expect(updated_deps.first.version).to eq("3.4.1")
+        updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
+        expect(updated_deps.length).to eq(2)
+        expect(updated_deps.last.version).to eq("3.5.14")
+      end
+    end
   end
   context "if types dependency not specified" do
     let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
