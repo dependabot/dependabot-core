@@ -110,14 +110,43 @@ module Dependabot
         return unless latest_version
 
         # No support for full unlocks for subdependencies yet
-        return false unless dependency.top_level?
+        if dependency.top_level?
+          # TODO: we should check that the parent dependencies are updatable
+          return conflicting_dependencies.any?
+        end
 
         version_resolver.latest_version_resolvable_with_full_unlock?
       end
 
       def updated_dependencies_after_full_unlock
-        version_resolver.dependency_updates_from_full_unlock.
+        updated_deps = version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
+        # TODO: only do this when we have a transitive dependency with conflicts
+        conflicting_dependencies.each do |conflict|
+          conflicting_dep = Dependency.new(
+            name: conflict['parent_name'],
+            package_manager: "npm_and_yarn",
+            version: conflict['parent_version'],
+            requirements: [])
+
+          # TODO: it's possible for the parent dependency to be locked by another dependency
+          # How would we resolve that?
+          conflicting_dep_latest_version = LatestVersionFinder.new(
+            dependency: conflicting_dep,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: [],
+            raise_on_ignored: false,
+            security_advisories: []
+          ).latest_version_from_registry
+
+          updated_deps << build_updated_dependency(
+            dependency: conflicting_dep,
+            version: conflicting_dep_latest_version,
+            previous_version: conflict['parent_version']
+          )
+        end
+        updated_deps
       end
 
       def build_updated_dependency(update_details)

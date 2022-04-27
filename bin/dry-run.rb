@@ -668,6 +668,7 @@ dependencies.each do |dep|
 
     conflicting_dependencies.each do |conflicting_dep|
       puts "   #{conflicting_dep['explanation']}"
+      puts "   parent: #{conflicting_dep['parent_name']}:#{conflicting_dep['parent_version']}"
     end
   end
 
@@ -706,10 +707,11 @@ dependencies.each do |dep|
     requirements_to_unlock: requirements_to_unlock
   )
 
-  if peer_dependencies_can_update?(checker, requirements_to_unlock)
-    puts "    (no update possible, peer dependency can be updated)"
-    next
-  end
+  # TODO: this detects a transitive dep updates as a peer_dependency update
+  # if peer_dependencies_can_update?(checker, requirements_to_unlock)
+  #   puts "    (no update possible, peer dependency can be updated)"
+  #   next
+  # end
 
   updater = file_updater_for(updated_deps)
   updated_files = updater.updated_dependency_files
