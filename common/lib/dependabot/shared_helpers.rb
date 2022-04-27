@@ -190,6 +190,11 @@ module Dependabot
         allow_unsafe_shell_command: true
       )
 
+      # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
+      run_shell_command(
+        "git config --global safe.directory /home/dependabot/dependabot-updater/repo"
+      )
+
       github_credentials = credentials.
                            select { |c| c["type"] == "git_source" }.
                            select { |c| c["host"] == "github.com" }.
