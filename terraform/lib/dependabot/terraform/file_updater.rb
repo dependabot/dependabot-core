@@ -169,7 +169,10 @@ module Dependabot
       end
 
       def architecture_type
-        @architecture_type ||= lookup_hash_architecture.empty? ? [:linux_amd64] : lookup_hash_architecture
+        @architecture_type ||= begin 
+          architecture_type = lookup_hash_architecture
+          architecture_type.empty? ? [:linux_amd64] : architecture_type
+        end
       end
 
       def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
