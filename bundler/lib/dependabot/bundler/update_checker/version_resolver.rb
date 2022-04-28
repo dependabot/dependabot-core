@@ -74,7 +74,7 @@ module Dependabot
         def fetch_latest_resolvable_version_details
           return latest_version_details unless gemfile
 
-          SharedHelpers.with_git_configured(credentials: credentials, repo_path: repo_contents_path) do
+          SharedHelpers.with_git_configured(credentials: credentials) do
             # We do not want the helper to handle errors for us as there are
             # some errors we want to handle specifically ourselves, including
             # potentially retrying in the case of the Ruby version being locked
