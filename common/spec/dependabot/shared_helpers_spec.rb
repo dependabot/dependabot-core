@@ -352,13 +352,21 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
+    let(:path) { "/home/dependabot/dependabot-core" }
 
     def with_git_configured(&block)
-      Dependabot::SharedHelpers.with_git_configured(credentials: credentials) { block.call }
+      Dependabot::SharedHelpers.with_git_configured(repo_path: path, credentials: credentials) { block.call }
     end
 
     let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
+
+    context "when providing a path" do
+      let(:path) { "/home/dependabot/dependabot-core" }
+      it "contains the safe directory setting" do
+        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core")
+      end
+    end
 
     context "when providing no extra credentials" do
       let(:credentials) { [] }
