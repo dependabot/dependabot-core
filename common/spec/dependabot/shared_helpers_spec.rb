@@ -352,19 +352,24 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:credentials) { [] }
-    let(:path) { "/home/dependabot/dependabot-core" }
 
     def with_git_configured(&block)
-      Dependabot::SharedHelpers.with_git_configured(repo_path: path, credentials: credentials) { block.call }
+      Dependabot::SharedHelpers.with_git_configured(credentials: credentials) { block.call }
     end
 
     let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
-    context "when providing a path" do
-      let(:path) { "/home/dependabot/dependabot-core" }
-      it "contains the safe directory setting" do
-        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core")
+    context "when the global .gitconfig has a safe directory" do
+      before do
+        Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo")
+      end
+      after do
+        Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo")
+      end
+
+      it "is preserved in the temporary .gitconfig" do
+        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
       end
     end
 

@@ -497,7 +497,7 @@ module Dependabot
 
       def _clone_repo_contents(target_directory:)
         path = target_directory || File.join("tmp", source.repo)
-        SharedHelpers.with_git_configured(repo_path: path, credentials: credentials) do
+        SharedHelpers.with_git_configured(credentials: credentials) do
           # Assume we're retrying the same branch, or that a `target_directory`
           # is specified when retrying a different branch.
           return path if Dir.exist?(File.join(path, ".git"))
