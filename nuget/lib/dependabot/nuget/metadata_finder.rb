@@ -19,6 +19,12 @@ module Dependabot
         # GitHub Packages doesn't support getting the `.nuspec`, switch to getting
         # that instead once it is supported.
         src_repo_from_project
+      rescue StandardError
+        # At this point in the process the PR is ready to be posted, we tried to gather commit
+        # and release notes, but have encountered an exception. So let's eat it and log it
+        # since it's better to have a PR with no info than error out.
+        # TODO how do we log this?
+        nil
       end
 
       def src_repo_from_project
@@ -29,7 +35,7 @@ module Dependabot
         response = Excon.get(
           source.fetch(:url),
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_header)
+          **SharedHelpers.excon_defaults(headers: { **auth_header, "Accept" => "application/json" })
         )
         return unless response.status == 200
 
@@ -40,7 +46,7 @@ module Dependabot
         response = Excon.get(
           search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
           idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_header)
+          **SharedHelpers.excon_defaults(headers: { **auth_header, "Accept" => "application/json" })
         )
         return unless response.status == 200
 
@@ -53,21 +59,26 @@ module Dependabot
           fetch("resources", []).
           find { |r| r.fetch("@type") == "SearchQueryService" }&.
           fetch("@id")
+      rescue JSON::ParserError
+        # Ignored, this is expected for some registries that don't handle this request.
+        # TODO can we log here so it's clear why the update is missing commit info?
       end
 
       def extract_source_repo(body)
         JSON.parse(body).fetch("data", []).each do |search_result|
           next unless search_result["id"].downcase == dependency.name.downcase
 
-          if search_result.fetch("projectUrl")
+          if search_result.key?("projectUrl")
             source = Source.from_url(search_result.fetch("projectUrl"))
-            return source unless source.repo.nil?
+            return source if source
           end
-          if search_result.fetch("licenseUrl")
+          if search_result.key?("licenseUrl")
             source = Source.from_url(search_result.fetch("licenseUrl"))
-            return source unless source.repo.nil?
+            return source if source
           end
         end
+        # failed to find a source URL
+        nil
       end
 
       def look_up_source_in_nuspec(nuspec)
