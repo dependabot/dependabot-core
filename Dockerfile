@@ -78,7 +78,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.10 --no-document \
+  && gem install bundler -v 2.3.12 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 

@@ -146,18 +146,14 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
       context "that requires authentication" do
         before do
           stub_request(:get, nuget_url).to_return(status: 404)
-          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").to_return(status: 404)
+          stub_request(:get, nuget_url).
+            with(basic_auth: %w(my passw0rd)).
+            to_return(status: 200, body: nuget_response)
         end
 
         it { is_expected.to be_nil }
 
         context "with details in the credentials" do
-          before do
-            stub_request(:get, nuget_url).
-              with(basic_auth: %w(my passw0rd)).
-              to_return(status: 200, body: nuget_response)
-          end
-
           let(:credentials) do
             [{
               "type" => "git_source",

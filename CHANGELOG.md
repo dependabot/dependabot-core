@@ -1,3 +1,59 @@
+## v0.183.0, 29 April 2022
+
+- fix unsafe directory git issues during updates (@jakecoffman) [#5065](https://github.com/dependabot/dependabot-core/pull/5065)
+
+## v0.182.4, 26 April 2022
+
+- Rollback RubyGems from 3.3.11 to 3.2.20 (@mctofu) [#5048](https://github.com/dependabot/dependabot-core/pull/5048)
+
+## v0.182.3, 25 April 2022
+
+- Set BUNDLER_VERSION to the specific installed version in native helpers (@brrygrdn) [#5044](https://github.com/dependabot/dependabot-core/pull/5044)
+
+## v0.182.2, 25 April 2022
+
+- Manually revert "nuget: fix PR missing commits in message when using private registry" (@brrygrdn) [#5040](https://github.com/dependabot/dependabot-core/pull/5040)
+
+## v0.182.1, 25 April 2022
+
+- Prevent KeyError when checking search results (@brrygrdn) [#5038](https://github.com/dependabot/dependabot-core/pull/5038)
+- Update RubyGems and use `--no-document` for updating it (@deivid-rodriguez) [#5035](https://github.com/dependabot/dependabot-core/pull/5035)
+- Translate from `@types` package to library name (@landongrindheim) [#5025](https://github.com/dependabot/dependabot-core/pull/5025)
+- Add ecosystem-specific code owners (@mattt) [#4614](https://github.com/dependabot/dependabot-core/pull/4614)
+- fix typos in GitHub issue bug report template (@tyrann0us) [#5015](https://github.com/dependabot/dependabot-core/pull/5015)
+- Update Bundler from 2.3.10 to 2.3.12 (@deivid-rodriguez) [#5018](https://github.com/dependabot/dependabot-core/pull/5018)
+- build(deps): bump @npmcli/arborist from 5.0.6 to 5.1.0 in /npm_and_yarn/helpers [#5020](https://github.com/dependabot/dependabot-core/pull/5020)
+- Use a temporary Ruby requirement for updating lockfile (@deivid-rodriguez) [#5019](https://github.com/dependabot/dependabot-core/pull/5019)
+
+## v0.182.0, 19 April 2022
+
+- Automate Terraform Platform Detection for Lockfile Hashes [#4905](https://github.com/dependabot/dependabot-core/pull/4905)
+
+## v0.181.0, 19 April 2022
+
+- nuget: fix PR missing commits in message when using private registry [#5002](https://github.com/dependabot/dependabot-core/pull/5002)
+- Map Package Name to Types Package Name [#5001](https://github.com/dependabot/dependabot-core/pull/5001)
+- build(deps-dev): bump phpstan/phpstan from 1.5.5 to 1.5.6 in /composer/helpers/v2 [#5010](https://github.com/dependabot/dependabot-core/pull/5010)
+- build(deps-dev): bump phpstan/phpstan from 1.5.5 to 1.5.6 in /composer/helpers/v1 [#5007](https://github.com/dependabot/dependabot-core/pull/5007)
+- build(deps-dev): bump phpstan/phpstan from 1.5.4 to 1.5.5 in /composer/helpers/v1 [#5005](https://github.com/dependabot/dependabot-core/pull/5005)
+- build(deps-dev): bump phpstan/phpstan from 1.5.4 to 1.5.5 in /composer/helpers/v2 [#5004](https://github.com/dependabot/dependabot-core/pull/5004)
+- build(deps): bump composer/composer from 1.10.25 to 1.10.26 in /composer/helpers/v1 [#4996](https://github.com/dependabot/dependabot-core/pull/4996)
+- build(deps): bump @npmcli/arborist from 5.0.5 to 5.0.6 in /npm_and_yarn/helpers [#4994](https://github.com/dependabot/dependabot-core/pull/4994)
+- build(deps): bump composer/composer from 2.3.4 to 2.3.5 in /composer/helpers/v2 [#4995](https://github.com/dependabot/dependabot-core/pull/4995)
+- build(deps): bump semver from 7.3.6 to 7.3.7 in /npm_and_yarn/helpers [#4990](https://github.com/dependabot/dependabot-core/pull/4990)
+- Adds failing tests for Typescript @types updates [#4992](https://github.com/dependabot/dependabot-core/pull/4992)
+- handle multiple python manifests containing the same dependency [#4969](https://github.com/dependabot/dependabot-core/pull/4969)
+- Python: unwrap arbitrary parentheses from requirement string [#4988](https://github.com/dependabot/dependabot-core/pull/4988)
+- Adding ability to debug into tests from VS Code [#4971](https://github.com/dependabot/dependabot-core/pull/4971)
+- build(deps): bump composer/composer from 2.3.3 to 2.3.4 in /composer/helpers/v2 [#4978](https://github.com/dependabot/dependabot-core/pull/4978)
+- build(deps): bump @npmcli/arborist from 5.0.4 to 5.0.5 in /npm_and_yarn/helpers [#4977](https://github.com/dependabot/dependabot-core/pull/4977)
+- build(deps-dev): update rubocop requirement from ~> 1.26.0 to ~> 1.27.0 in /common [#4986](https://github.com/dependabot/dependabot-core/pull/4986)
+- build(deps): bump pipenv from 2022.3.28 to 2022.4.8 in /python/helpers [#4985](https://github.com/dependabot/dependabot-core/pull/4985)
+- build(deps-dev): bump eslint from 8.12.0 to 8.13.0 in /npm_and_yarn/helpers [#4984](https://github.com/dependabot/dependabot-core/pull/4984)
+- pub: Bump when publish to none (@sigurdm) [#4981](https://github.com/dependabot/dependabot-core/pull/4981)
+- Fix terraform update_range function [#4982](https://github.com/dependabot/dependabot-core/pull/4982)
+- Restore python 3.6 support [#4958](https://github.com/dependabot/dependabot-core/pull/4958)
+
 ## v0.180.5, 7 April 2022
 
 - Actions: Fix failed update if version was a partial match for a branch [#4972](https://github.com/dependabot/dependabot-core/pull/4972)
