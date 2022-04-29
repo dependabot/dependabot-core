@@ -14,6 +14,7 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
+      require_relative "update_checker/locked_subdependency_version_resolver"
 
       def latest_version
         @latest_version ||=
@@ -110,9 +111,9 @@ module Dependabot
         return unless latest_version
 
         # No support for full unlocks for subdependencies yet
-        if dependency.top_level?
-          # TODO: we should check that the parent dependencies are updatable
-          return conflicting_dependencies.any?
+        unless dependency.top_level?
+          latest_version = locked_subdependency_version_resolver.latest_resolvable_version
+          return security_advisories.none? { |a| a.vulnerable?(latest_version) }
         end
 
         version_resolver.latest_version_resolvable_with_full_unlock?
@@ -121,7 +122,13 @@ module Dependabot
       def updated_dependencies_after_full_unlock
         updated_deps = version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
+
+        updated_deps + conflicting_updated_dependencies
+      end
+
+      def conflicting_updated_dependencies
         # TODO: only do this when we have a transitive dependency with conflicts
+        updated_deps = []
         conflicting_dependencies.each do |conflict|
           conflicting_dep = Dependency.new(
             name: conflict['parent_name'],
@@ -146,6 +153,7 @@ module Dependabot
             previous_version: conflict['parent_version']
           )
         end
+
         updated_deps
       end
 
@@ -266,6 +274,18 @@ module Dependabot
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version
+          )
+      end
+
+      def locked_subdependency_version_resolver
+        @locked_subdependency_version_resolver ||=
+          LockedSubdependencyVersionResolver.new(
+            dependency: dependency,
+            credentials: credentials,
+            dependency_files: dependency_files,
+            ignored_versions: ignored_versions,
+            latest_allowable_version: latest_version,
+            locking_dependencies: conflicting_updated_dependencies
           )
       end
 
