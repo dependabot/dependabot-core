@@ -181,7 +181,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
             to_return(status: 200, body: fixture("nuspecs", "index.json"))
           # next query for the package at the search URL returned
           stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0").
-            to_return(status: 200, body: fixture("nuspecs", "microsoft.extensions.depdencymodel-results.json"))
+            to_return(status: 200, body: fixture("nuspecs", "microsoft.extensions.dependencymodel-results.json"))
         end
 
         # data was extracted from the projectUrl in the search results
