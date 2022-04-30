@@ -2,6 +2,7 @@
 
 set -e
 
+DOCKER="${DOCKER:=docker}"
 IMAGE_NAME="${IMAGE_NAME:=dependabot/dependabot-core-development}"
 CONTAINER_NAME="${CONTAINER_NAME:=dependabot-core-development}"
 DOCKERFILE="Dockerfile.development"
@@ -15,7 +16,7 @@ export DOCKER_BUILDKIT=1
 OPTS=$(getopt -o hr --long help,rebuild -n 'parse-options' -- "$@")
 # shellcheck disable=SC2181
 if [ $? != 0 ]; then
-  echo "failed parsing options" >&2
+  printf '%s\n' "failed parsing options" >&2
   exit 1
 fi
 
@@ -29,13 +30,13 @@ while true; do
 done
 
 if [ "$HELP" = "true" ]; then
-  echo "usage: $0 [--rebuild] [ARGS]"
+  printf '%s\n' "usage: $0 [--rebuild] [ARGS]"
   exit 0
 fi
 
 build_image() {
   export BUILT_IMAGE=true
-  echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
+  printf '%s\n' "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
 
   local TARGETARCH;
   case "$(uname -m)"
@@ -45,39 +46,39 @@ build_image() {
     *) TARGETARCH=amd64 ;;
   esac
 
-  docker build \
+  $DOCKER build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "TARGETARCH=${TARGETARCH}" \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
     --cache-from "dependabot/dependabot-core:latest" \
     -t dependabot/dependabot-core .
-  echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
-  docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  printf '%s\n' "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
+  $DOCKER build --build-arg BUILDKIT_INLINE_CACHE=1 -t "$IMAGE_NAME" -f "$DOCKERFILE" .
 }
 
-IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
+IMAGE_ID=$($DOCKER inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
 if [ -z "$IMAGE_ID" ]; then
-  echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
+  printf '%s\n' "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
   build_image
 elif [ "$REBUILD" = "true" ]; then
-  echo "$(tput setaf 4) > rebuild of $IMAGE_NAME requested$(tput sgr0)"
+  printf '%s\n' "$(tput setaf 4) > rebuild of $IMAGE_NAME requested$(tput sgr0)"
   build_image
 else
-  echo "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
+  printf '%s\n' "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
 fi
 
 set +e
-RUNNING=$(docker ps --format '{{.Names}}' | grep "$CONTAINER_NAME$")
+RUNNING=$($DOCKER ps --format '{{.Names}}' | grep "$CONTAINER_NAME$")
 set -e
-echo "$RUNNING"
+printf '%s\n' "$RUNNING"
 if [ -n "$RUNNING" ]; then
   if [ -z "$BUILT_IMAGE" ]; then
     # image was not rebuilt - can we reuse existing?
-    exec docker exec -ti "$CONTAINER_NAME" bash
+    exec $DOCKER exec -ti "$CONTAINER_NAME" bash
   else
     # image was rebuilt - exit running container
-    docker stop "$CONTAINER_NAME"
+    $DOCKER stop "$CONTAINER_NAME"
   fi
 fi
 
@@ -98,131 +99,132 @@ if [ "$#" -gt "0" ]; then
   CONTAINER_ARGS=("$@")
 fi
 
-echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
+printf '%s\n' "$(tput setaf 2)=> running $DOCKER development shell$(tput sgr0)"
+LOCAL_CODE_DIR="${LOCAL_CODE_DIR:=$(pwd)}"
 CODE_DIR="/home/dependabot/dependabot-core"
-touch .core-bash_history
-mkdir -p dry-run tmp
-docker run --rm -ti \
-  -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
-  -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
-  -v "$(pwd)/bin:$CODE_DIR/bin" \
-  -v "$(pwd)/dry-run:$CODE_DIR/dry-run" \
-  -v "$(pwd)/common/.rubocop.yml:$CODE_DIR/common/.rubocop.yml" \
-  -v "$(pwd)/common/Gemfile:$CODE_DIR/common/Gemfile" \
-  -v "$(pwd)/common/dependabot-common.gemspec:$CODE_DIR/common/dependabot-common.gemspec" \
-  -v "$(pwd)/common/bin:$CODE_DIR/common/bin" \
-  -v "$(pwd)/common/lib:$CODE_DIR/common/lib" \
-  -v "$(pwd)/common/spec:$CODE_DIR/common/spec" \
-  -v "$(pwd)/common/script:$CODE_DIR/common/script" \
-  -v "$(pwd)/terraform/.rubocop.yml:$CODE_DIR/terraform/.rubocop.yml" \
-  -v "$(pwd)/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
-  -v "$(pwd)/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
-  -v "$(pwd)/terraform/helpers:$CODE_DIR/terraform/helpers" \
-  -v "$(pwd)/terraform/lib:$CODE_DIR/terraform/lib" \
-  -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
-  -v "$(pwd)/terraform/script:$CODE_DIR/terraform/script" \
-  -v "$(pwd)/elm/.rubocop.yml:$CODE_DIR/elm/.rubocop.yml" \
-  -v "$(pwd)/elm/Gemfile:$CODE_DIR/elm/Gemfile" \
-  -v "$(pwd)/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \
-  -v "$(pwd)/elm/lib:$CODE_DIR/elm/lib" \
-  -v "$(pwd)/elm/spec:$CODE_DIR/elm/spec" \
-  -v "$(pwd)/elm/script:$CODE_DIR/elm/script" \
-  -v "$(pwd)/docker/.rubocop.yml:$CODE_DIR/docker/.rubocop.yml" \
-  -v "$(pwd)/docker/Gemfile:$CODE_DIR/docker/Gemfile" \
-  -v "$(pwd)/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
-  -v "$(pwd)/docker/lib:$CODE_DIR/docker/lib" \
-  -v "$(pwd)/docker/spec:$CODE_DIR/docker/spec" \
-  -v "$(pwd)/docker/script:$CODE_DIR/docker/script" \
-  -v "$(pwd)/git_submodules/.rubocop.yml:$CODE_DIR/git_submodules/.rubocop.yml" \
-  -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
-  -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-git_submodules.gemspec" \
-  -v "$(pwd)/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
-  -v "$(pwd)/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
-  -v "$(pwd)/git_submodules/script:$CODE_DIR/git_submodules/script" \
-  -v "$(pwd)/github_actions/.rubocop.yml:$CODE_DIR/github_actions/.rubocop.yml" \
-  -v "$(pwd)/github_actions/Gemfile:$CODE_DIR/github_actions/Gemfile" \
-  -v "$(pwd)/github_actions/dependabot-github_actions.gemspec:$CODE_DIR/github_actions/dependabot-github_actions.gemspec" \
-  -v "$(pwd)/github_actions/lib:$CODE_DIR/github_actions/lib" \
-  -v "$(pwd)/github_actions/spec:$CODE_DIR/github_actions/spec" \
-  -v "$(pwd)/github_actions/script:$CODE_DIR/github_actions/script" \
-  -v "$(pwd)/python/.rubocop.yml:$CODE_DIR/python/.rubocop.yml" \
-  -v "$(pwd)/python/Gemfile:$CODE_DIR/python/Gemfile" \
-  -v "$(pwd)/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
-  -v "$(pwd)/python/helpers:$CODE_DIR/python/helpers" \
-  -v "$(pwd)/python/lib:$CODE_DIR/python/lib" \
-  -v "$(pwd)/python/spec:$CODE_DIR/python/spec" \
-  -v "$(pwd)/python/script:$CODE_DIR/python/script" \
-  -v "$(pwd)/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
-  -v "$(pwd)/pub/Gemfile:$CODE_DIR/pub/Gemfile" \
-  -v "$(pwd)/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
-  -v "$(pwd)/pub/lib:$CODE_DIR/pub/lib" \
-  -v "$(pwd)/pub/spec:$CODE_DIR/pub/spec" \
-  -v "$(pwd)/pub/script:$CODE_DIR/pub/script" \
-  -v "$(pwd)/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
-  -v "$(pwd)/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
-  -v "$(pwd)/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
-  -v "$(pwd)/nuget/lib:$CODE_DIR/nuget/lib" \
-  -v "$(pwd)/nuget/spec:$CODE_DIR/nuget/spec" \
-  -v "$(pwd)/nuget/script:$CODE_DIR/nuget/script" \
-  -v "$(pwd)/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
-  -v "$(pwd)/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
-  -v "$(pwd)/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
-  -v "$(pwd)/maven/lib:$CODE_DIR/maven/lib" \
-  -v "$(pwd)/maven/spec:$CODE_DIR/maven/spec" \
-  -v "$(pwd)/maven/script:$CODE_DIR/maven/script" \
-  -v "$(pwd)/gradle/.rubocop.yml:$CODE_DIR/gradle/.rubocop.yml" \
-  -v "$(pwd)/gradle/Gemfile:$CODE_DIR/gradle/Gemfile" \
-  -v "$(pwd)/gradle/dependabot-gradle.gemspec:$CODE_DIR/gradle/dependabot-gradle.gemspec" \
-  -v "$(pwd)/gradle/lib:$CODE_DIR/gradle/lib" \
-  -v "$(pwd)/gradle/spec:$CODE_DIR/gradle/spec" \
-  -v "$(pwd)/gradle/script:$CODE_DIR/gradle/script" \
-  -v "$(pwd)/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
-  -v "$(pwd)/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
-  -v "$(pwd)/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
-  -v "$(pwd)/hex/helpers:$CODE_DIR/hex/helpers" \
-  -v "$(pwd)/hex/lib:$CODE_DIR/hex/lib" \
-  -v "$(pwd)/hex/spec:$CODE_DIR/hex/spec" \
-  -v "$(pwd)/hex/script:$CODE_DIR/hex/script" \
-  -v "$(pwd)/cargo/.rubocop.yml:$CODE_DIR/cargo/.rubocop.yml" \
-  -v "$(pwd)/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
-  -v "$(pwd)/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-cargo.gemspec" \
-  -v "$(pwd)/cargo/lib:$CODE_DIR/cargo/lib" \
-  -v "$(pwd)/cargo/spec:$CODE_DIR/cargo/spec" \
-  -v "$(pwd)/cargo/script:$CODE_DIR/cargo/script" \
-  -v "$(pwd)/go_modules/.rubocop.yml:$CODE_DIR/go_modules/.rubocop.yml" \
-  -v "$(pwd)/go_modules/Gemfile:$CODE_DIR/go_modules/Gemfile" \
-  -v "$(pwd)/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
-  -v "$(pwd)/go_modules/helpers:$CODE_DIR/go_modules/helpers" \
-  -v "$(pwd)/go_modules/lib:$CODE_DIR/go_modules/lib" \
-  -v "$(pwd)/go_modules/spec:$CODE_DIR/go_modules/spec" \
-  -v "$(pwd)/go_modules/script:$CODE_DIR/go_modules/script" \
-  -v "$(pwd)/npm_and_yarn/.rubocop.yml:$CODE_DIR/npm_and_yarn/.rubocop.yml" \
-  -v "$(pwd)/npm_and_yarn/Gemfile:$CODE_DIR/npm_and_yarn/Gemfile" \
-  -v "$(pwd)/npm_and_yarn/dependabot-npm_and_yarn.gemspec:$CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec" \
-  -v "$(pwd)/npm_and_yarn/helpers:$CODE_DIR/npm_and_yarn/helpers" \
-  -v "$(pwd)/npm_and_yarn/lib:$CODE_DIR/npm_and_yarn/lib" \
-  -v "$(pwd)/npm_and_yarn/spec:$CODE_DIR/npm_and_yarn/spec" \
-  -v "$(pwd)/npm_and_yarn/script:$CODE_DIR/npm_and_yarn/script" \
-  -v "$(pwd)/composer/.rubocop.yml:$CODE_DIR/composer/.rubocop.yml" \
-  -v "$(pwd)/composer/Gemfile:$CODE_DIR/composer/Gemfile" \
-  -v "$(pwd)/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
-  -v "$(pwd)/composer/helpers:$CODE_DIR/composer/helpers" \
-  -v "$(pwd)/composer/lib:$CODE_DIR/composer/lib" \
-  -v "$(pwd)/composer/spec:$CODE_DIR/composer/spec" \
-  -v "$(pwd)/composer/script:$CODE_DIR/composer/script" \
-  -v "$(pwd)/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \
-  -v "$(pwd)/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
-  -v "$(pwd)/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
-  -v "$(pwd)/bundler/lib:$CODE_DIR/bundler/lib" \
-  -v "$(pwd)/bundler/helpers:$CODE_DIR/bundler/helpers" \
-  -v "$(pwd)/bundler/spec:$CODE_DIR/bundler/spec" \
-  -v "$(pwd)/bundler/script:$CODE_DIR/bundler/script" \
-  -v "$(pwd)/omnibus/.rubocop.yml:$CODE_DIR/omnibus/.rubocop.yml" \
-  -v "$(pwd)/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
-  -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
-  -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
-  -v "$(pwd)/omnibus/script:$CODE_DIR/omnibus/script" \
-  -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
+touch "$LOCAL_CODE_DIR/.core-bash_history"
+mkdir -p "$LOCAL_CODE_DIR/dry-run" "$LOCAL_CODE_DIR/tmp"
+$DOCKER run --rm -ti \
+  -v "$LOCAL_CODE_DIR/.core-bash_history:/home/dependabot/.bash_history" \
+  -v "$LOCAL_CODE_DIR/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/bin:$CODE_DIR/bin" \
+  -v "$LOCAL_CODE_DIR/dry-run:$CODE_DIR/dry-run" \
+  -v "$LOCAL_CODE_DIR/common/.rubocop.yml:$CODE_DIR/common/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/common/Gemfile:$CODE_DIR/common/Gemfile" \
+  -v "$LOCAL_CODE_DIR/common/dependabot-common.gemspec:$CODE_DIR/common/dependabot-common.gemspec" \
+  -v "$LOCAL_CODE_DIR/common/bin:$CODE_DIR/common/bin" \
+  -v "$LOCAL_CODE_DIR/common/lib:$CODE_DIR/common/lib" \
+  -v "$LOCAL_CODE_DIR/common/spec:$CODE_DIR/common/spec" \
+  -v "$LOCAL_CODE_DIR/common/script:$CODE_DIR/common/script" \
+  -v "$LOCAL_CODE_DIR/terraform/.rubocop.yml:$CODE_DIR/terraform/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/terraform/Gemfile:$CODE_DIR/terraform/Gemfile" \
+  -v "$LOCAL_CODE_DIR/terraform/dependabot-terraform.gemspec:$CODE_DIR/terraform/dependabot-terraform.gemspec" \
+  -v "$LOCAL_CODE_DIR/terraform/helpers:$CODE_DIR/terraform/helpers" \
+  -v "$LOCAL_CODE_DIR/terraform/lib:$CODE_DIR/terraform/lib" \
+  -v "$LOCAL_CODE_DIR/terraform/spec:$CODE_DIR/terraform/spec" \
+  -v "$LOCAL_CODE_DIR/terraform/script:$CODE_DIR/terraform/script" \
+  -v "$LOCAL_CODE_DIR/elm/.rubocop.yml:$CODE_DIR/elm/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/elm/Gemfile:$CODE_DIR/elm/Gemfile" \
+  -v "$LOCAL_CODE_DIR/elm/dependabot-elm.gemspec:$CODE_DIR/elm/dependabot-elm.gemspec" \
+  -v "$LOCAL_CODE_DIR/elm/lib:$CODE_DIR/elm/lib" \
+  -v "$LOCAL_CODE_DIR/elm/spec:$CODE_DIR/elm/spec" \
+  -v "$LOCAL_CODE_DIR/elm/script:$CODE_DIR/elm/script" \
+  -v "$LOCAL_CODE_DIR/docker/.rubocop.yml:$CODE_DIR/docker/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/docker/Gemfile:$CODE_DIR/docker/Gemfile" \
+  -v "$LOCAL_CODE_DIR/docker/dependabot-docker.gemspec:$CODE_DIR/docker/dependabot-docker.gemspec" \
+  -v "$LOCAL_CODE_DIR/docker/lib:$CODE_DIR/docker/lib" \
+  -v "$LOCAL_CODE_DIR/docker/spec:$CODE_DIR/docker/spec" \
+  -v "$LOCAL_CODE_DIR/docker/script:$CODE_DIR/docker/script" \
+  -v "$LOCAL_CODE_DIR/git_submodules/.rubocop.yml:$CODE_DIR/git_submodules/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
+  -v "$LOCAL_CODE_DIR/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-git_submodules.gemspec" \
+  -v "$LOCAL_CODE_DIR/git_submodules/lib:$CODE_DIR/git_submodules/lib" \
+  -v "$LOCAL_CODE_DIR/git_submodules/spec:$CODE_DIR/git_submodules/spec" \
+  -v "$LOCAL_CODE_DIR/git_submodules/script:$CODE_DIR/git_submodules/script" \
+  -v "$LOCAL_CODE_DIR/github_actions/.rubocop.yml:$CODE_DIR/github_actions/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/github_actions/Gemfile:$CODE_DIR/github_actions/Gemfile" \
+  -v "$LOCAL_CODE_DIR/github_actions/dependabot-github_actions.gemspec:$CODE_DIR/github_actions/dependabot-github_actions.gemspec" \
+  -v "$LOCAL_CODE_DIR/github_actions/lib:$CODE_DIR/github_actions/lib" \
+  -v "$LOCAL_CODE_DIR/github_actions/spec:$CODE_DIR/github_actions/spec" \
+  -v "$LOCAL_CODE_DIR/github_actions/script:$CODE_DIR/github_actions/script" \
+  -v "$LOCAL_CODE_DIR/python/.rubocop.yml:$CODE_DIR/python/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/python/Gemfile:$CODE_DIR/python/Gemfile" \
+  -v "$LOCAL_CODE_DIR/python/dependabot-python.gemspec:$CODE_DIR/python/dependabot-python.gemspec" \
+  -v "$LOCAL_CODE_DIR/python/helpers:$CODE_DIR/python/helpers" \
+  -v "$LOCAL_CODE_DIR/python/lib:$CODE_DIR/python/lib" \
+  -v "$LOCAL_CODE_DIR/python/spec:$CODE_DIR/python/spec" \
+  -v "$LOCAL_CODE_DIR/python/script:$CODE_DIR/python/script" \
+  -v "$LOCAL_CODE_DIR/pub/.rubocop.yml:$CODE_DIR/pub/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/pub/Gemfile:$CODE_DIR/pub/Gemfile" \
+  -v "$LOCAL_CODE_DIR/pub/dependabot-pub.gemspec:$CODE_DIR/pub/dependabot-pub.gemspec" \
+  -v "$LOCAL_CODE_DIR/pub/lib:$CODE_DIR/pub/lib" \
+  -v "$LOCAL_CODE_DIR/pub/spec:$CODE_DIR/pub/spec" \
+  -v "$LOCAL_CODE_DIR/pub/script:$CODE_DIR/pub/script" \
+  -v "$LOCAL_CODE_DIR/nuget/.rubocop.yml:$CODE_DIR/nuget/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/nuget/Gemfile:$CODE_DIR/nuget/Gemfile" \
+  -v "$LOCAL_CODE_DIR/nuget/dependabot-nuget.gemspec:$CODE_DIR/nuget/dependabot-nuget.gemspec" \
+  -v "$LOCAL_CODE_DIR/nuget/lib:$CODE_DIR/nuget/lib" \
+  -v "$LOCAL_CODE_DIR/nuget/spec:$CODE_DIR/nuget/spec" \
+  -v "$LOCAL_CODE_DIR/nuget/script:$CODE_DIR/nuget/script" \
+  -v "$LOCAL_CODE_DIR/maven/.rubocop.yml:$CODE_DIR/maven/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/maven/Gemfile:$CODE_DIR/maven/Gemfile" \
+  -v "$LOCAL_CODE_DIR/maven/dependabot-maven.gemspec:$CODE_DIR/maven/dependabot-maven.gemspec" \
+  -v "$LOCAL_CODE_DIR/maven/lib:$CODE_DIR/maven/lib" \
+  -v "$LOCAL_CODE_DIR/maven/spec:$CODE_DIR/maven/spec" \
+  -v "$LOCAL_CODE_DIR/maven/script:$CODE_DIR/maven/script" \
+  -v "$LOCAL_CODE_DIR/gradle/.rubocop.yml:$CODE_DIR/gradle/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/gradle/Gemfile:$CODE_DIR/gradle/Gemfile" \
+  -v "$LOCAL_CODE_DIR/gradle/dependabot-gradle.gemspec:$CODE_DIR/gradle/dependabot-gradle.gemspec" \
+  -v "$LOCAL_CODE_DIR/gradle/lib:$CODE_DIR/gradle/lib" \
+  -v "$LOCAL_CODE_DIR/gradle/spec:$CODE_DIR/gradle/spec" \
+  -v "$LOCAL_CODE_DIR/gradle/script:$CODE_DIR/gradle/script" \
+  -v "$LOCAL_CODE_DIR/hex/.rubocop.yml:$CODE_DIR/hex/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/hex/Gemfile:$CODE_DIR/hex/Gemfile" \
+  -v "$LOCAL_CODE_DIR/hex/dependabot-hex.gemspec:$CODE_DIR/hex/dependabot-hex.gemspec" \
+  -v "$LOCAL_CODE_DIR/hex/helpers:$CODE_DIR/hex/helpers" \
+  -v "$LOCAL_CODE_DIR/hex/lib:$CODE_DIR/hex/lib" \
+  -v "$LOCAL_CODE_DIR/hex/spec:$CODE_DIR/hex/spec" \
+  -v "$LOCAL_CODE_DIR/hex/script:$CODE_DIR/hex/script" \
+  -v "$LOCAL_CODE_DIR/cargo/.rubocop.yml:$CODE_DIR/cargo/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/cargo/Gemfile:$CODE_DIR/cargo/Gemfile" \
+  -v "$LOCAL_CODE_DIR/cargo/dependabot-cargo.gemspec:$CODE_DIR/cargo/dependabot-cargo.gemspec" \
+  -v "$LOCAL_CODE_DIR/cargo/lib:$CODE_DIR/cargo/lib" \
+  -v "$LOCAL_CODE_DIR/cargo/spec:$CODE_DIR/cargo/spec" \
+  -v "$LOCAL_CODE_DIR/cargo/script:$CODE_DIR/cargo/script" \
+  -v "$LOCAL_CODE_DIR/go_modules/.rubocop.yml:$CODE_DIR/go_modules/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/go_modules/Gemfile:$CODE_DIR/go_modules/Gemfile" \
+  -v "$LOCAL_CODE_DIR/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
+  -v "$LOCAL_CODE_DIR/go_modules/helpers:$CODE_DIR/go_modules/helpers" \
+  -v "$LOCAL_CODE_DIR/go_modules/lib:$CODE_DIR/go_modules/lib" \
+  -v "$LOCAL_CODE_DIR/go_modules/spec:$CODE_DIR/go_modules/spec" \
+  -v "$LOCAL_CODE_DIR/go_modules/script:$CODE_DIR/go_modules/script" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/.rubocop.yml:$CODE_DIR/npm_and_yarn/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/Gemfile:$CODE_DIR/npm_and_yarn/Gemfile" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec:$CODE_DIR/npm_and_yarn/dependabot-npm_and_yarn.gemspec" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/helpers:$CODE_DIR/npm_and_yarn/helpers" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/lib:$CODE_DIR/npm_and_yarn/lib" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/spec:$CODE_DIR/npm_and_yarn/spec" \
+  -v "$LOCAL_CODE_DIR/npm_and_yarn/script:$CODE_DIR/npm_and_yarn/script" \
+  -v "$LOCAL_CODE_DIR/composer/.rubocop.yml:$CODE_DIR/composer/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/composer/Gemfile:$CODE_DIR/composer/Gemfile" \
+  -v "$LOCAL_CODE_DIR/composer/dependabot-composer.gemspec:$CODE_DIR/composer/dependabot-composer.gemspec" \
+  -v "$LOCAL_CODE_DIR/composer/helpers:$CODE_DIR/composer/helpers" \
+  -v "$LOCAL_CODE_DIR/composer/lib:$CODE_DIR/composer/lib" \
+  -v "$LOCAL_CODE_DIR/composer/spec:$CODE_DIR/composer/spec" \
+  -v "$LOCAL_CODE_DIR/composer/script:$CODE_DIR/composer/script" \
+  -v "$LOCAL_CODE_DIR/bundler/.rubocop.yml:$CODE_DIR/bundler/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/bundler/Gemfile:$CODE_DIR/bundler/Gemfile" \
+  -v "$LOCAL_CODE_DIR/bundler/dependabot-bundler.gemspec:$CODE_DIR/bundler/dependabot-bundler.gemspec" \
+  -v "$LOCAL_CODE_DIR/bundler/lib:$CODE_DIR/bundler/lib" \
+  -v "$LOCAL_CODE_DIR/bundler/helpers:$CODE_DIR/bundler/helpers" \
+  -v "$LOCAL_CODE_DIR/bundler/spec:$CODE_DIR/bundler/spec" \
+  -v "$LOCAL_CODE_DIR/bundler/script:$CODE_DIR/bundler/script" \
+  -v "$LOCAL_CODE_DIR/omnibus/.rubocop.yml:$CODE_DIR/omnibus/.rubocop.yml" \
+  -v "$LOCAL_CODE_DIR/omnibus/Gemfile:$CODE_DIR/omnibus/Gemfile" \
+  -v "$LOCAL_CODE_DIR/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
+  -v "$LOCAL_CODE_DIR/omnibus/lib:$CODE_DIR/omnibus/lib" \
+  -v "$LOCAL_CODE_DIR/omnibus/script:$CODE_DIR/omnibus/script" \
+  -v "$LOCAL_CODE_DIR/tmp:/$CODE_DIR/tmp" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
