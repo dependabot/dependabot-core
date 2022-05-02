@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
-  spec.add_development_dependency "debase", "~> 0.2.4.1"
+  spec.add_development_dependency "debase", "~> 0.2.5.beta2"
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13"
