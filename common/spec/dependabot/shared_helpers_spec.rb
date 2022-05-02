@@ -360,6 +360,33 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
 
+    context "when the global .gitconfig has a safe directory" do
+      before do
+        Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo")
+      end
+      after do
+        Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo")
+      end
+
+      it "is preserved in the temporary .gitconfig" do
+        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+      end
+
+      context "when the global .gitconfig has two safe directories" do
+        before do
+          Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo2")
+        end
+        after do
+          Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo2")
+        end
+
+        it "is preserved in the temporary .gitconfig" do
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo2")
+        end
+      end
+    end
+
     context "when providing no extra credentials" do
       let(:credentials) { [] }
 
