@@ -90,12 +90,6 @@ module Dependabot
           )
 
           @crates_listing = JSON.parse(response.body)
-        rescue Excon::Error::Timeout
-          retrying ||= false
-          raise if retrying
-
-          retrying = true
-          sleep(rand(1.0..5.0)) && retry
         end
 
         def wants_prerelease?
