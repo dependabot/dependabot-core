@@ -285,10 +285,7 @@ module Dependabot
               if git_dependency?
                 nil
               else
-                retry_count ||= 0
-                retry_count += 1
-                raise_npm_details_error(e) if retry_count > 2
-                sleep(rand(3.0..10.0)) && retry
+                raise_npm_details_error(e)
               end
             end
         end
