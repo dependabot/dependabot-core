@@ -17,6 +17,15 @@
       ]
     },
     {
+      "name": "Debug Tests",
+      "type": "Ruby",
+      "request": "launch",
+      "program": "${workspaceRoot}/${input:ecosystem}/.bundle/bin/rspec",
+      "cwd": "${workspaceRoot}/${input:ecosystem}",
+      "useBundler": true,
+      "args": ["${input:test_path}"],
+    },
+    {
       "type": "node",
       "name": "vscode-jest-tests",
       "request": "launch",
