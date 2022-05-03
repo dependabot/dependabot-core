@@ -643,6 +643,38 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
     end
+
+    context "when the docker registery only knows about versions older than the current version" do
+      let(:dependency_name) { "jetstack/cert-manager-controller" }
+      let(:version) { "v1.7.2" }
+      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "quay.io",
+              tag: "v1.7.2",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "truncated_tag_list.json" }
+
+      before do
+        tags_url = "https://quay.io/v2/jetstack/cert-manager-controller/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("v1.7.2") }
+    end
   end
 
   describe "#latest_resolvable_version" do
