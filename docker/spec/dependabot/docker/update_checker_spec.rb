@@ -415,6 +415,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
     context "when the dependency has a namespace" do
       let(:dependency_name) { "moj/ruby" }
+      let(:version) { "2.4.0" }
       let(:tags_fixture_name) { "ruby.json" }
       before do
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
