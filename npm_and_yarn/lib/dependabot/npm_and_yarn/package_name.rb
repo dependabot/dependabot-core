@@ -38,7 +38,7 @@ module Dependabot
       end
 
       def eql?(other)
-        self.class == other.class && self == other
+        self.class == other.class && to_s == other.to_s
       end
 
       def hash

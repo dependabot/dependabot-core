@@ -232,14 +232,14 @@ module Dependabot
         def types_package
           @types_package ||= begin
             types_package_name = PackageName.new(dependency.name).types_package_name
-            top_level_dependencies.find { |d| types_package_name == d.name } if types_package_name
+            top_level_dependencies.find { |d| types_package_name.to_s == d.name } if types_package_name
           end
         end
 
         def original_package
           @original_package ||= begin
             original_package_name = PackageName.new(dependency.name).library_name
-            top_level_dependencies.find { |d| original_package_name == d.name } if original_package_name
+            top_level_dependencies.find { |d| original_package_name.to_s == d.name } if original_package_name
           end
         end
 
@@ -247,7 +247,7 @@ module Dependabot
           return false if types_package.nil?
 
           latest_version = latest_version_finder(types_package).latest_version_from_registry
-          return false unless latest_version.backwards_compatible_with?(latest_allowable_version)
+          return false unless latest_allowable_version.backwards_compatible_with?(latest_version)
 
           types_package_version = version_class.new(types_package.version)
           return false unless types_package_version < latest_version
