@@ -40,8 +40,12 @@ module Dependabot
           select { |f| f.type == "dir" }.
           any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
-        tmp_source.branch = nil
-        retry
+        # If we are attempting to find a branch, we should fail over to the default branch and retry once only
+        if tmp_source.branch.present?
+          tmp_source.branch = nil
+          retry
+        end
+        @repo_has_subdir_for_dep[tmp_source] = false
       rescue Dependabot::RepoNotFound
         @repo_has_subdir_for_dep[tmp_source] = false
       end

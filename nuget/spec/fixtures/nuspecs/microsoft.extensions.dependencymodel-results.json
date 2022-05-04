@@ -1,0 +1,193 @@
+{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "@base": "https://api.nuget.org/v3/registration5-semver1/"
+  },
+  "totalHits": 1,
+  "data": [
+    {
+      "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/index.json",
+      "id": "Microsoft.Extensions.DependencyModel",
+      "version": "6.0.0",
+      "description": "Abstractions for reading `.deps` files.\n\nCommonly Used Types:\nMicrosoft.Extensions.DependencyModel.DependencyContext",
+      "summary": "",
+      "title": "Microsoft.Extensions.DependencyModel",
+      "iconUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.extensions.dependencymodel/6.0.0/icon",
+      "licenseUrl": "https://www.nuget.org/packages/Microsoft.Extensions.DependencyModel/6.0.0/license",
+      "projectUrl": "https://github.com/dotnet/core-setup",
+      "tags": [],
+      "authors": [
+        "Microsoft"
+      ],
+      "owners": [
+        "aspnet",
+        "dotnetframework",
+        "Microsoft"
+      ],
+      "totalDownloads": 592854601,
+      "verified": true,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloads": 53573949,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.0.0.json"
+        },
+        {
+          "version": "1.0.3",
+          "downloads": 70125341,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.0.3.json"
+        },
+        {
+          "version": "1.1.0",
+          "downloads": 12508665,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.1.0.json"
+        },
+        {
+          "version": "1.1.1",
+          "downloads": 4699544,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.1.1.json"
+        },
+        {
+          "version": "1.1.2",
+          "downloads": 14087944,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.1.2.json"
+        },
+        {
+          "version": "1.1.9",
+          "downloads": 746146,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/1.1.9.json"
+        },
+        {
+          "version": "2.0.0",
+          "downloads": 66592651,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/2.0.0.json"
+        },
+        {
+          "version": "2.0.3",
+          "downloads": 21618938,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/2.0.3.json"
+        },
+        {
+          "version": "2.0.4",
+          "downloads": 109088277,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/2.0.4.json"
+        },
+        {
+          "version": "2.1.0",
+          "downloads": 120196091,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/2.1.0.json"
+        },
+        {
+          "version": "3.0.0",
+          "downloads": 18697802,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.0.0.json"
+        },
+        {
+          "version": "3.0.1",
+          "downloads": 303086,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.0.1.json"
+        },
+        {
+          "version": "3.0.2",
+          "downloads": 65869,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.0.2.json"
+        },
+        {
+          "version": "3.0.3",
+          "downloads": 103602,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.0.3.json"
+        },
+        {
+          "version": "3.1.0",
+          "downloads": 7791483,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.0.json"
+        },
+        {
+          "version": "3.1.1",
+          "downloads": 4184184,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.1.json"
+        },
+        {
+          "version": "3.1.2",
+          "downloads": 4194473,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.2.json"
+        },
+        {
+          "version": "3.1.3",
+          "downloads": 10138695,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.3.json"
+        },
+        {
+          "version": "3.1.4",
+          "downloads": 3718896,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.4.json"
+        },
+        {
+          "version": "3.1.5",
+          "downloads": 5237803,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.5.json"
+        },
+        {
+          "version": "3.1.6",
+          "downloads": 32350043,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/3.1.6.json"
+        },
+        {
+          "version": "5.0.0",
+          "downloads": 24280196,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/5.0.0.json"
+        },
+        {
+          "version": "6.0.0",
+          "downloads": 5397556,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/microsoft.extensions.dependencymodel/6.0.0.json"
+        }
+      ]
+    },
+    {
+      "@id": "https://api.nuget.org/v3/registration5-semver1/macross.servicemodel.extensions/index.json",
+      "@type": "Package",
+      "registration": "https://api.nuget.org/v3/registration5-semver1/macross.servicemodel.extensions/index.json",
+      "id": "Macross.ServiceModel.Extensions",
+      "version": "1.0.1",
+      "description": "Macross Software System.ServiceModel extensions library.\n\n      Provides extensions for the System.ServiceModel API.\n\n      Commonly Used Types:\n      System.ServiceModel.SoapClient<TChannel>\n\n      Commonly Used Extensions:\n      Microsoft.Extensions.DependencyInjection.AddSoapClient<TChannel, TImplementation>",
+      "summary": "",
+      "title": "Macross.ServiceModel.Extensions",
+      "licenseUrl": "https://www.nuget.org/packages/Macross.ServiceModel.Extensions/1.0.1/license",
+      "projectUrl": "https://github.com/Macross-Software/core/tree/develop/ClassLibraries/Macross.ServiceModel.Extensions",
+      "tags": [],
+      "authors": [
+        "Macross.ServiceModel.Extensions"
+      ],
+      "owners": [
+        "Macross-Software"
+      ],
+      "totalDownloads": 23530,
+      "verified": false,
+      "packageTypes": [
+        {
+          "name": "Dependency"
+        }
+      ],
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloads": 408,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/macross.servicemodel.extensions/1.0.0.json"
+        },
+        {
+          "version": "1.0.1",
+          "downloads": 22345,
+          "@id": "https://api.nuget.org/v3/registration5-semver1/macross.servicemodel.extensions/1.0.1.json"
+        }
+      ]
+    }
+  ]
+}
