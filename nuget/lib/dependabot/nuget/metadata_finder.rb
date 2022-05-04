@@ -21,9 +21,8 @@ module Dependabot
         src_repo_from_project
       rescue StandardError
         # At this point in the process the PR is ready to be posted, we tried to gather commit
-        # and release notes, but have encountered an exception. So let's eat it and log it
-        # since it's better to have a PR with no info than error out.
-        # TODO how do we log this?
+        # and release notes, but have encountered an exception. So let's eat it since it's
+        # better to have a PR with no info than error out.
         nil
       end
 
@@ -52,6 +51,8 @@ module Dependabot
 
         # Find a projectUrl or licenseUrl that look like a source URL
         extract_source_repo(response.body)
+      rescue JSON::ParserError
+        # Ignored, this is expected for some registries that don't handle these request.
       end
 
       def extract_search_url(body)
@@ -59,9 +60,6 @@ module Dependabot
           fetch("resources", []).
           find { |r| r.fetch("@type") == "SearchQueryService" }&.
           fetch("@id")
-      rescue JSON::ParserError
-        # Ignored, this is expected for some registries that don't handle this request.
-        # TODO can we log here so it's clear why the update is missing commit info?
       end
 
       def extract_source_repo(body)
