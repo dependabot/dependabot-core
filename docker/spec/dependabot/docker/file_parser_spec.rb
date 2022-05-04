@@ -404,6 +404,45 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "with a tag and digest" do
+      let(:dockerfile_fixture_name) { "digest_and_tag" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
+      let(:digest_headers) do
+        JSON.parse(
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+        )
+      end
+
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
+
+      subject(:dependency) { dependencies.first }
+
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = repo_url + "tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it "determines the correct version" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("ubuntu")
+        expect(dependency.version).to eq("12.04.5")
+        expect(dependency.requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "Dockerfile",
+          source: {
+            tag: "12.04.5",
+            digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+          }
+        }])
+      end
+    end
+
     context "with multiple FROM lines" do
       let(:dockerfile_fixture_name) { "multiple" }
 
