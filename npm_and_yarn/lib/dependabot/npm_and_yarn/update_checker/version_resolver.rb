@@ -251,15 +251,16 @@ module Dependabot
           puts("Whats types package? #{types_package}")
           return false if types_package.nil?
 
+          latest_types_package_version = latest_version_finder(types_package).latest_version_from_registry
+          return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
+
+          puts("The types package is backwards compatible with original package.")
+
           current_types_package_version = version_class.new(types_package.version)
           return false unless current_types_package_version < latest_types_package_version
 
           puts("There is an updated types package.")
           puts("Current types version: #{current_types_package_version}")
-          latest_types_package_version = latest_version_finder(types_package).latest_version_from_registry
-          return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
-
-          puts("The types package is backwards compatible with original package.")
           true
         end
 
