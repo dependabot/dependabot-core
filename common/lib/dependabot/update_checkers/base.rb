@@ -242,7 +242,7 @@ module Dependabot
 
       def numeric_version_can_update?(requirements_to_unlock:)
         return false if numeric_version_up_to_date?
-        
+
         puts("Version can update using #{requirements_to_unlock}")
         case requirements_to_unlock&.to_sym
         when :none
