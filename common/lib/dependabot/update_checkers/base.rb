@@ -37,12 +37,10 @@ module Dependabot
       end
 
       def can_update?(requirements_to_unlock:)
-        puts("Our code is running.  Also we're asking if updates are possible.")
         # Can't update if all versions are being ignored
         return false if ignore_requirements.include?(requirement_class.new(">= 0"))
 
         if dependency.version
-          puts("Current dependency: #{dependency.name}@#{dependency.version}")
           version_can_update?(requirements_to_unlock: requirements_to_unlock)
         else
           # TODO: Handle full unlock updates for dependencies without a lockfile
@@ -243,13 +241,11 @@ module Dependabot
       def numeric_version_can_update?(requirements_to_unlock:)
         return false if numeric_version_up_to_date?
 
-        puts("Version can update using #{requirements_to_unlock}")
         case requirements_to_unlock&.to_sym
         when :none
           new_version = latest_resolvable_version_with_no_unlock
           new_version && new_version > version_class.new(dependency.version)
         when :own
-          puts("We are checking a numeric version and using :own")
           preferred_version_resolvable_with_unlock?
         when :all
           latest_version_resolvable_with_full_unlock?
@@ -259,7 +255,6 @@ module Dependabot
 
       def preferred_version_resolvable_with_unlock?
         new_version = preferred_resolvable_version
-        puts("This should be nil if we did things correctly #{new_version}")
         return false unless new_version
 
         if existing_version_is_sha?

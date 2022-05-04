@@ -78,7 +78,6 @@ module Dependabot
           return if types_update_available?
           return if original_package_update_available?
 
-          puts("We did not early exit from latest_resolvable_version.... Hmmmmm :(")
           return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
           satisfying_versions.first
@@ -96,7 +95,6 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def dependency_updates_from_full_unlock
-          puts("We made it to fully unlocked updates.")
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
           return if newly_broken_peer_reqs_from_dep.any?
@@ -234,7 +232,6 @@ module Dependabot
         def types_package
           @types_package ||= begin
             types_package_name = PackageName.new(dependency.name).types_package_name
-            puts("Types package: #{types_package_name} and #{top_level_dependencies}")
             top_level_dependencies.find { |d| types_package_name.to_s == d.name } if types_package_name
           end
         end
@@ -247,20 +244,14 @@ module Dependabot
         end
 
         def types_update_available?
-          puts("Do we have a type package for #{dependency.name} #{latest_allowable_version}")
-          puts("Whats types package? #{types_package}")
           return false if types_package.nil?
 
           latest_types_package_version = latest_version_finder(types_package).latest_version_from_registry
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 
-          puts("The types package is backwards compatible with original package.")
-
           current_types_package_version = version_class.new(types_package.version)
           return false unless current_types_package_version < latest_types_package_version
 
-          puts("There is an updated types package.")
-          puts("Current types version: #{current_types_package_version}")
           true
         end
 
