@@ -105,36 +105,69 @@ module Dependabot
         )
       end
 
+      def vulnerability_audit
+        @vulnerability_audit ||=
+          VulnerabilityAuditor.new(
+            dependency_files: dependency_files,
+            credentials: credentials,
+          ).audit(
+            dependency: dependency,
+            security_advisories: security_advisories,
+          )
+      end
+
       private
 
       def latest_version_resolvable_with_full_unlock?
-        return unless latest_version
+        return false unless latest_version
 
-        # No support for full unlocks for subdependencies yet
-        unless dependency.top_level?
-          latest_version = locked_subdependency_version_resolver.latest_resolvable_version
-          return security_advisories.none? { |a| a.vulnerable?(latest_version) }
+        if dependency.top_level?
+          return version_resolver.latest_version_resolvable_with_full_unlock?
         end
 
-        version_resolver.latest_version_resolvable_with_full_unlock?
+        unless transitive_updates_enabled? && security_advisories.any?
+          return false
+        end
+
+        vulnerability_audit["fix_available"]
+      end
+
+      def transitive_updates_enabled?
+        true
       end
 
       def updated_dependencies_after_full_unlock
         updated_deps = version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
 
-        updated_deps + conflicting_updated_dependencies
+        if !dependency.top_level? && transitive_updates_enabled? && security_advisories.any?
+          return updated_deps + conflicting_updated_dependencies
+        end
+
+        updated_deps
       end
 
       def conflicting_updated_dependencies
         # TODO: only do this when we have a transitive dependency with conflicts
+
+        top_level_dependencies = FileParser.new(
+          dependency_files: dependency_files,
+          credentials: credentials,
+          source: nil
+        ).parse.select(&:top_level?)
+
+        top_level_dependency_lookup = Hash[
+          top_level_dependencies.map { |dep| [dep.name, dep] }
+        ]
+
         updated_deps = []
-        conflicting_dependencies.each do |conflict|
+        vulnerability_audit["fix_updates"].each do |update|
           conflicting_dep = Dependency.new(
-            name: conflict['parent_name'],
+            name: update["dependency_name"],
             package_manager: "npm_and_yarn",
-            version: conflict['parent_version'],
-            requirements: [])
+            version: update["target_version"],
+            requirements: [] # TODO: set requirements from existing dep if top level
+          )
 
           # TODO: it's possible for the parent dependency to be locked by another dependency
           # How would we resolve that?
@@ -150,7 +183,7 @@ module Dependabot
           updated_deps << build_updated_dependency(
             dependency: conflicting_dep,
             version: conflicting_dep_latest_version,
-            previous_version: conflict['parent_version']
+            previous_version: update['parent_version']
           )
         end
 
