@@ -5,7 +5,11 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 ### Limitations
 
  - Limited updating of git-dependencies
-   * `dart pub` in general doesn't read versions from git, so upgrade logic is limited to upgrading to what the 'ref' is pointing to.
+   * `dart pub` in general doesn't read versions numbers from git, so upgrade logic is limited to upgrading to what the 'ref' is pointing to.
+   * If you pin to a specific revision in `pubspec.yaml` dependabot will not find upgrades.
+   * If you give a branch in `pubspec.yaml` dependabot will upgrade to the
+     latest revision that branch is pointing to, and update pubspec.lock
+     accordingly.
  - No support for security advisory integration.
  - If the version found is ignored (by dependabot config) no update will happen (even if, an earlier version could be used)
  - Limited metadata support (just retrieves the repository link).
