@@ -4,14 +4,12 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 ### Limitations
 
- - No support for updating git-dependencies
-   * `dart pub` in general doesn't read versions from git, so upgrade logic is limited.
-   * Some variant of support for updating git-dependencies could be added in the future.
+ - Limited updating of git-dependencies
+   * `dart pub` in general doesn't read versions from git, so upgrade logic is limited to upgrading to what the 'ref' is pointing to.
  - No support for security advisory integration.
  - If the version found is ignored (by dependabot config) no update will happen (even if, an earlier version could be used)
- - Very limited metadata support (just retrieves the github link)
+ - Limited metadata support (just retrieves the repository link).
  - Only stable versions of Dart and Flutter supported.
- - No support for private package repositories (mostly a configuration issue).
  - `updated_dependencies_after_full_unlock` only allows updating to a later version, if the latest version that is mutually compatible with other dependencies is the latest version of the said package. This is a dependabot limitation.
 
 ### Running locally
@@ -45,6 +43,7 @@ allows checking for available updates.
       "version": "<version>",
 
       "kind": "direct" || "dev" || "transitive",
+      "source": <source-info>
 
       // Version constraint, as written in `pubspec.yaml`, null for
       // transitive dependencies.
@@ -68,6 +67,7 @@ allows checking for available updates.
       "name":        "<package-name>",       // name of current dependency
       "version":     "<version>",            // current version
       "kind":        "direct" || "dev" || "transitive",
+      "source": <source-info>
       "constraint":  "<version-constraint>" || null, // null for transitive deps
 
       // Latest desirable version of the current dependency,
@@ -110,6 +110,8 @@ allows checking for available updates.
            "name":                     "<package-name>",
            "version":                  "<new-version>" || null, // null, if removed
            "kind":                     "direct" || "dev" || "transitive",
+           "source": <source-info>
+           "previousSource": <source-info>
            "constraintBumped":         "<version-constraint>" || null, // null, if transitive
            "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
            "constraintWidened":        "<version-constraint>" || null, // null, if transitive
@@ -139,6 +141,8 @@ allows checking for available updates.
            "name":                     "<package-name>",
            "version":                  "<new-version>" || null, // null, if removed
            "kind":                     "direct" || "dev" || "transitive",
+           "source": <source-info>
+           "previousSource": <source-info>
            "constraintBumped":         "<version-constraint>" || null, // null, if transitive
            "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
            "constraintWidened":        "<version-constraint>" || null, // null, if transitive
@@ -168,6 +172,8 @@ allows checking for available updates.
            "name":                     "<package-name>",
            "version":                  "<new-version>" || null, // null, if removed
            "kind":                     "direct" || "dev" || "transitive",
+           "source": <source-info>
+           "previousSource": <source-info>
            "constraintBumped":         "<version-constraint>" || null, // null, if transitive
            "constraintBumpedIfNeeded": "<version-constraint>" || null, // null, if transitive
            "constraintWidened":        "<version-constraint>" || null, // null, if transitive
@@ -192,6 +198,7 @@ allows checking for available updates.
          "name":            "<package-name>",
          "version":         "<new-version>",
          "constraint":      "<version-constraint>" or null,
+         "source": <source-info>
       },
       ...
    ],
@@ -201,4 +208,19 @@ allows checking for available updates.
   "dependencies": [],
 }
 # Modifies pubspec.yaml and pubspec.lock on disk
+```
+
+
+The <source-info> is either `null` (no information provided) or a map providing
+details about the package source in a manner specific to the
+package-environment.
+
+For a git dependency it will usually contain the git-url,
+the path inside the repo and the ref. For a repository package it would contain
+the url of the repository.
+```js
+{
+  "type":          "git|path|...." // Name of the source.
+  ... // Other keys are free form json information about the dependency
+}
 ```

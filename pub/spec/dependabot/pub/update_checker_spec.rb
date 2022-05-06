@@ -86,6 +86,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     files.each do |file|
       # Simulate that the lockfile was from localhost:
       file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+      if defined?(git_dir)
+        file.content.gsub!("$GIT_DIR", git_dir)
+        file.content.gsub!("$REF", dependency_version)
+      end
     end
     files
   end
@@ -511,6 +515,49 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       it "raises an error" do
         expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
       end
+    end
+  end
+
+  context "With a git dependency" do
+    include_context :uses_temp_dir
+
+    let(:project) { "git_dependency" }
+
+    let(:git_dir) { File.join(temp_dir, "foo.git") }
+    let(:foo_pubspec) { File.join(git_dir, "pubspec.yaml") }
+
+    let(:dependency_name) { "foo" }
+    let(:dependency_version) {
+      FileUtils.mkdir_p git_dir
+      runGit ['init'], git_dir
+
+      File.write(foo_pubspec, '{"name":"foo", "version": "1.0.0", "environment": {"sdk": "^2.0.0"}}')
+      runGit ['add', '.'], git_dir
+      runGit ['commit', '-am', 'some commit message'], git_dir
+      ref = runGit(['rev-parse', 'HEAD'], git_dir).strip
+      ref
+    }
+    let(:requirements_to_unlock) { :all }
+    let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+
+    it "updates to latest git commit" do
+      File.write(foo_pubspec, '{"name":"foo", "version": "2.0.0", "environment": {"sdk": "^2.0.0"}}')
+      runGit ['add', '.'], git_dir
+      runGit ['commit', '-am', 'some commit message'], git_dir
+      new_ref = runGit(['rev-parse', 'HEAD'], git_dir).strip
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "foo",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "any", source: nil
+          }],
+          "previous_version" => dependency_version,
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "any", source: nil
+          }],
+          "version" => new_ref }
+      ]
     end
   end
 end

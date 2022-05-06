@@ -36,7 +36,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: "2.0.0",
           groups: ["direct"],
           file: "pubspec.yaml",
-          source: nil
+          source: { "description" => { "name" => "retry", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
         }])
       end
     end
@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: "^2.0.0",
           groups: ["direct"],
           file: "pubspec.yaml",
-          source: nil
+          source: { "description" => { "name" => "retry", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
         }])
       end
 
@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Pub::FileParser do
           requirement: ">=1.17.10 <=1.17.12",
           groups: ["dev"],
           file: "pubspec.yaml",
-          source: nil
+          source: { "description" => { "name" => "test", "url" => "https://pub.dartlang.org" }, "type" => "hosted" }
         }])
       end
 

@@ -91,7 +91,7 @@ module Dependabot
           params[:requirements] << {
             requirement: constraint,
             groups: [json["kind"]],
-            source: nil, # TODO: Expose some information about the source
+            source: json["source"],
             file: "pubspec.yaml"
           }
         end
@@ -159,9 +159,11 @@ module Dependabot
           nil
         else
           deps = dependencies.map do |d|
+            source = d.requirements.empty? ? d.requirements.first[:source] : nil
             obj = {
               "name" => d.name,
-              "version" => d.version
+              "version" => d.version,
+              "source" => source
             }
 
             obj["constraint"] = d.requirements[0][:requirement].to_s unless d.requirements.nil? || d.requirements.empty?

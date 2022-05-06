@@ -1,0 +1,192 @@
+{
+    "name": "retry",
+    "latest": {
+        "version": "3.1.0",
+        "pubspec": {
+            "name": "retry",
+            "version": "3.1.0",
+            "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+            "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+            "repository": "https://github.com/another_org/dart-neats.git",
+            "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+            "dev_dependencies": {
+                "test": "^1.16.0-nullsafety.13",
+                "pedantic": "^1.4.0"
+            },
+            "environment": {
+                "sdk": ">=2.12.0-0 <3.0.0"
+            }
+        },
+        "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.1.0.tar.gz",
+        "published": "2021-03-01T18:27:00.565009Z"
+    },
+    "versions": [
+        {
+            "version": "1.0.0",
+            "pubspec": {
+                "homepage": "https://github.com/gwTumm/dart-retry",
+                "version": "1.0.0",
+                "name": "retry",
+                "author": "Tim Kluge <timklge@gmail.com>",
+                "description": "Execute a function repeatedly until no exception is thrown",
+                "dev_dependencies": {
+                    "test": "any"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/1.0.0.tar.gz",
+            "published": "2016-03-31T16:47:45.053Z"
+        },
+        {
+            "version": "2.0.0",
+            "pubspec": {
+                "authors": [
+                    "Jonas Finnemann Jensen <jonasfj@google.com>"
+                ],
+                "repository": "https://github.com/google/dart-neats.git",
+                "version": "2.0.0",
+                "name": "retry",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential backoff, useful when making requests over network.\n",
+                "environment": {
+                    "sdk": ">=2.0.0 <3.0.0"
+                },
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/2.0.0.tar.gz",
+            "published": "2019-03-22T14:21:00.391587Z"
+        },
+        {
+            "version": "3.0.0",
+            "pubspec": {
+                "authors": [
+                    "Jonas Finnemann Jensen <jonasfj@google.com>"
+                ],
+                "repository": "https://github.com/google/dart-neats.git",
+                "version": "3.0.0",
+                "name": "retry",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "environment": {
+                    "sdk": ">=2.0.0 <3.0.0"
+                },
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.0.0.tar.gz",
+            "published": "2019-06-20T18:34:40.073842Z"
+        },
+        {
+            "version": "3.0.0+1",
+            "pubspec": {
+                "authors": [
+                    "Jonas Finnemann Jensen <jonasfj@google.com>"
+                ],
+                "repository": "https://github.com/google/dart-neats.git",
+                "version": "3.0.0+1",
+                "name": "retry",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "environment": {
+                    "sdk": ">=2.0.0 <3.0.0"
+                },
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.0.0%2B1.tar.gz",
+            "published": "2019-08-26T08:37:44.221096Z"
+        },
+        {
+            "version": "3.0.1-null-safety.0",
+            "pubspec": {
+                "name": "retry",
+                "version": "3.0.1-null-safety.0",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "repository": "https://github.com/google/dart-neats.git",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                },
+                "environment": {
+                    "sdk": ">=2.12.0-0 <2.12.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.0.1-null-safety.0.tar.gz",
+            "published": "2020-11-02T13:46:25.148871Z"
+        },
+        {
+            "version": "3.0.1",
+            "pubspec": {
+                "name": "retry",
+                "version": "3.0.1",
+                "authors": [
+                    "Jonas Finnemann Jensen <jonasfj@google.com>"
+                ],
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "repository": "https://github.com/google/dart-neats.git",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                },
+                "environment": {
+                    "sdk": ">=2.0.0 <3.0.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.0.1.tar.gz",
+            "published": "2020-07-01T17:29:53.216548Z"
+        },
+        {
+            "version": "3.1.0-null-safety.0",
+            "pubspec": {
+                "name": "retry",
+                "version": "3.1.0-null-safety.0",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "repository": "https://github.com/google/dart-neats.git",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.5.1",
+                    "pedantic": "^1.4.0"
+                },
+                "environment": {
+                    "sdk": ">=2.12.0-0 <2.12.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.1.0-null-safety.0.tar.gz",
+            "published": "2020-12-02T20:55:00.012653Z"
+        },
+        {
+            "version": "3.1.0",
+            "pubspec": {
+                "name": "retry",
+                "version": "3.1.0",
+                "description": "Utility for wrapping an asynchronous function in automatic retry logic with\nexponential back-off, useful when making requests over network.\n",
+                "homepage": "https://github.com/google/dart-neats/tree/master/retry",
+                "repository": "https://github.com/google/dart-neats.git",
+                "issue_tracker": "https://github.com/google/dart-neats/labels/pkg:retry",
+                "dev_dependencies": {
+                    "test": "^1.16.0-nullsafety.13",
+                    "pedantic": "^1.4.0"
+                },
+                "environment": {
+                    "sdk": ">=2.12.0-0 <3.0.0"
+                }
+            },
+            "archive_url": "https://pub.dartlang.org/packages/retry/versions/3.1.0.tar.gz",
+            "published": "2021-03-01T18:27:00.565009Z"
+        }
+    ]
+}
