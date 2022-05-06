@@ -527,24 +527,24 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:foo_pubspec) { File.join(git_dir, "pubspec.yaml") }
 
     let(:dependency_name) { "foo" }
-    let(:dependency_version) {
+    let(:dependency_version) do
       FileUtils.mkdir_p git_dir
-      runGit ['init'], git_dir
+      run_git ["init"], git_dir
 
       File.write(foo_pubspec, '{"name":"foo", "version": "1.0.0", "environment": {"sdk": "^2.0.0"}}')
-      runGit ['add', '.'], git_dir
-      runGit ['commit', '-am', 'some commit message'], git_dir
-      ref = runGit(['rev-parse', 'HEAD'], git_dir).strip
+      run_git ["add", "."], git_dir
+      run_git ["commit", "-am", "some commit message"], git_dir
+      ref = run_git(%w(rev-parse HEAD), git_dir).strip
       ref
-    }
+    end
     let(:requirements_to_unlock) { :all }
     let(:requirements_update_strategy) { "bump_versions_if_necessary" }
 
     it "updates to latest git commit" do
       File.write(foo_pubspec, '{"name":"foo", "version": "2.0.0", "environment": {"sdk": "^2.0.0"}}')
-      runGit ['add', '.'], git_dir
-      runGit ['commit', '-am', 'some commit message'], git_dir
-      new_ref = runGit(['rev-parse', 'HEAD'], git_dir).strip
+      run_git ["add", "."], git_dir
+      run_git ["commit", "-am", "some commit message"], git_dir
+      new_ref = run_git(%w(rev-parse HEAD), git_dir).strip
       expect(can_update).to be_truthy
       expect(updated_dependencies).to eq [
         { "name" => "foo",

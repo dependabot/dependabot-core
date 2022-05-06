@@ -70,16 +70,17 @@ module Dependabot
         end
       end
 
-      def git_revision?(s)
-        s.match?(/^[0-9a-f]{6,}$/)
+      def git_revision?(version_string)
+        version_string.match?(/^[0-9a-f]{6,}$/)
       end
 
       def latest_version_resolvable_with_full_unlock?
         entry = current_report["multiBreaking"].find { |d| d["name"] == dependency.name }
         # This a bit dumb, but full-unlock is only considered if we can get the
         # latest version!
-        entry && ((!git_revision?(entry["version"]) && latest_version == Dependabot::Pub::Version.new(entry["version"])) ||
-          latest_version == entry["version"])
+        entry && ((!git_revision?(entry["version"]) &&
+                  latest_version == Dependabot::Pub::Version.new(entry["version"])) ||
+                  latest_version == entry["version"])
       end
 
       def updated_dependencies_after_full_unlock

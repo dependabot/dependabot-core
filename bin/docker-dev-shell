@@ -223,6 +223,7 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/spec:$CODE_DIR/omnibus/spec" \
   -v "$(pwd)/omnibus/script:$CODE_DIR/omnibus/script" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
+  -v "/usr/local/google/home/sigurdm/projects/pub_dependency_services_git:/$CODE_DIR/mypub" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
