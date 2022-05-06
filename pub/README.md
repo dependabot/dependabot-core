@@ -220,7 +220,7 @@ the path inside the repo and the ref. For a repository package it would contain
 the url of the repository.
 ```js
 {
-  "type":          "git|path|...." // Name of the source.
+  "type": "git" || "hosted" || "path" || "sdk", // Name of the source.
   ... // Other keys are free form json information about the dependency
 }
 ```
