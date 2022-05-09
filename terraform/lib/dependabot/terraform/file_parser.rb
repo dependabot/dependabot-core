@@ -293,7 +293,7 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
         return :path if source_string.start_with?(".")
-        return :github if source_string.include?("github.com/")
+        return :github if source_string.start_with?("github.com/")
         return :bitbucket if source_string.start_with?("bitbucket.org/")
         return :git if source_string.start_with?("git::") || source_string.start_with?("git@")
         return :mercurial if source_string.start_with?("hg::")
