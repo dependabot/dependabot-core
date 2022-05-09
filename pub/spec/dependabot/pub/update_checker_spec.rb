@@ -541,6 +541,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     let(:requirements_update_strategy) { "bump_versions_if_necessary" }
 
     it "updates to latest git commit" do
+      dependency_version # triggers the initial commit.
       File.write(foo_pubspec, '{"name":"foo", "version": "2.0.0", "environment": {"sdk": "^2.0.0"}}')
       run_git ["add", "."], git_dir
       run_git ["commit", "-am", "some commit message"], git_dir
