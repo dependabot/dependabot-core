@@ -308,7 +308,10 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           elsif error.message.match?(SOURCE_TIMED_OUT_REGEX)
             url = error.message.match(SOURCE_TIMED_OUT_REGEX).named_captures.fetch("url")
-            raise if url.include?("packagist.org")
+            raise if [
+              "packagist.org",
+              "www.packagist.org"
+            ].include?(URI(url).host)
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
