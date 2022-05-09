@@ -107,8 +107,10 @@ module Dependabot
         homepage_url = pypi_listing.dig("info", "home_page")
 
         return unless homepage_url
-        return if homepage_url.include?("pypi.python.org")
-        return if homepage_url.include?("pypi.org")
+        return if [
+          "pypi.org",
+          "pypi.python.org"
+        ].include?(URI(homepage_url).host)
 
         @homepage_response ||=
           begin
