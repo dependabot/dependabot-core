@@ -1,3 +1,8 @@
+## v0.185.0, 9 May 2022
+
+- fix DependencyFileNotParseable due to 1MB file limit change (@jakecoffman) [#5107](https://github.com/dependabot/dependabot-core/pull/5107)
+- pin debase version to avoid build errors (@pavera) [#5086](https://github.com/dependabot/dependabot-core/pull/5086)
+
 ## v0.184.0, 4 May 2022
 
 - nuget: fix PR missing commits in message when using private registry (@jakecoffman) [#5072](https://github.com/dependabot/dependabot-core/pull/5072)
