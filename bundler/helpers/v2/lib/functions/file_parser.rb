@@ -74,7 +74,12 @@ module Functions
       return true if source.nil?
       return false unless source.is_a?(Bundler::Source::Rubygems)
 
-      source.remotes.any? { |r| r.to_s.include?("rubygems.org") }
+      source.remotes.any? do |r|
+        [
+          "rubygems.org",
+          "www.rubygems.org"
+        ].include?(URI(r.to_s).host)
+      end
     end
 
     def serialize_bundler_dependency(dependency)
