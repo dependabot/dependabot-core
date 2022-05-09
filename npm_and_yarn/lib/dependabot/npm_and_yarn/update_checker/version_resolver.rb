@@ -243,10 +243,13 @@ module Dependabot
           end
         end
 
+        def latest_types_package_version
+          @latest_types_package_version ||= latest_version_finder(types_package).latest_version_from_registry
+        end
+
         def types_update_available?
           return false if types_package.nil?
 
-          latest_types_package_version = latest_version_finder(types_package).latest_version_from_registry
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 
           current_types_package_version = version_class.new(types_package.version)
@@ -265,14 +268,11 @@ module Dependabot
         end
 
         def updated_types_dependencies
-          updated_version =
-            latest_version_finder(types_package).latest_version_from_registry
-
           [{
             dependency: types_package,
-            version: updated_version,
+            version: latest_types_package_version,
             previous_version: resolve_latest_previous_version(
-              types_package, updated_version
+              types_package, latest_types_package_version
             )
           }]
         end
