@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
@@ -436,7 +438,7 @@ module Dependabot
         def handle_timeout(error_message, yarn_lock)
           url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
                 named_captures["url"]
-          return if url.start_with?("https://registry.npmjs.org")
+          raise if URI(url).host == "registry.npmjs.org"
 
           package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
                          named_captures["package"]
@@ -482,7 +484,7 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          yarnrc_global_registry.include?("registry.npmjs.org")
+          URI(yarnrc_global_registry).host == "registry.npmjs.org"
         end
 
         def yarnrc_content
