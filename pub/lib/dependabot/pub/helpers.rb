@@ -159,7 +159,7 @@ module Dependabot
           nil
         else
           deps = dependencies.map do |d|
-            source = d.requirements.empty? ? d.requirements.first[:source] : nil
+            source = d.requirements.empty? ? nil : d.requirements.first[:source]
             obj = {
               "name" => d.name,
               "version" => d.version,
