@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 module Functions
   class FileParser
     def initialize(lockfile_name:)

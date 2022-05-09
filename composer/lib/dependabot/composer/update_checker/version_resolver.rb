@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-require "dependabot/errors"
 require "json"
+require "uri"
+
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"

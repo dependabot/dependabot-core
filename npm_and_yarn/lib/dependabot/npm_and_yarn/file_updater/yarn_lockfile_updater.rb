@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "uri"
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
