@@ -143,7 +143,10 @@ module Dependabot
             regex = BundlerErrorPatterns::HTTP_ERR_REGEX
             if error.message.match?(regex)
               source = error.message.match(regex)[:source]
-              raise if source.end_with?("rubygems.org/")
+              raise if [
+                "rubygems.org",
+                "www.rubygems.org"
+              ].include?(URI(source).host)
 
               raise Dependabot::PrivateSourceTimedOut, source
             end
