@@ -252,7 +252,9 @@ module Dependabot
 
           return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
 
+          return false unless version_class.correct?(types_package.version)
           current_types_package_version = version_class.new(types_package.version)
+
           return false unless current_types_package_version < latest_types_package_version
 
           true
@@ -261,8 +263,10 @@ module Dependabot
         def original_package_update_available?
           return false if original_package.nil?
 
-          latest_version = latest_version_finder(original_package).latest_version_from_registry
+          return false unless version_class.correct?(original_package.version)
           original_package_version = version_class.new(original_package.version)
+
+          latest_version = latest_version_finder(original_package).latest_version_from_registry
 
           original_package_version < latest_version
         end
