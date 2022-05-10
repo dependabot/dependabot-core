@@ -194,7 +194,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token\n"\
                       "//npm.fury.io/dep/:_authToken=my_other_token")
             end
@@ -217,7 +217,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 expect(npmrc_content).
                   to eq(
                     "@dependabot:registry=https://api.bintray.com/npm/"\
-                    "dependabot/npm-private/\n"\
+                    "dependabot/npm-private\n"\
                     "//api.bintray.com/npm/dependabot/"\
                     "npm-private/:_authToken=my_token"
                   )
@@ -258,7 +258,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               it "adds auth details, and scopes them correctly" do
                 expect(npmrc_content).
                   to eq(
-                    "@dependabot:registry=https://npm.fury.io/dependabot/\n"\
+                    "@dependabot:registry=https://npm.fury.io/dependabot\n"\
                     "//npm.fury.io/dependabot/:_authToken=my_token\n"\
                     "//npm.fury.io/dep/:_authToken=my_other_token"
                   )
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           end
           it "adds auth details, and scopes them correctly" do
             expect(npmrc_content).
-              to eq("@dependabot:registry=https://npm.fury.io/dependabot/")
+              to eq("@dependabot:registry=https://npm.fury.io/dependabot")
           end
         end
       end
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot/\n"\
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n"\
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
           end
@@ -634,7 +634,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot/")
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot")
             end
           end
 
@@ -651,7 +651,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot/")
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot")
             end
           end
         end
@@ -863,7 +863,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               registry = https://npm.pkg.github.com
               _authToken = my_token
               always-auth = true
-              @dsp-testing:registry=https://npm.pkg.github.com/
+              @dsp-testing:registry=https://npm.pkg.github.com
               //npm.pkg.github.com/:_authToken=my_token
             NPMRC
         end
@@ -877,7 +877,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         it "adds the scoped registry and token auth details" do
           expect(npmrc_content).
             to eq(<<~NPMRC.chomp)
-              @dsp-testing:registry=https://npm.pkg.github.com/
+              @dsp-testing:registry=https://npm.pkg.github.com
               //npm.pkg.github.com/:_authToken=my_token
             NPMRC
         end
@@ -891,7 +891,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         it "adds the scoped registry and token auth details" do
           expect(npmrc_content).
             to eq(<<~NPMRC.chomp)
-              @dsp-testing:registry=https://npm.pkg.github.com/
+              @dsp-testing:registry=https://npm.pkg.github.com
               //npm.pkg.github.com/:_authToken=my_token
             NPMRC
         end

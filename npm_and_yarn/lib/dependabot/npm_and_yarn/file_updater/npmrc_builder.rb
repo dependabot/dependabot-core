@@ -194,12 +194,7 @@ module Dependabot
           # Registry used for unscoped packages
           return if scopes.include?(nil)
 
-          # TODO: Remove this line
-          #
-          # We do not require the trailing slash for scopes, but we are currently added one
-          # by accident. This avoids us having to churn the tests to ensure the bug fix passes
-          registry_with_trailing_slash = registry.sub(%r{\/?$}, "/")
-          scopes.map { |scope| "@#{scope}:registry=https://#{registry_with_trailing_slash}" }
+          scopes.map { |scope| "@#{scope}:registry=https://#{registry}" }
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
