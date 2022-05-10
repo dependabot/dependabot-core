@@ -1,3 +1,10 @@
+## v0.186.1, 10 May 2022
+
+- Validate before creating version objects in `Dependabot::NpmAndYarn::UpdateChecker::VersionResolver` (@mattt) [#5120](https://github.com/dependabot/dependabot-core/pull/5120)
+- Fix implementation of `PackageName#library_name` (@mattt) [#5119](https://github.com/dependabot/dependabot-core/pull/5119)
+- Clarify comment and remove TODO (@jeffwidman) [#5031](https://github.com/dependabot/dependabot-core/pull/5031)
+- Bump `go` to `1.18.1` (@jeffwidman) [#5029](https://github.com/dependabot/dependabot-core/pull/5029)
+
 ## v0.186.0, 10 May 2022
 
 - Updating a package and its related @types package simultaneously (@pavera) [#5000](https://github.com/dependabot/dependabot-core/pull/5000)
