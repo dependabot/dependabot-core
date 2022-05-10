@@ -13,7 +13,7 @@ module Dependabot
 
       TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
-          @#{DEFINITELY_TYPED_SCOPE}\/               # starts with @types/
+          @types\/                                   # starts with @types/
           ((?<scope>.+)__)?                          # capture scope
           (?<name>.+)                                # capture name
           \z                                         # end of string
