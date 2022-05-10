@@ -828,5 +828,74 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
     end
+
+    context "registry scope generation" do
+      let(:credentials) do
+        [{
+          "type" => "npm_registry",
+          "registry" => "registry.npmjs.org"
+        },
+         {
+           "type" => "npm_registry",
+           "registry" => "npm.pkg.github.com",
+           "token" => "my_token"
+         }]
+      end
+
+      context "when no packages resolve to the private registry" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/simple")
+        end
+
+        it "adds only the token auth details" do
+          expect(npmrc_content).to eql("//npm.pkg.github.com/:_authToken=my_token")
+        end
+      end
+
+      context "when there are only packages that resolve to the private registry" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/private_registry_ghpr_only")
+        end
+
+        it "adds a global registry line, the scoped registry and token auth details" do
+          expect(npmrc_content).
+            to eq(<<~NPMRC.chomp)
+              registry = https://npm.pkg.github.com
+              _authToken = my_token
+              always-auth = true
+              @dsp-testing:registry=https://npm.pkg.github.com/
+              //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+
+      context "when there are some packages that resolve to the private registry" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/private_registry_ghpr_and_npm")
+        end
+
+        it "adds the scoped registry and token auth details" do
+          expect(npmrc_content).
+            to eq(<<~NPMRC.chomp)
+              @dsp-testing:registry=https://npm.pkg.github.com/
+              //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+
+      context "when there are some packages that resolve to the private registry, but include a port number" do
+        let(:dependency_files) do
+          project_dependency_files("npm8/private_registry_ghpr_with_ports")
+        end
+
+        it "adds the scoped registry and token auth details" do
+          expect(npmrc_content).
+            to eq(<<~NPMRC.chomp)
+              @dsp-testing:registry=https://npm.pkg.github.com/
+              //npm.pkg.github.com/:_authToken=my_token
+            NPMRC
+        end
+      end
+    end
   end
 end
