@@ -67,11 +67,9 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
 
   describe "#library_name" do
     it "returns nil if it is not a types package" do
-      jquery = "jquery"
-
-      library_name = described_class.new(jquery).library_name
-
-      expect(library_name).to be_nil
+      expect(described_class.new("jquery").library_name).to be_nil
+      expect(described_class.new("@babel/core").library_name).to be_nil
+      expect(described_class.new("@typescript-eslint/parser").library_name).to be_nil
     end
 
     it "returns the corresponding library for a types package" do

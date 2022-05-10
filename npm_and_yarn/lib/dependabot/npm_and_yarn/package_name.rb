@@ -3,17 +3,17 @@
 module Dependabot
   module NpmAndYarn
     class PackageName
-      DEFINITELY_TYPED_SCOPE = /types/i.freeze
-      PACKAGE_NAME_REGEX     = %r{
+      PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
           (?=.{1,214}\z)                             # enforce length (1 - 214)
           (@(?<scope>[a-z0-9\-~][a-z0-9\-\._~]*)\/)? # capture 'scope' if present
           (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
           \z                                         # end of string
       }xi.freeze                                     # multi-line/case-insensitive
+
       TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
-          @#{DEFINITELY_TYPED_SCOPE}\/               # starts with @types/
+          @types\/                                   # starts with @types/
           ((?<scope>.+)__)?                          # capture scope
           (?<name>.+)                                # capture name
           \z                                         # end of string
@@ -81,7 +81,7 @@ module Dependabot
       end
 
       def types_package?
-        DEFINITELY_TYPED_SCOPE.match?(@scope)
+        "types".casecmp?(@scope)
       end
     end
   end
