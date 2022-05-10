@@ -1,3 +1,10 @@
+## v0.186.0, 10 May 2022
+
+- Updating a package and its related @types package simultaneously (@pavera) [#5000](https://github.com/dependabot/dependabot-core/pull/5000)
+- Remove and ignore `.tool-versions` (@mattt) [#5114](https://github.com/dependabot/dependabot-core/pull/5114)
+- Add fixtures to `paths-ignore` for CodeQL workflow (@mattt) [#5113](https://github.com/dependabot/dependabot-core/pull/5113)
+- Fix code scanning alerts for incomplete sanitization of URL substrings (@mattt) [#5108](https://github.com/dependabot/dependabot-core/pull/5108)
+
 ## v0.185.0, 9 May 2022
 
 - fix DependencyFileNotParseable due to 1MB file limit change (@jakecoffman) [#5107](https://github.com/dependabot/dependabot-core/pull/5107)
