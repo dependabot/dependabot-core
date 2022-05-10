@@ -3,13 +3,14 @@
 module Dependabot
   module NpmAndYarn
     class PackageName
-      PACKAGE_NAME_REGEX     = %r{
+      PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
           (?=.{1,214}\z)                             # enforce length (1 - 214)
           (@(?<scope>[a-z0-9\-~][a-z0-9\-\._~]*)\/)? # capture 'scope' if present
           (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
           \z                                         # end of string
       }xi.freeze                                     # multi-line/case-insensitive
+
       TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                         # beginning of string
           @#{DEFINITELY_TYPED_SCOPE}\/               # starts with @types/
