@@ -37,16 +37,20 @@ module Dependabot
         end
       end
 
+      def eql?(other)
+        self.class == other.class && to_s == other.to_s
+      end
+
+      def hash
+        to_s.downcase.hash
+      end
+
       def <=>(other)
         to_s.casecmp(other.to_s)
       end
 
-      def eql?(other)
-        to_s.eql?(other.to_s)
-      end
-
       def library_name
-        return self unless types_package?
+        return unless types_package?
 
         @library_name ||=
           begin
@@ -60,7 +64,7 @@ module Dependabot
       end
 
       def types_package_name
-        return self if types_package?
+        return if types_package?
 
         @types_package_name ||=
           if scoped?

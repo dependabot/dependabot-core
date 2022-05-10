@@ -45,12 +45,12 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
       expect(types_package_name.to_s).to eq(lodash_types)
     end
 
-    it "returns self if it is already a types package" do
+    it "returns nil if it is already a types package" do
       stereo_types = "@types/stereo"
 
       types_package_name = described_class.new(stereo_types).types_package_name
 
-      expect(types_package_name.to_s).to eq(stereo_types)
+      expect(types_package_name).to be_nil
     end
 
     context "when given a scoped dependency name" do
@@ -66,12 +66,12 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
   end
 
   describe "#library_name" do
-    it "returns self if it is not a types package" do
+    it "returns nil if it is not a types package" do
       jquery = "jquery"
 
-      library_name = described_class.new(jquery).library_name.to_s
+      library_name = described_class.new(jquery).library_name
 
-      expect(library_name).to eq(jquery)
+      expect(library_name).to be_nil
     end
 
     it "returns the corresponding library for a types package" do
