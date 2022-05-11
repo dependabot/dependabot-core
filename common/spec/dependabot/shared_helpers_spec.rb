@@ -301,6 +301,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     it "includes the defaults" do
       expect(subject).to eq(
+        instrumentor: ActiveSupport::Notifications,
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,

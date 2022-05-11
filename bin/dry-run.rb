@@ -236,6 +236,11 @@ option_parse = OptionParser.new do |opts|
     $options[:profile] = true
   end
 
+  opts.on("--network-tracing",
+          "Enable Excon instrumentation to log requests made to remote hosts.") do
+    $options[:network_tracing] = true
+  end
+
   opts.on("--pull-request",
           "Output pull request information: title, description") do
     $options[:pull_request] = true
@@ -460,6 +465,15 @@ end
 # rubocop:enable Metrics/MethodLength
 
 StackProf.start(raw: true) if $options[:profile]
+
+if $options[:network_tracing]
+  $network_trace_count = 0
+  ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
+    $network_trace_count += 1
+    payload = args.last
+    puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
+  end
+end
 
 $source = Dependabot::Source.new(
   provider: $options[:provider],
@@ -773,6 +787,10 @@ end
 
 StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
+
+if $options[:network_tracing]
+  puts "🌍 Total requests made: '#{$network_trace_count}'"
+end
 
 # rubocop:enable Metrics/BlockLength
 
