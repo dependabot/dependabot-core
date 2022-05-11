@@ -293,6 +293,22 @@ RSpec.describe Dependabot::DependencyFile do
     end
   end
 
+  describe "#content" do
+    context "for utf-8 encoded content containing a BOM" do
+      let(:file) do
+        described_class.new(
+          name: "example.txt",
+          content_encoding: described_class::ContentEncoding::UTF_8,
+          content: "\xEF\xBB\xBFabc"
+        )
+      end
+
+      it "removes the BOM" do
+        expect(file.content).to eq("abc")
+      end
+    end
+  end
+
   describe "#decoded_content" do
     context "for base64 encoded content" do
       let(:file) do
