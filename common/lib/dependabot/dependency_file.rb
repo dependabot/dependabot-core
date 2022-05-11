@@ -25,7 +25,7 @@ module Dependabot
                    support_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
       # Remove UTF-8 byte order mark (BOM) from content, if present
-      content = content.sub(UTF_8_BOM, "") if content && content_encoding == ContentEncoding::UTF_8
+      content = content.delete_prefix(UTF_8_BOM) if content && content_encoding == ContentEncoding::UTF_8
 
       @name = name
       @content = content
