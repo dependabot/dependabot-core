@@ -156,7 +156,7 @@ module Dependabot
 
         def dependency_metadata(repository_details)
           repository_key = repository_details.hash
-          return @dependency_metadata[repository_key] if @dependency_metadata.has_key?(repository_key)
+          return @dependency_metadata[repository_key] if @dependency_metadata.key?(repository_key)
 
           @dependency_metadata[repository_key] = fetch_dependency_metadata(repository_details)
         end
@@ -173,7 +173,7 @@ module Dependabot
         rescue URI::InvalidURIError
           Nokogiri::XML("")
         rescue Excon::Error::Socket, Excon::Error::Timeout,
-                Excon::Error::TooManyRedirects
+               Excon::Error::TooManyRedirects
           raise if central_repo_urls.include?(repository_details["url"])
 
           Nokogiri::XML("")
