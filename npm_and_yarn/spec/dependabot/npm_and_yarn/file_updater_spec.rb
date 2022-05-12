@@ -1684,6 +1684,85 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "with multiple sub-dependencies" do
+        let(:files) { project_dependency_files("npm8/multiple_updates_subdependencies") }
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "webpack-dev-server",
+              version: "4.7.3",
+              previous_version: "4.6.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "^4.7.3",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "^4.6.0",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "selfsigned",
+              version: "2.0.1",
+              previous_version: "1.10.11",
+              requirements: [{
+                file: "package-lock.json",
+                requirement: "2.0.1",
+                groups: ["packages"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package-lock.json",
+                requirement: "1.10.14",
+                groups: ["packages"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "node-forge",
+              version: "1",
+              previous_version: "0.10.0",
+              requirements: [{
+                file: "package-lock.json",
+                requirement: "1.3.1",
+                groups: ["packages"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package-lock.json",
+                requirement: "0.10.0",
+                groups: ["packages"],
+                source: nil
+              }],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "updates all dependencies" do
+          parsed_package = JSON.parse(updated_package_json.content)
+          expect(parsed_package["dependencies"]["webpack-dev-server"]).
+            to eq("^4.7.3")
+
+          parsed_package_lock = JSON.parse(updated_npm_lock.content)
+          expect(parsed_package_lock["packages"][""]["dependencies"]["webpack-dev-server"]).
+            to eq("^4.7.3")
+          expect(parsed_package_lock["dependencies"]["webpack-dev-server"]["version"]).
+            to eq("4.7.3")
+          expect(parsed_package_lock["dependencies"]["selfsigned"]["version"]).
+            to eq("2.0.1")
+          expect(parsed_package_lock["dependencies"]["node-forge"]["version"]).
+            to eq("1.3.1")
+        end
+      end
+
       context "with a requirement that specifies a hash (invalid in npm 8/arborist)" do
         let(:files) { project_dependency_files("npm8/invalid_hash_requirement") }
 
