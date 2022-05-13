@@ -4,7 +4,7 @@ module Dependabot
   module Bundler
     module Helpers
       V1 = "1.17.3"
-      V2 = "2.3.12"
+      V2 = "2.3.13"
       # If we are updating a project with no Gemfile.lock, we default to the
       # newest version we support
       DEFAULT = V2
