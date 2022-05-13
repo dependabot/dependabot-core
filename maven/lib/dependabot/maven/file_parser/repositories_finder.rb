@@ -113,6 +113,11 @@ module Dependabot
             @maven_responses[url] ||= Excon.get(
               url,
               idempotent: true,
+              # We attempt to find dependencies in private repos before failing over to the CENTRAL_REPO_URL,
+              # but this can burn a lot of a job's time against slow servers due to our `read_timeout` being 20 seconds.
+              #
+              # In order to avoid the overall job timing out, we only make one retry attempt
+              retry_limit: 1,
               **SharedHelpers.excon_defaults
             )
             next unless @maven_responses[url].status == 200

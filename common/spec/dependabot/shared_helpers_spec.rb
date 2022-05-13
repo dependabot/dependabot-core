@@ -304,6 +304,7 @@ RSpec.describe Dependabot::SharedHelpers do
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
+        retry_limit: 4,
         omit_default_port: true,
         middlewares: described_class.excon_middleware,
         headers: described_class.excon_headers

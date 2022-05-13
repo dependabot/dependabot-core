@@ -153,6 +153,7 @@ module Dependabot
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
+        retry_limit: 4, # Excon defaults to four retries, but let's set it explicitly for clarity
         omit_default_port: true,
         middlewares: excon_middleware,
         headers: excon_headers(headers)
