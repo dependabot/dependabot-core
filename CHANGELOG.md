@@ -1,3 +1,12 @@
+## v0.187.0, 13 May 2022
+
+- Fix Bundler v2 related TODOs (@deivid-rodriguez) [#5034](https://github.com/dependabot/dependabot-core/pull/5034)
+- Add --network-trace to dry-run (@brrygrdn) [#5131](https://github.com/dependabot/dependabot-core/pull/5131)
+- [Maven] Fix some malformed memoizations (@brrygrdn) [#5132](https://github.com/dependabot/dependabot-core/pull/5132)
+- bundler: upgrade to 2.3.13 for rubygems/rubygems#5492 (@jakecoffman) [#5134](https://github.com/dependabot/dependabot-core/pull/5134)
+- [Maven] Avoid retrying requests to repos excessively (@brrygrdn) [#5130](https://github.com/dependabot/dependabot-core/pull/5130)
+- Fix Dependabot ignoring scoped registries if the lockfile resolved uri contains a port number (@brrygrdn) [#5124](https://github.com/dependabot/dependabot-core/pull/5124)
+
 ## v0.186.1, 10 May 2022
 
 - Validate before creating version objects in `Dependabot::NpmAndYarn::UpdateChecker::VersionResolver` (@mattt) [#5120](https://github.com/dependabot/dependabot-core/pull/5120)
