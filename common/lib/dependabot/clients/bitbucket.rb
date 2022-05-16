@@ -160,7 +160,8 @@ module Dependabot
           url,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
-          idempotent: true,
+          # Setting to false to prevent Excon retries, use BitbucketWithRetries for retries.
+          idempotent: false,
           **Dependabot::SharedHelpers.excon_defaults(
             headers: auth_header
           )

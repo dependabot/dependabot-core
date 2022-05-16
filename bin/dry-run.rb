@@ -461,6 +461,14 @@ end
 
 StackProf.start(raw: true) if $options[:profile]
 
+
+$network_trace_count = 0
+ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
+  $network_trace_count += 1
+  payload = args.last
+  puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
+end
+
 $source = Dependabot::Source.new(
   provider: $options[:provider],
   repo: $repo_name,
@@ -773,6 +781,8 @@ end
 
 StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
+
+puts "🌍 Total requests made: '#{$network_trace_count}'"
 
 # rubocop:enable Metrics/BlockLength
 

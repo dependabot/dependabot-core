@@ -116,6 +116,39 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
+    context "with a supported python version" do
+      let(:python_version) { "3.6.9" }
+      let(:pyproject_fixture_name) { "python_36.toml" }
+      let(:lockfile_fixture_name) { "python_36.lock" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "django",
+          version: "3.1",
+          previous_version: "3.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }],
+          previous_requirements: [{
+            requirement: "*",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["dependencies"]
+          }]
+        )
+      end
+      it "updates the lockfile" do
+        updated_lockfile = updated_files.find { |f| f.name == "pyproject.lock" }
+
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+        requests = lockfile_obj["package"].find { |d| d["name"] == "django" }
+        expect(requests["version"]).to eq("3.1")
+      end
+    end
+
     context "without a lockfile" do
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "caret_version.toml" }

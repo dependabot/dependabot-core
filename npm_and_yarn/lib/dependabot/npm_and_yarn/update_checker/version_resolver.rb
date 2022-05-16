@@ -9,6 +9,7 @@ require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
 require "dependabot/npm_and_yarn/file_updater/package_json_preparer"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/package_name"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/version"
@@ -74,6 +75,8 @@ module Dependabot
         def latest_resolvable_version
           return latest_allowable_version if git_dependency?(dependency)
           return if part_of_tightly_locked_monorepo?
+          return if types_update_available?
+          return if original_package_update_available?
 
           return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
 
@@ -90,10 +93,12 @@ module Dependabot
           resolve_latest_previous_version(dependency, updated_version)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def dependency_updates_from_full_unlock
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
           return if newly_broken_peer_reqs_from_dep.any?
+          return if original_package_update_available?
 
           updates = [{
             dependency: dependency,
@@ -122,8 +127,10 @@ module Dependabot
               )
             }
           end
+          updates += updated_types_dependencies if types_update_available?
           updates.uniq
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         private
 
@@ -220,6 +227,60 @@ module Dependabot
           end
 
           updates
+        end
+
+        def types_package
+          @types_package ||= begin
+            types_package_name = PackageName.new(dependency.name).types_package_name
+            top_level_dependencies.find { |d| types_package_name.to_s == d.name } if types_package_name
+          end
+        end
+
+        def original_package
+          @original_package ||= begin
+            original_package_name = PackageName.new(dependency.name).library_name
+            top_level_dependencies.find { |d| original_package_name.to_s == d.name } if original_package_name
+          end
+        end
+
+        def latest_types_package_version
+          @latest_types_package_version ||= latest_version_finder(types_package).latest_version_from_registry
+        end
+
+        def types_update_available?
+          return false if types_package.nil?
+
+          return false unless latest_allowable_version.backwards_compatible_with?(latest_types_package_version)
+
+          return false unless version_class.correct?(types_package.version)
+
+          current_types_package_version = version_class.new(types_package.version)
+
+          return false unless current_types_package_version < latest_types_package_version
+
+          true
+        end
+
+        def original_package_update_available?
+          return false if original_package.nil?
+
+          return false unless version_class.correct?(original_package.version)
+
+          original_package_version = version_class.new(original_package.version)
+
+          latest_version = latest_version_finder(original_package).latest_version_from_registry
+
+          original_package_version < latest_version
+        end
+
+        def updated_types_dependencies
+          [{
+            dependency: types_package,
+            version: latest_types_package_version,
+            previous_version: resolve_latest_previous_version(
+              types_package, latest_types_package_version
+            )
+          }]
         end
 
         def peer_dependency_errors

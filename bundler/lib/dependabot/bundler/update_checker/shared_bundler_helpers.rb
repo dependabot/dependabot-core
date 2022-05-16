@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "uri"
 
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
@@ -143,7 +144,10 @@ module Dependabot
             regex = BundlerErrorPatterns::HTTP_ERR_REGEX
             if error.message.match?(regex)
               source = error.message.match(regex)[:source]
-              raise if source.end_with?("rubygems.org/")
+              raise if [
+                "rubygems.org",
+                "www.rubygems.org"
+              ].include?(URI(source).host)
 
               raise Dependabot::PrivateSourceTimedOut, source
             end
@@ -213,7 +217,7 @@ module Dependabot
             File.write(path, file.content)
           end
 
-          File.write(lockfile.name, sanitized_lockfile_body) if lockfile
+          File.write(lockfile.name, lockfile.content) if lockfile
         end
 
         def private_registry_credentials
@@ -229,12 +233,6 @@ module Dependabot
         def lockfile
           dependency_files.find { |f| f.name == "Gemfile.lock" } ||
             dependency_files.find { |f| f.name == "gems.locked" }
-        end
-
-        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-        def sanitized_lockfile_body
-          re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
-          lockfile.content.gsub(re, "")
         end
       end
     end

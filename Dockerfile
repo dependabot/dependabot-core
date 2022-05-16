@@ -78,7 +78,7 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.10 --no-document \
+  && gem install bundler -v 2.3.13 --no-document \
   && rm -rf /var/lib/gems/2.7.0/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
@@ -90,9 +90,9 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.5 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.3 \
-  && pyenv global 3.10.3 \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.0 --single-branch --depth=1 /usr/local/.pyenv \
+  && pyenv install 3.10.4 \
+  && pyenv global 3.10.4 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -125,8 +125,8 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 
 # Install PHP 7.4 and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.3.3 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.26 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.3.5 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -174,10 +174,10 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.18
+ARG GOLANG_VERSION=1.18.1
 # You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
-ARG GOLANG_AMD64_CHECKSUM=e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f
-ARG GOLANG_ARM64_CHECKSUM=7ac7b396a691e588c5fb57687759e6c4db84a2a3bbebb0765f4b38e5b1c5b00e
+ARG GOLANG_AMD64_CHECKSUM=b3b815f47ababac13810fc6021eb73d65478e0b2db4b09d348eefad9581a2334
+ARG GOLANG_ARM64_CHECKSUM=56a91851c97fb4697077abbca38860f735c32b38993ff79b088dac46e4735633
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
