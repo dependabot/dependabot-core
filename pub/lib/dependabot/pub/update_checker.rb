@@ -10,7 +10,7 @@ module Dependabot
       include Dependabot::Pub::Helpers
 
       def latest_version
-        version = version_unless_ignored(current_report["latest"], allowed_version: dependency.version)
+        version = version_unless_ignored(current_report["latest"], current_version: dependency.version)
         raise AllVersionsIgnored if version.nil? && @raise_on_ignored
 
         version
@@ -52,16 +52,16 @@ module Dependabot
       # checked against the ignored_requirements:
       #
       # * If not ignored the parsed Version object will be returned.
-      # * If allowed_version is non-nil and the parsed version is the same it
+      # * If current_version is non-nil and the parsed version is the same it
       #   will be returned.
       # * Otherwise returns nil
-      def version_unless_ignored(unparsed_version, allowed_version: nil)
+      def version_unless_ignored(unparsed_version, current_version: nil)
         if git_revision?(unparsed_version)
           unparsed_version
         else
           new_version = Dependabot::Pub::Version.new(unparsed_version)
-          if !allowed_version.nil? && !git_revision?(allowed_version) &&
-             Dependabot::Pub::Version.new(allowed_version) == new_version
+          if !current_version.nil? && !git_revision?(current_version) &&
+             Dependabot::Pub::Version.new(current_version) == new_version
             return new_version
           end
           return nil if ignore_requirements.any? { |r| r.satisfied_by?(new_version) }
