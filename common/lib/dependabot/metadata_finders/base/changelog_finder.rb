@@ -167,6 +167,7 @@ module Dependabot
               when "github" then fetch_github_file(file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
+              when "codecommit" then nil # TODO: git file from codecommit
               else raise "Unsupported provider '#{provider}'"
               end
           end
@@ -220,6 +221,7 @@ module Dependabot
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
           when "azure" then [] # TODO: Fetch files from Azure
+          when "codecommit" then [] # TODO: Fetch Files from Codecommit
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
