@@ -4,9 +4,6 @@ require "pathname"
 
 module Dependabot
   class DependencyFile
-    # See https://www.unicode.org/faq/utf_bom.html#BOM
-    UTF_8_BOM = [0xEF, 0xBB, 0xBF].pack("C*").force_encoding("UTF-8").freeze
-
     attr_accessor :name, :content, :directory, :type, :support_file,
                   :symlink_target, :content_encoding, :operation
 
@@ -24,9 +21,6 @@ module Dependabot
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
-      # Remove UTF-8 byte order mark (BOM) from content, if present
-      content = content.delete_prefix(UTF_8_BOM) if content && content_encoding == ContentEncoding::UTF_8
-
       @name = name
       @content = content
       @directory = clean_directory(directory)
