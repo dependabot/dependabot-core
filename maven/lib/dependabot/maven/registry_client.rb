@@ -11,7 +11,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module Maven
     class RegistryClient
-      @@cached_errors = {}
+      @cached_errors = {}
 
       def self.get(url:, headers: {}, options: {})
         raise cached_error_for(url) if cached_error_for(url)
@@ -21,9 +21,9 @@ module Dependabot
           idempotent: true,
           **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
         )
-      rescue Excon::Error::Timeout => error
-        cache_error(url, error)
-        raise error
+      rescue Excon::Error::Timeout => e
+        cache_error(url, e)
+        raise e
       end
 
       def self.head(url:, headers: {}, options: {})
@@ -34,23 +34,23 @@ module Dependabot
           idempotent: true,
           **SharedHelpers.excon_defaults({ headers: headers }.merge(options))
         )
-      rescue Excon::Error::Timeout => error
-        cache_error(url, error)
-        raise error
+      rescue Excon::Error::Timeout => e
+        cache_error(url, e)
+        raise e
       end
 
       def self.clear_cache!
-        @@cached_errors = {}
+        @cached_errors = {}
       end
 
       private_class_method def self.cache_error(url, error)
         host = URI(url).host
-        @@cached_errors[host] = error
+        @cached_errors[host] = error
       end
 
       private_class_method def self.cached_error_for(url)
         host = URI(url).host
-        @@cached_errors.fetch(host, nil)
+        @cached_errors.fetch(host, nil)
       end
     end
   end
