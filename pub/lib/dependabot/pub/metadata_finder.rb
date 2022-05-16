@@ -20,25 +20,24 @@ module Dependabot
         end
         repository_url = source&.dig("description", "url") || "https://pub.dev"
 
-        repo = repository_listing(repository_url).dig("latest", "pubspec", "repository")
+        listing = repository_listing(repository_url)
+        repo = listing.dig("latest", "pubspec", "repository")
         # The repository field did not always exist in pubspec.yaml, and some
         # packages specify a git repository in the "homepage" field.
-        repo ||= repository_listing(repository_url).dig("latest", "pubspec", "homepage")
+        repo ||= listing.dig("latest", "pubspec", "homepage")
         return nil unless repo
 
         Source.from_url(repo)
       end
 
       def repository_listing(repository_url)
-        return @repository_listing unless @repository_listing.nil?
-
         response = Excon.get(
           "#{repository_url}/api/packages/#{dependency.name}",
           idempotent: true,
           **SharedHelpers.excon_defaults
         )
 
-        @repository_listing = JSON.parse(response.body)
+        JSON.parse(response.body)
       end
     end
   end
