@@ -1,3 +1,9 @@
+## v0.189.0, 17 May 2022
+
+- Revert "Strip UTF-8 BOM from file contents" (@mattt) [#5145](https://github.com/dependabot/dependabot-core/pull/5145)
+- [Maven] Cache client-side timeouts when a remote host is unreachable (@brrygrdn) [#5142](https://github.com/dependabot/dependabot-core/pull/5142)
+- build(deps): bump @npmcli/arborist from 5.1.0 to 5.2.0 in /npm_and_yarn/helpers [#5133](https://github.com/dependabot/dependabot-core/pull/5133)
+
 ## v0.188.0, 16 May 2022
 
 - Dwc0011/fix codecommit error (@dwc0011) [#4926](https://github.com/dependabot/dependabot-core/pull/4926)
