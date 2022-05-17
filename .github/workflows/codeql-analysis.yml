@@ -19,6 +19,8 @@ on:
     branches: [ main ]
     paths-ignore:
       - '*/spec/fixtures/**'
+      - 'CHANGELOG.md'
+      - 'common/lib/dependabot/version.rb'
   schedule:
     - cron: '41 4 * * 3'
 
