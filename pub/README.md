@@ -13,6 +13,7 @@ Dart (pub) support for [`dependabot-core`][core-repo].
  - No support for security advisory integration.
  - If the version found is ignored (by dependabot config) no update will happen (even if, an earlier version could be used)
  - Limited metadata support (just retrieves the repository link).
+ - No support for auhtentication of private package repositories (mostly a configuration issue).
  - Only stable versions of Dart and Flutter supported.
  - `updated_dependencies_after_full_unlock` only allows updating to a later version, if the latest version that is mutually compatible with other dependencies is the latest version of the said package. This is a dependabot limitation.
 
