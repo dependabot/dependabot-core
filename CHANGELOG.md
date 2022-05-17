@@ -1,4 +1,6 @@
-## v0.189.0, 17 May 2022
+## v0.190.0, 17 May 2022
+
+- Testing https://github.com/dependabot/dependabot-core/pull/5144
 
 - Revert "Strip UTF-8 BOM from file contents" (@mattt) [#5145](https://github.com/dependabot/dependabot-core/pull/5145)
 - [Maven] Cache client-side timeouts when a remote host is unreachable (@brrygrdn) [#5142](https://github.com/dependabot/dependabot-core/pull/5142)
