@@ -104,12 +104,9 @@ module Dependabot
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        response = Excon.get(
-          "#{maven_repo_dependency_url}/"\
-          "#{dependency.version}/"\
-          "#{dependency_artifact_id}-#{dependency.version}.pom",
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_headers)
+        response = RegistryClient.get(
+          url: "#{maven_repo_dependency_url}/#{dependency.version}/#{dependency_artifact_id}-#{dependency.version}.pom",
+          headers: auth_headers
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -137,10 +134,9 @@ module Dependabot
               "#{version}/"\
               "#{artifact_id}-#{version}.pom"
 
-        response = Excon.get(
-          substitute_properties_in_source_url(url, pom),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_headers)
+        response = RegistryClient.get(
+          url: substitute_properties_in_source_url(url, pom),
+          headers: auth_headers
         )
 
         Nokogiri::XML(response.body)
