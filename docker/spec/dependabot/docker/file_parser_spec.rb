@@ -101,29 +101,6 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
-    context "with a FROM line starting with a BOM" do
-      let(:dockerfile_fixture_name) { "bom" }
-
-      describe "the first dependency" do
-        subject(:dependency) { dependencies.first }
-        let(:expected_requirements) do
-          [{
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { tag: "17.04" }
-          }]
-        end
-
-        it "has the right details" do
-          expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("ubuntu")
-          expect(dependency.version).to eq("17.04")
-          expect(dependency.requirements).to eq(expected_requirements)
-        end
-      end
-    end
-
     context "with a FROM line written by a nutcase" do
       let(:dockerfile_fixture_name) { "case" }
 
