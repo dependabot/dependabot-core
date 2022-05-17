@@ -65,7 +65,7 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-# Install Ruby 2.7, update RubyGems, and install Bundler
+# Install Ruby 2.7.6, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Disable the outdated rubygems installation from being loaded
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
@@ -75,11 +75,11 @@ ENV BUNDLE_PATH=".bundle" \
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 RUN apt-add-repository ppa:brightbox/ruby-ng \
   && apt-get update \
-  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
+  && apt-get install -y --no-install-recommends ruby2.7.6 ruby2.7.6-dev \
   && gem update --system 3.2.20 \
   && gem install bundler -v 1.17.3 --no-document \
   && gem install bundler -v 2.3.13 --no-document \
-  && rm -rf /var/lib/gems/2.7.0/cache/* \
+  && rm -rf /var/lib/gems/2.7.6/cache/* \
   && rm -rf /var/lib/apt/lists/*
 
 
