@@ -160,6 +160,7 @@ module Dependabot
         end
 
         def fetch_dependency_metadata(repository_details)
+          puts "#{self.class}##{__method__} - oid #{object_id}"
           response = RegistryClient.get(
             url: dependency_metadata_url(repository_details.fetch("url")),
             headers: repository_details.fetch("auth_headers")

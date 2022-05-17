@@ -104,6 +104,7 @@ module Dependabot
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
+        puts "#{self.class}##{__method__} - oid #{object_id}"
         response = RegistryClient.get(
           url: "#{maven_repo_dependency_url}/#{dependency.version}/#{dependency_artifact_id}-#{dependency.version}.pom",
           headers: auth_headers
@@ -134,6 +135,7 @@ module Dependabot
               "#{version}/"\
               "#{artifact_id}-#{version}.pom"
 
+        puts "#{self.class}##{__method__} - oid #{object_id}"
         response = RegistryClient.get(
           url: substitute_properties_in_source_url(url, pom),
           headers: auth_headers

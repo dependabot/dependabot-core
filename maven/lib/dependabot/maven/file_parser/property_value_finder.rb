@@ -126,6 +126,8 @@ module Dependabot
           parent_repository_urls(pom).each do |base_url|
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
+            puts "#{self.class}##{__method__} - oid #{object_id}"
+
             @maven_responses ||= {}
             @maven_responses[url] ||= RegistryClient.get(url: url)
             next unless @maven_responses[url].status == 200

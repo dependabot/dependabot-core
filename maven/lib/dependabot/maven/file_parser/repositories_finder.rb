@@ -108,6 +108,8 @@ module Dependabot
           (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
+            puts "#{self.class}##{__method__} - oid #{object_id}"
+
             @maven_responses ||= {}
             @maven_responses[url] ||= RegistryClient.get(
               url: url,
