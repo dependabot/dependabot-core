@@ -10,7 +10,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
     Dependabot::DependencyFile.new(
       name: settings_file_name,
       content: fixture("settings_files", fixture_name)
-      )
+    )
   end
   let(:settings_file_name) { "settings.gradle" }
   let(:fixture_name) { "simple_settings.gradle" }
@@ -128,7 +128,7 @@ RSpec.describe Dependabot::Gradle::FileFetcher::SettingsFileParser do
       end
     end
 
-    # TODO context "with commented out included build declarations"
+    # TODO: context "with commented out included build declarations"
 
     context "when kotlin" do
       let(:settings_file_name) { "settings.gradle.kts" }

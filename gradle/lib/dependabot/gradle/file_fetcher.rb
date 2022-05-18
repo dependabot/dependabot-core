@@ -36,8 +36,8 @@ module Dependabot
         files = [buildfile(root_dir), settings_file(root_dir)].compact
         files += subproject_buildfiles(root_dir)
         files += dependency_script_plugins(root_dir)
-        files += included_builds(root_dir).
-          flat_map { |dir| all_buildfiles_in_build(dir) }
+        files + included_builds(root_dir).
+                flat_map { |dir| all_buildfiles_in_build(dir) }
       end
 
       def included_builds(root_dir)
@@ -45,15 +45,15 @@ module Dependabot
 
         # buildSrc is implicit: included but not declared in settings.gradle
         buildsrc = repo_contents(dir: root_dir, raise_errors: false).
-          find { |item| item.type == 'dir' && item.name == 'buildSrc' }
+                   find { |item| item.type == "dir" && item.name == "buildSrc" }
         builds << clean_join(root_dir, "buildSrc") if buildsrc
 
         return builds unless settings_file(root_dir)
 
         builds += SettingsFileParser.
-          new(settings_file: settings_file(root_dir)).
-          included_build_paths.
-          map { |p| clean_join(root_dir, p) }
+                  new(settings_file: settings_file(root_dir)).
+                  included_build_paths.
+                  map { |p| clean_join(root_dir, p) }
 
         builds.uniq
       end
@@ -133,15 +133,15 @@ module Dependabot
 
       def find_first(dir, supported_names)
         paths = supported_names.
-          map { |name| clean_join(dir, name) }.
-          each do |path|
-            return cached_files[path] || next
-          end
+                map { |name| clean_join(dir, name) }.
+                each do |path|
+          return cached_files[path] || next
+        end
         fetch_first_if_present(paths)
       end
 
       def cached_files
-        @cached_files ||= Hash.new
+        @cached_files ||= {}
       end
 
       def fetch_first_if_present(paths)

@@ -81,7 +81,6 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
     end
 
     context "with included builds" do
-
       context "when has buildSrc" do
         before do
           stub_content_request("buildSrc?ref=sha", "contents_java.json")
@@ -182,12 +181,14 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
           stub_content_request("included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_content_request("included/included?ref=sha", "contents_java_with_settings.json")
           stub_content_request("included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
-          stub_content_request("included/included/settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
+          stub_content_request("included/included/settings.gradle?ref=sha",
+                               "contents_java_settings_1_included_build.json")
           stub_content_request("included/included/app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_content_request("included/included/included?ref=sha", "contents_java_with_buildsrc.json")
           stub_content_request("included/included/included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_content_request("included/included/included/buildSrc?ref=sha", "contents_java.json")
-          stub_content_request("included/included/included/buildSrc/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
+          stub_content_request("included/included/included/buildSrc/build.gradle?ref=sha",
+                               "contents_java_basic_buildfile.json")
         end
 
         it "fetches all buildfiles transitively" do
