@@ -232,7 +232,7 @@ module Dependabot
 
           if (link_href = fetch_v2_next_link_href(response.body))
             url_details = url_details.dup
-            url_details[:versions_url] = link_href
+            url_details[:versions_url] = CGI::unescape(link_href)
             fetch_paginated_v2_nuget_listings(url_details, results)
           end
 
