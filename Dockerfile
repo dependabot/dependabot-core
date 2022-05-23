@@ -65,7 +65,7 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-# Install Ruby 2.7, update RubyGems, and install Bundler
+# Install Ruby, update RubyGems, and install Bundler
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Disable the outdated rubygems installation from being loaded
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
@@ -85,12 +85,13 @@ RUN apt-add-repository ppa:brightbox/ruby-ng \
 
 ### PYTHON
 
-# Install Python 3.10 with pyenv.
+# Install Python with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.0 --single-branch --depth=1 /usr/local/.pyenv \
+  # This is the version of CPython that gets installed
   && pyenv install 3.10.4 \
   && pyenv global 3.10.4 \
   && rm -Rf /tmp/python-build*
@@ -99,7 +100,7 @@ USER root
 
 ### JAVASCRIPT
 
-# Install Node 16.0 and npm v8
+# Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
@@ -109,8 +110,8 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
 
 ### ELM
 
-# Install Elm 0.19
-# This is amd64 only, see:
+# Install Elm
+# This is currently amd64 only, see:
 # - https://github.com/elm/compiler/issues/2007
 # - https://github.com/elm/compiler/issues/2232
 ENV PATH="$PATH:/node_modules/.bin"
@@ -123,7 +124,7 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 
 ### PHP
 
-# Install PHP 7.4 and Composer
+# Install PHP and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.26 /usr/bin/composer /usr/local/bin/composer1
 COPY --from=composer:2.3.5 /usr/bin/composer /usr/local/bin/composer
@@ -209,7 +210,7 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
 
 ### RUST
 
-# Install Rust 1.61.0
+# Install Rust
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
