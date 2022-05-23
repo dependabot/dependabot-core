@@ -1,3 +1,11 @@
+## v0.190.0, 23 May 2022
+
+- Git dependency support for pub (@sigurdm) [#5102](https://github.com/dependabot/dependabot-core/pull/5102)
+- Remove versions from comments (@jeffwidman) [#5181](https://github.com/dependabot/dependabot-core/pull/5181)
+- Cargo: Update rust toolchain to 1.61.0 (@DarkKirb) [#5180](https://github.com/dependabot/dependabot-core/pull/5180)
+- Bump Terraform from 1.0.16 to 1.2.0 (@andrassy) [#5170](https://github.com/dependabot/dependabot-core/pull/5170)
+- fix required checks not run during a release (@jakecoffman) [#5144](https://github.com/dependabot/dependabot-core/pull/5144)
+
 ## v0.189.0, 17 May 2022
 
 - Revert "Strip UTF-8 BOM from file contents" (@mattt) [#5145](https://github.com/dependabot/dependabot-core/pull/5145)
