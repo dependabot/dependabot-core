@@ -1515,5 +1515,11 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         )
       end
     end
+
+    context "with duplicate children modules" do
+      let(:project_name) { "duplicate_child_modules" }
+
+      specify { expect(subject.length).to eq(1) }
+    end
   end
 end
