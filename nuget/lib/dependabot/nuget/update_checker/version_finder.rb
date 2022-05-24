@@ -234,7 +234,7 @@ module Dependabot
             url_details = url_details.dup
             # Some Nuget repositories, such as JFrog's Artifactory, URL encode the "next" href
             # link in the paged results. If the href is not URL decoded, the paging parameters
-            # are ignored and the first page is always returned. 
+            # are ignored and the first page is always returned.
             url_details[:versions_url] = CGI.unescape(link_href)
             fetch_paginated_v2_nuget_listings(url_details, results)
           end
