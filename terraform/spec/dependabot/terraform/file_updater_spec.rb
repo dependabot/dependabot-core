@@ -1518,7 +1518,40 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
     context "with duplicate children modules" do
       let(:project_name) { "duplicate_child_modules" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "origin_label",
+            version: "0.4.1",
+            previous_version: "0.3.7",
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "child_module_one/main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.4.1"
+              }
+            }],
+            previous_requirements: [{
+              requirement: nil,
+              groups: [],
+              file: "child_module_one/main.tf",
+              source: {
+                type: "git",
+                url: "https://github.com/cloudposse/terraform-null-label.git",
+                branch: nil,
+                ref: "tags/0.3.7"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
 
+      specify { expect(subject).to all(be_a(Dependabot::DependencyFile)) }
       specify { expect(subject.length).to eq(1) }
     end
   end
