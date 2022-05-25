@@ -33,6 +33,9 @@ RUN apt-get update \
     locales \
     openssh-client \
     software-properties-common \
+    rbenv \
+    libyaml-dev \
+    libgdbm-dev \
     make \
     libpq-dev \
     libssl-dev \
@@ -73,15 +76,24 @@ ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-RUN apt-add-repository ppa:brightbox/ruby-ng \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
-  && gem update --system 3.2.20 \
-  && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.13 --no-document \
-  && rm -rf /var/lib/gems/2.7.0/cache/* \
-  && rm -rf /var/lib/apt/lists/*
 
+ENV RBENV_ROOT="$DEPENDABOT_NATIVE_HELPERS_PATH/.rbenv"
+ENV PATH="$RBENV_ROOT/bin:$PATH"
+
+ARG RUBY_VERSION=2.7.5
+ARG BUNDLER_V1_VERSION=1.17.3
+ARG BUNDLER_V2_VERSION=2.3.13
+ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
+
+RUN git clone https://github.com/rbenv/ruby-build.git /tmp/ruby-build \
+ && PREFIX=/usr/local /tmp/ruby-build/install.sh \
+ && rbenv install $RUBY_VERSION \
+ && rbenv global $RUBY_VERSION \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION \
+ && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-build
 
 ### PYTHON
 
