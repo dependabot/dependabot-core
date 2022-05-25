@@ -15,6 +15,7 @@ module Dependabot
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/locked_subdependency_version_resolver"
+      require_relative "update_checker/vulnerability_auditor"
 
       def latest_version
         @latest_version ||=
