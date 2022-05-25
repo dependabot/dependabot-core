@@ -469,6 +469,13 @@ ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
   puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
 end
 
+$package_manager_version_events_count = 0
+Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
+  $package_manager_version_events_count += 1
+  payload = args.last
+  puts "🎈 #{payload}"
+end
+
 $source = Dependabot::Source.new(
   provider: $options[:provider],
   repo: $repo_name,
@@ -783,6 +790,7 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
+puts "🎈 Total package manager version logs made: '#{$package_manager_version_events_count}'"
 
 # rubocop:enable Metrics/BlockLength
 
