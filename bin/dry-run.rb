@@ -681,7 +681,6 @@ dependencies.each do |dep|
 
     conflicting_dependencies.each do |conflicting_dep|
       puts "   #{conflicting_dep['explanation']}"
-      puts "   parent: #{conflicting_dep['parent_name']}:#{conflicting_dep['parent_version']}"
     end
   end
 
