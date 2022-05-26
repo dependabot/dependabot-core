@@ -14,7 +14,6 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
-      require_relative "update_checker/locked_subdependency_version_resolver"
       require_relative "update_checker/vulnerability_auditor"
 
       def latest_version
@@ -308,18 +307,6 @@ module Dependabot
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
             latest_allowable_version: latest_version
-          )
-      end
-
-      def locked_subdependency_version_resolver
-        @locked_subdependency_version_resolver ||=
-          LockedSubdependencyVersionResolver.new(
-            dependency: dependency,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: ignored_versions,
-            latest_allowable_version: latest_version,
-            locking_dependencies: conflicting_updated_dependencies
           )
       end
 

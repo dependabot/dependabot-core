@@ -30,8 +30,6 @@ async function findConflictingDependencies(directory, depName, targetVersion) {
               name: edge.from.name,
               version: edge.from.version,
               requirement: edge.spec,
-              parent_name: topLevel.to.name,
-              parent_version: topLevel.to.version,
             });
           });
         }
