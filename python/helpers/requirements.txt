@@ -1,5 +1,5 @@
-pip>=21.3.1  # Allow earlier versions to retain python 3.6 support
-pip-tools>=6.4.0  # Allow earlier versions to retain python 3.6 support
+pip>=21.3.1,<=22.1.1  # Allow earlier versions to retain python 3.6 support
+pip-tools>=6.4.0,<=6.6.2  # Allow earlier versions to retain python 3.6 support
 flake8==4.0.1
 hashin==0.17.0
 pipenv==2022.4.8
