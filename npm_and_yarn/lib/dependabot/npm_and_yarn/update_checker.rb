@@ -137,19 +137,15 @@ module Dependabot
       end
 
       def updated_dependencies_after_full_unlock
-        updated_deps = version_resolver.dependency_updates_from_full_unlock.
-          map { |update_details| build_updated_dependency(update_details) }
-
         if !dependency.top_level? && transitive_updates_enabled? && security_advisories.any?
-          return updated_deps + conflicting_updated_dependencies
+          return conflicting_updated_dependencies
         end
 
-        updated_deps
+        version_resolver.dependency_updates_from_full_unlock.
+          map { |update_details| build_updated_dependency(update_details) }
       end
 
       def conflicting_updated_dependencies
-        # TODO: only do this when we have a transitive dependency with conflicts
-
         top_level_dependencies = FileParser.new(
           dependency_files: dependency_files,
           credentials: credentials,
@@ -174,6 +170,17 @@ module Dependabot
             dependency: conflicting_dep,
             version: update["target_version"],
             previous_version: update["current_version"]
+          )
+        end
+
+        # We don't need to update this but need to include it so it's described
+        # in the PR and we'll later we'll pass validation that this dependency
+        # is at a non-vulnerable version.
+        if updated_deps.none? { |dep| dep.name == dependency.name }
+          updated_deps << build_updated_dependency(
+            dependency: dependency,
+            version: vulnerability_audit["target_version"],
+            previous_version: dependency.version
           )
         end
 
