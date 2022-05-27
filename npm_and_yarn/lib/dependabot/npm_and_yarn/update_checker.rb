@@ -162,28 +162,18 @@ module Dependabot
 
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
+          dependency_name = update["dependency_name"]
+          requirements = top_level_dependency_lookup[dependency_name]&.requirements || []
           conflicting_dep = Dependency.new(
-            name: update["dependency_name"],
+            name: dependency_name,
             package_manager: "npm_and_yarn",
-            version: update["target_version"],
-            requirements: [] # TODO: set requirements from existing dep if top level
+            requirements: requirements,
           )
-
-          # TODO: it's possible for the parent dependency to be locked by another dependency
-          # How would we resolve that?
-          conflicting_dep_latest_version = LatestVersionFinder.new(
-            dependency: conflicting_dep,
-            credentials: credentials,
-            dependency_files: dependency_files,
-            ignored_versions: [],
-            raise_on_ignored: false,
-            security_advisories: []
-          ).latest_version_from_registry
 
           updated_deps << build_updated_dependency(
             dependency: conflicting_dep,
-            version: conflicting_dep_latest_version,
-            previous_version: update['parent_version']
+            version: update["target_version"],
+            previous_version: update["current_version"]
           )
         end
 
