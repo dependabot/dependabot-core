@@ -238,7 +238,7 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
-ARG DART_VERSION=2.16.2
+ARG DART_VERSION=2.17.0
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
   && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
@@ -248,42 +248,13 @@ RUN DART_ARCH=${TARGETARCH} \
   && chmod -R o+rx "/opt/dart/dart-sdk" \
   && rm "/tmp/dart-sdk.zip" \
   && dart --version
-# We pull the dependency_services from the dart-lang/pub repo as it is not
-# exposed from the Dart SDK (yet...).
-RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout 1e3c17ea871e6a80c720aa998f37cbd3913bc287 \
-  && dart pub global activate --source path /opt/dart/pub \
-  && chmod -R o+r "/opt/dart/pub" \
-  && chown -R dependabot:dependabot "$PUB_CACHE" \
-  && chown -R dependabot:dependabot /opt/dart/pub
-
-# Install Flutter
-ARG FLUTTER_VERSION=2.10.3
-RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
-  && tar xf "/tmp/flutter.xz" -C /opt/dart \
-  && rm "/tmp/flutter.xz" \
-  && chmod -R o+rx "/opt/dart/flutter" \
-  && chown -R dependabot:dependabot "/opt/dart/flutter" \
-  # To reduce space usage we delete all of the flutter sdk except the few
-  # things needed for pub resolutions:
-  # * The version file
-  # * The flutter sdk packages.
-  && find "/opt/dart/flutter" \
-    ! -path '/opt/dart/flutter/version' \
-    ! -path '/opt/dart/flutter/packages/*' \
-    ! -path '/opt/dart/flutter/packages' \
-    ! -path '/opt/dart/flutter/bin/cache/pkg/*' \
-    ! -path /opt/dart/flutter/bin/cache/pkg \
-    ! -path /opt/dart/flutter/bin/cache \
-    ! -path /opt/dart/flutter/bin \
-    ! -path /opt/dart/flutter \
-    -delete
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
@@ -300,6 +271,7 @@ RUN bash /opt/composer/helpers/v2/build
 RUN bash /opt/go_modules/helpers/build
 RUN bash /opt/hex/helpers/build
 RUN bash /opt/npm_and_yarn/helpers/build
+RUN bash /opt/pub/helpers/build
 RUN bash /opt/python/helpers/build
 RUN bash /opt/terraform/helpers/build
 

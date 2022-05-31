@@ -42,6 +42,100 @@ module Dependabot
         end
       end
 
+      def pub_helpers_path
+        File.join(ENV["DEPENDABOT_NATIVE_HELPERS_PATH"], "pub")
+      end
+
+      def run_infer_sdk_versions
+        stdout, _, status = Open3.capture3(
+          {},
+          File.join(pub_helpers_path, "infer_sdk_versions")
+        )
+        # TODO(sigurdm): Any way to log the error here?
+        # log("Inferring the right Flutter release failed: #{stderr}")
+        return nil unless status.success?
+
+        JSON.parse(stdout)
+      end
+
+      # Clones the flutter repo into /tmp/flutter if needed
+      def ensure_flutter_repo
+        return if File.directory?("/tmp/flutter/.git")
+
+        # Make a flutter checkout
+        _, stderr, status = Open3.capture3(
+          {},
+          "git",
+          "clone",
+          "--no-checkout",
+          # "--reference",
+          "https://github.com/flutter/flutter",
+          chdir: "/tmp/"
+        )
+        raise Dependabot::DependabotError, "Cloning Flutter failed: #{stderr}" unless status.success?
+      end
+
+      # Will ensure that /tmp/flutter contains the flutter repo checked out at `ref`.
+      def check_out_flutter_ref(ref)
+        ensure_flutter_repo
+        # Ensure we have the right version (by tag)
+        _, stderr, status = Open3.capture3(
+          {},
+          "git",
+          "fetch",
+          "origin",
+          ref,
+          chdir: "/tmp/flutter"
+        )
+        unless status.success?
+          raise Dependabot::DependabotError, "Fetching Flutter version #{ref} failed: #{stderr}"
+        end
+
+        # Check out the right version in git.
+        _, stderr, status = Open3.capture3(
+          {},
+          "git",
+          "checkout",
+          ref,
+          chdir: "/tmp/flutter"
+        )
+        return if status.success?
+
+        raise Dependabot::DependabotError, "Checking out flutter #{ref} failed: #{stderr}"
+      end
+
+      ## Detects the right flutter release to use for the pubspec.yaml.
+      ## Then checks it out if it is not already.
+      ## Returns the sdk versions
+      def ensure_right_flutter_release
+        @ensure_right_flutter_release ||= begin
+          versions = run_infer_sdk_versions
+          flutter_ref = if versions
+                          "refs/tags/#{versions['flutter']}"
+                        else
+                          # Choose the 'stable' version if the tool failed to infer a version.
+                          "stable"
+                        end
+
+          check_out_flutter_ref flutter_ref
+
+          # Run `flutter --version` to make Flutter download engine artifacts and create flutter/version.
+          stdout, stderr, status = Open3.capture3(
+            {},
+            "/tmp/flutter/bin/flutter",
+            "--version",
+            "--machine"
+          )
+          raise Dependabot::DependabotError, "Running 'flutter --version' failed: #{stderr}" unless status.success?
+
+          parsed = JSON.parse(stdout)
+          {
+            "flutter" => parsed["frameworkVersion"],
+            "dart" => parsed["dartSdkVersion"]
+          }
+        end
+      end
+
       def run_dependency_services(command, stdin_data: nil)
         SharedHelpers.in_a_temporary_directory do
           dependency_files.each do |f|
@@ -49,26 +143,25 @@ module Dependabot
             FileUtils.mkdir_p File.dirname(in_path_name)
             File.write(in_path_name, f.content)
           end
+          sdk_versions = ensure_right_flutter_release
           SharedHelpers.with_git_configured(credentials: credentials) do
             env = {
               "CI" => "true",
               "PUB_ENVIRONMENT" => "dependabot",
               "FLUTTER_ROOT" => "/opt/dart/flutter",
-              "PUB_HOSTED_URL" => options[:pub_hosted_url]
+              "PUB_HOSTED_URL" => options[:pub_hosted_url],
+              # This variable will make the solver run assuming that Dart SDK version.
+              # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
+              "_PUB_TEST_SDK_VERSION" => sdk_versions["dart"]
             }
             Dir.chdir File.join(Dir.pwd, dependency_files.first.directory) do
               stdout, stderr, status = Open3.capture3(
                 env.compact,
-                "dart",
-                "--no-analytics",
-                "pub",
-                "global",
-                "run",
-                "pub:dependency_services",
+                File.join(pub_helpers_path, "dependency_services"),
                 command,
                 stdin_data: stdin_data
               )
-              raise Dependabot::DependabotError, "dart pub failed: #{stderr}" unless status.success?
+              raise Dependabot::DependabotError, "dependency_services failed: #{stderr}" unless status.success?
               return stdout unless block_given?
 
               yield
