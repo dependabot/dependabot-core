@@ -11,6 +11,22 @@ require "dependabot/pub/requirement"
 module Dependabot
   module Pub
     module Helpers
+      def self.pub_helpers_path
+        File.join(ENV["DEPENDABOT_NATIVE_HELPERS_PATH"], "pub")
+      end
+
+      def self.run_infer_sdk_versions
+        stdout, _, status = Open3.capture3(
+          {},
+          File.join(pub_helpers_path, "infer_sdk_versions")
+        )
+        # TODO(sigurdm): Any good way to log the error here?
+        # puts("Inferring the right Flutter release failed: #{stderr}") unless status.success?
+        return nil unless status.success?
+
+        JSON.parse(stdout)
+      end
+
       private
 
       def dependency_services_list
@@ -40,22 +56,6 @@ module Dependabot
             updated_file
           end
         end
-      end
-
-      def pub_helpers_path
-        File.join(ENV["DEPENDABOT_NATIVE_HELPERS_PATH"], "pub")
-      end
-
-      def run_infer_sdk_versions
-        stdout, _, status = Open3.capture3(
-          {},
-          File.join(pub_helpers_path, "infer_sdk_versions")
-        )
-        # TODO(sigurdm): Any way to log the error here?
-        # log("Inferring the right Flutter release failed: #{stderr}")
-        return nil unless status.success?
-
-        JSON.parse(stdout)
       end
 
       # Clones the flutter repo into /tmp/flutter if needed
