@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
       end
     end
 
-    context "with a supported python version" do
+    context "with a supported python version", :slow do
       let(:python_version) { "3.6.9" }
       let(:pyproject_fixture_name) { "python_36.toml" }
       let(:lockfile_fixture_name) { "python_36.lock" }
