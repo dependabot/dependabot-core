@@ -251,7 +251,7 @@ RUN DART_ARCH=${TARGETARCH} \
 # We pull the dependency_services from the dart-lang/pub repo as it is not
 # exposed from the Dart SDK (yet...).
 RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout 1e3c17ea871e6a80c720aa998f37cbd3913bc287 \
+  && git -C /opt/dart/pub checkout 6f20a94b074a1c2dc82d429fa04d365b4bcf65b6 \
   && dart pub global activate --source path /opt/dart/pub \
   && chmod -R o+r "/opt/dart/pub" \
   && chown -R dependabot:dependabot "$PUB_CACHE" \
