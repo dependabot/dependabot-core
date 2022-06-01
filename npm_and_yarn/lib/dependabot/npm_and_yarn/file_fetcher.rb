@@ -3,7 +3,9 @@
 require "json"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -43,8 +45,30 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
+        instrument_package_manager_version
 
         fetched_files.uniq
+      end
+
+      def instrument_package_manager_version
+        package_managers = {}
+
+        if [package_lock].any?
+          [package_lock].each do |lockfile|
+            versions = [package_managers["npm"]]
+            versions << Helpers.npm_version_numeric(lockfile.content)
+            package_managers["npm"] = versions.compact.min
+          end
+        end
+
+        package_managers["yarn"] = 1 if [yarn_lock].any?
+        package_managers["shrinkwrap"] = 1 if [shrinkwrap].any?
+
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "npm",
+          package_managers: package_managers
+        )
       end
 
       def package_json
