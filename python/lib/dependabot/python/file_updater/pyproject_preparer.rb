@@ -18,26 +18,6 @@ module Dependabot
           @lockfile = lockfile
         end
 
-        def replace_sources(credentials)
-          pyproject_object = TomlRB.parse(pyproject_content)
-          poetry_object = pyproject_object.fetch("tool").fetch("poetry")
-
-          sources_hash = pyproject_sources.map { |source| [source["url"], source] }.to_h
-
-          config_variable_sources(credentials).each do |source|
-            if sources_hash.key?(source["original_url"])
-              sources_hash[source["original_url"]]["url"] = source["url"]
-            else
-              source.delete("original_url")
-              sources_hash[source["url"]] = source
-            end
-          end
-
-          poetry_object["source"] = sources_hash.values unless sources_hash.empty?
-
-          TomlRB.dump(pyproject_object)
-        end
-
         def sanitize
           # {{ name }} syntax not allowed
           pyproject_content.
@@ -95,32 +75,6 @@ module Dependabot
 
         def normalise(name)
           NameNormaliser.normalise(name)
-        end
-
-        def pyproject_sources
-          return @pyproject_sources if @pyproject_sources
-
-          pyproject_sources ||=
-            TomlRB.parse(pyproject_content).
-            dig("tool", "poetry", "source")
-
-          @pyproject_sources ||=
-            (pyproject_sources || []).
-            map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
-        end
-
-        def config_variable_sources(credentials)
-          @config_variable_sources ||=
-            credentials.
-            select { |cred| cred["type"] == "python_index" }.
-            map do |c|
-              {
-                "original_url" => c["index-url"],
-                "url" => AuthedUrlBuilder.authed_url(credential: c),
-                "name" => SecureRandom.hex[0..3],
-                "default" => c["replaces-base"]
-              }.compact
-            end
         end
 
         def parsed_lockfile

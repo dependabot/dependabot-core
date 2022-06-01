@@ -105,7 +105,6 @@ module Dependabot
               content = sanitize(content)
               content = freeze_other_dependencies(content)
               content = freeze_dependencies_being_updated(content)
-              content = add_private_sources(content)
               content
             end
         end
@@ -148,12 +147,6 @@ module Dependabot
         def create_declaration_at_new_version!(poetry_object, dep)
           poetry_object[subdep_type] ||= {}
           poetry_object[subdep_type][dependency.name] = dep.version
-        end
-
-        def add_private_sources(pyproject_content)
-          PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            replace_sources(credentials)
         end
 
         def subdep_type
