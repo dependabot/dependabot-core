@@ -9,4 +9,4 @@ is-positive@^3.1.0:
 left-pad@^1.1.3:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/left-pad/-/left-pad-1.1.3.tgz#612f61c033f3a9e08e939f1caebeea41b6f3199a"
-  integrity sha1-YS9hwDPzqeCOk58crr7qQbbzGZo=
+  integrity sha512-m3z9QHpSXmd2H8Z5jnSXbGONPty4dFQfH1QpGgivzrEzICgsi50j9S+aGc77EaLoHpbw0BzP5+k1pp2UajTRuw==
