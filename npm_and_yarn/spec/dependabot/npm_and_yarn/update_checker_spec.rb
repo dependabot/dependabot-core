@@ -29,12 +29,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       dependency_files: dependency_files,
       credentials: credentials,
       ignored_versions: ignored_versions,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      options: options
     )
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
+  let(:options) { [] }
 
   let(:credentials) do
     [{
@@ -214,7 +216,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       expect(checker.latest_version).to eq(Gem::Version.new("1.7.0"))
     end
-
     it "only hits the registry once" do
       checker.latest_version
       expect(WebMock).to have_requested(:get, registry_listing_url).once
@@ -1204,6 +1205,65 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             }]
           )
         )
+    end
+  end
+
+  context "#conflicting_updated_dependencies for a security update with :npm_transitive_security_updates enabled",
+          :vcr do
+    let(:dependency_files) { project_dependency_files("npm8/node-forge-npm8") }
+    let(:options) { { npm_transitive_security_updates: true } }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: "node-forge",
+          package_manager: "npm_and_yarn",
+          vulnerable_versions: ["< 0.10.0", "< 1.0.0", "< 1.3.0"]
+        )
+      ]
+    end
+    let(:dependency_version) { "0.10.0" }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "node-forge",
+        version: dependency_version,
+        requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    it "correctly updates the transitive dependency" do
+      expect(checker.send(:updated_dependencies_after_full_unlock)).
+        to eq([
+          Dependabot::Dependency.new(
+            name: "webpack-dev-server",
+            version: "4.9.1",
+            package_manager: "npm_and_yarn",
+            previous_version: "3.11.3",
+            requirements: [{
+              file: "package.json",
+              requirement: "^4.9.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "package.json",
+              requirement: "^3.9.0",
+              groups: ["dependencies"],
+              source: {
+                type: "registry",
+                url: "https://registry.npmjs.org"
+              }
+            }]
+          ),
+          Dependabot::Dependency.new(
+            name: "node-forge",
+            version: "1.3.1",
+            package_manager: "npm_and_yarn",
+            previous_version: "0.10.0",
+            requirements: [],
+            previous_requirements: []
+          )
+        ])
     end
   end
 
