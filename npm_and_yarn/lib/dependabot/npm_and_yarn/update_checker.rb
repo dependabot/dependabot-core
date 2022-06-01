@@ -109,10 +109,10 @@ module Dependabot
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
             dependency_files: dependency_files,
-            credentials: credentials,
+            credentials: credentials
           ).audit(
             dependency: dependency,
-            security_advisories: security_advisories,
+            security_advisories: security_advisories
           )
       end
 
@@ -121,13 +121,9 @@ module Dependabot
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
 
-        if dependency.top_level?
-          return version_resolver.latest_version_resolvable_with_full_unlock?
-        end
+        return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
 
-        unless transitive_security_updates_enabled? && security_advisories.any?
-          return false
-        end
+        return false unless transitive_security_updates_enabled? && security_advisories.any?
 
         vulnerability_audit["fix_available"]
       end
@@ -152,9 +148,7 @@ module Dependabot
           source: nil
         ).parse.select(&:top_level?)
 
-        top_level_dependency_lookup = Hash[
-          top_level_dependencies.map { |dep| [dep.name, dep] }
-        ]
+        top_level_dependency_lookup = top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
 
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
@@ -163,7 +157,7 @@ module Dependabot
           conflicting_dep = Dependency.new(
             name: dependency_name,
             package_manager: "npm_and_yarn",
-            requirements: requirements,
+            requirements: requirements
           )
 
           updated_deps << build_updated_dependency(
