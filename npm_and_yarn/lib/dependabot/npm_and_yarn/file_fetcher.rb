@@ -53,14 +53,7 @@ module Dependabot
       def instrument_package_manager_version
         package_managers = {}
 
-        if [package_lock].any?
-          [package_lock].each do |lockfile|
-            versions = [package_managers["npm"]]
-            versions << Helpers.npm_version_numeric(lockfile.content)
-            package_managers["npm"] = versions.compact.min
-          end
-        end
-
+        package_managers["npm"] =  Helpers.npm_version_numeric(package_lock.content) if package_lock
         package_managers["yarn"] = 1 if yarn_lock
         package_managers["shrinkwrap"] = 1 if shrinkwrap
 
