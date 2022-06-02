@@ -18,6 +18,24 @@ module Dependabot
           @lockfile = lockfile
         end
 
+        # For hosted Dependabot token will be nil since the credentials aren't present.
+        # This is for those running Dependabot themselves and for dry-run.
+        def add_auth_env_vars(credentials)
+          TomlRB.parse(@pyproject_content).dig("tool", "poetry", "source")&.each do |source|
+            cred = credentials&.find { |c| c["index-url"] == source["url"] }
+            next unless cred
+
+            token = cred.fetch("token", nil)
+            next unless token && token.count(":") == 1
+
+            arr = token.split(":")
+            # https://python-poetry.org/docs/configuration/#using-environment-variables
+            name = source["name"]&.upcase&.gsub(/\W/, "_")
+            ENV["POETRY_HTTP_BASIC_#{name}_USERNAME"] = arr[0]
+            ENV["POETRY_HTTP_BASIC_#{name}_PASSWORD"] = arr[1]
+          end
+        end
+
         def sanitize
           # {{ name }} syntax not allowed
           pyproject_content.

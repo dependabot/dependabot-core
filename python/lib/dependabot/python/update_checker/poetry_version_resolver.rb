@@ -76,6 +76,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
+                add_auth_env_vars
 
                 if python_version && !pre_installed_python?(python_version)
                   run_poetry_command("pyenv install -s #{python_version}")
@@ -193,6 +194,12 @@ module Dependabot
           else
             File.write("pyproject.toml", sanitized_pyproject_content)
           end
+        end
+
+        def add_auth_env_vars
+          Python::FileUpdater::PyprojectPreparer.
+            new(pyproject_content: pyproject.content).
+            add_auth_env_vars(credentials)
         end
 
         def python_version

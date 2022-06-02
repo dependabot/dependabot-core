@@ -16,6 +16,53 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
   let(:pyproject_fixture_name) { "pyproject.toml" }
 
+  describe "#add_auth_env_vars" do
+    it "adds auth env vars when a token is present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/",
+          "token" => "hello:world"
+        }
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq("hello")
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq("world")
+    end
+
+    it "has no effect when a token is not present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/"
+        }
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq(nil)
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq(nil)
+    end
+
+    it "doesn't break when there are no private sources" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "pyproject.toml"),
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
+    end
+
+    it "doesn't break when there are private sources but no credentials" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
+    end
+  end
+
   describe "#sanitize" do
     subject(:sanitized_content) { preparer.sanitize }
 
