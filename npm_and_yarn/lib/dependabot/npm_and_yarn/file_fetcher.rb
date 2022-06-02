@@ -304,18 +304,22 @@ module Dependabot
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
       def expanded_paths(path)
-        ignored_paths = path.scan(/!\((.*?)\)/).flatten
+        ignored_path = path.match?(/!\(.*?\)/) && path.gsub(/(!\((.*?)\))/, '\2')
 
         dir = directory.gsub(%r{(^/|/$)}, "")
         path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
         unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
                          "."
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
+        results =
+          repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
           map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }.
-          reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
+          select { |filename| File.fnmatch?(path, filename) }
+
+        return results unless ignored_path
+
+        results.reject { |filename| File.fnmatch?(ignored_path, filename) }
       end
 
       def parsed_package_json
