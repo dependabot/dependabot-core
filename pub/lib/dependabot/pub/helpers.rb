@@ -68,7 +68,6 @@ module Dependabot
           "git",
           "clone",
           "--no-checkout",
-          # "--reference",
           "https://github.com/flutter/flutter",
           chdir: "/tmp/"
         )
