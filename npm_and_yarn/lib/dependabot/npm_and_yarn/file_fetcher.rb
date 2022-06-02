@@ -61,8 +61,8 @@ module Dependabot
           end
         end
 
-        package_managers["yarn"] = 1 if [yarn_lock].any?
-        package_managers["shrinkwrap"] = 1 if [shrinkwrap].any?
+        package_managers["yarn"] = 1 if yarn_lock
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
 
         Dependabot.instrument(
           Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
