@@ -115,13 +115,28 @@ module Dependabot
           check_out_flutter_ref flutter_ref
 
           # Run `flutter --version` to make Flutter download engine artifacts and create flutter/version.
-          stdout, stderr, status = Open3.capture3(
+          _, stderr, status = Open3.capture3(
             {},
             "/tmp/flutter/bin/flutter",
             "--version",
             "--machine"
           )
           raise Dependabot::DependabotError, "Running 'flutter --version' failed: #{stderr}" unless status.success?
+
+          # Run `flutter --version --machine` to get the current flutter version.
+          # We run flutter --version twice to work around https://github.com/flutter/flutter/issues/54014.
+          # First time a flutter command is run a welcome banner is displayed on stdout, that makes the output
+          # unparsable.
+          stdout, stderr, status = Open3.capture3(
+            {},
+            "/tmp/flutter/bin/flutter",
+            "--version",
+            "--machine"
+          )
+          unless status.success?
+            raise Dependabot::DependabotError,
+                  "Running 'flutter --version --machine' failed: #{stderr}"
+          end
 
           parsed = JSON.parse(stdout)
           {
