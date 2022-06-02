@@ -232,7 +232,7 @@ the url of the repository.
 ```
 ## Detection of Flutter and Dart SDK versions.
 
-`dependency_services` should be run in the constext of the right Flutter and
+`dependency_services` should be run in the context of the right Flutter and
 Dart SDK versions as these will affect package resolution.
 
 The pub dependabot integration supports the flutter releases on the `stable` and
