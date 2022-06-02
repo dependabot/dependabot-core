@@ -663,16 +663,6 @@ dependencies.each do |dep|
                            end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
-  conflicting_dependencies = checker.conflicting_dependencies
-  if conflicting_dependencies.any?
-    puts " => The update is not possible because of the following conflicting "\
-      "dependencies:"
-
-    conflicting_dependencies.each do |conflicting_dep|
-      puts "   #{conflicting_dep['explanation']}"
-    end
-  end
-
   if checker.up_to_date?
     puts "    (no update needed as it's already up-to-date)"
     next
@@ -701,6 +691,17 @@ dependencies.each do |dep|
     else
       puts "    (no update possible 🙅‍♀️)"
     end
+
+    conflicting_dependencies = checker.conflicting_dependencies
+    if conflicting_dependencies.any?
+      puts " => The update is not possible because of the following conflicting "\
+        "dependencies:"
+
+      conflicting_dependencies.each do |conflicting_dep|
+        puts "   #{conflicting_dep['explanation']}"
+      end
+    end
+
     next
   end
 
