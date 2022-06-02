@@ -1,6 +1,4 @@
 /// Support for automated upgrades.
-///
-/// This
 library dependency_services;
 
 import 'dart:async';

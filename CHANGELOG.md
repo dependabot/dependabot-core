@@ -1,3 +1,11 @@
+## v0.190.1, 31 May 2022
+
+- Update pub revision (@sigurdm) [#5203](https://github.com/dependabot/dependabot-core/pull/5203)
+- Update test cases with new hashes returned from npm registry [#5208](https://github.com/dependabot/dependabot-core/pull/5208)
+- Upgrade pip inside of any newly created pyenv (@pavera) [#5195](https://github.com/dependabot/dependabot-core/pull/5195)
+- Document why the link needs to be unescaped (@jeffwidman) [#5186](https://github.com/dependabot/dependabot-core/pull/5186)
+- URL decode Nuget API v2 "next" link when paging version results (@tomcain) [#5174](https://github.com/dependabot/dependabot-core/pull/5174)
+
 ## v0.190.0, 23 May 2022
 
 - Git dependency support for pub (@sigurdm) [#5102](https://github.com/dependabot/dependabot-core/pull/5102)

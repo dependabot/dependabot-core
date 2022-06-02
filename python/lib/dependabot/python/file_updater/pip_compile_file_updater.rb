@@ -223,6 +223,7 @@ module Dependabot
           return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install --upgrade pip")
           run_command("pyenv exec pip install -r "\
                       "#{NativeHelpers.python_requirements_path}")
         end

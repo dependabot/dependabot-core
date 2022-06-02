@@ -16,12 +16,11 @@ module Dependabot
       end
 
       def self.run_infer_sdk_versions
-        stdout, _, status = Open3.capture3(
+        stdout, stderr, status = Open3.capture3(
           {},
           File.join(pub_helpers_path, "infer_sdk_versions")
         )
-        # TODO(sigurdm): Any good way to log the error here?
-        # puts("Inferring the right Flutter release failed: #{stderr}") unless status.success?
+        Dependabot.log.warning "Inferring the right Flutter release failed: #{stderr}" unless status.success?
         return nil unless status.success?
 
         JSON.parse(stdout)
