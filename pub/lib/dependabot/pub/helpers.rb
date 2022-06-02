@@ -16,11 +16,10 @@ module Dependabot
       end
 
       def self.run_infer_sdk_versions
-        stdout, stderr, status = Open3.capture3(
+        stdout, _, status = Open3.capture3(
           {},
           File.join(pub_helpers_path, "infer_sdk_versions")
         )
-        Dependabot.log.warning "Inferring the right Flutter release failed: #{stderr}" unless status.success?
         return nil unless status.success?
 
         JSON.parse(stdout)
@@ -105,7 +104,7 @@ module Dependabot
       ## Returns the sdk versions
       def ensure_right_flutter_release
         @ensure_right_flutter_release ||= begin
-          versions = run_infer_sdk_versions
+          versions = Helpers.run_infer_sdk_versions
           flutter_ref = if versions
                           "refs/tags/#{versions['flutter']}"
                         else
@@ -153,7 +152,7 @@ module Dependabot
             Dir.chdir File.join(Dir.pwd, dependency_files.first.directory) do
               stdout, stderr, status = Open3.capture3(
                 env.compact,
-                File.join(pub_helpers_path, "dependency_services"),
+                File.join(Helpers.pub_helpers_path, "dependency_services"),
                 command,
                 stdin_data: stdin_data
               )
