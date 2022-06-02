@@ -4,9 +4,8 @@ module Dependabot
   module NpmAndYarn
     module Helpers
       def self.npm_version(lockfile_content)
-        return "npm#{ npm_version_numeric(lockfile_content) }"
+        "npm#{npm_version_numeric(lockfile_content)}"
       end
-
 
       def self.npm_version_numeric(lockfile_content)
         return 8 unless lockfile_content
