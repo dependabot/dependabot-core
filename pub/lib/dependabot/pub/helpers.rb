@@ -87,9 +87,7 @@ module Dependabot
           ref,
           chdir: "/tmp/flutter"
         )
-        unless status.success?
-          raise Dependabot::DependabotError, "Fetching Flutter version #{ref} failed: #{stderr}"
-        end
+        raise Dependabot::DependabotError, "Fetching Flutter version #{ref} failed: #{stderr}" unless status.success?
 
         # Check out the right version in git.
         _, stderr, status = Open3.capture3(
