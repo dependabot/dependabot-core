@@ -320,23 +320,30 @@ module Dependabot
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(path)
-        ignored_path = path.match?(/!\(.*?\)/) && path.gsub(/(!\((.*?)\))/, '\2')
+      def expanded_paths(glob)
+        unglobbed_path =
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
+          split("*").
+          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
-        path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
-        unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
-                         "."
 
-        results =
+        paths =
           repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }
+          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
 
-        return results unless ignored_path
+        matching_paths(glob, paths)
+      end
 
-        results.reject { |filename| File.fnmatch?(ignored_path, filename) }
+      def matching_paths(glob, paths)
+        ignored_glob = glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+
+        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        return results unless ignored_glob
+
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
       end
 
       def parsed_package_json
