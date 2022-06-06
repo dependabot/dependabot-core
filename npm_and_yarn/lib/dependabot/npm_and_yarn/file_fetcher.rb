@@ -309,18 +309,13 @@ module Dependabot
             [] # Invalid lerna.json, which must not be in use
           end
 
-        paths_array.flat_map do |path|
-          # The packages/!(not-this-package) syntax is unique to Yarn
-          if path.include?("*") || path.include?("!(")
-            expanded_paths(path)
-          else
-            path
-          end
-        end
+        paths_array.flat_map { |path| recursive_expanded_paths(path) }
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
       def expanded_paths(glob)
+        return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
         unglobbed_path =
           glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
           split("*").
@@ -337,13 +332,35 @@ module Dependabot
       end
 
       def matching_paths(glob, paths)
-        ignored_glob = glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
+        ignored_glob = yarn_ignored_glob(glob)
         glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
 
         results = paths.select { |filename| File.fnmatch?(glob, filename) }
         return results unless ignored_glob
 
         results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+      end
+
+      def recursive_expanded_paths(glob, prefix = "")
+        return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        glob = glob.gsub(%r{^\./}, "")
+        glob_parts = glob.split("/")
+
+        paths = expanded_paths(prefix + glob_parts.first)
+        next_parts = glob_parts.drop(1)
+        return paths if next_parts.empty?
+
+        paths = paths.flat_map do |expanded_path|
+          recursive_expanded_paths(next_parts.join("/"), "#{expanded_path}/")
+        end
+
+        matching_paths(prefix + glob, paths)
+      end
+
+      # The packages/!(not-this-package) syntax is unique to Yarn
+      def yarn_ignored_glob(glob)
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       def parsed_package_json
