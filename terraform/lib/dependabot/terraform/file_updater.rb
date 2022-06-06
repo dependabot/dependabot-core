@@ -29,7 +29,9 @@ module Dependabot
 
           raise "Content didn't change!" if updated_content == file.content
 
-          updated_files << updated_file(file: file, content: updated_content)
+          updated_file = updated_file(file: file, content: updated_content)
+
+          updated_files << updated_file unless updated_files.include?(updated_file)
         end
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
