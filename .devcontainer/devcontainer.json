@@ -1,5 +1,5 @@
 {
-  "name": "Ruby",
+  "name": "dependabot-core dev shell",
   "dockerFile": "../Dockerfile.development",
 
   "workspaceFolder": "/home/dependabot/dependabot-core",
