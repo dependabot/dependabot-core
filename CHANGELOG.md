@@ -1,3 +1,10 @@
+## v0.191.0, 7 June 2022
+
+- poetry: fixes for broken lockfile and leaked credentials (@jakecoffman) [#5222](https://github.com/dependabot/dependabot-core/pull/5222)
+- Check if updated file exists before adding to list of terraform updated files (@dwc0011) [#5168](https://github.com/dependabot/dependabot-core/pull/5168)
+- Print package manager version instrumentation events in the dry runner (@Nishnha) [#5194](https://github.com/dependabot/dependabot-core/pull/5194)
+- Instrument npm version (@Nishnha) [#5187](https://github.com/dependabot/dependabot-core/pull/5187)
+
 ## v0.190.1, 31 May 2022
 
 - Update pub revision (@sigurdm) [#5203](https://github.com/dependabot/dependabot-core/pull/5203)
