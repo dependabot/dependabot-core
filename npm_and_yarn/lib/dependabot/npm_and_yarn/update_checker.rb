@@ -105,6 +105,8 @@ module Dependabot
         )
       end
 
+      private
+
       def vulnerability_audit
         @vulnerability_audit ||=
           VulnerabilityAuditor.new(
@@ -115,8 +117,6 @@ module Dependabot
             security_advisories: security_advisories
           )
       end
-
-      private
 
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
