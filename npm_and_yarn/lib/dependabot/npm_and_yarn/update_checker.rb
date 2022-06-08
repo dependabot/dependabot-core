@@ -168,8 +168,8 @@ module Dependabot
         end
 
         # We don't need to update this but need to include it so it's described
-        # in the PR and we'll later we'll pass validation that this dependency
-        # is at a non-vulnerable version.
+        # in the PR and we'll pass validation that this dependency is at a
+        # non-vulnerable version.
         if updated_deps.none? { |dep| dep.name == dependency.name }
           updated_deps << build_updated_dependency(
             dependency: dependency,
