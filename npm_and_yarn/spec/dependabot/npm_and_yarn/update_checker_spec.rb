@@ -36,7 +36,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
-  let(:options) { [] }
+  let(:options) { {} }
 
   let(:credentials) do
     [{
@@ -166,6 +166,65 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         context "and a requirement that covers but doesn't exactly match" do
           let(:requirement) { "^1.6.0" }
           it { is_expected.to be_falsey }
+        end
+      end
+
+      context "for a locked transitive security update with :npm_transitive_security_updates enabled", :vcr do
+        let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+        let(:options) { { npm_transitive_security_updates: true } }
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["< 1.0.1"]
+            )
+          ]
+        end
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@dependabot-fixtures/npm-transitive-dependency",
+            version: dependency_version,
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to be_falsey }
+
+        it "allows full unlocking" do
+          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+        end
+      end
+
+      context "for a locked transitive security update without :npm_transitive_security_updates enabled", :vcr do
+        let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["< 1.0.1"]
+            )
+          ]
+        end
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@dependabot-fixtures/npm-transitive-dependency",
+            version: dependency_version,
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to be_falsey }
+
+        it "doesn't allow full unlocking" do
+          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(false)
         end
       end
     end
