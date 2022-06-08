@@ -1,5 +1,5 @@
 {
-  "name": "forge-npm8",
+  "name": "locked-transitive-dependency",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "webpack-dev-server": "^3.9.0"
+    "@dependabot-fixtures/npm-parent-dependency": "1.0.0"
   }
 }

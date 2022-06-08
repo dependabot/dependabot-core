@@ -1208,23 +1208,23 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  context "#conflicting_updated_dependencies for a security update with :npm_transitive_security_updates enabled",
-          :vcr do
-    let(:dependency_files) { project_dependency_files("npm8/node-forge-npm8") }
+  context "#updated_dependencies_after_full_unlock for a security update with :npm_transitive_security_updates enabled" do
+    let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+    let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
     let(:options) { { npm_transitive_security_updates: true } }
     let(:security_advisories) do
       [
         Dependabot::SecurityAdvisory.new(
-          dependency_name: "node-forge",
+          dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
           package_manager: "npm_and_yarn",
-          vulnerable_versions: ["< 0.10.0", "< 1.0.0", "< 1.3.0"]
+          vulnerable_versions: ["< 1.0.1"]
         )
       ]
     end
-    let(:dependency_version) { "0.10.0" }
+    let(:dependency_version) { "1.0.0" }
     let(:dependency) do
       Dependabot::Dependency.new(
-        name: "node-forge",
+        name: "@dependabot-fixtures/npm-transitive-dependency",
         version: dependency_version,
         requirements: [],
         package_manager: "npm_and_yarn"
@@ -1235,19 +1235,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       expect(checker.send(:updated_dependencies_after_full_unlock)).
         to eq([
           Dependabot::Dependency.new(
-            name: "webpack-dev-server",
-            version: "4.9.1",
+            name: "@dependabot-fixtures/npm-parent-dependency",
+            version: "1.0.1",
             package_manager: "npm_and_yarn",
-            previous_version: "3.11.3",
+            previous_version: "1.0.0",
             requirements: [{
               file: "package.json",
-              requirement: "^4.9.1",
+              requirement: "1.0.1",
               groups: ["dependencies"],
               source: nil
             }],
             previous_requirements: [{
               file: "package.json",
-              requirement: "^3.9.0",
+              requirement: "1.0.0",
               groups: ["dependencies"],
               source: {
                 type: "registry",
@@ -1256,10 +1256,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             }]
           ),
           Dependabot::Dependency.new(
-            name: "node-forge",
-            version: "1.3.1",
+            name: "@dependabot-fixtures/npm-transitive-dependency",
+            version: "1.0.1",
             package_manager: "npm_and_yarn",
-            previous_version: "0.10.0",
+            previous_version: "1.0.0",
             requirements: [],
             previous_requirements: []
           )
