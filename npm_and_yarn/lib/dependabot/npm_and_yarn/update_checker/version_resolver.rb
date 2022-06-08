@@ -95,7 +95,6 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def dependency_updates_from_full_unlock
-          # TODO: investigate how these special cases will affect transitive dependency updates
           return if git_dependency?(dependency)
           return updated_monorepo_dependencies if part_of_tightly_locked_monorepo?
           return if newly_broken_peer_reqs_from_dep.any?
