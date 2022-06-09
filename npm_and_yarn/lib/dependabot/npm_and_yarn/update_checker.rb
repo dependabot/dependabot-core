@@ -105,6 +105,10 @@ module Dependabot
         )
       end
 
+      def transitive_security_updates_enabled?
+        options.key?(:npm_transitive_security_updates)
+      end
+
       private
 
       def vulnerability_audit
@@ -126,10 +130,6 @@ module Dependabot
         return false unless transitive_security_updates_enabled? && security_advisories.any?
 
         vulnerability_audit["fix_available"]
-      end
-
-      def transitive_security_updates_enabled?
-        options.key?(:npm_transitive_security_updates)
       end
 
       def updated_dependencies_after_full_unlock
