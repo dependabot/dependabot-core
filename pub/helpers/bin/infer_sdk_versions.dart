@@ -132,7 +132,7 @@ Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
 }
 
 /// The "best" Flutter release for a given set of constraints is the first one
-/// in [flutterReleases] hat matches both the flutter and dart constraint.
+/// in [flutterReleases] that matches both the flutter and dart constraint.
 FlutterRelease? inferBestFlutterRelease(
     Map<String, VersionConstraint> sdkConstraints,
     List<FlutterRelease> flutterReleases) {
