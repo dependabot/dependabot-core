@@ -1295,18 +1295,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         to eq([
           Dependabot::Dependency.new(
             name: "@dependabot-fixtures/npm-parent-dependency",
-            version: "1.0.1",
+            version: "2.0.2",
             package_manager: "npm_and_yarn",
-            previous_version: "1.0.0",
+            previous_version: "2.0.0",
             requirements: [{
               file: "package.json",
-              requirement: "1.0.1",
+              requirement: "2.0.2",
               groups: ["dependencies"],
               source: nil
             }],
             previous_requirements: [{
               file: "package.json",
-              requirement: "1.0.0",
+              requirement: "2.0.0",
               groups: ["dependencies"],
               source: {
                 type: "registry",
