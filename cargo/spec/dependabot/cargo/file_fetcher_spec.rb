@@ -395,6 +395,13 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         stub_request(:get, url + "lib/sub_crate/Cargo.toml?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404, headers: json_header)
+        # additional requests due to submodule searching
+        stub_request(:get, url + "lib/sub_crate?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
+        stub_request(:get, url + "lib?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
       end
 
       it "raises a DependencyFileNotFound error" do
