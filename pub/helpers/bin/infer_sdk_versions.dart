@@ -59,8 +59,11 @@ Map<String, VersionConstraint> parseSdkConstraints(dynamic pubspec) {
 Future<void> main(List<String> args) async {
   try {
     final argResults = parseArgs(args);
-    final flutterReleases = await retrieveFlutterReleases(
-        argResults['flutter-releases-url'] ?? flutterReleasesUrl);
+    var url = argResults['flutter-releases-url'];
+    if (url == null || url.isEmpty) {
+      url = flutterReleasesUrl;
+    }
+    final flutterReleases = await retrieveFlutterReleases(url);
 
     final pubspecPath = p.join(argResults['directory'], 'pubspec.yaml');
     final pubspec = loadYaml(File(pubspecPath).readAsStringSync(),
