@@ -29,7 +29,7 @@ RSpec.describe "Helpers" do
 
   let(:inferred_result) do
     Dir.chdir File.join("spec", "fixtures", "projects", project) do
-      Dependabot::Pub::Helpers.run_infer_sdk_versions
+      Dependabot::Pub::Helpers.run_infer_sdk_versions url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
     end
   end
 

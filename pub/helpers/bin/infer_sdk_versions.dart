@@ -94,7 +94,7 @@ String get flutterReleasesUrl =>
 
 // Retrieves all released versions of Flutter.
 Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
-  final response = await client.get(Uri.parse(flutterReleasesUrl));
+  final response = await client.get(Uri.parse(url));
   final decoded = jsonDecode(response.body);
   if (decoded is! Map) throw FormatException('Bad response - should be a Map');
   final releases = decoded['releases'];
@@ -132,7 +132,7 @@ Future<List<FlutterRelease>> retrieveFlutterReleases(String url) async {
 }
 
 /// The "best" Flutter release for a given set of constraints is the first one
-/// that matches both the flutter and dart constraint.
+/// in [flutterReleases] hat matches both the flutter and dart constraint.
 FlutterRelease? inferBestFlutterRelease(
     Map<String, VersionConstraint> sdkConstraints,
     List<FlutterRelease> flutterReleases) {

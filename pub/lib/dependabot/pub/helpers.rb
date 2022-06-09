@@ -15,10 +15,11 @@ module Dependabot
         File.join(ENV["DEPENDABOT_NATIVE_HELPERS_PATH"], "pub")
       end
 
-      def self.run_infer_sdk_versions
+      def self.run_infer_sdk_versions(url: nil)
         stdout, _, status = Open3.capture3(
           {},
-          File.join(pub_helpers_path, "infer_sdk_versions")
+          File.join(pub_helpers_path, "infer_sdk_versions"),
+          *("--flutter-releases-url=#{url}" if url)
         )
         return nil unless status.success?
 
@@ -104,7 +105,7 @@ module Dependabot
       ## Returns the sdk versions
       def ensure_right_flutter_release
         @ensure_right_flutter_release ||= begin
-          versions = Helpers.run_infer_sdk_versions
+          versions = Helpers.run_infer_sdk_versions url: options[:flutter_releases_url]
           flutter_ref = if versions
                           "refs/tags/#{versions['flutter']}"
                         else
@@ -118,20 +119,18 @@ module Dependabot
           _, stderr, status = Open3.capture3(
             {},
             "/tmp/flutter/bin/flutter",
-            "--version",
-            "--machine"
+            "doctor",
+            chdir: "/tmp/flutter/"
           )
-          raise Dependabot::DependabotError, "Running 'flutter --version' failed: #{stderr}" unless status.success?
+          raise Dependabot::DependabotError, "Running 'flutter doctor' failed: #{stderr}" unless status.success?
 
           # Run `flutter --version --machine` to get the current flutter version.
-          # We run flutter --version twice to work around https://github.com/flutter/flutter/issues/54014.
-          # First time a flutter command is run a welcome banner is displayed on stdout, that makes the output
-          # unparsable.
           stdout, stderr, status = Open3.capture3(
             {},
             "/tmp/flutter/bin/flutter",
             "--version",
-            "--machine"
+            "--machine",
+            chdir: "/tmp/flutter/"
           )
           unless status.success?
             raise Dependabot::DependabotError,
@@ -158,7 +157,7 @@ module Dependabot
             env = {
               "CI" => "true",
               "PUB_ENVIRONMENT" => "dependabot",
-              "FLUTTER_ROOT" => "/opt/dart/flutter",
+              "FLUTTER_ROOT" => "/tmp/flutter",
               "PUB_HOSTED_URL" => options[:pub_hosted_url],
               # This variable will make the solver run assuming that Dart SDK version.
               # TODO(sigurdm): Would be nice to have a better handle for fixing the dart sdk version.
