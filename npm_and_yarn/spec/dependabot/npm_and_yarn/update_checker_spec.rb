@@ -1267,7 +1267,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
-  context "#updated_dependencies_after_full_unlock for a security update with :npm_transitive_security_updates enabled" do
+  context "#updated_dependencies_after_full_unlock for a security update with :npm_transitive_security_updates" do
     let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
     let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
     let(:options) { { npm_transitive_security_updates: true } }
