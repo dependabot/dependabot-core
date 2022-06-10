@@ -23,7 +23,7 @@ RSpec.describe "Helpers" do
 
   before do
     @server.mount_proc "/flutter_releases.json" do |_req, res|
-      res.body = File.read(File.join("..", "..", "spec", "fixtures", "flutter_releases.json"))
+      res.body = File.read(File.join(__dir__, "..", "..", "fixtures", "flutter_releases.json"))
     end
   end
 
