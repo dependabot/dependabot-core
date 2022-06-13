@@ -244,6 +244,6 @@ The helpers/bin/infer_sdk_versions.dart script will parse the root pubspec, and
 try to determine the right release based on the sdk constraints and the list of
 available releases:
 
-* The latest stable release that matches the sdk constraints will be chosen
+* The latest stable release that matches the SDK constraints will be chosen
 * If there is no stable release it will choose the newest beta that matches the
 SDK constraints.
