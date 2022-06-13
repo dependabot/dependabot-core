@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       let(:files) { project_dependency_files("broken_pubspec") }
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependabotError) do |error|
-          expect(error.message).to start_with("dart pub failed: " \
+          expect(error.message).to start_with("dependency_services failed: " \
             "Error on line 2, column 1 of pubspec.yaml: Unexpected end of file.")
         end
       end

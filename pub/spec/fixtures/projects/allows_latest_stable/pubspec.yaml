@@ -1,0 +1,4 @@
+name: foo
+environment:
+  flutter: '>=2.0.0'
+  dart: '>= 2.12.0 <3.0.0'
