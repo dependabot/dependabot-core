@@ -1,3 +1,7 @@
+## v0.192.0, 13 June 2022
+
+- Use inferred flutter version (@sigurdm) [#5207](https://github.com/dependabot/dependabot-core/pull/5207)
+
 ## v0.191.1, 13 June 2022
 
 - Only report conflicting dependencies when update is not possible (@deivid-rodriguez) [#5237](https://github.com/dependabot/dependabot-core/pull/5237)
