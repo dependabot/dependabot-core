@@ -240,7 +240,7 @@ The pub dependabot integration supports the flutter releases on the `stable` and
 [channel](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels).
 Each Flutter release comes with a matching Dart release.
 
-The helpers/bin/infer_sdk_versions.dart script will parse the root pubspec, and
+The `helpers/bin/infer_sdk_versions.dart` script will parse the root pubspec, and
 try to determine the right release based on the SDK constraints and the list of
 available releases:
 
