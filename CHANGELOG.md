@@ -1,3 +1,9 @@
+## v0.191.1, 13 June 2022
+
+- Only report conflicting dependencies when update is not possible (@deivid-rodriguez) [#5237](https://github.com/dependabot/dependabot-core/pull/5237)
+- build(deps): update pip requirement from <=22.1.1,>=21.3.1 to >=21.3.1,<22.1.3 in /python/helpers [#5212](https://github.com/dependabot/dependabot-core/pull/5212)
+- Fix Yarn ignored path checking (@FunkyloverOne) [#5220](https://github.com/dependabot/dependabot-core/pull/5220)
+
 ## v0.191.0, 7 June 2022
 
 - poetry: fixes for broken lockfile and leaked credentials (@jakecoffman) [#5222](https://github.com/dependabot/dependabot-core/pull/5222)
