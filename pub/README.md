@@ -246,4 +246,4 @@ available releases:
 
 * The latest stable release that matches the sdk constraints will be chosen
 * If there is no stable release it will choose the newest beta that matches the
-sdk constraints.
+SDK constraints.
