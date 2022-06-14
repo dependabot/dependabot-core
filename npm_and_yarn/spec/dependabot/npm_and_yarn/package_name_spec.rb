@@ -5,15 +5,41 @@ require "dependabot/npm_and_yarn/package_name"
 
 RSpec.describe Dependabot::NpmAndYarn::PackageName do
   describe "initialization" do
-    it "raises a meaningful error if the input is not a valid package name" do
+    it "allows valid package names" do
+      expect { described_class.new("some-package") }.not_to raise_error
+      expect { described_class.new("example.com") }.not_to raise_error
+      expect { described_class.new("under_score") }.not_to raise_error
+      expect { described_class.new("123numeric") }.not_to raise_error
+      expect { described_class.new("@npm/thingy") }.not_to raise_error
+      expect { described_class.new("@jane/foo.js") }.not_to raise_error
+      expect { described_class.new("@_foo/bar") }.not_to raise_error
+    end
+
+    # rubocop:disable Layout/LineLength
+    it "allows legacy package names" do
+      # Support
+      expect do
+        described_class.new("eLaBorAtE-paCkAgE-with-mixed-case-and-more-than-214-characters-----------------------------------------------------------------------------------------------------------------------------------------------------------")
+      end.not_to raise_error
+    end
+    # rubocop:enable Layout/LineLength
+
+    it "raises an error for invalid package names" do
+      expect { described_class.new("") }.to raise_error(described_class::InvalidPackageName)
+      expect { described_class.new(".leading-dot") }.to raise_error(described_class::InvalidPackageName)
+      expect { described_class.new("_leading-underscore") }.to raise_error(described_class::InvalidPackageName)
+
+      expect do
+        described_class.new(" leading-space:and:weirdchars")
+      end.to raise_error(described_class::InvalidPackageName)
+
+      expect { described_class.new("excited!") }.to raise_error(described_class::InvalidPackageName)
+      expect { described_class.new("mIxeD-CaSe-nAME") }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new("🤷") }.to raise_error(described_class::InvalidPackageName)
+
+      expect { described_class.new(nil) }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new([]) }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new({}) }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new(nil) }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new("") }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new(" prefixed-with-a-space") }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new(".prefixed-with-a-dot") }.to raise_error(described_class::InvalidPackageName)
-      expect { described_class.new("!invalid") }.to raise_error(described_class::InvalidPackageName)
     end
   end
 
