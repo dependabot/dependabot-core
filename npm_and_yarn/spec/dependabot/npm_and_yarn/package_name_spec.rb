@@ -15,15 +15,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
       expect { described_class.new("@_foo/bar") }.not_to raise_error
     end
 
-    # rubocop:disable Layout/LineLength
-    it "allows legacy package names" do
-      # Support
-      expect do
-        described_class.new("eLaBorAtE-paCkAgE-with-mixed-case-and-more-than-214-characters-----------------------------------------------------------------------------------------------------------------------------------------------------------")
-      end.not_to raise_error
-    end
-    # rubocop:enable Layout/LineLength
-
     it "raises an error for invalid package names" do
       expect { described_class.new("") }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new(".leading-dot") }.to raise_error(described_class::InvalidPackageName)
