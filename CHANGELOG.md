@@ -1,3 +1,7 @@
+## v0.192.1, 14 June 2022
+
+- Bump pub revision to fix error without lockfile [#5263](https://github.com/dependabot/dependabot-core/pull/5263)
+
 ## v0.192.0, 13 June 2022
 
 - Use inferred flutter version (@sigurdm) [#5207](https://github.com/dependabot/dependabot-core/pull/5207)
