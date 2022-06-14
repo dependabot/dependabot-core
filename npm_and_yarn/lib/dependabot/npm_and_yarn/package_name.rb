@@ -3,6 +3,9 @@
 module Dependabot
   module NpmAndYarn
     class PackageName
+      # NPM package naming rules are defined by the following projects:
+      # - https://github.com/npm/npm-user-validate
+      # - https://github.com/npm/validate-npm-package-name
       PACKAGE_NAME_REGEX = %r{
           \A                                          # beginning of string
           (?=.{1,214}\z)                              # enforce length (1 - 214)
