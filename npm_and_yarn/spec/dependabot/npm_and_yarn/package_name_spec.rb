@@ -24,7 +24,6 @@ RSpec.describe Dependabot::NpmAndYarn::PackageName do
         described_class.new(" leading-space:and:weirdchars")
       end.to raise_error(described_class::InvalidPackageName)
 
-      expect { described_class.new("mIxeD-CaSe-nAME") }.to raise_error(described_class::InvalidPackageName)
       expect { described_class.new("🤷") }.to raise_error(described_class::InvalidPackageName)
 
       expect { described_class.new(nil) }.to raise_error(described_class::InvalidPackageName)
