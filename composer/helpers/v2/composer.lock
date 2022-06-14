@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f009496780e9f8a7f35fbdda5f7f00b6",
+    "content-hash": "e38bd69c9e24e7830086662ccc33c959",
     "packages": [
         {
             "name": "composer/ca-bundle",
@@ -2108,16 +2108,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.6.8",
+            "version": "1.7.13",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "d76498c5531232cb8386ceb6004f7e013138d3ba"
+                "reference": "86ffc063bfd8f264c9eba568e84b0225a6090d09"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/d76498c5531232cb8386ceb6004f7e013138d3ba",
-                "reference": "d76498c5531232cb8386ceb6004f7e013138d3ba",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/86ffc063bfd8f264c9eba568e84b0225a6090d09",
+                "reference": "86ffc063bfd8f264c9eba568e84b0225a6090d09",
                 "shasum": ""
             },
             "require": {
@@ -2159,7 +2159,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2022-05-10T06:54:21+00:00"
+            "time": "2022-06-13T15:15:39+00:00"
         },
         {
             "name": "psr/cache",
