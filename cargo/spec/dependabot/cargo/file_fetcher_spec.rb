@@ -421,11 +421,12 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_submodule.json"))
         # Attempt to find the Cargo.toml in the submodule's repo.
-        stub_request(:get, "https://api.github.com/repos/runconduit/conduit/contents/?ref=453df4efd57f5e8958adf17d728520bd585c82c9").
+        submodule_root = "https://api.github.com/repos/runconduit/conduit"
+        stub_request(:get, submodule_root + "/contents/?ref=453df4efd57f5e8958adf17d728520bd585c82c9").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_without_lockfile.json"))
         # Found it, so download it!
-        stub_request(:get, "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=453df4efd57f5e8958adf17d728520bd585c82c9 ").
+        stub_request(:get, submodule_root + "/contents/Cargo.toml?ref=453df4efd57f5e8958adf17d728520bd585c82c9 ").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_manifest.json"))
       end
