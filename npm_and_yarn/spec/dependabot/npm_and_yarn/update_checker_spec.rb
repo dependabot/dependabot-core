@@ -170,7 +170,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       context "for a locked transitive security update with :npm_transitive_security_updates enabled", :vcr do
-        let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+        let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
         let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
         let(:options) { { npm_transitive_security_updates: true } }
         let(:security_advisories) do
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       context "for a locked transitive security update without :npm_transitive_security_updates enabled", :vcr do
-        let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+        let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
         let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
         let(:security_advisories) do
           [
@@ -1267,7 +1267,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "for a security update with :npm_transitive_security_updates enabled" do
-      let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
       let(:options) { { npm_transitive_security_updates: true } }
       let(:security_advisories) do
@@ -1325,7 +1325,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
 
       context "when a transitive dependency is locked by multiple top-level dependencies" do
-        let(:dependency_files) { project_dependency_files("npm8/transitive-dependency-locked-by-multiple") }
+        let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_multiple") }
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-multiple" }
 
         it "correctly updates the transitive dependency" do
