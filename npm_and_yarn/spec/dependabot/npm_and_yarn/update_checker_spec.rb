@@ -1265,64 +1265,106 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         )
     end
-  end
 
-  context "#updated_dependencies_after_full_unlock for a security update with :npm_transitive_security_updates" do
-    let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
-    let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
-    let(:options) { { npm_transitive_security_updates: true } }
-    let(:security_advisories) do
-      [
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
-          package_manager: "npm_and_yarn",
-          vulnerable_versions: ["< 1.0.1"]
-        )
-      ]
-    end
-    let(:dependency_version) { "1.0.0" }
-    let(:dependency) do
-      Dependabot::Dependency.new(
-        name: "@dependabot-fixtures/npm-transitive-dependency",
-        version: dependency_version,
-        requirements: [],
-        package_manager: "npm_and_yarn"
-      )
-    end
-
-    it "correctly updates the transitive dependency" do
-      expect(checker.send(:updated_dependencies_after_full_unlock)).
-        to eq([
-          Dependabot::Dependency.new(
-            name: "@dependabot-fixtures/npm-parent-dependency",
-            version: "2.0.2",
+    context "for a security update with :npm_transitive_security_updates enabled" do
+      let(:dependency_files) { project_dependency_files("npm8/locked-transitive-dependency") }
+      let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+      let(:options) { { npm_transitive_security_updates: true } }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
             package_manager: "npm_and_yarn",
-            previous_version: "2.0.0",
-            requirements: [{
-              file: "package.json",
-              requirement: "2.0.2",
-              groups: ["dependencies"],
-              source: nil
-            }],
-            previous_requirements: [{
-              file: "package.json",
-              requirement: "2.0.0",
-              groups: ["dependencies"],
-              source: {
-                type: "registry",
-                url: "https://registry.npmjs.org"
-              }
-            }]
-          ),
-          Dependabot::Dependency.new(
-            name: "@dependabot-fixtures/npm-transitive-dependency",
-            version: "1.0.1",
-            package_manager: "npm_and_yarn",
-            previous_version: "1.0.0",
-            requirements: [],
-            previous_requirements: []
+            vulnerable_versions: ["< 1.0.1"]
           )
-        ])
+        ]
+      end
+      let(:dependency_version) { "1.0.0" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "@dependabot-fixtures/npm-transitive-dependency",
+          version: dependency_version,
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      it "correctly updates the transitive dependency" do
+        expect(checker.send(:updated_dependencies_after_full_unlock)).
+          to eq([
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-parent-dependency",
+              version: "2.0.2",
+              package_manager: "npm_and_yarn",
+              previous_version: "2.0.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "2.0.2",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "2.0.0",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }]
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              version: "1.0.1",
+              package_manager: "npm_and_yarn",
+              previous_version: "1.0.0",
+              requirements: [],
+              previous_requirements: []
+            )
+          ])
+      end
+
+      context "when a transitive dependency is locked by multiple top-level dependencies" do
+        let(:dependency_files) { project_dependency_files("npm8/transitive-dependency-locked-by-multiple") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-multiple" }
+
+        it "correctly updates the transitive dependency" do
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-parent-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "2.0.1",
+              requirements: [],
+              version: "2.0.2",
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-parent-dependency-2",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "2.1.0",
+              requirements: [],
+              version: "2.1.1",
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-parent-dependency-3",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "2.0.0",
+              requirements: [],
+              version: "3.0.0",
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "1.0.0",
+              requirements: [],
+              version: "1.0.1",
+            )
+          )
+        end
+      end
     end
   end
 
