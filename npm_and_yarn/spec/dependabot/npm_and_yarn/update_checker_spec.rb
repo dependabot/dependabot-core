@@ -1336,7 +1336,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_requirements: [],
               previous_version: "2.0.1",
               requirements: [],
-              version: "2.0.2",
+              version: "2.0.2"
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-2",
@@ -1344,7 +1344,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_requirements: [],
               previous_version: "2.1.0",
               requirements: [],
-              version: "2.1.1",
+              version: "2.1.1"
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-3",
@@ -1352,7 +1352,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_requirements: [],
               previous_version: "2.0.0",
               requirements: [],
-              version: "3.0.0",
+              version: "3.0.0"
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
@@ -1360,7 +1360,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
-              version: "1.0.1",
+              version: "1.0.1"
             )
           )
         end
