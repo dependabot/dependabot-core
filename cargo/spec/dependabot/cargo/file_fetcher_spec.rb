@@ -410,6 +410,34 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       end
     end
 
+    context "that is in a submodule" do
+      before do
+        # This file doesn't exist because sub_crate is a submodule, so returns a 404
+        stub_request(:get, url + "lib/sub_crate/Cargo.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404, headers: json_header)
+        # This returns type: submodule, we're in the common submodule logic now
+        stub_request(:get, url + "lib/sub_crate?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_submodule.json"))
+        # Attempt to find the Cargo.toml in the submodule's repo.
+        stub_request(:get, "https://api.github.com/repos/runconduit/conduit/contents/?ref=453df4efd57f5e8958adf17d728520bd585c82c9").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_without_lockfile.json"))
+        # Found it, so download it!
+        stub_request(:get, "https://api.github.com/repos/runconduit/conduit/contents/Cargo.toml?ref=453df4efd57f5e8958adf17d728520bd585c82c9 ").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 200, headers: json_header, body: fixture("github", "contents_cargo_manifest.json"))
+      end
+
+      it "places the found Cargo.toml in the correct directories" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Cargo.toml lib/sub_crate/Cargo.toml))
+        expect(file_fetcher_instance.files.map(&:path)).
+          to match_array(%w(/Cargo.toml /lib/sub_crate/Cargo.toml))
+      end
+    end
+
     context "that specifies a directory of packages" do
       let(:parent_fixture) do
         fixture("github", "contents_cargo_manifest_workspace_root_glob.json")
