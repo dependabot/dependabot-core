@@ -138,8 +138,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "0ad17e8424e9989722f272e012636d9f43bb5205"
-      resolved-ref: "0ad17e8424e9989722f272e012636d9f43bb5205"
+      ref: c4e9ddc888c3aa89ef4462f0c4298929191e32b9
+      resolved-ref: c4e9ddc888c3aa89ef4462f0c4298929191e32b9
       url: "https://github.com/dart-lang/pub"
     source: git
     version: "0.0.0"
@@ -228,4 +228,4 @@ packages:
     source: hosted
     version: "2.0.3"
 sdks:
-  dart: ">=2.16.0 <3.0.0"
+  dart: ">=2.17.0 <3.0.0"
