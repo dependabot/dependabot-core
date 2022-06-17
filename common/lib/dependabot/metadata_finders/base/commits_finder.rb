@@ -23,6 +23,7 @@ module Dependabot
         def commits_url
           return unless source
           return if source.provider == "azure" # TODO: Fetch Azure commits
+          return if source.provider == "codecommit" # TODO: Fetch Codecommit commits
 
           path =
             case source.provider
@@ -44,6 +45,7 @@ module Dependabot
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
           when "azure" then [] # TODO: Fetch Azure commits
+          when "codecommit" then [] # TODO: Fetch Codecommit commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
@@ -210,7 +212,7 @@ module Dependabot
           elsif new_tag
             "commits/#{new_tag}"
           else
-            "commits/master"
+            "commits/#{default_gitlab_branch}"
           end
         end
 
@@ -320,6 +322,11 @@ module Dependabot
         def reliable_source_directory?
           MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
             include?(dependency.package_manager)
+        end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
         end
       end
     end

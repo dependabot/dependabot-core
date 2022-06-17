@@ -16,6 +16,5 @@
 **/node_modules
 !**/spec/fixtures/*
 git.store
-.byebug_history
 .DS_Store
 *.pyc

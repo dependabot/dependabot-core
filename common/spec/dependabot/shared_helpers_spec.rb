@@ -187,9 +187,10 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".run_shell_command" do
     let(:command) { File.join(spec_root, "helpers/test/run_bash") + " output" }
+    let(:env) { nil }
 
     subject(:run_shell_command) do
-      Dependabot::SharedHelpers.run_shell_command(command)
+      Dependabot::SharedHelpers.run_shell_command(command, env: env)
     end
 
     context "when the subprocess is successful" do
@@ -218,6 +219,14 @@ RSpec.describe Dependabot::SharedHelpers do
           expect(output).not_to eq("$(ps)\n")
           expect(output).to include("PID")
         end
+      end
+    end
+
+    context "with an environment variable" do
+      let(:env) { { "TEST_ENV" => "prefix:" } }
+
+      it "is available to the command" do
+        expect(run_shell_command).to eq("prefix:output\n")
       end
     end
 
@@ -292,9 +301,11 @@ RSpec.describe Dependabot::SharedHelpers do
 
     it "includes the defaults" do
       expect(subject).to eq(
+        instrumentor: ActiveSupport::Notifications,
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,
+        retry_limit: 4,
         omit_default_port: true,
         middlewares: described_class.excon_middleware,
         headers: described_class.excon_headers
@@ -350,6 +361,33 @@ RSpec.describe Dependabot::SharedHelpers do
 
     let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
     let(:configured_git_credentials) { with_git_configured { `cat #{Dir.pwd}/git.store` } }
+
+    context "when the global .gitconfig has a safe directory" do
+      before do
+        Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo")
+      end
+      after do
+        Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo")
+      end
+
+      it "is preserved in the temporary .gitconfig" do
+        expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+      end
+
+      context "when the global .gitconfig has two safe directories" do
+        before do
+          Open3.capture2("git config --global --add safe.directory /home/dependabot/dependabot-core/repo2")
+        end
+        after do
+          Open3.capture2("git config --global --unset safe.directory /home/dependabot/dependabot-core/repo2")
+        end
+
+        it "is preserved in the temporary .gitconfig" do
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo")
+          expect(configured_git_config).to include("directory = /home/dependabot/dependabot-core/repo2")
+        end
+      end
+    end
 
     context "when providing no extra credentials" do
       let(:credentials) { [] }

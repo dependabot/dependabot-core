@@ -40,7 +40,7 @@ module Functions
       bundler_source.
         fetchers.flat_map do |fetcher|
           fetcher.
-            specs_with_retry([dependency_name], bundler_source).
+            specs([dependency_name], bundler_source).
             search_all(dependency_name)
         end.
         map(&:version)

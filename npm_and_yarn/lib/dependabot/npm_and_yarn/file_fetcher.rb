@@ -3,7 +3,9 @@
 require "json"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -43,8 +45,23 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
+        instrument_package_manager_version
 
         fetched_files.uniq
+      end
+
+      def instrument_package_manager_version
+        package_managers = {}
+
+        package_managers["npm"] =  Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = 1 if yarn_lock
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
+
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "npm",
+          package_managers: package_managers
+        )
       end
 
       def package_json
@@ -123,7 +140,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar")
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -132,7 +149,7 @@ module Dependabot
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
             # Unfetchable tarballs should not be re-fetched as a package
-            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar")
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar", ".tar.gz")
           end
         end
 
@@ -288,32 +305,38 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else [] # Invalid lerna.json, which must not be in use
+          else
+            [] # Invalid lerna.json, which must not be in use
           end
 
         paths_array.flat_map do |path|
           # The packages/!(not-this-package) syntax is unique to Yarn
           if path.include?("*") || path.include?("!(")
             expanded_paths(path)
-          else path
+          else
+            path
           end
         end
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
       def expanded_paths(path)
-        ignored_paths = path.scan(/!\((.*?)\)/).flatten
+        ignored_path = path.match?(/!\(.*?\)/) && path.gsub(/(!\((.*?)\))/, '\2')
 
         dir = directory.gsub(%r{(^/|/$)}, "")
         path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
         unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
                          "."
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
+        results =
+          repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
           map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }.
-          reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
+          select { |filename| File.fnmatch?(path, filename) }
+
+        return results unless ignored_path
+
+        results.reject { |filename| File.fnmatch?(ignored_path, filename) }
       end
 
       def parsed_package_json

@@ -40,8 +40,12 @@ module Dependabot
           select { |f| f.type == "dir" }.
           any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
-        tmp_source.branch = nil
-        retry
+        # If we are attempting to find a branch, we should fail over to the default branch and retry once only
+        if tmp_source.branch.present?
+          tmp_source.branch = nil
+          retry
+        end
+        @repo_has_subdir_for_dep[tmp_source] = false
       rescue Dependabot::RepoNotFound
         @repo_has_subdir_for_dep[tmp_source] = false
       end
@@ -100,12 +104,9 @@ module Dependabot
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        response = Excon.get(
-          "#{maven_repo_dependency_url}/"\
-          "#{dependency.version}/"\
-          "#{dependency_artifact_id}-#{dependency.version}.pom",
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_headers)
+        response = RegistryClient.get(
+          url: "#{maven_repo_dependency_url}/#{dependency.version}/#{dependency_artifact_id}-#{dependency.version}.pom",
+          headers: auth_headers
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
@@ -133,10 +134,9 @@ module Dependabot
               "#{version}/"\
               "#{artifact_id}-#{version}.pom"
 
-        response = Excon.get(
-          substitute_properties_in_source_url(url, pom),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_headers)
+        response = RegistryClient.get(
+          url: substitute_properties_in_source_url(url, pom),
+          headers: auth_headers
         )
 
         Nokogiri::XML(response.body)

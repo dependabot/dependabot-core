@@ -17,6 +17,15 @@
       ]
     },
     {
+      "name": "Debug Tests",
+      "type": "Ruby",
+      "request": "launch",
+      "program": "${workspaceRoot}/${input:ecosystem}/.bundle/bin/rspec",
+      "cwd": "${workspaceRoot}/${input:ecosystem}",
+      "useBundler": true,
+      "args": ["${input:test_path}"],
+    },
+    {
       "type": "node",
       "name": "vscode-jest-tests",
       "request": "launch",
@@ -88,6 +97,33 @@
         "terraform"
       ],
       "default": "go_modules"
+    },
+    {
+      "type": "pickString",
+      "id": "ecosystem",
+      "description": "What type of ecosystem tests do you want to debug?",
+      "options": [
+        "bundler",
+        "cargo",
+        "composer",
+        "docker",
+        "elm",
+        "go_modules",
+        "gradle",
+        "hex",
+        "maven",
+        "npm_and_yarn",
+        "nuget",
+        "python",
+        "terraform"
+      ],
+      "default": "python"
+    },
+    {
+      "type": "promptString",
+      "id": "test_path",
+      "description": "Enter the path of the test(s) to run.",
+      "default": "spec"
     },
     {
       "type": "promptString",

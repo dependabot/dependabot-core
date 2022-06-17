@@ -1,11 +1,11 @@
-pip==21.2.4
-pip-tools==6.4.0
+pip>=21.3.1,<22.1.3  # Allow earlier versions to retain python 3.6 support
+pip-tools>=6.4.0,<=6.6.2  # Allow earlier versions to retain python 3.6 support
 flake8==4.0.1
-hashin==0.15.0
-pipenv==2021.5.29
+hashin==0.17.0
+pipenv==2022.4.8
 pipfile==0.0.2
-poetry==1.1.11
-wheel==0.37.0
+poetry==1.1.13
+wheel==0.37.1
 
 # Some dependencies will only install if Cython is present
-Cython==0.29.24
+Cython==0.29.28

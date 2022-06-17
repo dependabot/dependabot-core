@@ -14,27 +14,27 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     subject { finder.library? }
 
     context "with private set to true" do
-      let(:project_name) { "npm7/workspaces" }
+      let(:project_name) { "npm8/workspaces" }
       it { is_expected.to eq(false) }
     end
 
     context "with no version" do
-      let(:project_name) { "npm7/app_no_version" }
+      let(:project_name) { "npm8/app_no_version" }
       it { is_expected.to eq(false) }
     end
 
     context "with {{ }} in the name" do
-      let(:project_name) { "npm7/simple" }
+      let(:project_name) { "npm8/simple" }
       it { is_expected.to eq(false) }
     end
 
     context "with space in the name" do
-      let(:project_name) { "npm7/package_with_space_in_name" }
+      let(:project_name) { "npm8/package_with_space_in_name" }
       it { is_expected.to eq(false) }
     end
 
     context "with a library package.json" do
-      let(:project_name) { "npm7/library" }
+      let(:project_name) { "npm8/library" }
 
       context "not listed on npm" do
         before do

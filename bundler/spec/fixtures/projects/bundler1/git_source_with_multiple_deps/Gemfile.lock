@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/dependabot-fixtures/elasticsearch-rails.git
+  remote: https://github.com/dependabot-fixtures/elasticsearch-rails.git
   revision: 212b37a1e927015f2a095e0f841c897d377ad1c7
   branch: 5.x
   specs:
@@ -10,7 +10,7 @@ GIT
     elasticsearch-rails (5.1.0)
 
 GIT
-  remote: git://github.com/dependabot-fixtures/elasticsearch-ruby.git
+  remote: https://github.com/dependabot-fixtures/elasticsearch-ruby.git
   revision: 43f48b229a975b77c5339644d512c88389fefafa
   branch: 5.x
   specs:

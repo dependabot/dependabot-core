@@ -25,7 +25,8 @@ module Dependabot
           initial_content =
             if npmrc_file then complete_npmrc_from_credentials
             elsif yarnrc_file then build_npmrc_from_yarnrc
-            else build_npmrc_content_from_lockfile
+            else
+              build_npmrc_content_from_lockfile
             end
 
           return initial_content || "" unless registry_credentials.any?
@@ -47,7 +48,9 @@ module Dependabot
         end
 
         def global_registry # rubocop:disable Metrics/PerceivedComplexity
-          @global_registry ||=
+          return @global_registry if defined?(@global_registry)
+
+          @global_registry =
             registry_credentials.find do |cred|
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
@@ -131,21 +134,24 @@ module Dependabot
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
-            registry = cred.fetch("registry").sub(%r{\/?$}, "/")
+            registry = cred.fetch("registry")
 
             lines += registry_scopes(registry) if registry_scopes(registry)
 
             token = cred.fetch("token", nil)
             next unless token
 
+            # We need to ensure the registry uri ends with a trailing slash in the npmrc file
+            # but we do not want to add one if it already exists
+            registry_with_trailing_slash = registry.sub(%r{\/?$}, "/")
             if token.include?(":")
               encoded_token = Base64.encode64(token).delete("\n")
-              lines << "//#{registry}:_auth=#{encoded_token}"
+              lines << "//#{registry_with_trailing_slash}:_auth=#{encoded_token}"
             elsif Base64.decode64(token).ascii_only? &&
                   Base64.decode64(token).include?(":")
-              lines << %(//#{registry}:_auth=#{token.delete("\n")})
+              lines << %(//#{registry_with_trailing_slash}:_auth=#{token.delete("\n")})
             else
-              lines << "//#{registry}:_authToken=#{token}"
+              lines << "//#{registry_with_trailing_slash}:_authToken=#{token}"
             end
           end
 
@@ -168,7 +174,6 @@ module Dependabot
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
-
           return unless dependency_urls
 
           other_regs =

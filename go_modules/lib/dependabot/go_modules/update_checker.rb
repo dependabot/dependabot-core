@@ -71,7 +71,8 @@ module Dependabot
             credentials: credentials,
             ignored_versions: ignored_versions,
             security_advisories: security_advisories,
-            raise_on_ignored: raise_on_ignored
+            raise_on_ignored: raise_on_ignored,
+            goprivate: options.fetch(:goprivate, "*")
           )
       end
 
@@ -89,10 +90,6 @@ module Dependabot
       # version is the tag)
       def existing_version_is_sha?
         git_dependency?
-      end
-
-      def library?
-        dependency_files.none? { |f| f.type == "package_main" }
       end
 
       def version_from_tag(tag)

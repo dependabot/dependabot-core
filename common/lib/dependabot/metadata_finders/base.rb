@@ -9,7 +9,7 @@ module Dependabot
       require "dependabot/metadata_finders/base/release_finder"
       require "dependabot/metadata_finders/base/commits_finder"
 
-      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(npm_and_yarn).freeze
+      PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(npm_and_yarn pub).freeze
 
       attr_reader :dependency, :credentials
 

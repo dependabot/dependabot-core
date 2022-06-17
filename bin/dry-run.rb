@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# This script is does a full update run for a given repo (optionally for a
+# This script executes a full update run for a given repo (optionally for a
 # specific dependency only), and shows the proposed changes to any dependency
 # files without actually creating a pull request.
 #
@@ -32,13 +32,14 @@
 # - submodules
 # - docker
 # - terraform
+# - pub
 
 # rubocop:disable Style/GlobalVars
 
 require "etc"
 unless Etc.getpwuid(Process.uid).name == "dependabot"
   puts <<~INFO
-    bin/dry-run.rb is only supported in a developerment container.
+    bin/dry-run.rb is only supported in a development container.
 
     Please use bin/docker-dev-shell first.
   INFO
@@ -60,6 +61,7 @@ $LOAD_PATH << "./maven/lib"
 $LOAD_PATH << "./npm_and_yarn/lib"
 $LOAD_PATH << "./nuget/lib"
 $LOAD_PATH << "./python/lib"
+$LOAD_PATH << "./pub/lib"
 $LOAD_PATH << "./terraform/lib"
 
 require "bundler"
@@ -68,7 +70,7 @@ Bundler.setup
 
 require "optparse"
 require "json"
-require "byebug"
+require "debug"
 require "logger"
 require "dependabot/logger"
 require "stackprof"
@@ -96,6 +98,7 @@ require "dependabot/maven"
 require "dependabot/npm_and_yarn"
 require "dependabot/nuget"
 require "dependabot/python"
+require "dependabot/pub"
 require "dependabot/terraform"
 
 # GitHub credentials with write permission to the repo you want to update
@@ -209,7 +212,17 @@ option_parse = OptionParser.new do |opts|
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
     $options[:updater_options] = value.split(",").map do |o|
-      [o.strip.downcase.to_sym, true]
+      if o.include?("=") # key/value pair, e.g. "goprivate=true"
+        o.split("=", 2).map.with_index do |v, i|
+          if i == 0
+            v.strip.downcase.to_sym
+          else
+            v.strip
+          end
+        end
+      else # just a key, e.g. "vendor"
+        [o.strip.downcase.to_sym, true]
+      end
     end.to_h
   end
 
@@ -448,6 +461,19 @@ end
 
 StackProf.start(raw: true) if $options[:profile]
 
+
+$network_trace_count = 0
+ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
+  $network_trace_count += 1
+  payload = args.last
+  puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
+end
+
+$package_manager_version_log = []
+Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
+  $package_manager_version_log << args.last
+end
+
 $source = Dependabot::Source.new(
   provider: $options[:provider],
   repo: $repo_name,
@@ -468,7 +494,7 @@ fetcher_args = {
 $config_file = begin
   cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file
   Dependabot::Config::File.parse(cfg_file.content)
-rescue Dependabot::DependencyFileNotFound
+rescue Dependabot::RepoNotFound, Dependabot::DependencyFileNotFound
   Dependabot::Config::File.new(updates: [])
 end
 $update_config = $config_file.update_config(
@@ -527,7 +553,8 @@ def update_checker_for(dependency)
     repo_contents_path: $repo_contents_path,
     requirements_update_strategy: $options[:requirements_update_strategy],
     ignored_versions: ignored_versions_for(dependency),
-    security_advisories: security_advisories
+    security_advisories: security_advisories,
+    options: $options[:updater_options]
   )
 end
 
@@ -647,16 +674,6 @@ dependencies.each do |dep|
                            end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
 
-  conflicting_dependencies = checker.conflicting_dependencies
-  if conflicting_dependencies.any?
-    puts " => The update is not possible because of the following conflicting "\
-      "dependencies:"
-
-    conflicting_dependencies.each do |conflicting_dep|
-      puts "   #{conflicting_dep['explanation']}"
-    end
-  end
-
   if checker.up_to_date?
     puts "    (no update needed as it's already up-to-date)"
     next
@@ -685,6 +702,17 @@ dependencies.each do |dep|
     else
       puts "    (no update possible 🙅‍♀️)"
     end
+
+    conflicting_dependencies = checker.conflicting_dependencies
+    if conflicting_dependencies.any?
+      puts " => The update is not possible because of the following conflicting "\
+        "dependencies:"
+
+      conflicting_dependencies.each do |conflicting_dep|
+        puts "   #{conflicting_dep['explanation']}"
+      end
+    end
+
     next
   end
 
@@ -759,6 +787,9 @@ end
 
 StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
+
+puts "🌍 Total requests made: '#{$network_trace_count}'"
+puts "🎈 Package manager version log: #{$package_manager_version_log.join('\n')}" if $package_manager_version_log.any?
 
 # rubocop:enable Metrics/BlockLength
 

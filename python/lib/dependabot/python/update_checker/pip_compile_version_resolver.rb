@@ -25,11 +25,13 @@ module Dependabot
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone -q (?<url>[^\s]+).* /.freeze
+          /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
-          /egg=(?<name>\S+).*.*WARNING: Did not find branch or tag \'(?<tag>[^\n"]+)\'/m.freeze
+          /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
+        # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -110,6 +112,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def handle_pip_compile_errors(error)
           if error.message.include?("Could not find a version")
             check_original_requirements_resolvable
@@ -143,9 +146,15 @@ module Dependabot
           end
 
           if error.message.match?(GIT_REFERENCE_NOT_FOUND_REGEX)
-            name = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
-            raise GitDependencyReferenceNotFound, name
+            tag = error.message.match(GIT_REFERENCE_NOT_FOUND_REGEX).named_captures.fetch("tag")
+            constraints_section = error.message.split("Finding the best candidates:").first
+            egg_regex = /#{Regexp.escape(tag)}#egg=(#{PYTHON_PACKAGE_NAME_REGEX})/
+            name_match = constraints_section.scan(egg_regex)
+
+            # We can determine the name of the package from another part of the logger output if it has a unique tag
+            raise GitDependencyReferenceNotFound, name_match.first.first if name_match.length == 1
+
+            raise GitDependencyReferenceNotFound, "(unknown package at #{tag})"
           end
 
           if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
@@ -156,8 +165,8 @@ module Dependabot
 
           raise
         end
-
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         # Needed because pip-compile's resolver isn't perfect.
         # Note: We raise errors from this method, rather than returning a
@@ -271,7 +280,8 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             updated_content =
               if update_requirement then update_req_file(file, updated_req)
-              else file.content
+              else
+                file.content
               end
             File.write(path, updated_content)
           end
@@ -303,6 +313,7 @@ module Dependabot
           return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install --upgrade pip")
           run_command("pyenv exec pip install -r"\
                       "#{NativeHelpers.python_requirements_path}")
         end

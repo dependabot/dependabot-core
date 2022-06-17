@@ -114,11 +114,16 @@ module Dependabot
             Dir.chdir(path) do
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "#{npm_version}:updateSubdependency",
-                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
-              )
+              if npm_version == "npm8"
+                SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command([dependency.name]))
+                { lockfile_name => File.read(lockfile_name) }
+              else
+                SharedHelpers.run_helper_subprocess(
+                  command: NativeHelpers.helper_path,
+                  function: "npm6:updateSubdependency",
+                  args: [Dir.pwd, lockfile_name, [dependency.to_h]]
+                )
+              end
             end
           end
         end

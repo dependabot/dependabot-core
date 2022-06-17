@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "nokogiri"
-require "dependabot/shared_helpers"
 require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/update_checker"
@@ -25,6 +24,7 @@ module Dependabot
           @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = []
+          @dependency_metadata = {}
         end
 
         def latest_version_details
@@ -138,10 +138,9 @@ module Dependabot
           @released_check[version] =
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
-              response = Excon.head(
-                dependency_files_url(url, version),
-                idempotent: true,
-                **SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
+              response = RegistryClient.head(
+                url: dependency_files_url(url, version),
+                headers: repository_details.fetch("auth_headers")
               )
 
               response.status < 400
@@ -154,25 +153,27 @@ module Dependabot
         end
 
         def dependency_metadata(repository_details)
-          @dependency_metadata ||= {}
-          @dependency_metadata[repository_details.hash] ||=
-            begin
-              response = Excon.get(
-                dependency_metadata_url(repository_details.fetch("url")),
-                idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
-              )
-              check_response(response, repository_details.fetch("url"))
+          repository_key = repository_details.hash
+          return @dependency_metadata[repository_key] if @dependency_metadata.key?(repository_key)
 
-              Nokogiri::XML(response.body)
-            rescue URI::InvalidURIError
-              Nokogiri::XML("")
-            rescue Excon::Error::Socket, Excon::Error::Timeout,
-                   Excon::Error::TooManyRedirects
-              raise if central_repo_urls.include?(repository_details["url"])
+          @dependency_metadata[repository_key] = fetch_dependency_metadata(repository_details)
+        end
 
-              Nokogiri::XML("")
-            end
+        def fetch_dependency_metadata(repository_details)
+          response = RegistryClient.get(
+            url: dependency_metadata_url(repository_details.fetch("url")),
+            headers: repository_details.fetch("auth_headers")
+          )
+          check_response(response, repository_details.fetch("url"))
+
+          Nokogiri::XML(response.body)
+        rescue URI::InvalidURIError
+          Nokogiri::XML("")
+        rescue Excon::Error::Socket, Excon::Error::Timeout,
+               Excon::Error::TooManyRedirects
+          raise if central_repo_urls.include?(repository_details["url"])
+
+          Nokogiri::XML("")
         end
 
         def check_response(response, repository_url)
@@ -184,7 +185,7 @@ module Dependabot
         end
 
         def repositories
-          return @repositories if @repositories
+          return @repositories if defined?(@repositories)
 
           details = pom_repository_details + credentials_repository_details
 

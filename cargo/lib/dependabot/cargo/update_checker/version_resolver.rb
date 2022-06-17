@@ -287,6 +287,7 @@ module Dependabot
           return true if message.include?("wasn't a root")
           return true if message.include?("requires a nightly version")
           return true if message.match?(/feature `[^\`]+` is required/)
+          return true if message.include?("unexpected end of input while parsing major version number")
 
           !original_requirements_resolvable?
         end
@@ -327,7 +328,8 @@ module Dependabot
 
         def write_manifest_files(prepared: true)
           manifest_files = if prepared then prepared_manifest_files
-                           else original_manifest_files
+                           else
+                             original_manifest_files
                            end
 
           manifest_files.each do |file|

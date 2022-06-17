@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-require "dependabot/errors"
 require "json"
+require "uri"
+
+require "dependabot/errors"
 require "dependabot/shared_helpers"
 require "dependabot/composer/update_checker"
 require "dependabot/composer/version"
@@ -250,10 +252,10 @@ module Dependabot
 
           if error.message.match?(FAILED_GIT_CLONE_WITH_MIRROR)
             dependency_url = error.message.match(FAILED_GIT_CLONE_WITH_MIRROR).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
           elsif error.message.match?(FAILED_GIT_CLONE)
             dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
-            raise Dependabot::GitDependenciesNotReachable, dependency_url
+            raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
           elsif unresolvable_error?(error)
             raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
@@ -308,7 +310,10 @@ module Dependabot
             raise Dependabot::PrivateSourceAuthenticationFailure, source
           elsif error.message.match?(SOURCE_TIMED_OUT_REGEX)
             url = error.message.match(SOURCE_TIMED_OUT_REGEX).named_captures.fetch("url")
-            raise if url.include?("packagist.org")
+            raise if [
+              "packagist.org",
+              "www.packagist.org"
+            ].include?(URI(url).host)
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
@@ -461,6 +466,15 @@ module Dependabot
           platform["php"] ||= []
           platform["php"] << requirement_php
           platform
+        end
+
+        def clean_dependency_url(dependency_url)
+          return dependency_url unless URI::DEFAULT_PARSER.regexp[:ABS_URI].match?(dependency_url)
+
+          url = URI.parse(dependency_url)
+          url.user = nil
+          url.password = nil
+          url.to_s
         end
 
         def parsed_composer_file

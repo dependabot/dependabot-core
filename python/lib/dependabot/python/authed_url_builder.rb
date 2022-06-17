@@ -13,7 +13,8 @@ module Dependabot
           elsif Base64.decode64(token).ascii_only? &&
                 Base64.decode64(token).include?(":")
             Base64.decode64(token)
-          else token
+          else
+            token
           end
 
         if basic_auth_details.include?(":")

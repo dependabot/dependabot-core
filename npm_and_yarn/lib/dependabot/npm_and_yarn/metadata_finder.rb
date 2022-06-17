@@ -122,20 +122,6 @@ module Dependabot
       end
 
       def get_directory(details)
-        source_from_url = Source.from_url(get_url(details))
-        # Special case Gatsby, which specifies directories in URLs.
-        # This can be removed once this PR is merged:
-        # https://github.com/gatsbyjs/gatsby/pull/11145
-        if source_from_url.repo == "gatsbyjs/gatsby" &&
-           get_url(details).match?(%r{tree\/master\/.})
-          return get_url(details).split("tree/master/").last.split("#").first
-        end
-
-        # Special case DefinitelyTyped, which has predictable URLs.
-        # This can be removed once this PR is merged:
-        # https://github.com/Microsoft/types-publisher/pull/578
-        return dependency.name.gsub(/^@/, "") if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
 
@@ -197,7 +183,8 @@ module Dependabot
       def dependency_url
         registry_url =
           if new_source.nil? then "https://registry.npmjs.org"
-          else new_source.fetch(:url)
+          else
+            new_source.fetch(:url)
           end
 
         # NPM registries expect slashes to be escaped
@@ -213,7 +200,8 @@ module Dependabot
 
       def dependency_registry
         if new_source.nil? then "registry.npmjs.org"
-        else new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
+        else
+          new_source.fetch(:url).gsub("https://", "").gsub("http://", "")
         end
       end
 

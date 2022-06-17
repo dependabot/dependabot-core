@@ -2,7 +2,7 @@
 
 require "rspec/its"
 require "webmock/rspec"
-require "byebug"
+require "debug"
 
 $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 $LOAD_PATH.unshift(File.expand_path("../monkey_patches", __dir__))
@@ -21,10 +21,6 @@ RSpec.configure do |config|
   config.raise_errors_for_deprecations!
 end
 
-# Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
-# TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
-
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler2", project))
 
@@ -36,7 +32,6 @@ def project_dependency_files(project)
     files = files.select { |f| File.file?(f) }
     files.map do |filename|
       content = File.read(filename)
-      content = content.gsub(LOCKFILE_ENDING, "") if filename == "Gemfile.lock"
       {
         name: filename,
         content: content

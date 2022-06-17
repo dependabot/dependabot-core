@@ -76,9 +76,11 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
+                add_auth_env_vars
 
                 if python_version && !pre_installed_python?(python_version)
                   run_poetry_command("pyenv install -s #{python_version}")
+                  run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
                     "pyenv exec pip install -r "\
                     "#{NativeHelpers.python_requirements_path}"
@@ -90,7 +92,8 @@ module Dependabot
 
                 updated_lockfile =
                   if File.exist?("poetry.lock") then File.read("poetry.lock")
-                  else File.read("pyproject.lock")
+                  else
+                    File.read("pyproject.lock")
                   end
                 updated_lockfile = TomlRB.parse(updated_lockfile)
 
@@ -193,6 +196,12 @@ module Dependabot
           end
         end
 
+        def add_auth_env_vars
+          Python::FileUpdater::PyprojectPreparer.
+            new(pyproject_content: pyproject.content).
+            add_auth_env_vars(credentials)
+        end
+
         def python_version
           requirements = python_requirement_parser.user_specified_requirements
           requirements = requirements.
@@ -226,7 +235,6 @@ module Dependabot
         def updated_pyproject_content(updated_requirement:)
           content = pyproject.content
           content = sanitize_pyproject_content(content)
-          content = add_private_sources(content)
           content = freeze_other_dependencies(content)
           content = set_target_dependency_req(content, updated_requirement)
           content
@@ -235,7 +243,6 @@ module Dependabot
         def sanitized_pyproject_content
           content = pyproject.content
           content = sanitize_pyproject_content(content)
-          content = add_private_sources(content)
           content
         end
 
@@ -243,12 +250,6 @@ module Dependabot
           Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             sanitize
-        end
-
-        def add_private_sources(pyproject_content)
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            replace_sources(credentials)
         end
 
         def freeze_other_dependencies(pyproject_content)

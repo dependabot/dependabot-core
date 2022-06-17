@@ -439,6 +439,27 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
 
+      context "with an imported gemspec that specifies a minimum Ruby version not satisfied by the running Ruby" do
+        let(:dependency_files) { bundler_project_dependency_files("unsatisfied_required_ruby_version") }
+
+        before do
+          require "dependabot/bundler/file_updater/ruby_requirement_setter"
+
+          stub_const(
+            "#{described_class}::RubyRequirementSetter::RUBY_VERSIONS",
+            described_class::RubyRequirementSetter::RUBY_VERSIONS + ["99.0.0"]
+          )
+        end
+
+        it "locks the updated gem to the latest version" do
+          expect(file.content).to include("business (1.5.0)")
+        end
+
+        it "doesn't add in a RUBY VERSION" do
+          expect(file.content).not_to include("RUBY VERSION")
+        end
+      end
+
       context "when the Gemfile specifies a Ruby version" do
         let(:dependency_files) { bundler_project_dependency_files("explicit_ruby_in_lockfile") }
 
@@ -646,7 +667,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
               new_lock.find { |l| l.include?("dependabot-fixtures/business") }
 
             new_revision_line =
-              new_lock[new_lock.find_index(original_remote_line) + 1]
+              new_lock[new_lock.find_index(new_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).to eq(original_revision_line)
@@ -766,7 +787,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             to eq(old_lock.index(original_remote_line))
         end
 
-        context "when a git source is specified that multiple deps use for bundler v1", :bundler_v1_only do
+        context "when a git source is specified that multiple deps use" do
           let(:dependency_files) { bundler_project_dependency_files("git_source_with_multiple_deps") }
           let(:dependency) do
             Dependabot::Dependency.new(
@@ -805,55 +826,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             new_remote_line =
               new_lock.find { |l| l.include?("elasticsearch-ruby") }
             new_revision_line =
-              new_lock[new_lock.find_index(original_remote_line) + 1]
-
-            expect(new_remote_line).to eq(original_remote_line)
-            expect(new_revision_line).not_to eq(original_revision_line)
-            expect(new_lock.index(new_remote_line)).
-              to eq(old_lock.index(original_remote_line))
-          end
-        end
-
-        context "when a git source is specified that multiple deps use for bundler v2", :bundler_v2_only do
-          let(:dependency_files) { bundler_project_dependency_files("git_source_with_multiple_deps") }
-          let(:dependency) do
-            Dependabot::Dependency.new(
-              name: "elasticsearch-dsl",
-              version: "86a36ec0db704b2a62dd4d5fe9edf887625b1826",
-              previous_version: "43f48b229a975b77c5339644d512c88389fefafa",
-              requirements: requirements,
-              previous_requirements: previous_requirements,
-              package_manager: "bundler"
-            )
-          end
-          let(:requirements) { previous_requirements }
-          let(:previous_requirements) do
-            [{
-              file: "Gemfile",
-              requirement: ">= 0",
-              groups: [],
-              source: {
-                type: "git",
-                url: "https://github.com/dependabot-fixtures/elasticsearch-ruby.git",
-                branch: "5.x",
-                ref: "5.x"
-              }
-            }]
-          end
-
-          it "updates the dependency's revision" do
-            old_lock = dependency_files.find { |f| f.name == "Gemfile.lock" }.content.split(/^/)
-            new_lock = file.content.split(/^/)
-
-            original_remote_line =
-              old_lock.find { |l| l.include?("elasticsearch-ruby") }
-            original_revision_line =
-              old_lock[old_lock.find_index(original_remote_line) + 1]
-
-            new_remote_line =
-              new_lock.find { |l| l.include?("elasticsearch-ruby") }
-            new_revision_line =
-              new_lock[new_lock.find_index(original_remote_line) + 1]
+              new_lock[new_lock.find_index(new_remote_line) + 1]
 
             expect(new_remote_line).to eq(original_remote_line)
             expect(new_revision_line).not_to eq(original_revision_line)

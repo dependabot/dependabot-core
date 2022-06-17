@@ -48,7 +48,6 @@ module Dependabot
 
     attr_reader :url, :credentials
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
@@ -70,15 +69,10 @@ module Dependabot
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
-      retry_count ||= 0
-      retry_count += 1
-
-      sleep(rand(0.9)) && retry if retry_count <= 2 && uri.match?(KNOWN_HOSTS)
       raise if uri.match?(KNOWN_HOSTS)
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def fetch_raw_upload_pack_for(uri)
       url = service_pack_uri(uri)
@@ -167,7 +161,8 @@ module Dependabot
     def uri_with_auth(uri)
       bare_uri =
         if uri.include?("git@") then uri.split("git@").last.sub(%r{:/?}, "/")
-        else uri.sub(%r{.*?://}, "")
+        else
+          uri.sub(%r{.*?://}, "")
         end
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| bare_uri.start_with?(c["host"]) }

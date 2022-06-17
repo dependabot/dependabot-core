@@ -1,0 +1,22 @@
+{
+  "name": "dependabot-consume-private-registries",
+  "version": "1.0.0",
+  "description": "Used by [#dependabot-updates-team](https://app.slack.com/client/T0CA8C346/C01BKB7EVQX) to test [support for private registries](https://github.com/github/dsp/issues/167).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dsp-testing/dependabot-consume-private-registries.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dsp-testing/dependabot-consume-private-registries/issues"
+  },
+  "homepage": "https://github.com/dsp-testing/dependabot-consume-private-registries#readme",
+  "dependencies": {
+    "@dsp-testing/inner-source-top-secret-npm-2": "1.0.3"
+  }
+}

@@ -23,8 +23,9 @@ module Dependabot
 
         def update_possible?
           return false unless target_version
+          return @update_possible if defined?(@update_possible)
 
-          @update_possible ||=
+          @update_possible =
             dependencies_using_property.all? do |dep|
               next false if includes_property_reference?(updated_version(dep))
 
@@ -105,7 +106,7 @@ module Dependabot
             dependency: dep,
             declaring_requirement: declaring_requirement,
             dependency_files: dependency_files
-          ).declaration_nodes.first.at_xpath("./*/version")&.content
+          ).declaration_nodes.first.at_css("version")&.content
         end
 
         def pom

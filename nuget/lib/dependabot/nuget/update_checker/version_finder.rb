@@ -172,6 +172,7 @@ module Dependabot
 
           dependency.requirements.any? do |req|
             reqs = parse_requirement_string(req.fetch(:requirement) || "")
+            return true if reqs.any? { |r| r == "*-*" }
             next unless reqs.any? { |r| r.include?("-") }
 
             requirement_class.
@@ -231,7 +232,10 @@ module Dependabot
 
           if (link_href = fetch_v2_next_link_href(response.body))
             url_details = url_details.dup
-            url_details[:versions_url] = link_href
+            # Some Nuget repositories, such as JFrog's Artifactory, URL encode the "next" href
+            # link in the paged results. If the href is not URL decoded, the paging parameters
+            # are ignored and the first page is always returned.
+            url_details[:versions_url] = CGI.unescape(link_href)
             fetch_paginated_v2_nuget_listings(url_details, results)
           end
 
@@ -329,7 +333,7 @@ module Dependabot
           # For large JSON files we sometimes need a little longer than for
           # other languages. For example, see:
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
-          # q=microsoft.aspnetcore.mvc&prerelease=true
+          # q=microsoft.aspnetcore.mvc&prerelease=true&semVerLevel=2.0.0
           {
             connect_timeout: 30,
             write_timeout: 30,

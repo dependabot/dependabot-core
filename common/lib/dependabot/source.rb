@@ -38,11 +38,24 @@ module Dependabot
       (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
     }x.freeze
 
+    CODECOMMIT_SOURCE = %r{
+      (?<protocol>(http://|https://|git://|ssh://))
+      git[-]
+      (?<provider>codecommit)
+      (?:.*)
+      (?:\.com/v1/repos/)
+      (?<repo>([^/]*))
+      (?:/)?(?<directory>[^?]*)?
+      [?]?
+      (?<ref>.*)?
+    }x.freeze
+
     SOURCE_REGEX = /
       (?:#{GITHUB_SOURCE})|
       (?:#{GITLAB_SOURCE})|
       (?:#{BITBUCKET_SOURCE})|
-      (?:#{AZURE_SOURCE})
+      (?:#{AZURE_SOURCE})|
+      (?:#{CODECOMMIT_SOURCE})
     /x.freeze
 
     IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
@@ -89,7 +102,7 @@ module Dependabot
         # currently doesn't work with development environments
         resp.headers["X-GitHub-Request-Id"] &&
         !resp.headers["X-GitHub-Request-Id"].empty?
-    rescue Excon::Error
+    rescue StandardError
       false
     end
 

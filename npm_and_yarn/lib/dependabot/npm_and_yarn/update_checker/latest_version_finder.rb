@@ -62,7 +62,8 @@ module Dependabot
           secure_versions =
             if specified_dist_tag_requirement?
               [version_from_dist_tags].compact
-            else possible_versions(filter_ignored: false)
+            else
+              possible_versions(filter_ignored: false)
             end
 
           secure_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(secure_versions,
@@ -284,10 +285,7 @@ module Dependabot
               if git_dependency?
                 nil
               else
-                retry_count ||= 0
-                retry_count += 1
-                raise_npm_details_error(e) if retry_count > 2
-                sleep(rand(3.0..10.0)) && retry
+                raise_npm_details_error(e)
               end
             end
         end

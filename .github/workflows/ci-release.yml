@@ -1,0 +1,38 @@
+name: CI
+on:
+  pull_request:
+    paths:
+      - 'CHANGELOG.md'
+      - 'common/lib/dependabot/version.rb'
+    branches:
+      - "main"
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bundler, name: bundler1 }
+          - { path: bundler, name: bundler2 }
+          - { path: cargo, name: cargo }
+          - { path: common, name: common }
+          - { path: composer, name: composer }
+          - { path: docker, name: docker }
+          - { path: elm, name: elm }
+          - { path: git_submodules, name: git_submodules }
+          - { path: github_actions, name: github_actions }
+          - { path: go_modules, name: go_modules }
+          - { path: gradle, name: gradle }
+          - { path: hex, name: hex }
+          - { path: maven, name: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn }
+          - { path: nuget, name: nuget }
+          - { path: omnibus, name: omnibus }
+          - { path: python, name: python }
+          - { path: python, name: python_slow }
+          - { path: pub, name: pub }
+          - { path: terraform, name: terraform }
+    steps:
+      - run: 'echo "No build required"'

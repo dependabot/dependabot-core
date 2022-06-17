@@ -68,7 +68,8 @@ module Dependabot
             elsif !v_cls.correct?(old_dep.version) then new_dep.version
             elsif v_cls.new(new_dep.version) > v_cls.new(old_dep.version)
               old_dep.version
-            else new_dep.version
+            else
+              new_dep.version
             end
 
           subdependency_metadata = (

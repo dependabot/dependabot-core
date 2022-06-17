@@ -351,23 +351,24 @@ module Dependabot
       end
 
       def create_github_language_label
-        langauge_name =
-          self.class.label_details_for_package_manager(package_manager).
-          fetch(:name)
+        label = self.class.label_details_for_package_manager(package_manager)
+        language_name = label.fetch(:name)
         github_client_for_source.add_label(
           source.repo,
-          langauge_name,
-          self.class.label_details_for_package_manager(package_manager).
-            fetch(:colour),
-          description: "Pull requests that update #{langauge_name.capitalize} "\
-                       "code",
+          language_name,
+          label.fetch(:colour),
+          description: label.fetch(:description) { default_description_for(language_name) },
           accept: "application/vnd.github.symmetra-preview+json"
         )
-        @labels = [*@labels, langauge_name].uniq
+        @labels = [*@labels, language_name].uniq
       rescue Octokit::UnprocessableEntity => e
         raise unless e.errors.first.fetch(:code) == "already_exists"
 
-        @labels = [*@labels, langauge_name].uniq
+        @labels = [*@labels, language_name].uniq
+      end
+
+      def default_description_for(language)
+        "Pull requests that update #{language.capitalize} code"
       end
 
       def create_gitlab_language_label

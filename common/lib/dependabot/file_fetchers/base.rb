@@ -446,7 +446,13 @@ module Dependabot
           )
         end
 
-        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        if tmp.content == ""
+          # The file may have exceeded the 1MB limit
+          # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
+          github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+        else
+          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
 

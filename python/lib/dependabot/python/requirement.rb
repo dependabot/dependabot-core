@@ -6,7 +6,7 @@ require "dependabot/python/version"
 module Dependabot
   module Python
     class Requirement < Gem::Requirement
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/.freeze
 
       # Add equality and arbitrary-equality matchers
       OPS = OPS.merge(
@@ -20,11 +20,17 @@ module Dependabot
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
       PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PARENS_PATTERN = /\A\(([^)]+)\)\z/.freeze
 
       def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
-        unless (matches = PATTERN.match(obj.to_s))
+        line = obj.to_s
+        if (matches = PARENS_PATTERN.match(line))
+          line = matches[1]
+        end
+
+        unless (matches = PATTERN.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise BadRequirementError, msg
         end
@@ -40,6 +46,10 @@ module Dependabot
       # NOTE: Or requirements are only valid for Poetry.
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
+
+        if (matches = PARENS_PATTERN.match(requirement_string))
+          requirement_string = matches[1]
+        end
 
         requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
           new(req_string.strip)
@@ -82,7 +92,8 @@ module Dependabot
         if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
         elsif req_string.include?(".*") then convert_wildcard(req_string)
-        else req_string
+        else
+          req_string
         end
       end
 
@@ -108,7 +119,8 @@ module Dependabot
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           elsif i > first_non_zero_index && i == 2 then "0.a"
-          else 0
+          else
+            0
           end
         end.join(".")
 

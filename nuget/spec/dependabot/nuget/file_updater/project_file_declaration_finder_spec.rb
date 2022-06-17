@@ -20,7 +20,7 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
     {
       requirement: declaring_requirement_string,
       file: "my.csproj",
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }
   end

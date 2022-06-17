@@ -40,7 +40,9 @@ module Dependabot
         PIPENV_INSTALLATION_ERROR_REGEX =
           /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/.
           freeze
-        UNSUPPORTED_DEP_REGEX = /(?:pyobjc)[\s\S]*#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/.freeze
+        UNSUPPORTED_DEPS = %w(pyobjc).freeze
+        UNSUPPORTED_DEP_REGEX =
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/.freeze
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
@@ -62,11 +64,7 @@ module Dependabot
           @resolvable ||= {}
           return @resolvable[version] if @resolvable.key?(version)
 
-          @resolvable[version] = if fetch_latest_resolvable_version_string(requirement: "==#{version}")
-                                   true
-                                 else
-                                   false
-                                 end
+          @resolvable[version] = !!fetch_latest_resolvable_version_string(requirement: "==#{version}")
         end
 
         private
@@ -155,7 +153,9 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          check_original_requirements_resolvable if error.message.include?("Could not find a version")
+          if error.message.include?("Could not find a version") || error.message.include?("ResolutionFailure")
+            check_original_requirements_resolvable
+          end
 
           if error.message.include?("SyntaxError: invalid syntax")
             raise DependencyFileNotResolvable,
@@ -220,7 +220,8 @@ module Dependabot
         end
 
         def handle_pipenv_errors_resolving_original_reqs(error)
-          if error.message.include?("Could not find a version")
+          if error.message.include?("Could not find a version") ||
+             error.message.include?("package versions have conflicting dependencies")
             msg = clean_error_message(error.message)
             msg.gsub!(/\s+\(from .*$/, "")
             raise if msg.empty?
@@ -322,6 +323,7 @@ module Dependabot
 
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")
+          run_command("pyenv exec pip install --upgrade pip")
           run_command("pyenv exec pip install -r "\
                       "#{requirements_path}")
         end
@@ -404,7 +406,8 @@ module Dependabot
             elsif user_specified_python_requirement
               parts = user_specified_python_requirement.split(".")
               parts.fill("*", (parts.length)..2).join(".")
-            else PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+            else
+              PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
             end
 
           # Ideally, the requirement is satisfied by a Python version we support

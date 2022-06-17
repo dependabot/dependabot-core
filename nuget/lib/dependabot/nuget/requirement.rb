@@ -65,13 +65,15 @@ module Dependabot
         lower_b =
           if ["(", "["].include?(lower_b) then nil
           elsif lower_b.start_with?("(") then "> #{lower_b.sub(/\(\s*/, '')}"
-          else ">= #{lower_b.sub(/\[\s*/, '').strip}"
+          else
+            ">= #{lower_b.sub(/\[\s*/, '').strip}"
           end
 
         upper_b =
           if [")", "]"].include?(upper_b) then nil
           elsif upper_b.end_with?(")") then "< #{upper_b.sub(/\s*\)/, '')}"
-          else "<= #{upper_b.sub(/\s*\]/, '').strip}"
+          else
+            "<= #{upper_b.sub(/\s*\]/, '').strip}"
           end
 
         [lower_b, upper_b].compact
@@ -86,6 +88,8 @@ module Dependabot
       end
 
       def convert_wildcard_req(req_string)
+        return ">= 0-a" if req_string == "*-*"
+
         return ">= 0" if req_string.start_with?("*")
 
         defined_part = req_string.split("*").first

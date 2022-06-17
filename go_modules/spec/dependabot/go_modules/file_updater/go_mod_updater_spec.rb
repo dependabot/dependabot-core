@@ -12,7 +12,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
       credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
-      options: { tidy: tidy, vendor: false }
+      options: { tidy: tidy, vendor: false, goprivate: goprivate }
     )
   end
 
@@ -21,6 +21,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:go_mod_content) { fixture("projects", project_name, "go.mod") }
   let(:tidy) { true }
   let(:directory) { "/" }
+  let(:goprivate) { "*" }
 
   let(:credentials) { [] }
 
@@ -77,6 +78,18 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
         context "when a path-based replace directive is present" do
           let(:project_name) { "replace" }
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
+
+        context "with an unrestricted goprivate" do
+          let(:goprivate) { "" }
+
+          it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
+        end
+
+        context "with an org specific goprivate" do
+          let(:goprivate) { "rsc.io/*" }
 
           it { is_expected.to include(%(rsc.io/quote v1.5.2\n)) }
         end
@@ -349,7 +362,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+        allow(Open3).to receive(:capture3).with(anything, "go get").and_return(["", stderr, exit_status])
       end
 
       it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
@@ -623,6 +636,24 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
           expect(error.message).to include("dependabot-fixtures/go-modules-private")
           expect(error.dependency_urls).
             to eq(["github.com/dependabot-fixtures/go-modules-private"])
+        end
+      end
+
+      context "with an unrestricted goprivate" do
+        let(:goprivate) { "" }
+
+        it "raises the correct error" do
+          expect { updater.updated_go_sum_content }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
+        end
+      end
+
+      context "with an org specific goprivate" do
+        let(:goprivate) { "github.com/dependabot-fixtures/*" }
+
+        it "raises the correct error" do
+          expect { updater.updated_go_sum_content }.
+            to raise_error(Dependabot::GitDependenciesNotReachable)
         end
       end
     end

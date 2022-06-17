@@ -499,6 +499,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:gitlab_raw_changelog_url) do
         "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
       end
+      let(:gitlab_repo_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness"
+      end
 
       let(:gitlab_status) { 200 }
       let(:gitlab_response) { fixture("gitlab", "business_files.json") }
@@ -513,6 +516,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         stub_request(:get, gitlab_url).
           to_return(status: gitlab_status,
                     body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_repo_url).
+          to_return(status: 200,
+                    body: fixture("gitlab", "bump_repo.json"),
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, gitlab_raw_changelog_url).
           to_return(status: 200,
@@ -798,18 +805,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             "* Fixed `issue <https://github.com/pytest-dev/"\
             "pytest-selenium/issues/216>`_ with TestingBot local tunnel."
           end
-          let(:converted_text) do
-            "1.16.0 (2019-02-12)\n"\
-            "===================\n"\
-            "\n"\
-            "-   `pytest-selenium` now requires pytest 3.6 or later.\n"\
-            "-   Fixed [issue](https://github.com/pytest-dev/"\
-            "pytest-selenium/issues/216) with TestingBot local tunnel.\n"
-          end
 
-          it "converts the rst properly (or falls back)" do
-            expect([converted_text, unconverted_text]).
-              to include(changelog_text)
+          it "does not convert the rst" do
+            expect(changelog_text).to eq(unconverted_text)
           end
         end
       end
@@ -866,6 +864,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
       let(:gitlab_raw_changelog_url) do
         "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
       end
+      let(:gitlab_repo_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness"
+      end
 
       let(:gitlab_contents_response) do
         fixture("gitlab", "business_files.json")
@@ -881,6 +882,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         stub_request(:get, gitlab_url).
           to_return(status: 200,
                     body: gitlab_contents_response,
+                    headers: { "Content-Type" => "application/json" })
+        stub_request(:get, gitlab_repo_url).
+          to_return(status: 200,
+                    body: fixture("gitlab", "bump_repo.json"),
                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, gitlab_raw_changelog_url).
           to_return(status: 200,
