@@ -1333,25 +1333,64 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
               package_manager: "npm_and_yarn",
-              previous_requirements: [],
+              previous_requirements: [{
+                requirement: "2.0.1",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
               previous_version: "2.0.1",
-              requirements: [],
+              requirements: [{
+                requirement: "2.0.2",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }],
               version: "2.0.2"
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-2",
               package_manager: "npm_and_yarn",
-              previous_requirements: [],
+              previous_requirements: [{
+                requirement: "2.1.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
               previous_version: "2.1.0",
-              requirements: [],
+              requirements: [{
+                requirement: "2.1.1",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }],
               version: "2.1.1"
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-3",
               package_manager: "npm_and_yarn",
-              previous_requirements: [],
+              previous_requirements: [{
+                requirement: "2.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
               previous_version: "2.0.0",
-              requirements: [],
+              requirements: [{
+                requirement: "3.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }],
               version: "3.0.0"
             ),
             Dependabot::Dependency.new(
