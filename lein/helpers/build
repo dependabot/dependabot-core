@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+
+install_dir=$1
+if [ -z "$install_dir" ]; then
+  echo "usage: $0 INSTALL_DIR"
+  exit 1
+fi
+
+if ! [[ "$install_dir" =~ ^/ ]]; then
+  echo "$install_dir must be an absolute path"
+  exit 1
+fi
+
+if [ ! -d "$install_dir/bin" ]; then
+  mkdir -p "$install_dir/bin"
+fi
+
+echo "copying jar running wrapper"
+cp $install_dir/helpers/bin/helper $install_dir/bin
+
+echo "building $install_dir/bin/helper"
+cd $install_dir/helpers && lein uberjar
+cp -R $install_dir/helpers/target $install_dir
