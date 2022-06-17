@@ -1,3 +1,7 @@
+## v0.194.0, 17 June 2022
+
+- Updates TERRAFORM_VERSION in Dockerfile to version 1.2.3 (@joberget) [#5274](https://github.com/dependabot/dependabot-core/pull/5274)
+
 ## v0.193.0, 16 June 2022
 
 - Revert "build(deps-dev): bump phpstan/phpstan from 1.6.8 to 1.7.14 in /composer/helpers/v2" (@jakecoffman) [#5278](https://github.com/dependabot/dependabot-core/pull/5278)
