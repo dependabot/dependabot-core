@@ -1,3 +1,11 @@
+## v0.194.1, 20 June 2022
+
+- build(deps-dev): update debase-ruby_core_source requirement from = 0.10.14 to = 0.10.16 in /common [#5173](https://github.com/dependabot/dependabot-core/pull/5173)
+- build(deps-dev): bump eslint from 8.15.0 to 8.18.0 in /npm_and_yarn/helpers [#5285](https://github.com/dependabot/dependabot-core/pull/5285)
+- build(deps-dev): update rubocop requirement from ~> 1.29.1 to ~> 1.30.1 in /common [#5235](https://github.com/dependabot/dependabot-core/pull/5235)
+- Setup Dependabot for the Pub helpers [#5289](https://github.com/dependabot/dependabot-core/pull/5289)
+- Handle beta dart releases (@sigurdm) [#5286](https://github.com/dependabot/dependabot-core/pull/5286)
+
 ## v0.194.0, 17 June 2022
 
 - Updates TERRAFORM_VERSION in Dockerfile to version 1.2.3 (@joberget) [#5274](https://github.com/dependabot/dependabot-core/pull/5274)
