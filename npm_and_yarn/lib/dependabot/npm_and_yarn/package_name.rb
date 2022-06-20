@@ -3,21 +3,30 @@
 module Dependabot
   module NpmAndYarn
     class PackageName
+      # NPM package naming rules are defined by the following projects:
+      # - https://github.com/npm/npm-user-validate
+      # - https://github.com/npm/validate-npm-package-name
       PACKAGE_NAME_REGEX = %r{
-          \A                                         # beginning of string
-          (?=.{1,214}\z)                             # enforce length (1 - 214)
-          (@(?<scope>[a-z0-9\-~][a-z0-9\-\._~]*)\/)? # capture 'scope' if present
-          (?<name>[a-z0-9\-~][a-z0-9\-._~]*)         # capture package name
-          \z                                         # end of string
-      }xi.freeze                                     # multi-line/case-insensitive
+          \A                                          # beginning of string
+          (?=.{1,214}\z)                              # enforce length (1 - 214)
+          (@(?<scope>                                 # capture 'scope' if present
+            (?=[^\.])                                 # reject leading dot
+            [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
+          )\/)?
+          (?<name>                                    # capture package name
+            (?=[^\.\_])                               # reject leading dot or underscore
+            [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
+          )
+          \z                                          # end of string
+      }xi.freeze                                      # multi-line/case-insensitive
 
       TYPES_PACKAGE_NAME_REGEX = %r{
-          \A                                         # beginning of string
-          @types\/                                   # starts with @types/
-          ((?<scope>.+)__)?                          # capture scope
-          (?<name>.+)                                # capture name
-          \z                                         # end of string
-      }xi.freeze                                     # multi-line/case-insensitive
+          \A                                          # beginning of string
+          @types\/                                    # starts with @types/
+          ((?<scope>.+)__)?                           # capture scope
+          (?<name>.+)                                 # capture name
+          \z                                          # end of string
+      }xi.freeze                                      # multi-line/case-insensitive
 
       class InvalidPackageName < StandardError; end
 
