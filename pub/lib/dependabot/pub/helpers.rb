@@ -140,7 +140,7 @@ module Dependabot
           parsed = JSON.parse(stdout)
           {
             "flutter" => parsed["frameworkVersion"],
-            "dart" => parsed["dartSdkVersion"]
+            "dart" => parsed["dartSdkVersion"].split.first
           }
         end
       end
