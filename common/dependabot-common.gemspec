@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "debase", "0.2.3"
-  spec.add_development_dependency "debase-ruby_core_source", "0.10.14"
+  spec.add_development_dependency "debase-ruby_core_source", "0.10.16"
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "rake", "~> 13"
