@@ -13,8 +13,8 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  test:
-    name: Test
+  ci:
+    name: CI
     runs-on: ubuntu-latest
 
     strategy:
