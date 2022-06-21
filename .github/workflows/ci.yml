@@ -5,8 +5,8 @@ on:
       - "main"
   pull_request:
     paths-ignore:
-      - 'CHANGELOG.md'
-      - 'common/lib/dependabot/version.rb'
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
     branches:
       - "main"
   schedule:
@@ -14,45 +14,22 @@ on:
 permissions:
   contents: read
   packages: write
+env:
+  BASE_IMAGE: ubuntu:18.04
+  BRANCH_REF: ${{ github.ref_name }}
+  CORE_IMAGE: dependabot/dependabot-core
+  CORE_BRANCH_IMAGE: ghcr.io/${{ github.repository }}-branch
+  CORE_CI_IMAGE: ghcr.io/${{ github.repository }}-ci
+  CODE_DIR: /home/dependabot/dependabot-core
 jobs:
-  ci:
-    name: CI
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        suite:
-          - { path: bundler, name: bundler1 }
-          - { path: bundler, name: bundler2 }
-          - { path: cargo, name: cargo }
-          - { path: common, name: common }
-          - { path: composer, name: composer }
-          - { path: docker, name: docker }
-          - { path: elm, name: elm }
-          - { path: git_submodules, name: git_submodules }
-          - { path: github_actions, name: github_actions }
-          - { path: go_modules, name: go_modules }
-          - { path: gradle, name: gradle }
-          - { path: hex, name: hex }
-          - { path: maven, name: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn }
-          - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus }
-          - { path: python, name: python }
-          - { path: python, name: python_slow }
-          - { path: pub, name: pub }
-          - { path: terraform, name: terraform }
-    env:
-      BASE_IMAGE: ubuntu:18.04
-      CORE_IMAGE: dependabot/dependabot-core
-      CORE_BRANCH_IMAGE: ghcr.io/dependabot/dependabot-core-branch
-      CORE_CI_IMAGE: ghcr.io/dependabot/dependabot-core-ci
-      CODE_DIR: /home/dependabot/dependabot-core
+    outputs:
+      branch-ref: steps.set-branch-ref.branch-ref
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Prepare BRANCH_REF environment variable
-        run: echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
       - name: Log in to GHCR
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -61,7 +38,6 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "$CORE_IMAGE:latest" \
             -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
@@ -93,6 +69,39 @@ jobs:
         run: |
           docker push "$CORE_CI_IMAGE:latest"
           docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bundler, name: bundler1 }
+          - { path: bundler, name: bundler2 }
+          - { path: cargo, name: cargo }
+          - { path: common, name: common }
+          - { path: composer, name: composer }
+          - { path: docker, name: docker }
+          - { path: elm, name: elm }
+          - { path: git_submodules, name: git_submodules }
+          - { path: github_actions, name: github_actions }
+          - { path: go_modules, name: go_modules }
+          - { path: gradle, name: gradle }
+          - { path: hex, name: hex }
+          - { path: maven, name: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn }
+          - { path: nuget, name: nuget }
+          - { path: omnibus, name: omnibus }
+          - { path: python, name: python }
+          - { path: python, name: python_slow }
+          - { path: pub, name: pub }
+          - { path: terraform, name: terraform }
+    steps:
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Run ${{ matrix.suite.name }} tests
         run: |
           docker run \
@@ -102,10 +111,11 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --rm "$CORE_CI_IMAGE:branch--$BRANCH_REF" bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
       - run: ./bin/lint
+        continue-on-error: true
