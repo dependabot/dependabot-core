@@ -84,7 +84,7 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
-          fetched_file = fetch_file_from_host(path)
+          fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
           grandchild_requirement_files =
             fetch_workspace_files(

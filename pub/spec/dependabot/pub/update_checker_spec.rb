@@ -588,4 +588,27 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       ]
     end
   end
+
+  context "works for a flutter project requiring a flutter beta" do
+    include_context :uses_temp_dir
+
+    let(:project) { "requires_latest_beta" }
+    let(:requirements_to_unlock) { :all }
+    let(:dependency_name) { "retry" }
+    it "can update" do
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "retry",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+          }],
+          "previous_version" => "2.0.0",
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+          }],
+          "version" => "3.1.0" }
+      ]
+    end
+  end
 end
