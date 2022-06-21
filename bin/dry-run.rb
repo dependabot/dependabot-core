@@ -591,7 +591,11 @@ def security_advisories
   end
 end
 
-def peer_dependencies_can_update?(checker, reqs_to_unlock)
+# If a version update for a peer dependency is possible we should
+# defer to the PR that will be created for it to avoid duplicate PRs.
+def peer_dependency_should_update_instead?(checker, reqs_to_unlock)
+  # This doesn't apply to security updates as we can't rely on the
+  # peer dependency getting updated.
   return false if $options[:security_updates_only]
 
   checker.updated_dependencies(requirements_to_unlock: reqs_to_unlock).
@@ -722,7 +726,7 @@ dependencies.each do |dep|
     requirements_to_unlock: requirements_to_unlock
   )
 
-  if peer_dependencies_can_update?(checker, requirements_to_unlock)
+  if peer_dependency_should_update_instead?(checker, requirements_to_unlock)
     puts "    (no update possible, peer dependency can be updated)"
     next
   end
