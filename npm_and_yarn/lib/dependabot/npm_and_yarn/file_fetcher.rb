@@ -291,7 +291,7 @@ module Dependabot
 
           if matches_double_glob && !nested
             dependency_files +=
-              expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+              find_directories(File.join(path, "*")).flat_map do |nested_path|
                 fetch_lerna_packages_from_path(nested_path, true)
               end
           end
@@ -309,11 +309,11 @@ module Dependabot
             [] # Invalid lerna.json, which must not be in use
           end
 
-        paths_array.flat_map { |path| recursive_expanded_paths(path) }
+        paths_array.flat_map { |path| recursive_find_directories(path) }
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(glob)
+      def find_directories(glob)
         return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
         unglobbed_path =
@@ -341,18 +341,18 @@ module Dependabot
         results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
       end
 
-      def recursive_expanded_paths(glob, prefix = "")
+      def recursive_find_directories(glob, prefix = "")
         return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
         glob = glob.gsub(%r{^\./}, "")
         glob_parts = glob.split("/")
 
-        paths = expanded_paths(prefix + glob_parts.first)
+        paths = find_directories(prefix + glob_parts.first)
         next_parts = glob_parts.drop(1)
         return paths if next_parts.empty?
 
         paths = paths.flat_map do |expanded_path|
-          recursive_expanded_paths(next_parts.join("/"), "#{expanded_path}/")
+          recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
         end
 
         matching_paths(prefix + glob, paths)
