@@ -1324,6 +1324,32 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           ])
       end
 
+      context "when a transitive dependency is locked by an intermediate transitive dependency" do
+        let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_intermediate") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-intermediate" }
+
+        it "correctly updates the transitive dependency" do
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-intermediate-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "0.0.1",
+              requirements: [],
+              version: "0.0.2"
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "1.0.0",
+              requirements: [],
+              version: "1.0.1"
+            )
+          )
+        end
+      end
+
       context "when a transitive dependency is locked by multiple top-level dependencies" do
         let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_by_multiple") }
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-multiple" }
