@@ -593,13 +593,13 @@ end
 
 # If a version update for a peer dependency is possible we should
 # defer to the PR that will be created for it to avoid duplicate PRs.
-def peer_dependency_should_update_instead?(updated_deps)
+def peer_dependency_should_update_instead?(dependency_name, updated_deps)
   # This doesn't apply to security updates as we can't rely on the
   # peer dependency getting updated.
   return false if $options[:security_updates_only]
 
   updated_deps.
-    reject { |dep| dep.name == checker.dependency.name }.
+    reject { |dep| dep.name == dependency_name }.
     any? do |dep|
       original_peer_dep = ::Dependabot::Dependency.new(
         name: dep.name,
@@ -726,7 +726,7 @@ dependencies.each do |dep|
     requirements_to_unlock: requirements_to_unlock
   )
 
-  if peer_dependency_should_update_instead?(updated_deps)
+  if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
     puts "    (no update possible, peer dependency can be updated)"
     next
   end
