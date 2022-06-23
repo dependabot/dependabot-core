@@ -1,3 +1,45 @@
+## v0.194.1, 20 June 2022
+
+- build(deps-dev): update debase-ruby_core_source requirement from = 0.10.14 to = 0.10.16 in /common [#5173](https://github.com/dependabot/dependabot-core/pull/5173)
+- build(deps-dev): bump eslint from 8.15.0 to 8.18.0 in /npm_and_yarn/helpers [#5285](https://github.com/dependabot/dependabot-core/pull/5285)
+- build(deps-dev): update rubocop requirement from ~> 1.29.1 to ~> 1.30.1 in /common [#5235](https://github.com/dependabot/dependabot-core/pull/5235)
+- Setup Dependabot for the Pub helpers [#5289](https://github.com/dependabot/dependabot-core/pull/5289)
+- Handle beta dart releases (@sigurdm) [#5286](https://github.com/dependabot/dependabot-core/pull/5286)
+
+## v0.194.0, 17 June 2022
+
+- Updates TERRAFORM_VERSION in Dockerfile to version 1.2.3 (@joberget) [#5274](https://github.com/dependabot/dependabot-core/pull/5274)
+
+## v0.193.0, 16 June 2022
+
+- Revert "build(deps-dev): bump phpstan/phpstan from 1.6.8 to 1.7.14 in /composer/helpers/v2" (@jakecoffman) [#5278](https://github.com/dependabot/dependabot-core/pull/5278)
+- build(deps-dev): bump phpstan/phpstan from 1.6.8 to 1.7.14 in /composer/helpers/v2 [#5266](https://github.com/dependabot/dependabot-core/pull/5266)
+- Update NPM package name validation rules (@mattt) [#5259](https://github.com/dependabot/dependabot-core/pull/5259)
+- build(deps-dev): bump phpstan/phpstan from 1.6.8 to 1.7.14 in /composer/helpers/v1 [#5267](https://github.com/dependabot/dependabot-core/pull/5267)
+- build(deps-dev): bump prettier from 2.6.2 to 2.7.1 in /npm_and_yarn/helpers [#5270](https://github.com/dependabot/dependabot-core/pull/5270)
+- cargo: handle patch with path that is a submodule (@jakecoffman) [#5250](https://github.com/dependabot/dependabot-core/pull/5250)
+
+## v0.192.1, 14 June 2022
+
+- Bump pub revision to fix error without lockfile [#5263](https://github.com/dependabot/dependabot-core/pull/5263)
+
+## v0.192.0, 13 June 2022
+
+- Use inferred flutter version (@sigurdm) [#5207](https://github.com/dependabot/dependabot-core/pull/5207)
+
+## v0.191.1, 13 June 2022
+
+- Only report conflicting dependencies when update is not possible (@deivid-rodriguez) [#5237](https://github.com/dependabot/dependabot-core/pull/5237)
+- build(deps): update pip requirement from <=22.1.1,>=21.3.1 to >=21.3.1,<22.1.3 in /python/helpers [#5212](https://github.com/dependabot/dependabot-core/pull/5212)
+- Fix Yarn ignored path checking (@FunkyloverOne) [#5220](https://github.com/dependabot/dependabot-core/pull/5220)
+
+## v0.191.0, 7 June 2022
+
+- poetry: fixes for broken lockfile and leaked credentials (@jakecoffman) [#5222](https://github.com/dependabot/dependabot-core/pull/5222)
+- Check if updated file exists before adding to list of terraform updated files (@dwc0011) [#5168](https://github.com/dependabot/dependabot-core/pull/5168)
+- Print package manager version instrumentation events in the dry runner (@Nishnha) [#5194](https://github.com/dependabot/dependabot-core/pull/5194)
+- Instrument npm version (@Nishnha) [#5187](https://github.com/dependabot/dependabot-core/pull/5187)
+
 ## v0.190.1, 31 May 2022
 
 - Update pub revision (@sigurdm) [#5203](https://github.com/dependabot/dependabot-core/pull/5203)

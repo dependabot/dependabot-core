@@ -16,78 +16,50 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
   let(:pyproject_fixture_name) { "pyproject.toml" }
 
-  describe "#replace_sources" do
-    subject(:replace_sources) { preparer.replace_sources(credentials) }
-
-    context "with no credentials" do
-      let(:credentials) { [] }
-      it { is_expected.to_not include("tool.poetry.source") }
-    end
-
-    context "with a python_index credential" do
-      let(:credentials) do
-        [{
-          "type" => "python_index",
-          "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-        }]
-      end
-
-      it { is_expected.to include("tool.poetry.source") }
-      it { is_expected.to include('url = "https://username:password@pypi') }
-      it { is_expected.to_not include("default") }
-
-      context "that includes auth details" do
-        let(:credentials) do
-          [{
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/",
-            "token" => "username:password"
-          }]
-        end
-
-        it { is_expected.to include("tool.poetry.source") }
-        it { is_expected.to include('url = "https://username:password@pypi') }
-      end
-
-      context "that replaces the default" do
-        let(:credentials) do
-          [{
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/",
-            "replaces-base" => true
-          }]
-        end
-
-        it { is_expected.to include("tool.poetry.source") }
-        it { is_expected.to include("default = true") }
-      end
-    end
-    context "with a private repository as a python_index" do
-      subject(:parsed_sources) { TomlRB.parse(replace_sources, symbolize_keys: true)[:tool][:poetry][:source] }
-      let(:pyproject_fixture_name) { "private_secondary_source.toml" }
-      let(:credentials) do
-        [{
-          "type" => "python_index",
-          "index-url" => "https://some.internal.registry.com/pypi/"
-        }]
-      end
-
-      it { is_expected.to contain_exactly({ name: "custom", secondary: true, url: credentials[0]["index-url"] }) }
-
-      context "that includes auth details" do
-        let(:credentials) do
-          [{
-            "type" => "python_index",
-            "index-url" => "https://some.internal.registry.com/pypi/",
-            "token" => "username:password"
-          }]
-        end
-
-        it {
-          is_expected.to contain_exactly({ name: "custom", secondary: true,
-                                           url: "https://username:password@some.internal.registry.com/pypi/" })
+  describe "#add_auth_env_vars" do
+    it "adds auth env vars when a token is present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/",
+          "token" => "hello:world"
         }
-      end
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq("hello")
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq("world")
+    end
+
+    it "has no effect when a token is not present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/"
+        }
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq(nil)
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq(nil)
+    end
+
+    it "doesn't break when there are no private sources" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "pyproject.toml"),
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
+    end
+
+    it "doesn't break when there are private sources but no credentials" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
     end
   end
 

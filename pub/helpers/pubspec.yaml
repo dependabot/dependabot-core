@@ -1,0 +1,15 @@
+name: helpers
+environment:
+  sdk: '>=2.16.0 <3.0.0'
+
+dependencies:
+  path: ^1.8.2
+  yaml: ^3.1.1
+  args: ^2.3.1
+  collection: ^1.16.0
+  pub_semver: ^2.1.1
+  http: ^0.13.4
+  pub:
+    git:
+     url: https://github.com/dart-lang/pub
+     ref: c4e9ddc888c3aa89ef4462f0c4298929191e32b9

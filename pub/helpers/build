@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Precompiles the helper scripts for the pub integration.
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+# Retrieve the dependencies
+dart pub get -C "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers"
+
+# Compile the helpers
+dart compile exe "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers/bin/dependency_services.dart" -o "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/dependency_services"
+dart compile exe "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/helpers/bin/infer_sdk_versions.dart" -o "$DEPENDABOT_NATIVE_HELPERS_PATH/pub/infer_sdk_versions"

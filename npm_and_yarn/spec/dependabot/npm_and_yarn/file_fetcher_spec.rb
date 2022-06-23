@@ -1203,6 +1203,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                 ),
                 headers: json_header
               )
+            stub_request(:get, File.join(url, "packages?ref=sha")).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "packages_files2.json"),
+                headers: json_header
+              )
           end
 
           it "fetches package.json from the workspace dependencies" do
@@ -1212,6 +1219,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                   package.json
                   package-lock.json
                   packages/package1/package.json
+                  packages/package2/package.json
                 )
               )
           end

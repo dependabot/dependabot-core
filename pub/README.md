@@ -14,7 +14,6 @@ Dart (pub) support for [`dependabot-core`][core-repo].
  - If the version found is ignored (by dependabot config) no update will happen (even if, an earlier version could be used)
  - Limited metadata support (just retrieves the repository link).
  - No support for auhtentication of private package repositories (mostly a configuration issue).
- - Only stable versions of Dart and Flutter supported.
  - `updated_dependencies_after_full_unlock` only allows updating to a later version, if the latest version that is mutually compatible with other dependencies is the latest version of the said package. This is a dependabot limitation.
 
 ### Running locally
@@ -35,6 +34,8 @@ Dart (pub) support for [`dependabot-core`][core-repo].
 
 The `dart pub` repo offers an experimental dependency services interface which
 allows checking for available updates.
+
+It is implemented as helpers/bin/dependency_services.dart, that is mainly a wrapper around the implementation in the [pub client](https://github.com/dart-lang/pub).
 
 #### List Dependencies
 
@@ -83,16 +84,16 @@ allows checking for available updates.
       "latest": "<version>",
 
       // In the following possible upgrades are listed for different
-      // 
+      //
       // The constraints are given in three versions, according to different
-      // strategies for updating constraint to allow the new version of a 
+      // strategies for updating constraint to allow the new version of a
       // package:
       //
       // * "constraintBumped": always update the constraint lower bound to match
       //   the new version.
       // * "constraintBumpedIfNeeded": leave the constraint if the original
       //   constraint allows the new version.
-      // * "constraintWidened": extend only the upper bound to include the new 
+      // * "constraintWidened": extend only the upper bound to include the new
       //   version.
 
       // If it is possible to upgrade the current version without making any
@@ -229,3 +230,20 @@ the url of the repository.
   ... // Other keys are free form json information about the dependency
 }
 ```
+## Detection of Flutter and Dart SDK versions.
+
+`dependency_services` should be run in the context of the right Flutter and
+Dart SDK versions as these will affect package resolution.
+
+The pub dependabot integration supports the flutter releases on the `stable` and
+`beta`
+[channel](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels).
+Each Flutter release comes with a matching Dart release.
+
+The `helpers/bin/infer_sdk_versions.dart` script will parse the root pubspec, and
+try to determine the right release based on the SDK constraints and the list of
+available releases:
+
+* The latest stable release that matches the SDK constraints will be chosen
+* If there is no stable release it will choose the newest beta that matches the
+SDK constraints.
