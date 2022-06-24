@@ -14,6 +14,7 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
+      require_relative "update_checker/vulnerability_auditor"
 
       def latest_version
         @latest_version ||=
@@ -106,18 +107,78 @@ module Dependabot
 
       private
 
+      def vulnerability_audit
+        @vulnerability_audit ||=
+          VulnerabilityAuditor.new(
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).audit(
+            dependency: dependency,
+            security_advisories: security_advisories
+          )
+      end
+
       def latest_version_resolvable_with_full_unlock?
-        return unless latest_version
+        return false unless latest_version
 
-        # No support for full unlocks for subdependencies yet
-        return false unless dependency.top_level?
+        return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
 
-        version_resolver.latest_version_resolvable_with_full_unlock?
+        return false unless transitive_security_updates_enabled? && security_advisories.any?
+
+        vulnerability_audit["fix_available"]
+      end
+
+      def transitive_security_updates_enabled?
+        options.key?(:npm_transitive_security_updates)
       end
 
       def updated_dependencies_after_full_unlock
+        if !dependency.top_level? && transitive_security_updates_enabled? && security_advisories.any?
+          return conflicting_updated_dependencies
+        end
+
         version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
+      end
+
+      def conflicting_updated_dependencies
+        top_level_dependencies = FileParser.new(
+          dependency_files: dependency_files,
+          credentials: credentials,
+          source: nil
+        ).parse.select(&:top_level?)
+
+        top_level_dependency_lookup = top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
+
+        updated_deps = []
+        vulnerability_audit["fix_updates"].each do |update|
+          dependency_name = update["dependency_name"]
+          requirements = top_level_dependency_lookup[dependency_name]&.requirements || []
+          conflicting_dep = Dependency.new(
+            name: dependency_name,
+            package_manager: "npm_and_yarn",
+            requirements: requirements
+          )
+
+          updated_deps << build_updated_dependency(
+            dependency: conflicting_dep,
+            version: update["target_version"],
+            previous_version: update["current_version"]
+          )
+        end
+
+        # We don't need to update this but need to include it so it's described
+        # in the PR and we'll pass validation that this dependency is at a
+        # non-vulnerable version.
+        if updated_deps.none? { |dep| dep.name == dependency.name }
+          updated_deps << build_updated_dependency(
+            dependency: dependency,
+            version: vulnerability_audit["target_version"],
+            previous_version: dependency.version
+          )
+        end
+
+        updated_deps
       end
 
       def build_updated_dependency(update_details)
