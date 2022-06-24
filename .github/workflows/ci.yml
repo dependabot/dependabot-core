@@ -43,6 +43,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
       - name: Build dependabot-core-ci image
         env:
           DOCKER_BUILDKIT: 1
@@ -51,7 +60,6 @@ jobs:
             -f Dockerfile.ci \
             -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-core \
             .
       - name: Run ${{ matrix.suite.name }} tests
         run: |
