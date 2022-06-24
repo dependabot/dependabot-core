@@ -152,7 +152,7 @@ module Dependabot
 
         def write_temporary_dependency_files(prepared: true)
           write_manifest_files(prepared: prepared)
-          write_cargo_config
+
           File.write(lockfile.name, lockfile.content) if lockfile
           File.write(toolchain.name, toolchain.content) if toolchain
         end
@@ -346,13 +346,6 @@ module Dependabot
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
             File.write(File.join(dir, "src/main.rs"), dummy_app_content)
           end
-        end
-
-        def write_cargo_config
-          FileUtils.mkdir_p(".cargo")
-          # Use git for git operations instead of the built-in libgit
-          # so that it picks up our configuration.
-          File.write(".cargo/config.toml", "[net]\ngit-fetch-with-cli = true")
         end
 
         def git_dependency_version
