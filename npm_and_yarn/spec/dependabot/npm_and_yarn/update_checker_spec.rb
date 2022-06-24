@@ -192,7 +192,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         end
 
-        it { is_expected.to be_falsey }
+        it "can't update without unlocking" do
+          expect(subject).to eq(false)
+        end
 
         it "allows full unlocking" do
           expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
@@ -230,7 +232,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           )
         end
 
-        it { is_expected.to be_falsey }
+        it "can't update without unlocking" do
+          expect(subject).to eq(false)
+        end
 
         it "doesn't allow full unlocking" do
           expect(checker.can_update?(requirements_to_unlock: :all)).to eq(false)
