@@ -352,7 +352,7 @@ module Dependabot
           FileUtils.mkdir_p(".cargo")
           # Use git for git operations instead of the built-in libgit
           # so that it picks up our configuration.
-          File.write("[net]\ngit-fetch-with-cli = true")
+          File.write(".cargo/config.toml", "[net]\ngit-fetch-with-cli = true")
         end
 
         def git_dependency_version
