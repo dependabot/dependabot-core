@@ -1,3 +1,7 @@
+## v0.196.0, 24 June 2022
+
+- [npm] Initial support for locked transitive dependency updates [#5239](https://github.com/dependabot/dependabot-core/pull/5239)
+
 ## v0.195.0, 24 June 2022
 
 - Rebuild dependabot-core image in CI Workflow (@mattt) [#5307](https://github.com/dependabot/dependabot-core/pull/5307)
