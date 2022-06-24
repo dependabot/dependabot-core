@@ -210,6 +210,8 @@ module Dependabot
         github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
         github_credentials.first
 
+      configure_git_to_use_https
+
       deduped_credentials = credentials -
                             github_credentials +
                             [github_credential].compact
@@ -225,7 +227,6 @@ module Dependabot
           "@#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
-        configure_git_to_use_https
       end
 
       # Save the file

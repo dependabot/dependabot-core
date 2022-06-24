@@ -342,14 +342,12 @@ RSpec.describe Dependabot::SharedHelpers do
       	helper = !#{Dependabot::SharedHelpers.credential_helper_path} --file #{Dir.pwd}/git.store
     CONFIG
 
-    def alternatives(host)
+    def alternatives
       <<~CONFIG.chomp
-        [url "https://#{host}/"]
-        	insteadOf = ssh://git@#{host}/
-        	insteadOf = ssh://git@#{host}:
-        	insteadOf = git@#{host}:
-        	insteadOf = git@#{host}/
-        	insteadOf = git://#{host}/
+        [url "https://"]
+        	insteadOf = ssh://git@
+        	insteadOf = git@
+        	insteadOf = git://
       CONFIG
     end
 
@@ -400,8 +398,8 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(configured_git_config).to include(credentials_helper)
       end
 
-      it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(configured_git_config).to include(alternatives("github.com"))
+      it "creates a .gitconfig that contains alternatives" do
+        expect(configured_git_config).to include(alternatives)
       end
 
       it "creates a git credentials store that is empty" do
@@ -430,7 +428,7 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(configured_git_config).to include(alternatives("github.com"))
+        expect(configured_git_config).to include(alternatives)
       end
 
       it "creates a git credentials store that contains github.com credentials" do
@@ -481,12 +479,8 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(configured_git_config).to include(credentials_helper)
       end
 
-      it "creates a .gitconfig that contains the github.com alternatives" do
-        expect(configured_git_config).to include(alternatives("github.com"))
-      end
-
-      it "creates a .gitconfig that contains the private.com alternatives" do
-        expect(configured_git_config).to include(alternatives("private.com"))
+      it "creates a .gitconfig that contains alternatives" do
+        expect(configured_git_config).to include(alternatives)
       end
 
       it "creates a git credentials store that contains private git credentials" do
