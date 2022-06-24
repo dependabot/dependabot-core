@@ -178,7 +178,9 @@ module Dependabot
           )
         end
 
-        updated_deps
+        # Target dependency should be first in the result to support rebases
+        updated_deps.select { |dep| dep.name == dependency.name } +
+          updated_deps.reject { |dep| dep.name == dependency.name }
       end
 
       def build_updated_dependency(update_details)
