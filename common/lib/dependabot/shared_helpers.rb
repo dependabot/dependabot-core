@@ -210,9 +210,6 @@ module Dependabot
         github_credentials.find { |c| !c["password"]&.start_with?("v1.") } ||
         github_credentials.first
 
-      # Make sure we always have https alternatives for github.com.
-      configure_git_to_use_https("github.com") if github_credential.nil?
-
       deduped_credentials = credentials -
                             github_credentials +
                             [github_credential].compact
@@ -228,7 +225,7 @@ module Dependabot
           "@#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
-        configure_git_to_use_https(cred.fetch("host"))
+        configure_git_to_use_https
       end
 
       # Save the file
@@ -237,29 +234,12 @@ module Dependabot
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
 
-    def self.configure_git_to_use_https(host)
+    def self.configure_git_to_use_https
       # NOTE: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
-      run_shell_command(
-        "git config --global --replace-all url.https://#{host}/."\
-        "insteadOf ssh://git@#{host}/"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/."\
-        "insteadOf ssh://git@#{host}:"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/."\
-        "insteadOf git@#{host}:"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/."\
-        "insteadOf git@#{host}/"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/."\
-        "insteadOf git://#{host}/"
-      )
+      run_shell_command("git config --global --add url.https://.insteadOf ssh://git@")
+      run_shell_command("git config --global --add url.https://.insteadOf git@")
+      run_shell_command("git config --global --add url.https://.insteadOf git://")
     end
 
     def self.reset_git_repo(path)
