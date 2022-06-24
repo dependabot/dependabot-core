@@ -141,6 +141,7 @@ module Dependabot
           map { |update_details| build_updated_dependency(update_details) }
       end
 
+      # rubocop:disable Metrics/AbcSize
       def conflicting_updated_dependencies
         top_level_dependencies = FileParser.new(
           dependency_files: dependency_files,
@@ -184,6 +185,7 @@ module Dependabot
 
         updated_deps
       end
+      # rubocop:enable Metrics/AbcSize
 
       def build_updated_dependency(update_details)
         original_dep = update_details.fetch(:dependency)
