@@ -1,3 +1,10 @@
+## v0.195.0, 24 June 2022
+
+- Rebuild dependabot-core image in CI Workflow (@mattt) [#5307](https://github.com/dependabot/dependabot-core/pull/5307)
+- Update logo in README (@mattt) [#5298](https://github.com/dependabot/dependabot-core/pull/5298)
+- Update pub revision (@sigurdm) [#5272](https://github.com/dependabot/dependabot-core/pull/5272)
+- Remove Image Caching from CI Workflow (@mattt) [#5295](https://github.com/dependabot/dependabot-core/pull/5295)
+
 ## v0.194.1, 20 June 2022
 
 - build(deps-dev): update debase-ruby_core_source requirement from = 0.10.14 to = 0.10.16 in /common [#5173](https://github.com/dependabot/dependabot-core/pull/5173)
