@@ -150,6 +150,10 @@ module Dependabot
 
         top_level_dependency_lookup = top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
 
+        puts ">>> UpdateChecker#conflicting_updated_dependencies"
+        puts ">>>   vulnerability_audit = "
+        puts ">>>   #{vulnerability_audit.inspect}"
+
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
           dependency_name = update["dependency_name"]

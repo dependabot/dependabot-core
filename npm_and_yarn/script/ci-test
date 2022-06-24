@@ -7,4 +7,6 @@ bundle exec rubocop .
 bundle exec rspec spec
 
 cd /opt/npm_and_yarn && npm run lint && cd -
+
+export DEBUG_HELPERS=true
 cd /opt/npm_and_yarn && npm test && cd -
