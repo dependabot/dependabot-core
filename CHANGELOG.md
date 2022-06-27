@@ -1,3 +1,13 @@
+## v0.196.1, 27 June 2022
+
+- Fix rubocop configuration error [#5318](https://github.com/dependabot/dependabot-core/pull/5318)
+- build(deps-dev): bump jest from 28.1.0 to 28.1.1 in /npm_and_yarn/helpers [#5243](https://github.com/dependabot/dependabot-core/pull/5243)
+- build(deps-dev): bump phpstan/phpstan from 1.7.14 to 1.7.15 in /composer/helpers/v1 [#5290](https://github.com/dependabot/dependabot-core/pull/5290)
+- build(deps-dev): bump phpstan/phpstan from 1.6.8 to 1.7.15 in /composer/helpers/v2 [#5291](https://github.com/dependabot/dependabot-core/pull/5291)
+- build(deps): bump nock from 13.2.4 to 13.2.7 in /npm_and_yarn/helpers [#5316](https://github.com/dependabot/dependabot-core/pull/5316)
+- build(deps): bump @npmcli/arborist from 5.2.0 to 5.2.3 in /npm_and_yarn/helpers [#5306](https://github.com/dependabot/dependabot-core/pull/5306)
+- Prioritize target dependency in transitive dependency updates [#5311](https://github.com/dependabot/dependabot-core/pull/5311)
+
 ## v0.196.0, 24 June 2022
 
 - [npm] Initial support for locked transitive dependency updates [#5239](https://github.com/dependabot/dependabot-core/pull/5239)
