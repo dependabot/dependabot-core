@@ -12,7 +12,7 @@
     "@dependabot/yarn-lib": "^1.21.1",
     "@npmcli/arborist": "^5.2.3",
     "detect-indent": "^6.1.0",
-    "nock": "^13.2.4",
+    "nock": "^13.2.7",
     "npm": "6.14.17",
     "semver": "^7.3.7"
   },
