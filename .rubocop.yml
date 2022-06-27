@@ -8,7 +8,7 @@ AllCops:
   - "*/spec/fixtures/**/*"
   TargetRubyVersion: 2.7
   SuggestExtensions: false
-Gemspec/DateAssignment:
+Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
 Layout/DotPosition:
   EnforcedStyle: trailing
