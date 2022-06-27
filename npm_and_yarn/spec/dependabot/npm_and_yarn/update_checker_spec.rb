@@ -1306,6 +1306,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(checker.send(:updated_dependencies_after_full_unlock)).
           to eq([
             Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              version: "1.0.1",
+              package_manager: "npm_and_yarn",
+              previous_version: "1.0.0",
+              requirements: [],
+              previous_requirements: []
+            ),
+            Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
               version: "2.0.2",
               package_manager: "npm_and_yarn",
@@ -1325,14 +1333,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   url: "https://registry.npmjs.org"
                 }
               }]
-            ),
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-transitive-dependency",
-              version: "1.0.1",
-              package_manager: "npm_and_yarn",
-              previous_version: "1.0.0",
-              requirements: [],
-              previous_requirements: []
             )
           ])
       end
@@ -1342,15 +1342,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-intermediate" }
 
         it "correctly updates the transitive dependency" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
-            Dependabot::Dependency.new(
-              name: "@dependabot-fixtures/npm-intermediate-dependency",
-              package_manager: "npm_and_yarn",
-              previous_requirements: [],
-              previous_version: "0.0.1",
-              requirements: [],
-              version: "0.0.2"
-            ),
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
               package_manager: "npm_and_yarn",
@@ -1358,8 +1350,16 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               version: "1.0.1"
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-intermediate-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "0.0.1",
+              requirements: [],
+              version: "0.0.2"
             )
-          )
+          ])
         end
       end
 

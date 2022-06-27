@@ -142,18 +142,12 @@ module Dependabot
       end
 
       def conflicting_updated_dependencies
-        top_level_dependencies = FileParser.new(
-          dependency_files: dependency_files,
-          credentials: credentials,
-          source: nil
-        ).parse.select(&:top_level?)
-
-        top_level_dependency_lookup = top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
+        top_level_dependencies = top_level_dependency_lookup
 
         updated_deps = []
         vulnerability_audit["fix_updates"].each do |update|
           dependency_name = update["dependency_name"]
-          requirements = top_level_dependency_lookup[dependency_name]&.requirements || []
+          requirements = top_level_dependencies[dependency_name]&.requirements || []
           conflicting_dep = Dependency.new(
             name: dependency_name,
             package_manager: "npm_and_yarn",
@@ -178,7 +172,19 @@ module Dependabot
           )
         end
 
-        updated_deps
+        # Target dependency should be first in the result to support rebases
+        updated_deps.select { |dep| dep.name == dependency.name } +
+          updated_deps.reject { |dep| dep.name == dependency.name }
+      end
+
+      def top_level_dependency_lookup
+        top_level_dependencies = FileParser.new(
+          dependency_files: dependency_files,
+          credentials: credentials,
+          source: nil
+        ).parse.select(&:top_level?)
+
+        top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
       end
 
       def build_updated_dependency(update_details)
