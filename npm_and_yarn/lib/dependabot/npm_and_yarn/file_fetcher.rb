@@ -291,7 +291,7 @@ module Dependabot
 
           if matches_double_glob && !nested
             dependency_files +=
-              expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+              find_directories(File.join(path, "*")).flat_map do |nested_path|
                 fetch_lerna_packages_from_path(nested_path, true)
               end
           end
@@ -309,34 +309,58 @@ module Dependabot
             [] # Invalid lerna.json, which must not be in use
           end
 
-        paths_array.flat_map do |path|
-          # The packages/!(not-this-package) syntax is unique to Yarn
-          if path.include?("*") || path.include?("!(")
-            expanded_paths(path)
-          else
-            path
-          end
-        end
+        paths_array.flat_map { |path| recursive_find_directories(path) }
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(path)
-        ignored_path = path.match?(/!\(.*?\)/) && path.gsub(/(!\((.*?)\))/, '\2')
+      def find_directories(glob)
+        return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        unglobbed_path =
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
+          split("*").
+          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
-        path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
-        unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
-                         "."
 
-        results =
+        paths =
           repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }
+          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
 
-        return results unless ignored_path
+        matching_paths(glob, paths)
+      end
 
-        results.reject { |filename| File.fnmatch?(ignored_path, filename) }
+      def matching_paths(glob, paths)
+        ignored_glob = yarn_ignored_glob(glob)
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+
+        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        return results unless ignored_glob
+
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+      end
+
+      def recursive_find_directories(glob, prefix = "")
+        return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        glob = glob.gsub(%r{^\./}, "")
+        glob_parts = glob.split("/")
+
+        paths = find_directories(prefix + glob_parts.first)
+        next_parts = glob_parts.drop(1)
+        return paths if next_parts.empty?
+
+        paths = paths.flat_map do |expanded_path|
+          recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
+        end
+
+        matching_paths(prefix + glob, paths)
+      end
+
+      # The packages/!(not-this-package) syntax is unique to Yarn
+      def yarn_ignored_glob(glob)
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       def parsed_package_json
