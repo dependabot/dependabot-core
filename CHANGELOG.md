@@ -1,3 +1,8 @@
+## v0.196.2, 29 June 2022
+
+- Configure arborist registries from npm config [#5313](https://github.com/dependabot/dependabot-core/pull/5313)
+- Yarn: support recursive paths expansion (@FunkyloverOne) [#5231](https://github.com/dependabot/dependabot-core/pull/5231)
+
 ## v0.196.1, 27 June 2022
 
 - Fix rubocop configuration error [#5318](https://github.com/dependabot/dependabot-core/pull/5318)
