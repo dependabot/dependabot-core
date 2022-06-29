@@ -290,7 +290,7 @@ module Dependabot
               fetch_submodules: true
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
-            raise unless allow_pyproject
+            raise unless allow_pyproject || setup_cfg_file
 
             fetch_file_from_host(
               path.gsub("setup.py", "pyproject.toml"),
