@@ -15,6 +15,8 @@ const semver = require("semver");
 async function findConflictingDependencies(directory, depName, targetVersion) {
   const arb = new Arborist({
     path: directory,
+    dryRun: true,
+    ignoreScripts: true,
   });
 
   return await arb.loadVirtual().then((tree) => {
