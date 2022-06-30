@@ -19,6 +19,7 @@ module Dependabot
         OBJECT_PATTERN = /object not found - no match for id \(.*\)/.freeze
         REF_NOT_FOUND_REGEX =
           /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m.freeze
+        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m.freeze
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
@@ -175,7 +176,6 @@ module Dependabot
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/MethodLength
         def handle_cargo_errors(error)
           if error.message.include?("does not have these features")
             # TODO: Ideally we should update the declaration not to ask
@@ -184,7 +184,8 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repo") ||
-             error.message.include?("HTTP 200 response: got 401")
+             error.message.include?("HTTP 200 response: got 401") ||
+             error.message.include?("fatal: Authentication failed for")
             # Check all dependencies for reachability (so that we raise a
             # consistent error)
             urls = unreachable_git_urls
@@ -200,17 +201,10 @@ module Dependabot
             raise Dependabot::GitDependenciesNotReachable, urls
           end
 
-          if error.message.match?(BRANCH_NOT_FOUND_REGEX)
-            dependency_url =
-              error.message.match(BRANCH_NOT_FOUND_REGEX).
-              named_captures.fetch("url").split(/[#?]/).first
-            raise Dependabot::GitDependencyReferenceNotFound, dependency_url
-          end
+          [BRANCH_NOT_FOUND_REGEX, REF_NOT_FOUND_REGEX, GIT_REF_NOT_FOUND_REGEX].each do |regex|
+            next unless error.message.match?(regex)
 
-          if error.message.match?(REF_NOT_FOUND_REGEX)
-            dependency_url =
-              error.message.match(REF_NOT_FOUND_REGEX).
-              named_captures.fetch("url").split(/[#?]/).first
+            dependency_url = error.message.match(regex).named_captures.fetch("url").split(/[#?]/).first
             raise Dependabot::GitDependencyReferenceNotFound, dependency_url
           end
 
@@ -241,7 +235,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/MethodLength
 
         def unreachable_git_urls
           return @unreachable_git_urls if defined?(@unreachable_git_urls)
