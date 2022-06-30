@@ -90,10 +90,10 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.0 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.10.4 \
-  && pyenv global 3.10.4 \
+  && pyenv install 3.10.5 \
+  && pyenv global 3.10.5 \
   && rm -Rf /tmp/python-build*
 USER root
 
