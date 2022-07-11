@@ -27,6 +27,8 @@ RUN apt-get update \
     file \
     zlib1g-dev \
     liblzma-dev \
+    libyaml-dev \
+    libgdbm-dev \
     tzdata \
     zip \
     unzip \
@@ -65,23 +67,34 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-# Install Ruby, update RubyGems, and install Bundler
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
+ARG RUBY_VERSION=2.7.5
+ARG RUBY_INSTALL_VERSION=0.8.3
+
+ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
 # Disable the outdated rubygems installation from being loaded
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
+
+ARG BUNDLER_V1_VERSION=1.17.3
+ARG BUNDLER_V2_VERSION=2.3.13
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-RUN apt-add-repository ppa:brightbox/ruby-ng \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
-  && gem update --system 3.2.20 \
-  && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.13 --no-document \
-  && rm -rf /var/lib/gems/2.7.0/cache/* \
-  && rm -rf /var/lib/apt/lists/*
 
+# Install Ruby, update RubyGems, and install Bundler
+RUN mkdir -p /tmp/ruby-install \
+ && cd /tmp/ruby-install \
+ && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
+ && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
+ && cd ruby-install-$RUBY_INSTALL_VERSION/ \
+ && make \
+ && ./bin/ruby-install --system ruby $RUBY_VERSION \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION \
+ && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-install
 
 ### PYTHON
 
