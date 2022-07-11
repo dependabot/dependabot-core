@@ -280,7 +280,7 @@ ENV HOME="/home/dependabot"
 WORKDIR ${HOME}
 
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
