@@ -183,6 +183,11 @@ RSpec.describe Dependabot::SecurityAdvisory do
         it { is_expected.to eq(false) }
       end
     end
+
+    context "with a removed dependency" do
+      let(:dependency_version) { "" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#affects_version?" do

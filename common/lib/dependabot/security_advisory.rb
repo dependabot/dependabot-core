@@ -62,6 +62,9 @@ module Dependabot
       # Ignore deps that weren't previously vulnerable
       return false unless affects_version?(dependency.previous_version)
 
+      # Removing a dependency is a way to fix the vulnerability
+      return true if dependency.removed?
+
       # Select deps that are now fixed
       !affects_version?(dependency.version)
     end
