@@ -90,6 +90,13 @@ RSpec.describe Dependabot::Python::Requirement do
         end
       end
 
+      context "with an x instead" do
+        let(:requirement_string) { "1.3.x"}
+        its(:to_s) do
+          is_expected.to eq(Gem::Requirement.new("~> 1.3.0.a").to_s)
+        end
+      end
+      
       context "with a bad character after the wildcard" do
         let(:requirement_string) { "== 1.3.*'" }
 
