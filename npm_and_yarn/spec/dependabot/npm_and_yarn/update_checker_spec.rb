@@ -204,7 +204,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
           let(:registry_listing_url) { "https://registry.npmjs.org/locked_transitive_dependency_removed" }
 
-          it "doesn't allow an update yet" do
+          it "doesn't allow an update because removal has not been enabled" do
             expect(checker.can_update?(requirements_to_unlock: :all)).to eq(false)
           end
         end
@@ -1439,6 +1439,51 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_version: "1.0.0",
               requirements: [],
               version: "1.0.1"
+            )
+          )
+        end
+      end
+
+      context "when the vulnerable transitive dependency is removed as a result of updating its parent" do
+        let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency_removed") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency-removed" }
+        let(:options) do
+          {
+            npm_transitive_security_updates: true,
+            npm_transitive_dependency_removal: true
+          }
+        end
+
+        it "correctly updates the parent dependency and removes the transitive because removal is enabled" do
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "1.0.0",
+              requirements: [],
+              version: ""
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-remove-dependency",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [{
+                requirement: "10.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
+              previous_version: "10.0.0",
+              requirements: [{
+                requirement: "10.0.1",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              version: "10.0.1"
             )
           )
         end
