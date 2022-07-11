@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/maven/registry_client"
+require "dependabot/registry_client"
 
-RSpec.describe Dependabot::Maven::RegistryClient do
+RSpec.describe Dependabot::RegistryClient do
   let(:url) { "https://example.com" }
   let(:maven_defaults) do
     { idempotent: true }
