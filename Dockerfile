@@ -29,6 +29,7 @@ RUN apt-get update \
     liblzma-dev \
     libyaml-dev \
     libgdbm-dev \
+    bison \
     tzdata \
     zip \
     unzip \
