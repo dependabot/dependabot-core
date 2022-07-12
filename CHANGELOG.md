@@ -1,3 +1,21 @@
+## v0.196.3, 12 July 2022
+
+- Add support for Python 3.10.5 & 3.9.13 (@ulgens) [#5333](https://github.com/dependabot/dependabot-core/pull/5333)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.8.0 to 3.9.2 in /composer/helpers/v2 [#5357](https://github.com/dependabot/dependabot-core/pull/5357)
+- build(deps): update pip-tools requirement from <=6.6.2,>=6.4.0 to >=6.4.0,<6.8.1 in /python/helpers [#5337](https://github.com/dependabot/dependabot-core/pull/5337)
+- build(deps-dev): update rubocop requirement from ~> 1.30.1 to ~> 1.31.2 in /common [#5350](https://github.com/dependabot/dependabot-core/pull/5350)
+- build(deps): bump poetry from 1.1.13 to 1.1.14 in /python/helpers [#5354](https://github.com/dependabot/dependabot-core/pull/5354)
+- build(deps): update gitlab requirement from = 4.18.0 to = 4.19.0 in /common [#5355](https://github.com/dependabot/dependabot-core/pull/5355)
+- build(deps): bump nock from 13.2.7 to 13.2.8 in /npm_and_yarn/helpers [#5336](https://github.com/dependabot/dependabot-core/pull/5336)
+- build(deps-dev): bump eslint from 8.18.0 to 8.19.0 in /npm_and_yarn/helpers [#5343](https://github.com/dependabot/dependabot-core/pull/5343)
+- build(deps): bump cython from 0.29.28 to 0.29.30 in /python/helpers [#5158](https://github.com/dependabot/dependabot-core/pull/5158)
+- build(deps-dev): bump jest from 28.1.1 to 28.1.2 in /npm_and_yarn/helpers [#5328](https://github.com/dependabot/dependabot-core/pull/5328)
+- build(deps-dev): bump phpstan/phpstan from 1.7.15 to 1.8.0 in /composer/helpers/v2 [#5330](https://github.com/dependabot/dependabot-core/pull/5330)
+- build(deps): bump composer/composer from 2.3.5 to 2.3.9 in /composer/helpers/v2 [#5347](https://github.com/dependabot/dependabot-core/pull/5347)
+- [go_mod] Stub failed response for initial go get call [#5335](https://github.com/dependabot/dependabot-core/pull/5335)
+- [npm] Ensure 'fix_updates' field in `VulnerabilityAuditor#audit` response (@bdragon) [#5334](https://github.com/dependabot/dependabot-core/pull/5334)
+- Disable potential script execution in arborist [#5327](https://github.com/dependabot/dependabot-core/pull/5327)
+
 ## v0.196.2, 29 June 2022
 
 - Configure arborist registries from npm config [#5313](https://github.com/dependabot/dependabot-core/pull/5313)
