@@ -66,11 +66,14 @@ module Dependabot
         type = dependency.requirements.first[:source][:type]
         base_url = service_url_for(service_key_for(type))
         case type
+        # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
         when "module", "modules", "registry"
-          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}/download"))
+          download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+          response = http_get(download_url)
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-Terraform-Get")
+          source_url = URI.join(download_url, source_url) if source_url.start_with?("/") || source_url.start_with?("./") || source_url.start_with?("../")
           source_url = Helpers.get_proxied_source(source_url) if source_url
         when "provider", "providers"
           response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
