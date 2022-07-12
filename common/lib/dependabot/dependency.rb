@@ -61,6 +61,10 @@ module Dependabot
       requirements.any?
     end
 
+    def removed?
+      version == ""
+    end
+
     def to_h
       {
         "name" => name,
@@ -114,9 +118,7 @@ module Dependabot
     private
 
     def check_values
-      if [version, previous_version].any? { |v| v == "" }
-        raise ArgumentError, "blank strings must not be provided as versions"
-      end
+      raise ArgumentError, "previous version must not be a blank string" if previous_version == ""
 
       check_requirement_fields
       check_subdependency_metadata
