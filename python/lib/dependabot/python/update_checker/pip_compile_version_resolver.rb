@@ -76,16 +76,13 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe -v "\
-                     "#{pip_compile_options(filename)} -P #{dependency.name} "\
-                     "#{filename}"
+                    "pyenv exec pip-compile -v #{pip_compile_options(filename)} -P #{dependency.name} #{filename}"
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   write_original_manifest_files unless dependency.top_level?
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
-                     "#{pip_compile_options(filename)} #{filename}"
+                    "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                   )
                 end
 
@@ -179,7 +176,7 @@ module Dependabot
 
               filenames_to_compile.each do |filename|
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{pip_compile_options(filename)} --allow-unsafe #{filename}"
+                  "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                 )
               end
 
@@ -220,6 +217,7 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
+          options += ["--resolver backtracking", "--allow-unsafe"]
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
