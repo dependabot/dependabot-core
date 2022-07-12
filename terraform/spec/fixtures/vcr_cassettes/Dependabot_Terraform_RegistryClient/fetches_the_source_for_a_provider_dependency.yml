@@ -15,7 +15,7 @@ http_interactions:
       content-type:
       - application/json
       X-Terraform-Get:
-      - https://github.com/hashicorp/terraform-aws-consul
+      - git://https://github.com/hashicorp/terraform-aws-consul
     body:
       encoding: US-ASCII
       string: ''
