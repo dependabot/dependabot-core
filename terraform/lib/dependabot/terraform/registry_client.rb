@@ -64,10 +64,19 @@ module Dependabot
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
         base_url = service_url_for(service_key_for(type))
-        response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
-        return nil unless response.status == 200
+        case type
+        when "module", "modules", "registry"
+          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}/download"))
+          return nil unless response.status == 204
 
-        source_url = JSON.parse(response.body).fetch("source")
+          source_url = response.headers.fetch("X-Terraform-Get")
+        when "provider", "providers"
+          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+          return nil unless response.status == 200
+
+          source_url = JSON.parse(response.body).fetch("source")
+        end
+
         Source.from_url(source_url) if source_url
       rescue JSON::ParserError, Excon::Error::Timeout
         nil
