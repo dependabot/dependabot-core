@@ -168,7 +168,7 @@ module Dependabot
       # Full docs at https://www.terraform.io/docs/modules/sources.html
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
-        bare_source = Helpers::get_proxied_source(raw_source)
+        bare_source = Helpers.get_proxied_source(raw_source)
 
         source_details =
           case source_type(bare_source)
