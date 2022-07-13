@@ -6,6 +6,7 @@ require "dependabot/bundler/helpers"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/file_updater/lockfile_updater"
 require "dependabot/bundler/requirement"
+require "dependabot/registry_client"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -180,10 +181,8 @@ module Dependabot
           # If no Ruby version is specified, we don't have a problem
           return false unless details[:ruby_version]
 
-          versions = Excon.get(
-            "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          versions = Dependabot::RegistryClient.get(
+            url: "https://rubygems.org/api/v1/versions/#{dependency.name}.json",
           )
 
           # Give the benefit of the doubt if something goes wrong fetching
