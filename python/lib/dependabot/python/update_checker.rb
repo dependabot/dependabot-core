@@ -6,7 +6,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/python/requirement"
 require "dependabot/python/requirement_parser"
@@ -274,10 +274,8 @@ module Dependabot
         details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
         return false unless details
 
-        index_response = Excon.get(
-          "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
+        index_response = Dependabot::RegistryClient.get(
+          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
         )
 
         return false unless index_response.status == 200

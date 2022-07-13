@@ -7,7 +7,7 @@ require "nokogiri"
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
 require "dependabot/update_checkers/version_filters"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
@@ -214,18 +214,16 @@ module Dependabot
         end
 
         def registry_response_for_dependency(index_url)
-          Excon.get(
-            index_url + normalised_name + "/",
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
+          Dependabot::RegistryClient.get(
+            url: index_url + normalised_name + "/",
+            headers: { "Accept" => "text/html" }
           )
         end
 
         def registry_index_response(index_url)
-          Excon.get(
-            index_url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: { "Accept" => "text/html" })
+          Dependabot::RegistryClient.get(
+            url: index_url,
+            headers: { "Accept" => "text/html" }
           )
         end
 
