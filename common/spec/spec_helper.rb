@@ -10,6 +10,7 @@ require "stackprof"
 require "uri"
 
 require "dependabot/dependency_file"
+require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
 require_relative "warning_monkey_patch"
 
@@ -37,6 +38,11 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+
+  config.after do
+    # Ensure we clear any cached timeouts between tests
+    Dependabot::RegistryClient.clear_cache!
+  end
 
   config.around do |example|
     if example.metadata[:profile]
