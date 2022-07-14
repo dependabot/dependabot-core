@@ -1,3 +1,13 @@
+## v0.196.4, 14 July 2022
+
+- [NPM/YARN] Cache client-side timeouts when a remote host is unreachable [#5373](https://github.com/dependabot/dependabot-core/pull/5373)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.9.2 to 3.9.3 in /composer/helpers/v2 [#5378](https://github.com/dependabot/dependabot-core/pull/5378)
+- build(deps-dev): bump jest from 28.1.2 to 28.1.3 in /npm_and_yarn/helpers [#5376](https://github.com/dependabot/dependabot-core/pull/5376)
+- build(deps-dev): bump phpstan/phpstan from 1.8.0 to 1.8.1 in /composer/helpers/v2 [#5371](https://github.com/dependabot/dependabot-core/pull/5371)
+- Update Ruby to version 2.7.6 [#5364](https://github.com/dependabot/dependabot-core/pull/5364)
+- Install Ruby with ruby-install [#5356](https://github.com/dependabot/dependabot-core/pull/5356)
+- Do not attribute `maintainers` in release notes [#5360](https://github.com/dependabot/dependabot-core/pull/5360)
+
 ## v0.196.3, 12 July 2022
 
 - Add support for Python 3.10.5 & 3.9.13 (@ulgens) [#5333](https://github.com/dependabot/dependabot-core/pull/5333)
