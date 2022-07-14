@@ -7,6 +7,7 @@ require "dependabot/file_fetchers/base"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/registry_client"
 
 module Dependabot
   module Maven
@@ -104,7 +105,7 @@ module Dependabot
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        response = RegistryClient.get(
+        response = Dependabot::RegistryClient.get(
           url: "#{maven_repo_dependency_url}/#{dependency.version}/#{dependency_artifact_id}-#{dependency.version}.pom",
           headers: auth_headers
         )
@@ -134,7 +135,7 @@ module Dependabot
               "#{version}/"\
               "#{artifact_id}-#{version}.pom"
 
-        response = RegistryClient.get(
+        response = Dependabot::RegistryClient.get(
           url: substitute_properties_in_source_url(url, pom),
           headers: auth_headers
         )
