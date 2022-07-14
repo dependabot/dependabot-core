@@ -7,7 +7,7 @@ require "dependabot/shared_helpers"
 #
 # This is not used to support full response caching currently, we just use it to ensure we detect unreachable
 # hosts and fast-fail on any subsequent requests to them to avoid excessive use of retries and connect- or
-# read-timeouts as Maven jobs tend to be sensitive to exceeding our overall 45 minute timeout.
+# read-timeouts as some jobs tend to be sensitive to exceeding our overall 45 minute timeout.
 module Dependabot
   class RegistryClient
     @cached_errors = {}
