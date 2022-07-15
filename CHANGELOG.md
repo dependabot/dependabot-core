@@ -1,3 +1,8 @@
+## v0.198.0, 15 July 2022
+
+- Bump go from 1.18.1 to 1.18.4 [#5379](https://github.com/dependabot/dependabot-core/pull/5379)
+- [npm] Detect cycles when traversing vuln effects in helper and raise [#5321](https://github.com/dependabot/dependabot-core/pull/5321)
+
 ## v0.197.0, 15 July 2022
 
 - [Bundler] Cache client-side timeouts when a remote host is unreachable [#5375](https://github.com/dependabot/dependabot-core/pull/5375)
