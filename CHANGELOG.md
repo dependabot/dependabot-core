@@ -1,3 +1,9 @@
+## v0.197.0, 15 July 2022
+
+- [Bundler] Cache client-side timeouts when a remote host is unreachable [#5375](https://github.com/dependabot/dependabot-core/pull/5375)
+- Bump bundler from 2.3.13 to 2.3.18 and fix script [#5382](https://github.com/dependabot/dependabot-core/pull/5382)
+- Use new pip resolver for pip-compile [#5358](https://github.com/dependabot/dependabot-core/pull/5358)
+
 ## v0.196.4, 14 July 2022
 
 - [NPM/YARN] Cache client-side timeouts when a remote host is unreachable [#5373](https://github.com/dependabot/dependabot-core/pull/5373)
