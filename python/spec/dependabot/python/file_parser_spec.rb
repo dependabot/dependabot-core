@@ -215,9 +215,9 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      describe "the first dependency" do
-        it "has the right details" do
-          expect(dependencies.map(&:name)).not_to match_array([])
+      describe "the tarball dependency requirement" do
+        it "is not parsed" do
+          expect(dependencies).to be([])
         end
       end
     end
