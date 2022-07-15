@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/registry_client"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
 
@@ -84,10 +85,8 @@ module Dependabot
           def rubygems_versions
             @rubygems_versions ||=
               begin
-                response = Excon.get(
-                  dependency_rubygems_uri,
-                  idempotent: true,
-                  **SharedHelpers.excon_defaults
+                response = Dependabot::RegistryClient.get(
+                  url: dependency_rubygems_uri
                 )
 
                 JSON.parse(response.body).
