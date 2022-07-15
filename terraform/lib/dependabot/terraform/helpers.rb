@@ -3,7 +3,6 @@
 module Dependabot
   module Terraform
     class Helpers
-
       ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
 
       # rubocop:disable Metrics/PerceivedComplexity

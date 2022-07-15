@@ -73,7 +73,10 @@ module Dependabot
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-Terraform-Get")
-          source_url = URI.join(download_url, source_url) if source_url.start_with?("/") || source_url.start_with?("./") || source_url.start_with?("../")
+          source_url = URI.join(download_url, source_url) if
+            source_url.start_with?("/") ||
+            source_url.start_with?("./") ||
+            source_url.start_with?("../")
           source_url = Helpers.get_proxied_source(source_url) if source_url
         when "provider", "providers"
           response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
