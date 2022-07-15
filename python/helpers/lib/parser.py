@@ -37,9 +37,6 @@ def parse_requirements(directory):
             )
             for parsed_req in requirements:
                 install_req = install_req_from_parsed_requirement(parsed_req)
-                if install_req.original_link:
-                    continue
-
                 pattern = r"-[cr] (.*) \(line \d+\)"
                 abs_path = re.search(pattern, install_req.comes_from).group(1)
                 rel_path = os.path.relpath(abs_path, directory)
