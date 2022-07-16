@@ -232,6 +232,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
                 [{
                   "type" => "python_index",
                   "index-url" => "https://pypi.weasyldev.com/source/+simple",
+                  "token" => "user:pass",
                   "replaces-base" => false
                 }]
               end
