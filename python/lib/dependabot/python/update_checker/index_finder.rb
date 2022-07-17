@@ -164,6 +164,7 @@ module Dependabot
 
           regexp = url.
                    sub(%r{(?<=://).+@}, "").
+                   sub(%r{https?://}, "").
                    split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
                    join(".+")
