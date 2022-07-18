@@ -217,7 +217,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
       describe "the tarball dependency requirement" do
         it "is not parsed" do
-          expect(dependencies).to be([])
+          expect(dependencies).to eq([])
         end
       end
     end
