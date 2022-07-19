@@ -277,6 +277,8 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
   PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
   MIX_HOME="/opt/hex/mix"
 
+RUN chown dependabot:dependabot /opt/*
+
 USER dependabot
 RUN bash /opt/bundler/helpers/v1/build
 RUN bash /opt/bundler/helpers/v2/build
