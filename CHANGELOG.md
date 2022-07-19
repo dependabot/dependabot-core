@@ -1,3 +1,7 @@
+## v0.199.0, 19 July 2022
+
+- Stop skipping requirements with `original_link` [#5385](https://github.com/dependabot/dependabot-core/pull/5385)
+
 ## v0.198.0, 15 July 2022
 
 - Bump go from 1.18.1 to 1.18.4 [#5379](https://github.com/dependabot/dependabot-core/pull/5379)
