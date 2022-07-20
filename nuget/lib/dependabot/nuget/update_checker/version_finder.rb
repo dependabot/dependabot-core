@@ -219,10 +219,9 @@ module Dependabot
         end
 
         def fetch_paginated_v2_nuget_listings(url_details, results = {})
-          response = Excon.get(
-            url_details[:versions_url],
-            idempotent: true,
-            **SharedHelpers.excon_defaults(excon_options.merge(headers: url_details[:auth_header]))
+          response = Dependabot::RegistryClient.get(
+            url: url_details[:versions_url],
+            headers: url_details[:auth_header]
           )
 
           # NOTE: Short circuit if we get a circular next link
@@ -261,12 +260,9 @@ module Dependabot
             fetch_versions_from_search_url(repository_details)
           # Otherwise, use the versions URL
           elsif repository_details[:versions_url]
-            response = Excon.get(
-              repository_details[:versions_url],
-              idempotent: true,
-              **SharedHelpers.excon_defaults(
-                excon_options.merge(headers: repository_details[:auth_header])
-              )
+            response = Dependabot::RegistryClient.get(
+              url: repository_details[:versions_url],
+              headers: repository_details[:auth_header]
             )
             return unless response.status == 200
 
@@ -276,12 +272,9 @@ module Dependabot
         end
 
         def fetch_versions_from_search_url(repository_details)
-          response = Excon.get(
-            repository_details[:search_url],
-            idempotent: true,
-            **SharedHelpers.excon_defaults(
-              excon_options.merge(headers: repository_details[:auth_header])
-            )
+          response = Dependabot::RegistryClient.get(
+            url: repository_details[:search_url],
+            headers: repository_details[:auth_header]
           )
           return unless response.status == 200
 
