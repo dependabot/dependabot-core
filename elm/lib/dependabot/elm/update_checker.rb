@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 
 module Dependabot
@@ -98,11 +98,8 @@ module Dependabot
 
         @version_lookup_attempted = true
 
-        response = Excon.get(
-          "https://package.elm-lang.org/packages/#{dependency.name}/"\
-          "releases.json",
-          idempotent: true,
-          **Dependabot::SharedHelpers.excon_defaults
+        response = Dependabot::RegistryClient.get(
+          url: "https://package.elm-lang.org/packages/#{dependency.name}/releases.json"
         )
 
         return @all_versions = [] unless response.status == 200
