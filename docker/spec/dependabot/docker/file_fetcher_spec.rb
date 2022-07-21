@@ -157,4 +157,86 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
+
+  context "with a YAML file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_kubernetes_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "pod.yaml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: kubernetes_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
+
+    it "fetches the pod.yaml" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(pod.yaml))
+    end
+
+    context "that has an invalid encoding" do
+      let(:kubernetes_fixture) { fixture("github", "contents_image.json") }
+
+      it "raises a helpful error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+  end
+
+  context "with multiple YAMLs" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_kubernetes_repo_multiple.json"),
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "pod.yaml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: kubernetes_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+      stub_request(:get, File.join(url, "deployment.yaml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: kubernetes_2_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
+    let(:kubernetes_2_fixture) { fixture("github", "contents_kubernetes.json") }
+
+    it "fetches both YAMLs" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(deployment.yaml pod.yaml))
+    end
+
+    context "one of which has an invalid encoding" do
+      let(:kubernetes_2_fixture) { fixture("github", "contents_image.json") }
+
+      it "fetches the first yaml, and ignores the invalid one" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pod.yaml))
+      end
+    end
+  end
 end

@@ -1,0 +1,4 @@
+{
+    "__type": "UnrecognizedClientException",
+    "message": "The security token included in the request is invalid."
+}
