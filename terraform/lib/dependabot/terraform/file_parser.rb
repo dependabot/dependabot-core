@@ -9,7 +9,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/git_commit_checker"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
 
@@ -270,11 +270,7 @@ module Dependabot
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
         host = URI.parse(raw_source).host
 
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: url)
         raise PrivateSourceAuthenticationFailure, host if response.status == 401
 
         return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]

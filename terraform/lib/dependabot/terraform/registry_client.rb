@@ -2,6 +2,7 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/registry_client"
 require "dependabot/source"
 require "dependabot/terraform/version"
 
@@ -119,7 +120,10 @@ module Dependabot
       end
 
       def http_get(url)
-        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers_for(hostname)))
+        Dependabot::RegistryClient.get(
+          url: url.to_s,
+          headers: headers_for(hostname)
+        )
       end
 
       def http_get!(url)
