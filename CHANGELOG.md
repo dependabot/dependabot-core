@@ -1,3 +1,8 @@
+## v0.200.0, 21 July 2022
+
+- [Python] Cache client-side timeouts when a remote host is unreachable [#5374](https://github.com/dependabot/dependabot-core/pull/5374)
+- Pip: Do not raise PathDependenciesNotReachable for missing setup.py [#5392](https://github.com/dependabot/dependabot-core/pull/5392)
+
 ## v0.199.0, 19 July 2022
 
 - Stop skipping requirements with `original_link` [#5385](https://github.com/dependabot/dependabot-core/pull/5385)
