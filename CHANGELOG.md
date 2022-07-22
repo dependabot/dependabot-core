@@ -1,3 +1,7 @@
+## v0.201.0, 22 July 2022
+
+- [Composer] Cache client-side timeouts when a remote host is unreachable [#5400](https://github.com/dependabot/dependabot-core/pull/5400)
+
 ## v0.200.0, 21 July 2022
 
 - [Python] Cache client-side timeouts when a remote host is unreachable [#5374](https://github.com/dependabot/dependabot-core/pull/5374)
