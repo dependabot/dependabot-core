@@ -1,3 +1,9 @@
+## v0.201.1, 25 July 2022
+
+- [Cargo] Correctly handle unused subdependencies of path dependencies [#5414](https://github.com/dependabot/dependabot-core/pull/5414)
+- [Nuget] Cache client-side timeouts when a remote host is unreachable [#5399](https://github.com/dependabot/dependabot-core/pull/5399)
+- Tweak bump-version script to just push the newly-created tag [#5413](https://github.com/dependabot/dependabot-core/pull/5413)
+
 ## v0.201.0, 22 July 2022
 
 - [Composer] Cache client-side timeouts when a remote host is unreachable [#5400](https://github.com/dependabot/dependabot-core/pull/5400)
