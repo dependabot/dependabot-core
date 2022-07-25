@@ -21,8 +21,8 @@ module Dependabot
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+      (?<repo>(?!\.git|/tree|/blob)[\w./-]+?)(?:\.git)?
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?$
     }x.freeze
 
     BITBUCKET_SOURCE = %r{
