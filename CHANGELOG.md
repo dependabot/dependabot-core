@@ -1,3 +1,10 @@
+## v0.202.0, 26 July 2022
+
+- [cargo] Cache client-side timeouts when a remote host is unreachable [#5402](https://github.com/dependabot/dependabot-core/pull/5402)
+- [gomod] Cache client-side timeouts when a remote host is unreachable [#5401](https://github.com/dependabot/dependabot-core/pull/5401)
+- fix: regex to support Gitlab subgroups (@argoyle) [#5297](https://github.com/dependabot/dependabot-core/pull/5297)
+- fix(terraform): correctly keep platform hashes when multiple providers are installed (@Flydiverny) [#5341](https://github.com/dependabot/dependabot-core/pull/5341)
+
 ## v0.201.1, 25 July 2022
 
 - [Cargo] Correctly handle unused subdependencies of path dependencies [#5414](https://github.com/dependabot/dependabot-core/pull/5414)
