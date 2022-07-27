@@ -12,6 +12,14 @@ updates:
     directory: "/composer/helpers/v2"
     schedule:
       interval: "daily"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gomod"
+    directory: "/go_modules/helpers"
+    schedule:
+      interval: "daily"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
@@ -25,14 +33,6 @@ updates:
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "gomod"
-    directory: "/go_modules/helpers"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "github-actions"
-    directory: "/"
     schedule:
       interval: "daily"
   - package-ecosystem: "pub"
