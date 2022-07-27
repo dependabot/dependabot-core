@@ -3,43 +3,43 @@ updates:
   - package-ecosystem: "bundler"
     directory: "/common"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v2"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/go_modules/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "npm"
     directory: "/npm_and_yarn/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "pip"
     directory: "/python/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
   - package-ecosystem: "pub"
     directory: "/pub/helpers"
     schedule:
-      interval: "daily"
+      interval: "weekly"
