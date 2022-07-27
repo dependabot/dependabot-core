@@ -779,10 +779,10 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with a digest" do
       let(:podfile_fixture_name) { "digest.yaml" }
-      let(:registry_tags) { fixture("kubernetes", "registry_tags", "ubuntu.json") }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
         JSON.parse(
-          fixture("kubernetes", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
         )
       end
 
@@ -800,7 +800,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "that doesn't match any tags" do
         let(:registry_tags) do
-          fixture("kubernetes", "registry_tags", "small_ubuntu.json")
+          fixture("docker", "registry_tags", "small_ubuntu.json")
         end
         before { digest_headers["docker_content_digest"] = "nomatch" }
 
@@ -977,7 +977,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                     "https://api.ecr.eu-west-2.amazonaws.com/"
                   ).and_return(
                     status: 403,
-                    body: fixture("kubernetes", "ecr_responses", "invalid_token")
+                    body: fixture("docker", "ecr_responses", "invalid_token")
                   )
                 end
 
@@ -998,7 +998,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                     "https://api.ecr.eu-west-2.amazonaws.com/"
                   ).and_return(
                     status: 200,
-                    body: fixture("kubernetes", "ecr_responses", "auth_data")
+                    body: fixture("docker", "ecr_responses", "auth_data")
                   )
                 end
 
@@ -1036,10 +1036,10 @@ RSpec.describe Dependabot::Docker::FileParser do
 
     context "with a tag and digest" do
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
-      let(:registry_tags) { fixture("kubernetes", "registry_tags", "ubuntu.json") }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_headers) do
         JSON.parse(
-          fixture("kubernetes", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
         )
       end
 
