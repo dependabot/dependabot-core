@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 
 module Dependabot
   module Hex
@@ -55,12 +55,7 @@ module Dependabot
       def hex_listing
         return @hex_listing unless @hex_listing.nil?
 
-        response = Excon.get(
-          "https://hex.pm/api/packages/#{dependency.name}",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
+        response = Dependabot::RegistryClient.get(url: "https://hex.pm/api/packages/#{dependency.name}")
         @hex_listing = JSON.parse(response.body)
       end
     end
