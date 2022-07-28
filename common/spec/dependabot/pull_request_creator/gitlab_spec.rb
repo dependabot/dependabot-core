@@ -38,7 +38,7 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       "password" => "token"
     }]
   end
-  let(:files) { [gemfile, gemfile_lock, created_file, deleted_file] }
+  let(:files) { [gemfile, gemfile_lock, created_file, created_executable, deleted_file] }
   let(:commit_message) { "Commit msg" }
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
@@ -87,6 +87,14 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
       name: "created-file",
       content: "created",
       operation: Dependabot::DependencyFile::Operation::CREATE
+    )
+  end
+  let(:created_executable) do
+    Dependabot::DependencyFile.new(
+      name: "created-executable-file",
+      content: "created-executable",
+      operation: Dependabot::DependencyFile::Operation::CREATE,
+      execute_filemode: true
     )
   end
   let(:deleted_file) do
@@ -161,9 +169,19 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
                 content: created_file.content
               },
               {
+                action: "create",
+                file_path: created_executable.path,
+                content: created_executable.content
+              },
+              {
                 action: "delete",
                 file_path: deleted_file.path,
                 content: ""
+              },
+              {
+                action: "chmod",
+                file_path: created_executable.path,
+                execute_filemode: true
               }
             ]
           }

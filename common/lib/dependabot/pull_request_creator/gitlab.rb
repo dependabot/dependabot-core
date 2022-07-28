@@ -114,6 +114,14 @@ module Dependabot
           }
         end
 
+        files.select(&:execute_filemode?).each do |file|
+          actions << {
+            action: "chmod",
+            file_path: file.path,
+            execute_filemode: true
+          }
+        end
+
         gitlab_client_for_source.create_commit(
           source.repo,
           branch_name,

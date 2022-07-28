@@ -75,6 +75,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -87,6 +88,11 @@ RSpec.describe Dependabot::DependencyFile do
         expect(file.deleted).to be_falsey
         expect(file.deleted?).to be_falsey
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
+
+      it "indicates the filemode correctly" do
+        expect(file.execute_filemode).to be_falsey
+        expect(file.execute_filemode?).to be_falsey
       end
     end
 
@@ -105,6 +111,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "symlink",
           "support_file" => false,
           "symlink_target" => "nested/Gemfile",
@@ -135,6 +142,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -164,6 +172,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -193,6 +202,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -222,6 +232,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -252,6 +263,7 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "execute_filemode" => false,
           "type" => "file",
           "support_file" => false,
           "content_encoding" => "utf-8",
@@ -264,6 +276,36 @@ RSpec.describe Dependabot::DependencyFile do
         expect(file.deleted).to be_truthy
         expect(file.deleted?).to be_truthy
         expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
+
+    context "with an executable file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::UPDATE,
+          execute_filemode: true
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "execute_filemode" => true,
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+
+      it "indicates the filemode correctly" do
+        expect(file.execute_filemode).to be_truthy
+        expect(file.execute_filemode?).to be_truthy
       end
     end
   end

@@ -5,7 +5,7 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target, :content_encoding, :operation
+                  :symlink_target, :content_encoding, :operation, :execute_filemode
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -20,7 +20,8 @@ module Dependabot
 
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
+                   content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE,
+                   execute_filemode: false)
       @name = name
       @content = content
       @directory = clean_directory(directory)
@@ -28,6 +29,7 @@ module Dependabot
       @support_file = support_file
       @content_encoding = content_encoding
       @operation = operation
+      @execute_filemode = execute_filemode
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -55,7 +57,8 @@ module Dependabot
         "support_file" => support_file,
         "content_encoding" => content_encoding,
         "deleted" => deleted,
-        "operation" => operation
+        "operation" => operation,
+        "execute_filemode" => execute_filemode
       }
 
       details["symlink_target"] = symlink_target if symlink_target
@@ -96,6 +99,10 @@ module Dependabot
 
     def deleted?
       deleted
+    end
+
+    def execute_filemode?
+      execute_filemode
     end
 
     def binary?
