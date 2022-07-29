@@ -171,7 +171,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: nil,
               ref: "master"
             },
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              url: "https://github.com/dependabot-fixtures/uk_phone_numbers",
               branch: nil,
               ref: nil
             },

@@ -1,4 +1,4 @@
-source 'http://rubygems.org'
+source 'https://rubygems.org'
 
 %w[cli dependency].each do |path|
   require File.expand_path("../lib/backup/#{path}", __FILE__)
