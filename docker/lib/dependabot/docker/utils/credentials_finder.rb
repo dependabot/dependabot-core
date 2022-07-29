@@ -9,7 +9,7 @@ module Dependabot
   module Docker
     module Utils
       class CredentialsFinder
-        AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
+        AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/.freeze
 
         def initialize(credentials)
           @credentials = credentials
