@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       body: "Not GHES",
       headers: {}
     )
-    stub_request(:get, "https://initd.org/status").to_return(status: 404)
+    stub_request(:get, "https://www.psycopg.org/status").to_return(status: 404)
     stub_request(:get, "https://pypi.org/status").to_return(status: 404)
   end
 
@@ -218,7 +218,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi", "pypi_response_no_source.json") }
 
       before do
-        stub_request(:get, "http://initd.org/psycopg/").
+        stub_request(:get, "http://www.psycopg.org/").
           to_return(status: 200, body: "no details")
       end
 
@@ -232,19 +232,19 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       it "caches the call to the homepage" do
         2.times { source_url }
         expect(WebMock).
-          to have_requested(:get, "http://initd.org/psycopg/").once
+          to have_requested(:get, "http://www.psycopg.org/").once
       end
 
       context "and the homepage does an infinite redirect" do
-        let(:redirect_url) { "http://initd.org/Psycopg/" }
+        let(:redirect_url) { "http://www.psycopg.org/fake-redirect/" }
 
         before do
-          stub_request(:get, "http://initd.org/psycopg/").
+          stub_request(:get, "http://www.psycopg.org/").
             to_return(status: 302, headers: { "Location" => redirect_url })
           stub_request(:get, redirect_url).
             to_return(
               status: 302,
-              headers: { "Location" => "http://initd.org/psycopg/" }
+              headers: { "Location" => "http://www.psycopg.org/" }
             )
         end
 
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
       context "but there are details on the home page" do
         before do
-          stub_request(:get, "http://initd.org/psycopg/").
+          stub_request(:get, "http://psycopg.org/").
             to_return(
               status: 200,
               body: fixture("psycopg_homepage.html")
@@ -261,25 +261,25 @@ RSpec.describe Dependabot::Python::MetadataFinder do
         end
 
         context "for this dependency" do
-          let(:dependency_name) { "psycopg2" }
-          it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
+          let(:dependency_name) { "psycopg" }
+          it { is_expected.to eq("https://github.com/psycopg/psycopg") }
 
           context "with an unexpected name" do
-            let(:dependency_name) { "python-psycopg2" }
+            let(:dependency_name) { "python-psycopg" }
             before do
-              stub_request(:get, "https://github.com/psycopg/psycopg2").
-                to_return(status: 200, body: "python-psycopg2")
+              stub_request(:get, "https://github.com/psycopg/psycopg").
+                to_return(status: 200, body: "python-psycopg")
             end
 
-            it { is_expected.to eq("https://github.com/psycopg/psycopg2") }
+            it { is_expected.to eq("https://github.com/psycopg/psycopg") }
           end
         end
 
         context "for another dependency" do
           let(:dependency_name) { "luigi" }
           before do
-            stub_request(:get, "https://github.com/psycopg/psycopg2").
-              to_return(status: 200, body: "python-psycopg2")
+            stub_request(:get, "https://github.com/psycopg/psycopg").
+              to_return(status: 200, body: "python-psycopg")
           end
 
           it { is_expected.to be_nil }
@@ -323,7 +323,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       let(:pypi_response) { fixture("pypi", "pypi_response_no_source.json") }
 
       it "returns the specified homepage" do
-        expect(homepage_url).to eq("http://initd.org/psycopg/")
+        expect(homepage_url).to eq("http://www.psycopg.org/")
       end
     end
   end

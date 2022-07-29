@@ -1,229 +1,319 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>PostgreSQL + Python | Psycopg</title>
-  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
-  <meta http-equiv="content-language" content="en-us" />
-  <meta name="description" content="Python adapter for PostgreSQL" />
-  <meta name="keywords" content="python, postgresql, adapter, driver, psycopg, psycopg2, database" />
 
-  <link rel="stylesheet" type="text/css" href="/psycopg/media/css/psycopg.css" />
-  <link rel="stylesheet" type="text/css" href="/psycopg/media/css/syntax.css" />
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-19287248-2"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-19287248-2');
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Python adapter for PostgreSQL" />
+    <meta name="keywords" content="python, postgresql, adapter, driver, psycopg, psycopg2, database" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/syntax.css?h=8242465b">
+    <link rel="stylesheet" href="/css/psycopg.css?h=09ddafbb">
+    <title>PostgreSQL driver for Python — Psycopg</title>
+    <link rel="alternate" type="application/atom+xml" title="Psycopg news"
+      href="/news.xml" />
+    <link rel="alternate" type="application/atom+xml" title="Psycopg articles"
+      href="/articles.xml" />
+  </head>
+  <body>
+    <header>
+      <div id="logoContainer" class="container">
+        <div id="logo"><h1><a href="/">psycopg</a></h1></div>
+        <div style="clear: left"></div>
+      </div>
+  <nav id="menu" class="navbar navbar-expand-sm navbar-dark">
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+        data-target="#collapsibleNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <ul class="navbar-nav">
+          <li class="nav-item active">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/features/">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/install/">Install</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/articles/tag/news/">News</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/articles/tag/recipe/">Recipes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/psycopg3/">psycopg3</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/sponsors/">Sponsors</a>
+          </li>
+      </ul>
+    </div>
+  </nav>
+    </header>
 
-
-  <link rel="alternate" type="application/atom+xml" title="Psycopg news"
-    href="/psycopg/articles/feeds/tag/news/atom/" />
-  <link rel="alternate" type="application/atom+xml" title="Psycopg articles"
-    href="/psycopg/articles/feeds/atom/" />
-  <script type="text/javascript">
-    /* <![CDATA[ */
-        (function() {
-          var s = document.createElement('script'), t = document.getElementsByTagName('script')[0];
-          s.type = 'text/javascript';
-          s.async = true;
-          s.src = 'http://api.flattr.com/js/0.6/load.js?mode=auto';
-          t.parentNode.insertBefore(s, t);
-        })();
-    /* ]]> */
-  </script>
-
-
-
-
-
-<script type="text/javascript">
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-19287248-1']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-</script>
-
-
-
-</head>
-<body class="">
-
-<div id="header">
-  <div id="logoContainer">
-    <div id="logo"><h1><a href="/psycopg/">psycopg</a></h1></div>
-    <div class="clearLeft"></div>
-  </div>
-  <div id="menu">
-    <table cellpadding="0" cellspacing="0" border="0">
-      <tbody>
-        <tr>
-          <td>
-            <ul>
-              <li><a href="/psycopg/">Home</a></li>
-              <li><a href="/psycopg/download/">Download</a></li>
-              <li><a href="/psycopg/docs/install.html">Install</a></li>
-              <li><a href="/psycopg/docs/">Documentation</a></li>
-
-              <li><a href="/psycopg/articles/tag/news/">News</a></li>
-              <li><a href="/psycopg/articles/">Articles</a></li>
-              <li><a href="/psycopg/development/">Development</a></li>
-            </ul>
-            <div class="clearLeft"></div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<div id="site">
-  <div id="content">
+    <div id="site" class="container" style="margin-top:30px">
+      <div class="row">
+        <div id="content" class="col-sm-8 sidebar">
 
 <div class="teaser">
-<p><strong>Psycopg</strong> is the most popular <a class="reference external" href="http://www.postgresql.org/">PostgreSQL</a> adapter for the <a class="reference external" href="http://www.python.org/">Python programming language</a>.
-At its core it fully implements the <a class="reference external" href="http://www.python.org/dev/peps/pep-0249/">Python DB API 2.0</a> specifications. Several extensions allow access to many of the features offered by PostgreSQL.</p>
+<p><strong>Psycopg</strong> is the most popular <a class="reference external" href="http://www.postgresql.org/">PostgreSQL</a> adapter for the <a class="reference external" href="http://www.python.org/">Python programming
+language</a>. Its core is a complete implementation of the <a class="reference external" href="http://www.python.org/dev/peps/pep-0249/">Python DB API 2.0</a>
+specifications. Several extensions allow access to many of the features offered
+by PostgreSQL.</p>
 
 </div>
-<div style="margin-bottom: 1em">
-<p>Psycopg is released under the terms of the <a class="reference external" href="/psycopg/license/">GNU Lesser General Public License</a>, allowing use from both free and proprietary software.</p>
+
+<div class="sponsor">
+  <p>
+  <a href="/psycopg3/">Psycopg 3</a> was released in October 2021 and is currently in
+  <a href="https://www.psycopg.org/psycopg3/docs/" target="_blank"
+    >version 3.0 </a>.
+  </p>
+
+  <p><a href="https://www.psycopg.org/psycopg3/docs/news.html#psycopg-3-1-unreleased" target="_blank">Version 3.1</a> is about to be released, with new features and improvements.</p>
+
+  <p>
+    If you use Python and PostgreSQL, and you would like to support the
+    creation of the most advanced adapter between the two systems,
+    <a href="https://github.com/sponsors/dvarrazzo/" target="_blank"
+      >please consider becoming a sponsor</a>.
+  </p>
+
+  <p>
+  Sponsoring this project will help achieve swift completion and
+  ensure the maintenance of psycopg2, psycopg3 and other related
+  projects.
+  </p>
+
+  <p>If you are interested in contributing to the maintenance of the project, please reach out. Thank you!
+  </p>
+
+  <iframe src="https://github.com/sponsors/dvarrazzo/button"
+          title="Sponsor the project" style="border: 0"
+          width="116" height="35">
+  </iframe>
+
+  <div class="clear"></div>
+</div>
+
+<p>Psycopg is released under the terms of the <a class="reference external" href="/license/">GNU Lesser General Public
+License</a>, allowing use from both free and proprietary software.</p>
 <ul class="simple">
-<li>Check the <a class="reference external" href="/psycopg/features/">features list</a> to see what Psycopg offers</li>
-<li>Read the <a class="reference external" href="/psycopg/docs/">Psycopg documentation</a>. Be sure to check the <a class="reference external" href="/psycopg/docs/faq.html">Frequently Asked Questions</a></li>
-<li><a class="reference external" href="/psycopg/download/">Download Psycopg</a>!</li>
+<li>Check the <a class="reference external" href="/features/">features list</a> to see what Psycopg offers</li>
+<li>Read the <a class="reference external" href="/docs/">Psycopg documentation</a>. Be sure to check the <a class="reference external" href="/docs/faq.html">Frequently
+Asked Questions</a></li>
+<li><a class="reference external" href="/docs/install.html">Install Psycopg</a>!</li>
 </ul>
-
-</div>
-
-
-
-  <div class="clearbox">
-  <h2><a href="/psycopg/articles/">Latest articles</a></h2>
-
-    <div class="article">
-      <h3><a href="/psycopg/articles/2018/02/08/psycopg-274-released/">Psycopg 2.7.4 released</a></h3>
-
-<p class="header">
-  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
-  on <span class="pub_date">February 8, 2018</span>
+<p>For help requests and development discussions please <a class="reference external" href="https://lists.postgresql.org/">subscribe to the mailing
+list</a> psycopg&#64;postgresql.org.</p>
 
 
-    <br />Tagged as
 
-    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
+<div class="dashed-top">
+  <h1>Latest articles</h1>
+  <div class="article">
 
-    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+    <h2><a href="/articles/2021/10/13/psycopg-30-released/">Psycopg 3.0 released</a></h2>
 
+  <p class="header">
+    Posted by Daniele Varrazzo on 2021-10-13
 
-</p>
-
-    </div>
-
-    <div class="article">
-      <h3><a href="/psycopg/articles/2017/10/24/psycopg-2732-released/">Psycopg 2.7.3.2 released</a></h3>
-
-<p class="header">
-  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
-  on <span class="pub_date">October 24, 2017</span>
-
-
-    <br />Tagged as
-
-    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
-
-    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
+      <br />
+      Tagged as
+      <a class="tag" href="/"
+          >news</a>,
+      <a class="tag" href="/"
+          >release</a>
 
 
-</p>
+  </p>
 
-    </div>
-
-    <div class="article">
-      <h3><a href="/psycopg/articles/2017/08/26/psycopg-2731-released/">Psycopg 2.7.3.1 released</a></h3>
-
-<p class="header">
-  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
-  on <span class="pub_date">August 26, 2017</span>
+    <p>Hello,</p>
+<p>I am extremely excited to announce the first stable release of Psycopg 3!</p>
 
 
-</p>
-
-    </div>
-
-    <div class="article">
-      <h3><a href="/psycopg/articles/2017/07/24/psycopg-273-released/">Psycopg 2.7.3 released</a></h3>
-
-<p class="header">
-  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
-  on <span class="pub_date">July 24, 2017</span>
-
-
-    <br />Tagged as
-
-    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
-
-    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
-
-
-</p>
-
-    </div>
-
-    <div class="article">
-      <h3><a href="/psycopg/articles/2017/07/22/psycopg-272-released/">Psycopg 2.7.2 released</a></h3>
-
-<p class="header">
-  Posted by <a class="author" href="/psycopg/articles/author/piro/">Daniele Varrazzo</a>
-  on <span class="pub_date">July 22, 2017</span>
-
-
-    <br />Tagged as
-
-    <a class="tag" href="/psycopg/articles/tag/news/">news</a>,
-
-    <a class="tag" href="/psycopg/articles/tag/release/">release</a>
-
-
-</p>
-
-    </div>
-
-  </div>
-
+    <p class="read-more"><a href="/articles/2021/10/13/psycopg-30-released/">Read more...</a></p>
 
 
   </div>
 
-  <div id="sidebar">
+  <div class="article">
+
+    <h2><a href="/articles/2021/08/30/psycopg-30-beta1-released/">Psycopg 3.0 beta 1 released!</a></h2>
+
+  <p class="header">
+    Posted by Daniele Varrazzo on 2021-08-30
+
+      <br />
+      Tagged as
+      <a class="tag" href="/"
+          >news</a>,
+      <a class="tag" href="/"
+          >release</a>
 
 
-<div class="clearbox">
-  <h3>Donate</h3>
-  <a class="FlattrButton" style="display:none;" rev="flattr;button:compact;" href="http://www.psycopg.org/"></a>
-  <noscript><a href="http://flattr.com/thing/390575/psycopg" target="_blank">
-  <img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript>
+  </p>
+
+    <p>We are immensely proud to <a class="reference external" href="https://pypi.org/project/psycopg/3.0b1/">release on PyPI</a> the first beta package of Psycopg
+3!</p>
+
+
+    <p class="read-more"><a href="/articles/2021/08/30/psycopg-30-beta1-released/">Read more...</a></p>
+
+
+  </div>
+
+  <div class="article">
+
+    <h2><a href="/articles/2021/08/02/psycopg3-django-driver/">Building a Django driver for Psycopg 3</a></h2>
+
+  <p class="header">
+    Posted by Daniele Varrazzo on 2021-08-02
+
+      <br />
+      Tagged as
+      <a class="tag" href="/"
+          >psycopg3</a>,
+      <a class="tag" href="/"
+          >development</a>,
+      <a class="tag" href="/"
+          >recipe</a>
+
+
+  </p>
+
+    <p>One of the goals of the <a class="reference external" href="https://www.psycopg.org/psycopg3/">Psycopg 3 project</a> is to make easy to port code
+developed from Psycopg 2. For this reason the creation of a Django backend
+(the module you specify in the settings as your <a class="reference external" href="https://docs.djangoproject.com/en/3.2/ref/settings/#databases">database ENGINE</a>) was
+a project with a double goal:</p>
+<ul class="simple">
+<li>A Django driver is a way to make Psycopg 3 useful from the start, with the
+possibility of dropping it in a project transparently and have available,
+when needed the new features offered (for instance the superior <a class="reference external" href="https://www.psycopg.org/psycopg3/docs/basic/copy.html">COPY
+support</a>).</li>
+<li>The difficulty of introducing Psycopg 3 in the Django codebase and the type
+of changes required are indicative of the type of problems that could be
+found porting other projects.</li>
+</ul>
+<p>...and it's done! A few days ago, the new <a class="reference external" href="https://github.com/dvarrazzo/django-psycopg3-backend">Psycopg 3 Django backend</a> could
+pass the entire Django test suite!</p>
+
+
+    <p class="read-more"><a href="/articles/2021/08/02/psycopg3-django-driver/">Read more...</a></p>
+
+
+  </div>
+
+  <a href="/articles/">See all articles...</a>
 </div>
+        </div>
+        <div id="sidebar" class="col-sm-4">
 
-<div class="clearbox">
-  <h3>Quick links</h3>
-  <ul>
-    <li><a href="http://initd.org/psycopg/tarballs/PSYCOPG-2-7/psycopg2-2.7.4.tar.gz"
-      >Download stable release (2.7.4)</a></li>
 
-    <li><a href="http://www.stickpeople.com/projects/python/win-psycopg/">Windows download</a></li>
-    <li><a href="https://github.com/psycopg/psycopg2/issues">Report a bug</a></li>
-    <li><a href="https://lists.postgresql.org/">Mailing list</a></li>
+
+
+<div>
+
+  <h3>psycopg2</h3>
+
+  <ul class="fa-ul links">
+    <li>
+      <a href="/docs/">
+        <i class="fa-li fa-lg fa fa-book" aria-hidden="true"></i>
+        Documentation</a>
+    </li>
+    <li>
+      <a href="https://github.com/psycopg/psycopg2/">
+        <i class="fa-li fa-lg fa fa-github" aria-hidden="true"></i>
+        Source code</a>
+    </li>
+    <li>
+      <a href="https://github.com/psycopg/psycopg2/issues">
+        <i class="fa-li fa-lg fa fa-bug" aria-hidden="true"></i>
+        Bug tracker</a>
+    </li>
+    <li>
+      <a href="https://pypi.org/project/psycopg2/">
+        <i class="fa-li fa-lg fa fa-cloud-download" aria-hidden="true"></i>
+        Download</a>
+    </li>
   </ul>
 </div>
 
+<div class="dashed-top">
+  <h3>psycopg3</h3>
 
-  </div>
+  <ul class="fa-ul links">
+    <li>
+      <a href="/psycopg3/">
+        <i class="fa-li fa-lg fa fa-cogs" aria-hidden="true"></i>
+        The Project</a>
+    </li>
+    <li>
+      <a href="/psycopg3/docs/">
+        <i class="fa-li fa-lg fa fa-book" aria-hidden="true"></i>
+        Documentation</a>
+    </li>
+    <li>
+      <a href="https://github.com/psycopg/psycopg3/">
+        <i class="fa-li fa-lg fa fa-github" aria-hidden="true"></i>
+        Source code</a>
+    </li>
+    <li>
+      <a href="https://github.com/psycopg/psycopg3/issues">
+        <i class="fa-li fa-lg fa fa-bug" aria-hidden="true"></i>
+        Bug tracker</a>
+    </li>
+  </ul>
 </div>
 
-<div class="clearBoth"></div>
+<div class="dashed-top">
+  <h3>Mailing List</h3>
 
-<div id="footer">
-  <p>&#169; 2010&#8212;2017 &#8212; Daniele Varrazzo (at gmail.com)
+  <ul class="fa-ul links">
+    <li>
+      <a href="https://lists.postgresql.org/">
+        <i class="fa-li fa-lg fa fa-pencil" aria-hidden="true"></i>
+        Subscribe</a>
+    </li>
+    <li>
+      <a href="https://www.postgresql.org/list/psycopg/">
+        <i class="fa-li fa-lg fa fa-envelope-o" aria-hidden="true"></i>
+        Archives</a>
+    </li>
+  </ul>
 </div>
 
-</body>
+<div class="dashed-top">
+  <a class="twitter-timeline" data-width="300" data-height="600" data-dnt="true"
+    href="https://twitter.com/psycopg?ref_src=twsrc%5Etfw">Tweets by psycopg</a>
+  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+
+        </div>
+
+      </div>
+    </div>
+
+    <footer>
+      <div style="margin-bottom:0">
+        <p>© Copyright 2010—2021 by Daniele Varrazzo (at gmail), The Psycopg Team.</p>
+      </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  </body>
 </html>
