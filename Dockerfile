@@ -68,10 +68,10 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-ARG RUBY_VERSION=2.7.6
+ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.3
 
-ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
+ARG RUBYGEMS_SYSTEM_VERSION=3.3.19
 # Disable the outdated rubygems installation from being loaded
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 

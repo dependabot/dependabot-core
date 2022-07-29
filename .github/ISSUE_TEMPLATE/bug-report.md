@@ -17,7 +17,7 @@ assignees: ''
 **Package manager version**
 <!-- If applicable, specify the package manager version you're using (e.g., npm 7.1, pip-compile 5.0, etc.) -->
 **Language version**
-<!-- If applicable, specify the language version you're using (e.g., node 14.1, Ruby 2.7, etc. ) -->
+<!-- If applicable, specify the language version you're using (e.g., node 14.1, Ruby 3.1, etc. ) -->
 **Manifest location and content before the Dependabot update**
 <!-- If applicable, specify the path to each manifest file (/client/package.json, /Gemfile, etc.) -->
 <!-- If applicable, attach each manifest file or provide a link to each manifest file -->

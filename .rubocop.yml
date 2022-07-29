@@ -6,7 +6,7 @@ AllCops:
   - "*/bin/**/*"
   - "**/tmp/**/*"
   - "*/spec/fixtures/**/*"
-  TargetRubyVersion: 2.7
+  TargetRubyVersion: 3.1
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
