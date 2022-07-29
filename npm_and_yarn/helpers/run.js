@@ -25,6 +25,6 @@ process.stdin.on("end", () => {
     })
     .catch((error) => {
       output({ error: error.message });
-      process.exit(1);
+      process.exitCode = 1;
     });
 });
