@@ -548,5 +548,45 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
 
       specify { expect(subject).to be_nil }
     end
+
+    context "with an optional dependency" do
+      let(:manifest_fixture_name) { "bare_version_specified_as_optional" }
+      let(:unprepared_dependency_files) { [manifest] }
+
+      it { is_expected.to be >= Gem::Version.new("0.2.10") }
+    end
+
+    context "when attempting to resolve a subdependency of a path dependency" do
+      let(:path_dependency_manifest) do
+        Dependabot::DependencyFile.new(
+          name: "src/s3/Cargo.toml",
+          content: fixture("manifests", path_dependency_manifest_fixture_name)
+        )
+      end
+
+      let(:manifest_fixture_name) { "path_dependency" }
+      let(:path_dependency_manifest_fixture_name) { "cargo-registry-s3" }
+
+      let(:unprepared_dependency_files) { [manifest, path_dependency_manifest] }
+
+      let(:dependency_name) { "openssl" }
+      let(:dependency_version) { "0.10" }
+      let(:string_req) { "0.10" }
+
+      it { is_expected.to be >= Gem::Version.new("0.10.41") }
+
+      context "when the subdependency is optional" do
+        let(:path_dependency_manifest_fixture_name) { "cargo-registry-s3-ssl-optional" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "when the subdependency is optional but enabled by the parent" do
+        let(:manifest_fixture_name) { "path_dependency_feature_enabled" }
+        let(:path_dependency_manifest_fixture_name) { "cargo-registry-s3-ssl-optional" }
+
+        it { is_expected.to be >= Gem::Version.new("0.10.41") }
+      end
+    end
   end
 end

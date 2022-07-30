@@ -143,11 +143,7 @@ module Dependabot
 
           @google_version_details ||=
             begin
-              response = Excon.get(
-                dependency_metadata_url,
-                idempotent: true,
-                **SharedHelpers.excon_defaults
-              )
+              response = Dependabot::RegistryClient.get(url: dependency_metadata_url)
               Nokogiri::XML(response.body)
             end
 
@@ -168,10 +164,9 @@ module Dependabot
           @dependency_metadata ||= {}
           @dependency_metadata[repository_details.hash] ||=
             begin
-              response = Excon.get(
-                dependency_metadata_url(repository_details.fetch("url")),
-                idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults(headers: repository_details.fetch("auth_headers"))
+              response = Dependabot::RegistryClient.get(
+                url: dependency_metadata_url(repository_details.fetch("url")),
+                headers: repository_details.fetch("auth_headers")
               )
               check_response(response, repository_details.fetch("url"))
               Nokogiri::XML(response.body)

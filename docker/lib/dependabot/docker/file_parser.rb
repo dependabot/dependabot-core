@@ -32,7 +32,7 @@ module Dependabot
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
           #{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x.freeze
 
-      AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+).amazonaws\.com/.freeze
+      AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/.freeze
 
       def parse
         dependency_set = DependencySet.new

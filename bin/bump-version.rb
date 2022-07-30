@@ -107,6 +107,6 @@ unless dry_run
   puts "# tag the approved release notes:"
   puts "git fetch"
   puts "git tag 'v#{new_version}' 'origin/v#{new_version}-release-notes'"
-  puts "git push --tags"
+  puts "git push origin v#{new_version}"
   puts
 end
