@@ -3,7 +3,7 @@
 set -e
 
 bundle install
-bundle exec rubocop .
+# bundle exec rubocop .
 bundle exec rspec spec
 
 cd /opt/npm_and_yarn && npm run lint && cd -
