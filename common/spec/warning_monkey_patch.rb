@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 ALLOW_PATTERNS = [
+  # TODO: Pin the parser version to the Ruby version--details: https://github.com/dependabot/dependabot-core/issues/5461
   # Ignore parser warnings for ruby 2.7 minor version mismatches.
   # This is a recurring issue that occurs whenever the parser gets
   # ahead of our installed ruby version.
