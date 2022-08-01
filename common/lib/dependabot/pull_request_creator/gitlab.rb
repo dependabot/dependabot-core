@@ -92,6 +92,27 @@ module Dependabot
         )
       end
 
+      def create_commit
+        return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
+
+        gitlab_client_for_source.create_commit(
+          source.repo,
+          branch_name,
+          commit_message,
+          file_actions
+        )
+      end
+
+      def file_actions
+        files.map do |file|
+          {
+            action: file_action(file),
+            file_path: file.type == "symlink" ? file.symlink_target : file.path,
+            content: file.content
+          }
+        end
+      end
+
       # @param [DependencyFile] file
       def file_action(file)
         if file.operation == Dependabot::DependencyFile::Operation::DELETE
@@ -101,25 +122,6 @@ module Dependabot
         else
           "update"
         end
-      end
-
-      def create_commit
-        return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
-
-        actions = files.map do |file|
-          {
-            action: file_action(file),
-            file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
-          }
-        end
-
-        gitlab_client_for_source.create_commit(
-          source.repo,
-          branch_name,
-          commit_message,
-          actions
-        )
       end
 
       def create_submodule_update_commit
