@@ -4,6 +4,78 @@ updates:
     directory: "/common"
     schedule:
       interval: "weekly"
+
+  # Watch the per-ecosystem gemspecs
+  - package-ecosystem: "bundler"
+    directory: "/bundler"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/cargo"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/composer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/elm"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/git_submodules"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/github_actions"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/go_modules"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/gradle"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/hex"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/maven"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/npm_and_yarn"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/nuget"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/omnibus"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/pub"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/python"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+
+  # Watch the per-ecosystem native helpers
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
     schedule:
