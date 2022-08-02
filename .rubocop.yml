@@ -256,6 +256,8 @@ Style/HashExcept:
   Enabled: true
 Style/HashLikeCase:
   Enabled: false
+Style/HashSyntax:
+  EnforcedShorthandSyntax: either
 Style/HashTransformKeys:
   Enabled: false
 Style/HashTransformValues:
