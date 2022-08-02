@@ -41,7 +41,7 @@ RSpec.describe Dependabot::Bundler::Helpers do
   end
 
   let(:v1) { "1.17.3" }
-  let(:v2) { "2.3.18" }
+  let(:v2) { "2.3.19" }
 
   describe "#bundler_version" do
     def described_method(lockfile)

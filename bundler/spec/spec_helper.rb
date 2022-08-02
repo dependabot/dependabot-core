@@ -20,7 +20,7 @@ module PackageManagerHelper
   end
 
   def self.bundler_version
-    use_bundler_2? ? "2.3.18" : "1.17.3"
+    use_bundler_2? ? "2.3.19" : "1.17.3"
   end
 
   def self.bundler_major_version
