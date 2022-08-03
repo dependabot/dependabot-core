@@ -47,7 +47,7 @@ module Dependabot
         end
 
         def gitlab_maven_repo?(maven_repo_path)
-          gitlab_maven_repo_reg = %r{^/api/v4.*/packages/maven/?$}.freeze
+          gitlab_maven_repo_reg = %r{^/api/v4.*/packages/maven/?$}
           maven_repo_path.match?(gitlab_maven_repo_reg)
         end
       end

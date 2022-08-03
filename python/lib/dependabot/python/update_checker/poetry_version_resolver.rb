@@ -35,7 +35,7 @@ module Dependabot
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
-        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /x # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
           (?:'\['git',
           \s+'clone',
@@ -47,7 +47,7 @@ module Dependabot
           \s+Failed\sto\sclone
           \s+(?<url>.+?),
           \s+check\syour\sgit\sconfiguration)
-        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /mx # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 

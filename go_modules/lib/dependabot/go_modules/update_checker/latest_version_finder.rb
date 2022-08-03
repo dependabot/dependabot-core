@@ -22,10 +22,10 @@ module Dependabot
           /unrecognized import path/,
           /malformed module path/,
           # (Private) module could not be fetched
-          /module .*: git ls-remote .*: exit status 128/m.freeze
+          /module .*: git ls-remote .*: exit status 128/m
         ].freeze
-        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m.freeze
-        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/.freeze
+        INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
+        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:, raise_on_ignored: false,

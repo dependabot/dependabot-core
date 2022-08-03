@@ -10,7 +10,7 @@ module Functions
         locked\sto\s(?<name>[^\s]+)\s\(|
         not\sfind\s(?<name>[^\s]+)-\d|
         has\s(?<name>[^\s]+)\slocked\sat
-      /x.freeze
+      /x
     DEPENDENCY_DROPPED = "_dependency_dropped_"
 
     def initialize(gemfile_name:, lockfile_name:, dependencies:)

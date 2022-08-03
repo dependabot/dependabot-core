@@ -8,10 +8,10 @@ module Dependabot
   module Hex
     class UpdateChecker
       class RequirementsUpdater
-        OPERATORS = />=|<=|>|<|==|~>/.freeze
-        AND_SEPARATOR = /\s+and\s+/.freeze
-        OR_SEPARATOR = /\s+or\s+/.freeze
-        SEPARATOR = /#{AND_SEPARATOR}|#{OR_SEPARATOR}/.freeze
+        OPERATORS = />=|<=|>|<|==|~>/
+        AND_SEPARATOR = /\s+and\s+/
+        OR_SEPARATOR = /\s+or\s+/
+        SEPARATOR = /#{AND_SEPARATOR}|#{OR_SEPARATOR}/
 
         def initialize(requirements:, latest_resolvable_version:,
                        updated_source:)

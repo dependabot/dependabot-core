@@ -13,7 +13,7 @@ module Dependabot
           registry.yarnpkg.com
         ).freeze
 
-        SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/.freeze
+        SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files

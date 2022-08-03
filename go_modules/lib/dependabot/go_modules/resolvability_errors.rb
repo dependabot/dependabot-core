@@ -3,7 +3,7 @@
 module Dependabot
   module GoModules
     module ResolvabilityErrors
-      GITHUB_REPO_REGEX = %r{github.com/[^:@]*}.freeze
+      GITHUB_REPO_REGEX = %r{github.com/[^:@]*}
 
       def self.handle(message, credentials:, goprivate:)
         mod_path = message.scan(GITHUB_REPO_REGEX).last

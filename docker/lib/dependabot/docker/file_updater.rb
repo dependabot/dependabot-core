@@ -7,7 +7,7 @@ require "dependabot/errors"
 module Dependabot
   module Docker
     class FileUpdater < Dependabot::FileUpdaters::Base
-      FROM_REGEX = /FROM(\s+--platform\=\S+)?/i.freeze
+      FROM_REGEX = /FROM(\s+--platform\=\S+)?/i
 
       def self.updated_files_regex
         [

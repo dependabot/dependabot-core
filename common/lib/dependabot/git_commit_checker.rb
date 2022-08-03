@@ -19,7 +19,7 @@ module Dependabot
         |
         [0-9]+\.[0-9]+(?:\.[a-z0-9\-]+)*
       )$
-    /ix.freeze
+    /ix
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,

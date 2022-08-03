@@ -25,18 +25,16 @@ module Dependabot
           (?:\$\{property\((?<property_name>[^:\s]*?)\)\})|
           (?:\$\{(?<property_name>[^:\s]*?)\})|
           (?:\$(?<property_name>[^:\s"']*))
-        /x.freeze
+        /x
 
-      PART = %r{[^\s,@'":/\\]+}.freeze
-      VSN_PART = %r{[^\s,'":/\\]+}.freeze
-      DEPENDENCY_DECLARATION_REGEX =
-        /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/.
-        freeze
-      DEPENDENCY_SET_DECLARATION_REGEX =
-        /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/.freeze
-      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/.freeze
-      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/.freeze
-      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/.freeze
+      PART = %r{[^\s,@'":/\\]+}
+      VSN_PART = %r{[^\s,'":/\\]+}
+      DEPENDENCY_DECLARATION_REGEX = /(?:\(|\s)\s*['"](?<declaration>#{PART}:#{PART}:#{VSN_PART})['"]/
+
+      DEPENDENCY_SET_DECLARATION_REGEX = /(?:^|\s)dependencySet\((?<arguments>[^\)]+)\)\s*\{/
+      DEPENDENCY_SET_ENTRY_REGEX = /entry\s+['"](?<name>#{PART})['"]/
+      PLUGIN_BLOCK_DECLARATION_REGEX = /(?:^|\s)plugins\s*\{/
+      PLUGIN_ID_REGEX = /['"](?<id>#{PART})['"]/
 
       def parse
         dependency_set = DependencySet.new

@@ -6,12 +6,11 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Hex
     class FileFetcher < Dependabot::FileFetchers::Base
-      APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m.freeze
+      APPS_PATH_REGEX = /apps_path:\s*"(?<path>.*?)"/m
       STRING_ARG = %{(?:["'](.*?)["'])}
       SUPPORTED_METHODS = %w(eval_file require_file).join("|").freeze
-      SUPPORT_FILE = /Code\.(?:#{SUPPORTED_METHODS})\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/.
-                     freeze
-      PATH_DEPS_REGEX = /{.*path: ?#{STRING_ARG}.*}/.freeze
+      SUPPORT_FILE = /Code\.(?:#{SUPPORTED_METHODS})\(#{STRING_ARG}(?:\s*,\s*#{STRING_ARG})?\)/
+      PATH_DEPS_REGEX = /{.*path: ?#{STRING_ARG}.*}/
 
       def self.required_files_in?(filenames)
         filenames.include?("mix.exs")

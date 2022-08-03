@@ -12,10 +12,10 @@ module Dependabot
   module Python
     class FileParser
       class SetupFileParser
-        INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m.freeze
-        SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m.freeze
-        TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m.freeze
-        EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m.freeze
+        INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m
+        SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m
+        TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m
+        EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m
 
         CLOSING_BRACKET = { "[" => "]", "{" => "}" }.freeze
 

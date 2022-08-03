@@ -4,7 +4,7 @@ require "raven"
 
 # ExceptionSanitizer filters potential secrets/PII from exception payloads
 class ExceptionSanitizer < Raven::Processor
-  REPO = %r{[\w.\-]+/([\w.\-]+)}.freeze
+  REPO = %r{[\w.\-]+/([\w.\-]+)}
   PATTERNS = {
     auth_token: /(?:authorization|bearer):? (\w+)/i,
     repo: %r{api\.github\.com/repos/#{REPO}|github\.com/#{REPO}}

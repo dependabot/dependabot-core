@@ -12,15 +12,15 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class Requirement < Gem::Requirement
-      WILDCARD_REGEX = /(?:\.|^)[xX*]/.freeze
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/.freeze
+      WILDCARD_REGEX = /(?:\.|^)[xX*]/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Version::VERSION_PATTERN}"
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use GoModules::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.

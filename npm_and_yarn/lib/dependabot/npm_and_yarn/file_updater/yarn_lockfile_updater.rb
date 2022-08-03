@@ -40,10 +40,9 @@ module Dependabot
 
         attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
 
-        UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/.freeze
-        TIMEOUT_FETCHING_PACKAGE =
-          %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
-        INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/.freeze
+        UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/
+        TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+        INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/
 
         def top_level_dependencies
           dependencies.select(&:top_level?)

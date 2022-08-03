@@ -18,7 +18,7 @@ module Dependabot
       VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z]+(\.[0-9a-zA-Z]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       def self.correct?(version)
         return false if version.nil?

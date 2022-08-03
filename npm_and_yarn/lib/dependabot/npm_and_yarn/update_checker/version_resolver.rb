@@ -36,7 +36,7 @@ module Dependabot
             "\s>\s(?<requiring_dep>[^"]+)"\s
             has\s(incorrect|unmet)\speer\sdependency\s
             "(?<required_dep>[^"]+)"
-          /x.freeze
+          /x
 
         # Error message from npm install:
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
@@ -46,7 +46,7 @@ module Dependabot
             (?<requiring_dep>[^\s]+)\s
             requires\sa\speer\sof\s
             (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
-          /x.freeze
+          /x
 
         # Error message from npm install:
         # npm ERR! Could not resolve dependency:
@@ -59,7 +59,7 @@ module Dependabot
           /
             npm\s(?:WARN|ERR!)\sCould\snot\sresolve\sdependency:\n
             npm\s(?:WARN|ERR!)\speer\s(?<required_dep>\S+@\S+(\s\S+)?)\sfrom\s(?<requiring_dep>\S+@\S+)
-          /x.freeze
+          /x
 
         def initialize(dependency:, credentials:, dependency_files:,
                        latest_allowable_version:, latest_version_finder:)

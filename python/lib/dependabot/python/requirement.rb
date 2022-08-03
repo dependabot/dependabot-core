@@ -6,7 +6,7 @@ require "dependabot/python/version"
 module Dependabot
   module Python
     class Requirement < Gem::Requirement
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/.freeze
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/
 
       # Add equality and arbitrary-equality matchers
       OPS = OPS.merge(
@@ -19,8 +19,8 @@ module Dependabot
       version_pattern = Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
-      PARENS_PATTERN = /\A\(([^)]+)\)\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
+      PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
       def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

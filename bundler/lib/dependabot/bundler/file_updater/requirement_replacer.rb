@@ -167,7 +167,7 @@ module Dependabot
             req_string.include?(" ")
           end
 
-          EQUALITY_OPERATOR = /(?<![<>!])=/.freeze
+          EQUALITY_OPERATOR = /(?<![<>!])=/
 
           def use_equality_operator?(requirement_nodes)
             return true if requirement_nodes.none?
