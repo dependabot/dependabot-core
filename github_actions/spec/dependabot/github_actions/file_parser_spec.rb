@@ -202,5 +202,59 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         end
       end
     end
+
+    context "with a non-github.com source" do
+      let(:workflow_file_fixture_name) { "non_github_source.yml" }
+      let(:service_pack_url) do
+        "https://ghes.other.com/inactions/checkout.git/info/refs"\
+        "?service=git-upload-pack"
+      end
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "github",
+          repo: "gocardless/bump",
+          directory: "/",
+          hostname: "ghes.other.com",
+          api_endpoint: "https://ghes.other.com/api/v3"
+        )
+      end
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "checkout"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://ghes.other.com/inactions/checkout",
+              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              branch: nil
+            },
+            metadata: { declaration_string: "inactions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("inactions/checkout")
+          expect(dependency.version).to eq("2.1.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
   end
 end
