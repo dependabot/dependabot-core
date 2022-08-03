@@ -1,3 +1,21 @@
+## v0.203.0, 3 August 2022
+
+- Make Dependabot watch the per-ecosystem gemspecs [#5460](https://github.com/dependabot/dependabot-core/pull/5460)
+- build(deps): update pip requirement from <22.1.3,>=21.3.1 to >=21.3.1,<22.2.2 in /python/helpers [#5456](https://github.com/dependabot/dependabot-core/pull/5456)
+- fix: set correct url for terraform module version download (@umglurf) [#5366](https://github.com/dependabot/dependabot-core/pull/5366)
+- build(deps): bump @npmcli/arborist from 5.2.3 to 5.3.1 in /npm_and_yarn/helpers [#5458](https://github.com/dependabot/dependabot-core/pull/5458)
+- build(deps): bump path-parse from 1.0.6 to 1.0.7 in /npm_and_yarn/helpers [#5427](https://github.com/dependabot/dependabot-core/pull/5427)
+- GitLab: Extract local actions variable into method (@NobodysNightmare) [#5448](https://github.com/dependabot/dependabot-core/pull/5448)
+- build(deps): bump flake8 from 4.0.1 to 5.0.1 in /python/helpers [#5454](https://github.com/dependabot/dependabot-core/pull/5454)
+- Fix incomplete regular expression for hostnames [#5444](https://github.com/dependabot/dependabot-core/pull/5444)
+- Bump base image in docker push workflow to `20.04` [#5432](https://github.com/dependabot/dependabot-core/pull/5432)
+- Cache client-side timeouts when a remote host is unreachable for remaining ecosystems [#5408](https://github.com/dependabot/dependabot-core/pull/5408)
+- Switch to weekly updates for Dependabot [#5435](https://github.com/dependabot/dependabot-core/pull/5435)
+- Move comment to relevant section of code [#5434](https://github.com/dependabot/dependabot-core/pull/5434)
+- Add dependabot updates for Dockerfiles [#5428](https://github.com/dependabot/dependabot-core/pull/5428)
+- Re-order ecosystems lexicographically [#5429](https://github.com/dependabot/dependabot-core/pull/5429)
+- build(deps): update faraday requirement from = 1.10.0 to = 2.3.0 in /common [#5197](https://github.com/dependabot/dependabot-core/pull/5197)
+
 ## v0.202.0, 26 July 2022
 
 - [cargo] Cache client-side timeouts when a remote host is unreachable [#5402](https://github.com/dependabot/dependabot-core/pull/5402)
