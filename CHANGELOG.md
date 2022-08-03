@@ -1,3 +1,68 @@
+## v0.202.0, 26 July 2022
+
+- [cargo] Cache client-side timeouts when a remote host is unreachable [#5402](https://github.com/dependabot/dependabot-core/pull/5402)
+- [gomod] Cache client-side timeouts when a remote host is unreachable [#5401](https://github.com/dependabot/dependabot-core/pull/5401)
+- fix: regex to support Gitlab subgroups (@argoyle) [#5297](https://github.com/dependabot/dependabot-core/pull/5297)
+- fix(terraform): correctly keep platform hashes when multiple providers are installed (@Flydiverny) [#5341](https://github.com/dependabot/dependabot-core/pull/5341)
+
+## v0.201.1, 25 July 2022
+
+- [Cargo] Correctly handle unused subdependencies of path dependencies [#5414](https://github.com/dependabot/dependabot-core/pull/5414)
+- [Nuget] Cache client-side timeouts when a remote host is unreachable [#5399](https://github.com/dependabot/dependabot-core/pull/5399)
+- Tweak bump-version script to just push the newly-created tag [#5413](https://github.com/dependabot/dependabot-core/pull/5413)
+
+## v0.201.0, 22 July 2022
+
+- [Composer] Cache client-side timeouts when a remote host is unreachable [#5400](https://github.com/dependabot/dependabot-core/pull/5400)
+
+## v0.200.0, 21 July 2022
+
+- [Python] Cache client-side timeouts when a remote host is unreachable [#5374](https://github.com/dependabot/dependabot-core/pull/5374)
+- Pip: Do not raise PathDependenciesNotReachable for missing setup.py [#5392](https://github.com/dependabot/dependabot-core/pull/5392)
+
+## v0.199.0, 19 July 2022
+
+- Stop skipping requirements with `original_link` [#5385](https://github.com/dependabot/dependabot-core/pull/5385)
+
+## v0.198.0, 15 July 2022
+
+- Bump go from 1.18.1 to 1.18.4 [#5379](https://github.com/dependabot/dependabot-core/pull/5379)
+- [npm] Detect cycles when traversing vuln effects in helper and raise [#5321](https://github.com/dependabot/dependabot-core/pull/5321)
+
+## v0.197.0, 15 July 2022
+
+- [Bundler] Cache client-side timeouts when a remote host is unreachable [#5375](https://github.com/dependabot/dependabot-core/pull/5375)
+- Bump bundler from 2.3.13 to 2.3.18 and fix script [#5382](https://github.com/dependabot/dependabot-core/pull/5382)
+- Use new pip resolver for pip-compile [#5358](https://github.com/dependabot/dependabot-core/pull/5358)
+
+## v0.196.4, 14 July 2022
+
+- [NPM/YARN] Cache client-side timeouts when a remote host is unreachable [#5373](https://github.com/dependabot/dependabot-core/pull/5373)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.9.2 to 3.9.3 in /composer/helpers/v2 [#5378](https://github.com/dependabot/dependabot-core/pull/5378)
+- build(deps-dev): bump jest from 28.1.2 to 28.1.3 in /npm_and_yarn/helpers [#5376](https://github.com/dependabot/dependabot-core/pull/5376)
+- build(deps-dev): bump phpstan/phpstan from 1.8.0 to 1.8.1 in /composer/helpers/v2 [#5371](https://github.com/dependabot/dependabot-core/pull/5371)
+- Update Ruby to version 2.7.6 [#5364](https://github.com/dependabot/dependabot-core/pull/5364)
+- Install Ruby with ruby-install [#5356](https://github.com/dependabot/dependabot-core/pull/5356)
+- Do not attribute `maintainers` in release notes [#5360](https://github.com/dependabot/dependabot-core/pull/5360)
+
+## v0.196.3, 12 July 2022
+
+- Add support for Python 3.10.5 & 3.9.13 (@ulgens) [#5333](https://github.com/dependabot/dependabot-core/pull/5333)
+- build(deps-dev): bump friendsofphp/php-cs-fixer from 3.8.0 to 3.9.2 in /composer/helpers/v2 [#5357](https://github.com/dependabot/dependabot-core/pull/5357)
+- build(deps): update pip-tools requirement from <=6.6.2,>=6.4.0 to >=6.4.0,<6.8.1 in /python/helpers [#5337](https://github.com/dependabot/dependabot-core/pull/5337)
+- build(deps-dev): update rubocop requirement from ~> 1.30.1 to ~> 1.31.2 in /common [#5350](https://github.com/dependabot/dependabot-core/pull/5350)
+- build(deps): bump poetry from 1.1.13 to 1.1.14 in /python/helpers [#5354](https://github.com/dependabot/dependabot-core/pull/5354)
+- build(deps): update gitlab requirement from = 4.18.0 to = 4.19.0 in /common [#5355](https://github.com/dependabot/dependabot-core/pull/5355)
+- build(deps): bump nock from 13.2.7 to 13.2.8 in /npm_and_yarn/helpers [#5336](https://github.com/dependabot/dependabot-core/pull/5336)
+- build(deps-dev): bump eslint from 8.18.0 to 8.19.0 in /npm_and_yarn/helpers [#5343](https://github.com/dependabot/dependabot-core/pull/5343)
+- build(deps): bump cython from 0.29.28 to 0.29.30 in /python/helpers [#5158](https://github.com/dependabot/dependabot-core/pull/5158)
+- build(deps-dev): bump jest from 28.1.1 to 28.1.2 in /npm_and_yarn/helpers [#5328](https://github.com/dependabot/dependabot-core/pull/5328)
+- build(deps-dev): bump phpstan/phpstan from 1.7.15 to 1.8.0 in /composer/helpers/v2 [#5330](https://github.com/dependabot/dependabot-core/pull/5330)
+- build(deps): bump composer/composer from 2.3.5 to 2.3.9 in /composer/helpers/v2 [#5347](https://github.com/dependabot/dependabot-core/pull/5347)
+- [go_mod] Stub failed response for initial go get call [#5335](https://github.com/dependabot/dependabot-core/pull/5335)
+- [npm] Ensure 'fix_updates' field in `VulnerabilityAuditor#audit` response (@bdragon) [#5334](https://github.com/dependabot/dependabot-core/pull/5334)
+- Disable potential script execution in arborist [#5327](https://github.com/dependabot/dependabot-core/pull/5327)
+
 ## v0.196.2, 29 June 2022
 
 - Configure arborist registries from npm config [#5313](https://github.com/dependabot/dependabot-core/pull/5313)

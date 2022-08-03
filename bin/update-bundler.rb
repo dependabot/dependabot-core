@@ -8,7 +8,7 @@ require "excon"
 require "json"
 
 LATEST_VERSION = JSON.parse(Excon.get("https://rubygems.org/api/v1/gems/bundler.json").body)["version"]
-CURRENT_VERSION = File.read("Dockerfile").match(/gem install bundler -v (2.\d+\.\d+)/)[1]
+CURRENT_VERSION = File.read("Dockerfile").match(/BUNDLER_V2_VERSION=(2.\d+\.\d+)/)[1]
 
 def update_file(filename)
   File.open(filename, "r+") do |f|

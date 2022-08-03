@@ -30,7 +30,9 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          @latest_resolvable_version ||= fetch_latest_resolvable_version
+          return @latest_resolvable_version if defined?(@latest_resolvable_version)
+
+          @latest_resolvable_version = fetch_latest_resolvable_version
         end
 
         private
@@ -73,6 +75,8 @@ module Dependabot
             else
               versions.min_by { |p| version_class.new(p.fetch("version")) }
             end
+
+          return unless updated_version
 
           if git_dependency?
             updated_version.fetch("source").split("#").last

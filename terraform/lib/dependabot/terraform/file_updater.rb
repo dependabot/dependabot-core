@@ -103,6 +103,11 @@ module Dependabot
           select { |h| h&.match?(/^h1:/) }
       end
 
+      def remove_provider_h1_hashes(content, declaration_regex)
+        content.match(declaration_regex).to_s.
+          sub(hashes_object_regex, "")
+      end
+
       def lockfile_details(new_req)
         content = lock_file.content.dup
         provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
@@ -131,7 +136,7 @@ module Dependabot
         )
 
         base_dir = dependency_files.first.directory
-        lockfile_hash_removed = content.sub(hashes_object_regex, "")
+        lockfile_hash_removed = remove_provider_h1_hashes(content, declaration_regex)
 
         # This runs in the same directory as the actual lockfile update so
         # the platform must be determined before the updated manifest files
@@ -265,7 +270,7 @@ module Dependabot
       end
 
       def hashes_object_regex
-        /hashes\s*=\s*.*\]/m
+        /hashes\s*=\s*[^\]]*\]/m
       end
 
       def hashes_string_regex

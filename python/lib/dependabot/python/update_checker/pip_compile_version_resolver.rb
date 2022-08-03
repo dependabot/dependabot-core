@@ -32,6 +32,8 @@ module Dependabot
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
+        RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
+        ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -76,16 +78,13 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe -v "\
-                     "#{pip_compile_options(filename)} -P #{dependency.name} "\
-                     "#{filename}"
+                    "pyenv exec pip-compile -v #{pip_compile_options(filename)} -P #{dependency.name} #{filename}"
                   )
                   # Run pip-compile a second time, without an update argument,
                   # to ensure it handles markers correctly
                   write_original_manifest_files unless dependency.top_level?
                   run_pip_compile_command(
-                    "pyenv exec pip-compile --allow-unsafe "\
-                     "#{pip_compile_options(filename)} #{filename}"
+                    "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                   )
                 end
 
@@ -114,7 +113,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_pip_compile_errors(error)
-          if error.message.include?("Could not find a version")
+          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR)
             check_original_requirements_resolvable
             # If the original requirements are resolvable but we get an
             # incompatibility error after unlocking then it's likely to be
@@ -138,7 +137,7 @@ module Dependabot
             return
           end
 
-          if error.message.include?("Could not find a version ") &&
+          if error.message.include?(RESOLUTION_IMPOSSIBLE_ERROR) &&
              !error.message.match?(/#{Regexp.quote(dependency.name)}/i)
             # Sometimes pip-tools gets confused and can't work around
             # sub-dependency incompatibilities. Ignore those cases.
@@ -179,7 +178,7 @@ module Dependabot
 
               filenames_to_compile.each do |filename|
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{pip_compile_options(filename)} --allow-unsafe #{filename}"
+                  "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                 )
               end
 
@@ -188,7 +187,7 @@ module Dependabot
               # Pick the error message that includes resolvability errors, this might be the cause from
               # handle_pip_compile_errors (it's unclear if we should always pick the cause here)
               error_message = [e.message, e.cause&.message].compact.find do |msg|
-                ["UnsupportedConstraint", "Could not find a version"].any? { |err| msg.include?(err) }
+                msg.include?(RESOLUTION_IMPOSSIBLE_ERROR)
               end
 
               cleaned_message = clean_error_message(error_message || "")
@@ -220,6 +219,7 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
+          options += ["--resolver backtracking", "--allow-unsafe"]
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
@@ -353,25 +353,8 @@ module Dependabot
           NameNormaliser.normalise(name)
         end
 
-        VERBOSE_ERROR_OUTPUT_LINES = [
-          "Traceback",
-          "Using indexes:",
-          "Current constraints:",
-          "Finding the best candidates:",
-          "Finding secondary dependencies:",
-          "\n",
-          "  "
-        ].freeze
-
         def clean_error_message(message)
-          msg_lines = message.lines
-          msg = msg_lines.
-                take_while { |l| !l.start_with?("During handling of") }.
-                drop_while { |l| l.start_with?(*VERBOSE_ERROR_OUTPUT_LINES) }.
-                join.strip
-
-          # Redact any URLs, as they may include credentials
-          msg.gsub(/http.*?(?=\s)/, "<redacted>")
+          message.scan(ERROR_REGEX).last
         end
 
         def filenames_to_compile

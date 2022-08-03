@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/registry_client"
 
 module Dependabot
   module Bundler
@@ -127,10 +128,9 @@ module Dependabot
           "#{dependency.name}-#{dependency.version}.gemspec.rz"
 
         response =
-          Excon.get(
-            gemspec_uri,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+          Dependabot::RegistryClient.get(
+            url: gemspec_uri,
+            headers: registry_auth_headers
           )
 
         return @rubygems_marshalled_gemspec_response = nil if response.status >= 400
@@ -145,10 +145,9 @@ module Dependabot
         return @rubygems_api_response if defined?(@rubygems_api_response)
 
         response =
-          Excon.get(
-            "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+          Dependabot::RegistryClient.get(
+            url: "#{registry_url}api/v1/gems/#{dependency.name}.json",
+            headers: registry_auth_headers
           )
         return @rubygems_api_response = {} if response.status >= 400
 
@@ -186,11 +185,7 @@ module Dependabot
         return response_body if source_url
 
         rubygems_response =
-          Excon.get(
-            "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          Dependabot::RegistryClient.get(url: "https://rubygems.org/api/v1/gems/#{dependency.name}.json")
         parsed_rubygems_body = JSON.parse(rubygems_response.body)
         rubygems_digest =
           parsed_rubygems_body.values_at("version", "authors", "info").hash

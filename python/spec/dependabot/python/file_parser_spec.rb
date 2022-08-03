@@ -215,9 +215,9 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      describe "the first dependency" do
-        it "has the right details" do
-          expect(dependencies.map(&:name)).not_to match_array([])
+      describe "the tarball dependency requirement" do
+        it "is not parsed" do
+          expect(dependencies).to eq([])
         end
       end
     end
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with a git dependency" do
       let(:requirements_fixture_name) { "with_git_dependency.txt" }
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with a constraints file" do

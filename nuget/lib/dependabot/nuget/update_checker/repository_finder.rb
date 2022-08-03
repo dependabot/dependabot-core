@@ -4,7 +4,7 @@ require "excon"
 require "nokogiri"
 require "dependabot/errors"
 require "dependabot/nuget/update_checker"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 
 module Dependabot
   module Nuget
@@ -69,12 +69,9 @@ module Dependabot
         end
 
         def get_repo_metadata(repo_details)
-          Excon.get(
-            repo_details.fetch(:url),
-            idempotent: true,
-            **SharedHelpers.excon_defaults(
-              headers: auth_header_for_token(repo_details.fetch(:token))
-            )
+          Dependabot::RegistryClient.get(
+            url: repo_details.fetch(:url),
+            headers: auth_header_for_token(repo_details.fetch(:token))
           )
         end
 

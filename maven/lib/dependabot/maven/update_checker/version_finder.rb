@@ -7,6 +7,7 @@ require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
 require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/registry_client"
 
 module Dependabot
   module Maven
@@ -138,7 +139,7 @@ module Dependabot
           @released_check[version] =
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
-              response = RegistryClient.head(
+              response = Dependabot::RegistryClient.head(
                 url: dependency_files_url(url, version),
                 headers: repository_details.fetch("auth_headers")
               )
@@ -160,7 +161,7 @@ module Dependabot
         end
 
         def fetch_dependency_metadata(repository_details)
-          response = RegistryClient.get(
+          response = Dependabot::RegistryClient.get(
             url: dependency_metadata_url(repository_details.fetch("url")),
             headers: repository_details.fetch("auth_headers")
           )

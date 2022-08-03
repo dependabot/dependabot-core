@@ -10,9 +10,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
-# Everything from `make` onwards in apt-get install is only installed to ensure
-# Python support works with all packages (which may require specific libraries
-# at install time).
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -27,12 +24,18 @@ RUN apt-get update \
     file \
     zlib1g-dev \
     liblzma-dev \
+    libyaml-dev \
+    libgdbm-dev \
+    bison \
     tzdata \
     zip \
     unzip \
     locales \
     openssh-client \
     software-properties-common \
+    # Everything from here onwards is only installed to ensure
+    # Python support works with all packages (which may require
+    # specific libraries at install time).
     make \
     libpq-dev \
     libssl-dev \
@@ -65,23 +68,34 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-# Install Ruby, update RubyGems, and install Bundler
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
+ARG RUBY_VERSION=2.7.6
+ARG RUBY_INSTALL_VERSION=0.8.3
+
+ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
 # Disable the outdated rubygems installation from being loaded
 ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
+
+ARG BUNDLER_V1_VERSION=1.17.3
+ARG BUNDLER_V2_VERSION=2.3.18
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-RUN apt-add-repository ppa:brightbox/ruby-ng \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
-  && gem update --system 3.2.20 \
-  && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.3.13 --no-document \
-  && rm -rf /var/lib/gems/2.7.0/cache/* \
-  && rm -rf /var/lib/apt/lists/*
 
+# Install Ruby, update RubyGems, and install Bundler
+RUN mkdir -p /tmp/ruby-install \
+ && cd /tmp/ruby-install \
+ && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
+ && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
+ && cd ruby-install-$RUBY_INSTALL_VERSION/ \
+ && make \
+ && ./bin/ruby-install --system ruby $RUBY_VERSION \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION \
+ && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-install
 
 ### PYTHON
 
@@ -90,10 +104,10 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.0 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.10.4 \
-  && pyenv global 3.10.4 \
+  && pyenv install 3.10.5 \
+  && pyenv global 3.10.5 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -127,7 +141,7 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 # Install PHP and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
 COPY --from=composer:1.10.26 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.3.5 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.3.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -175,10 +189,10 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.18.1
+ARG GOLANG_VERSION=1.18.4
 # You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
-ARG GOLANG_AMD64_CHECKSUM=b3b815f47ababac13810fc6021eb73d65478e0b2db4b09d348eefad9581a2334
-ARG GOLANG_ARM64_CHECKSUM=56a91851c97fb4697077abbca38860f735c32b38993ff79b088dac46e4735633
+ARG GOLANG_AMD64_CHECKSUM=c9b099b68d93f5c5c8a8844a89f8db07eaa58270e3a1e01804f17f4cf8df02f5
+ARG GOLANG_ARM64_CHECKSUM=35014d92b50d97da41dade965df7ebeb9a715da600206aa59ce1b2d05527421f
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \

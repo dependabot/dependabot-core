@@ -22,7 +22,7 @@ CHANGELOG_PATH = File.join(__dir__, "..", "CHANGELOG.md")
 CHANGELOG_CONTENTS = File.read(CHANGELOG_PATH)
 
 def proposed_changes(version, _new_version)
-  dependabot_team = `gh api -X GET 'orgs/dependabot/teams/reviewers/members' --jq '.[].login'`
+  dependabot_team = `gh api -X GET 'orgs/dependabot/teams/maintainers/members' --jq '.[].login'`
   dependabot_team = dependabot_team.split("\n").map(&:strip) + ["dependabot"]
 
   commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
@@ -107,6 +107,6 @@ unless dry_run
   puts "# tag the approved release notes:"
   puts "git fetch"
   puts "git tag 'v#{new_version}' 'origin/v#{new_version}-release-notes'"
-  puts "git push --tags"
+  puts "git push origin v#{new_version}"
   puts
 end
