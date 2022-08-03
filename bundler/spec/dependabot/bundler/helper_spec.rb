@@ -40,32 +40,29 @@ RSpec.describe Dependabot::Bundler::Helpers do
     LOCKFILE
   end
 
-  let(:v1) { "1.17.3" }
-  let(:v2) { "2.3.18" }
-
   describe "#bundler_version" do
     def described_method(lockfile)
       described_class.bundler_version(lockfile)
     end
 
     it "is 2 if there is no lockfile" do
-      expect(described_method(no_lockfile)).to eql(v2)
+      expect(described_method(no_lockfile)).to eql("2")
     end
 
     it "is 1 if there is no bundled with string" do
-      expect(described_method(lockfile_bundled_with_missing)).to eql(v1)
+      expect(described_method(lockfile_bundled_with_missing)).to eql("1")
     end
 
     it "is 1 if it was bundled with a v1.x version" do
-      expect(described_method(lockfile_bundled_with_v1)).to eql(v1)
+      expect(described_method(lockfile_bundled_with_v1)).to eql("1")
     end
 
     it "is 2 if it was bundled with a v2.x version" do
-      expect(described_method(lockfile_bundled_with_v2)).to eql(v2)
+      expect(described_method(lockfile_bundled_with_v2)).to eql("2")
     end
 
     it "is 2 if it was bundled with a future version" do
-      expect(described_method(lockfile_bundled_with_future_version)).to eql(v2)
+      expect(described_method(lockfile_bundled_with_future_version)).to eql("2")
     end
   end
 
