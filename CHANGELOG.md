@@ -1,3 +1,7 @@
+## v0.204.0, 3 August 2022
+
+- use a "shim" to fix inability to rewrite git commands to use HTTPS URLs [#5332](https://github.com/dependabot/dependabot-core/pull/5332)
+
 ## v0.203.0, 3 August 2022
 
 - Make Dependabot watch the per-ecosystem gemspecs [#5460](https://github.com/dependabot/dependabot-core/pull/5460)
