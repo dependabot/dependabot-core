@@ -91,7 +91,7 @@ RUN mkdir -p /tmp/ruby-install \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
  && ./bin/ruby-install --system ruby $RUBY_VERSION \
- && gem update --system $RUBYGEMS_SYSTEM_VERSION \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
