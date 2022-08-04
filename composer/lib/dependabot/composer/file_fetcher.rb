@@ -106,14 +106,14 @@ module Dependabot
         wildcard_depth = 0
         path = path.gsub(/\*$/, "")
         while path.end_with?("*/")
-          path = path.gsub(/\*\/$/, "")
+          path = path.gsub(%r{\*/$}, "")
           wildcard_depth += 1
         end
         directories = repo_contents(dir: path).
                       select { |file| file.type == "dir" }.
                       map { |f| File.join(path, f.name) }
 
-        while wildcard_depth > 0
+        while wildcard_depth.positive?
           directories.each do |dir|
             directories += repo_contents(dir: dir).
                            select { |file| file.type == "dir" }.
