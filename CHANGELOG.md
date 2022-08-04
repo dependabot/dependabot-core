@@ -1,3 +1,15 @@
+## v0.205.0, 4 August 2022
+
+- Downgrade bundler to 2.3.14 [#5479](https://github.com/dependabot/dependabot-core/pull/5479)
+- build(deps): bump json-schema from 0.2.3 to 0.4.0 in /npm_and_yarn/helpers [#5425](https://github.com/dependabot/dependabot-core/pull/5425)
+- Update ruby gems using the `--no-document` flag [#5471](https://github.com/dependabot/dependabot-core/pull/5471)
+- build(deps-dev): bump eslint from 8.19.0 to 8.21.0 in /npm_and_yarn/helpers [#5455](https://github.com/dependabot/dependabot-core/pull/5455)
+- build(deps): bump minimist from 1.2.5 to 1.2.6 in /npm_and_yarn/helpers [#5426](https://github.com/dependabot/dependabot-core/pull/5426)
+- build(deps): bump cython from 0.29.30 to 0.29.32 in /python/helpers [#5457](https://github.com/dependabot/dependabot-core/pull/5457)
+- build(deps): bump flake8 from 5.0.1 to 5.0.3 in /python/helpers [#5467](https://github.com/dependabot/dependabot-core/pull/5467)
+- Allow Actions to be fetched from non-GitHub source [#5469](https://github.com/dependabot/dependabot-core/pull/5469)
+- Reduce bundler version hardcoding (@deivid-rodriguez) [#4973](https://github.com/dependabot/dependabot-core/pull/4973)
+
 ## v0.204.0, 3 August 2022
 
 - use a "shim" to fix inability to rewrite git commands to use HTTPS URLs [#5332](https://github.com/dependabot/dependabot-core/pull/5332)
