@@ -103,9 +103,25 @@ module Dependabot
       end
 
       def expand_path(path)
-        repo_contents(dir: path.gsub(/\*$/, "")).
-          select { |file| file.type == "dir" }.
-          map { |f| path.gsub(/\*$/, f.name) }
+        wildcard_depth = 0
+        path = path.gsub(/\*$/, "")
+        while path.end_with?("*/")
+          path = path.gsub(%r{\*/$}, "")
+          wildcard_depth += 1
+        end
+        directories = repo_contents(dir: path).
+                      select { |file| file.type == "dir" }.
+                      map { |f| File.join(path, f.name) }
+
+        while wildcard_depth.positive?
+          directories.each do |dir|
+            directories += repo_contents(dir: dir).
+                           select { |file| file.type == "dir" }.
+                           map { |f| File.join(dir, f.name) }
+          end
+          wildcard_depth -= 1
+        end
+        directories
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         lockfile_path_dependency_paths.
           select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }
