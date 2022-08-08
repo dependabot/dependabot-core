@@ -207,8 +207,8 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.3
-ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
+ARG ELIXIR_VERSION=v1.13.4
+ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
 ARG ERLANG_VERSION=1:24.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
