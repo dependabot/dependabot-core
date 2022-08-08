@@ -1,3 +1,13 @@
+## v0.205.1, 8 August 2022
+
+- Add a `.ruby-version` file [#5483](https://github.com/dependabot/dependabot-core/pull/5483)
+- build(deps): update octokit requirement from ~> 4.6 to >= 4.6, < 6.0 in /common [#5370](https://github.com/dependabot/dependabot-core/pull/5370)
+- Migrate from `actions/setup-ruby` to `ruby/setup-ruby` [#5433](https://github.com/dependabot/dependabot-core/pull/5433)
+- Add support for multi-level wildcard paths in composer [#5484](https://github.com/dependabot/dependabot-core/pull/5484)
+- Skip installing docs when installing Ruby [#5482](https://github.com/dependabot/dependabot-core/pull/5482)
+- Suppress "detached head" advice during `git clone` [#5476](https://github.com/dependabot/dependabot-core/pull/5476)
+- Bitbucket does not support HTML in pull request message (@stefangr) [#5481](https://github.com/dependabot/dependabot-core/pull/5481)
+
 ## v0.205.0, 4 August 2022
 
 - Downgrade bundler to 2.3.14 [#5479](https://github.com/dependabot/dependabot-core/pull/5479)
