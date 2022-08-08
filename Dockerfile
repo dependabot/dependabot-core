@@ -209,7 +209,7 @@ ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.13.4
 ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
-ARG ERLANG_VERSION=1:24.2.1-1
+ARG ERLANG_VERSION=1:25.0.3-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
