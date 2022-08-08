@@ -20,7 +20,8 @@ cp -r \
 cd "$install_dir"
 PYENV_VERSION=3.10.5 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
 
-# Workaround of https://github.com/python-poetry/poetry/issues/3010
+# TODO remove this workaround of https://github.com/python-poetry/poetry/issues/3010
+# once Poetry 1.2 ships.
 # By default poetry config file is stored under ~/.config/pypoetry
 # and is not bound to any specific Python version
-PYENV_VERSION=3.10.5 pyenv exec poetry config experimental.new-installer false
+PYENV_VERSION=3.10.5 pyenv exec poetry config installer.max-workers 1
