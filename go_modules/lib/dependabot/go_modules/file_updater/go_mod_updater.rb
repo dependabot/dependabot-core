@@ -154,13 +154,15 @@ module Dependabot
         end
 
         def run_go_get(dependencies = [])
+          # `go get` will fail if there are no go files in the directory.
+          # For example, if a `//go:build` tag excludes all files when run
+          # on a particular architecture. However, dropping a go file with
+          # a `package ...` line in it will always make `go get` succeed...
+          # Even when the package name doesn't match the rest of the files
+          # in the directory! I assume this is because it doesn't actually
+          # compile anything when it runs.
           tmp_go_file = "#{SecureRandom.hex}.go"
-
-          package = Dir.glob("[^\._]*.go").any? do |path|
-            !File.read(path).include?("// +build")
-          end
-
-          File.write(tmp_go_file, "package dummypkg\n") unless package
+          File.write(tmp_go_file, "package dummypkg\n")
 
           command = +"go get"
           # `go get` accepts multiple packages, each separated by a space
