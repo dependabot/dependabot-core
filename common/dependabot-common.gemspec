@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "commonmarker", ">= 0.20.1", "< 0.24.0"
   spec.add_dependency "docker_registry2", "~> 1.7", ">= 1.7.1"
   spec.add_dependency "excon", "~> 0.75"
-  spec.add_dependency "faraday", "2.3.0"
+  spec.add_dependency "faraday", "2.4.0"
   spec.add_dependency "gitlab", "4.19.0"
   spec.add_dependency "nokogiri", "~> 1.8"
   spec.add_dependency "octokit", ">= 4.6", "< 6.0"
