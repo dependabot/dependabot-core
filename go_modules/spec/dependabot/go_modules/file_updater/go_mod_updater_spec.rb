@@ -281,20 +281,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
             end
           end
 
-          # Build tag format changed between 1.16 and 1.17. The old tag style was deprecated in 1.18:
-          # https://go.dev/design/draft-gobuild
-          # https://go.dev/doc/go1.18#go-command
-          describe "with ignored go files in the root using 1.16-style build tags" do
-            let(:project_name) { "ignored_go_files_116" }
-
-            it "updates the go.mod" do
-              expect(updater.updated_go_mod_content).to include(
-                %(rsc.io/quote v1.5.2\n)
-              )
-            end
-          end
-          describe "with ignored go files in the root using 1.17-style build tags" do
-            let(:project_name) { "ignored_go_files_117" }
+          describe "with ignored go files in the root" do
+            let(:project_name) { "ignored_go_files" }
 
             it "updates the go.mod" do
               expect(updater.updated_go_mod_content).to include(
