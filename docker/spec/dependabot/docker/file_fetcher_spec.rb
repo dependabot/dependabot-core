@@ -15,8 +15,14 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     )
   end
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: credentials)
+    described_class.new(
+      source: source,
+      credentials: credentials,
+      repo_contents_path: nil,
+      options: options
+    )
   end
+  let(:options) { {} }
   let(:directory) { "/" }
   let(:github_url) { "https://api.github.com/" }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
@@ -154,7 +160,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     it "raises a helpful error" do
       expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
+        to raise_error(Dependabot::DependabotError)
     end
   end
 
@@ -178,6 +184,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
+    let(:options) { { kubernetes_updates: true } }
 
     it "fetches the pod.yaml" do
       expect(file_fetcher_instance.files.count).to eq(1)
@@ -191,6 +198,24 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       it "raises a helpful error" do
         expect { file_fetcher_instance.files }.
           to raise_error(Dependabot::DependencyFileNotParseable)
+      end
+    end
+
+    context "that has an non-kubernetes YAML" do
+      let(:kubernetes_fixture) { fixture("github", "contents_other_yaml.json") }
+
+      it "raises a helpful error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependabotError)
+      end
+    end
+  
+    context "with kubernetes not enabled" do
+      let(:options) { { kubernetes_updates: false } }
+
+      it "raises a helpful error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependabotError)
       end
     end
   end
@@ -222,6 +247,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
     let(:kubernetes_2_fixture) { fixture("github", "contents_kubernetes.json") }
+    let(:options) { { kubernetes_updates: true } }
 
     it "fetches both YAMLs" do
       expect(file_fetcher_instance.files.count).to eq(2)

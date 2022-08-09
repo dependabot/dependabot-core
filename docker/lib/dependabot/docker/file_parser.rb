@@ -64,7 +64,7 @@ module Dependabot
           end
         end
 
-        workflow_files.each do |file|
+        manifest_files.each do |file|
           dependency_set += workfile_file_dependencies(file)
         end
 
@@ -164,18 +164,21 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true)
-        images = deep_fetch_images(json).uniq
+        resources = file.content.split(/^---$/).map(&:strip).reject(&:empty?) # assuming a yaml file
+        resources.flat_map do |resource|
+          json = YAML.safe_load(resource, aliases: true)
+          images = deep_fetch_images(json).uniq
 
-        images.each do |string|
-          # TODO: Support Docker references and path references
-          details = string.match(IMAGE_SPEC).named_captures
-          details["registry"] = nil if details["registry"] == "docker.io"
+          images.each do |string|
+            # TODO: Support Docker references and path references
+            details = string.match(IMAGE_SPEC).named_captures
+            details["registry"] = nil if details["registry"] == "docker.io"
 
-          version = version_from(details)
-          next unless version
+            version = version_from(details)
+            next unless version
 
-          dependency_set << build_image_dependency(file, details, version)
+            dependency_set << build_image_dependency(file, details, version)
+          end
         end
 
         dependency_set
@@ -218,7 +221,7 @@ module Dependabot
         images + json_object.values.flat_map { |obj| deep_fetch_images(obj) }
       end
 
-      def workflow_files
+      def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
         dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
       end

@@ -1222,6 +1222,51 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "when it has multiple resources" do
+      let(:podfile_fixture_name) { "multiple-resources.yaml" }
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: podfile_fixture_name,
+            source: {
+              tag: "1.2.34"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.2.34")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: podfile_fixture_name,
+            source: { tag: "20.04.2" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("ubuntu")
+          expect(dependency.version).to eq("20.04.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with multiple dockerfiles" do
       let(:podfiles) { [podfile, podfile2] }
       let(:podfile2) do
