@@ -86,6 +86,7 @@
         "dep",
         "docker",
         "elm",
+        "github_actions",
         "go_modules",
         "gradle",
         "hex",
@@ -94,8 +95,7 @@
         "nuget",
         "pip",
         "submodules",
-        "terraform",
-        "github_actions"
+        "terraform"
       ],
       "default": "go_modules"
     },
@@ -109,6 +109,7 @@
         "composer",
         "docker",
         "elm",
+        "github_actions",
         "go_modules",
         "gradle",
         "hex",
@@ -116,8 +117,7 @@
         "npm_and_yarn",
         "nuget",
         "python",
-        "terraform",
-        "github_actions"
+        "terraform"
       ],
       "default": "python"
     },
