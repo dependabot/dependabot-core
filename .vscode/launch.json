@@ -94,7 +94,8 @@
         "nuget",
         "pip",
         "submodules",
-        "terraform"
+        "terraform",
+        "github_actions"
       ],
       "default": "go_modules"
     },
@@ -115,7 +116,8 @@
         "npm_and_yarn",
         "nuget",
         "python",
-        "terraform"
+        "terraform",
+        "github_actions"
       ],
       "default": "python"
     },
