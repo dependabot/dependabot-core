@@ -30,7 +30,7 @@ module Dependabot
       # still better than nothing, though.
       class PipenvVersionResolver
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone -q (?<url>[^\s]+).* /.freeze
+          /git clone -q | --filter=blob:none (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
           %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
@@ -238,7 +238,7 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          # NOTE: Pipenv masks the actualy error, see this issue for updates:
+          # NOTE: Pipenv masks the actual error, see this issue for updates:
           # https://github.com/pypa/pipenv/issues/2791
           handle_pipenv_installation_error(error.message) if error.message.match?(PIPENV_INSTALLATION_ERROR_REGEX)
 
