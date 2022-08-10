@@ -1,3 +1,18 @@
+## v0.206.0, 10 August 2022
+
+- Pin MessageBuilder cassette names [#5508](https://github.com/dependabot/dependabot-core/pull/5508)
+- github_actions ecosystem was missing for debugging [#5505](https://github.com/dependabot/dependabot-core/pull/5505)
+- Bump Elixir to `1.13.4` [#5502](https://github.com/dependabot/dependabot-core/pull/5502)
+- build(deps-dev): update rubocop requirement from ~> 1.31.2 to ~> 1.33.0 in /common [#5498](https://github.com/dependabot/dependabot-core/pull/5498)
+- build(deps): update pip requirement from <22.2.2,>=21.3.1 to >=21.3.1,<22.2.3 in /python/helpers [#5495](https://github.com/dependabot/dependabot-core/pull/5495)
+- build(deps): bump flake8 from 5.0.3 to 5.0.4 in /python/helpers [#5496](https://github.com/dependabot/dependabot-core/pull/5496)
+- Handle the new `go` build tag syntax [#4954](https://github.com/dependabot/dependabot-core/pull/4954)
+- Tweak comment now that `pip` has a resolver [#5491](https://github.com/dependabot/dependabot-core/pull/5491)
+- Bump to `go` `1.19` [#5490](https://github.com/dependabot/dependabot-core/pull/5490)
+- Disable `pip` latest version check when building `python` native helper [#5493](https://github.com/dependabot/dependabot-core/pull/5493)
+- [npm] Refactor with top-down traversal [#5439](https://github.com/dependabot/dependabot-core/pull/5439)
+- build(deps): bump http from 0.13.4 to 0.13.5 in /pub/helpers [#5499](https://github.com/dependabot/dependabot-core/pull/5499)
+
 ## v0.205.1, 8 August 2022
 
 - Add a `.ruby-version` file [#5483](https://github.com/dependabot/dependabot-core/pull/5483)
