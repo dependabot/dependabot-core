@@ -143,7 +143,7 @@ module Functions
 
       Bundler.settings.set_command_option(
         cred.fetch("host"),
-        token.gsub("@", "%40F").gsub("?", "%3F")
+        token.gsub("@", "%40").gsub("?", "%3F")
       )
     end
 
