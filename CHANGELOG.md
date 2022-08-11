@@ -1,3 +1,8 @@
+## v0.207.0, 11 August 2022
+
+- Monkey patch bundler EndpointSpecification [#5510](https://github.com/dependabot/dependabot-core/pull/5510)
+- Log reasons why npm audit can't succeed [#5512](https://github.com/dependabot/dependabot-core/pull/5512)
+
 ## v0.206.0, 10 August 2022
 
 - Pin MessageBuilder cassette names [#5508](https://github.com/dependabot/dependabot-core/pull/5508)
