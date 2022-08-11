@@ -11,13 +11,13 @@ bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX
 
 # Should we only run these on one of the CI_NODE_INDEX's?
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
-  cd helpers/v1 \
-    && BUNDLER_VERSION=1.17.3 bundle install \
+  # shellcheck source=../helpers/v1/build
+  DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v1/build \
     && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
     && cd -
 else
-  cd helpers/v2 \
-    && bundle install \
+  # shellcheck source=../helpers/v2/build
+  DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v2/build \
     && bundle exec rspec spec \
     && cd -
 fi

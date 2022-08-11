@@ -2,30 +2,34 @@
 
 set -e
 
-if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
-  exit 1
-fi
-
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
-mkdir -p "$install_dir"
-
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cp -r \
-  "$helpers_dir/lib" \
-  "$helpers_dir/monkey_patches" \
-  "$helpers_dir/run.rb" \
-  "$helpers_dir/Gemfile" \
-  "$install_dir"
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  install_dir="$helpers_dir"
+else
+  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
+  mkdir -p "$install_dir"
+
+  cp -r \
+    "$helpers_dir/lib" \
+    "$helpers_dir/monkey_patches" \
+    "$helpers_dir/run.rb" \
+    "$helpers_dir/Gemfile" \
+    "$install_dir"
+fi
 
 cd "$install_dir"
 
-export GEM_HOME=$install_dir/.bundle
-
 default_version=$(ruby -rbundler -e'print Bundler::VERSION')
+
+export GEM_HOME=$install_dir/.bundle
 
 gem install bundler -v "$default_version" --no-document
 
 bundle config --local path.system true
-bundle config --local without "test"
+
+if [ -n "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  bundle config --local without "test"
+fi
+
 bundle install
