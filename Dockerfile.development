@@ -36,15 +36,18 @@ COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec 
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
+ARG TARGET_ECOSYSTEM=
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
     -not -path "${CODE_DIR}/common/Gemfile" \
     -name 'Gemfile' | xargs dirname`; do \
-    echo && \
-    echo "---------------------------------------------------------------------------" && \
-    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-    echo "---------------------------------------------------------------------------" && \
-    cd $d && bundle install; \
+    if [ -z $TARGET_ECOSYSTEM ] || [ "$d" = "${CODE_DIR}/$TARGET_ECOSYSTEM" ]; then \
+      echo && \
+      echo "---------------------------------------------------------------------------" && \
+      echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
+      echo "---------------------------------------------------------------------------" && \
+      cd $d && bundle install; \
+    fi; \
   done
 
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/

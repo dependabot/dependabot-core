@@ -53,7 +53,11 @@ build_image() {
     --cache-from "dependabot/dependabot-core:latest" \
     -t dependabot/dependabot-core .
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
-  docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  docker build \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg "TARGET_ECOSYSTEM=${TARGET_ECOSYSTEM}" \
+    -t "$IMAGE_NAME" \
+    -f "$DOCKERFILE" .
 }
 
 IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
