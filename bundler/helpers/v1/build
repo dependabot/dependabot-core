@@ -2,7 +2,7 @@
 
 set -e
 
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   install_dir="$helpers_dir"
