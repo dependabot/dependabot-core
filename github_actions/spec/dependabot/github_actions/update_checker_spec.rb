@@ -143,11 +143,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             )
         end
 
-        context "when the specified reference is not in the latest release" do
+        context "when the specified commit has diverged from the latest release" do
           let(:comparison_response) do
             fixture("github", "commit_compare_diverged.json")
           end
-          it { is_expected.to be_falsey }
+          it "can update to the latest version" do
+            expect(subject).to be_truthy
+          end
         end
 
         context "when the specified ref is included in the latest release" do
@@ -337,7 +339,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           )
       end
 
-      context "when the specified reference is not in the latest release" do
+      context "when the specified commit has diverged from the latest release" do
         let(:comparison_response) do
           fixture("github", "commit_compare_diverged.json")
         end
@@ -403,7 +405,21 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:comparison_response) do
           fixture("github", "commit_compare_diverged.json")
         end
-        it { is_expected.to eq(dependency.requirements) }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: "v1.1",
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+        it { is_expected.to eq(expected_requirements) }
       end
 
       context "when the specified ref is included in the latest release" do
