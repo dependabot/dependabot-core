@@ -6,14 +6,15 @@ bundle install
 bundle exec rubocop .
 bundle exec rspec spec
 
+# NOTE: Don't use `if` branches without `else` part, since the code in some of
+# then seems to not abort the script regardless of `set -e`
+
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   cd helpers/v1 \
     && BUNDLER_VERSION=1.17.3 bundle install \
     && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
     && cd -
-fi
-
-if [[ "$SUITE_NAME" == "bundler2" ]]; then
+else
   cd helpers/v2 \
     && bundle install \
     && bundle exec rspec spec \
