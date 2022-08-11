@@ -41,7 +41,7 @@ RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
     -not -path "${CODE_DIR}/common/Gemfile" \
     -name 'Gemfile' | xargs dirname`; do \
-    if [ -z $TARGET_ECOSYSTEM ] || [ "$d" = "${CODE_DIR}/$TARGET_ECOSYSTEM" ]; then \
+    if [ -z "$TARGET_ECOSYSTEM" ] || [ "$d" = "${CODE_DIR}/$TARGET_ECOSYSTEM" ]; then \
       echo && \
       echo "---------------------------------------------------------------------------" && \
       echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
