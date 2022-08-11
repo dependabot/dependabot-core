@@ -20,6 +20,12 @@ cp -r \
 
 cd "$install_dir"
 
-bundle config --local path ".bundle"
+export GEM_HOME=$install_dir/.bundle
+
+default_version=$(ruby -rbundler -e'print Bundler::VERSION')
+
+gem install bundler -v "$default_version" --no-document
+
+bundle config --local path.system true
 bundle config --local without "test"
 bundle install
