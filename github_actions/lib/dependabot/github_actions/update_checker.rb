@@ -70,13 +70,10 @@ module Dependabot
           return latest_version
         end
 
-        # If the dependency is pinned to a commit SHA and the latest
-        # version-like tag includes that commit then we want to update to that
-        # version-like tag. We return a version (not a commit SHA) so that we
-        # get nice behaviour in PullRequestCreator::MessageBuilder
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
+        # If the dependency is pinned to a commit SHA, we return a *version* so
+        # that we get nice behaviour in PullRequestCreator::MessageBuilder
+        if git_commit_checker.pinned_ref_looks_like_commit_sha?
+          latest_tag = git_commit_checker.local_tag_for_latest_version
           return latest_tag.fetch(:version)
         end
 

@@ -341,7 +341,10 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:comparison_response) do
           fixture("github", "commit_compare_diverged.json")
         end
-        it { is_expected.to be_nil }
+
+        it "updates to the latest version" do
+          expect(subject).to eq(Gem::Version.new("1.1.0"))
+        end
       end
 
       context "when the specified ref is included in the latest release" do
