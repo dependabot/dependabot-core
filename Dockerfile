@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -127,8 +127,7 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
 # - https://github.com/elm/compiler/issues/2007
 # - https://github.com/elm/compiler/issues/2232
 ENV PATH="$PATH:/node_modules/.bin"
-RUN [ "$TARGETARCH" != "amd64" ] \
-  || (curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN [ "${TARGETARCH:-amd64}" != "amd64" ] || (curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
   && rm -f binaries-for-linux.tar.gz)
@@ -193,7 +192,8 @@ ARG GOLANG_AMD64_CHECKSUM=464b6b66591f6cf055bc5df90a9750bf5fbc9d038722bb84a9d56a
 ARG GOLANG_ARM64_CHECKSUM=efa97fac9574fc6ef6c9ff3e3758fb85f1439b046573bf434cccb5e012bd00c8
 
 ENV PATH=/opt/go/bin:$PATH
-RUN cd /tmp \
+RUN export TARGETARCH=${TARGETARCH:-amd64}; \
+  cd /tmp \
   && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
   && printf "$GOLANG_AMD64_CHECKSUM go-amd64.tar.gz\n$GOLANG_ARM64_CHECKSUM go-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
   && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
@@ -237,7 +237,8 @@ USER root
 ARG TERRAFORM_VERSION=1.2.3
 ARG TERRAFORM_AMD64_CHECKSUM=728b6fbcb288ad1b7b6590585410a98d3b7e05efe4601ef776c37e15e9a83a96
 ARG TERRAFORM_ARM64_CHECKSUM=a48991e938a25bfe5d257f4b6cbbdc73d920cc34bbc8f0e685e28b9610ad75fe
-RUN cd /tmp \
+RUN export TARGETARCH=${TARGETARCH:-amd64}; \
+  cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
   && unzip -d /usr/local/bin terraform-${TARGETARCH}.tar.gz \
@@ -251,7 +252,8 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
 ARG DART_VERSION=2.17.0
-RUN DART_ARCH=${TARGETARCH} \
+RUN export TARGETARCH=${TARGETARCH:-amd64}; \
+  DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
   && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
   && mkdir -p "$PUB_CACHE" \
