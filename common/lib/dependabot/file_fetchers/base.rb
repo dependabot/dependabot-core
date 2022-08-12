@@ -15,7 +15,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :repo_contents_path
+      attr_reader :source, :credentials, :repo_contents_path, :options
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -42,11 +42,14 @@ module Dependabot
       # If provided, file _data_ will be loaded from the clone.
       # Submodules and directory listings are _not_ currently supported
       # by repo_contents_path and still use an API trip.
-      def initialize(source:, credentials:, repo_contents_path: nil)
+      #
+      # options supports custom feature enablement
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
         @linked_paths = {}
+        @options = options
       end
 
       def repo
