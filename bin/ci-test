@@ -12,6 +12,9 @@ function handle_args() {
     bundler1 | bundler2)
       export MODULE=bundler
       ;;
+    python | python_slow)
+      export MODULE=python
+      ;;
     "")
       print_usage
       exit 1
