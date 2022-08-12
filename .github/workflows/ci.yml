@@ -20,56 +20,40 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1 }
-          - { path: bundler, name: bundler2 }
-          - { path: cargo, name: cargo }
-          - { path: common, name: common }
-          - { path: composer, name: composer }
-          - { path: docker, name: docker }
-          - { path: elm, name: elm }
-          - { path: git_submodules, name: git_submodules }
-          - { path: github_actions, name: github_actions }
-          - { path: go_modules, name: go_modules }
-          - { path: gradle, name: gradle }
-          - { path: hex, name: hex }
-          - { path: maven, name: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn }
-          - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus }
-          - { path: python, name: python }
-          - { path: python, name: python_slow }
-          - { path: pub, name: pub }
-          - { path: terraform, name: terraform }
+          - bundler1
+          - bundler2
+          - cargo
+          - common
+          - composer
+          - docker
+          - elm
+          - git_submodules
+          - github_actions
+          - go_modules
+          - gradle
+          - hex
+          - maven
+          - npm_and_yarn
+          - nuget
+          - omnibus
+          - python
+          - python_slow
+          - pub
+          - terraform
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Build dependabot-core image
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
-          docker build \
-            -t "dependabot/dependabot-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-core \
-            .
+          ./bin/ci-test build-core
       - name: Build dependabot-core-ci image
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
-          docker build \
-            -f Dockerfile.ci \
-            -t "dependabot-core-ci:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            .
+          ./bin/ci-test build-core-ci
       - name: Run ${{ matrix.suite.name }} tests
+        env:
+          LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker run \
-            --env "CI=true" \
-            --env "RAISE_ON_WARNINGS=true" \
-            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
-            --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --rm dependabot-core-ci bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+          ./bin/ci-test run-suite ${{ matrix.suite }}
 
   lint:
     name: Lint

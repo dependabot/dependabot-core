@@ -1,12 +1,11 @@
 #!/bin/bash -e
-#/ usage: ci-test SUITE
-#/ simulate the process followed by ~/.github/workflows/ci.yml
+#/ usage: ci-test build-core|build-core-ci|<SUITE>|run-suite <SUITE>
 
 function print_usage() {
   grep ^#/ "$0" | cut -c4-
 }
 
-function handle_args() {
+function handle_suite_args() {
   export SUITE=$1
   case $SUITE in
     bundler1 | bundler2)
@@ -34,27 +33,72 @@ function handle_args() {
   fi
 }
 
-function build() {
-  export DOCKER_BUILDKIT=1
-  export DOCKER_SCAN_SUGGEST=false
-  export CORE=dependabot/dependabot-core
-  export CI=dependabot/dependabot-core-ci
-
+function build_core() {
   set -x
-  docker build -qt $CORE .
-  docker build -qt $CI -f Dockerfile.ci .
-  docker run --rm \
-    -e "CI=true" \
-    -e "SUITE_NAME=$SUITE" \
-    -e "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
-    -it $CI \
-    bash -c \
+
+  docker build \
+    -t "dependabot/dependabot-core:latest" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from ghcr.io/dependabot/dependabot-core \
+    .
+}
+
+function build_core_ci() {
+  set -x
+
+  docker build \
+    -f Dockerfile.ci \
+    -t "dependabot-core-ci:latest" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    .
+}
+
+function build() {
+  build_core
+  build_core_ci
+  run_suite
+}
+
+function run_suite() {
+  set -x
+
+  test -t 1 && USE_TTY="-it"
+
+  docker run $USE_TTY \
+    --env "CI=true" \
+    --env "RAISE_ON_WARNINGS=true" \
+    --env "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
+    --env "SUITE_NAME=$SUITE" \
+    --rm dependabot-core-ci bash -c \
     "cd /home/dependabot/dependabot-core/$MODULE && ./script/ci-test"
 }
 
 function main() {
-  handle_args "$@"
-  build
+  export DOCKER_BUILDKIT=1
+  export DOCKER_SCAN_SUGGEST=false
+
+  TASK=$1
+
+  if shift; then
+    case $TASK in
+      build-core)
+        build_core
+        ;;
+      build-core-ci)
+        build_core_ci
+        ;;
+      run-suite)
+        handle_suite_args "$@"
+        run_suite
+        ;;
+      *)
+        handle_suite_args "$@"
+        build
+    esac
+  else
+    print_usage
+    exit 1
+  fi
 }
 
 main "$@"
