@@ -36,16 +36,23 @@ COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec 
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
-RUN GREEN='\033[0;32m'; NC='\033[0m'; \
-  for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/common/Gemfile" \
-    -name 'Gemfile' | xargs dirname`; do \
-    echo && \
-    echo "---------------------------------------------------------------------------" && \
-    echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
-    echo "---------------------------------------------------------------------------" && \
-    cd $d && bundle install; \
-  done
+
+RUN cd bundler && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd cargo && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd composer && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd docker && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd elm && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd git_submodules && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd github_actions && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd go_modules && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd gradle && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd hex && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd maven && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd npm_and_yarn && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd nuget && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd python && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd pub && bundle config path ${CODE_DIR}/common/.bundle
+RUN cd terraform && bundle config path ${CODE_DIR}/common/.bundle
 
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 RUN cd omnibus \
