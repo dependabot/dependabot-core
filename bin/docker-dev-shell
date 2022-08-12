@@ -191,7 +191,6 @@ docker run --rm -ti \
   -v "$(pwd)/go_modules/.rubocop.yml:$CODE_DIR/go_modules/.rubocop.yml" \
   -v "$(pwd)/go_modules/Gemfile:$CODE_DIR/go_modules/Gemfile" \
   -v "$(pwd)/go_modules/dependabot-go_modules.gemspec:$CODE_DIR/go_modules/dependabot-go_modules.gemspec" \
-  -v "$(pwd)/go_modules/helpers:$CODE_DIR/go_modules/helpers" \
   -v "$(pwd)/go_modules/lib:$CODE_DIR/go_modules/lib" \
   -v "$(pwd)/go_modules/spec:$CODE_DIR/go_modules/spec" \
   -v "$(pwd)/go_modules/script:$CODE_DIR/go_modules/script" \

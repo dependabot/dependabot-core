@@ -28,10 +28,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/go_modules/helpers"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "mix"
     directory: "/hex/helpers"
     schedule:

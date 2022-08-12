@@ -303,9 +303,6 @@ COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
 RUN bash /opt/bundler/helpers/v1/build \
   && bash /opt/bundler/helpers/v2/build
 
-COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
-RUN bash /opt/go_modules/helpers/build
-
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
 # https://github.com/hexpm/hex/releases

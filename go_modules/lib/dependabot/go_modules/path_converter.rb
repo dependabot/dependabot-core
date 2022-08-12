@@ -10,22 +10,8 @@ require "dependabot/go_modules/native_helpers"
 module Dependabot
   module GoModules
     module PathConverter
-      def self.git_url_for_path(path)
-        # Save a query by manually converting golang.org/x names
-        import_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
-
-        SharedHelpers.run_helper_subprocess(
-          command: NativeHelpers.helper_path,
-          function: "getVcsRemoteForImport",
-          args: { import: import_path }
-        )
-      end
-
       # rubocop:disable Metrics/PerceivedComplexity
-      # Used in dependabot-backend, which doesn't have access to any Go
-      # helpers.
-      # TODO: remove the need for this.
-      def self.git_url_for_path_without_go_helper(path)
+      def self.git_url_for_path(path)
         # Save a query by manually converting golang.org/x names
         tmp_path = path.gsub(%r{^golang\.org/x}, "github.com/golang")
 
@@ -56,8 +42,8 @@ module Dependabot
       # rubocop:enable Metrics/PerceivedComplexity
 
       def self.fetch_path_metadata(path)
-        # TODO: This is not robust! Instead, we should shell out to Go and
-        # use https://github.com/Masterminds/vcs.
+        # TODO: update this comment to explain why it's leveraging the `go-get=1` trick
+        # and why may not be robust
         response = Dependabot::RegistryClient.get(url: "https://#{path}?go-get=1")
 
         return unless response.status == 200
