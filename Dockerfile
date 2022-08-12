@@ -88,7 +88,7 @@ RUN mkdir -p /tmp/ruby-install \
  && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
- && ./bin/ruby-install --system ruby $RUBY_VERSION -- --disable-install-doc \
+ && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
  && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
