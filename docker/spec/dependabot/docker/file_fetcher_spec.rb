@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
           to raise_error(Dependabot::DependabotError)
       end
     end
-  
+
     context "with kubernetes not enabled" do
       let(:options) { { kubernetes_updates: false } }
 

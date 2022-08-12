@@ -6,9 +6,12 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
+      YAML_REGEXP = /^[^\.]+\.ya?ml$/i.freeze
+      DOCKER_REGEXP = /dockerfile/i.freeze
+
       def self.required_files_in?(filenames)
-        filenames.any? { |f| f.match?(/dockerfile/i) } or
-          filenames.any? { |f| f.match?(/^[^\.]+\.ya?ml$/i) }
+        filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
+          filenames.any? { |f| f.match?(YAML_REGEXP) }
       end
 
       def self.required_files_message
@@ -24,9 +27,7 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
-        if kubernetes_enabled?
-          fetched_files += correctly_encoded_yamlfiles
-        end
+        fetched_files += correctly_encoded_yamlfiles if kubernetes_enabled?
 
         return fetched_files if fetched_files.any?
 
@@ -56,7 +57,7 @@ module Dependabot
       def dockerfiles
         @dockerfiles ||=
           repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(/dockerfile/i) }.
+          select { |f| f.type == "file" && f.name.match?(DOCKER_REGEXP) }.
           map { |f| fetch_file_from_host(f.name) }
       end
 
@@ -71,7 +72,7 @@ module Dependabot
       def yamlfiles
         @yamlfiles ||=
           repo_contents(raise_errors: false).
-          select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml$/i) }.
+          select { |f| f.type == "file" && f.name.match?(YAML_REGEXP) }.
           map { |f| fetch_file_from_host(f.name) }
       end
 
@@ -83,14 +84,12 @@ module Dependabot
       def correctly_encoded_yamlfiles
         candidate_files = yamlfiles.select { |f| f.content.valid_encoding? }
         candidate_files.select do |f|
-          begin
-            # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
-            # in a multi-resource file had better be a valid k8s resource
-            content = ::YAML.safe_load(f.content, aliases: true)
-            likely_kubernetes_resource?(content)
-          rescue ::Psych::Exception
-            false
-          end
+          # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
+          # in a multi-resource file had better be a valid k8s resource
+          content = ::YAML.safe_load(f.content, aliases: true)
+          likely_kubernetes_resource?(content)
+        rescue ::Psych::Exception
+          false
         end
       end
 
