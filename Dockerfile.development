@@ -16,9 +16,6 @@ ARG CODE_DIR=${HOME}/dependabot-core
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
-WORKDIR ${CODE_DIR}
-RUN cd common \
-  && bundle install
 
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
@@ -36,22 +33,29 @@ COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec 
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
+
+COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
+WORKDIR ${CODE_DIR}
+
+RUN cd omnibus \
+  && bundle install
+# Make omnibus gems available to bundler in root directory
+RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
+
+RUN cd common \
+  && bundle config path ${CODE_DIR}/omnibus/.bundle
+
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
     -not -path "${CODE_DIR}/common/Gemfile" \
+    -not -path "${CODE_DIR}/omnibus/Gemfile" \
     -name 'Gemfile' | xargs dirname`; do \
     echo && \
     echo "---------------------------------------------------------------------------" && \
     echo "Installing gems for ${GREEN}$(realpath --relative-to=${CODE_DIR} $d)${NC}..." && \
     echo "---------------------------------------------------------------------------" && \
-    cd $d && bundle install; \
+    cd $d && bundle config path ${CODE_DIR}/omnibus/.bundle; \
   done
-
-COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
-RUN cd omnibus \
-  && bundle install
-# Make omnibus gems available to bundler in root directory
-RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
 
 # Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
