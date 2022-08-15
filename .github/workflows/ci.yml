@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v3.1.1
         with:
           load: true
-          cache-from: type=registry,ref=dependabot/dependabot-core:latest
+          cache-from: type=registry,ref=ghcr.io/dependabot/dependabot-core:latest
           tags: dependabot/dependabot-core:latest
       - name: Build dependabot-core-ci image
         uses: docker/build-push-action@v3.1.1
