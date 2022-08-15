@@ -44,12 +44,8 @@ RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > G
 
 ENV PATH="${CODE_DIR}/omnibus/$BUNDLE_BIN:$PATH"
 
-RUN cd common \
-  && bundle config path ${CODE_DIR}/omnibus/.bundle
-
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/common/Gemfile" \
     -not -path "${CODE_DIR}/omnibus/Gemfile" \
     -name 'Gemfile' | xargs dirname`; do \
     echo && \
