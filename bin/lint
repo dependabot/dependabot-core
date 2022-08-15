@@ -6,6 +6,7 @@ shellcheck \
   ./bin/ci-test \
   ./bin/docker-dev-shell \
   ./bin/lint \
+  ./*/helpers/*/build \
   ./*/helpers/build \
   ./*/script/* \
   "$@"
