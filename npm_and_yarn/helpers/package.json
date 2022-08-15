@@ -9,7 +9,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@dependabot/yarn-lib": "^1.21.1",
+    "@dependabot/yarn-lib": "^1.22.19",
     "@npmcli/arborist": "^5.3.1",
     "detect-indent": "^6.1.0",
     "nock": "^13.2.8",
