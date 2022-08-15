@@ -15,6 +15,12 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -40,14 +46,15 @@ jobs:
           tags: |
             type=raw,value=latest
             type=semver,pattern={{version}}
-      - name: Build and push dependabot-core image
+      - name: Build and push ${{ matrix.arch }} dependabot-core image
         uses: docker/build-push-action@v3.1.1
         with:
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/${{ matrix.arch }}
           cache-from: type=registry,ref=dependabot/dependabot-core:latest
           cache-to: type=inline
           tags: ${{ steps.tags.outputs.tags }}
+
   push-development-image:
     name: Push dependabot-core-development image to GHCR
     runs-on: ubuntu-latest
@@ -76,12 +83,12 @@ jobs:
           tags: |
             type=raw,value=latest
             type=semver,pattern={{version}}
-      - name: Build dependabot-core image
+      - name: Build and push ${{ matrix.arch }} dependabot-core-development image
         uses: docker/build-push-action@v3.1.1
         with:
           push: true
           file: Dockerfile.development
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/${{ matrix.arch }}
           cache-from: type=registry,ref=ghcr.io/dependabot/dependabot-core-development:latest
           cache-to: type=inline
           tags: ${{ steps.tags.outputs.tags }}
