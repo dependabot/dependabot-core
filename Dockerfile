@@ -79,6 +79,7 @@ ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
+ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \
