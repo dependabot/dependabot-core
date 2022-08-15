@@ -31,7 +31,6 @@ module Dependabot
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        UNKNOWN_OPTION_ERROR = "No such option: --resolver"
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
@@ -43,7 +42,6 @@ module Dependabot
           @dependency_files         = dependency_files
           @credentials              = credentials
           @build_isolation = true
-          @backwards_compat = false
         end
 
         def latest_resolvable_version(requirement: nil)
@@ -98,10 +96,6 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => e
               retry_count ||= 0
               retry_count += 1
-              if unknown_option_error?(e) && retry_count <= 1
-                @backwards_compat = true
-                retry
-              end
               if compilation_error?(e) && retry_count <= 1
                 @build_isolation = false
                 retry
@@ -225,11 +219,15 @@ module Dependabot
           )
         end
 
+        def backwards_compat?
+          python_version.to_s.start_with?("3.6")
+        end
+
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
           options += ["--allow-unsafe"]
-          options += ["--resolver backtracking"] unless @backwards_compat
+          options += ["--resolver backtracking"] unless backwards_compat?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
