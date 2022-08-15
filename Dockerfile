@@ -77,7 +77,8 @@ ARG BUNDLER_V1_VERSION=1.17.3
 ARG BUNDLER_V2_VERSION=2.3.14
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
-ENV BUNDLE_PATH=".bundle"
+ENV BUNDLE_PATH=".bundle" \
+    BUNDLE_BIN=".bundle/bin"
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \

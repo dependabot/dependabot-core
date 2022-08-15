@@ -42,6 +42,8 @@ RUN cd omnibus \
 # Make omnibus gems available to bundler in root directory
 RUN echo 'eval_gemfile File.join(File.dirname(__FILE__), "omnibus/Gemfile")' > Gemfile
 
+ENV PATH="${CODE_DIR}/omnibus/$BUNDLE_BIN:$PATH"
+
 RUN cd common \
   && bundle config path ${CODE_DIR}/omnibus/.bundle
 
