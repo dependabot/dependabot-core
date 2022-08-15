@@ -121,16 +121,9 @@ module Dependabot
 
         latest_tag = git_commit_checker.local_tag_for_latest_version
 
-        # Update the git commit if updating a pinned commit
+        # Update the pinned git commit if one is available
         if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version]) &&
-           (latest_commit = latest_tag.fetch(:commit_sha)) != current_commit
-          return dependency_source_details.merge(ref: latest_commit)
-        end
-
-        # Update to the latest tag if pinned to a commit that has diverged
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           !git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
+           latest_tag.fetch(:commit_sha) != current_commit
           return dependency_source_details.merge(ref: latest_tag.fetch(:commit_sha))
         end
 
