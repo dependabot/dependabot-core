@@ -211,7 +211,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         }]
       end
 
-      it "raises a helpful error", :skip => "see https://github.com/pypa/setuptools/pull/3505" do
+      it "raises a helpful error", skip: "see https://github.com/pypa/setuptools/pull/3505" do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
