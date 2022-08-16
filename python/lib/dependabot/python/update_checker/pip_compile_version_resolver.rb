@@ -31,6 +31,7 @@ module Dependabot
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
+        UNPINNED_SETUPTOOLS = "ModuleNotFoundError: No module named 'distutils.msvccompiler'"
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
         ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
@@ -107,7 +108,7 @@ module Dependabot
         end
 
         def compilation_error?(error)
-          error.message.include?(NATIVE_COMPILATION_ERROR)
+          error.message.include?(NATIVE_COMPILATION_ERROR) || error.message.include?(UNPINNED_SETUPTOOLS)
         end
 
         # rubocop:disable Metrics/AbcSize
