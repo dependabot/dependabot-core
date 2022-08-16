@@ -109,10 +109,6 @@ module Dependabot
           error.message.include?(NATIVE_COMPILATION_ERROR)
         end
 
-        def unknown_option_error?(error)
-          error.message.include?(UNKNOWN_OPTION_ERROR)
-        end
-
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
         def handle_pip_compile_errors(error)
@@ -219,7 +215,7 @@ module Dependabot
           )
         end
 
-        def backwards_compat?
+        def new_resolver_supported?
           python_version.to_s.start_with?("3.6")
         end
 
@@ -227,7 +223,7 @@ module Dependabot
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
           options += ["--allow-unsafe"]
-          options += ["--resolver backtracking"] unless backwards_compat?
+          options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
