@@ -216,7 +216,7 @@ module Dependabot
         end
 
         def new_resolver_supported?
-          python_version.to_s.start_with?("3.6")
+          !python_version.to_s.start_with?("3.6")
         end
 
         def pip_compile_options(filename)
