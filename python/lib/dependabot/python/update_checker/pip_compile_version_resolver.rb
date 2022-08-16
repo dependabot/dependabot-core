@@ -28,8 +28,6 @@ module Dependabot
           /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
           /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
-        NATIVE_COMPILATION_ERROR =
-          "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
         PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
@@ -97,17 +95,13 @@ module Dependabot
               retry_count ||= 0
               retry_count += 1
 
-              if compilation_error?(e) && retry_count <= 1
+              if retry_count <= 1
                 @build_isolation = false
                 retry
               end
 
               handle_pip_compile_errors(e)
             end
-        end
-
-        def compilation_error?(error)
-          error.message.include?(NATIVE_COMPILATION_ERROR)
         end
 
         # rubocop:disable Metrics/AbcSize
