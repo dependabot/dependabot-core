@@ -96,7 +96,6 @@ module Dependabot
             rescue SharedHelpers::HelperSubprocessFailed => e
               retry_count ||= 0
               retry_count += 1
-
               if compilation_error?(e) && retry_count <= 1
                 @build_isolation = false
                 retry
@@ -216,10 +215,15 @@ module Dependabot
           )
         end
 
+        def new_resolver_supported?
+          python_version >= Python::Version.new("3.7")
+        end
+
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
-          options += ["--resolver backtracking", "--allow-unsafe"]
+          options += ["--allow-unsafe"]
+          options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
             options << "--output-file=#{requirements_file.name}"
