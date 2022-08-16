@@ -13,7 +13,7 @@ jupyter_nbextensions_configurator
 
 librosa
 numba==0.48
-numpy
+numpy==1.23.2
 
 jax
 matplotlib
