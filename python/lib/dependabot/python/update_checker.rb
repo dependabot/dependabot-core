@@ -107,10 +107,7 @@ module Dependabot
       private
 
       def latest_version_resolvable_with_full_unlock?
-        # Full unlock checks aren't implemented for pip because they're not
-        # relevant (pip doesn't have a resolver). This method always returns
-        # false to ensure `updated_dependencies_after_full_unlock` is never
-        # called.
+        # Full unlock checks aren't implemented for Python (yet)
         false
       end
 

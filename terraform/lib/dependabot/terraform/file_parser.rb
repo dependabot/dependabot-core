@@ -12,6 +12,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
+require "dependabot/terraform/registry_client"
 
 module Dependabot
   module Terraform
@@ -20,7 +21,6 @@ module Dependabot
 
       include FileSelector
 
-      ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
       DEFAULT_REGISTRY = "registry.terraform.io"
       DEFAULT_NAMESPACE = "hashicorp"
       # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
@@ -168,7 +168,7 @@ module Dependabot
       # Full docs at https://www.terraform.io/docs/modules/sources.html
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
-        bare_source = get_proxied_source(raw_source)
+        bare_source = RegistryClient.get_proxied_source(raw_source)
 
         source_details =
           case source_type(bare_source)
@@ -301,7 +301,7 @@ module Dependabot
 
         path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
         query_uri = URI.parse(source_string)
-        return :http_archive if path_uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+        return :http_archive if path_uri.path.end_with?(*RegistryClient::ARCHIVE_EXTENSIONS)
         return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"

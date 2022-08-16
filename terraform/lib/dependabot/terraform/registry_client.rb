@@ -11,6 +11,7 @@ module Dependabot
     # Terraform::RegistryClient is a basic API client to interact with a
     # terraform registry: https://www.terraform.io/docs/registry/api.html
     class RegistryClient
+      ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
       PUBLIC_HOSTNAME = "registry.terraform.io"
 
       def initialize(hostname: PUBLIC_HOSTNAME, credentials: [])
@@ -19,6 +20,39 @@ module Dependabot
           memo[item["host"]] = item["token"] if item["type"] == "terraform_registry"
         end
       end
+
+      # rubocop:disable Metrics/PerceivedComplexity
+      # See https://www.terraform.io/docs/modules/sources.html#http-urls for
+      # details of how Terraform handle HTTP(S) sources for modules
+      def self.get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
+        return raw_source unless raw_source.start_with?("http")
+
+        uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
+        return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+        return raw_source if URI.parse(raw_source).query&.include?("archive=")
+
+        url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
+        host = URI.parse(raw_source).host
+
+        response = Excon.get(
+          url,
+          idempotent: true,
+          **SharedHelpers.excon_defaults
+        )
+        raise PrivateSourceAuthenticationFailure, host if response.status == 401
+
+        return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
+
+        doc = Nokogiri::XML(response.body)
+        doc.css("meta").find do |tag|
+          tag.attributes&.fetch("name", nil)&.value == "terraform-get"
+        end&.attributes&.fetch("content", nil)&.value
+      rescue Excon::Error::Socket, Excon::Error::Timeout => e
+        raise PrivateSourceAuthenticationFailure, host if e.message.include?("no address for")
+
+        raw_source
+      end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       # Fetch all the versions of a provider, and return a Version
       # representation of them.
@@ -65,10 +99,26 @@ module Dependabot
       def source(dependency:)
         type = dependency.requirements.first[:source][:type]
         base_url = service_url_for(service_key_for(type))
-        response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
-        return nil unless response.status == 200
+        case type
+        # https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+        when "module", "modules", "registry"
+          download_url = URI.join(base_url, "#{dependency.name}/#{dependency.version}/download")
+          response = http_get(download_url)
+          return nil unless response.status == 204
 
-        source_url = JSON.parse(response.body).fetch("source")
+          source_url = response.headers.fetch("X-Terraform-Get")
+          source_url = URI.join(download_url, source_url) if
+            source_url.start_with?("/") ||
+            source_url.start_with?("./") ||
+            source_url.start_with?("../")
+          source_url = RegistryClient.get_proxied_source(source_url) if source_url
+        when "provider", "providers"
+          response = http_get(URI.join(base_url, "#{dependency.name}/#{dependency.version}"))
+          return nil unless response.status == 200
+
+          source_url = JSON.parse(response.body).fetch("source")
+        end
+
         Source.from_url(source_url) if source_url
       rescue JSON::ParserError, Excon::Error::Timeout
         nil

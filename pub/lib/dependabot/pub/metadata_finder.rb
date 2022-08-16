@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 
 module Dependabot
   module Pub
@@ -31,12 +31,7 @@ module Dependabot
       end
 
       def repository_listing(repository_url)
-        response = Excon.get(
-          "#{repository_url}/api/packages/#{dependency.name}",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
+        response = Dependabot::RegistryClient.get(url: "#{repository_url}/api/packages/#{dependency.name}")
         JSON.parse(response.body)
       end
     end

@@ -489,7 +489,8 @@ $repo_contents_path = File.expand_path(File.join("tmp", $repo_name.split("/"))) 
 fetcher_args = {
   source: $source,
   credentials: $options[:credentials],
-  repo_contents_path: $repo_contents_path
+  repo_contents_path: $repo_contents_path,
+  options: $options[:updater_options]
 }
 $config_file = begin
   cfg_file = Dependabot::Config::FileFetcher.new(**fetcher_args).config_file

@@ -1,3 +1,89 @@
+## v0.207.0, 11 August 2022
+
+- Monkey patch bundler EndpointSpecification [#5510](https://github.com/dependabot/dependabot-core/pull/5510)
+- Log reasons why npm audit can't succeed [#5512](https://github.com/dependabot/dependabot-core/pull/5512)
+
+## v0.206.0, 10 August 2022
+
+- Pin MessageBuilder cassette names [#5508](https://github.com/dependabot/dependabot-core/pull/5508)
+- github_actions ecosystem was missing for debugging [#5505](https://github.com/dependabot/dependabot-core/pull/5505)
+- Bump Elixir to `1.13.4` [#5502](https://github.com/dependabot/dependabot-core/pull/5502)
+- build(deps-dev): update rubocop requirement from ~> 1.31.2 to ~> 1.33.0 in /common [#5498](https://github.com/dependabot/dependabot-core/pull/5498)
+- build(deps): update pip requirement from <22.2.2,>=21.3.1 to >=21.3.1,<22.2.3 in /python/helpers [#5495](https://github.com/dependabot/dependabot-core/pull/5495)
+- build(deps): bump flake8 from 5.0.3 to 5.0.4 in /python/helpers [#5496](https://github.com/dependabot/dependabot-core/pull/5496)
+- Handle the new `go` build tag syntax [#4954](https://github.com/dependabot/dependabot-core/pull/4954)
+- Tweak comment now that `pip` has a resolver [#5491](https://github.com/dependabot/dependabot-core/pull/5491)
+- Bump to `go` `1.19` [#5490](https://github.com/dependabot/dependabot-core/pull/5490)
+- Disable `pip` latest version check when building `python` native helper [#5493](https://github.com/dependabot/dependabot-core/pull/5493)
+- [npm] Refactor with top-down traversal [#5439](https://github.com/dependabot/dependabot-core/pull/5439)
+- build(deps): bump http from 0.13.4 to 0.13.5 in /pub/helpers [#5499](https://github.com/dependabot/dependabot-core/pull/5499)
+
+## v0.205.1, 8 August 2022
+
+- Add a `.ruby-version` file [#5483](https://github.com/dependabot/dependabot-core/pull/5483)
+- build(deps): update octokit requirement from ~> 4.6 to >= 4.6, < 6.0 in /common [#5370](https://github.com/dependabot/dependabot-core/pull/5370)
+- Migrate from `actions/setup-ruby` to `ruby/setup-ruby` [#5433](https://github.com/dependabot/dependabot-core/pull/5433)
+- Add support for multi-level wildcard paths in composer [#5484](https://github.com/dependabot/dependabot-core/pull/5484)
+- Skip installing docs when installing Ruby [#5482](https://github.com/dependabot/dependabot-core/pull/5482)
+- Suppress "detached head" advice during `git clone` [#5476](https://github.com/dependabot/dependabot-core/pull/5476)
+- Bitbucket does not support HTML in pull request message (@stefangr) [#5481](https://github.com/dependabot/dependabot-core/pull/5481)
+
+## v0.205.0, 4 August 2022
+
+- Downgrade bundler to 2.3.14 [#5479](https://github.com/dependabot/dependabot-core/pull/5479)
+- build(deps): bump json-schema from 0.2.3 to 0.4.0 in /npm_and_yarn/helpers [#5425](https://github.com/dependabot/dependabot-core/pull/5425)
+- Update ruby gems using the `--no-document` flag [#5471](https://github.com/dependabot/dependabot-core/pull/5471)
+- build(deps-dev): bump eslint from 8.19.0 to 8.21.0 in /npm_and_yarn/helpers [#5455](https://github.com/dependabot/dependabot-core/pull/5455)
+- build(deps): bump minimist from 1.2.5 to 1.2.6 in /npm_and_yarn/helpers [#5426](https://github.com/dependabot/dependabot-core/pull/5426)
+- build(deps): bump cython from 0.29.30 to 0.29.32 in /python/helpers [#5457](https://github.com/dependabot/dependabot-core/pull/5457)
+- build(deps): bump flake8 from 5.0.1 to 5.0.3 in /python/helpers [#5467](https://github.com/dependabot/dependabot-core/pull/5467)
+- Allow Actions to be fetched from non-GitHub source [#5469](https://github.com/dependabot/dependabot-core/pull/5469)
+- Reduce bundler version hardcoding (@deivid-rodriguez) [#4973](https://github.com/dependabot/dependabot-core/pull/4973)
+
+## v0.204.0, 3 August 2022
+
+- use a "shim" to fix inability to rewrite git commands to use HTTPS URLs [#5332](https://github.com/dependabot/dependabot-core/pull/5332)
+
+## v0.203.0, 3 August 2022
+
+- Make Dependabot watch the per-ecosystem gemspecs [#5460](https://github.com/dependabot/dependabot-core/pull/5460)
+- build(deps): update pip requirement from <22.1.3,>=21.3.1 to >=21.3.1,<22.2.2 in /python/helpers [#5456](https://github.com/dependabot/dependabot-core/pull/5456)
+- fix: set correct url for terraform module version download (@umglurf) [#5366](https://github.com/dependabot/dependabot-core/pull/5366)
+- build(deps): bump @npmcli/arborist from 5.2.3 to 5.3.1 in /npm_and_yarn/helpers [#5458](https://github.com/dependabot/dependabot-core/pull/5458)
+- build(deps): bump path-parse from 1.0.6 to 1.0.7 in /npm_and_yarn/helpers [#5427](https://github.com/dependabot/dependabot-core/pull/5427)
+- GitLab: Extract local actions variable into method (@NobodysNightmare) [#5448](https://github.com/dependabot/dependabot-core/pull/5448)
+- build(deps): bump flake8 from 4.0.1 to 5.0.1 in /python/helpers [#5454](https://github.com/dependabot/dependabot-core/pull/5454)
+- Fix incomplete regular expression for hostnames [#5444](https://github.com/dependabot/dependabot-core/pull/5444)
+- Bump base image in docker push workflow to `20.04` [#5432](https://github.com/dependabot/dependabot-core/pull/5432)
+- Cache client-side timeouts when a remote host is unreachable for remaining ecosystems [#5408](https://github.com/dependabot/dependabot-core/pull/5408)
+- Switch to weekly updates for Dependabot [#5435](https://github.com/dependabot/dependabot-core/pull/5435)
+- Move comment to relevant section of code [#5434](https://github.com/dependabot/dependabot-core/pull/5434)
+- Add dependabot updates for Dockerfiles [#5428](https://github.com/dependabot/dependabot-core/pull/5428)
+- Re-order ecosystems lexicographically [#5429](https://github.com/dependabot/dependabot-core/pull/5429)
+- build(deps): update faraday requirement from = 1.10.0 to = 2.3.0 in /common [#5197](https://github.com/dependabot/dependabot-core/pull/5197)
+
+## v0.202.0, 26 July 2022
+
+- [cargo] Cache client-side timeouts when a remote host is unreachable [#5402](https://github.com/dependabot/dependabot-core/pull/5402)
+- [gomod] Cache client-side timeouts when a remote host is unreachable [#5401](https://github.com/dependabot/dependabot-core/pull/5401)
+- fix: regex to support Gitlab subgroups (@argoyle) [#5297](https://github.com/dependabot/dependabot-core/pull/5297)
+- fix(terraform): correctly keep platform hashes when multiple providers are installed (@Flydiverny) [#5341](https://github.com/dependabot/dependabot-core/pull/5341)
+
+## v0.201.1, 25 July 2022
+
+- [Cargo] Correctly handle unused subdependencies of path dependencies [#5414](https://github.com/dependabot/dependabot-core/pull/5414)
+- [Nuget] Cache client-side timeouts when a remote host is unreachable [#5399](https://github.com/dependabot/dependabot-core/pull/5399)
+- Tweak bump-version script to just push the newly-created tag [#5413](https://github.com/dependabot/dependabot-core/pull/5413)
+
+## v0.201.0, 22 July 2022
+
+- [Composer] Cache client-side timeouts when a remote host is unreachable [#5400](https://github.com/dependabot/dependabot-core/pull/5400)
+
+## v0.200.0, 21 July 2022
+
+- [Python] Cache client-side timeouts when a remote host is unreachable [#5374](https://github.com/dependabot/dependabot-core/pull/5374)
+- Pip: Do not raise PathDependenciesNotReachable for missing setup.py [#5392](https://github.com/dependabot/dependabot-core/pull/5392)
+
 ## v0.199.0, 19 July 2022
 
 - Stop skipping requirements with `original_link` [#5385](https://github.com/dependabot/dependabot-core/pull/5385)

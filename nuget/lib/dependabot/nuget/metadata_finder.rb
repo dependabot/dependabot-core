@@ -3,6 +3,7 @@
 require "nokogiri"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/registry_client"
 
 module Dependabot
   module Nuget
@@ -31,10 +32,9 @@ module Dependabot
         return unless source
 
         # Query the service index e.g. https://nuget.pkg.github.com/ORG/index.json
-        response = Excon.get(
-          source.fetch(:url),
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: { **auth_header, "Accept" => "application/json" })
+        response = Dependabot::RegistryClient.get(
+          url: source.fetch(:url),
+          headers: { **auth_header, "Accept" => "application/json" }
         )
         return unless response.status == 200
 
@@ -42,10 +42,9 @@ module Dependabot
         search_base = extract_search_url(response.body)
         return unless search_base
 
-        response = Excon.get(
-          search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: { **auth_header, "Accept" => "application/json" })
+        response = Dependabot::RegistryClient.get(
+          url: search_base + "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
+          headers: { **auth_header, "Accept" => "application/json" }
         )
         return unless response.status == 200
 
@@ -110,10 +109,9 @@ module Dependabot
       def dependency_nuspec_file
         return @dependency_nuspec_file unless @dependency_nuspec_file.nil?
 
-        response = Excon.get(
-          dependency_nuspec_url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: auth_header)
+        response = Dependabot::RegistryClient.get(
+          url: dependency_nuspec_url,
+          headers: auth_header
         )
 
         @dependency_nuspec_file = Nokogiri::XML(response.body)

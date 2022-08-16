@@ -63,7 +63,7 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3/repos/releases/#list-releases-for-a-repository"}'
-    http_version: 
+    http_version:
   recorded_at: Thu, 11 Jun 2020 15:34:58 GMT
 - request:
     method: get
@@ -128,7 +128,7 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3/repos/contents/#get-contents"}'
-    http_version: 
+    http_version:
   recorded_at: Thu, 11 Jun 2020 15:34:58 GMT
 - request:
     method: get
@@ -193,6 +193,6 @@ http_interactions:
     body:
       encoding: ASCII-8BIT
       string: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3/repos/contents/#get-contents"}'
-    http_version: 
+    http_version:
   recorded_at: Thu, 11 Jun 2020 15:34:58 GMT
 recorded_with: VCR 5.0.0
