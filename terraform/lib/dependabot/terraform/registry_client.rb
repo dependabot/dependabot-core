@@ -34,11 +34,7 @@ module Dependabot
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
         host = URI.parse(raw_source).host
 
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: url)
         raise PrivateSourceAuthenticationFailure, host if response.status == 401
 
         return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
