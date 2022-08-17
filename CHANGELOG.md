@@ -1,3 +1,10 @@
+## v0.209.0, 17 August 2022
+
+- Ignore newlines when determining indentation [#5550](https://github.com/dependabot/dependabot-core/pull/5550)
+- Allow diverged-commit pinned Actions to be updated [#5516](https://github.com/dependabot/dependabot-core/pull/5516)
+- Add a dependabot implementation for Kubernetes YAML files. (@brendandburns) [#5348](https://github.com/dependabot/dependabot-core/pull/5348)
+- The new pip resolver is not backwards compatible [#5540](https://github.com/dependabot/dependabot-core/pull/5540)
+
 ## v0.208.0, 16 August 2022
 
 - Try fix spec failure due to broken setuptools [#5546](https://github.com/dependabot/dependabot-core/pull/5546)
