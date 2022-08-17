@@ -2,6 +2,7 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
+require "dependabot/registry_client"
 require "dependabot/source"
 require "dependabot/terraform/version"
 
@@ -33,11 +34,7 @@ module Dependabot
         url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
         host = URI.parse(raw_source).host
 
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: url)
         raise PrivateSourceAuthenticationFailure, host if response.status == 401
 
         return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
@@ -169,7 +166,10 @@ module Dependabot
       end
 
       def http_get(url)
-        Excon.get(url.to_s, idempotent: true, **SharedHelpers.excon_defaults(headers: headers_for(hostname)))
+        Dependabot::RegistryClient.get(
+          url: url.to_s,
+          headers: headers_for(hostname)
+        )
       end
 
       def http_get!(url)
