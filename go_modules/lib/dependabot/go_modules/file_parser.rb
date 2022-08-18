@@ -53,7 +53,7 @@ module Dependabot
         Dependency.new(
           name: details["Path"],
           version: version,
-          requirements: details["Indirect"] || dependency_is_replaced(details) ? [] : reqs,
+          requirements: dependency_is_replaced(details) ? [] : reqs,
           package_manager: "go_modules"
         )
       end
@@ -152,7 +152,7 @@ module Dependabot
       end
 
       def skip_dependency?(dep)
-        return true if dep["Indirect"]
+        return true if dep["Indirect"] && !security_update?
 
         begin
           path_uri = URI.parse("https://#{dep['Path']}")
@@ -160,6 +160,11 @@ module Dependabot
         rescue URI::InvalidURIError
           false
         end
+      end
+
+      def security_update?
+        # TODO: Implement this
+        return true
       end
 
       def dependency_is_replaced(details)

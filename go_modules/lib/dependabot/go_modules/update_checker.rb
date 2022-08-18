@@ -14,6 +14,8 @@ module Dependabot
 
       def latest_resolvable_version
         # We don't yet support updating indirect dependencies for go_modules
+        # except for security fixes where the indirect dependency is in the
+        # go.mod file.
         #
         # To update indirect dependencies we'll need to promote the indirect
         # dependency to the go.mod file forcing the resolver to pick this
