@@ -582,6 +582,45 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "kind: Pod" }
     end
 
+    context "when the image contains a hyphen" do
+      let(:podfile_body) { fixture("kubernetes", "yaml", "hyphen.yaml") }
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: podfile_body,
+          name: "hyphen.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "hyphen.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "hyphen.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "kubernetes"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "hyphen.yaml" }
+        end
+
+        its(:content) { is_expected.to include "  - image: nginx:1.14.3\n    name: nginx" }
+        its(:content) { is_expected.to include "kind: Pod" }
+      end
+    end
+
     context "when multiple identical lines need to be updated" do
       let(:podfile_body) do
         fixture("kubernetes", "yaml", "multiple_identical.yaml")
