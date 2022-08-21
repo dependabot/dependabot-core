@@ -288,7 +288,6 @@ COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-COPY --chown=dependabot:dependabot swift/helpers /opt/swift/helpers
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
