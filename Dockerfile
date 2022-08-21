@@ -1,6 +1,8 @@
-FROM ubuntu:20.04
+ARG UBUNTU_VERSION=20.04
+FROM ubuntu:${UBUNTU_VERSION}
 
 ARG TARGETARCH=amd64
+ARG UBUNTU_VERSION
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -233,9 +235,22 @@ USER root
 
 ### SWIFT
 
-# Install Swift 5.4
-FROM swift:5.4-focal
-RUN swift --version
+# Install Swift 5.6.2
+ARG SWIFT_VERSION=5.6.2
+ARG SWIFT_UBUNTU=2004
+RUN apt-get update \
+  && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev
+USER dependabot
+RUN mkdir -p "${SWIFT_HOME}" && chown dependabot:dependabot "${SWIFT_HOME}"
+RUN wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
+  && wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz.sig \
+  && gpg --verify swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz{.sig,} \
+  && mkdir -p ${SWIFT_HOME}/bin \
+  && tar -xvzf swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz -C ${SWIFT_HOME}/bin \
+  && rm -f swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
+  && rm -rf /var/lib/apt/lists/* \
+  && swift --version
+USER root
 
 ### Terraform
 
