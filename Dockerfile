@@ -236,20 +236,20 @@ USER root
 ### SWIFT
 
 # Install Swift 5.6.2
-ENV SWIFT_HOME=/opt/swift \
-   PATH="$PATH:${SWIFT_HOME}/bin"
+ENV SWIFT_HOME=/opt/swift
 ARG SWIFT_VERSION=5.6.2
 ARG SWIFT_UBUNTU=2004
 RUN apt-get update \
   && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev
-USER dependabot
-RUN mkdir -p "${SWIFT_HOME}" && chown dependabot:dependabot "${SWIFT_HOME}"
-RUN curl -O https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
-  && curl -O https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz.sig \
-  && gpg --verify swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz{.sig,} \
-  && mkdir -p ${SWIFT_HOME}/bin \
-  && tar -xvzf swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz -C ${SWIFT_HOME}/bin \
-  && rm -f swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
+ARG SWIFT_ARCHIVE_ROOT=swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}
+RUN mkdir -p ${SWIFT_HOME} \
+  && gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 'A62A E125 BBBF BB96 A6E0  42EC 925C C1CC ED3D 1561' \
+  && curl -o ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_ARCHIVE_ROOT}.tar.gz \
+  && curl -o ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz.sig https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_ARCHIVE_ROOT}.tar.gz.sig \
+  && gpg --verify ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz{.sig,} \
+  && tar -xvzf ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz -C ${SWIFT_HOME} \
+  && cp -r ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}/usr/* /usr \
+  && rm -rf ${SWIFT_HOME} \
   && rm -rf /var/lib/apt/lists/* \
   && swift --version
 USER root
