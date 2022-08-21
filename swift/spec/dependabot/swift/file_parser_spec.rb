@@ -23,21 +23,21 @@ RSpec.describe Dependabot::Swift::FileParser do
 
   let(:files) do
     [
-      package_manifest_file, 
+      package_manifest_file,
       package_resolved_file
     ]
   end
 
   let(:package_manifest_file) do
     Dependabot::DependencyFile.new(
-      name: "Package.swift", 
+      name: "Package.swift",
       content: fixture("github", "mona", "Example", "Package.swift")
     )
   end
 
   let(:package_resolved_file) do
     Dependabot::DependencyFile.new(
-      name: "Package.resolved", 
+      name: "Package.resolved",
       content: fixture("github", "mona", "Example", "Package.resolved")
     )
   end
@@ -188,7 +188,9 @@ RSpec.describe Dependabot::Swift::FileParser do
         end
       end
 
+      # rubocop:disable Layout/LineLength
       describe "the seventh dependency (https://github.com:443/mona/Trie.git at revision f3b37c3ccf0a1559d4097e2eeb883801c4b8f510)" do
+        # rubocop:enable Layout/LineLength
         subject(:dependency) { dependencies[6] }
 
         let(:expected_requirements) do

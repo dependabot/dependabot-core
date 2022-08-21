@@ -17,8 +17,8 @@ module Dependabot
       def updated_dependency_files
         raise NotImplementedError
       end
-   end
- end
+    end
+  end
 end
 
 Dependabot::FileUpdaters.

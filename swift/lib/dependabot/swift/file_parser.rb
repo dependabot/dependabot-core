@@ -31,18 +31,16 @@ module Dependabot
           requirements = []
           declaration = declarations.find { |d| d["url"] == url }
           declaration&.dig("requirement", "range")&.each do |range|
-            if lower_bound = range["lowerBound"]
+            if (lower_bound = range["lowerBound"])
               requirements << Gem::Requirement.new(">= #{lower_bound}")
             end
 
-            if upper_bound = range["upperBound"]
+            if (upper_bound = range["upperBound"])
               requirements << Gem::Requirement.new("< #{upper_bound}")
             end
           end
 
-          if !version.nil? && requirements.empty?
-            requirements << Gem::Requirement.new("#{version}")
-          end
+          requirements << Gem::Requirement.new(version.to_s) if !version.nil? && requirements.empty?
 
           dependency_set << Dependency.new(
             name: id.normalized,
@@ -99,11 +97,11 @@ module Dependabot
 
       def package_manifest_file
         # TODO: Select version-specific manifest
-        @manifest ||= get_original_file("Package.swift")
+        @package_manifest_file ||= get_original_file("Package.swift")
       end
 
       def package_resolved_file
-        @resolved ||= get_original_file("Package.resolved")
+        @package_resolved_file ||= get_original_file("Package.resolved")
       end
     end
   end

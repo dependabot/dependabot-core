@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'uri'
+require "uri"
 
 module Dependabot
   module Swift
@@ -8,8 +8,8 @@ module Dependabot
       class Identifier
         include Comparable
 
-        SCOPE_REGEX = /[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}/
-        NAME_REGEX = /\p{XID_Start}\p{XID_Continue}{0,127}/
+        SCOPE_REGEX = /[a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}/.freeze
+        NAME_REGEX = /\p{XID_Start}\p{XID_Continue}{0,127}/.freeze
 
         attr_reader :scope, :name
 
@@ -23,10 +23,8 @@ module Dependabot
             components = string.sub(%r{(?:ssh\://)?git@github.com[:/]}, "").split("/")
             @scope = components.first
             @name = components.last.sub(/\.git$/, "")
-          when %r{\A#{SCOPE_REGEX}\.#{NAME_REGEX}\z}
+          when /%r{\A#{SCOPE_REGEX}\.#{NAME_REGEX}\z}/
             @scope, @name = string.split(".")
-          else
-            return
           end
         end
 
@@ -35,7 +33,7 @@ module Dependabot
         end
 
         def inspect
-          "#<#{self.class.name}:#{self.object_id} scope: #{@scope}, name: #{@name}>"
+          "#<#{self.class.name}:#{object_id} scope: #{@scope}, name: #{@name}>"
         end
 
         def to_s
@@ -43,7 +41,7 @@ module Dependabot
         end
 
         def <=>(other)
-          self.normalized <=> other.normalized
+          normalized <=> other.normalized
         end
       end
     end

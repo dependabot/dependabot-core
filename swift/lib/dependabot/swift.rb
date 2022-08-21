@@ -8,7 +8,6 @@ require "dependabot/swift/file_parser"
 require "dependabot/swift/update_checker"
 require "dependabot/swift/file_updater"
 require "dependabot/swift/metadata_finder"
-require "dependabot/swift/package"
 require "dependabot/swift/requirement"
 require "dependabot/swift/version"
 

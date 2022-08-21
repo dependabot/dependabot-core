@@ -20,11 +20,11 @@ RSpec.describe Dependabot::Swift::FileFetcher do
   let(:file_fetcher_instance) do
     described_class.new(source: source, credentials: credentials)
   end
-  
+
   let(:github_url) { "https://api.github.com/" }
-  
+
   let(:url) { github_url + "repos/mona/LinkedList/contents/" }
-  
+
   let(:credentials) do
     [{
       "type" => "git_source",
@@ -69,15 +69,15 @@ RSpec.describe Dependabot::Swift::FileFetcher do
     let(:directory) { "/nonexistent" }
 
     before do
-        %w(Package.swift Package.resolved).each do |filename|
-          stub_request(:get, File.join(url, "nonexistent", "#{filename}?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 404,
-              headers: { "content-type" => "application/json" },
-              body: fixture("github", "errors", "not_found.json")
-            )
-        end
+      %w(Package.swift Package.resolved).each do |filename|
+        stub_request(:get, File.join(url, "nonexistent", "#{filename}?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 404,
+            headers: { "content-type" => "application/json" },
+            body: fixture("github", "errors", "not_found.json")
+          )
+      end
     end
 
     it "raises a helpful error" do
