@@ -236,6 +236,8 @@ USER root
 ### SWIFT
 
 # Install Swift 5.6.2
+ENV SWIFT_HOME=/opt/swift \
+   PATH="$PATH:${SWIFT_HOME}/bin"
 ARG SWIFT_VERSION=5.6.2
 ARG SWIFT_UBUNTU=2004
 RUN apt-get update \
