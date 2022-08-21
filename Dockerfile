@@ -229,6 +229,7 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.61.0 --profile minimal
+USER root
 
 ### SWIFT
 
