@@ -244,8 +244,8 @@ RUN apt-get update \
   && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev
 USER dependabot
 RUN mkdir -p "${SWIFT_HOME}" && chown dependabot:dependabot "${SWIFT_HOME}"
-RUN wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
-  && wget https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz.sig \
+RUN curl -o https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz \
+  && curl -o https://swift.org/builds/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz.sig \
   && gpg --verify swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz{.sig,} \
   && mkdir -p ${SWIFT_HOME}/bin \
   && tar -xvzf swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}.tar.gz -C ${SWIFT_HOME}/bin \
