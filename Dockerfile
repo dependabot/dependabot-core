@@ -1,7 +1,6 @@
 FROM ubuntu:20.04
 
 ARG TARGETARCH=amd64
-ARG UBUNTU_VERSION=focal
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -235,8 +234,7 @@ USER root
 ### SWIFT
 
 # Install Swift 5.4
-ARG SWIFT_VERSION=5.4
-FROM swift:${SWIFT_VERSION}-${UBUNTU-VERSION}
+FROM swift:5.4-focal
 RUN swift --version
 
 ### Terraform
