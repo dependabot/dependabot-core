@@ -240,7 +240,8 @@ ENV SWIFT_HOME=/opt/swift
 ARG SWIFT_VERSION=5.6.2
 ARG SWIFT_UBUNTU=2004
 RUN apt-get update \
-  && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev
+  && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev \
+  && rm -rf /var/lib/apt/lists/*
 ARG SWIFT_ARCHIVE_ROOT=swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}
 RUN mkdir -p ${SWIFT_HOME} \
   && gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 'A62A E125 BBBF BB96 A6E0  42EC 925C C1CC ED3D 1561' \
@@ -249,8 +250,7 @@ RUN mkdir -p ${SWIFT_HOME} \
   && gpg --verify ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz{.sig,} \
   && tar -xvzf ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz -C ${SWIFT_HOME} \
   && cp -r ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}/usr/* /usr \
-  && rm -rf ${SWIFT_HOME} \
-  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}* \
   && swift --version
 USER root
 
