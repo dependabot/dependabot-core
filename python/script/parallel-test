@@ -10,4 +10,4 @@ end
 
 puts "Running the following tests: #{tests.join(' ')}"
 
-exec "bundle exec rspec #{tests.join(' ')}"
+exec "bundle exec rspec --profile 10 #{tests.join(' ')}"
