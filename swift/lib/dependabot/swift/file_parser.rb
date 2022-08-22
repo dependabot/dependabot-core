@@ -26,21 +26,11 @@ module Dependabot
           url = pin["repositoryURL"]
           id = Dependabot::Swift::Package::Identifier.new(url)
 
-          version = pin.dig("state", "version")
+          requirements = parse_declaration(declarations.find { |d| d["url"] == url })
 
-          requirements = []
-          declaration = declarations.find { |d| d["url"] == url }
-          declaration&.dig("requirement", "range")&.each do |range|
-            if (lower_bound = range["lowerBound"])
-              requirements << Gem::Requirement.new(">= #{lower_bound}")
-            end
-
-            if (upper_bound = range["upperBound"])
-              requirements << Gem::Requirement.new("< #{upper_bound}")
-            end
+          if requirements.empty? && (version = pin.dig("state", "version"))
+            requirements << Gem::Requirement.new(version.to_s)
           end
-
-          requirements << Gem::Requirement.new(version.to_s) if !version.nil? && requirements.empty?
 
           dependency_set << Dependency.new(
             name: id.normalized,
@@ -102,6 +92,20 @@ module Dependabot
 
       def package_resolved_file
         @package_resolved_file ||= get_original_file("Package.resolved")
+      end
+
+      def parse_declaration(declaration)
+        requirements = []
+        declaration&.dig("requirement", "range")&.each do |range|
+          if (lower_bound = range["lowerBound"])
+            requirements << Gem::Requirement.new(">= #{lower_bound}")
+          end
+
+          if (upper_bound = range["upperBound"])
+            requirements << Gem::Requirement.new("< #{upper_bound}")
+          end
+        end
+        requirements
       end
     end
   end
