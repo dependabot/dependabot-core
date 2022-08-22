@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+tests = Dir["spec/**/*_spec.rb"].
+        sort.
+        shuffle(random: Random.new(ENV["GITHUB_SHA"].to_i(16))).
+        select.
+        with_index do |_el, i|
+  i % ENV["CI_NODE_TOTAL"].to_i == ENV["CI_NODE_INDEX"].to_i
+end
+
+puts "Running the following tests: #{tests.join(' ')}"
+
+exec "bundle exec rspec #{tests.join(' ')}"

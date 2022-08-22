@@ -20,26 +20,35 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1 }
-          - { path: bundler, name: bundler2 }
-          - { path: cargo, name: cargo }
-          - { path: common, name: common }
-          - { path: composer, name: composer }
-          - { path: docker, name: docker }
-          - { path: elm, name: elm }
-          - { path: git_submodules, name: git_submodules }
-          - { path: github_actions, name: github_actions }
-          - { path: go_modules, name: go_modules }
-          - { path: gradle, name: gradle }
-          - { path: hex, name: hex }
-          - { path: maven, name: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn }
-          - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus }
-          - { path: python, name: python }
-          - { path: python, name: python_slow }
-          - { path: pub, name: pub }
-          - { path: terraform, name: terraform }
+          - { path: bundler, name: bundler1, ci_node_total: 1, ci_node_index: 0 }
+          - { path: bundler, name: bundler2, ci_node_total: 1, ci_node_index: 0 }
+          - { path: cargo, name: cargo, ci_node_total: 1, ci_node_index: 0 }
+          - { path: common, name: common, ci_node_total: 1, ci_node_index: 0 }
+          - { path: composer, name: composer, ci_node_total: 1, ci_node_index: 0 }
+          - { path: docker, name: docker, ci_node_total: 1, ci_node_index: 0 }
+          - { path: elm, name: elm, ci_node_total: 1, ci_node_index: 0 }
+          - { path: git_submodules, name: git_submodules, ci_node_total: 1, ci_node_index: 0 }
+          - { path: github_actions, name: github_actions, ci_node_total: 1, ci_node_index: 0 }
+          - { path: go_modules, name: go_modules, ci_node_total: 1, ci_node_index: 0 }
+          - { path: gradle, name: gradle, ci_node_total: 1, ci_node_index: 0 }
+          - { path: hex, name: hex, ci_node_total: 1, ci_node_index: 0 }
+          - { path: maven, name: maven, ci_node_total: 1, ci_node_index: 0 }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 1, ci_node_index: 0 }
+          - { path: nuget, name: nuget, ci_node_total: 1, ci_node_index: 0 }
+          - { path: omnibus, name: omnibus, ci_node_total: 1, ci_node_index: 0 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 4 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 4 }
+          - { path: pub, name: pub, ci_node_total: 1, ci_node_index: 0 }
+          - { path: terraform, name: terraform, ci_node_total: 1, ci_node_index: 0 }
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -68,6 +77,9 @@ jobs:
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
+            --env "GITHUB_SHA=${{ github.sha }}" \
+            --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
+            --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm dependabot-core-ci bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
 
