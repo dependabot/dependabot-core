@@ -25,8 +25,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
   end
   let(:dependencies) { [dependency] }
   let(:project_name) { "gemfile" }
-  let(:dependency_files) { bundler_project_dependency_files(project_name) }
   let(:directory) { "/" }
+  let(:dependency_files) { bundler_project_dependency_files(project_name, directory: directory) }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
