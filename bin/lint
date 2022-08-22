@@ -3,10 +3,11 @@
 set -e
 
 shellcheck \
+  -s bash \
   ./bin/ci-test \
   ./bin/docker-dev-shell \
   ./bin/lint \
   ./*/helpers/*/build \
   ./*/helpers/build \
-  ./*/script/* \
+  ./*/script/ci-test \
   "$@"
