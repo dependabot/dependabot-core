@@ -1608,5 +1608,35 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
         end
       end
     end
+
+    context "vendoring with subdir" do
+      let(:project_name) { "vendored_gems_with_subdir" }
+      let(:directory) { "/acceptance" }
+      let(:repo_contents_path) { bundler_build_tmp_repo(project_name) }
+
+      before do
+        stub_request(:get, "https://rubygems.org/gems/business-1.5.0.gem").
+          to_return(
+            status: 200,
+            body: fixture("ruby", "gems", "business-1.5.0.gem")
+          )
+      end
+
+      after do
+        FileUtils.remove_entry repo_contents_path
+        ::Bundler.settings.temporary(persistent_gems_after_clean: nil)
+      end
+
+      it "vendors the new dependency" do
+        expect(updater.updated_dependency_files.map(&:name)).to match_array(
+          [
+            "vendor/cache/business-1.4.0.gem",
+            "vendor/cache/business-1.5.0.gem",
+            "Gemfile",
+            "Gemfile.lock"
+          ]
+        )
+      end
+    end
   end
 end
