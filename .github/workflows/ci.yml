@@ -77,7 +77,6 @@ jobs:
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --env "GITHUB_SHA=${{ github.sha }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm dependabot-core-ci bash -c \
