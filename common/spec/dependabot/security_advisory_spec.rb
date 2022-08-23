@@ -131,7 +131,8 @@ RSpec.describe Dependabot::SecurityAdvisory do
         version: dependency_version,
         previous_version: dependency_previous_version,
         requirements: [],
-        previous_requirements: []
+        previous_requirements: [],
+        removed: removed
       )
     end
     let(:package_manager) { "dummy" }
@@ -140,6 +141,7 @@ RSpec.describe Dependabot::SecurityAdvisory do
     let(:safe_versions) { [Gem::Requirement.new("~> 1.11.0")] }
     let(:dependency_version) { "1.11.1" }
     let(:dependency_previous_version) { "0.7.1" }
+    let(:removed) { false }
 
     it { is_expected.to eq(true) }
 
@@ -182,6 +184,12 @@ RSpec.describe Dependabot::SecurityAdvisory do
         let(:vulnerable_versions) { ["~> 0.8.0"] }
         it { is_expected.to eq(false) }
       end
+    end
+
+    context "with a removed dependency" do
+      let(:dependency_version) { nil }
+      let(:removed) { true }
+      it { is_expected.to eq(true) }
     end
   end
 

@@ -293,10 +293,14 @@ module Dependabot
         return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
 
         dependencies.map do |dep|
-          "\n\nUpdates `#{dep.display_name}` "\
-          "#{from_version_msg(previous_version(dep))}to "\
-          "#{new_version(dep)}"\
-          "#{metadata_links_for_dep(dep)}"
+          if dep.removed?
+            "\n\nRemoves `#{dep.display_name}`"
+          else
+            "\n\nUpdates `#{dep.display_name}` "\
+            "#{from_version_msg(previous_version(dep))}to "\
+            "#{new_version(dep)}"\
+            "#{metadata_links_for_dep(dep)}"
+          end
         end.join
       end
 
@@ -313,9 +317,13 @@ module Dependabot
         return metadata_cascades_for_dep(dependencies.first) if dependencies.one?
 
         dependencies.map do |dep|
-          msg = "\nUpdates `#{dep.display_name}` "\
-                "#{from_version_msg(previous_version(dep))}"\
-                "to #{new_version(dep)}"
+          msg = if dep.removed?
+                  "\nRemoves `#{dep.display_name}`"
+                else
+                  "\nUpdates `#{dep.display_name}` "\
+                        "#{from_version_msg(previous_version(dep))}"\
+                        "to #{new_version(dep)}"
+                end
 
           if vulnerabilities_fixed[dep.name]&.one?
             msg += " **This update includes a security fix.**"
@@ -328,6 +336,8 @@ module Dependabot
       end
 
       def metadata_cascades_for_dep(dependency)
+        return "" if dependency.removed?
+
         MetadataPresenter.new(
           dependency: dependency,
           source: source,
