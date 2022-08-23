@@ -153,6 +153,55 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when multiple identical named dependencies with same tag, but different variants" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "multi_stage_different_variants")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python",
+          version: "3.10.6",
+          previous_version: "3.10.5",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.10.6" }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.10.6-slim" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "3.10.5" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "3.10.5-slim" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM python:3.10.6 AS base\n" }
+        its(:content) { is_expected.to include "FROM python:3.10.6-slim AS production\n" }
+        its(:content) { is_expected.to include "ENV PIP_NO_CACHE_DIR=off \\\n" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
