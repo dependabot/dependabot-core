@@ -34,6 +34,9 @@ module Dependabot
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/.freeze
 
+      IMAGE_SPEC =
+        %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x.freeze
+
       def parse
         dependency_set = DependencySet.new
 
@@ -61,15 +64,18 @@ module Dependabot
           end
         end
 
+        manifest_files.each do |file|
+          dependency_set += workfile_file_dependencies(file)
+        end
+
         dependency_set.dependencies
       end
 
       private
 
       def dockerfiles
-        # The Docker file fetcher only fetches Dockerfiles, so no need to
-        # filter here
-        dependency_files
+        # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.
+        dependency_files.reject { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
       end
 
       def version_from(parsed_from_line)
@@ -153,6 +159,71 @@ module Dependabot
         return if dependency_files.any?
 
         raise "No Dockerfile!"
+      end
+
+      def workfile_file_dependencies(file)
+        dependency_set = DependencySet.new
+
+        resources = file.content.split(/^---$/).map(&:strip).reject(&:empty?) # assuming a yaml file
+        resources.flat_map do |resource|
+          json = YAML.safe_load(resource, aliases: true)
+          images = deep_fetch_images(json).uniq
+
+          images.each do |string|
+            # TODO: Support Docker references and path references
+            details = string.match(IMAGE_SPEC).named_captures
+            details["registry"] = nil if details["registry"] == "docker.io"
+
+            version = version_from(details)
+            next unless version
+
+            dependency_set << build_image_dependency(file, details, version)
+          end
+        end
+
+        dependency_set
+      rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias
+        raise Dependabot::DependencyFileNotParseable, file.path
+      end
+
+      def build_image_dependency(file, details, version)
+        Dependency.new(
+          name: details.fetch("image"),
+          version: version,
+          package_manager: "docker",
+          requirements: [
+            requirement: nil,
+            groups: [],
+            file: file.name,
+            source: source_from(details)
+          ]
+        )
+      end
+
+      def deep_fetch_images(json_obj)
+        case json_obj
+        when Hash then deep_fetch_images_from_hash(json_obj)
+        when Array then json_obj.flat_map { |o| deep_fetch_images(o) }
+        else []
+        end
+      end
+
+      def deep_fetch_images_from_hash(json_object)
+        img = json_object.fetch("image", nil)
+
+        images =
+          if !img.nil? && img.is_a?(String) && !img.empty?
+            [img]
+          else
+            []
+          end
+
+        images + json_object.values.flat_map { |obj| deep_fetch_images(obj) }
+      end
+
+      def manifest_files
+        # Dependencies include both Dockerfiles and yaml, select yaml.
+        dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
       end
     end
   end

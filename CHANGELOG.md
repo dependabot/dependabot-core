@@ -1,3 +1,40 @@
+## v0.210.0, 23 August 2022
+
+- build(deps): bump nock from 13.2.8 to 13.2.9 in /npm_and_yarn/helpers [#5397](https://github.com/dependabot/dependabot-core/pull/5397)
+- build(deps): bump NPM from 8.5.1 to 8.18.0 (@THETCR) [#5518](https://github.com/dependabot/dependabot-core/pull/5518)
+- build(deps-dev): bump eslint from 8.21.0 to 8.22.0 in /npm_and_yarn/helpers [#5533](https://github.com/dependabot/dependabot-core/pull/5533)
+- Fix file updater removing variants from docker tags [#5560](https://github.com/dependabot/dependabot-core/pull/5560)
+- Update rubocop requirement from ~> 1.33.0 to ~> 1.35.1 in /common [#5564](https://github.com/dependabot/dependabot-core/pull/5564)
+- Fix Bundler vendoring when a subdirectory is configured [#5567](https://github.com/dependabot/dependabot-core/pull/5567)
+- Fix CI matrices [#5573](https://github.com/dependabot/dependabot-core/pull/5573)
+- Split slow ecosystems across multiple CI jobs [#5568](https://github.com/dependabot/dependabot-core/pull/5568)
+- Set the author details when updating an Azure pull request. (@JManou) [#5557](https://github.com/dependabot/dependabot-core/pull/5557)
+- Bump @npmcli/arborist from 5.3.1 to 5.6.0 in /npm_and_yarn/helpers [#5563](https://github.com/dependabot/dependabot-core/pull/5563)
+- Bump docker_registry2 to fix #3989 (@noorul) [#5436](https://github.com/dependabot/dependabot-core/pull/5436)
+- Add a fix for when the image tag is the first entry in the array. (@brendandburns) [#5558](https://github.com/dependabot/dependabot-core/pull/5558)
+- [terraform] Cache client-side timeouts when a remote host is unreachable [#5407](https://github.com/dependabot/dependabot-core/pull/5407)
+
+## v0.209.0, 17 August 2022
+
+- Ignore newlines when determining indentation [#5550](https://github.com/dependabot/dependabot-core/pull/5550)
+- Allow diverged-commit pinned Actions to be updated [#5516](https://github.com/dependabot/dependabot-core/pull/5516)
+- Add a dependabot implementation for Kubernetes YAML files. (@brendandburns) [#5348](https://github.com/dependabot/dependabot-core/pull/5348)
+- The new pip resolver is not backwards compatible [#5540](https://github.com/dependabot/dependabot-core/pull/5540)
+
+## v0.208.0, 16 August 2022
+
+- Try fix spec failure due to broken setuptools [#5546](https://github.com/dependabot/dependabot-core/pull/5546)
+- Share omnibus gems with all projects to reduce install time [#5529](https://github.com/dependabot/dependabot-core/pull/5529)
+- build(deps): bump @dependabot/yarn-lib from 1.21.1 to 1.22.19 in /npm_and_yarn/helpers [#5531](https://github.com/dependabot/dependabot-core/pull/5531)
+- Run shellcheck on all native helper build scripts [#5519](https://github.com/dependabot/dependabot-core/pull/5519)
+- Python private registry authentication fix (@andrcuns) [#5452](https://github.com/dependabot/dependabot-core/pull/5452)
+- Adds a TODO and more detailed comment about python 3.6 support [#5527](https://github.com/dependabot/dependabot-core/pull/5527)
+- [Bitbucket] Add default reviewers to pull request (@stefangr) [#5526](https://github.com/dependabot/dependabot-core/pull/5526)
+- Make failures in Bundler 1 native helper specs actually fail CI [#5517](https://github.com/dependabot/dependabot-core/pull/5517)
+- Optional options arg for FileFetcher [#5524](https://github.com/dependabot/dependabot-core/pull/5524)
+- Cleanup Ruby sources after installing Ruby [#5522](https://github.com/dependabot/dependabot-core/pull/5522)
+- Remove ENV no longer necessary [#5515](https://github.com/dependabot/dependabot-core/pull/5515)
+
 ## v0.207.0, 11 August 2022
 
 - Monkey patch bundler EndpointSpecification [#5510](https://github.com/dependabot/dependabot-core/pull/5510)

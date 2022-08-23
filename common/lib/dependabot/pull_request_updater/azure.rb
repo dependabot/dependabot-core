@@ -11,16 +11,17 @@ module Dependabot
       OBJECT_ID_FOR_BRANCH_DELETE = "0000000000000000000000000000000000000000"
 
       attr_reader :source, :files, :base_commit, :old_commit, :credentials,
-                  :pull_request_number
+                  :pull_request_number, :author_details
 
       def initialize(source:, files:, base_commit:, old_commit:,
-                     credentials:, pull_request_number:)
+                     credentials:, pull_request_number:, author_details: nil)
         @source = source
         @files = files
         @base_commit = base_commit
         @old_commit = old_commit
         @credentials = credentials
         @pull_request_number = pull_request_number
+        @author_details = author_details
       end
 
       def update
@@ -74,12 +75,15 @@ module Dependabot
       end
 
       def create_temp_branch
+        author = author_details&.slice(:name, :email, :date)
+        author = nil unless author&.any?
+
         response = azure_client_for_source.create_commit(
           temp_branch_name,
           base_commit,
           commit_message,
           files,
-          nil
+          author
         )
 
         JSON.parse(response.body).fetch("refUpdates").first.fetch("newObjectId")
