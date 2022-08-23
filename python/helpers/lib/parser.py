@@ -37,7 +37,7 @@ def parse_requirements(directory):
             )
             for parsed_req in requirements:
                 install_req = install_req_from_parsed_requirement(parsed_req)
-                if install_req.original_link:
+                if install_req.req is None:
                     continue
 
                 pattern = r"-[cr] (.*) \(line \d+\)"

@@ -6,6 +6,7 @@ require "uri"
 require "dependabot/bundler/update_checker"
 require "dependabot/bundler/native_helpers"
 require "dependabot/bundler/helpers"
+require "dependabot/registry_client"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -182,10 +183,8 @@ module Dependabot
               uri = URI.parse(spec.fetch("auth_uri"))
               next false unless %w(http https).include?(uri.scheme)
 
-              Excon.get(
-                uri.to_s,
-                idempotent: true,
-                **SharedHelpers.excon_defaults
+              Dependabot::RegistryClient.get(
+                url: uri.to_s
               ).status == 200
             rescue Excon::Error::Socket, Excon::Error::Timeout
               false

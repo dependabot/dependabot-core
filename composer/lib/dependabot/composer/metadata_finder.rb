@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/composer/version"
 
 module Dependabot
@@ -48,11 +48,7 @@ module Dependabot
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Excon.get(
-          "https://packagist.org/p/#{dependency.name.downcase}.json",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: "https://packagist.org/p/#{dependency.name.downcase}.json")
 
         return nil unless response.status == 200
 

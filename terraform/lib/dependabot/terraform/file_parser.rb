@@ -12,6 +12,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 require "dependabot/terraform/file_selector"
+require "dependabot/terraform/registry_client"
 
 module Dependabot
   module Terraform
@@ -20,7 +21,6 @@ module Dependabot
 
       include FileSelector
 
-      ARCHIVE_EXTENSIONS = %w(.zip .tbz2 .tgz .txz).freeze
       DEFAULT_REGISTRY = "registry.terraform.io"
       DEFAULT_NAMESPACE = "hashicorp"
       # https://www.terraform.io/docs/language/providers/requirements.html#source-addresses
@@ -168,7 +168,7 @@ module Dependabot
       # Full docs at https://www.terraform.io/docs/modules/sources.html
       def source_from(details_hash)
         raw_source = details_hash.fetch("source")
-        bare_source = get_proxied_source(raw_source)
+        bare_source = RegistryClient.get_proxied_source(raw_source)
 
         source_details =
           case source_type(bare_source)
@@ -258,39 +258,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      # See https://www.terraform.io/docs/modules/sources.html#http-urls for
-      # details of how Terraform handle HTTP(S) sources for modules
-      def get_proxied_source(raw_source) # rubocop:disable Metrics/AbcSize
-        return raw_source unless raw_source.start_with?("http")
-
-        uri = URI.parse(raw_source.split(%r{(?<!:)//}).first)
-        return raw_source if uri.path.end_with?(*ARCHIVE_EXTENSIONS)
-        return raw_source if URI.parse(raw_source).query&.include?("archive=")
-
-        url = raw_source.split(%r{(?<!:)//}).first + "?terraform-get=1"
-        host = URI.parse(raw_source).host
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-        raise PrivateSourceAuthenticationFailure, host if response.status == 401
-
-        return response.headers["X-Terraform-Get"] if response.headers["X-Terraform-Get"]
-
-        doc = Nokogiri::XML(response.body)
-        doc.css("meta").find do |tag|
-          tag.attributes&.fetch("name", nil)&.value == "terraform-get"
-        end&.attributes&.fetch("content", nil)&.value
-      rescue Excon::Error::Socket, Excon::Error::Timeout => e
-        raise PrivateSourceAuthenticationFailure, host if e.message.include?("no address for")
-
-        raw_source
-      end
-      # rubocop:enable Metrics/PerceivedComplexity
-
-      # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
@@ -305,7 +272,7 @@ module Dependabot
 
         path_uri = URI.parse(source_string.split(%r{(?<!:)//}).first)
         query_uri = URI.parse(source_string)
-        return :http_archive if path_uri.path.end_with?(*ARCHIVE_EXTENSIONS)
+        return :http_archive if path_uri.path.end_with?(*RegistryClient::ARCHIVE_EXTENSIONS)
         return :http_archive if query_uri.query&.include?("archive=")
 
         raise "HTTP source, but not an archive!"

@@ -12,7 +12,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       old_commit: old_commit,
       files: files,
       credentials: credentials,
-      pull_request_number: pull_request_number
+      pull_request_number: pull_request_number,
+      author_details: author_details
     )
   end
 
@@ -29,6 +30,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
   let(:source_branch_new_commit) { "newcommitsha" }
   let(:tree_object_id) { "treeobjectid" }
   let(:pull_request_number) { 1 }
+  let(:author_details) { nil }
   let(:source_branch) { "dependabot/npm_and_yarn/business-1.5.0" }
   let(:temp_branch) { source_branch + "-temp" }
   let(:path) { "files/are/here" }
@@ -79,9 +81,25 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       to_return(status: 200,
                 body: fixture("azure", "pull_request_source_branch_details.json"),
                 headers: json_header)
-    stub_request(:post, "#{repo_url}/pushes?api-version=5.0").
+    stub_request(:post, create_commit_url).
       to_return(status: 201,
+                body: fixture("azure", "create_new_branch.json"),
                 headers: json_header)
+    stub_request(:get, source_branch_commits_url).
+      to_return(status: 200,
+                body: fixture("azure", "commits.json"),
+                headers: json_header)
+    stub_request(:get, repo_contents_tree_url).
+      to_return(status: 200,
+                body: fixture("azure", "repo_contents_treeroot.json"),
+                headers: json_header)
+    stub_request(:get, repo_contents_url).
+      to_return(status: 200,
+                body: fixture("azure", "repo_contents.json"),
+                headers: json_header)
+    stub_request(:post, branch_update_url).
+      to_return(status: 201,
+                body: fixture("azure", "update_ref.json"))
   end
 
   describe "#update" do
@@ -113,52 +131,41 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
       end
     end
 
-    context "tries updating source branch head commit in AzureDevOps" do
+    context "when updating source branch head commit in AzureDevOps" do
       before do
-        stub_request(:get, source_branch_commits_url).
-          to_return(status: 200,
-                    body: fixture("azure", "commits.json"),
-                    headers: json_header)
-        stub_request(:get, repo_contents_tree_url).
-          to_return(status: 200,
-                    body: fixture("azure", "repo_contents_treeroot.json"),
-                    headers: json_header)
-        stub_request(:get, repo_contents_url).
-          to_return(status: 200,
-                    body: fixture("azure", "repo_contents.json"),
-                    headers: json_header)
-        stub_request(:post, create_commit_url).
-          with(body: {
-            refUpdates: [
-              { name: "refs/heads/#{temp_branch}", oldObjectId: base_commit }
-            ],
-            commits: [
-              {
-                comment: commit_message,
-                changes: files.map do |file|
-                  {
-                    changeType: "edit",
-                    item: { path: file.path },
-                    newContent: {
-                      content: Base64.encode64(file.content),
-                      contentType: "base64encoded"
-                    }
-                  }
-                end
-              }
-            ]
-          }).
-          to_return(status: 201,
-                    body: fixture("azure", "create_new_branch.json"),
-                    headers: json_header)
-
         allow(updater).to receive(:temp_branch_name).and_return(temp_branch)
       end
 
-      it "sends request to AzureDevOps to update source branch head commit" do
-        stub_request(:post, branch_update_url).
-          to_return(status: 201, body: fixture("azure", "update_ref.json"))
+      it "commits on the temp branch" do
+        updater.update
 
+        expect(WebMock).
+          to(
+            have_requested(:post, create_commit_url).
+            with(body: {
+              refUpdates: [
+                { name: "refs/heads/#{temp_branch}", oldObjectId: base_commit }
+              ],
+              commits: [
+                {
+                  comment: commit_message,
+                  changes: files.map do |file|
+                    {
+                      changeType: "edit",
+                      item: { path: file.path },
+                      newContent: {
+                        content: Base64.encode64(file.content),
+                        contentType: "base64encoded"
+                      }
+                    }
+                  end
+                }
+              ]
+            })
+          )
+      end
+
+      it "sends request to AzureDevOps to update source branch head commit" do
         allow(updater).to receive(:temp_branch_name).and_return(temp_branch)
         updater.update
 
@@ -177,6 +184,27 @@ RSpec.describe Dependabot::PullRequestUpdater::Azure do
           to_return(status: 200, body: fixture("azure", "update_ref_failed.json"))
 
         expect { updater.update }.to raise_error(Dependabot::PullRequestUpdater::Azure::PullRequestUpdateFailed)
+      end
+    end
+
+    context "with author details provided" do
+      let(:author_details) do
+        { email: "support@dependabot.com", name: "dependabot" }
+      end
+
+      it "includes the author details when commiting on the temp branch" do
+        updater.update
+
+        expect(WebMock).
+          to(
+            have_requested(:post, create_commit_url).
+              with do |req|
+                json_body = JSON.parse(req.body)
+                expect(json_body.fetch("commits").count).to eq(1)
+                expect(json_body.fetch("commits").first.fetch("author")).
+                  to eq(author_details.transform_keys(&:to_s))
+              end
+          )
       end
     end
   end

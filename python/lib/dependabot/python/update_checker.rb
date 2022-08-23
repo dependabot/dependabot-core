@@ -6,7 +6,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/python/requirement"
 require "dependabot/python/requirement_parser"
@@ -107,10 +107,7 @@ module Dependabot
       private
 
       def latest_version_resolvable_with_full_unlock?
-        # Full unlock checks aren't implemented for pip because they're not
-        # relevant (pip doesn't have a resolver). This method always returns
-        # false to ensure `updated_dependencies_after_full_unlock` is never
-        # called.
+        # Full unlock checks aren't implemented for Python (yet)
         false
       end
 
@@ -274,10 +271,8 @@ module Dependabot
         details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
         return false unless details
 
-        index_response = Excon.get(
-          "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
+        index_response = Dependabot::RegistryClient.get(
+          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
         )
 
         return false unless index_response.status == 200

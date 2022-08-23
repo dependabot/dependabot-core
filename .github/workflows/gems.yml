@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - uses: actions/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
       - run: |
           [ -d ~/.gem ] || mkdir ~/.gem
           echo "---" > ~/.gem/credentials

@@ -4,6 +4,7 @@ require "nokogiri"
 
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser"
+require "dependabot/registry_client"
 
 # For documentation, see:
 # - http://maven.apache.org/guides/introduction/introduction-to-the-pom.html
@@ -127,7 +128,7 @@ module Dependabot
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
             @maven_responses ||= {}
-            @maven_responses[url] ||= RegistryClient.get(url: url)
+            @maven_responses[url] ||= Dependabot::RegistryClient.get(url: url)
             next unless @maven_responses[url].status == 200
             next unless pom?(@maven_responses[url].body)
 

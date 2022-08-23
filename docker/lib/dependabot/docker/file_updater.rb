@@ -10,7 +10,10 @@ module Dependabot
       FROM_REGEX = /FROM(\s+--platform\=\S+)?/i.freeze
 
       def self.updated_files_regex
-        [/dockerfile/i]
+        [
+          /dockerfile/i,
+          /^[^\.]+\.ya?ml/i
+        ]
       end
 
       def updated_dependency_files
@@ -19,11 +22,17 @@ module Dependabot
         dependency_files.each do |file|
           next unless requirement_changed?(file, dependency)
 
-          updated_files <<
-            updated_file(
-              file: file,
-              content: updated_dockerfile_content(file)
-            )
+          updated_files << if file.name.match?(/^[^\.]+\.ya?ml/i)
+                             updated_file(
+                               file: file,
+                               content: updated_yaml_content(file)
+                             )
+                           else
+                             updated_file(
+                               file: file,
+                               content: updated_dockerfile_content(file)
+                             )
+                           end
         end
 
         updated_files.reject! { |f| dependency_files.include?(f) }
@@ -76,7 +85,11 @@ module Dependabot
 
         modified_content = file.content
 
-        old_tags.each do |old_tag|
+        new_tags = new_tags(file)
+
+        old_tags.zip(new_tags).each do |old_tag, new_tag|
+          new_tag ||= new_tags.first
+
           old_declaration =
             if private_registry_url(file) then "#{private_registry_url(file)}/"
             else
@@ -90,7 +103,7 @@ module Dependabot
 
           modified_content = modified_content.
                              gsub(old_declaration_regex) do |old_dec|
-            old_dec.gsub(":#{old_tag}", ":#{new_tag(file)}")
+            old_dec.gsub(":#{old_tag}", ":#{new_tag}")
           end
         end
 
@@ -120,10 +133,10 @@ module Dependabot
           fetch(:source).fetch(:digest)
       end
 
-      def new_tag(file)
+      def new_tags(file)
         dependency.requirements.
-          find { |r| r[:file] == file.name }.
-          fetch(:source)[:tag]
+          select { |r| r[:file] == file.name }.
+          map { |r| r.fetch(:source)[:tag] }
       end
 
       def old_tags(file)
@@ -137,6 +150,48 @@ module Dependabot
         dependency.requirements.
           find { |r| r[:file] == file.name }.
           fetch(:source)[:registry]
+      end
+
+      def updated_yaml_content(file)
+        updated_content = update_image(file)
+
+        raise "Expected content to change!" if updated_content == file.content
+
+        updated_content
+      end
+
+      def update_image(file)
+        old_images = old_yaml_images(file)
+        return if old_images.empty?
+
+        modified_content = file.content
+
+        old_images.each do |old_image|
+          old_image_regex = /^\s+(?:-\s)?image:\s+#{old_image}(?=\s|$)/
+          modified_content = modified_content.gsub(old_image_regex) do |old_img|
+            old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
+          end
+        end
+        modified_content
+      end
+
+      def new_yaml_image(file)
+        elt = dependency.requirements.find { |r| r[:file] == file.name }
+        prefix = elt.fetch(:source)[:registry] ? "#{elt.fetch(:source)[:registry]}/" : ""
+        digest = elt.fetch(:source)[:digest] ? "@#{elt.fetch(:source)[:digest]}" : ""
+        tag = elt.fetch(:source)[:tag] ? ":#{elt.fetch(:source)[:tag]}" : ""
+        "#{prefix}#{dependency.name}#{tag}#{digest}"
+      end
+
+      def old_yaml_images(file)
+        dependency.
+          previous_requirements.
+          select { |r| r[:file] == file.name }.map do |r|
+            prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
+            digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
+            tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
+            "#{prefix}#{dependency.name}#{tag}#{digest}"
+          end
       end
     end
   end

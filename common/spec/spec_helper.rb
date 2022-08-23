@@ -10,6 +10,7 @@ require "stackprof"
 require "uri"
 
 require "dependabot/dependency_file"
+require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
 require_relative "warning_monkey_patch"
 
@@ -37,6 +38,11 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+
+  config.after do
+    # Ensure we clear any cached timeouts between tests
+    Dependabot::RegistryClient.clear_cache!
+  end
 
   config.around do |example|
     if example.metadata[:profile]
@@ -114,8 +120,8 @@ def build_tmp_repo(project, path: "projects")
   tmp_repo_path.to_s
 end
 
-def project_dependency_files(project)
-  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+def project_dependency_files(project, directory: "/")
+  project_path = File.expand_path(File.join("spec/fixtures/projects", project, directory))
 
   raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
 
@@ -127,7 +133,8 @@ def project_dependency_files(project)
       content = File.read(filename)
       Dependabot::DependencyFile.new(
         name: filename,
-        content: content
+        content: content,
+        directory: directory
       )
     end
   end

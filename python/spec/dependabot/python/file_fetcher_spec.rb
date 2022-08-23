@@ -1037,25 +1037,44 @@ RSpec.describe Dependabot::Python::FileFetcher do
           end
         end
       end
+    end
 
-      context "that has an unfetchable path" do
-        before do
-          stub_request(:get, url + "setup.py?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
-          stub_request(:get, url + "setup.cfg?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
-        end
+    context "with a pyproject.toml and a requirements.txt file that does not use setup.py" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_and_requirements_without_setup_py.json")
+      end
+      before do
+        stub_request(:get, url + "requirements-test.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_self_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "pyproject.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_cfg_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.py?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
 
-        it "raises a PathDependenciesNotReachable error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(
-              Dependabot::PathDependenciesNotReachable,
-              "The following path based dependencies could not be retrieved: " \
-              "setup.py"
-            )
-        end
+      it "doesn't raise a path dependency error" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(
+          ["requirements-test.txt", "pyproject.toml", "setup.cfg"]
+        )
       end
     end
 

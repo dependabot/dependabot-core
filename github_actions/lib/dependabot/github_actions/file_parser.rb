@@ -55,7 +55,7 @@ module Dependabot
       def build_github_dependency(file, string)
         details = string.match(GITHUB_REPO_REFERENCE).named_captures
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
-        url = "https://github.com/#{name}"
+        url = "https://#{source.hostname}/#{name}"
 
         ref = details.fetch("ref")
         version = version_class.new(ref).to_s if version_class.correct?(ref)

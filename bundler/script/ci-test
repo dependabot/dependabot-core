@@ -4,18 +4,20 @@ set -e
 
 bundle install
 bundle exec rubocop .
-bundle exec rspec spec
+bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec
 
+# NOTE: Don't use `if` branches without `else` part, since the code in some of
+# then seems to not abort the script regardless of `set -e`
+
+# Should we only run these on one of the CI_NODE_INDEX's?
 if [[ "$SUITE_NAME" == "bundler1" ]]; then
   cd helpers/v1 \
     && BUNDLER_VERSION=1.17.3 bundle install \
     && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
     && cd -
-fi
-
-if [[ "$SUITE_NAME" == "bundler2" ]]; then
+else
   cd helpers/v2 \
-    && BUNDLER_VERSION=2.3.13 bundle install \
-    && BUNDLER_VERSION=2.3.13 bundle exec rspec spec \
+    && bundle install \
+    && bundle exec rspec spec \
     && cd -
 fi

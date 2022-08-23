@@ -18,7 +18,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         subject.run_bundler_subprocess(
           function: "noop",
           args: [],
-          bundler_version: "2.0.0",
+          bundler_version: "2",
           options: options
         )
       end
@@ -31,7 +31,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         expect(Dependabot::SharedHelpers).
           to have_received(:run_helper_subprocess).
           with(
-            command: "timeout -s HUP 120 bundle exec ruby /opt/bundler/v2/run.rb",
+            command: "timeout -s HUP 120 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
             env: anything
@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         expect(Dependabot::SharedHelpers).
           to have_received(:run_helper_subprocess).
           with(
-            command: "timeout -s HUP 1800 bundle exec ruby /opt/bundler/v2/run.rb",
+            command: "timeout -s HUP 1800 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
             env: anything
@@ -71,7 +71,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         expect(Dependabot::SharedHelpers).
           to have_received(:run_helper_subprocess).
           with(
-            command: "timeout -s HUP 60 bundle exec ruby /opt/bundler/v2/run.rb",
+            command: "timeout -s HUP 60 ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
             env: anything
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         expect(Dependabot::SharedHelpers).
           to have_received(:run_helper_subprocess).
           with(
-            command: "bundle exec ruby /opt/bundler/v2/run.rb",
+            command: "ruby /opt/bundler/v2/run.rb",
             function: "noop",
             args: [],
             env: anything
@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
         expect(Dependabot::SharedHelpers).
           to have_received(:run_helper_subprocess).
           with(
-            command: "bundle exec ruby #{File.expand_path('../../../helpers/v2/run.rb', __dir__)}",
+            command: "ruby #{File.expand_path('../../../helpers/v2/run.rb', __dir__)}",
             function: "noop",
             args: [],
             env: anything

@@ -9,7 +9,6 @@ require "dependabot/maven/file_updater"
 require "dependabot/maven/metadata_finder"
 require "dependabot/maven/requirement"
 require "dependabot/maven/version"
-require "dependabot/maven/registry_client"
 
 require "dependabot/pull_request_creator/labeler"
 Dependabot::PullRequestCreator::Labeler.

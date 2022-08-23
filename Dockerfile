@@ -10,9 +10,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
-# Everything from `make` onwards in apt-get install is only installed to ensure
-# Python support works with all packages (which may require specific libraries
-# at install time).
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -36,6 +33,9 @@ RUN apt-get update \
     locales \
     openssh-client \
     software-properties-common \
+    # Everything from here onwards is only installed to ensure
+    # Python support works with all packages (which may require
+    # specific libraries at install time).
     make \
     libpq-dev \
     libssl-dev \
@@ -72,11 +72,9 @@ ARG RUBY_VERSION=2.7.6
 ARG RUBY_INSTALL_VERSION=0.8.3
 
 ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
-# Disable the outdated rubygems installation from being loaded
-ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 
 ARG BUNDLER_V1_VERSION=1.17.3
-ARG BUNDLER_V2_VERSION=2.3.13
+ARG BUNDLER_V2_VERSION=2.3.14
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
@@ -90,8 +88,8 @@ RUN mkdir -p /tmp/ruby-install \
  && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
- && ./bin/ruby-install --system ruby $RUBY_VERSION \
- && gem update --system $RUBYGEMS_SYSTEM_VERSION \
+ && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
@@ -104,7 +102,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
   && pyenv install 3.10.5 \
   && pyenv global 3.10.5 \
@@ -189,10 +187,10 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.18.1
+ARG GOLANG_VERSION=1.19
 # You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
-ARG GOLANG_AMD64_CHECKSUM=b3b815f47ababac13810fc6021eb73d65478e0b2db4b09d348eefad9581a2334
-ARG GOLANG_ARM64_CHECKSUM=56a91851c97fb4697077abbca38860f735c32b38993ff79b088dac46e4735633
+ARG GOLANG_AMD64_CHECKSUM=464b6b66591f6cf055bc5df90a9750bf5fbc9d038722bb84a9d56a2bea974be6
+ARG GOLANG_ARM64_CHECKSUM=efa97fac9574fc6ef6c9ff3e3758fb85f1439b046573bf434cccb5e012bd00c8
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
@@ -207,8 +205,8 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.3
-ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
+ARG ELIXIR_VERSION=v1.13.4
+ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
 ARG ERLANG_VERSION=1:24.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
@@ -292,3 +290,10 @@ RUN bash /opt/terraform/helpers/build
 ENV HOME="/home/dependabot"
 
 WORKDIR ${HOME}
+
+# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
+ENV PATH="$HOME/bin:$PATH"
+# Configure cargo to use git CLI so the above takes effect
+RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
