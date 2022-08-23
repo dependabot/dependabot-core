@@ -85,7 +85,11 @@ module Dependabot
 
         modified_content = file.content
 
-        old_tags.each do |old_tag|
+        new_tags = new_tags(file)
+
+        old_tags.zip(new_tags).each do |old_tag, new_tag|
+          new_tag ||= new_tags.first
+
           old_declaration =
             if private_registry_url(file) then "#{private_registry_url(file)}/"
             else
@@ -99,7 +103,7 @@ module Dependabot
 
           modified_content = modified_content.
                              gsub(old_declaration_regex) do |old_dec|
-            old_dec.gsub(":#{old_tag}", ":#{new_tag(file)}")
+            old_dec.gsub(":#{old_tag}", ":#{new_tag}")
           end
         end
 
@@ -129,10 +133,10 @@ module Dependabot
           fetch(:source).fetch(:digest)
       end
 
-      def new_tag(file)
+      def new_tags(file)
         dependency.requirements.
-          find { |r| r[:file] == file.name }.
-          fetch(:source)[:tag]
+          select { |r| r[:file] == file.name }.
+          map { |r| r.fetch(:source)[:tag] }
       end
 
       def old_tags(file)
@@ -163,12 +167,11 @@ module Dependabot
         modified_content = file.content
 
         old_images.each do |old_image|
-          old_image_regex = /^\s+image:\s+#{old_image}(?=\s|$)/
+          old_image_regex = /^\s+(?:-\s)?image:\s+#{old_image}(?=\s|$)/
           modified_content = modified_content.gsub(old_image_regex) do |old_img|
             old_img.gsub(old_image.to_s, new_yaml_image(file).to_s)
           end
         end
-
         modified_content
       end
 

@@ -153,6 +153,55 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       end
     end
 
+    context "when multiple identical named dependencies with same tag, but different variants" do
+      let(:dockerfile_body) do
+        fixture("docker", "dockerfiles", "multi_stage_different_variants")
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "python",
+          version: "3.10.6",
+          previous_version: "3.10.5",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.10.6" }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "3.10.6-slim" }
+          }],
+          previous_requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "3.10.5" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "3.10.5-slim" }
+            }
+          ],
+          package_manager: "docker"
+        )
+      end
+
+      describe "the updated Dockerfile" do
+        subject(:updated_dockerfile) do
+          updated_files.find { |f| f.name == "Dockerfile" }
+        end
+
+        its(:content) { is_expected.to include "FROM python:3.10.6 AS base\n" }
+        its(:content) { is_expected.to include "FROM python:3.10.6-slim AS production\n" }
+        its(:content) { is_expected.to include "ENV PIP_NO_CACHE_DIR=off \\\n" }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dockerfile_body) { fixture("docker", "dockerfiles", "namespace") }
       let(:dependency) do
@@ -580,6 +629,45 @@ RSpec.describe Dependabot::Docker::FileUpdater do
       its(:content) { is_expected.to include "image: ubuntu:17.10\n" }
       its(:content) { is_expected.to include "image: nginx:1.14.2\n" }
       its(:content) { is_expected.to include "kind: Pod" }
+    end
+
+    context "when the image contains a hyphen" do
+      let(:podfile_body) { fixture("kubernetes", "yaml", "hyphen.yaml") }
+      let(:podfile) do
+        Dependabot::DependencyFile.new(
+          content: podfile_body,
+          name: "hyphen.yaml"
+        )
+      end
+      let(:yaml_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "hyphen.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "hyphen.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "kubernetes"
+        )
+      end
+
+      describe "the updated podfile" do
+        subject(:updated_podfile) do
+          updated_files.find { |f| f.name == "hyphen.yaml" }
+        end
+
+        its(:content) { is_expected.to include "  - image: nginx:1.14.3\n    name: nginx" }
+        its(:content) { is_expected.to include "kind: Pod" }
+      end
     end
 
     context "when multiple identical lines need to be updated" do

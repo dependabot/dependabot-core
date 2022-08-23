@@ -24,7 +24,7 @@ module Functions
 
   def self.vendor_cache_dir(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
-    Bundler.app_cache
+    Bundler.settings.app_cache_path
   end
 
   def self.update_lockfile(**args)
