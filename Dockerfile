@@ -1,6 +1,8 @@
-FROM ubuntu:20.04
+ARG UBUNTU_VERSION=20.04
+FROM ubuntu:${UBUNTU_VERSION}
 
 ARG TARGETARCH=amd64
+ARG UBUNTU_VERSION
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -229,7 +231,29 @@ ENV RUSTUP_HOME=/opt/rust \
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.61.0 --profile minimal
+USER root
 
+### SWIFT
+
+# Install Swift 5.6.2
+ENV SWIFT_HOME=/opt/swift
+ARG SWIFT_VERSION=5.6.2
+ARG SWIFT_UBUNTU=2004
+RUN apt-get update \
+  && apt-get install -y binutils git gnupg2 libc6-dev libcurl4 libedit2 libgcc-9-dev libxml2 libz3-dev pkg-config tzdata uuid-dev zlib1g-dev
+ARG SWIFT_ARCHIVE_ROOT=swift-${SWIFT_VERSION}-RELEASE-ubuntu${UBUNTU_VERSION}
+RUN mkdir -p ${SWIFT_HOME} \
+  && chown dependabot:dependabot ${SWIFT_HOME} \
+  && gpg --keyserver hkp://keyserver.ubuntu.com --recv-keys 'A62A E125 BBBF BB96 A6E0  42EC 925C C1CC ED3D 1561' \
+  && curl -o ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_ARCHIVE_ROOT}.tar.gz \
+  && curl -o ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz.sig https://download.swift.org/swift-${SWIFT_VERSION}-release/ubuntu${SWIFT_UBUNTU}/swift-${SWIFT_VERSION}-RELEASE/${SWIFT_ARCHIVE_ROOT}.tar.gz.sig \
+  && gpg --verify ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz{.sig,} \
+  && tar -xvzf ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}.tar.gz -C ${SWIFT_HOME} \
+  && cp -r ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}/usr/* /usr \
+  && rm -rf ${SWIFT_HOME}/${SWIFT_ARCHIVE_ROOT}* \
+  && rm -rf /var/lib/apt/lists/* \
+  && swift --version
+USER root
 
 ### Terraform
 

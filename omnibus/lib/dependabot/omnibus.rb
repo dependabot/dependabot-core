@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/python"
+require "dependabot/swift"
 require "dependabot/terraform"
 require "dependabot/elm"
 require "dependabot/docker"

@@ -1,0 +1,70 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "LinkedList",
+        "repositoryURL": "https://github.com/mona/LinkedList.git",
+        "state": {
+          "branch": null,
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": "1.2.2"
+        }
+      },
+      {
+        "package": "Queue",
+        "repositoryURL": "https://github.com/mona/Queue",
+        "state": {
+          "branch": null,
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": "1.5.0"
+        }
+      },
+      {
+        "package": "HashMap",
+        "repositoryURL": "https://github.com/mona/HashMap.git",
+        "state": {
+          "branch": null,
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": "0.9.9"
+        }
+      },
+      {
+        "package": "Matrix",
+        "repositoryURL": "git@github.com:mona/Matrix.git",
+        "state": {
+          "branch": null,
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": "2.0.1"
+        }
+      },
+      {
+        "package": "RedBlackTree",
+        "repositoryURL": "ssh://git@github.com:mona/RedBlackTree.git",
+        "state": {
+          "branch": null,
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": "0.1.10"
+        }
+      },
+      {
+        "package": "Heap",
+        "repositoryURL": "https://github.com/mona/Heap",
+        "state": {
+          "branch": "main",
+          "revision": "79b05a5da89557a4fa50647cc92488a3d9c3f478",
+          "version": null
+        }
+      },
+      {
+        "package": "Trie",
+        "repositoryURL": "https://github.com:443/mona/Trie.git",
+        "state": {
+          "branch": null,
+          "revision": "f3b37c3ccf0a1559d4097e2eeb883801c4b8f510",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
