@@ -1,3 +1,9 @@
+## v0.211.0, 23 August 2022
+
+- Support for transitive dependency removal [#5549](https://github.com/dependabot/dependabot-core/pull/5549)
+- build(deps): bump poetry from 1.1.14 to 1.1.15 in /python/helpers [#5578](https://github.com/dependabot/dependabot-core/pull/5578)
+- Adding required checks in ci-release.yml [#5575](https://github.com/dependabot/dependabot-core/pull/5575)
+
 ## v0.210.0, 23 August 2022
 
 - build(deps): bump nock from 13.2.8 to 13.2.9 in /npm_and_yarn/helpers [#5397](https://github.com/dependabot/dependabot-core/pull/5397)
