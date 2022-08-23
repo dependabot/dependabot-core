@@ -70,13 +70,10 @@ module Dependabot
           return latest_version
         end
 
-        # If the dependency is pinned to a commit SHA and the latest
-        # version-like tag includes that commit then we want to update to that
-        # version-like tag. We return a version (not a commit SHA) so that we
-        # get nice behaviour in PullRequestCreator::MessageBuilder
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
+        # If the dependency is pinned to a commit SHA, we return a *version* so
+        # that we get nice behaviour in PullRequestCreator::MessageBuilder
+        if git_commit_checker.pinned_ref_looks_like_commit_sha?
+          latest_tag = git_commit_checker.local_tag_for_latest_version
           return latest_tag.fetch(:version)
         end
 
@@ -122,12 +119,12 @@ module Dependabot
           return dependency_source_details.merge(ref: new_tag.fetch(:tag))
         end
 
-        # Update the git commit if updating a pinned commit
+        latest_tag = git_commit_checker.local_tag_for_latest_version
+
+        # Update the pinned git commit if one is available
         if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version]) &&
-           (latest_commit = latest_tag.fetch(:commit_sha)) != current_commit
-          return dependency_source_details.merge(ref: latest_commit)
+           latest_tag.fetch(:commit_sha) != current_commit
+          return dependency_source_details.merge(ref: latest_tag.fetch(:commit_sha))
         end
 
         # Otherwise return the original source

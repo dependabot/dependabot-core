@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubuntu
+spec:
+  containers:
+  - name: ubuntu
+    image: aws-account-id.dkr.ecr.region.amazonaws.com/myreg/ubuntu:17.04
+    ports:
+    - containerPort: 80

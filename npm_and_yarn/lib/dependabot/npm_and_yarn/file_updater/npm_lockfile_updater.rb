@@ -499,7 +499,7 @@ module Dependabot
         # Takes a JSON string and detects if it is spaces or tabs and how many
         # levels deep it is indented.
         def detect_indentation(json)
-          indentation = json.scan(/^\s+/).min_by(&:length)
+          indentation = json.scan(/^[[:blank:]]+/).min_by(&:length)
           return "" if indentation.nil? # let npm set the default if we can't detect any indentation
 
           indentation_size = indentation.length

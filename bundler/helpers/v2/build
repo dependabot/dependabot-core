@@ -2,13 +2,13 @@
 
 set -e
 
-if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
 
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
-mkdir -p $install_dir
+mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
