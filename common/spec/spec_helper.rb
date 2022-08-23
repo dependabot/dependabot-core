@@ -120,8 +120,8 @@ def build_tmp_repo(project, path: "projects")
   tmp_repo_path.to_s
 end
 
-def project_dependency_files(project)
-  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+def project_dependency_files(project, directory: "/")
+  project_path = File.expand_path(File.join("spec/fixtures/projects", project, directory))
 
   raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
 
@@ -133,7 +133,8 @@ def project_dependency_files(project)
       content = File.read(filename)
       Dependabot::DependencyFile.new(
         name: filename,
-        content: content
+        content: content,
+        directory: directory
       )
     end
   end

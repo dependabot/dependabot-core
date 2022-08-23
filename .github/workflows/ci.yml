@@ -42,7 +42,7 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1 }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2 }
           - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus, ci_node_total: 1, ci_node_index: 0 }
+          - { path: omnibus, name: omnibus }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
@@ -55,7 +55,7 @@ jobs:
           - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 4 }
           - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 0 }
           - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 1 }
-          - { path: terraform, name: terraform, ci_node_total: 1, ci_node_index: 0 }
+          - { path: terraform, name: terraform }
 
     steps:
       - name: Checkout code
