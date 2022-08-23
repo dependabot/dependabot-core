@@ -4,7 +4,8 @@ set -e
 
 bundle install
 bundle exec rubocop .
-bundle exec rspec spec
+bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec
 
+# Should we only run these on one of the CI_NODE_INDEX's?
 cd /opt/npm_and_yarn && npm run lint && cd -
 cd /opt/npm_and_yarn && npm test && cd -
