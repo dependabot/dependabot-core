@@ -114,7 +114,6 @@ $options = {
   cache_steps: [],
   write: false,
   clone: false,
-  lockfile_only: false,
   reject_external_code: false,
   requirements_update_strategy: nil,
   commit: nil,
@@ -185,15 +184,11 @@ option_parse = OptionParser.new do |opts|
     $options[:write] = true
   end
 
-  opts.on("--lockfile-only", "Only update the lockfile") do |_value|
-    $options[:lockfile_only] = true
-  end
-
   opts.on("--reject-external-code", "Reject external code") do |_value|
     $options[:reject_external_code] = true
   end
 
-  opts_req_desc = "Options: auto, widen_ranges, bump_versions or " \
+  opts_req_desc = "Options: lockfile_only, auto, widen_ranges, bump_versions or " \
                   "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
@@ -701,7 +696,7 @@ dependencies.each do |dep|
   end
 
   requirements_to_unlock =
-    if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
+    if !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
       else
         :update_not_possible
