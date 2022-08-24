@@ -41,7 +41,7 @@ module Dependabot
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: [])
+                   subdependency_metadata: [], removed: false)
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -53,12 +53,17 @@ module Dependabot
         @subdependency_metadata = subdependency_metadata&.
                                   map { |h| symbolize_keys(h) }
       end
+      @removed = removed
 
       check_values
     end
 
     def top_level?
       requirements.any?
+    end
+
+    def removed?
+      @removed
     end
 
     def to_h
@@ -69,7 +74,8 @@ module Dependabot
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
         "package_manager" => package_manager,
-        "subdependency_metadata" => subdependency_metadata
+        "subdependency_metadata" => subdependency_metadata,
+        "removed" => removed? ? true : nil
       }.compact
     end
 

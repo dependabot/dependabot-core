@@ -732,7 +732,10 @@ dependencies.each do |dep|
     next
   end
 
-  updater = file_updater_for(updated_deps)
+  # Removal is only supported for transitive dependencies which are removed as a
+  # side effect of the parent update
+  deps_to_update = updated_deps.reject{ |d| d.removed? }
+  updater = file_updater_for(deps_to_update)
   updated_files = updater.updated_dependency_files
 
   # Currently unused but used to create pull requests (from the updater)
