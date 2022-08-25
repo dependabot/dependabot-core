@@ -24,3 +24,4 @@ git.store
 .dockerignore
 Dockerfile*
 *.md
+CODEOWNERS
