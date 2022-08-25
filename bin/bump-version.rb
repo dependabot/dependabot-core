@@ -8,6 +8,7 @@ end
 component = ARGV[0].to_sym
 dry_run = ARGV[1] == "--dry-run"
 
+# rubocop:disable Lint/LiteralAsCondition
 unless `which gh` && $?.success?
   puts "Please install the gh cli: brew install gh"
   exit 1
@@ -17,6 +18,7 @@ unless `gh auth status -h github.com > /dev/null 2>&1` && $?.success?
   puts "Please login to GitHub first: gh auth login"
   exit 1
 end
+# rubocop:enable Lint/LiteralAsCondition
 
 CHANGELOG_PATH = File.join(__dir__, "..", "CHANGELOG.md")
 CHANGELOG_CONTENTS = File.read(CHANGELOG_PATH)
