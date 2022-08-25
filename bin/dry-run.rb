@@ -735,7 +735,7 @@ dependencies.each do |dep|
 
   # Removal is only supported for transitive dependencies which are removed as a
   # side effect of the parent update
-  deps_to_update = updated_deps.reject { |d| d.removed? }
+  deps_to_update = updated_deps.reject(&:removed?)
   updater = file_updater_for(deps_to_update)
   updated_files = updater.updated_dependency_files
 
