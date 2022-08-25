@@ -12,7 +12,7 @@ module Dependabot
   module Pub
     module Helpers
       def self.pub_helpers_path
-        File.join(ENV["DEPENDABOT_NATIVE_HELPERS_PATH"], "pub")
+        File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
       end
 
       def self.run_infer_sdk_versions(url: nil)

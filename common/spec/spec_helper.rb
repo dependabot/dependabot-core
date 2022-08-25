@@ -158,7 +158,7 @@ def github_credentials
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
   end
 end

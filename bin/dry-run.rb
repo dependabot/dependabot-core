@@ -130,7 +130,7 @@ unless ENV["LOCAL_GITHUB_ACCESS_TOKEN"].to_s.strip.empty?
     "type" => "git_source",
     "host" => "github.com",
     "username" => "x-access-token",
-    "password" => ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+    "password" => ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
   }
 end
 
@@ -138,7 +138,7 @@ unless ENV["LOCAL_CONFIG_VARIABLES"].to_s.strip.empty?
   # For example:
   # "[{\"type\":\"npm_registry\",\"registry\":\
   #     "registry.npmjs.org\",\"token\":\"123\"}]"
-  $options[:credentials].concat(JSON.parse(ENV["LOCAL_CONFIG_VARIABLES"]))
+  $options[:credentials].concat(JSON.parse(ENV.fetch("LOCAL_CONFIG_VARIABLES", nil)))
 end
 
 unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
@@ -147,13 +147,13 @@ unless ENV["SECURITY_ADVISORIES"].to_s.strip.empty?
   #   "patched-versions":[],
   #   "unaffected-versions":[],
   #   "affected-versions":["< 0.10.0"]}]
-  $options[:security_advisories].concat(JSON.parse(ENV["SECURITY_ADVISORIES"]))
+  $options[:security_advisories].concat(JSON.parse(ENV.fetch("SECURITY_ADVISORIES", nil)))
 end
 
 unless ENV["IGNORE_CONDITIONS"].to_s.strip.empty?
   # For example:
   # [{"dependency-name":"ruby","version-requirement":">= 3.a, < 4"}]
-  $options[:ignore_conditions] = JSON.parse(ENV["IGNORE_CONDITIONS"])
+  $options[:ignore_conditions] = JSON.parse(ENV.fetch("IGNORE_CONDITIONS", nil))
 end
 
 # rubocop:disable Metrics/BlockLength

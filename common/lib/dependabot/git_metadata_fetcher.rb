@@ -88,7 +88,7 @@ module Dependabot
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
 
-      env = { "PATH" => ENV["PATH"] }
+      env = { "PATH" => ENV.fetch("PATH", nil) }
       command = "git ls-remote #{service_pack_uri}"
       command = SharedHelpers.escape_command(command)
 

@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Bundler::NativeHelpers do
     private
 
     def with_env(key, value)
-      previous_value = ENV[key]
+      previous_value = ENV.fetch(key, nil)
       ENV[key] = value
       yield
     ensure
