@@ -160,7 +160,7 @@ module Dependabot
     end
 
     def symbolize_keys(hash)
-      hash.keys.map { |k| [k.to_sym, hash[k]] }.to_h
+      hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end
   end
 end

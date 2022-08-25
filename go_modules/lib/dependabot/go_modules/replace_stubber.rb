@@ -20,8 +20,7 @@ module Dependabot
           map { |r| r["New"]["Path"] }.
           compact.
           select { |p| stub_replace_path?(p, directory) }.
-          map { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }.
-          to_h
+          to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
       end
 
       private

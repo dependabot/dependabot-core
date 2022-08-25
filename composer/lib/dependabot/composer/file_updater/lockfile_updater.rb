@@ -456,8 +456,7 @@ module Dependabot
         def credentials_env
           credentials.
             select { |c| c.fetch("type") == "php_environment_variable" }.
-            map { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }.
-            to_h
+            to_h { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }
         end
 
         def git_credentials
