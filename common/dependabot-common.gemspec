@@ -64,5 +64,5 @@ Gem::Specification.new do |spec|
       spec.files << path unless File.directory?(path)
     end
   end
-spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["rubygems_mfa_required"] = "true"
 end

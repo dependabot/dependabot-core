@@ -42,5 +42,5 @@ Gem::Specification.new do |spec|
   common_gemspec.development_dependencies.each do |dep|
     spec.add_development_dependency dep.name, dep.requirement.to_s
   end
-spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["rubygems_mfa_required"] = "true"
 end
