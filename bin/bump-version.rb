@@ -71,7 +71,7 @@ if dry_run
   puts "Would update version file:"
   puts new_version_contents
 else
-  File.open(version_path, "w") { |f| f.write(new_version_contents) }
+  File.write(version_path, new_version_contents)
   puts "☑️  common/lib/dependabot/version.rb updated"
 
 end
@@ -89,7 +89,7 @@ else
     CHANGELOG_CONTENTS
   ].join("\n")
 
-  File.open(CHANGELOG_PATH, "w") { |f| f.write(new_changelog_contents) }
+  File.write(CHANGELOG_PATH, new_changelog_contents)
   puts "☑️  CHANGELOG.md updated"
 end
 
