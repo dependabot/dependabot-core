@@ -689,11 +689,13 @@ dependencies.each do |dep|
   requirements_to_unlock =
     if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?
       if checker.can_update?(requirements_to_unlock: :none) then :none
-      else :update_not_possible
+      else
+        :update_not_possible
       end
     elsif checker.can_update?(requirements_to_unlock: :own) then :own
     elsif checker.can_update?(requirements_to_unlock: :all) then :all
-    else :update_not_possible
+    else
+      :update_not_possible
     end
 
   puts " => requirements to unlock: #{requirements_to_unlock}"
