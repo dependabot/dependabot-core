@@ -212,3 +212,5 @@ Style/StringLiterals:
   EnforcedStyle: double_quotes
 Style/SwapValues:
   Enabled: true
+Style/OpenStructUse:
+  Enabled: false
