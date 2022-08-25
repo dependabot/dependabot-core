@@ -96,13 +96,20 @@ module Dependabot
       end
 
       def conflicting_dependencies
-        ConflictingDependencyResolver.new(
+        conflicts = ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           credentials: credentials
         ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version
         )
+
+        vulnerable = vulnerability_audit.select do |v|
+          v["fix_available"] == false &&
+            v["explanation"]
+        end
+
+        conflicts + vulnerable
       end
 
       private
