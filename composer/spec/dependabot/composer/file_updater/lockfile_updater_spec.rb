@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path)  }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "the updated lockfile" do
     subject(:updated_lockfile_content) do

@@ -56,7 +56,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { FileUtils.mkdir_p(tmp_path)  }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
 
