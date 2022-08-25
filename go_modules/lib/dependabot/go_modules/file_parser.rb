@@ -65,7 +65,7 @@ module Dependabot
             # `go mod edit` works, even if some modules have been `replace`d with
             # a local module that we don't have access to.
             local_replacements.each do |_, stub_path|
-              FileUtils.mkdir_p(stub_path) 
+              FileUtils.mkdir_p(stub_path)
               FileUtils.touch(File.join(stub_path, "go.mod"))
             end
 

@@ -9,7 +9,7 @@ RSpec.shared_context "in a temporary bundler directory" do
   let(:project_name) { "gemfile" }
 
   let(:tmp_path) do
-    FileUtils.mkdir_p(TMP_DIR_PATH) 
+    FileUtils.mkdir_p(TMP_DIR_PATH)
     dir = Dir.mktmpdir("native_helper_spec_", TMP_DIR_PATH)
     Pathname.new(dir).expand_path
   end

@@ -32,7 +32,7 @@ module Dependabot
         reset_git_repo(repo_contents_path)
         # Handle missing directories by creating an empty one and relying on the
         # file fetcher to raise a DependencyFileNotFound error
-        FileUtils.mkdir_p(path) 
+        FileUtils.mkdir_p(path)
         Dir.chdir(path) { yield(path) }
       else
         in_a_temporary_directory(directory, &block)
@@ -40,7 +40,7 @@ module Dependabot
     end
 
     def self.in_a_temporary_directory(directory = "/")
-      FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH) 
+      FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
       tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
 
       begin
