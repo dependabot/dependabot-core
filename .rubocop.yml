@@ -6,6 +6,7 @@ AllCops:
   - "*/bin/**/*"
   - "**/tmp/**/*"
   - "*/spec/fixtures/**/*"
+  NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
