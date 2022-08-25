@@ -214,3 +214,5 @@ Style/SwapValues:
   Enabled: true
 Style/OpenStructUse:
   Enabled: false
+Style/SpecialGlobalVars:
+  Enabled: false

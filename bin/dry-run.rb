@@ -214,7 +214,7 @@ option_parse = OptionParser.new do |opts|
     $options[:updater_options] = value.split(",").to_h do |o|
       if o.include?("=") # key/value pair, e.g. "goprivate=true"
         o.split("=", 2).map.with_index do |v, i|
-          if i == 0
+          if i.zero?
             v.strip.downcase.to_sym
           else
             v.strip
