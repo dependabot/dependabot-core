@@ -21,3 +21,4 @@
 git.store
 .DS_Store
 *.pyc
+Dockerfile*
