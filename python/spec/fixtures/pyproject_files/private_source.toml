@@ -12,6 +12,6 @@ python = "^3.7"
 requests = "2.18.0"
 
 [[tool.poetry.source]]
-name = "custom"
+name = "custom-source.1"
 url = "https://some.internal.registry.com/pypi/"
 default = true

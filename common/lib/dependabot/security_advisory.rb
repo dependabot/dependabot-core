@@ -5,13 +5,15 @@ require "rubygems_version_patch"
 module Dependabot
   class SecurityAdvisory
     attr_reader :dependency_name, :package_manager,
-                :vulnerable_versions, :safe_versions
+                :vulnerable_versions, :safe_versions,
+                :vulnerable_version_strings
 
     def initialize(dependency_name:, package_manager:,
                    vulnerable_versions: [], safe_versions: [])
       @dependency_name = dependency_name
       @package_manager = package_manager
-      @vulnerable_versions = vulnerable_versions || []
+      @vulnerable_version_strings = vulnerable_versions || []
+      @vulnerable_versions = []
       @safe_versions = safe_versions || []
 
       convert_string_version_requirements
@@ -60,6 +62,9 @@ module Dependabot
       # Ignore deps that weren't previously vulnerable
       return false unless affects_version?(dependency.previous_version)
 
+      # Removing a dependency is a way to fix the vulnerability
+      return true if dependency.removed?
+
       # Select deps that are now fixed
       !affects_version?(dependency.version)
     end
@@ -91,7 +96,7 @@ module Dependabot
     private
 
     def convert_string_version_requirements
-      @vulnerable_versions = vulnerable_versions.flat_map do |vuln_str|
+      @vulnerable_versions = vulnerable_version_strings.flat_map do |vuln_str|
         next vuln_str unless vuln_str.is_a?(String)
 
         requirement_class.requirements_array(vuln_str)

@@ -14,6 +14,7 @@ module Dependabot
       require_relative "update_checker/version_resolver"
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
+      require_relative "update_checker/vulnerability_auditor"
 
       def latest_version
         @latest_version ||=
@@ -106,23 +107,94 @@ module Dependabot
 
       private
 
+      def vulnerability_audit
+        @vulnerability_audit ||=
+          VulnerabilityAuditor.new(
+            dependency_files: dependency_files,
+            credentials: credentials,
+            allow_removal: @options.key?(:npm_transitive_dependency_removal)
+          ).audit(
+            dependency: dependency,
+            security_advisories: security_advisories
+          )
+      end
+
       def latest_version_resolvable_with_full_unlock?
-        return unless latest_version
+        return false unless latest_version
 
-        # No support for full unlocks for subdependencies yet
-        return false unless dependency.top_level?
+        return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
 
-        version_resolver.latest_version_resolvable_with_full_unlock?
+        return false unless transitive_security_updates_enabled? && security_advisories.any?
+
+        vulnerability_audit["fix_available"]
+      end
+
+      def transitive_security_updates_enabled?
+        options.key?(:npm_transitive_security_updates)
       end
 
       def updated_dependencies_after_full_unlock
+        if !dependency.top_level? && transitive_security_updates_enabled? && security_advisories.any?
+          return conflicting_updated_dependencies
+        end
+
         version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
       end
 
+      # rubocop:disable Metrics/AbcSize
+      def conflicting_updated_dependencies
+        top_level_dependencies = top_level_dependency_lookup
+
+        updated_deps = []
+        vulnerability_audit["fix_updates"].each do |update|
+          dependency_name = update["dependency_name"]
+          requirements = top_level_dependencies[dependency_name]&.requirements || []
+
+          updated_deps << build_updated_dependency(
+            dependency: Dependency.new(
+              name: dependency_name,
+              package_manager: "npm_and_yarn",
+              requirements: requirements
+            ),
+            version: update["target_version"],
+            previous_version: update["current_version"]
+          )
+        end
+        # rubocop:enable Metrics/AbcSize
+
+        # We don't need to update this but need to include it so it's described
+        # in the PR and we'll pass validation that this dependency is at a
+        # non-vulnerable version.
+        if updated_deps.none? { |dep| dep.name == dependency.name }
+          target_version = vulnerability_audit["target_version"]
+          updated_deps << build_updated_dependency(
+            dependency: dependency,
+            version: target_version,
+            previous_version: dependency.version,
+            removed: target_version.nil?
+          )
+        end
+
+        # Target dependency should be first in the result to support rebases
+        updated_deps.select { |dep| dep.name == dependency.name } +
+          updated_deps.reject { |dep| dep.name == dependency.name }
+      end
+
+      def top_level_dependency_lookup
+        top_level_dependencies = FileParser.new(
+          dependency_files: dependency_files,
+          credentials: credentials,
+          source: nil
+        ).parse.select(&:top_level?)
+
+        top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
+      end
+
       def build_updated_dependency(update_details)
         original_dep = update_details.fetch(:dependency)
-        version = update_details.fetch(:version).to_s
+        removed = update_details.fetch(:removed, false)
+        version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
 
         Dependency.new(
@@ -136,7 +208,8 @@ module Dependabot
           ).updated_requirements,
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
-          package_manager: original_dep.package_manager
+          package_manager: original_dep.package_manager,
+          removed: removed
         )
       end
 

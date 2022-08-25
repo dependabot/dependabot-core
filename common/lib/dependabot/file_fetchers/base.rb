@@ -15,7 +15,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :repo_contents_path
+      attr_reader :source, :credentials, :repo_contents_path, :options
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -42,11 +42,14 @@ module Dependabot
       # If provided, file _data_ will be loaded from the clone.
       # Submodules and directory listings are _not_ currently supported
       # by repo_contents_path and still use an API trip.
-      def initialize(source:, credentials:, repo_contents_path: nil)
+      #
+      # options supports custom feature enablement
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
         @linked_paths = {}
+        @options = options
       end
 
       def repo
@@ -456,7 +459,13 @@ module Dependabot
           )
         end
 
-        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        if tmp.content == ""
+          # The file may have exceeded the 1MB limit
+          # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
+          github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+        else
+          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
 

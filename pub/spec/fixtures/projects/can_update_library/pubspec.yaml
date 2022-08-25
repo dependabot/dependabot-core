@@ -1,0 +1,10 @@
+name: dependabot_testcase
+version: 1.0.0
+environment:
+  sdk: '>=2.12.0 <3.0.0'
+dependencies:
+  collection: ^1.14.13 # Locked to 1.14.13, can update with no unlock.
+  retry: ^2.0.0 # Can update with updated constraint, no further constraints.
+  protobuf: 1.1.4 # Can update with updated constraint, only together with fixnum.
+  fixnum: 0.10.11
+  path: 1.8.0 # Already at latest

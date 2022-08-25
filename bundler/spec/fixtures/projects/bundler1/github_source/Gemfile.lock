@@ -1,5 +1,5 @@
 GIT
-  remote: git://github.com/dependabot-fixtures/business.git
+  remote: https://github.com/dependabot-fixtures/business.git
   revision: d31e445215b5af70c1604715d97dd953e868380e
   specs:
     business (1.10.0)

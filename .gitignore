@@ -26,4 +26,4 @@ vendor
 /.core-bash_history
 coverage/
 .ruby-gemset
-.ruby-version
+.tool-versions

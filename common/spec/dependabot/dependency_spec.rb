@@ -217,6 +217,27 @@ RSpec.describe Dependabot::Dependency do
         is_expected.to eq(expected)
       end
     end
+
+    context "when removed" do
+      let(:dependency_args) do
+        {
+          name: "dep",
+          requirements: [],
+          package_manager: "dummy",
+          removed: true
+        }
+      end
+
+      it do
+        expected = {
+          "name" => "dep",
+          "package_manager" => "dummy",
+          "requirements" => [],
+          "removed" => true
+        }
+        is_expected.to eq(expected)
+      end
+    end
   end
 
   describe "#subdependency_metadata" do

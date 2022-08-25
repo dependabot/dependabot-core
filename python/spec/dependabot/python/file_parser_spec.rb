@@ -38,7 +38,7 @@ RSpec.describe Dependabot::Python::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(4) }
+    its(:length) { is_expected.to eq(5) }
 
     context "with a version specified" do
       describe "the first dependency" do
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
     end
 
     context "with jinja templates" do
@@ -215,9 +215,9 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      describe "the first dependency" do
-        it "has the right details" do
-          expect(dependencies.map(&:name)).not_to match_array([])
+      describe "the tarball dependency requirement" do
+        it "is not parsed" do
+          expect(dependencies).to eq([])
         end
       end
     end
@@ -316,7 +316,7 @@ RSpec.describe Dependabot::Python::FileParser do
 
     context "with a git dependency" do
       let(:requirements_fixture_name) { "with_git_dependency.txt" }
-      its(:length) { is_expected.to eq(1) }
+      its(:length) { is_expected.to eq(2) }
     end
 
     context "with a constraints file" do
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -478,7 +478,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(4) }
+      its(:length) { is_expected.to eq(5) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -689,7 +689,7 @@ RSpec.describe Dependabot::Python::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(6) }
 
       it "has the right details" do
         expect(dependencies).to match_array(
@@ -700,6 +700,17 @@ RSpec.describe Dependabot::Python::FileParser do
               requirements: [{
                 requirement: "==2.4.1",
                 file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              package_manager: "pip"
+            ),
+            Dependabot::Dependency.new(
+              name: "attrs",
+              version: "18.0.0",
+              requirements: [{
+                requirement: "==18.0.0",
+                file: "more_requirements.txt",
                 groups: ["dependencies"],
                 source: nil
               }],
@@ -1161,7 +1172,7 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(5) }
+        its(:length) { is_expected.to eq(6) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
@@ -1250,12 +1261,13 @@ RSpec.describe Dependabot::Python::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(5) }
+        its(:length) { is_expected.to eq(6) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
 
           it "has the right details" do
+            # requests is only in version_not_specified.toml
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("requests")
             expect(dependency.version).to be_nil
@@ -1274,13 +1286,19 @@ RSpec.describe Dependabot::Python::FileParser do
           subject(:dependency) { dependencies[1] }
 
           it "has the right details" do
+            # pytest is in both files, it picks version to be the lowest
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("pytest")
-            expect(dependency.version).to be_nil
+            expect(dependency.version).to eq("3.4.0")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "*",
                 file: "pyproject.toml",
+                groups: ["dependencies"],
+                source: nil
+              }, {
+                requirement: "==3.4.0",
+                file: "requirements.txt",
                 groups: ["dependencies"],
                 source: nil
               }]
@@ -1292,12 +1310,33 @@ RSpec.describe Dependabot::Python::FileParser do
           subject(:dependency) { dependencies[2] }
 
           it "has the right details" do
+            # psycopg2 only exists in version_specified.txt
             expect(dependency).to be_a(Dependabot::Dependency)
             expect(dependency.name).to eq("psycopg2")
             expect(dependency.version).to eq("2.6.1")
             expect(dependency.requirements).to eq(
               [{
                 requirement: "==2.6.1",
+                file: "requirements.txt",
+                groups: ["dependencies"],
+                source: nil
+              }]
+            )
+          end
+        end
+
+        describe "a dependency in requirements.txt that only exists in the lockfile" do
+          subject(:dependency) { dependencies.find { |d| d.name == "attrs" } }
+
+          it "has the right details" do
+            # attrs2 exists in version_not_specified.lock and version_specified.txt
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("attrs")
+            expect(dependency.version).to eq("18.0.0")
+            # it only has 1 requirement since it isn't in version_not_specified.toml
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "==18.0.0",
                 file: "requirements.txt",
                 groups: ["dependencies"],
                 source: nil

@@ -76,7 +76,7 @@ http_interactions:
   recorded_at: Mon, 21 Jun 2021 12:46:30 GMT
 - request:
     method: get
-    uri: https://registry.terraform.io/v1/modules/dependabot/package/0.9.3
+    uri: https://registry.terraform.io/v1/modules/dependabot/package/0.9.3/download
     body:
       encoding: US-ASCII
       string: ''

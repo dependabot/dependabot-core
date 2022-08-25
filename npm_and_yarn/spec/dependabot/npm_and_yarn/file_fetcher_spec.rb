@@ -28,6 +28,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     }]
   end
   let(:json_header) { { "content-type" => "application/json" } }
+  let(:events) { [] }
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -56,105 +57,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         headers: json_header
       )
 
-    stub_request(:get, File.join(url, "common/config/rush?ref=sha")).
-      with(headers: { "Authorization" => "token token" }).
-      to_return(status: 404)
-
-    stub_request(:get, File.join(url, "common/scripts?ref=sha")).
-      with(headers: { "Authorization" => "token token" }).
-      to_return(status: 404)
-
-    stub_request(:get, File.join(url, "common/config?ref=sha")).
-      with(headers: { "Authorization" => "token token" }).
-      to_return(status: 404)
-  end
-
-  context "for manifest files" do
-    before :each do
-      stub_request(:get, File.join(url, "rush.json?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "rush_json_content.json"),
-          headers: json_header
-        )
-    end
-
-    it "raises an error if no manifest file is found" do
-      stub_request(:get, url + "?ref=sha").
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 200,
-          body: fixture("github", "content_js_npm_without_manifest.json"),
-          headers: json_header
-        )
-
-      stub_request(:get, File.join(url, "package.json?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 404,
-          body: fixture("github", "package_json_content.json"),
-          headers: json_header
-        )
-
-      stub_request(:get, File.join(url, "rush.json?ref=sha")).
-        with(headers: { "Authorization" => "token token" }).
-        to_return(
-          status: 404,
-          body: fixture("github", "rush_json_content.json"),
-          headers: json_header
-        )
-
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::ManifestFileNotFound)
-    end
-
-    context "returns an array of manifest files" do
-      it "when only package.json or rush.json is found" do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_js_npm_with_rush.json"),
-            headers: json_header
-          )
-
-        stub_request(:get, File.join(url, "package.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 404,
-            body: fixture("github", "package_json_content.json"),
-            headers: json_header
-          )
-
-        expect(file_fetcher_instance.files.count).to eq(1)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include("rush.json")
-      end
-
-      it "when both package.json and rush.json are found" do
-        stub_request(:get, url + "?ref=sha").
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "contents_js_npm_with_rush_and_package_json.json"),
-            headers: json_header
-          )
-
-        stub_request(:get, File.join(url, "package.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture("github", "package_json_content.json"),
-            headers: json_header
-          )
-
-        expect(file_fetcher_instance.files.count).to eq(2)
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include("rush.json")
-        expect(file_fetcher_instance.files.map(&:name)).
-          to include("package.json")
-      end
+    Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
+      events << ActiveSupport::Notifications::Event.new(*args)
     end
   end
 
@@ -282,6 +186,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to match_array(%w(package.json yarn.lock))
     end
 
+    it "instruments the yarn lockfile" do
+      file_fetcher_instance.files
+      expect(events.last.payload).to eq(
+        { ecosystem: "npm", package_managers: { "yarn" => 1 } }
+      )
+    end
+
     context "with a .yarnrc file" do
       before do
         stub_request(:get, url + "?ref=sha").
@@ -333,6 +244,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(package.json npm-shrinkwrap.json))
     end
+
+    it "instruments the shrinkwrap file" do
+      file_fetcher_instance.files
+      expect(events.last.payload).to eq(
+        { ecosystem: "npm", package_managers: { "shrinkwrap" => 1 } }
+      )
+    end
   end
 
   context "with a package-lock.json file but no yarn.lock" do
@@ -359,6 +277,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "fetches the package.json and package-lock.json" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(package.json package-lock.json))
+    end
+
+    it "instruments the npm lockfile" do
+      file_fetcher_instance.files
+      expect(events.last.payload).to eq(
+        { ecosystem: "npm", package_managers: { "npm" => 6 } }
+      )
     end
   end
 
@@ -390,6 +315,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "fetches the package.json, package-lock.json and yarn.lock" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(package.json package-lock.json yarn.lock))
+    end
+
+    it "instruments the npm and yarn lockfiles" do
+      file_fetcher_instance.files
+      expect(events.last.payload).to eq(
+        { ecosystem: "npm", package_managers: { "npm" => 6, "yarn" => 1 } }
+      )
     end
   end
 
@@ -1242,50 +1174,70 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "specified using complex glob pattern like packages/**/*" do
-        let(:package_json_code_search_results) do
-          [
-            "/packages/folderA/subfolderA/packageA/package.json",
-            "/packages/folderA/subfolderB/packageA/package.json",
-            "/packages/folderB/subfolderA/packageA/package1.json",
-            "/paster/folderA/subfolderA/packageA/package.json",
-            "/packages1/folderA/subfolderA/packageA/package2.json"
-          ]
-        end
-
+      context "specified using 'packages/*/*'" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
               body:
-                fixture("github", "package_json_with_complex_workspaces.json"),
+                fixture("github", "package_json_with_nested_glob_workspaces.json"),
               headers: json_header
             )
-
           stub_request(
             :get,
-            File.join(url, "packages/folderA/subfolderA/packageA/package.json?ref=sha")
+            File.join(url, "packages/package1?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "packages_files_nested2.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "packages_files_nested3.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package1/package.json?ref=sha")
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
               body: fixture("github", "package_json_content.json"),
               headers: json_header
             )
-
           stub_request(
             :get,
-            File.join(url, "packages/folderA/subfolderB/packageA/package.json?ref=sha")
+            File.join(url, "packages/package1/package2/package.json?ref=sha")
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
               body: fixture("github", "package_json_content.json"),
               headers: json_header
             )
-
-          allow(file_fetcher_instance).to receive(:fetch_repo_paths_for_code_search).
-            with("package.json", source.directory).
-            and_return(package_json_code_search_results)
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package21/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package22/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
         end
 
         it "fetches package.json from the workspace dependencies" do
@@ -1294,46 +1246,17 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
               %w(
                 package.json
                 package-lock.json
-                packages/folderA/subfolderA/packageA/package.json
-                packages/folderA/subfolderB/packageA/package.json
+                packages/package1/package1/package.json
+                packages/package1/package2/package.json
+                packages/package2/package21/package.json
+                packages/package2/package22/package.json
               )
             )
-        end
 
-        it "ignores excluded workspaces while fetching package.json from workspace dependencies" do
-          stub_request(:get, File.join(url, "package.json?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body:
-                fixture("github", "package_json_with_complex_and_exclusion_workspaces.json"),
-              headers: json_header
-            )
-          expect(file_fetcher_instance.files.count).to eq(3)
-          expect(file_fetcher_instance.files.map(&:name)).
-            not_to include("packages/folderA/subfolderB/packageA/package.json")
-        end
-
-        it "tries to fetch package.json from condensed glob pattern in case no paths are detected via code search" do
-          stub_request(:get, File.join(url, "packages?ref=sha")).
-            with(headers: { "Authorization" => "token token" }).
-            to_return(
-              status: 200,
-              body: fixture("github", "packages_files.json"),
-              headers: json_header
-            )
-
-          allow(file_fetcher_instance).to receive(:fetch_repo_paths_for_code_search).
-            with("package.json", source.directory).
-            and_return([])
-
-          expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(
-              %w(
-                package.json
-                package-lock.json
-              )
-            )
+          workspace_dep =
+            file_fetcher_instance.files.
+            find { |f| f.name == "packages/package1/package1/package.json" }
+          expect(workspace_dep.type).to eq("file")
         end
       end
 
@@ -1366,6 +1289,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                 ),
                 headers: json_header
               )
+            stub_request(:get, File.join(url, "packages?ref=sha")).
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "packages_files2.json"),
+                headers: json_header
+              )
           end
 
           it "fetches package.json from the workspace dependencies" do
@@ -1375,6 +1305,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
                   package.json
                   package-lock.json
                   packages/package1/package.json
+                  packages/package2/package.json
                 )
               )
           end

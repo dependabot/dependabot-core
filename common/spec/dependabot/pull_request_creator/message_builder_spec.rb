@@ -514,7 +514,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       context "with multiple git source requirements", :vcr do
         include_context "with multiple git sources"
 
-        it do
+        it "has the correct name" do
           is_expected.to eq(
             "Update actions/checkout requirement to v2.2.0"
           )
@@ -1531,10 +1531,49 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "removing a transitive dependency" do
+        let(:dependencies) { [removed_dependency, dependency] }
+        let(:removed_dependency) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            previous_version: "1.6.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: [],
+            removed: true
+          )
+        end
+
+        it "includes details of both dependencies" do
+          expect(pr_message).
+            to eq(
+              "Bumps [statesman](https://github.com/gocardless/statesman) "\
+              "and [business](https://github.com/gocardless/business). "\
+              "These dependencies needed to be updated together.\n"\
+              "Removes `statesman`\n"\
+              "Updates `business` from 1.4.0 to 1.5.0\n"\
+              "<details>\n"\
+              "<summary>Changelog</summary>\n"\
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
+              "business/blob/master/CHANGELOG.md\">"\
+              "business's changelog</a>.</em></p>\n"\
+              "<blockquote>\n"\
+              "<h2>1.5.0 - June 2, 2015</h2>\n"\
+              "<ul>\n"\
+              "<li>Add 2016 holiday definitions</li>\n"\
+              "</ul>\n"\
+              "</blockquote>\n"\
+              "</details>\n"\
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+              "<br />\n"
+            )
+        end
+      end
+
       context "with multiple git source requirements", :vcr do
         include_context "with multiple git sources"
 
-        it do
+        it "has the correct message" do
           expect(pr_message).to start_with(
             "Updates the requirements on "\
             "[actions/checkout](https://github.com/gocardless/actions) "\
@@ -1851,11 +1890,15 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                     headers: json_header)
       end
 
-      it { is_expected.to start_with(":arrow_up: Bump ") }
+      it "uses gitmoji" do
+        is_expected.to start_with(":arrow_up: Bump ")
+      end
 
       context "with a security vulnerability fixed" do
         let(:vulnerabilities_fixed) { { business: [{}] } }
-        it { is_expected.to start_with(":arrow_up::lock: Bump ") }
+        it "uses gitmoji" do
+          is_expected.to start_with(":arrow_up::lock: Bump ")
+        end
       end
     end
   end

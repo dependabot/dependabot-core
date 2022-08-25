@@ -1,11 +1,11 @@
-pip==21.3.1
-pip-tools==6.4.0
-flake8==4.0.1
+pip>=21.3.1,<22.2.3  # Range maintains py36 support TODO: Review python 3.6 support in April 2023 (eol ubuntu 18.04)
+pip-tools>=6.4.0,<6.8.1  # Range maintains py36 support TODO: Review python 3.6 support in April 2023 (eol ubuntu 18.04)
+flake8==5.0.4
 hashin==0.17.0
-pipenv==2022.1.8
+pipenv==2022.4.8
 pipfile==0.0.2
-poetry==1.1.12
+poetry==1.1.15
 wheel==0.37.1
 
 # Some dependencies will only install if Cython is present
-Cython==0.29.26
+Cython==0.29.32

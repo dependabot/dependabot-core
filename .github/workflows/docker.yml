@@ -1,6 +1,6 @@
 name: Push docker images
 env:
-  BASE_IMAGE: "ubuntu:18.04"
+  BASE_IMAGE: "ubuntu:20.04"
   CORE_IMAGE: "dependabot/dependabot-core"
   CORE_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-core"
 on:
@@ -19,7 +19,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build dependabot-core image
         env:
           DOCKER_BUILDKIT: 1
@@ -60,7 +60,7 @@ jobs:
       DEV_IMAGE: ghcr.io/dependabot/dependabot-core-development
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build dependabot-core image
         env:
           DOCKER_BUILDKIT: 1

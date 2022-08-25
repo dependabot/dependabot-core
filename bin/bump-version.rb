@@ -2,10 +2,11 @@
 # frozen_string_literal: true
 
 unless %w(minor patch).include?(ARGV[0])
-  puts "usage: bin/bump-version.rb minor|patch"
+  puts "usage: bin/bump-version.rb minor|patch [--dry-run]"
   exit 1
 end
 component = ARGV[0].to_sym
+dry_run = ARGV[1] == "--dry-run"
 
 unless `which gh` && $?.success?
   puts "Please install the gh cli: brew install gh"
@@ -17,8 +18,37 @@ unless `gh auth status -h github.com > /dev/null 2>&1` && $?.success?
   exit 1
 end
 
-dependabot_team = `gh api -X GET 'orgs/dependabot/teams/reviewers/members' --jq '.[].login'`
-dependabot_team = dependabot_team.split("\n").map(&:strip) + ["dependabot"]
+CHANGELOG_PATH = File.join(__dir__, "..", "CHANGELOG.md")
+CHANGELOG_CONTENTS = File.read(CHANGELOG_PATH)
+
+def proposed_changes(version, _new_version)
+  dependabot_team = `gh api -X GET 'orgs/dependabot/teams/maintainers/members' --jq '.[].login'`
+  dependabot_team = dependabot_team.split("\n").map(&:strip) + ["dependabot"]
+
+  commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
+  merge_subjects = commit_subjects.select do |s|
+    s.downcase.start_with?("merge pull request #") && !s.match?(/release[-_\s]notes/i)
+  end
+  pr_numbers = merge_subjects.map { |s| s.match(/#(\d+)/)[1].to_i }
+  puts "⏳ fetching pull request details"
+  pr_details = pr_numbers.map do |pr_number|
+    pr_details = `gh pr view #{pr_number} --json title,author --jq ".title,.author.login"`
+    title, author = pr_details.split("\n").map(&:strip)
+    {
+      title: title,
+      author: author,
+      number: pr_number,
+      link: "https://github.com/dependabot/dependabot-core/pull/#{pr_number}"
+    }
+  end
+
+  pr_details.map do |details|
+    line = "- #{details[:title]}"
+    line += " (@#{details[:author]})" unless dependabot_team.include?(details[:author])
+    line += " [##{details[:number]}](#{details[:link]})"
+    line
+  end
+end
 
 # Update version file
 version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
@@ -36,59 +66,47 @@ new_version =
   end
 
 new_version_contents = version_contents.gsub(version, new_version)
-File.open(version_path, "w") { |f| f.write(new_version_contents) }
 
-puts "☑️  common/lib/dependabot/version.rb updated"
+if dry_run
+  puts "Would update version file:"
+  puts new_version_contents
+else
+  File.open(version_path, "w") { |f| f.write(new_version_contents) }
+  puts "☑️  common/lib/dependabot/version.rb updated"
+
+end
+
+proposed_changes = proposed_changes(version, new_version)
 
 # Update CHANGELOG
-changelog_path = File.join(__dir__, "..", "CHANGELOG.md")
-changelog_contents = File.read(changelog_path)
+if dry_run
+  puts "Would update CHANGELOG:"
+  puts proposed_changes
+else
+  new_changelog_contents = [
+    "## v#{new_version}, #{Time.now.strftime('%e %B %Y').strip}\n",
+    proposed_changes.join("\n") + "\n",
+    CHANGELOG_CONTENTS
+  ].join("\n")
 
-commit_subjects = `git log --pretty="%s" v#{version}..HEAD`.lines
-merge_subjects = commit_subjects.select do |s|
-  s.downcase.start_with?("merge pull request #") && !s.match?(/release[-_\s]notes/i)
-end
-pr_numbers = merge_subjects.map { |s| s.match(/#(\d+)/)[1].to_i }
-puts "⏳ fetching pull request details"
-pr_details = pr_numbers.map do |pr_number|
-  pr_details = `gh pr view #{pr_number} --json title,author --jq ".title,.author.login"`
-  title, author = pr_details.split("\n").map(&:strip)
-  {
-    title: title,
-    author: author,
-    number: pr_number,
-    link: "https://github.com/dependabot/dependabot-core/pull/#{pr_number}"
-  }
+  File.open(CHANGELOG_PATH, "w") { |f| f.write(new_changelog_contents) }
+  puts "☑️  CHANGELOG.md updated"
 end
 
-proposed_changes = pr_details.map do |details|
-  line = "- #{details[:title]}"
-  line += " (@#{details[:author]})" unless dependabot_team.include?(details[:author])
-  line += " [##{details[:number]}](#{details[:link]})"
-  line
+unless dry_run
+  puts
+  puts "Double check the changes (editing CHANGELOG.md where necessary), then"
+  puts "commit, tag, and push the release:"
+  puts
+  puts "git checkout -b v#{new_version}-release-notes"
+  puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
+  puts "git commit -m 'v#{new_version}'"
+  puts "git push origin HEAD:v#{new_version}-release-notes"
+  puts "# ... create PR, verify, merge, for example:"
+  puts "gh pr create"
+  puts "# tag the approved release notes:"
+  puts "git fetch"
+  puts "git tag 'v#{new_version}' 'origin/v#{new_version}-release-notes'"
+  puts "git push origin v#{new_version}"
+  puts
 end
-
-new_changelog_contents = [
-  "## v#{new_version}, #{Time.now.strftime('%e %B %Y').strip}\n",
-  proposed_changes.join("\n") + "\n",
-  changelog_contents
-].join("\n")
-File.open(changelog_path, "w") { |f| f.write(new_changelog_contents) }
-
-puts "☑️  CHANGELOG.md updated"
-puts
-puts "Double check the changes (editing CHANGELOG.md where necessary), then"
-puts "commit, tag, and push the release:"
-puts
-puts "git checkout -b v#{new_version}-release-notes"
-puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
-puts "git commit -m 'v#{new_version}'"
-puts "git push origin HEAD:v#{new_version}-release-notes"
-puts "git checkout v#{new_version}-release-notes"
-puts "# ... create PR, verify, merge, for example:"
-puts "gh pr create"
-puts "# tag the approved release notes:"
-puts "git fetch"
-puts "git tag 'v#{new_version}' 'origin/v#{new_version}-release-notes'"
-puts "git push --tags"
-puts

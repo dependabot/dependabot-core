@@ -3,7 +3,9 @@
 require "json"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -49,12 +51,23 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
+        instrument_package_manager_version
 
         fetched_files.uniq
       end
 
-      def root_manifest_files
-        @root_manifest_files ||= fetch_root_manifest_files
+      def instrument_package_manager_version
+        package_managers = {}
+
+        package_managers["npm"] =  Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = 1 if yarn_lock
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
+
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "npm",
+          package_managers: package_managers
+        )
       end
 
       def package_json
@@ -170,7 +183,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar")
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -179,7 +192,7 @@ module Dependabot
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
             # Unfetchable tarballs should not be re-fetched as a package
-            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar")
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar", ".tar.gz")
           end
         end
 
@@ -332,7 +345,7 @@ module Dependabot
 
           if matches_double_glob && !nested
             dependency_files +=
-              expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+              find_directories(File.join(path, "*")).flat_map do |nested_path|
                 fetch_lerna_packages_from_path(nested_path, true)
               end
           end
@@ -362,92 +375,59 @@ module Dependabot
             [] # Invalid lerna.json, which must not be in use
           end
 
-        # Currently, for complex glob patterns like packages/**/*, */packages/**,
-        # it is not possible to fetch workspace packages without local repo clone,
-        # (See `expanded_paths` function declaration in this file for more details).
-        # Hence, the idea is to fetch all the package.json paths in the repo and then
-        # match it with the specified workspace glob patterns.
-        complex_glob_pattern_present = paths_array.any? do |globbed_path|
-          globbed_path.include?("**") || globbed_path.include?("*/")
-        end
-        if complex_glob_pattern_present
-
-          workspace_directories = expanded_paths_for_complex_glob_patterns(paths_array)
-          return workspace_directories unless workspace_directories.empty?
-        end
-
-        paths_array.flat_map do |path|
-          # The packages/!(not-this-package) syntax is unique to Yarn
-          if path.include?("*") || path.include?("!(")
-            expanded_paths(path)
-          else
-            path
-          end
-        end
+        paths_array.flat_map { |path| recursive_find_directories(path) }
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(path)
-        ignored_paths = path.scan(/!\((.*?)\)/).flatten
+      def find_directories(glob)
+        return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        unglobbed_path =
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
+          split("*").
+          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
-        path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
-        unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
-                         "."
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
+        paths =
+          repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }.
-          reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
+          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+
+        matching_paths(glob, paths)
       end
 
-      def expanded_paths_for_complex_glob_patterns(paths_array)
-        workspace_directories = []
-        ignored_paths = ignored_workspace_paths(paths_array)
-        package_json_paths = fetch_all_workspace_package_jsons_repo_paths
+      def matching_paths(glob, paths)
+        ignored_glob = yarn_ignored_glob(glob)
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
 
-        package_json_paths.each do |package_json_path|
-          # Since we want only the directory path, remove package.json from the package_json_path
-          workspace_directory_path = package_json_path.chomp("/package.json")
+        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        return results unless ignored_glob
 
-          # If it does not match any of the specified workspaces or is an excluded workspace, skip that workspace path.
-          next unless ignored_paths.none? { |path| File.fnmatch?(path, workspace_directory_path, File::FNM_PATHNAME) }
-          next unless paths_array.any? do |path|
-                        !path.include?("!(") && File.fnmatch?(path, workspace_directory_path, File::FNM_PATHNAME)
-                      end
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+      end
 
-          workspace_directories.append(workspace_directory_path)
+      def recursive_find_directories(glob, prefix = "")
+        return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        glob = glob.gsub(%r{^\./}, "")
+        glob_parts = glob.split("/")
+
+        paths = find_directories(prefix + glob_parts.first)
+        next_parts = glob_parts.drop(1)
+        return paths if next_parts.empty?
+
+        paths = paths.flat_map do |expanded_path|
+          recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
         end
 
-        workspace_directories
+        matching_paths(prefix + glob, paths)
       end
 
-      def fetch_all_workspace_package_jsons_repo_paths
-        dir = directory.gsub(%r{(^/|/$)}, "")
-
-        fetch_repo_paths_for_code_search("package.json", directory).
-          # Check if the path is for a package.json file and starts with the source repo directory
-          filter { |repo_path| repo_path.end_with?("/package.json") }.
-          # Return path relative to repo source directory
-          map { |package_json_path| package_json_path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
-      end
-
-      def ignored_workspace_paths(workspace_paths)
-        # The packages/!(not-this-package) syntax is used to specify workspace exclusions
-        ignored_paths_array = workspace_paths.filter { |path| path.include?("!(") }
-
-        ignored_workspace_paths = []
-        ignored_paths_array.each do |ignored_path|
-          paths = ignored_path.scan(/!\((.*?)\)/).flatten
-          paths.each do |path|
-            # Expands regex to add individual directory regexes
-            ignored_workspace_paths.append(ignored_path.gsub(/!\(.*?\)/, path))
-          end
-        end
-
-        ignored_workspace_paths
+      # The packages/!(not-this-package) syntax is unique to Yarn
+      def yarn_ignored_glob(glob)
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       def parsed_package_json

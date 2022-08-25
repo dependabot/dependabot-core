@@ -290,7 +290,10 @@ module Dependabot
               fetch_submodules: true
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
-            raise unless allow_pyproject
+            # For Poetry projects attempt to fetch a pyproject.toml at the
+            # given path instead of a setup.py. We do not require a
+            # setup.py to be present, so if none can be found, simply return
+            return [] unless allow_pyproject
 
             fetch_file_from_host(
               path.gsub("setup.py", "pyproject.toml"),

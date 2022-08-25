@@ -63,6 +63,27 @@ module Dependabot
         gitlab_client_for_source.commit(source.repo, old_commit)
       end
 
+      def create_commit
+        gitlab_client_for_source.create_commit(
+          source.repo,
+          merge_request.source_branch,
+          commit_being_updated.title,
+          file_actions,
+          force: true,
+          start_branch: merge_request.target_branch
+        )
+      end
+
+      def file_actions
+        files.map do |file|
+          {
+            action: file_action(file),
+            file_path: file.type == "symlink" ? file.symlink_target : file.path,
+            content: file.content
+          }
+        end
+      end
+
       # @param [DependencyFile] file
       def file_action(file)
         if file.operation == Dependabot::DependencyFile::Operation::DELETE
@@ -72,25 +93,6 @@ module Dependabot
         else
           "update"
         end
-      end
-
-      def create_commit
-        actions = files.map do |file|
-          {
-            action: file_action(file),
-            file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
-          }
-        end
-
-        gitlab_client_for_source.create_commit(
-          source.repo,
-          merge_request.source_branch,
-          commit_being_updated.title,
-          actions,
-          force: true,
-          start_branch: merge_request.target_branch
-        )
       end
     end
   end

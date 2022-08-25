@@ -4,7 +4,7 @@ require "nokogiri"
 
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 
 # For documentation, see:
@@ -110,10 +110,13 @@ module Dependabot
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
             @maven_responses ||= {}
-            @maven_responses[url] ||= Excon.get(
-              url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
+            @maven_responses[url] ||= Dependabot::RegistryClient.get(
+              url: url,
+              # We attempt to find dependencies in private repos before failing over to the CENTRAL_REPO_URL,
+              # but this can burn a lot of a job's time against slow servers due to our `read_timeout` being 20 seconds.
+              #
+              # In order to avoid the overall job timing out, we only make one retry attempt
+              options: { retry_limit: 1 }
             )
             next unless @maven_responses[url].status == 200
             next unless pom?(@maven_responses[url].body)

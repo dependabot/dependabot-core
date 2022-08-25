@@ -36,10 +36,6 @@ module Dependabot
           # Fetch the (optional) go.sum
           fetched_files << go_sum if go_sum
 
-          # Fetch the main.go file if present, as this will later identify
-          # this repo as an app.
-          fetched_files << main if main
-
           fetched_files
         end
       end
@@ -50,27 +46,6 @@ module Dependabot
 
       def go_sum
         @go_sum ||= fetch_file_if_present("go.sum")
-      end
-
-      def main
-        return @main if defined?(@main)
-
-        go_files = Dir.glob("*.go")
-
-        go_files.each do |filename|
-          file_content = File.read(filename)
-          next unless file_content.match?(/\s*package\s+main/)
-
-          return @main = DependencyFile.new(
-            name: Pathname.new(filename).cleanpath.to_path,
-            directory: "/",
-            type: "package_main",
-            support_file: true,
-            content: file_content
-          )
-        end
-
-        nil
       end
     end
   end

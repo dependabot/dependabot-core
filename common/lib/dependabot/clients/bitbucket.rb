@@ -120,6 +120,8 @@ module Dependabot
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(repo, pr_name, source_branch, target_branch,
                               pr_description, _labels, _work_item = nil)
+        reviewers = default_reviewers(repo)
+
         content = {
           title: pr_name,
           source: {
@@ -133,6 +135,7 @@ module Dependabot
             }
           },
           description: pr_description,
+          reviewers: reviewers,
           close_source_branch: true
         }
 
@@ -140,6 +143,21 @@ module Dependabot
         post(base_url + pr_path, content.to_json)
       end
       # rubocop:enable Metrics/ParameterLists
+
+      def default_reviewers(repo)
+        path = "#{repo}/default-reviewers?pagelen=100&fields=values.uuid,next"
+        reviewers_url = base_url + path
+
+        default_reviewers = paginate({ "next" => reviewers_url })
+
+        reviewer_data = []
+
+        default_reviewers.each do |reviewer|
+          reviewer_data.append({ uuid: reviewer.fetch("uuid") })
+        end
+
+        reviewer_data
+      end
 
       def tags(repo)
         path = "#{repo}/refs/tags?pagelen=100"
@@ -160,7 +178,8 @@ module Dependabot
           url,
           user: credentials&.fetch("username", nil),
           password: credentials&.fetch("password", nil),
-          idempotent: true,
+          # Setting to false to prevent Excon retries, use BitbucketWithRetries for retries.
+          idempotent: false,
           **Dependabot::SharedHelpers.excon_defaults(
             headers: auth_header
           )

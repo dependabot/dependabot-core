@@ -21,8 +21,6 @@ module Dependabot
 
       class TagsCreationForbidden < StandardError; end
 
-      class BadRequest < StandardError; end
-
       RETRYABLE_ERRORS = [InternalServerError, BadGateway, ServiceNotAvailable].freeze
 
       MAX_PR_DESCRIPTION_LENGTH = 3999

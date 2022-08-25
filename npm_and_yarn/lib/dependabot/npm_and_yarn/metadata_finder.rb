@@ -5,7 +5,7 @@ require "time"
 
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/version"
 
@@ -122,20 +122,6 @@ module Dependabot
       end
 
       def get_directory(details)
-        source_from_url = Source.from_url(get_url(details))
-        # Special case Gatsby, which specifies directories in URLs.
-        # This can be removed once this PR is merged:
-        # https://github.com/gatsbyjs/gatsby/pull/11145
-        if source_from_url.repo == "gatsbyjs/gatsby" &&
-           get_url(details).match?(%r{tree\/master\/.})
-          return get_url(details).split("tree/master/").last.split("#").first
-        end
-
-        # Special case DefinitelyTyped, which has predictable URLs.
-        # This can be removed once this PR is merged:
-        # https://github.com/Microsoft/types-publisher/pull/578
-        return dependency.name.gsub(/^@/, "") if source_from_url.repo == "DefinitelyTyped/DefinitelyTyped"
-
         # Only return a directory if it is explicitly specified
         return unless details.is_a?(Hash)
 
@@ -150,12 +136,7 @@ module Dependabot
       def latest_version_listing
         return @latest_version_listing if defined?(@latest_version_listing)
 
-        response = Excon.get(
-          "#{dependency_url}/latest",
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
-        )
-
+        response = Dependabot::RegistryClient.get(url: "#{dependency_url}/latest", headers: registry_auth_headers)
         return @latest_version_listing = JSON.parse(response.body) if response.status == 200
 
         @latest_version_listing = {}
@@ -175,12 +156,7 @@ module Dependabot
       def npm_listing
         return @npm_listing unless @npm_listing.nil?
 
-        response = Excon.get(
-          dependency_url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults(headers: registry_auth_headers)
-        )
-
+        response = Dependabot::RegistryClient.get(url: dependency_url, headers: registry_auth_headers)
         return @npm_listing = {} if response.status >= 500
 
         begin

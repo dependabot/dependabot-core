@@ -71,7 +71,7 @@ RSpec.describe Dependabot::NpmAndYarn::DependencyFilesFilterer do
     end
 
     context "when using npm workspaces" do
-      let(:project_name) { "npm7/workspaces" }
+      let(:project_name) { "npm8/workspaces" }
 
       let(:dependency) do
         Dependabot::Dependency.new(

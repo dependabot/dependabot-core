@@ -8,5 +8,4 @@ authors = ["Dependabot <support@dependabot.com>"]
 description = "Various small python projects."
 
 [tool.poetry.dependencies]
-requests = "2.24.0"
 taxtea = {path = "taxtea-0.6.0.tar.gz"}

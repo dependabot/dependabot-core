@@ -6,7 +6,7 @@ module Dependabot
       NAME = /[a-zA-Z0-9](?:[a-zA-Z0-9\-_\.]*[a-zA-Z0-9])?/.freeze
       EXTRA = /[a-zA-Z0-9\-_\.]+/.freeze
       COMPARISON = /===|==|>=|<=|<|>|~=|!=/.freeze
-      VERSION = /[0-9]+[a-zA-Z0-9\-_\.*]*(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?/.
+      VERSION = /([1-9][0-9]*!)?[0-9]+[a-zA-Z0-9\-_.*]*(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?/.
                 freeze
       REQUIREMENT =
         /(?<comparison>#{COMPARISON})\s*\\?\s*(?<version>#{VERSION})/.freeze

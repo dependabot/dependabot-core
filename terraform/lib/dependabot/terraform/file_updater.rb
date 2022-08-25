@@ -13,6 +13,7 @@ module Dependabot
 
       PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
       MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
+      GIT_HTTPS_PREFIX = %r{^git::https://}.freeze
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -28,7 +29,9 @@ module Dependabot
 
           raise "Content didn't change!" if updated_content == file.content
 
-          updated_files << updated_file(file: file, content: updated_content)
+          updated_file = updated_file(file: file, content: updated_content)
+
+          updated_files << updated_file unless updated_files.include?(updated_file)
         end
         updated_lockfile_content = update_lockfile_declaration(updated_files)
 
@@ -93,25 +96,115 @@ module Dependabot
         end
       end
 
-      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize
+      def extract_provider_h1_hashes(content, declaration_regex)
+        content.match(declaration_regex).to_s.
+          match(hashes_object_regex).to_s.
+          split("\n").map { |hash| hash.match(hashes_string_regex).to_s }.
+          select { |h| h&.match?(/^h1:/) }
+      end
+
+      def remove_provider_h1_hashes(content, declaration_regex)
+        content.match(declaration_regex).to_s.
+          sub(hashes_object_regex, "")
+      end
+
+      def lockfile_details(new_req)
+        content = lock_file.content.dup
+        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
+        declaration_regex = lockfile_declaration_regex(provider_source)
+
+        [content, provider_source, declaration_regex]
+      end
+
+      def lookup_hash_architecture # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
+        new_req = dependency.requirements.first
+
+        # NOTE: Only providers are inlcuded in the lockfile, modules are not
+        return unless new_req[:source][:type] == "provider"
+
+        architectures = []
+        content, provider_source, declaration_regex = lockfile_details(new_req)
+        hashes = extract_provider_h1_hashes(content, declaration_regex)
+
+        # These are ordered in assumed popularity
+        possible_architectures = %w(
+          linux_amd64
+          darwin_amd64
+          windows_amd64
+          darwin_arm64
+          linux_arm64
+        )
+
+        base_dir = dependency_files.first.directory
+        lockfile_hash_removed = remove_provider_h1_hashes(content, declaration_regex)
+
+        # This runs in the same directory as the actual lockfile update so
+        # the platform must be determined before the updated manifest files
+        # are written to disk
+        SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          possible_architectures.each do |arch|
+            # Exit early if we have detected all of the architectures present
+            break if architectures.count == hashes.count
+
+            # Terraform will update the lockfile in place so we use a fresh lockfile for each lookup
+            File.write(".terraform.lock.hcl", lockfile_hash_removed)
+
+            SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
+
+            updated_lockfile = File.read(".terraform.lock.hcl")
+            updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex)
+            next if updated_hashes.nil?
+
+            # Check if the architecture is present in the original lockfile
+            hashes.each do |hash|
+              updated_hashes.select { |h| h.match?(/^h1:/) }.each do |updated_hash|
+                architectures.append(arch.to_sym) if hash == updated_hash
+              end
+            end
+
+            File.delete(".terraform.lock.hcl")
+          end
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          if @retrying_lock && e.message.match?(MODULE_NOT_INSTALLED_ERROR)
+            mod = e.message.match(MODULE_NOT_INSTALLED_ERROR).named_captures.fetch("mod")
+            raise Dependabot::DependencyFileNotResolvable, "Attempt to install module #{mod} failed"
+          end
+          raise if @retrying_lock || !e.message.include?("terraform init")
+
+          # NOTE: Modules need to be installed before terraform can update the lockfile
+          @retrying_lock = true
+          run_terraform_init
+          retry
+        end
+
+        architectures.to_a
+      end
+
+      def architecture_type
+        @architecture_type ||= lookup_hash_architecture.empty? ? [:linux_amd64] : lookup_hash_architecture
+      end
+
+      def update_lockfile_declaration(updated_manifest_files) # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
         return if lock_file.nil?
 
         new_req = dependency.requirements.first
         # NOTE: Only providers are inlcuded in the lockfile, modules are not
         return unless new_req[:source][:type] == "provider"
 
-        content = lock_file.content.dup
-        provider_source = new_req[:source][:registry_hostname] + "/" + new_req[:source][:module_identifier]
-        declaration_regex = lockfile_declaration_regex(provider_source)
+        content, provider_source, declaration_regex = lockfile_details(new_req)
         lockfile_dependency_removed = content.sub(declaration_regex, "")
 
         base_dir = dependency_files.first.directory
         SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+          # Determine the provider using the original manifest files
+          platforms = architecture_type.map { |arch| "-platform=#{arch}" }.join(" ")
+
           # Update the provider requirements in case the previous requirement doesn't allow the new version
           updated_manifest_files.each { |f| File.write(f.name, f.content) }
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
-          SharedHelpers.run_shell_command("terraform providers lock #{provider_source} -no-color")
+
+          SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source}")
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first
@@ -129,8 +222,7 @@ module Dependabot
           end
           raise if @retrying_lock || !e.message.include?("terraform init")
 
-          # NOTE: Modules need to be installed before terraform can update the
-          # lockfile
+          # NOTE: Modules need to be installed before terraform can update the lockfile
           @retrying_lock = true
           run_terraform_init
           retry
@@ -149,7 +241,12 @@ module Dependabot
           output = e.message
 
           if output.match?(PRIVATE_MODULE_ERROR)
-            raise PrivateSourceAuthenticationFailure, output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+            repo = output.match(PRIVATE_MODULE_ERROR).named_captures.fetch("repo")
+            if repo.match?(GIT_HTTPS_PREFIX)
+              repo = repo.sub(GIT_HTTPS_PREFIX, "")
+              repo = repo.sub(/\.git$/, "")
+            end
+            raise PrivateSourceAuthenticationFailure, repo
           end
 
           raise Dependabot::DependencyFileNotResolvable, "Error running `terraform init`: #{output}"
@@ -170,6 +267,14 @@ module Dependabot
         return if [*terraform_files, *terragrunt_files].any?
 
         raise "No Terraform configuration file!"
+      end
+
+      def hashes_object_regex
+        /hashes\s*=\s*[^\]]*\]/m
+      end
+
+      def hashes_string_regex
+        /(?<=\").*(?=\")/
       end
 
       def provider_declaration_regex

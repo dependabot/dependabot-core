@@ -16,13 +16,13 @@ gem "dependabot-hex", path: "../hex"
 gem "dependabot-maven", path: "../maven"
 gem "dependabot-npm_and_yarn", path: "../npm_and_yarn"
 gem "dependabot-nuget", path: "../nuget"
+gem "dependabot-pub", path: "../pub"
 gem "dependabot-python", path: "../python"
 gem "dependabot-terraform", path: "../terraform"
 
 gem "rubocop", group: :development
 
 # Visual Studio Code integration
-gem "debase", group: :development
 gem "reek", group: :development
 gem "ruby-debug-ide", group: :development
 gem "solargraph", group: :development

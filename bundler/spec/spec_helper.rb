@@ -28,8 +28,8 @@ module PackageManagerHelper
   end
 end
 
-def bundler_project_dependency_files(project)
-  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_major_version}", project))
+def bundler_project_dependency_files(project, directory: "/")
+  project_dependency_files(File.join("bundler#{PackageManagerHelper.bundler_version}", project), directory: directory)
 end
 
 def bundler_project_dependency_file(project, filename:)

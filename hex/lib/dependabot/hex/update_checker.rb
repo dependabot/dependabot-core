@@ -4,7 +4,7 @@ require "excon"
 require "dependabot/git_commit_checker"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 
 require "json"
 
@@ -243,12 +243,7 @@ module Dependabot
 
         @hex_registry_requested = true
 
-        response = Excon.get(
-          dependency_url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
+        response = Dependabot::RegistryClient.get(url: dependency_url)
         return unless response.status == 200
 
         @hex_registry_response = JSON.parse(response.body)

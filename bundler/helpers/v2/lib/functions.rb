@@ -24,7 +24,7 @@ module Functions
 
   def self.vendor_cache_dir(**args)
     set_bundler_flags_and_credentials(dir: args.fetch(:dir), credentials: [])
-    Bundler.app_cache
+    Bundler.settings.app_cache_path
   end
 
   def self.update_lockfile(**args)
@@ -143,16 +143,14 @@ module Functions
 
       Bundler.settings.set_command_option(
         cred.fetch("host"),
-        token.gsub("@", "%40F").gsub("?", "%3F")
+        token.gsub("@", "%40").gsub("?", "%3F")
       )
     end
 
     # NOTE: Prevent bundler from printing resolution information
     Bundler.ui = Bundler::UI::Silent.new
 
-    # Use HTTPS for GitHub if lockfile
     Bundler.settings.set_command_option("forget_cli_options", "true")
-    Bundler.settings.set_command_option("github.https", "true")
   end
 
   def self.relevant_credentials(credentials)

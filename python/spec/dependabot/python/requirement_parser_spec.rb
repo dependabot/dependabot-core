@@ -64,6 +64,13 @@ RSpec.describe Dependabot::Python::RequirementParser do
       it { is_expected.to be_nil }
     end
 
+    context "with an epoch specification" do
+      let(:line) { "luigi==1!1.1.0" }
+      its([:requirements]) do
+        is_expected.to eq [{ comparison: "==", version: "1!1.1.0" }]
+      end
+    end
+
     context "with a simple specification" do
       let(:line) { "luigi == 0.1.0" }
       its([:requirements]) do

@@ -217,6 +217,54 @@ RSpec.describe Dependabot::Clients::Azure do
       end
     end
   end
+  end
+
+  describe "#create_pull_request" do
+    subject do
+      client.create_pull_request("pr_name", "source_branch", "target_branch",
+                                 "", [], nil)
+    end
+
+    let(:pull_request_url) { repo_url + "/pullrequests?api-version=5.0" }
+
+    context "when response is 403 & tags creation is forbidden" do
+      before do
+        stub_request(:post, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(
+            status: 403,
+            body: { message: "TF401289" }.to_json
+          )
+=======
+    context "when response is 403" do
+      before do
+        stub_request(:post, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 403)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+>>>>>>> upstream/main
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::TagsCreationForbidden)
+      end
+    end
+
+    context "when response is 403" do
+      before do
+        stub_request(:post, pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 403)
+      end
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::Clients::Azure::Forbidden)
+      end
+    end
+  end
 
   describe "#pull_request" do
     subject { client.pull_request(pull_request_id) }
