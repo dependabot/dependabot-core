@@ -187,8 +187,8 @@ module Dependabot
         return file.content if file.path.end_with?(".tar.gz", ".whl", ".zip")
 
         file.content.lines.
-          reject { |l| l.match?(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/) }.
-          reject { |l| l.match?(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/) }.
+          grep_v(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
+          grep_v(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
           join
       end
 

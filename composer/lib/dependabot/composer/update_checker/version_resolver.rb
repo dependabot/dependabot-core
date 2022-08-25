@@ -209,7 +209,7 @@ module Dependabot
               version_for_requirement =
                 dependency.requirements.map { |r| r[:requirement] }.compact.
                 reject { |req_string| req_string.start_with?("<") }.
-                select { |req_string| req_string.match?(VERSION_REGEX) }.
+                grep(VERSION_REGEX).
                 map { |req_string| req_string.match(VERSION_REGEX) }.
                 select { |version| requirement_valid?(">= #{version}") }.
                 max_by { |version| Composer::Version.new(version) }

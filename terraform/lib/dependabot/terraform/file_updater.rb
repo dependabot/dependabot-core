@@ -157,7 +157,7 @@ module Dependabot
 
             # Check if the architecture is present in the original lockfile
             hashes.each do |hash|
-              updated_hashes.select { |h| h.match?(/^h1:/) }.each do |updated_hash|
+              updated_hashes.grep(/^h1:/).each do |updated_hash|
                 architectures.append(arch.to_sym) if hash == updated_hash
               end
             end

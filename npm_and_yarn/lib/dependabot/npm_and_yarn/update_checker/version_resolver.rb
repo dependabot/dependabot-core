@@ -583,7 +583,7 @@ module Dependabot
 
           dep.requirements.map { |r| r[:requirement] }.compact.
             reject { |req_string| req_string.start_with?("<") }.
-            select { |req_string| req_string.match?(version_regex) }.
+            grep(version_regex).
             map { |req_string| req_string.match(version_regex) }.
             select { |version| version_class.correct?(version.to_s) }.
             map { |version| version_class.new(version.to_s) }.

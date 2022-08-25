@@ -170,7 +170,7 @@ module Dependabot
         original_format = format_of(version)
 
         tags_from_registry.
-          select { |tag| tag.match?(NAME_WITH_VERSION) }.
+          grep(NAME_WITH_VERSION).
           select { |tag| prefix_of(tag) == original_prefix }.
           select { |tag| suffix_of(tag) == original_suffix || commit_sha_suffix?(tag) }.
           select { |tag| format_of(tag) == original_format }

@@ -165,7 +165,7 @@ module Dependabot
           return [] unless npmrc_file
 
           @npmrc_scoped_registries ||=
-            npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
+            npmrc_file.content.lines.grep(SCOPED_REGISTRY).
             map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }.
             compact
         end
