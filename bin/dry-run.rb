@@ -461,7 +461,6 @@ end
 
 StackProf.start(raw: true) if $options[:profile]
 
-
 $network_trace_count = 0
 ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
   $network_trace_count += 1
