@@ -105,7 +105,7 @@ def build_tmp_repo(project, path: "projects")
 
   tmp_dir = Dependabot::Utils::BUMP_TMP_DIR_PATH
   prefix = Dependabot::Utils::BUMP_TMP_FILE_PREFIX
-  Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
+  FileUtils.mkdir_p(tmp_dir) 
   tmp_repo = Dir.mktmpdir(prefix, tmp_dir)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
   FileUtils.mkpath(tmp_repo_path)

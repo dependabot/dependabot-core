@@ -54,7 +54,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path)  }
 
   subject(:updated_yarn_lock_content) { updater.updated_yarn_lock_content(yarn_lock) }
 

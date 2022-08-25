@@ -175,7 +175,7 @@ module Dependabot
           _, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
-          File.delete(tmp_go_file) if File.exist?(tmp_go_file)
+          FileUtils.rm_f(tmp_go_file) 
         end
 
         def parse_manifest
@@ -199,7 +199,7 @@ module Dependabot
           # `go get` works, even if some modules have been `replace`d
           # with a local module that we don't have access to.
           stub_paths.each do |stub_path|
-            Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+            FileUtils.mkdir_p(stub_path) 
             FileUtils.touch(File.join(stub_path, "go.mod"))
             FileUtils.touch(File.join(stub_path, "main.go"))
           end

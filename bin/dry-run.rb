@@ -283,7 +283,7 @@ def cached_read(name)
 
   cache_path = File.join("tmp", $repo_name.split("/"), "cache", "#{name}.bin")
   cache_dir = File.dirname(cache_path)
-  FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+  FileUtils.mkdir_p(cache_dir) 
   cached = File.read(cache_path) if File.exist?(cache_path)
   # rubocop:disable Security/MarshalLoad
   return Marshal.load(cached) if cached
@@ -310,7 +310,7 @@ def cached_dependency_files_read
   cache_manifest_path = File.join(
     cache_dir, "cache-manifest-#{$package_manager}.json"
   )
-  FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+  FileUtils.mkdir_p(cache_dir) 
 
   cached_manifest = File.read(cache_manifest_path) if File.exist?(cache_manifest_path)
   cached_dependency_files = JSON.parse(cached_manifest) if cached_manifest
@@ -354,7 +354,7 @@ def cached_dependency_files_read
     data.map do |file|
       files_path = File.join(cache_dir, file.name)
       files_dir = File.dirname(files_path)
-      FileUtils.mkdir_p(files_dir) unless Dir.exist?(files_dir)
+      FileUtils.mkdir_p(files_dir) 
       File.write(files_path, file.content)
     end
     # Initialize a git repo so that changed files can be diffed
@@ -757,9 +757,9 @@ dependencies.each do |dep|
       path = File.join(dependency_files_cache_dir, updated_file.name)
       puts " => writing updated file ./#{path}"
       dirname = File.dirname(path)
-      FileUtils.mkdir_p(dirname) unless Dir.exist?(dirname)
+      FileUtils.mkdir_p(dirname) 
       if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-        File.delete(path) if File.exist?(path)
+        FileUtils.rm_f(path) 
       else
         File.write(path, updated_file.decoded_content)
       end
