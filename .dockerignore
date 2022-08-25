@@ -23,3 +23,4 @@ git.store
 *.pyc
 .dockerignore
 Dockerfile*
+*.md
