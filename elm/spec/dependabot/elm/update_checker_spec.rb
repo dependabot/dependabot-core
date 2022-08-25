@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
       let(:dependency_version) { nil }
       let(:elm_package_url) do
         "https://package.elm-lang.org/packages/mercurymedia/elm-datetime-picker/" \
-        "releases.json"
+          "releases.json"
       end
       let(:elm_package_response) do
         fixture("elm_package_responses", "mercurymedia-elm-datetime-picker.json")

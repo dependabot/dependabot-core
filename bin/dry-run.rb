@@ -194,7 +194,7 @@ option_parse = OptionParser.new do |opts|
   end
 
   opts_req_desc = "Options: auto, widen_ranges, bump_versions or " \
-                         "bump_versions_if_necessary"
+                  "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
     $options[:requirements_update_strategy] = value
@@ -713,7 +713,7 @@ dependencies.each do |dep|
     conflicting_dependencies = checker.conflicting_dependencies
     if conflicting_dependencies.any?
       puts " => The update is not possible because of the following conflicting " \
-        "dependencies:"
+           "dependencies:"
 
       conflicting_dependencies.each do |conflicting_dep|
         puts "   #{conflicting_dep['explanation']}"

@@ -278,9 +278,9 @@ module Dependabot
           group_id = "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
 
           "#{repository_url}/" \
-          "#{group_id.tr('.', '/')}/" \
-          "#{artifact_id}/" \
-          "maven-metadata.xml"
+            "#{group_id.tr('.', '/')}/" \
+            "#{artifact_id}/" \
+            "maven-metadata.xml"
         end
 
         def group_and_artifact_ids

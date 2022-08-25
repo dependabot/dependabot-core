@@ -61,12 +61,12 @@ RSpec.describe namespace::MultiDependencyUpdater do
 
   let(:maven_central_metadata_url_gradle_plugin) do
     "https://repo.maven.apache.org/maven2/" \
-    "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
+      "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
   end
 
   let(:maven_central_metadata_url_stdlib) do
     "https://repo.maven.apache.org/maven2/" \
-    "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+      "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
   end
 
   before do
@@ -88,15 +88,15 @@ RSpec.describe namespace::MultiDependencyUpdater do
 
   let(:jcenter_metadata_url_protoc) do
     "https://jcenter.bintray.com/" \
-    "com/google/protobuf/protoc/maven-metadata.xml"
+      "com/google/protobuf/protoc/maven-metadata.xml"
   end
   let(:jcenter_metadata_url_protobuf_java) do
     "https://jcenter.bintray.com/" \
-    "com/google/protobuf/protobuf-java/maven-metadata.xml"
+      "com/google/protobuf/protobuf-java/maven-metadata.xml"
   end
   let(:jcenter_metadata_url_protobuf_java_util) do
     "https://jcenter.bintray.com/" \
-    "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
+      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
   end
 
   before do

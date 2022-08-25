@@ -298,7 +298,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             let(:dockerfile_fixture_name) { "private_ecr_digest" }
             let(:repo_url) do
               "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
-              "docker-php/"
+                "docker-php/"
             end
 
             context "without credentials" do
@@ -928,7 +928,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             let(:podfile_fixture_name) { "private_ecr_digest.yaml" }
             let(:repo_url) do
               "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
-              "docker-php/"
+                "docker-php/"
             end
 
             context "without credentials" do

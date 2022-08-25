@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with an optional Jinja dependency" do
         let(:line) do
           "{% if cookiecutter.include_package == 'y' %} luigi==0.1.0 " \
-          "{% endif %}"
+            "{% endif %}"
         end
 
         its([:name]) { is_expected.to eq "luigi" }
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
       context "with markers" do
         let(:line) do
           'luigi==0.1.0;python_version>="2.7" and ' \
-          '(sys_platform == "darwin" or sys_platform == "win32") '
+            '(sys_platform == "darwin" or sys_platform == "win32") '
         end
         its([:name]) { is_expected.to eq "luigi" }
         its([:requirements]) do
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
         its([:markers]) do
           is_expected.to eq 'python_version>="2.7" and ' \
-            '(sys_platform == "darwin" or sys_platform == "win32")'
+                            '(sys_platform == "darwin" or sys_platform == "win32")'
         end
       end
 
@@ -155,8 +155,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
         context "spread over multiple lines" do
           let(:line) do
             "luigi==0.1.0 \\\n" \
-            "    --hash=sha256:2ccb79b01 \\\n" \
-            "    --hash=sha256:2ccb79b02"
+              "    --hash=sha256:2ccb79b01 \\\n" \
+              "    --hash=sha256:2ccb79b02"
           end
 
           its([:hashes]) do
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::Python::RequirementParser do
         context "and with marker" do
           let(:line) do
             "luigi==0.1.0 ; python_version=='2.7' " \
-            "--hash=sha256:2ccb79b01 --hash=sha256:2ccb79b02"
+              "--hash=sha256:2ccb79b01 --hash=sha256:2ccb79b02"
           end
           its([:requirements]) do
             is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
@@ -193,8 +193,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
         context "spread over multiple lines with marker" do
           let(:line) do
             "luigi==0.1.0 ; python_version=='2.7' \\\n" \
-            "    --hash=sha256:2ccb79b01 \\\n" \
-            "    --hash=sha256:2ccb79b02"
+              "    --hash=sha256:2ccb79b01 \\\n" \
+              "    --hash=sha256:2ccb79b02"
           end
           its([:requirements]) do
             is_expected.to eq [{ comparison: "==", version: "0.1.0" }]

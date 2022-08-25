@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
   let(:maven_central_metadata_url) do
     "https://repo.maven.apache.org/maven2/" \
-    "com/google/guava/guava/maven-metadata.xml"
+      "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_metadata_url_mockk) do
     "https://repo.maven.apache.org/maven2/io/mockk/mockk/maven-metadata.xml"
@@ -66,11 +66,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
   end
   let(:maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/" \
-    "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+      "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
   end
   let(:mockk_maven_central_version_files_url) do
     "https://repo.maven.apache.org/maven2/" \
-    "io/mockk/mockk/1.10.0/mockk-1.10.0-sources.jar"
+      "io/mockk/mockk/1.10.0/mockk-1.10.0-sources.jar"
   end
 
   before do
@@ -102,11 +102,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the latest version hasn't actually been released" do
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+          "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
       let(:old_maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/23.5-jre/guava-23.5-jre.jar"
+          "com/google/guava/guava/23.5-jre/guava-23.5-jre.jar"
       end
 
       before do
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "23.0-rc1-android" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/23.7-rc1-android/guava-23.7-rc1-android.jar"
+          "com/google/guava/guava/23.7-rc1-android/guava-23.7-rc1-android.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.7.html")
@@ -137,14 +137,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+          "com/thoughtworks/xstream/xstream/maven-metadata.xml"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/1.4.12-java7/xstream-1.4.12-java7.jar"
+          "com/thoughtworks/xstream/xstream/1.4.12-java7/xstream-1.4.12-java7.jar"
       end
       let(:dependency_version) { "1.4.11-java7" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12-java7")) }
@@ -153,8 +153,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:dependency_version) { "1.4.11-native-mt" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
-          "com/thoughtworks/xstream/" \
-          "xstream/1.4.12-native-mt/xstream-1.4.12-native-mt.jar"
+            "com/thoughtworks/xstream/" \
+            "xstream/1.4.12-native-mt/xstream-1.4.12-native-mt.jar"
         end
         its([:version]) do
           is_expected.to eq(version_class.new("1.4.12-native-mt"))
@@ -168,14 +168,14 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+          "com/thoughtworks/xstream/xstream/maven-metadata.xml"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/1.4.12/xstream-1.4.12.jar"
+          "com/thoughtworks/xstream/xstream/1.4.12/xstream-1.4.12.jar"
       end
       let(:dependency_version) { "1.4.11.1" }
       its([:version]) { is_expected.to eq(version_class.new("1.4.12")) }
@@ -187,12 +187,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "commons-collections/commons-collections/maven-metadata.xml"
+          "commons-collections/commons-collections/maven-metadata.xml"
       end
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "commons-collections/commons-collections/3.2.2/" \
-        "commons-collections-3.2.2.jar"
+          "commons-collections/commons-collections/3.2.2/" \
+          "commons-collections-3.2.2.jar"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_date_releases.xml")
@@ -210,8 +210,8 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
         let(:dependency_version) { "20030418" }
         let(:maven_central_version_files_url) do
           "https://repo.maven.apache.org/maven2/" \
-          "commons-collections/commons-collections/20040616/" \
-          "commons-collections-20040616.jar"
+            "commons-collections/commons-collections/20040616/" \
+            "commons-collections-20040616.jar"
         end
         let(:maven_central_version_files) do
           fixture(
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "22.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/22.0/guava-22.0.jar"
+          "com/google/guava/guava/22.0/guava-22.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -266,7 +266,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/22.0/guava-22.0.jar"
+          "com/google/guava/guava/22.0/guava-22.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/21.0/guava-21.0.jar"
+          "com/google/guava/guava/21.0/guava-21.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -292,7 +292,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "17.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/22.0/guava-22.0.jar"
+          "com/google/guava/guava/22.0/guava-22.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -304,7 +304,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
       let(:dependency_version) { "RELEASE802" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/23.0/guava-23.0.jar"
+          "com/google/guava/guava/23.0/guava-23.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-23.0.html")
@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:private_registry_metadata_url) do
         "https://private.registry.org/repo/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       before do
@@ -358,7 +358,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
         let(:private_registry_metadata_url) do
           "https://private.registry.org/api/v4/groups/-/packages/maven/" \
-          "com/google/guava/guava/maven-metadata.xml"
+            "com/google/guava/guava/maven-metadata.xml"
         end
 
         before do
@@ -444,17 +444,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:private_registry_metadata_url) do
         "https://private.registry.org/repo/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:second_repo) do
         "https://private.registry.org/repo2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:gitlab_maven_repo) do
         "https://private.registry.org/api/v4/groups/-/packages/maven/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       before do
@@ -492,32 +492,32 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:scala_tools_metadata_url) do
         "http://scala-tools.org/repo-releases/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:scala_tools_version_files_url) do
         "http://scala-tools.org/repo-releases/" \
-        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+          "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       let(:jboss_metadata_url) do
         "http://repository.jboss.org/maven2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:jboss_plugins_metadata_url) do
         "http://plugin-repository.jboss.org/maven2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:jboss_plugins_version_files_url) do
         "http://plugin-repository.jboss.org/maven2/" \
-        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+          "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       let(:jboss_version_files_url) do
         "http://repository.jboss.org/maven2/" \
-        "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
+          "com/google/guava/guava/23.6-jre/guava-23.6-jre.jar"
       end
 
       before do
@@ -564,7 +564,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     end
     let(:maven_central_version_files_url) do
       "https://repo.maven.apache.org/maven2/" \
-      "com/google/guava/guava/20.0/guava-20.0.jar"
+        "com/google/guava/guava/20.0/guava-20.0.jar"
     end
     let(:maven_central_version_files) do
       fixture("maven_central_version_files", "guava-23.6.html").
@@ -579,11 +579,11 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
     context "when the lowest version hasn't actually been released" do
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/20.0/guava-20.0.jar"
+          "com/google/guava/guava/20.0/guava-20.0.jar"
       end
       let(:next_maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/21.0/guava-21.0.jar"
+          "com/google/guava/guava/21.0/guava-21.0.jar"
       end
 
       before do
@@ -656,17 +656,17 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
 
       let(:scala_tools_metadata_url) do
         "http://scala-tools.org/repo-releases/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:jboss_metadata_url) do
         "http://repository.jboss.org/maven2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:jboss_plugins_metadata_url) do
         "http://plugin-repository.jboss.org/maven2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       before do

@@ -53,7 +53,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
   end
   let(:service_pack_url) do
     "https://github.com/gocardless/business.git/info/refs" \
-    "?service=git-upload-pack"
+      "?service=git-upload-pack"
   end
   let(:upload_pack_fixture) { "business" }
 
@@ -580,7 +580,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     context "with a gitlab repo" do
       let(:service_pack_url) do
         "https://gitlab.com/org/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
       let(:gitlab_repo_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness"
@@ -630,7 +630,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
     context "with a bitbucket repo" do
       let(:service_pack_url) do
         "https://bitbucket.org/org/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
 
       let(:source) do
@@ -745,8 +745,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               },
               {
                 message: "Merge pull request #8 from gocardless/" \
-                          "rename-sepa-to-ecb\n\nRemove _SEPA_ calendar " \
-                          "(replaced by TARGET)",
+                         "rename-sepa-to-ecb\n\nRemove _SEPA_ calendar " \
+                         "(replaced by TARGET)",
                 sha: "a5970daf0b824e4c3974e57474b6cf9e39a11d0f",
                 html_url: "https://github.com/gocardless/business/commit/" \
                           "a5970daf0b824e4c3974e57474b6cf9e39a11d0f"
@@ -901,7 +901,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       context "with a bitbucket repo" do
         let(:bitbucket_compare_url) do
           "https://api.bitbucket.org/2.0/repositories/org/business/commits/" \
-          "?exclude=v1.3.0&include=v1.4.0"
+            "?exclude=v1.3.0&include=v1.4.0"
         end
 
         let(:bitbucket_compare) do
@@ -916,7 +916,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         end
         let(:service_pack_url) do
           "https://bitbucket.org/org/business.git/info/refs" \
-          "?service=git-upload-pack"
+            "?service=git-upload-pack"
         end
 
         before do
@@ -937,7 +937,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               },
               {
                 message: "Eliminate use of deprecated PGError constant from " \
-                          "specs",
+                         "specs",
                 sha: "f275e318641f185b8a15a2220e7c189b1769f84c",
                 html_url: "https://bitbucket.org/ged/ruby-pg/commits/" \
                           "f275e318641f185b8a15a2220e7c189b1769f84c"
@@ -950,11 +950,11 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       context "with a gitlab repo" do
         let(:gitlab_compare_url) do
           "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/" \
-          "compare?from=v1.3.0&to=v1.4.0"
+            "compare?from=v1.3.0&to=v1.4.0"
         end
         let(:service_pack_url) do
           "https://gitlab.com/org/business.git/info/refs" \
-          "?service=git-upload-pack"
+            "?service=git-upload-pack"
         end
 
         let(:gitlab_compare) do
@@ -996,8 +996,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               },
               {
                 message: "BUG: added 'force_consistent' keyword argument " \
-                          "with default True\n\nThe bug fix is necessary to " \
-                          "pass the test turbomole_h3o2m.py.\n",
+                         "with default True\n\nThe bug fix is necessary to " \
+                         "pass the test turbomole_h3o2m.py.\n",
                 sha: "e718899ddcdc666311d08497401199e126428163",
                 html_url: "https://gitlab.com/org/business/commit/" \
                           "e718899ddcdc666311d08497401199e126428163"

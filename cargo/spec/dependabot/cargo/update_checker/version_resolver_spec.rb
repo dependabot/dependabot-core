@@ -287,7 +287,7 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
         let(:lockfile_fixture_name) { "git_dependency_unreachable" }
         let(:git_url) do
           "https://github.com/greysteil/utf8-ranges.git/info/" \
-          "refs?service=git-upload-pack"
+            "refs?service=git-upload-pack"
         end
         let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
 

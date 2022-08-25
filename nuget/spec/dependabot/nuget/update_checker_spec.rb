@@ -52,11 +52,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
   let(:nuget_versions_url) do
     "https://api.nuget.org/v3-flatcontainer/" \
-    "microsoft.extensions.dependencymodel/index.json"
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
     "https://azuresearch-usnc.nuget.org/query" \
-    "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
         "https://azuresearch-usnc.nuget.org/query" \
-        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
+          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -495,7 +495,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
         "https://azuresearch-usnc.nuget.org/query" \
-        "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
+          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")

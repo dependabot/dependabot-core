@@ -99,7 +99,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     context "with a github repo" do
       let(:github_url) do
         "https://api.github.com/repos/gocardless/#{dependency_name}/" \
-        "releases?per_page=100"
+          "releases?per_page=100"
       end
 
       let(:github_status) { 200 }

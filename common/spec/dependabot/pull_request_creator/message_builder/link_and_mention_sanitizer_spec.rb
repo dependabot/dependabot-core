@@ -21,7 +21,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       it "sanitizes the text" do
         expect(sanitize_links_and_mentions).
           to eq("<p>Great work <a href=\"https://github.com/greysteil\">" \
-            "<code>@\u200Bgreysteil</code></a>!</p>\n")
+                "<code>@\u200Bgreysteil</code></a>!</p>\n")
       end
 
       context "that includes a dash" do
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         context "with a mention before" do
           let(:text) do
             "@greysteil wrote this:\n\n```\n @model ||= 123\n```\n\n" \
-            "Review by @hmarr!"
+              "Review by @hmarr!"
           end
 
           it "sanitizes the text" do
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
         context "with mentions inside a complex code fence" do
           let(:text) do
             "Take a look at this code: ```` @not-a-mention " \
-            "```@not-a-mention``` ````"
+              "```@not-a-mention``` ````"
           end
 
           it "sanitizes the text without touching the code fence" do
@@ -157,7 +157,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
           context "and a real mention after" do
             let(:text) do
               "Take a look at this code: ```` @not-a-mention " \
-              "```@not-a-mention``` ```` This is a @mention!"
+                "```@not-a-mention``` ```` This is a @mention!"
             end
 
             it "sanitizes the text without touching the code fence" do
@@ -310,7 +310,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
     context "with a markdown footer" do
       let(:text) do
         "[Updated the `libm` dependency to 0.2][144]\n\n" \
-        "[144]: https://github.com/rust-num/num-traits/pull/144"
+          "[144]: https://github.com/rust-num/num-traits/pull/144"
       end
 
       it do

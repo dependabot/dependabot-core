@@ -31,11 +31,11 @@ RSpec.describe Dependabot::PullRequestCreator::CommitSigner do
 
     let(:text_to_sign) do
       "tree tree_sha\n" \
-      "parent parent_sha\n" \
-      "author dependabot <support@dependabot.com> 1519342187 +0000\n" \
-      "committer dependabot <support@dependabot.com> 1519342187 +0000\n" \
-      "\n" \
-      "commit_message"
+        "parent parent_sha\n" \
+        "author dependabot <support@dependabot.com> 1519342187 +0000\n" \
+        "committer dependabot <support@dependabot.com> 1519342187 +0000\n" \
+        "\n" \
+        "commit_message"
     end
 
     it "signs the correct text, correctly" do

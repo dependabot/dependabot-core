@@ -133,8 +133,8 @@ module Dependabot
             "#{dependency.name.downcase}.nuspec"
         else
           "https://api.nuget.org/v3-flatcontainer/" \
-          "#{dependency.name.downcase}/#{dependency.version}/" \
-          "#{dependency.name.downcase}.nuspec"
+            "#{dependency.name.downcase}/#{dependency.version}/" \
+            "#{dependency.name.downcase}.nuspec"
         end
       end
 

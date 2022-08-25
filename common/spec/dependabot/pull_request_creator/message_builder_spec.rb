@@ -63,39 +63,39 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   def commits_details(base:, head:)
     "<details>\n" \
-    "<summary>Commits</summary>\n" \
-    "<ul>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "26f4887ec647493f044836363537e329d9d213aa\"><code>26f4887</code></a> " \
-    "Bump version to v1.4.0</li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> " \
-    "[Fix <a href=\"https://redirect.github.com/gocardless/" \
-    "business/issues/9\">#9</a>] Allow custom calendars</li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> " \
-    "Allow custom calendars</li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "5555535ff2aa9d7ce0403d7fd4aa010d94723076\"><code>5555535</code>" \
-    "</a></li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> " \
-    "Spacing: <a href=\"https://redirect.github.com/my/repo/" \
-    "pull/5\">my/repo#5</a></li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> " \
-    "Merge pull request <a href=\"https://redirect.github.com/" \
-    "gocardless/business/issues/8\">#8</a> " \
-    "from gocardless/rename-sepa-to-ecb</li>\n" \
-    "<li><a href=\"https://github.com/gocardless/business/commit/" \
-    "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> " \
-    "<a href=\"https://redirect.github.com/gocardless/business/" \
-    "issues/12\">12</a> Remove <em>SEPA</em> " \
-    "calendar (replaced by TARGET)</li>\n" \
-    "<li>See full diff in <a href=\"https://github.com/gocardless/business/" \
-    "compare/#{base}...#{head}\">compare view</a></li>\n" \
-    "</ul>\n" \
-    "</details>\n"
+      "<summary>Commits</summary>\n" \
+      "<ul>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "26f4887ec647493f044836363537e329d9d213aa\"><code>26f4887</code></a> " \
+      "Bump version to v1.4.0</li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> " \
+      "[Fix <a href=\"https://redirect.github.com/gocardless/" \
+      "business/issues/9\">#9</a>] Allow custom calendars</li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> " \
+      "Allow custom calendars</li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "5555535ff2aa9d7ce0403d7fd4aa010d94723076\"><code>5555535</code>" \
+      "</a></li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> " \
+      "Spacing: <a href=\"https://redirect.github.com/my/repo/" \
+      "pull/5\">my/repo#5</a></li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> " \
+      "Merge pull request <a href=\"https://redirect.github.com/" \
+      "gocardless/business/issues/8\">#8</a> " \
+      "from gocardless/rename-sepa-to-ecb</li>\n" \
+      "<li><a href=\"https://github.com/gocardless/business/commit/" \
+      "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> " \
+      "<a href=\"https://redirect.github.com/gocardless/business/" \
+      "issues/12\">12</a> Remove <em>SEPA</em> " \
+      "calendar (replaced by TARGET)</li>\n" \
+      "<li>See full diff in <a href=\"https://github.com/gocardless/business/" \
+      "compare/#{base}...#{head}\">compare view</a></li>\n" \
+      "</ul>\n" \
+      "</details>\n"
   end
 
   shared_context "with multiple git sources" do
@@ -195,7 +195,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
           let(:watched_repo_url) do
             "https://gitlab.com/api/v4/projects/" \
-            "#{CGI.escape(source.repo)}/repository"
+              "#{CGI.escape(source.repo)}/repository"
           end
           let(:commits_response) { fixture("gitlab", "commits.json") }
           before do
@@ -1283,7 +1283,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               headers: json_header
             )
           stub_request(:get, "https://api.github.com/repos/gocardless/" \
-                         "business/contents/UPGRADE.md?ref=master").
+                             "business/contents/UPGRADE.md?ref=master").
             to_return(
               status: 200,
               body: fixture("github", "upgrade_guide_contents.json"),

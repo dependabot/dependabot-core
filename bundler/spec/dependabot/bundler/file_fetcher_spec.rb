@@ -200,11 +200,11 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
     let(:directory) { "/Library/Homebrew/test" }
     let(:url) do
       "https://api.github.com/repos/gocardless/bump/contents/Library/" \
-      "Homebrew/test"
+        "Homebrew/test"
     end
     let(:imported_file_url) do
       "https://api.github.com/repos/gocardless/bump/contents/Library/" \
-      "Homebrew/constants.rb"
+        "Homebrew/constants.rb"
     end
 
     before do

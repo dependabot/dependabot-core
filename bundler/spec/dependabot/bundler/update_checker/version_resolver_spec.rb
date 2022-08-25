@@ -392,7 +392,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           {
             type: "git",
             url: "https://github.com/dependabot-fixtures/" \
-            "rubygems-circular-dependency",
+                 "rubygems-circular-dependency",
             branch: "master",
             ref: "master"
           }

@@ -25,7 +25,7 @@ RSpec.describe Dependabot::DependabotError do
     context "with dependabot temp path" do
       let(:message) do
         "Error (/Users/x/code/dependabot-core/cargo/tmp/dependabot_20201218-14100-y0d218) " \
-        "failed to load https://github.com/dependabot"
+          "failed to load https://github.com/dependabot"
       end
 
       it do

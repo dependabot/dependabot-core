@@ -1008,7 +1008,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               source: {
                 type: "git",
                 url: "https://github.com/dependabot-fixtures/" \
-                "dependabot-test-ruby-package",
+                     "dependabot-test-ruby-package",
                 branch: "master",
                 ref: "master"
               }
@@ -1025,7 +1025,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
             ).to_return(status: 404)
             git_url = "https://github.com/dependabot-fixtures/" \
-              "dependabot-test-ruby-package.git"
+                      "dependabot-test-ruby-package.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
             }
@@ -1593,7 +1593,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "dependabot-test-ruby-package",
+                   "dependabot-test-ruby-package",
               branch: "master",
               ref: "master"
             }
@@ -1608,7 +1608,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
           ).to_return(status: 404)
           git_url = "https://github.com/dependabot-fixtures/" \
-            "dependabot-test-ruby-package.git"
+                    "dependabot-test-ruby-package.git"
           git_header = {
             "content-type" => "application/x-git-upload-pack-advertisement"
           }

@@ -47,7 +47,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
   let(:maven_central_metadata_url) do
     "https://repo.maven.apache.org/maven2/" \
-    "com/google/guava/guava/maven-metadata.xml"
+      "com/google/guava/guava/maven-metadata.xml"
   end
   let(:maven_central_releases) do
     fixture("maven_central_metadata", "with_release.xml")
@@ -89,7 +89,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:dependency_name) { "com.thoughtworks.xstream:xstream" }
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+          "com/thoughtworks/xstream/xstream/maven-metadata.xml"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
@@ -111,7 +111,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:maven_central_metadata_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/thoughtworks/xstream/xstream/maven-metadata.xml"
+          "com/thoughtworks/xstream/xstream/maven-metadata.xml"
       end
       let(:maven_central_releases) do
         fixture("maven_central_metadata", "with_version_type_releases.xml")
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
       let(:dependency_version) { "22.0" }
       let(:maven_central_version_files_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "com/google/guava/guava/22.0/guava-22.0.jar"
+          "com/google/guava/guava/22.0/guava-22.0.jar"
       end
       let(:maven_central_version_files) do
         fixture("maven_central_version_files", "guava-22.0.html")
@@ -212,17 +212,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:jcenter_metadata_url) do
         "https://jcenter.bintray.com/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:magnusja_metadata_url) do
         "https://dl.bintray.com/magnusja/maven/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:google_metadata_url) do
         "https://maven.google.com/" \
-        "com/google/guava/group-index.xml"
+          "com/google/guava/group-index.xml"
       end
 
       let(:dependency_version) { "18.0.0" }
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:private_registry_metadata_url) do
         "https://private.registry.org/repo/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       before do
@@ -291,7 +291,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
         let(:private_registry_metadata_url) do
           "https://private.registry.org/api/v4/groups/-/packages/maven/" \
-          "com/google/guava/guava/maven-metadata.xml"
+            "com/google/guava/guava/maven-metadata.xml"
         end
 
         before do
@@ -377,17 +377,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:private_registry_metadata_url) do
         "https://private.registry.org/repo/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:second_repo) do
         "https://private.registry.org/repo2/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:gitlab_maven_repo) do
         "https://private.registry.org/api/v4/groups/-/packages/maven/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       before do
@@ -424,18 +424,18 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:private_plugin_registry_metadata_url) do
         "https://private.registry.org/repo/org/springframework/boot/" \
-        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+          "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
       let(:gradle_plugin_releases) do
         fixture("gradle_plugin_metadata", "org_springframework_boot.xml")
       end
       let(:maven_metadata_url) do
         "https://plugins.gradle.org/m2/org/springframework/boot/" \
-        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+          "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
       let(:repo_maven_metadata_url) do
         "https://repo.maven.apache.org/maven2/org/springframework/boot" \
-        "/org.springframework.boot.gradle.plugin/maven-metadata.xml"
+          "/org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
       before do
         stub_request(:get, repo_maven_metadata_url).
@@ -572,14 +572,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:gradle_plugin_metadata_url) do
         "https://plugins.gradle.org/m2/org/springframework/boot/" \
-        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+          "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
       let(:gradle_plugin_releases) do
         fixture("gradle_plugin_metadata", "org_springframework_boot.xml")
       end
       let(:maven_metadata_url) do
         "https://repo.maven.apache.org/maven2/org/springframework/boot/" \
-        "org.springframework.boot.gradle.plugin/maven-metadata.xml"
+          "org.springframework.boot.gradle.plugin/maven-metadata.xml"
       end
 
       before do
@@ -625,14 +625,14 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:gradle_plugin_metadata_url) do
         "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/" \
-        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+          "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
       let(:gradle_plugin_releases) do
         fixture("gradle_plugin_metadata", "org_jetbrains_kotlin_jvm.xml")
       end
       let(:maven_metadata_url) do
         "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/jvm/" \
-        "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
+          "org.jetbrains.kotlin.jvm.gradle.plugin/maven-metadata.xml"
       end
 
       before do
@@ -669,17 +669,17 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
 
       let(:jcenter_metadata_url) do
         "https://jcenter.bintray.com/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:magnusja_metadata_url) do
         "https://dl.bintray.com/magnusja/maven/" \
-        "com/google/guava/guava/maven-metadata.xml"
+          "com/google/guava/guava/maven-metadata.xml"
       end
 
       let(:google_metadata_url) do
         "https://maven.google.com/" \
-        "com/google/guava/group-index.xml"
+          "com/google/guava/group-index.xml"
       end
 
       before do
@@ -714,15 +714,15 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
         let(:dependency_name) { "com.google.guava:guava~bad" }
         let(:jcenter_metadata_url) do
           "https://jcenter.bintray.com/" \
-          "com/google/guava/guava~bad/maven-metadata.xml"
+            "com/google/guava/guava~bad/maven-metadata.xml"
         end
         let(:magnusja_metadata_url) do
           "https://dl.bintray.com/magnusja/maven/" \
-          "com/google/guava/guava~bad/maven-metadata.xml"
+            "com/google/guava/guava~bad/maven-metadata.xml"
         end
         let(:google_metadata_url) do
           "https://maven.google.com/" \
-          "com/google/guava/group-index.xml"
+            "com/google/guava/group-index.xml"
         end
 
         before do

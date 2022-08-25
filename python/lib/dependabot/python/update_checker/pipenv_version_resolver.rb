@@ -148,8 +148,8 @@ module Dependabot
 
           if error.message.match?(PIPENV_RANGE_WARNING)
             msg = "Pipenv does not support specifying Python ranges " \
-              "(see https://github.com/pypa/pipenv/issues/1050 for more " \
-              "details)."
+                  "(see https://github.com/pypa/pipenv/issues/1050 for more " \
+                  "details)."
             raise DependencyFileNotResolvable, msg
           end
 

@@ -101,7 +101,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       context "that uses a conditional" do
         let(:content) do
           "Spec.new { |s| s.version = '0.1.0'\n " \
-          "s.post_install_message = \"a\" if true }"
+            "s.post_install_message = \"a\" if true }"
         end
         it "maintains a valid conditional" do
           expect(rewrite).to eq(
@@ -113,7 +113,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       context "that assigns to the metadata hash" do
         let(:content) do
           "Spec.new { |s| s.version = '0.1.0'\n " \
-          "s.metadata['homepage'] = \"a\" }"
+            "s.metadata['homepage'] = \"a\" }"
         end
         it "removes the assignment" do
           expect(rewrite).to eq(

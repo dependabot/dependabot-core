@@ -433,7 +433,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
               to have_requested(:post, "#{repo_api_url}/labels").
               with(
                 body: "description=Pull%20requests%20that%20address%20a" \
-                    "%20security%20vulnerability&name=security&color=%23ee0701"
+                      "%20security%20vulnerability&name=security&color=%23ee0701"
               )
             expect(labeler.labels_for_pr).to include("security")
           end

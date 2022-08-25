@@ -162,7 +162,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "pinned_source.yml" }
       let(:service_pack_url) do
         "https://github.com/actions/checkout.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
       before do
         stub_request(:get, service_pack_url).
@@ -207,7 +207,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       let(:workflow_file_fixture_name) { "non_github_source.yml" }
       let(:service_pack_url) do
         "https://ghes.other.com/inactions/checkout.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
       let(:source) do
         Dependabot::Source.new(

@@ -125,7 +125,7 @@ module Dependabot
           msg +=
             if commits.count > 10
               "- Additional commits viewable in " \
-              "[compare view](#{commits_url})\n"
+                "[compare view](#{commits_url})\n"
             else
               "- See full diff in [compare view](#{commits_url})\n"
             end
@@ -176,7 +176,7 @@ module Dependabot
         def vulnerability_source_line(details)
           if details["source_url"] && details["source_name"]
             "*Sourced from [#{details['source_name']}]" \
-            "(#{details['source_url']}).*\n\n"
+              "(#{details['source_url']}).*\n\n"
           elsif details["source_name"]
             "*Sourced from #{details['source_name']}.*\n\n"
           else

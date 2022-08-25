@@ -857,7 +857,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 source: {
                   type: "git",
                   url: "https://github.com/dependabot-fixtures/" \
-                  "dependabot-test-ruby-package"
+                       "dependabot-test-ruby-package"
                 }
               }]
             end
@@ -869,7 +869,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
                 source: {
                   type: "git",
                   url: "https://github.com/dependabot-fixtures/" \
-                  "dependabot-test-ruby-package"
+                       "dependabot-test-ruby-package"
                 }
               }]
             end
@@ -1555,7 +1555,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "dependabot-test-ruby-package"
+                   "dependabot-test-ruby-package"
             }
           }]
         end
@@ -1567,7 +1567,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "dependabot-test-ruby-package"
+                   "dependabot-test-ruby-package"
             }
           }]
         end

@@ -249,9 +249,9 @@ module Dependabot
           group_id, artifact_id, _classifier = dependency.name.split(":")
 
           "#{repository_url}/" \
-          "#{group_id.tr('.', '/')}/" \
-          "#{artifact_id}/" \
-          "maven-metadata.xml"
+            "#{group_id.tr('.', '/')}/" \
+            "#{artifact_id}/" \
+            "maven-metadata.xml"
         end
 
         def dependency_files_url(repository_url, version)
@@ -261,10 +261,10 @@ module Dependabot
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
           "#{repository_url}/" \
-          "#{group_id.tr('.', '/')}/" \
-          "#{artifact_id}/" \
-          "#{version}/" \
-          "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
+            "#{group_id.tr('.', '/')}/" \
+            "#{artifact_id}/" \
+            "#{version}/" \
+            "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 
         def version_class

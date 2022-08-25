@@ -52,7 +52,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:reference) { "master" }
   let(:service_pack_url) do
     "https://github.com/actions/setup-node.git/info/refs" \
-    "?service=git-upload-pack"
+      "?service=git-upload-pack"
   end
   before do
     stub_request(:get, service_pack_url).

@@ -57,12 +57,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
   let(:maven_central_metadata_url_beans) do
     "https://repo.maven.apache.org/maven2/" \
-    "org/springframework/spring-beans/maven-metadata.xml"
+      "org/springframework/spring-beans/maven-metadata.xml"
   end
 
   let(:maven_central_metadata_url_context) do
     "https://repo.maven.apache.org/maven2/" \
-    "org/springframework/spring-context/maven-metadata.xml"
+      "org/springframework/spring-context/maven-metadata.xml"
   end
 
   before do
@@ -222,12 +222,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
 
       let(:maven_central_metadata_url_runner) do
         "https://repo.maven.apache.org/maven2/" \
-        "org/junit/platform/junit-platform-runner/maven-metadata.xml"
+          "org/junit/platform/junit-platform-runner/maven-metadata.xml"
       end
 
       let(:maven_central_metadata_url_surefire_provider) do
         "https://repo.maven.apache.org/maven2/" \
-        "org/junit/platform/junit-platform-surefire-provider/maven-metadata.xml"
+          "org/junit/platform/junit-platform-surefire-provider/maven-metadata.xml"
       end
 
       before do

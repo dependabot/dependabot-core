@@ -43,8 +43,8 @@ module Dependabot
           return unless global_registry
 
           "registry = https://#{global_registry['registry']}\n" \
-          "#{global_registry_auth_line}" \
-          "always-auth = true"
+            "#{global_registry_auth_line}" \
+            "always-auth = true"
         end
 
         def global_registry # rubocop:disable Metrics/PerceivedComplexity

@@ -666,11 +666,11 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
           "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n" \
-          "parent basecommitsha\n" \
-          "author dependabot <support@dependabot.com> 978307200 +0000\n" \
-          "committer dependabot <support@dependabot.com> 978307200 +0000\n" \
-          "\n" \
-          "Commit msg"
+            "parent basecommitsha\n" \
+            "author dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "committer dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "\n" \
+            "Commit msg"
         end
         before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
 
@@ -943,15 +943,15 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
         end
         let(:expected_comment_body) do
           "Dependabot tried to add `@greysteil` as a reviewer to this PR, " \
-          "but received the following error from GitHub:\n\n" \
-          "```\n" \
-          "POST https://api.github.com/repos/gocardless/bump/pulls" \
-          "/1347/requested_reviewers: 422 - Reviews may only be requested " \
-          "from collaborators. One or more of the users or teams you " \
-          "specified is not a collaborator of the example/repo repository. " \
-          "// See: https://developer.github.com/v3/pulls/review_requests/" \
-          "#create-a-review-request\n" \
-          "```"
+            "but received the following error from GitHub:\n\n" \
+            "```\n" \
+            "POST https://api.github.com/repos/gocardless/bump/pulls" \
+            "/1347/requested_reviewers: 422 - Reviews may only be requested " \
+            "from collaborators. One or more of the users or teams you " \
+            "specified is not a collaborator of the example/repo repository. " \
+            "// See: https://developer.github.com/v3/pulls/review_requests/" \
+            "#create-a-review-request\n" \
+            "```"
         end
 
         it "comments on the PR with details of the failure" do

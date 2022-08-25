@@ -113,7 +113,7 @@ RSpec.describe Dependabot::PullRequestCreator::PrNamePrefixer do
         end
         let(:watched_repo_url) do
           "https://gitlab.com/api/v4/projects/" \
-          "#{CGI.escape(source.repo)}/repository"
+            "#{CGI.escape(source.repo)}/repository"
         end
         let(:commits_response) { fixture("gitlab", "commits.json") }
         before do

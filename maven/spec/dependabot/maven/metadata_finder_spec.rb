@@ -42,12 +42,12 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
     subject(:source_url) { finder.source_url }
     let(:maven_url) do
       "https://repo.maven.apache.org/maven2/com/google/guava/" \
-      "guava/23.3-jre/guava-23.3-jre.pom"
+        "guava/23.3-jre/guava-23.3-jre.pom"
     end
     let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
     let(:mockk_url) do
       "https://repo.maven.apache.org/maven2/io/mockk/" \
-      "mockk/1.10.0/mockk-1.10.0.pom"
+        "mockk/1.10.0/mockk-1.10.0.pom"
     end
     let(:mockk_response) { fixture("poms", "mockk-1.10.0.pom.xml") }
 
@@ -86,11 +86,11 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       let(:dependency_version) { "3.10.0" }
       let(:maven_url) do
         "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
-        "okhttp/3.10.0/okhttp-3.10.0.pom"
+          "okhttp/3.10.0/okhttp-3.10.0.pom"
       end
       let(:parent_url) do
         "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
-        "parent/3.10.0/parent-3.10.0.pom"
+          "parent/3.10.0/parent-3.10.0.pom"
       end
 
       context "but there is in the parent" do
@@ -259,7 +259,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         end
         let(:parent_url) do
           "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
-          "parent//parent-.pom"
+            "parent//parent-.pom"
         end
         before do
           stub_request(:get, parent_url).to_return(status: 404, body: "")
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       end
       let(:maven_url) do
         "https://custom.registry.org/maven2/com/google/guava/" \
-        "guava/23.3-jre/guava-23.3-jre.pom"
+          "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")
@@ -369,7 +369,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       end
       let(:maven_url) do
         "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/" \
-        "guava/23.3-jre/guava-23.3-jre.pom"
+          "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")
@@ -438,7 +438,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
     context "when the Maven link resolves to a redirect" do
       let(:redirect_url) do
         "https://repo1.maven.org/maven2/org/mockito/mockito-core/2.11.0/" \
-        "mockito-core-2.11.0.pom"
+          "mockito-core-2.11.0.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")

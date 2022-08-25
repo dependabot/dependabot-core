@@ -33,7 +33,7 @@ module Dependabot
 
       def self.required_files_message
         "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, " \
-        "or a Pipfile."
+          "or a Pipfile."
       end
 
       private

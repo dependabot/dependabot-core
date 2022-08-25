@@ -36,7 +36,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     context "with source code hosted on GitHub" do
       let(:service_pack_url) do
         "https://github.com/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
       let(:upload_pack_fixture) { "no_tags" }
 
@@ -185,7 +185,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       let(:url) { "https://bitbucket.org/gocardless/business" }
       let(:service_pack_url) do
         "https://bitbucket.org/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
 
       let(:upload_pack_fixture) { "business" }
@@ -197,7 +197,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
       let(:url) { "http://bitbucket.org/gocardless/business" }
       let(:service_pack_url) do
         "http://bitbucket.org/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
 
       let(:upload_pack_fixture) { "business" }
@@ -223,7 +223,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
     context "with source code hosted on GitHub" do
       let(:service_pack_url) do
         "https://github.com/gocardless/business.git/info/refs" \
-        "?service=git-upload-pack"
+          "?service=git-upload-pack"
       end
       let(:upload_pack_fixture) { "no_tags" }
 
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::GitMetadataFetcher do
 
     let(:service_pack_url) do
       "https://github.com/gocardless/business.git/info/refs" \
-      "?service=git-upload-pack"
+        "?service=git-upload-pack"
     end
 
     let(:upload_pack_fixture) { "business" }

@@ -85,11 +85,11 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
       let(:struts_apps_maven_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
+          "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
       end
       let(:struts_parent_maven_url) do
         "https://repo.maven.apache.org/maven2/" \
-        "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
+          "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
       end
       let(:struts_apps_maven_response) do
         fixture("poms", "struts2-apps-2.5.10.pom")
@@ -130,13 +130,13 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
 
         let(:scala_plugins_maven_url) do
           "https://repo.maven.apache.org/maven2/" \
-          "org/scala-tools/maven-scala-plugin/2.15.2/" \
-          "maven-scala-plugin-2.15.2.pom"
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
+            "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_url) do
           "http://child-repository.jboss.org/maven2/" \
-          "org/scala-tools/maven-scala-plugin/2.15.2/" \
-          "maven-scala-plugin-2.15.2.pom"
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
+            "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_response) do
           fixture("poms", "struts2-parent-2.5.10.pom")

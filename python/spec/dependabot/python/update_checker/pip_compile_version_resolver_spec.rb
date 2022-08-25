@@ -185,7 +185,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
               to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message).
                   to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
-                  "package versions have conflicting dependencies.")
+                             "package versions have conflicting dependencies.")
               end
           end
         end

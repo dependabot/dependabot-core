@@ -314,7 +314,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-dep-name-npm-package",
+                   "test-missing-dep-name-npm-package",
               branch: nil,
               ref: ref
             }
@@ -328,7 +328,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-dep-name-npm-package",
+                   "test-missing-dep-name-npm-package",
               branch: nil,
               ref: old_ref
             }
@@ -406,7 +406,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-scoped-dep-version-npm-package",
+                   "test-missing-scoped-dep-version-npm-package",
               branch: nil,
               ref: ref
             }
@@ -420,7 +420,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-scoped-dep-version-npm-package",
+                   "test-missing-scoped-dep-version-npm-package",
               branch: nil,
               ref: old_ref
             }
@@ -449,7 +449,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-dep-version-npm-package",
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: ref
             }
@@ -463,7 +463,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/" \
-              "test-missing-dep-version-npm-package",
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: old_ref
             }

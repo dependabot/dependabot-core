@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Pub::FileParser do
       it "raises a helpful error" do
         expect { subject }.to raise_error(Dependabot::DependabotError) do |error|
           expect(error.message).to start_with("dependency_services failed: " \
-            "Error on line 2, column 1 of pubspec.yaml: Unexpected end of file.")
+                                              "Error on line 2, column 1 of pubspec.yaml: Unexpected end of file.")
         end
       end
     end
