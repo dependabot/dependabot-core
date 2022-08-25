@@ -66,7 +66,7 @@ module Dependabot
 
                   hash[group.split(":").last] ||= []
                   hash[group.split(":").last] <<
-                    dep.name + dep.requirements.first[:requirement].to_s
+                    (dep.name + dep.requirements.first[:requirement].to_s)
                 end
               end
 

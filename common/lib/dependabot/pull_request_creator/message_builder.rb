@@ -493,7 +493,7 @@ module Dependabot
 
       def switching_from_ref_to_release?(dependency)
         unless dependency.previous_version&.match?(/^[0-9a-f]{40}$/) ||
-               dependency.previous_version.nil? && previous_ref(dependency)
+               (dependency.previous_version.nil? && previous_ref(dependency))
           return false
         end
 

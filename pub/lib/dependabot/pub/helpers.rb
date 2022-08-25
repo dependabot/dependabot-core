@@ -35,7 +35,7 @@ module Dependabot
       def dependency_services_report
         sha256 = Digest::SHA256.new
         dependency_files.each do |f|
-          sha256 << f.path + "\n" + f.content + "\n"
+          sha256 << (f.path + "\n" + f.content + "\n")
         end
         hash = sha256.hexdigest
 
