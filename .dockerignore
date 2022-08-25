@@ -2,6 +2,7 @@
 /.env
 /.envrc
 /.git
+/.github
 /.vscode-server-insiders/
 /.vscode-server/
 /.vscode/
