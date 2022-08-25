@@ -2,10 +2,10 @@
 AllCops:
   DisplayCopNames: true
   Exclude:
-  - "*/vendor/**/*"
-  - "*/bin/**/*"
-  - "**/tmp/**/*"
-  - "*/spec/fixtures/**/*"
+    - "*/vendor/**/*"
+    - "*/bin/**/*"
+    - "**/tmp/**/*"
+    - "*/spec/fixtures/**/*"
   NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
@@ -102,9 +102,9 @@ Metrics/AbcSize:
   Max: 35
 Metrics/BlockLength:
   Exclude:
-  - "*/Rakefile"
-  - "**/spec/**/*"
-  - "*/dependabot-*.gemspec"
+    - "*/Rakefile"
+    - "**/spec/**/*"
+    - "*/dependabot-*.gemspec"
   Max: 35
 Metrics/ClassLength:
   Max: 350
