@@ -26,6 +26,8 @@ Layout/SpaceAroundMethodCallOperator:
   Enabled: false
 Layout/SpaceBeforeBrackets:
   Enabled: true
+Layout/LineContinuationLeadingSpace:
+  Enabled: false
 Lint/AmbiguousAssignment:
   Enabled: true
 Lint/BinaryOperatorWithIdenticalOperands:
