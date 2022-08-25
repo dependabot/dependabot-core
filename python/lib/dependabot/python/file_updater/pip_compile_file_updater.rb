@@ -71,20 +71,20 @@ module Dependabot
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
-              name_part = "pyenv exec pip-compile "\
-                          "#{pip_compile_options(filename)} -P "\
+              name_part = "pyenv exec pip-compile " \
+                          "#{pip_compile_options(filename)} -P " \
                           "#{dependency.name}"
               version_part = "#{dependency.version} #{filename}"
               # Don't escape pyenv `dep-name==version` syntax
               run_pip_compile_command(
-                "#{SharedHelpers.escape_command(name_part)}=="\
+                "#{SharedHelpers.escape_command(name_part)}==" \
                 "#{SharedHelpers.escape_command(version_part)}",
                 allow_unsafe_shell_command: true
               )
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
               run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} "\
+                "pyenv exec pip-compile #{pip_compile_options(filename)} " \
                 "#{filename}"
               )
             end
@@ -224,7 +224,7 @@ module Dependabot
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r "\
+          run_command("pyenv exec pip install -r " \
                       "#{NativeHelpers.python_requirements_path}")
         end
 

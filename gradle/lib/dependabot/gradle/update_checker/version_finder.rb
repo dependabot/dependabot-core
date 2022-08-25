@@ -137,8 +137,8 @@ module Dependabot
           url = Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO
           group_id, artifact_id = group_and_artifact_ids
 
-          dependency_metadata_url = "#{Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO}/"\
-                                    "#{group_id.tr('.', '/')}/"\
+          dependency_metadata_url = "#{Gradle::FileParser::RepositoriesFinder::GOOGLE_MAVEN_REPO}/" \
+                                    "#{group_id.tr('.', '/')}/" \
                                     "group-index.xml"
 
           @google_version_details ||=
@@ -277,9 +277,9 @@ module Dependabot
           group_id, artifact_id = group_and_artifact_ids
           group_id = "#{KOTLIN_PLUGIN_REPO_PREFIX}.#{group_id}" if kotlin_plugin?
 
-          "#{repository_url}/"\
-          "#{group_id.tr('.', '/')}/"\
-          "#{artifact_id}/"\
+          "#{repository_url}/" \
+          "#{group_id.tr('.', '/')}/" \
+          "#{artifact_id}/" \
           "maven-metadata.xml"
         end
 

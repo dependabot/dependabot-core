@@ -42,7 +42,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:maven_url) do
-      "https://repo.maven.apache.org/maven2/com/google/guava/"\
+      "https://repo.maven.apache.org/maven2/com/google/guava/" \
       "guava/23.3-jre/guava-23.3-jre.pom"
     end
     let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
@@ -75,8 +75,8 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         { type: "maven_repo", url: "https://plugins.gradle.org/m2" }
       end
       let(:maven_url) do
-        "https://plugins.gradle.org/m2/org/springframework/boot/"\
-        "org.springframework.boot.gradle.plugin/1.5.0.RELEASE/"\
+        "https://plugins.gradle.org/m2/org/springframework/boot/" \
+        "org.springframework.boot.gradle.plugin/1.5.0.RELEASE/" \
         "org.springframework.boot.gradle.plugin-1.5.0.RELEASE.pom"
       end
       let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
@@ -97,8 +97,8 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         { type: "maven_repo", url: "https://plugins.gradle.org/m2" }
       end
       let(:maven_url) do
-        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/"\
-        "org.jetbrains.kotlin.jvm.gradle.plugin/1.1.1/"\
+        "https://plugins.gradle.org/m2/org/jetbrains/kotlin/jvm/" \
+        "org.jetbrains.kotlin.jvm.gradle.plugin/1.1.1/" \
         "org.jetbrains.kotlin.jvm.gradle.plugin-1.1.1.pom"
       end
       let(:maven_response) { fixture("poms", "mockito-core-2.11.0.xml") }
@@ -128,11 +128,11 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
       let(:dependency_name) { "com.squareup.okhttp3:okhttp" }
       let(:dependency_version) { "3.10.0" }
       let(:maven_url) do
-        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
         "okhttp/3.10.0/okhttp-3.10.0.pom"
       end
       let(:parent_url) do
-        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
         "parent/3.10.0/parent-3.10.0.pom"
       end
 
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         { type: "maven_repo", url: "https://custom.registry.org/maven2" }
       end
       let(:maven_url) do
-        "https://custom.registry.org/maven2/com/google/guava/"\
+        "https://custom.registry.org/maven2/com/google/guava/" \
         "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
         { type: "maven_repo", url: "https://gitlab.com/api/v4/groups/some-group/-/packages/maven" }
       end
       let(:maven_url) do
-        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/"\
+        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/" \
         "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
@@ -365,7 +365,7 @@ RSpec.describe Dependabot::Gradle::MetadataFinder do
 
     context "when the Maven link resolves to a redirect" do
       let(:redirect_url) do
-        "https://repo1.maven.org/maven2/org/mockito/mockito-core/2.11.0/"\
+        "https://repo1.maven.org/maven2/org/mockito/mockito-core/2.11.0/" \
         "mockito-core-2.11.0.pom"
       end
       let(:maven_response) do

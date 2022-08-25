@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name         = "dependabot-common"
   spec.version      = Dependabot::VERSION
   spec.summary      = "Shared code used between Dependabot package managers"
-  spec.description  = "Automated dependency management for Ruby, JavaScript, "\
+  spec.description  = "Automated dependency management for Ruby, JavaScript, " \
                       "Python, PHP, Elixir, Rust, Java, .NET, Elm and Go"
 
   spec.author       = "Dependabot"

@@ -74,8 +74,8 @@ module Dependabot
 
         pr_name +
           if dependencies.count == 1
-            "#{dependencies.first.display_name} requirement "\
-            "#{from_version_msg(old_library_requirement(dependencies.first))}"\
+            "#{dependencies.first.display_name} requirement " \
+            "#{from_version_msg(old_library_requirement(dependencies.first))}" \
             "to #{new_library_requirement(dependencies.first)}"
           else
             names = dependencies.map(&:name)
@@ -90,18 +90,18 @@ module Dependabot
         pr_name +
           if dependencies.count == 1
             dependency = dependencies.first
-            "#{dependency.display_name} "\
-            "#{from_version_msg(previous_version(dependency))}"\
+            "#{dependency.display_name} " \
+            "#{from_version_msg(previous_version(dependency))}" \
             "to #{new_version(dependency)}"
           elsif updating_a_property?
             dependency = dependencies.first
-            "#{property_name} "\
-            "#{from_version_msg(previous_version(dependency))}"\
+            "#{property_name} " \
+            "#{from_version_msg(previous_version(dependency))}" \
             "to #{new_version(dependency)}"
           elsif updating_a_dependency_set?
             dependency = dependencies.first
-            "#{dependency_set.fetch(:group)} dependency set "\
-            "#{from_version_msg(previous_version(dependency))}"\
+            "#{dependency_set.fetch(:group)} dependency set " \
+            "#{from_version_msg(previous_version(dependency))}" \
             "to #{new_version(dependency)}"
           else
             names = dependencies.map(&:name)
@@ -174,7 +174,7 @@ module Dependabot
         return unless signoff_details.is_a?(Hash)
         return unless signoff_details[:org_name] && signoff_details[:org_email]
 
-        "On-behalf-of: @#{signoff_details[:org_name]} "\
+        "On-behalf-of: @#{signoff_details[:org_name]} " \
         "<#{signoff_details[:org_email]}>"
       end
 
@@ -200,8 +200,8 @@ module Dependabot
         return multidependency_intro if dependencies.count > 1
 
         dependency = dependencies.first
-        msg = "Bumps #{dependency_links.first} "\
-              "#{from_version_msg(previous_version(dependency))}"\
+        msg = "Bumps #{dependency_links.first} " \
+              "#{from_version_msg(previous_version(dependency))}" \
               "to #{new_version(dependency)}."
 
         msg += " This release includes the previously tagged commit." if switching_from_ref_to_release?(dependency)
@@ -220,22 +220,22 @@ module Dependabot
       def multidependency_property_intro
         dependency = dependencies.first
 
-        "Bumps `#{property_name}` "\
-        "#{from_version_msg(previous_version(dependency))}"\
+        "Bumps `#{property_name}` " \
+        "#{from_version_msg(previous_version(dependency))}" \
         "to #{new_version(dependency)}."
       end
 
       def dependency_set_intro
         dependency = dependencies.first
 
-        "Bumps `#{dependency_set.fetch(:group)}` "\
-        "dependency set #{from_version_msg(previous_version(dependency))}"\
+        "Bumps `#{dependency_set.fetch(:group)}` " \
+        "dependency set #{from_version_msg(previous_version(dependency))}" \
         "to #{new_version(dependency)}."
       end
 
       def multidependency_intro
-        "Bumps #{dependency_links[0..-2].join(', ')} "\
-        "and #{dependency_links[-1]}. These "\
+        "Bumps #{dependency_links[0..-2].join(', ')} " \
+        "and #{dependency_links[-1]}. These " \
         "dependencies needed to be updated together."
       end
 
@@ -296,9 +296,9 @@ module Dependabot
           if dep.removed?
             "\n\nRemoves `#{dep.display_name}`"
           else
-            "\n\nUpdates `#{dep.display_name}` "\
-            "#{from_version_msg(previous_version(dep))}to "\
-            "#{new_version(dep)}"\
+            "\n\nUpdates `#{dep.display_name}` " \
+            "#{from_version_msg(previous_version(dep))}to " \
+            "#{new_version(dep)}" \
             "#{metadata_links_for_dep(dep)}"
           end
         end.join
@@ -320,8 +320,8 @@ module Dependabot
           msg = if dep.removed?
                   "\nRemoves `#{dep.display_name}`"
                 else
-                  "\nUpdates `#{dep.display_name}` "\
-                        "#{from_version_msg(previous_version(dep))}"\
+                  "\nUpdates `#{dep.display_name}` " \
+                        "#{from_version_msg(previous_version(dep))}" \
                         "to #{new_version(dep)}"
                 end
 

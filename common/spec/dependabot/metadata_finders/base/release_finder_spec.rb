@@ -98,7 +98,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
 
     context "with a github repo" do
       let(:github_url) do
-        "https://api.github.com/repos/gocardless/#{dependency_name}/"\
+        "https://api.github.com/repos/gocardless/#{dependency_name}/" \
         "releases?per_page=100"
       end
 
@@ -123,8 +123,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             it "gets the right text" do
               expect(subject).
                 to eq(
-                  "## v1.8.0\n"\
-                  "- Add 2018-2027 TARGET holiday defintions\n"\
+                  "## v1.8.0\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
                   "- Add 2018-2027 Bankgirot holiday defintions"
                 )
             end
@@ -170,8 +170,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it "gets the right text" do
                 expect(subject).
                   to eq(
-                    "## v1.8.0\n"\
-                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "## v1.8.0\n" \
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
                     "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
@@ -185,8 +185,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it "still gets the right text" do
                 expect(subject).
                   to eq(
-                    "## business-1.8.0\n"\
-                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "## business-1.8.0\n" \
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
                     "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
@@ -214,8 +214,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it "falls back to the tag name" do
                 expect(subject).
                   to eq(
-                    "## v1.8.0\n"\
-                    "- Add 2018-2027 TARGET holiday defintions\n"\
+                    "## v1.8.0\n" \
+                    "- Add 2018-2027 TARGET holiday defintions\n" \
                     "- Add 2018-2027 Bankgirot holiday defintions"
                   )
               end
@@ -239,16 +239,16 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it "falls back to the tag name" do
                 expect(subject).
                   to eq(
-                    "## JasperReports 6.5.1\n"\
-                    "Body for 6.5.1\n"\
-                    "\n"\
-                    "## JasperReports 6.5.0\n"\
-                    "Body for 6.5.0\n"\
-                    "\n"\
-                    "## JasperReports 6.4.3\n"\
-                    "Body for 6.4.3\n"\
-                    "\n"\
-                    "## JasperReports 6.4.1\n"\
+                    "## JasperReports 6.5.1\n" \
+                    "Body for 6.5.1\n" \
+                    "\n" \
+                    "## JasperReports 6.5.0\n" \
+                    "Body for 6.5.0\n" \
+                    "\n" \
+                    "## JasperReports 6.4.3\n" \
+                    "Body for 6.4.3\n" \
+                    "\n" \
+                    "## JasperReports 6.4.1\n" \
                     "Body for 6.4.1"
                   )
               end
@@ -261,17 +261,17 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             it "gets the right text" do
               expect(subject).
                 to eq(
-                  "## v1.8.0\n"\
-                  "- Add 2018-2027 TARGET holiday defintions\n"\
-                  "- Add 2018-2027 Bankgirot holiday defintions\n"\
-                  "\n"\
-                  "## v1.7.0\n"\
-                  "No release notes provided.\n"\
-                  "\n"\
-                  "## v1.7.0.beta\n"\
-                  "No release notes provided.\n"\
-                  "\n"\
-                  "## v1.7.0.alpha\n"\
+                  "## v1.8.0\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions\n" \
+                  "\n" \
+                  "## v1.7.0\n" \
+                  "No release notes provided.\n" \
+                  "\n" \
+                  "## v1.7.0.beta\n" \
+                  "No release notes provided.\n" \
+                  "\n" \
+                  "## v1.7.0.alpha\n" \
                   "No release notes provided."
                 )
             end
@@ -288,19 +288,19 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
               it "gets the right text" do
                 expect(subject).
                   to eq(
-                    "## v1.7.0\n"\
-                    "No release notes provided.\n"\
-                    "\n"\
-                    "## v1.7.0.beta\n"\
-                    "No release notes provided.\n"\
-                    "\n"\
-                    "## v1.7.0.alpha\n"\
-                    "No release notes provided.\n"\
-                    "\n"\
-                    "## v1.6.0\n"\
-                    "Mad props to @greysteil and "\
-                    "[@hmarr](https://github.com/hmarr) for the "\
-                    "@angular/scope work - "\
+                    "## v1.7.0\n" \
+                    "No release notes provided.\n" \
+                    "\n" \
+                    "## v1.7.0.beta\n" \
+                    "No release notes provided.\n" \
+                    "\n" \
+                    "## v1.7.0.alpha\n" \
+                    "No release notes provided.\n" \
+                    "\n" \
+                    "## v1.6.0\n" \
+                    "Mad props to @greysteil and " \
+                    "[@hmarr](https://github.com/hmarr) for the " \
+                    "@angular/scope work - " \
                     "see [changelog](CHANGELOG.md)."
                   )
               end
@@ -313,23 +313,23 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             it "uses the version number to filter the releases" do
               expect(subject).
                 to eq(
-                  "## v1.8.0\n"\
-                  "- Add 2018-2027 TARGET holiday defintions\n"\
-                  "- Add 2018-2027 Bankgirot holiday defintions\n"\
-                  "\n"\
-                  "## v1.7.0\n"\
-                  "No release notes provided.\n"\
-                  "\n"\
-                  "## v1.7.0.beta\n"\
-                  "No release notes provided.\n"\
-                  "\n"\
-                  "## v1.7.0.alpha\n"\
-                  "No release notes provided.\n"\
-                  "\n"\
-                  "## v1.6.0\n"\
-                  "Mad props to @greysteil and "\
-                  "[@hmarr](https://github.com/hmarr) for the "\
-                  "@angular/scope work - "\
+                  "## v1.8.0\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
+                  "- Add 2018-2027 Bankgirot holiday defintions\n" \
+                  "\n" \
+                  "## v1.7.0\n" \
+                  "No release notes provided.\n" \
+                  "\n" \
+                  "## v1.7.0.beta\n" \
+                  "No release notes provided.\n" \
+                  "\n" \
+                  "## v1.7.0.alpha\n" \
+                  "No release notes provided.\n" \
+                  "\n" \
+                  "## v1.6.0\n" \
+                  "Mad props to @greysteil and " \
+                  "[@hmarr](https://github.com/hmarr) for the " \
+                  "@angular/scope work - " \
                   "see [changelog](CHANGELOG.md)."
                 )
             end
@@ -438,8 +438,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           it "gets the right text" do
             expect(subject).
               to eq(
-                "## v1.7.0\n"\
-                "- Add 2018-2027 TARGET holiday defintions\n"\
+                "## v1.7.0\n" \
+                "- Add 2018-2027 TARGET holiday defintions\n" \
                 "- Add 2018-2027 Bankgirot holiday defintions"
               )
           end
@@ -453,7 +453,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
           it "gets the right text" do
             expect(subject).
               to eq(
-                "## Flurl.Http 2.4.0\n"\
+                "## Flurl.Http 2.4.0\n" \
                 "- Improved `ConnectionLeaseTimeout` implementation (#330)"
               )
           end
@@ -492,8 +492,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
             it "gets the right text" do
               expect(subject).
                 to eq(
-                  "## v1.8.0\n"\
-                  "- Add 2018-2027 TARGET holiday defintions\n"\
+                  "## v1.8.0\n" \
+                  "- Add 2018-2027 TARGET holiday defintions\n" \
                   "- Add 2018-2027 Bankgirot holiday defintions"
                 )
             end
@@ -535,7 +535,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
       it "gets the right text" do
         expect(subject).
           to eq(
-            "## v1.4.0\n"\
+            "## v1.4.0\n" \
             "Some release notes"
           )
       end

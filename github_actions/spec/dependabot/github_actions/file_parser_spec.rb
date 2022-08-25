@@ -161,7 +161,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
     context "with a semver tag pinned to a commit" do
       let(:workflow_file_fixture_name) { "pinned_source.yml" }
       let(:service_pack_url) do
-        "https://github.com/actions/checkout.git/info/refs"\
+        "https://github.com/actions/checkout.git/info/refs" \
         "?service=git-upload-pack"
       end
       before do
@@ -206,7 +206,7 @@ RSpec.describe Dependabot::GithubActions::FileParser do
     context "with a non-github.com source" do
       let(:workflow_file_fixture_name) { "non_github_source.yml" }
       let(:service_pack_url) do
-        "https://ghes.other.com/inactions/checkout.git/info/refs"\
+        "https://ghes.other.com/inactions/checkout.git/info/refs" \
         "?service=git-upload-pack"
       end
       let(:source) do

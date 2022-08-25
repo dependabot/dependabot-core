@@ -135,8 +135,8 @@ module Dependabot
         }
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         if e.message == "Cannot detect VCS"
-          msg = e.message + " for #{dep['Path']}. Attempted to detect VCS "\
-                            "because the version looks like a git revision: "\
+          msg = e.message + " for #{dep['Path']}. Attempted to detect VCS " \
+                            "because the version looks like a git revision: " \
                             "#{dep['Version']}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end

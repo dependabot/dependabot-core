@@ -148,8 +148,8 @@ module Dependabot
         end
 
         def remote_pom_url(group_id, artifact_id, version, base_repo_url)
-          "#{base_repo_url}/"\
-          "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
+          "#{base_repo_url}/" \
+          "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
           "#{artifact_id}-#{version}.pom"
         end
 

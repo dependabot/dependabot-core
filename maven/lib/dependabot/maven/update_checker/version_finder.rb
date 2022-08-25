@@ -248,9 +248,9 @@ module Dependabot
         def dependency_metadata_url(repository_url)
           group_id, artifact_id, _classifier = dependency.name.split(":")
 
-          "#{repository_url}/"\
-          "#{group_id.tr('.', '/')}/"\
-          "#{artifact_id}/"\
+          "#{repository_url}/" \
+          "#{group_id.tr('.', '/')}/" \
+          "#{artifact_id}/" \
           "maven-metadata.xml"
         end
 
@@ -260,10 +260,10 @@ module Dependabot
                  dig(:metadata, :packaging_type)
 
           actual_classifier = classifier.nil? ? "" : "-#{classifier}"
-          "#{repository_url}/"\
-          "#{group_id.tr('.', '/')}/"\
-          "#{artifact_id}/"\
-          "#{version}/"\
+          "#{repository_url}/" \
+          "#{group_id.tr('.', '/')}/" \
+          "#{artifact_id}/" \
+          "#{version}/" \
           "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 

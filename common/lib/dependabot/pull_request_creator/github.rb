@@ -219,7 +219,7 @@ module Dependabot
         retry_count ||= 0
         retry_count += 1
         if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} "\
+          raise "Repeatedly failed to create or update branch #{branch_name} " \
                 "with commit #{commit.sha}."
         end
 
@@ -315,9 +315,9 @@ module Dependabot
 
         msg = "Dependabot tried to add #{reviewers_string} as "
         msg += reviewers.count > 1 ? "reviewers" : "a reviewer"
-        msg += " to this PR, but received the following error from GitHub:\n\n"\
+        msg += " to this PR, but received the following error from GitHub:\n\n" \
                "```\n" \
-               "#{message}\n"\
+               "#{message}\n" \
                "```"
 
         github_client_for_source.add_comment(

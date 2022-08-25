@@ -267,7 +267,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   groups: ["devDependencies"],
                   source: {
                     type: "registry",
-                    url: "https://gitlab.mydomain.com/api/v4/"\
+                    url: "https://gitlab.mydomain.com/api/v4/" \
                          "packages/npm"
                   }
                 }]
@@ -289,7 +289,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   groups: ["devDependencies"],
                   source: {
                     type: "registry",
-                    url: "https://artifactory01.mydomain.com/artifactory/api/"\
+                    url: "https://artifactory01.mydomain.com/artifactory/api/" \
                          "npm/my-repo"
                   }
                 }]
@@ -311,7 +311,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                   groups: ["dependencies"],
                   source: {
                     type: "registry",
-                    url: "https://artifactory01.mydomain.com/artifactory/api/"\
+                    url: "https://artifactory01.mydomain.com/artifactory/api/" \
                          "npm/my-repo"
                   }
                 }]
@@ -336,7 +336,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     groups: ["dependencies"],
                     source: {
                       type: "registry",
-                      url: "https://artifactory01.mydomain.com/artifactory/"\
+                      url: "https://artifactory01.mydomain.com/artifactory/" \
                            "api/npm/my-repo"
                     }
                   }]
@@ -360,7 +360,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       groups: ["dependencies"],
                       source: {
                         type: "registry",
-                        url: "https://artifactory01.mydomain.com/artifactory/"\
+                        url: "https://artifactory01.mydomain.com/artifactory/" \
                              "api/npm/my-repo"
                       }
                     }]
@@ -1121,7 +1121,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                     groups: ["devDependencies"],
                     source: {
                       type: "git",
-                      url: "https://username:password@github.com/"\
+                      url: "https://username:password@github.com/" \
                            "jonschlinkert/is-number.git",
                       branch: nil,
                       ref: "master"
@@ -1145,7 +1145,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                       groups: ["devDependencies"],
                       source: {
                         type: "git",
-                        url: "https://username:password@github.com/"\
+                        url: "https://username:password@github.com/" \
                              "jonschlinkert/is-number.git",
                         branch: nil,
                         ref: "master"

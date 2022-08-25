@@ -24,13 +24,13 @@ RSpec.describe Dependabot::DependabotError do
 
     context "with dependabot temp path" do
       let(:message) do
-        "Error (/Users/x/code/dependabot-core/cargo/tmp/dependabot_20201218-14100-y0d218) "\
+        "Error (/Users/x/code/dependabot-core/cargo/tmp/dependabot_20201218-14100-y0d218) " \
         "failed to load https://github.com/dependabot"
       end
 
       it do
         is_expected.to eq(
-          "Error (/Users/x/code/dependabot-core/cargo/dependabot_tmp_dir) "\
+          "Error (/Users/x/code/dependabot-core/cargo/dependabot_tmp_dir) " \
           "failed to load https://github.com/dependabot"
         )
       end
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::PrivateSourceAuthenticationFailure do
 
     it do
       is_expected.to eq(
-        "The following source could not be reached as it requires authentication (and any provided details were "\
+        "The following source could not be reached as it requires authentication (and any provided details were " \
         "invalid or lacked the required permissions): source"
       )
     end
@@ -121,7 +121,7 @@ RSpec.describe Dependabot::PrivateSourceAuthenticationFailure do
 
       it do
         is_expected.to eq(
-          "The following source could not be reached as it requires authentication (and any provided details were "\
+          "The following source could not be reached as it requires authentication (and any provided details were " \
           "invalid or lacked the required permissions): npm.fury.io/<redacted>"
         )
       end
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::GitDependenciesNotReachable do
 
     it do
       is_expected.to eq(
-        "The following git URLs could not be retrieved: "\
+        "The following git URLs could not be retrieved: " \
         "https://bitbucket.org/gocardless/"
       )
     end

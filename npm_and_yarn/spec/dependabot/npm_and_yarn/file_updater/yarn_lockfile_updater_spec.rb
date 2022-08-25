@@ -79,7 +79,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-dep-name-npm-package",
             branch: nil,
             ref: ref
@@ -93,7 +93,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-dep-name-npm-package",
             branch: nil,
             ref: old_ref
@@ -186,7 +186,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-scoped-dep-version-npm-package",
             branch: nil,
             ref: ref
@@ -200,7 +200,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-scoped-dep-version-npm-package",
             branch: nil,
             ref: old_ref
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-dep-version-npm-package",
             branch: nil,
             ref: ref
@@ -243,7 +243,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
           groups: ["dependencies"],
           source: {
             type: "git",
-            url: "https://github.com/dependabot-fixtures/"\
+            url: "https://github.com/dependabot-fixtures/" \
             "test-missing-dep-version-npm-package",
             branch: nil,
             ref: old_ref

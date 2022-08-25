@@ -432,7 +432,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "package_json_with_tarball_path.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                            "contents/deps/etag.tgz?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -440,7 +440,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "file_too_large.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                             "contents/deps?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "contents_js_tarball.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/git/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/git/" \
                            "blobs/2393602fac96cfe31d64f89476014124b4a13b85").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -474,7 +474,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "package_json_with_tarball_path.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                             "contents/deps?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -482,7 +482,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "contents_js_tarball.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                           "contents/deps/etag.tgz?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
@@ -504,7 +504,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "package_json_with_tar_path.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                            "contents/deps/etag.tar?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -512,7 +512,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "file_too_large.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                             "contents/deps?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -520,7 +520,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "contents_js_tar.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/git/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/git/" \
                            "blobs/2393602fac96cfe31d64f89476014124b4a13b85").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -546,7 +546,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "package_json_with_tar_path.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                             "contents/deps?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(
@@ -554,7 +554,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             body: fixture("github", "contents_js_tar.json"),
             headers: json_header
           )
-        stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+        stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                           "contents/deps/etag.tar?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(status: 404)
@@ -994,13 +994,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             )
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/bump/contents/"\
+            "https://api.github.com/repos/gocardless/bump/contents/" \
             ".npmrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/bump/contents/"\
+            "https://api.github.com/repos/gocardless/bump/contents/" \
             ".yarnrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
@@ -1427,13 +1427,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             )
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/bump/contents/"\
+            "https://api.github.com/repos/gocardless/bump/contents/" \
             ".npmrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/bump/contents/"\
+            "https://api.github.com/repos/gocardless/bump/contents/" \
             ".yarnrc?ref=sha"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(status: 404)
@@ -1449,7 +1449,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           before do
             stub_request(
               :get,
-              "https://api.github.com/repos/gocardless/bump/contents/"\
+              "https://api.github.com/repos/gocardless/bump/contents/" \
               ".npmrc?ref=sha"
             ).with(headers: { "Authorization" => "token token" }).
               to_return(

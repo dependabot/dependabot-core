@@ -34,7 +34,7 @@ module Dependabot
         GIT_REFERENCE_NOT_FOUND_REGEX =
           %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
           freeze
-        PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out"\
+        PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
         PIPENV_INSTALLATION_ERROR_REGEX =
@@ -136,19 +136,19 @@ module Dependabot
           end
 
           if error.message.match?(UNSUPPORTED_DEP_REGEX)
-            msg = "Dependabot detected a dependency that can't be built on "\
-                  "linux. Currently, all Dependabot builds happen on linux "\
-                  "boxes, so there is no way for Dependabot to resolve your "\
-                  "dependency files.\n\n"\
-                  "Unless you think Dependabot has made a mistake (please "\
-                  "tag us if so) you may wish to disable Dependabot on this "\
+            msg = "Dependabot detected a dependency that can't be built on " \
+                  "linux. Currently, all Dependabot builds happen on linux " \
+                  "boxes, so there is no way for Dependabot to resolve your " \
+                  "dependency files.\n\n" \
+                  "Unless you think Dependabot has made a mistake (please " \
+                  "tag us if so) you may wish to disable Dependabot on this " \
                   "repo."
             raise DependencyFileNotResolvable, msg
           end
 
           if error.message.match?(PIPENV_RANGE_WARNING)
-            msg = "Pipenv does not support specifying Python ranges "\
-              "(see https://github.com/pypa/pipenv/issues/1050 for more "\
+            msg = "Pipenv does not support specifying Python ranges " \
+              "(see https://github.com/pypa/pipenv/issues/1050 for more " \
               "details)."
             raise DependencyFileNotResolvable, msg
           end
@@ -159,7 +159,7 @@ module Dependabot
 
           if error.message.include?("SyntaxError: invalid syntax")
             raise DependencyFileNotResolvable,
-                  "SyntaxError while installing dependencies. Is one of the dependencies not Python 3 compatible? "\
+                  "SyntaxError while installing dependencies. Is one of the dependencies not Python 3 compatible? " \
                   "Pip v21 no longer supports Python 2."
           end
 
@@ -272,9 +272,9 @@ module Dependabot
           dependency_name = error_message.match(PIPENV_INSTALLATION_ERROR_REGEX).named_captures["name"]
           raise unless dependency_name
 
-          msg = "Pipenv failed to install \"#{dependency_name}\". This could be caused by missing system "\
-                "dependencies that can't be installed by Dependabot or required installation flags.\n\n"\
-                "Error output from running \"pipenv lock\":\n"\
+          msg = "Pipenv failed to install \"#{dependency_name}\". This could be caused by missing system " \
+                "dependencies that can't be installed by Dependabot or required installation flags.\n\n" \
+                "Error output from running \"pipenv lock\":\n" \
                 "#{clean_error_message(error_message)}"
 
           raise DependencyFileNotResolvable, msg
@@ -324,7 +324,7 @@ module Dependabot
           requirements_path = NativeHelpers.python_requirements_path
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r "\
+          run_command("pyenv exec pip install -r " \
                       "#{requirements_path}")
         end
 
@@ -429,9 +429,9 @@ module Dependabot
 
           # Otherwise we have to raise, giving details of the Python versions
           # that Dependabot supports
-          msg = "Dependabot detected the following Python requirement "\
-                "for your project: '#{requirement_string}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirement " \
+                "for your project: '#{requirement_string}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end

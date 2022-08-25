@@ -912,7 +912,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                   groups: [],
                   source: {
                     type: "git",
-                    url: "https://github.com/dependabot-fixtures/"\
+                    url: "https://github.com/dependabot-fixtures/" \
                          "ruby-dummy-git-dependency",
                     branch: nil,
                     ref: "v1.0.0"
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
                 stub_request(
                   :get, rubygems_url + "versions/dummy-git-dependency.json"
                 ).to_return(status: 404)
-                url = "https://github.com/dependabot-fixtures/"\
+                url = "https://github.com/dependabot-fixtures/" \
                       "ruby-dummy-git-dependency.git"
                 git_header = {
                   "content-type" =>
@@ -1007,7 +1007,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               groups: [],
               source: {
                 type: "git",
-                url: "https://github.com/dependabot-fixtures/"\
+                url: "https://github.com/dependabot-fixtures/" \
                 "dependabot-test-ruby-package",
                 branch: "master",
                 ref: "master"
@@ -1024,7 +1024,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             stub_request(
               :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
             ).to_return(status: 404)
-            git_url = "https://github.com/dependabot-fixtures/"\
+            git_url = "https://github.com/dependabot-fixtures/" \
               "dependabot-test-ruby-package.git"
             git_header = {
               "content-type" => "application/x-git-upload-pack-advertisement"
@@ -1162,7 +1162,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           before do
             stub_request(
               :get,
-              "https://github.com/no-exist-sorry/prius.git/info/refs"\
+              "https://github.com/no-exist-sorry/prius.git/info/refs" \
               "?service=git-upload-pack"
             ).with(headers: { "Authorization" => "Basic #{token}" }).
               to_return(status: 401)
@@ -1334,7 +1334,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
@@ -1360,7 +1360,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_return(status: 401)
@@ -1386,7 +1386,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
         before do
           stub_request(
             :get,
-            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs"\
+            "https://github.com/dependabot-fixtures/does-not-exist.git/info/refs" \
             "?service=git-upload-pack"
           ).with(headers: { "Authorization" => "Basic #{token}" }).
             to_raise(Excon::Error::Timeout)
@@ -1592,7 +1592,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
             groups: [:default],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
+              url: "https://github.com/dependabot-fixtures/" \
               "dependabot-test-ruby-package",
               branch: "master",
               ref: "master"
@@ -1607,7 +1607,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
           stub_request(
             :get, rubygems_url + "versions/dependabot-test-ruby-package.json"
           ).to_return(status: 404)
-          git_url = "https://github.com/dependabot-fixtures/"\
+          git_url = "https://github.com/dependabot-fixtures/" \
             "dependabot-test-ruby-package.git"
           git_header = {
             "content-type" => "application/x-git-upload-pack-advertisement"

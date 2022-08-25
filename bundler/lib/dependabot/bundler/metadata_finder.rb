@@ -124,7 +124,7 @@ module Dependabot
         return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
 
         gemspec_uri =
-          "#{registry_url}quick/Marshal.4.8/"\
+          "#{registry_url}quick/Marshal.4.8/" \
           "#{dependency.name}-#{dependency.version}.gemspec.rz"
 
         response =

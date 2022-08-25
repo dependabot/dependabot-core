@@ -84,11 +84,11 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:callsite_pom) { base_pom }
 
       let(:struts_apps_maven_url) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
       end
       let(:struts_parent_maven_url) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
       end
       let(:struts_apps_maven_response) do
@@ -129,13 +129,13 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
         let(:scala_plugins_maven_url) do
-          "https://repo.maven.apache.org/maven2/"\
-          "org/scala-tools/maven-scala-plugin/2.15.2/"\
+          "https://repo.maven.apache.org/maven2/" \
+          "org/scala-tools/maven-scala-plugin/2.15.2/" \
           "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_url) do
-          "http://child-repository.jboss.org/maven2/"\
-          "org/scala-tools/maven-scala-plugin/2.15.2/"\
+          "http://child-repository.jboss.org/maven2/" \
+          "org/scala-tools/maven-scala-plugin/2.15.2/" \
           "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_response) do

@@ -18,7 +18,7 @@ module Dependabot
         # In theory we should check the artifact type and either look in
         # <repositories> or <pluginRepositories>. In practice it's unlikely
         # anyone makes this distinction.
-        REPOSITORY_SELECTOR = "repositories > repository, "\
+        REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
 
         # The Central Repository is included in the Super POM, which is
@@ -137,8 +137,8 @@ module Dependabot
         end
 
         def remote_pom_url(group_id, artifact_id, version, base_repo_url)
-          "#{base_repo_url}/"\
-          "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
+          "#{base_repo_url}/" \
+          "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
           "#{artifact_id}-#{version}.pom"
         end
 

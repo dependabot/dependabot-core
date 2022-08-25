@@ -114,13 +114,13 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           let(:pom) { child_pom }
 
           let(:central_url) do
-            "https://repo.maven.apache.org/maven2/"\
-            "org/scala-tools/maven-scala-plugin/2.15.2/"\
+            "https://repo.maven.apache.org/maven2/" \
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
             "maven-scala-plugin-2.15.2.pom"
           end
           let(:custom_url) do
-            "http://child-repository.jboss.org/maven2/"\
-            "org/scala-tools/maven-scala-plugin/2.15.2/"\
+            "http://child-repository.jboss.org/maven2/" \
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
             "maven-scala-plugin-2.15.2.pom"
           end
 

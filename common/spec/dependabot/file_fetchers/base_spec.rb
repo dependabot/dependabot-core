@@ -474,7 +474,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 headers: { "content-type" => "application/json" }
               )
 
-            sub_url = "https://api.github.com/repos/dependabot/"\
+            sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
             stub_request(:get, sub_url + "?ref=sha2").
               with(headers: { "Authorization" => "token token" }).
@@ -541,7 +541,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 headers: { "content-type" => "application/json" }
               )
 
-            sub_url = "https://api.github.com/repos/dependabot/"\
+            sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
             stub_request(:get, sub_url + "?ref=sha2").
               with(headers: { "Authorization" => "token token" }).
@@ -671,7 +671,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file is too big to download" do
         let(:blob_url) do
-          "https://api.github.com/repos/#{repo}/git/blobs/"\
+          "https://api.github.com/repos/#{repo}/git/blobs/" \
           "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
         before do

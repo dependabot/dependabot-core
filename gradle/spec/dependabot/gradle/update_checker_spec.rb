@@ -11,7 +11,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
   it_behaves_like "an update checker"
 
   let(:maven_central_metadata_url) do
-    "https://repo.maven.apache.org/maven2/"\
+    "https://repo.maven.apache.org/maven2/" \
     "com/google/guava/guava/maven-metadata.xml"
   end
   let(:version_class) { Dependabot::Gradle::Version }
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the version comes from a property" do
       let(:buildfile_fixture_name) { "single_property_build.gradle" }
       let(:maven_central_metadata_url) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the dependency comes from a dependency set" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
       let(:maven_central_metadata_url) do
-        "https://jcenter.bintray.com/"\
+        "https://jcenter.bintray.com/" \
         "com/google/protobuf/protoc/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the version comes from a property" do
       let(:buildfile_fixture_name) { "single_property_build.gradle" }
       let(:maven_central_metadata_url) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -220,7 +220,7 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
     context "when the dependency comes from a dependency set" do
       let(:buildfile_fixture_name) { "dependency_set.gradle" }
       let(:maven_central_metadata_url) do
-        "https://jcenter.bintray.com/"\
+        "https://jcenter.bintray.com/" \
         "com/google/protobuf/protoc/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -350,11 +350,11 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
       let(:dependency_version) { "1.1.4-3" }
       let(:maven_central_metadata_url_gradle_plugin) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
       end
       let(:maven_central_metadata_url_stdlib) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do
@@ -419,15 +419,15 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       let(:dependency_version) { "3.6.1" }
 
       let(:jcenter_metadata_url_protoc) do
-        "https://jcenter.bintray.com/"\
+        "https://jcenter.bintray.com/" \
         "com/google/protobuf/protoc/maven-metadata.xml"
       end
       let(:jcenter_metadata_url_protobuf_java) do
-        "https://jcenter.bintray.com/"\
+        "https://jcenter.bintray.com/" \
         "com/google/protobuf/protobuf-java/maven-metadata.xml"
       end
       let(:jcenter_metadata_url_protobuf_java_util) do
-        "https://jcenter.bintray.com/"\
+        "https://jcenter.bintray.com/" \
         "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
       end
 
@@ -477,11 +477,11 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
       let(:dependency_version) { "1.1.4-3" }
       let(:maven_central_metadata_url_gradle_plugin) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
       end
       let(:maven_central_metadata_url_stdlib) do
-        "https://repo.maven.apache.org/maven2/"\
+        "https://repo.maven.apache.org/maven2/" \
         "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
       end
       let(:dependency_requirements) do

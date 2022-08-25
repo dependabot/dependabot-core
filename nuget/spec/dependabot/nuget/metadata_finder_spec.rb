@@ -39,8 +39,8 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:nuget_url) do
-      "https://api.nuget.org/v3-flatcontainer/"\
-      "microsoft.extensions.dependencymodel/2.1.0/"\
+      "https://api.nuget.org/v3-flatcontainer/" \
+      "microsoft.extensions.dependencymodel/2.1.0/" \
       "microsoft.extensions.dependencymodel.nuspec"
     end
     let(:nuget_response) do
@@ -74,16 +74,16 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           type: "nuget_repo",
           url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
           source_url: nil,
-          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/"\
-                      "flatcontainer/microsoft.extensions."\
-                      "dependencymodel/2.1.0/"\
+          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                      "flatcontainer/microsoft.extensions." \
+                      "dependencymodel/2.1.0/" \
                       "microsoft.extensions.dependencymodel.nuspec"
         }
       end
 
       let(:nuget_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/"\
-        "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/"\
+        "https://www.myget.org/F/exceptionless/api/v3/" \
+        "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/" \
         "microsoft.extensions.dependencymodel.nuspec"
       end
 
@@ -118,8 +118,8 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         end
 
         let(:nuget_url) do
-          "https://api.nuget.org/v3-flatcontainer/"\
-          "microsoft.extensions.dependencymodel/2.1.0/"\
+          "https://api.nuget.org/v3-flatcontainer/" \
+          "microsoft.extensions.dependencymodel/2.1.0/" \
           "microsoft.extensions.dependencymodel.nuspec"
         end
 
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
             "password" => "token"
           }, {
             "type" => "nuget_feed",
-            "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+            "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
                      "index.json"
           }]
         end
@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
               "password" => "token"
             }, {
               "type" => "nuget_feed",
-              "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+              "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
                        "index.json",
               "token" => "my:passw0rd"
             }]

@@ -141,14 +141,14 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     let(:dependency_previous_version) { "1.0.0" }
 
     let(:expected_pruned_changelog) do
-      "## 1.4.0 - December 24, 2014\n\n"\
-      "- Add support for custom calendar load paths\n"\
-      "- Remove the 'sepa' calendar\n\n\n"\
-      "## 1.3.0 - December 2, 2014\n\n"\
-      "- Add `Calendar#previous_business_day`\n\n\n"\
-      "## 1.2.0 - November 15, 2014\n\n"\
-      "- Add TARGET calendar\n\n\n"\
-      "## 1.1.0 - September 30, 2014\n\n"\
+      "## 1.4.0 - December 24, 2014\n\n" \
+      "- Add support for custom calendar load paths\n" \
+      "- Remove the 'sepa' calendar\n\n\n" \
+      "## 1.3.0 - December 2, 2014\n\n" \
+      "- Add `Calendar#previous_business_day`\n\n\n" \
+      "## 1.2.0 - November 15, 2014\n\n" \
+      "- Add TARGET calendar\n\n\n" \
+      "## 1.1.0 - September 30, 2014\n\n" \
       "- Add 2015 holiday definitions"
     end
 
@@ -183,9 +183,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
       # Ideally we'd prune the 1.10.0 entry off, but it's tricky.
       let(:expected_pruned_changelog) do
-        "## 1.10.0 - September 20, 2017\n\n"\
-        "- Add 2018-2019 Betalingsservice holiday definitions\n\n"\
-        "## 1.11.1 - December 20, 2017\n\n"\
+        "## 1.10.0 - September 20, 2017\n\n" \
+        "- Add 2018-2019 Betalingsservice holiday definitions\n\n" \
+        "## 1.11.1 - December 20, 2017\n\n" \
         "- Add 2017-2018 BECS holiday definitions"
       end
 
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it "gets the right content" do
         expect(pruned_text).
           to eq(
-            "* 2.9.1\n"\
+            "* 2.9.1\n" \
             "    * IPv6 support. Thanks https://github.com/amashinchi"
           )
       end
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it "includes the changelog up to the new version" do
         expect(pruned_text).to start_with("## v2.2.0")
         expect(pruned_text).to end_with(
-          "Refer [here](https://github.com/actions/checkout/blob/v1/"\
+          "Refer [here](https://github.com/actions/checkout/blob/v1/" \
           "CHANGELOG.md) for the V1 changelog"
         )
       end

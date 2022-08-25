@@ -169,7 +169,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with source code hosted on GitHub" do
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
         let(:service_pack_url) do
-          "https://github.com/gocardless/business.git/info/refs"\
+          "https://github.com/gocardless/business.git/info/refs" \
           "?service=git-upload-pack"
         end
         before do
@@ -289,11 +289,11 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
-          "https://bitbucket.org/gocardless/business.git/info/refs"\
+          "https://bitbucket.org/gocardless/business.git/info/refs" \
           "?service=git-upload-pack"
         end
         let(:bitbucket_url) do
-          "https://api.bitbucket.org/2.0/repositories/"\
+          "https://api.bitbucket.org/2.0/repositories/" \
           "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
         before do
@@ -711,7 +711,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               let(:source) do
                 {
                   type: "git",
-                  url: "https://x-access-token:token@bitbucket.org/gocardless/"\
+                  url: "https://x-access-token:token@bitbucket.org/gocardless/" \
                        "business",
                   branch: "master",
                   ref: "master"

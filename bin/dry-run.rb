@@ -193,7 +193,7 @@ option_parse = OptionParser.new do |opts|
     $options[:reject_external_code] = true
   end
 
-  opts_req_desc = "Options: auto, widen_ranges, bump_versions or "\
+  opts_req_desc = "Options: auto, widen_ranges, bump_versions or " \
                          "bump_versions_if_necessary"
   opts.on("--requirements-update-strategy STRATEGY", opts_req_desc) do |value|
     value = nil if value == "auto"
@@ -208,7 +208,7 @@ option_parse = OptionParser.new do |opts|
     $options[:clone] = true
   end
 
-  opts_opt_desc = "Comma separated list of updater options, "\
+  opts_opt_desc = "Comma separated list of updater options, " \
                   "available options depend on PACKAGE_MANAGER"
   opts.on("--updater-options OPTIONS", opts_opt_desc) do |value|
     $options[:updater_options] = value.split(",").map do |o|
@@ -320,7 +320,7 @@ def cached_dependency_files_read
   end
 
   if all_files_cached && $options[:cache_steps].include?("files")
-    puts "=> reading dependency files from cache manifest: "\
+    puts "=> reading dependency files from cache manifest: " \
          "./#{cache_manifest_path}"
     cached_dependency_files.map do |file|
       file_content = File.read(File.join(cache_dir, file["name"]))
@@ -335,7 +335,7 @@ def cached_dependency_files_read
     end
   else
     if $options[:cache_steps].include?("files")
-      puts "=> failed to read all dependency files from cache manifest: "\
+      puts "=> failed to read all dependency files from cache manifest: " \
            "./#{cache_manifest_path}"
     end
     puts "=> fetching dependency files"
@@ -454,7 +454,7 @@ def handle_dependabot_error(error:, dependency:)
       raise error
     end
 
-  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:"error-type")} "\
+  puts " => handled error whilst updating #{dependency.name}: #{error_details.fetch(:"error-type")} " \
        "#{error_details.fetch(:"error-detail")}"
 end
 # rubocop:enable Metrics/MethodLength
@@ -658,8 +658,8 @@ dependencies.each do |dep|
     if checker.version_class.correct?(checker.dependency.version)
       puts "    (no security update needed as it's not vulnerable)"
     else
-      puts "    (can't update vulnerable dependencies for "\
-           "projects without a lockfile as the currently "\
+      puts "    (can't update vulnerable dependencies for " \
+           "projects without a lockfile as the currently " \
            "installed version isn't known 🚨)"
     end
     next
@@ -667,7 +667,7 @@ dependencies.each do |dep|
 
   if checker.vulnerable?
     if checker.lowest_security_fix_version
-      puts " => earliest available non-vulnerable version is "\
+      puts " => earliest available non-vulnerable version is " \
            "#{checker.lowest_security_fix_version}"
     else
       puts " => there is no available non-vulnerable version"
@@ -699,7 +699,7 @@ dependencies.each do |dep|
   puts " => requirements to unlock: #{requirements_to_unlock}"
 
   if checker.respond_to?(:requirements_update_strategy)
-    puts " => requirements update strategy: "\
+    puts " => requirements update strategy: " \
          "#{checker.requirements_update_strategy}"
   end
 
@@ -712,7 +712,7 @@ dependencies.each do |dep|
 
     conflicting_dependencies = checker.conflicting_dependencies
     if conflicting_dependencies.any?
-      puts " => The update is not possible because of the following conflicting "\
+      puts " => The update is not possible because of the following conflicting " \
         "dependencies:"
 
       conflicting_dependencies.each do |conflicting_dep|

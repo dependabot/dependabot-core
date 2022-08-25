@@ -138,8 +138,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
 
         context "within a source block" do
           let(:content) do
-            "source 'https://example.com' do\n"\
-            "  ruby \"2.2.0\"\n"\
+            "source 'https://example.com' do\n" \
+            "  ruby \"2.2.0\"\n" \
             "end"
           end
           it { is_expected.to include("ruby '1.9.3'\n") }

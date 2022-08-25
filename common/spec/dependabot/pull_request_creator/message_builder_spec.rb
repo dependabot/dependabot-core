@@ -62,39 +62,39 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   def commits_details(base:, head:)
-    "<details>\n"\
-    "<summary>Commits</summary>\n"\
-    "<ul>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "26f4887ec647493f044836363537e329d9d213aa\"><code>26f4887</code></a> "\
-    "Bump version to v1.4.0</li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> "\
-    "[Fix <a href=\"https://redirect.github.com/gocardless/"\
-    "business/issues/9\">#9</a>] Allow custom calendars</li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> "\
-    "Allow custom calendars</li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "5555535ff2aa9d7ce0403d7fd4aa010d94723076\"><code>5555535</code>"\
-    "</a></li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> "\
-    "Spacing: <a href=\"https://redirect.github.com/my/repo/"\
-    "pull/5\">my/repo#5</a></li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> "\
-    "Merge pull request <a href=\"https://redirect.github.com/"\
-    "gocardless/business/issues/8\">#8</a> "\
-    "from gocardless/rename-sepa-to-ecb</li>\n"\
-    "<li><a href=\"https://github.com/gocardless/business/commit/"\
-    "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> "\
-    "<a href=\"https://redirect.github.com/gocardless/business/"\
-    "issues/12\">12</a> Remove <em>SEPA</em> "\
-    "calendar (replaced by TARGET)</li>\n"\
-    "<li>See full diff in <a href=\"https://github.com/gocardless/business/"\
-    "compare/#{base}...#{head}\">compare view</a></li>\n"\
-    "</ul>\n"\
+    "<details>\n" \
+    "<summary>Commits</summary>\n" \
+    "<ul>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "26f4887ec647493f044836363537e329d9d213aa\"><code>26f4887</code></a> " \
+    "Bump version to v1.4.0</li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "7abe4c2dc0161904c40c221a48999d12995fbea7\"><code>7abe4c2</code></a> " \
+    "[Fix <a href=\"https://redirect.github.com/gocardless/" \
+    "business/issues/9\">#9</a>] Allow custom calendars</li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> " \
+    "Allow custom calendars</li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "5555535ff2aa9d7ce0403d7fd4aa010d94723076\"><code>5555535</code>" \
+    "</a></li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "0bfb8c3f0d2701abf9248185beeb8adf643374f6\"><code>0bfb8c3</code></a> " \
+    "Spacing: <a href=\"https://redirect.github.com/my/repo/" \
+    "pull/5\">my/repo#5</a></li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "a5970daf0b824e4c3974e57474b6cf9e39a11d0f\"><code>a5970da</code></a> " \
+    "Merge pull request <a href=\"https://redirect.github.com/" \
+    "gocardless/business/issues/8\">#8</a> " \
+    "from gocardless/rename-sepa-to-ecb</li>\n" \
+    "<li><a href=\"https://github.com/gocardless/business/commit/" \
+    "d2eb29beda934c14220146c82f830de2edd63a25\"><code>d2eb29b</code></a> " \
+    "<a href=\"https://redirect.github.com/gocardless/business/" \
+    "issues/12\">12</a> Remove <em>SEPA</em> " \
+    "calendar (replaced by TARGET)</li>\n" \
+    "<li>See full diff in <a href=\"https://github.com/gocardless/business/" \
+    "compare/#{base}...#{head}\">compare view</a></li>\n" \
+    "</ul>\n" \
     "</details>\n"
   end
 
@@ -194,7 +194,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
           end
           let(:watched_repo_url) do
-            "https://gitlab.com/api/v4/projects/"\
+            "https://gitlab.com/api/v4/projects/" \
             "#{CGI.escape(source.repo)}/repository"
           end
           let(:commits_response) { fixture("gitlab", "commits.json") }
@@ -246,7 +246,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             it "has the right name" do
               expect(pr_name).
                 to eq(
-                  "Bump springframework.version "\
+                  "Bump springframework.version " \
                   "from 4.3.12.RELEASE to 4.3.15.RELEASE"
                 )
             end
@@ -289,7 +289,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             it "has the right name" do
               expect(pr_name).
                 to eq(
-                  "Bump springframework dependency set "\
+                  "Bump springframework dependency set " \
                   "from 4.3.12.RELEASE to 4.3.15.RELEASE"
                 )
             end
@@ -375,7 +375,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 groups: [],
                 source: {
                   type: "digest",
-                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                           "fc38288cf73aa07485005"
                 }
               }],
@@ -385,7 +385,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 groups: [],
                 source: {
                   type: "digest",
-                  digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\
+                  digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                           "aaaaaaaaaaaaaaaaaaaaa"
                 }
               }]
@@ -647,7 +647,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "includes the directory" do
             expect(pr_name).
-              to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0 "\
+              to eq("Update business requirement from ~> 1.4.0 to ~> 1.5.0 " \
                     "in /directory")
           end
         end
@@ -663,7 +663,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "uses an angular commit prefix" do
           expect(pr_name).
-            to eq("chore(deps): update business requirement from ~> 1.4.0 "\
+            to eq("chore(deps): update business requirement from ~> 1.4.0 " \
                   "to ~> 1.5.0")
         end
 
@@ -683,7 +683,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "uses an eslint commit prefix" do
           expect(pr_name).
-            to eq("Upgrade: Update business requirement from ~> 1.4.0 "\
+            to eq("Upgrade: Update business requirement from ~> 1.4.0 " \
                   "to ~> 1.5.0")
         end
 
@@ -718,7 +718,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200,
                   body: fixture("github", "business_releases.json"),
                   headers: json_header)
-      stub_request(:get, "https://api.github.com/repos/gocardless/"\
+      stub_request(:get, "https://api.github.com/repos/gocardless/" \
                          "business/contents/CHANGELOG.md?ref=master").
         to_return(status: 200,
                   body: fixture("github", "changelog_contents.json"),
@@ -735,7 +735,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         to_return(status: 200, body: fixture("ruby", "rubygems_response.json"))
 
       service_pack_url =
-        "https://github.com/gocardless/business.git/info/refs"\
+        "https://github.com/gocardless/business.git/info/refs" \
         "?service=git-upload-pack"
       stub_request(:get, service_pack_url).
         to_return(
@@ -751,21 +751,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it "has the right text" do
         expect(pr_message).
           to eq(
-            "Bumps [business](https://github.com/gocardless/business) "\
-            "from 1.4.0 to 1.5.0.\n"\
-            "<details>\n"\
-            "<summary>Changelog</summary>\n"\
-            "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-            "business/blob/master/CHANGELOG.md\">"\
-            "business's changelog</a>.</em></p>\n"\
-            "<blockquote>\n"\
-            "<h2>1.5.0 - June 2, 2015</h2>\n"\
-            "<ul>\n"\
-            "<li>Add 2016 holiday definitions</li>\n"\
-            "</ul>\n"\
-            "</blockquote>\n"\
-            "</details>\n"\
-            "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+            "Bumps [business](https://github.com/gocardless/business) " \
+            "from 1.4.0 to 1.5.0.\n" \
+            "<details>\n" \
+            "<summary>Changelog</summary>\n" \
+            "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+            "business/blob/master/CHANGELOG.md\">" \
+            "business's changelog</a>.</em></p>\n" \
+            "<blockquote>\n" \
+            "<h2>1.5.0 - June 2, 2015</h2>\n" \
+            "<ul>\n" \
+            "<li>Add 2016 holiday definitions</li>\n" \
+            "</ul>\n" \
+            "</blockquote>\n" \
+            "</details>\n" \
+            "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
             "<br />\n"
           )
       end
@@ -778,21 +778,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                     gsub("redirect.github.com", "github.com")
           expect(pr_message).
             to eq(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "from 1.4.0 to 1.5.0.\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits}"\
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "from 1.4.0 to 1.5.0.\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits}" \
               "<br />\n"
             )
         end
@@ -800,7 +800,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "with a relative link in the changelog" do
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+          stub_request(:get, "https://api.github.com/repos/gocardless/" \
                              "business/contents/CHANGELOG.md?ref=master").
             to_return(
               status: 200,
@@ -812,23 +812,23 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "has the right text" do
           expect(pr_message).
             to eq(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "from 1.4.0 to 1.5.0.\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "<li>See <a href=\"https://github.com/gocardless/business/blob/"\
-              "master/holiday/README.md\">holiday-deps</a></li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "from 1.4.0 to 1.5.0.\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "<li>See <a href=\"https://github.com/gocardless/business/blob/" \
+              "master/holiday/README.md\">holiday-deps</a></li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
               "<br />\n"
             )
         end
@@ -870,7 +870,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           stub_request(
             :get,
-            "#{business_repo_url}/commits?sha="\
+            "#{business_repo_url}/commits?sha=" \
             "2468a02a6230e59ed1232d95d1ad3ef157195b03"
           ).to_return(
             status: 200,
@@ -879,7 +879,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
           stub_request(
             :get,
-            "#{business_repo_url}/commits?sha="\
+            "#{business_repo_url}/commits?sha=" \
             "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
           ).to_return(
             status: 200,
@@ -894,9 +894,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             head: "cff701b3bfb182afc99a85657d7c9f3d6c1ccce2"
           )
           expect(pr_message).to eq(
-            "Bumps [business](https://github.com/gocardless/business) "\
-            "from `2468a02` to `cff701b`.\n"\
-            "#{commits_details}"\
+            "Bumps [business](https://github.com/gocardless/business) " \
+            "from `2468a02` to `cff701b`.\n" \
+            "#{commits_details}" \
             "<br />\n"
           )
         end
@@ -912,21 +912,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
             expect(pr_message).
               to eq(
-                "Bumps [business](https://github.com/gocardless/business) "\
-                "from v1.0.0 to v1.1.0.\n"\
-                "<details>\n"\
-                "<summary>Changelog</summary>\n"\
-                "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-                "business/blob/master/CHANGELOG.md\">"\
-                "business's changelog</a>.</em></p>\n"\
-                "<blockquote>\n"\
-                "<h2>1.1.0 - September 30, 2014</h2>\n"\
-                "<ul>\n"\
-                "<li>Add 2015 holiday definitions</li>\n"\
-                "</ul>\n"\
-                "</blockquote>\n"\
-                "</details>\n"\
-                "#{commits_details}"\
+                "Bumps [business](https://github.com/gocardless/business) " \
+                "from v1.0.0 to v1.1.0.\n" \
+                "<details>\n" \
+                "<summary>Changelog</summary>\n" \
+                "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+                "business/blob/master/CHANGELOG.md\">" \
+                "business's changelog</a>.</em></p>\n" \
+                "<blockquote>\n" \
+                "<h2>1.1.0 - September 30, 2014</h2>\n" \
+                "<ul>\n" \
+                "<li>Add 2015 holiday definitions</li>\n" \
+                "</ul>\n" \
+                "</blockquote>\n" \
+                "</details>\n" \
+                "#{commits_details}" \
                 "<br />\n"
               )
           end
@@ -950,21 +950,21 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               )
               expect(pr_message).
                 to eq(
-                  "Bumps [business](https://github.com/gocardless/business) "\
-                  "from v1.0.0 to v1.1.0.\n"\
-                  "<details>\n"\
-                  "<summary>Changelog</summary>\n"\
-                  "<p><em>Sourced from <a href=\"https://github.com/"\
-                  "gocardless/business/blob/master/CHANGELOG.md\">"\
-                  "business's changelog</a>.</em></p>\n"\
-                  "<blockquote>\n"\
-                  "<h2>1.1.0 - September 30, 2014</h2>\n"\
-                  "<ul>\n"\
-                  "<li>Add 2015 holiday definitions</li>\n"\
-                  "</ul>\n"\
-                  "</blockquote>\n"\
-                  "</details>\n"\
-                  "#{commits_details}"\
+                  "Bumps [business](https://github.com/gocardless/business) " \
+                  "from v1.0.0 to v1.1.0.\n" \
+                  "<details>\n" \
+                  "<summary>Changelog</summary>\n" \
+                  "<p><em>Sourced from <a href=\"https://github.com/" \
+                  "gocardless/business/blob/master/CHANGELOG.md\">" \
+                  "business's changelog</a>.</em></p>\n" \
+                  "<blockquote>\n" \
+                  "<h2>1.1.0 - September 30, 2014</h2>\n" \
+                  "<ul>\n" \
+                  "<li>Add 2015 holiday definitions</li>\n" \
+                  "</ul>\n" \
+                  "</blockquote>\n" \
+                  "</details>\n" \
+                  "#{commits_details}" \
                   "<br />\n"
                 )
             end
@@ -1028,7 +1028,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           stub_request(
             :get,
-            "#{business_repo_url}/commits?sha="\
+            "#{business_repo_url}/commits?sha=" \
             "2468a02a6230e59ed1232d95d1ad3ef157195b03"
           ).to_return(
             status: 200,
@@ -1050,43 +1050,43 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           )
           expect(pr_message).
             to eq(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "from `2468a02` to 1.5.0. This release includes the previously "\
-              "tagged commit.\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "<h2>1.4.0 - December 24, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add support for custom calendar load paths</li>\n"\
-              "<li>Remove the 'sepa' calendar</li>\n"\
-              "</ul>\n"\
-              "<h2>1.3.0 - December 2, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add <code>Calendar#previous_business_day</code></li>\n"\
-              "</ul>\n"\
-              "<h2>1.2.0 - November 15, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add TARGET calendar</li>\n"\
-              "</ul>\n"\
-              "<h2>1.1.0 - September 30, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2015 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "<h2>1.0.0 - June 11, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Initial public release</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits_details}"\
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "from `2468a02` to 1.5.0. This release includes the previously " \
+              "tagged commit.\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "<h2>1.4.0 - December 24, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add support for custom calendar load paths</li>\n" \
+              "<li>Remove the 'sepa' calendar</li>\n" \
+              "</ul>\n" \
+              "<h2>1.3.0 - December 2, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add <code>Calendar#previous_business_day</code></li>\n" \
+              "</ul>\n" \
+              "<h2>1.2.0 - November 15, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add TARGET calendar</li>\n" \
+              "</ul>\n" \
+              "<h2>1.1.0 - September 30, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2015 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "<h2>1.0.0 - June 11, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Initial public release</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits_details}" \
               "<br />\n"
             )
         end
@@ -1096,8 +1096,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it "has the right text" do
             expect(pr_message).to include(
-              "Updates the requirements on "\
-              "[business](https://github.com/gocardless/business) to permit "\
+              "Updates the requirements on " \
+              "[business](https://github.com/gocardless/business) to permit " \
               "the latest version."
             )
           end
@@ -1120,7 +1120,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/business/compare/"\
+            "https://api.github.com/repos/gocardless/business/compare/" \
             "v1.4.0...v1.5.0"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
@@ -1133,9 +1133,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "has the right text" do
           expect(pr_message).
             to eq(
-              "Bumps [business](https://github.com/gocardless/business) from "\
-              "1.4.0 to 1.5.0.\n"\
-              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+              "Bumps [business](https://github.com/gocardless/business) from " \
+              "1.4.0 to 1.5.0.\n" \
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
               "<br />\n"
             )
         end
@@ -1186,23 +1186,23 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the right text" do
             expect(pr_message).
               to eq(
-                "Bumps [business](https://github.com/gocardless/business) "\
-                "from 1.5.0 to 1.6.0.\n"\
-                "<details>\n"\
-                "<summary>Release notes</summary>\n"\
-                "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-                "business/releases\">business's releases</a>.</em></p>\n"\
-                "<blockquote>\n"\
-                "<h2>v1.6.0</h2>\n"\
-                "<p>Mad props to <a href=\"https://github.com/greysteil\">"\
-                "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">"\
-                "<code>@\u200Bhmarr</code></a> for the "\
-                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/"\
-                "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>."\
-                "</p>\n"\
-                "</blockquote>\n"\
-                "</details>\n"\
-                "#{commits_details(base: 'v1.5.0', head: 'v1.6.0')}"\
+                "Bumps [business](https://github.com/gocardless/business) " \
+                "from 1.5.0 to 1.6.0.\n" \
+                "<details>\n" \
+                "<summary>Release notes</summary>\n" \
+                "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+                "business/releases\">business's releases</a>.</em></p>\n" \
+                "<blockquote>\n" \
+                "<h2>v1.6.0</h2>\n" \
+                "<p>Mad props to <a href=\"https://github.com/greysteil\">" \
+                "<code>@\u200Bgreysteil</code></a> and <a href=\"https://github.com/hmarr\">" \
+                "<code>@\u200Bhmarr</code></a> for the " \
+                "<code>@\u200Bangular/scope</code> work - see <a href=\"https://github.com/" \
+                "gocardless/business/blob/HEAD/CHANGELOG.md\">changelog</a>." \
+                "</p>\n" \
+                "</blockquote>\n" \
+                "</details>\n" \
+                "#{commits_details(base: 'v1.5.0', head: 'v1.6.0')}" \
                 "<br />\n"
               )
           end
@@ -1214,7 +1214,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           {
             "business" => [{
               "title" => "Serious vulnerability",
-              "description" => "A vulnerability that allows arbitrary code\n"\
+              "description" => "A vulnerability that allows arbitrary code\n" \
                                "execution.\n",
               "patched_versions" => ["> 1.5.0"],
               "unaffected_versions" => [],
@@ -1226,17 +1226,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "has the right text" do
           expect(pr_message).
             to start_with(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "from 1.4.0 to 1.5.0. **This update includes a security fix.**\n"\
-              "<details>\n"\
-              "<summary>Vulnerabilities fixed</summary>\n"\
-              "<blockquote>\n"\
-              "<p><strong>Serious vulnerability</strong>\n"\
-              "A vulnerability that allows arbitrary code\n"\
-              "execution.</p>\n"\
-              "<p>Patched versions: &gt; 1.5.0\n"\
-              "Unaffected versions: none</p>\n"\
-              "</blockquote>\n"\
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "from 1.4.0 to 1.5.0. **This update includes a security fix.**\n" \
+              "<details>\n" \
+              "<summary>Vulnerabilities fixed</summary>\n" \
+              "<blockquote>\n" \
+              "<p><strong>Serious vulnerability</strong>\n" \
+              "A vulnerability that allows arbitrary code\n" \
+              "execution.</p>\n" \
+              "<p>Patched versions: &gt; 1.5.0\n" \
+              "Unaffected versions: none</p>\n" \
+              "</blockquote>\n" \
               "</details>\n"
             )
         end
@@ -1267,7 +1267,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           stub_request(
             :get,
-            "https://api.github.com/repos/gocardless/business/compare/"\
+            "https://api.github.com/repos/gocardless/business/compare/" \
             "v0.9.0...v1.5.0"
           ).with(headers: { "Authorization" => "token token" }).
             to_return(
@@ -1282,7 +1282,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 fixture("github", "business_files_with_upgrade_guide.json"),
               headers: json_header
             )
-          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+          stub_request(:get, "https://api.github.com/repos/gocardless/" \
                          "business/contents/UPGRADE.md?ref=master").
             to_return(
               status: 200,
@@ -1294,47 +1294,47 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "has the right text" do
           expect(pr_message).
             to start_with(
-              "Bumps [business](https://github.com/gocardless/business) from "\
-              "0.9.0 to 1.5.0.\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">business's changelog</a>."\
-              "</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "<h2>1.4.0 - December 24, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add support for custom calendar load paths</li>\n"\
-              "<li>Remove the 'sepa' calendar</li>\n"\
-              "</ul>\n"\
-              "<h2>1.3.0 - December 2, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add <code>Calendar#previous_business_day</code></li>\n"\
-              "</ul>\n"\
-              "<h2>1.2.0 - November 15, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add TARGET calendar</li>\n"\
-              "</ul>\n"\
-              "<h2>1.1.0 - September 30, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2015 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "<h2>1.0.0 - June 11, 2014</h2>\n"\
-              "<ul>\n"\
-              "<li>Initial public release</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "<details>\n"\
-              "<summary>Upgrade guide</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/UPGRADE.md\">business's upgrade guide</a>."\
-              "</em></p>\n"\
-              "<blockquote>\n"\
+              "Bumps [business](https://github.com/gocardless/business) from " \
+              "0.9.0 to 1.5.0.\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">business's changelog</a>." \
+              "</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "<h2>1.4.0 - December 24, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add support for custom calendar load paths</li>\n" \
+              "<li>Remove the 'sepa' calendar</li>\n" \
+              "</ul>\n" \
+              "<h2>1.3.0 - December 2, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add <code>Calendar#previous_business_day</code></li>\n" \
+              "</ul>\n" \
+              "<h2>1.2.0 - November 15, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add TARGET calendar</li>\n" \
+              "</ul>\n" \
+              "<h2>1.1.0 - September 30, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2015 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "<h2>1.0.0 - June 11, 2014</h2>\n" \
+              "<ul>\n" \
+              "<li>Initial public release</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "<details>\n" \
+              "<summary>Upgrade guide</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/UPGRADE.md\">business's upgrade guide</a>." \
+              "</em></p>\n" \
+              "<blockquote>\n" \
               "<h1>UPGRADE GUIDE FROM 2.x to 3.0</h1>"
             )
         end
@@ -1349,10 +1349,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the right text" do
           expect(pr_message).to include(
-            "<details>\n"\
-            "<summary>Maintainer changes</summary>\n"\
-            "<p>Maintainer change</p>\n"\
-            "</details>\n"\
+            "<details>\n" \
+            "<summary>Maintainer changes</summary>\n" \
+            "<p>Maintainer change</p>\n" \
+            "</details>\n" \
             "<br />"
           )
         end
@@ -1396,7 +1396,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
-          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+          stub_request(:get, "https://api.github.com/repos/gocardless/" \
                              "statesman/contents/CHANGELOG.md?ref=master").
             to_return(status: 200,
                       body: fixture("github", "changelog_contents.json"),
@@ -1408,7 +1408,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
 
           service_pack_url =
-            "https://github.com/gocardless/statesman.git/info/refs"\
+            "https://github.com/gocardless/statesman.git/info/refs" \
             "?service=git-upload-pack"
           stub_request(:get, service_pack_url).
             to_return(
@@ -1423,44 +1423,44 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "includes details of both dependencies" do
           expect(pr_message).
             to eq(
-              "Bumps [business](https://github.com/gocardless/business) "\
-              "and [statesman](https://github.com/gocardless/statesman). "\
-              "These dependencies needed to be updated together.\n"\
-              "Updates `business` from 1.4.0 to 1.5.0\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
-              "<br />\n\n"\
-              "Updates `statesman` from 1.6.0 to 1.7.0\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "statesman/blob/master/CHANGELOG.md\">"\
-              "statesman's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.7.0 - January 18, 2017</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2018-2027 BACS holiday defintions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "<details>\n"\
-              "<summary>Commits</summary>\n"\
-              "<ul>\n"\
-              "<li>See full diff in <a href=\"https://github.com/gocardless/"\
-              "statesman/commits\">compare view</a></li>\n"\
-              "</ul>\n"\
-              "</details>\n"\
+              "Bumps [business](https://github.com/gocardless/business) " \
+              "and [statesman](https://github.com/gocardless/statesman). " \
+              "These dependencies needed to be updated together.\n" \
+              "Updates `business` from 1.4.0 to 1.5.0\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
+              "<br />\n\n" \
+              "Updates `statesman` from 1.6.0 to 1.7.0\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "statesman/blob/master/CHANGELOG.md\">" \
+              "statesman's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.7.0 - January 18, 2017</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2018-2027 BACS holiday defintions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "<details>\n" \
+              "<summary>Commits</summary>\n" \
+              "<ul>\n" \
+              "<li>See full diff in <a href=\"https://github.com/gocardless/" \
+              "statesman/commits\">compare view</a></li>\n" \
+              "</ul>\n" \
+              "</details>\n" \
               "<br />\n"
             )
         end
@@ -1547,24 +1547,24 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "includes details of both dependencies" do
           expect(pr_message).
             to eq(
-              "Bumps [statesman](https://github.com/gocardless/statesman) "\
-              "and [business](https://github.com/gocardless/business). "\
-              "These dependencies needed to be updated together.\n"\
-              "Removes `statesman`\n"\
-              "Updates `business` from 1.4.0 to 1.5.0\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+              "Bumps [statesman](https://github.com/gocardless/statesman) " \
+              "and [business](https://github.com/gocardless/business). " \
+              "These dependencies needed to be updated together.\n" \
+              "Removes `statesman`\n" \
+              "Updates `business` from 1.4.0 to 1.5.0\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
               "<br />\n"
             )
         end
@@ -1575,8 +1575,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "has the correct message" do
           expect(pr_message).to start_with(
-            "Updates the requirements on "\
-            "[actions/checkout](https://github.com/gocardless/actions) "\
+            "Updates the requirements on " \
+            "[actions/checkout](https://github.com/gocardless/actions) " \
             "to permit the latest version."
           )
         end
@@ -1595,22 +1595,22 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       it "has the right text" do
         expect(pr_message).
           to eq(
-            "Updates the requirements on "\
-            "[business](https://github.com/gocardless/business) "\
-            "to permit the latest version.\n"\
-            "<details>\n"\
-            "<summary>Changelog</summary>\n"\
-            "<p><em>Sourced from "\
-            "<a href=\"https://github.com/gocardless/business/blob/master/"\
-            "CHANGELOG.md\">business's changelog</a>.</em></p>\n"\
-            "<blockquote>\n"\
-            "<h2>1.5.0 - June 2, 2015</h2>\n"\
-            "<ul>\n"\
-            "<li>Add 2016 holiday definitions</li>\n"\
-            "</ul>\n"\
-            "</blockquote>\n"\
-            "</details>\n"\
-            "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
+            "Updates the requirements on " \
+            "[business](https://github.com/gocardless/business) " \
+            "to permit the latest version.\n" \
+            "<details>\n" \
+            "<summary>Changelog</summary>\n" \
+            "<p><em>Sourced from " \
+            "<a href=\"https://github.com/gocardless/business/blob/master/" \
+            "CHANGELOG.md\">business's changelog</a>.</em></p>\n" \
+            "<blockquote>\n" \
+            "<h2>1.5.0 - June 2, 2015</h2>\n" \
+            "<ul>\n" \
+            "<li>Add 2016 holiday definitions</li>\n" \
+            "</ul>\n" \
+            "</blockquote>\n" \
+            "</details>\n" \
+            "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
             "<br />\n"
           )
       end
@@ -1653,7 +1653,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             to_return(status: 200,
                       body: fixture("github", "business_releases.json"),
                       headers: json_header)
-          stub_request(:get, "https://api.github.com/repos/gocardless/"\
+          stub_request(:get, "https://api.github.com/repos/gocardless/" \
                              "statesman/contents/CHANGELOG.md?ref=master").
             to_return(status: 200,
                       body: fixture("github", "changelog_contents.json"),
@@ -1665,7 +1665,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
 
           service_pack_url =
-            "https://github.com/gocardless/statesman.git/info/refs"\
+            "https://github.com/gocardless/statesman.git/info/refs" \
             "?service=git-upload-pack"
           stub_request(:get, service_pack_url).
             to_return(
@@ -1680,45 +1680,45 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "includes details of both dependencies" do
           expect(pr_message).
             to eq(
-              "Updates the requirements on "\
-              "[business](https://github.com/gocardless/business) "\
-              "and [statesman](https://github.com/gocardless/statesman) "\
-              "to permit the latest version.\n"\
-              "Updates `business` from 1.4.0 to 1.5.0\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "business/blob/master/CHANGELOG.md\">"\
-              "business's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.5.0 - June 2, 2015</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2016 holiday definitions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}"\
-              "<br />\n\n"\
-              "Updates `statesman` from 1.6.0 to 1.7.0\n"\
-              "<details>\n"\
-              "<summary>Changelog</summary>\n"\
-              "<p><em>Sourced from <a href=\"https://github.com/gocardless/"\
-              "statesman/blob/master/CHANGELOG.md\">"\
-              "statesman's changelog</a>.</em></p>\n"\
-              "<blockquote>\n"\
-              "<h2>1.7.0 - January 18, 2017</h2>\n"\
-              "<ul>\n"\
-              "<li>Add 2018-2027 BACS holiday defintions</li>\n"\
-              "</ul>\n"\
-              "</blockquote>\n"\
-              "</details>\n"\
-              "<details>\n"\
-              "<summary>Commits</summary>\n"\
-              "<ul>\n"\
-              "<li>See full diff in <a href=\"https://github.com/gocardless/"\
-              "statesman/commits\">compare view</a></li>\n"\
-              "</ul>\n"\
-              "</details>\n"\
+              "Updates the requirements on " \
+              "[business](https://github.com/gocardless/business) " \
+              "and [statesman](https://github.com/gocardless/statesman) " \
+              "to permit the latest version.\n" \
+              "Updates `business` from 1.4.0 to 1.5.0\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "business/blob/master/CHANGELOG.md\">" \
+              "business's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.5.0 - June 2, 2015</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2016 holiday definitions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
+              "<br />\n\n" \
+              "Updates `statesman` from 1.6.0 to 1.7.0\n" \
+              "<details>\n" \
+              "<summary>Changelog</summary>\n" \
+              "<p><em>Sourced from <a href=\"https://github.com/gocardless/" \
+              "statesman/blob/master/CHANGELOG.md\">" \
+              "statesman's changelog</a>.</em></p>\n" \
+              "<blockquote>\n" \
+              "<h2>1.7.0 - January 18, 2017</h2>\n" \
+              "<ul>\n" \
+              "<li>Add 2018-2027 BACS holiday defintions</li>\n" \
+              "</ul>\n" \
+              "</blockquote>\n" \
+              "</details>\n" \
+              "<details>\n" \
+              "<summary>Commits</summary>\n" \
+              "<ul>\n" \
+              "<li>See full diff in <a href=\"https://github.com/gocardless/" \
+              "statesman/commits\">compare view</a></li>\n" \
+              "</ul>\n" \
+              "</details>\n" \
               "<br />\n"
             )
         end
@@ -1781,7 +1781,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       before do
         allow(builder).to receive(:pr_name).
           and_return(
-            "build(deps-dev): update postcss-import requirement from "\
+            "build(deps-dev): update postcss-import requirement from " \
             "^11.1.0 to ^12.0.0 in /electron"
           )
       end
@@ -1797,7 +1797,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         before do
           allow(builder).to receive(:pr_name).
             and_return(
-              "build(deps-dev): update postcss-import requirement from "\
+              "build(deps-dev): update postcss-import requirement from " \
               "^11.1.0 to ^12.0.0 in /electron-really-long-name"
             )
         end
@@ -1836,7 +1836,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it "includes an on-behalf-of line" do
           expect(commit_message).to end_with(
-            "\n\nOn-behalf-of: @tutum <support@tutum.com>\n"\
+            "\n\nOn-behalf-of: @tutum <support@tutum.com>\n" \
             "Signed-off-by: dependabot <support@dependabot.com>"
           )
         end

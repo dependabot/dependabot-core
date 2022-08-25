@@ -131,8 +131,8 @@ module Dependabot
 
         return unless artifact_id && group_id && version
 
-        url = "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"\
-              "#{version}/"\
+        url = "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/" \
+              "#{version}/" \
               "#{artifact_id}-#{version}.pom"
 
         response = Dependabot::RegistryClient.get(

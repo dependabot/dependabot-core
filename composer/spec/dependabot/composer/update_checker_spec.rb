@@ -137,7 +137,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       let(:service_pack_url) do
-        "https://github.com/dependabot/monolog.git/info/refs"\
+        "https://github.com/dependabot/monolog.git/info/refs" \
         "?service=git-upload-pack"
       end
       before do

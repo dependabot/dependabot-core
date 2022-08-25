@@ -17,9 +17,9 @@ require "dependabot/version"
 module Dependabot
   module SharedHelpers
     GIT_CONFIG_GLOBAL_PATH = File.expand_path("~/.gitconfig")
-    USER_AGENT = "dependabot-core/#{Dependabot::VERSION} "\
-                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} "\
-                 "(#{RUBY_PLATFORM}) "\
+    USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
+                 "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
+                 "(#{RUBY_PLATFORM}) " \
                  "(+https://github.com/dependabot/dependabot-core)"
     SIGKILL = 9
 
@@ -188,7 +188,7 @@ module Dependabot
       # a wrapper binary that only allows non-mutating commands. Without this,
       # whenever the credentials are deemed to be invalid, they're erased.
       run_shell_command(
-        "git config --global credential.helper "\
+        "git config --global credential.helper " \
         "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
         allow_unsafe_shell_command: true
       )
@@ -224,7 +224,7 @@ module Dependabot
         next unless cred["username"] && cred["password"]
 
         authenticated_url =
-          "https://#{cred.fetch('username')}:#{cred.fetch('password')}"\
+          "https://#{cred.fetch('username')}:#{cred.fetch('password')}" \
           "@#{cred.fetch('host')}"
 
         git_store_content += authenticated_url + "\n"
@@ -241,23 +241,23 @@ module Dependabot
       # NOTE: we use --global here (rather than --system) so that Dependabot
       # can be run without privileged access
       run_shell_command(
-        "git config --global --replace-all url.https://#{host}/."\
+        "git config --global --replace-all url.https://#{host}/." \
         "insteadOf ssh://git@#{host}/"
       )
       run_shell_command(
-        "git config --global --add url.https://#{host}/."\
+        "git config --global --add url.https://#{host}/." \
         "insteadOf ssh://git@#{host}:"
       )
       run_shell_command(
-        "git config --global --add url.https://#{host}/."\
+        "git config --global --add url.https://#{host}/." \
         "insteadOf git@#{host}:"
       )
       run_shell_command(
-        "git config --global --add url.https://#{host}/."\
+        "git config --global --add url.https://#{host}/." \
         "insteadOf git@#{host}/"
       )
       run_shell_command(
-        "git config --global --add url.https://#{host}/."\
+        "git config --global --add url.https://#{host}/." \
         "insteadOf git://#{host}/"
       )
     end
