@@ -29,6 +29,7 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
+        # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX =
           /git clone -q (?<url>[^\s]+).* /.freeze
         GIT_REFERENCE_NOT_FOUND_REGEX =
@@ -44,6 +45,7 @@ module Dependabot
         UNSUPPORTED_DEP_REGEX =
           /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/.freeze
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
+        # rubocop:enable Layout/LineLength
 
         attr_reader :dependency, :dependency_files, :credentials
 
