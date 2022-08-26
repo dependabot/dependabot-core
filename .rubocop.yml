@@ -10,6 +10,8 @@ AllCops:
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
+Gemspec/RequireMFA:
+  Enabled: false
 Layout/DotPosition:
   EnforcedStyle: trailing
 Layout/EmptyLinesAroundAttributeAccessor:
