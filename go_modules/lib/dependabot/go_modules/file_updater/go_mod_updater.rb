@@ -266,7 +266,7 @@ module Dependabot
         end
 
         def filter_error_message(message:, regex:)
-          lines = message.lines.grep(regex)
+          lines = message.lines.select { |l| regex =~ l }
           return lines.join if lines.any?
 
           # In case the regex is multi-line, match the whole string

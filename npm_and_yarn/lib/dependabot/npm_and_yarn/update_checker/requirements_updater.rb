@@ -129,7 +129,7 @@ module Dependabot
 
         def update_range_requirement(req_string)
           range_requirements =
-            req_string.split(SEPARATOR).grep(/<|(\s+-\s+)/)
+            req_string.split(SEPARATOR).select { |r| r.match?(/<|(\s+-\s+)/) }
 
           if range_requirements.count == 1
             range_requirement = range_requirements.first

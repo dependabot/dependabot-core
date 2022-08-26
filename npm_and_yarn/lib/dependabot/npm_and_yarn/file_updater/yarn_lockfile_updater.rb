@@ -397,7 +397,7 @@ module Dependabot
         end
 
         def remove_integrity_lines(content)
-          content.lines.grep_v(/\s*integrity sha/).join
+          content.lines.reject { |l| l.match?(/\s*integrity sha/) }.join
         end
 
         def lockfile_dependencies(lockfile)

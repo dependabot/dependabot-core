@@ -100,7 +100,7 @@ module Dependabot
             version_for_requirement =
               dependency.requirements.map { |r| r[:requirement] }.compact.
               reject { |req_string| req_string.start_with?("<") }.
-              grep(version_regex).
+              select { |req_string| req_string.match?(version_regex) }.
               map { |req_string| req_string.match(version_regex) }.
               select { |version| version_class.correct?(version.to_s) }.
               max_by { |version| version_class.new(version.to_s) }

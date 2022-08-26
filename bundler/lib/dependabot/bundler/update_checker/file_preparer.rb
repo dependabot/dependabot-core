@@ -225,7 +225,7 @@ module Dependabot
             version_for_requirement =
               dependency.requirements.map { |r| r[:requirement] }.
               reject { |req_string| req_string.start_with?("<") }.
-              grep(VERSION_REGEX).
+              select { |req_string| req_string.match?(VERSION_REGEX) }.
               map { |req_string| req_string.match(VERSION_REGEX) }.
               select { |version| Gem::Version.correct?(version) }.
               max_by { |version| Gem::Version.new(version) }

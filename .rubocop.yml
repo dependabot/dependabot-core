@@ -216,3 +216,5 @@ Style/OpenStructUse:
   Enabled: false
 Style/SpecialGlobalVars:
   Enabled: false
+Style/SelectByRegexp:
+  Enabled: false
