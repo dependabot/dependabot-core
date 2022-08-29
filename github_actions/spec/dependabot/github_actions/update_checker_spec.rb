@@ -210,9 +210,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#latest_version" do
     subject { checker.latest_version }
 
+    let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
+
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
-      it { is_expected.to eq("d963e800e3592dd31d6c76252092562d0bc7a3ba") }
+      it { is_expected.to eq(tip_of_master) }
     end
 
     context "given a dependency with a tag reference" do
