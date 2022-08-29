@@ -59,7 +59,7 @@ module Dependabot
       end
 
       def fetch_latest_version_for_git_dependency
-        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
+        return current_commit unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag.
