@@ -5,7 +5,6 @@ hashin==0.17.0
 pipenv==2022.4.8
 pipfile==0.0.2
 poetry==1.1.15
-wheel==0.37.1
 
 # Some dependencies will only install if Cython is present
 Cython==0.29.32
