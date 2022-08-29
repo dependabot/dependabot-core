@@ -54,6 +54,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     "https://github.com/actions/setup-node.git/info/refs" \
       "?service=git-upload-pack"
   end
+  let(:git_commit_checker) do
+    Dependabot::GitCommitChecker.new(
+      dependency: dependency,
+      credentials: github_credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
+  end
   before do
     stub_request(:get, service_pack_url).
       to_return(
@@ -276,9 +284,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           }
         end
 
-        allow_any_instance_of(Dependabot::GitCommitChecker).
-          to receive(:local_tags_for_latest_version_commit_sha).
-          and_return(version_tags)
+        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+        allow(git_commit_checker).to receive(:local_tags_for_latest_version_commit_sha).and_return(version_tags)
       end
 
       context "using the major version" do
