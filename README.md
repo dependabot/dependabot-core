@@ -316,7 +316,7 @@ the following:
   arrangement.
 
 If you make a significant contribution to Dependabot Core then you will be asked
-to transfer the IP of that contribution to Dependabot Ltd so that it can be
+to transfer the IP of that contribution to GitHub Inc. so that it can be
 licensed in the same way as the above.
 
 ## History
