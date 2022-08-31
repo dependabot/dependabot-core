@@ -105,8 +105,7 @@ module Dependabot
         )
 
         vulnerable = vulnerability_audit.select do |v|
-          v["fix_available"] == false &&
-            v["explanation"]
+          !v["fix_available"] && v["explanation"]
         end
 
         conflicts + vulnerable
