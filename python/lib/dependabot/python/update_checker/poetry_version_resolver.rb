@@ -61,7 +61,8 @@ module Dependabot
                                    false
                                  end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("SolverProblemError")
+          raise unless e.message.include?("SolverProblemError") ||
+                       e.message.include?("version solving failed.")
 
           @resolvable[version] = false
         end
@@ -116,21 +117,22 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
-          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
+          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX) || error.message.include?("verify ref exists on remote.")
             message = error.message.gsub(/\s/, "")
             name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX) || error.message.include?("check your git configuration and permissions")
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
           end
 
           raise unless error.message.include?("SolverProblemError") ||
-                       error.message.include?("PackageNotFound")
+                       error.message.include?("PackageNotFound") ||
+                       error.message.include?("version solving failed.")
 
           check_original_requirements_resolvable
 
@@ -161,7 +163,8 @@ module Dependabot
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("SolverProblemError") ||
-                           e.message.include?("PackageNotFound")
+                           e.message.include?("PackageNotFound") ||
+                           e.message.include?("version solving failed.")
 
               msg = clean_error_message(e.message)
               raise DependencyFileNotResolvable, msg
