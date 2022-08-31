@@ -1,4 +1,4 @@
-name: \U0001F41B Bug report
+name: 🐛 Bug report
 description: Report a bug in dependabot-core to help us fix it
 labels: ["T: bug 🐞"]
 body:
