@@ -26,4 +26,6 @@ RSpec.configure do |config|
       example.skip
     end
   end
+
+  config.profile_examples = 10
 end
