@@ -43,7 +43,7 @@ body:
     attributes:
       label: Manifest location and content before the Dependabot update
       description: |
-        If applicable, specify the path to each manifest file (`/client/package.json`, `/Gemfile`, etc.
+        If applicable, specify the path to each manifest file (`/client/package.json`, `/Gemfile`, etc.)
         If applicable, attach each manifest file or provide a link to each manifest file.
     validations:
       required: false
