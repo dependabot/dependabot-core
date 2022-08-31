@@ -1,14 +1,12 @@
 name: Push docker images
-env:
-  BASE_IMAGE: "ubuntu:20.04"
-  CORE_IMAGE: "dependabot/dependabot-core"
-  CORE_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-core"
+
 on:
   push:
     branches:
       - main
     tags:
       - v[0-9]+.[0-9]+.[0-9]+
+
 jobs:
   push-core-image:
     name: Push dependabot-core image to docker hub
@@ -17,38 +15,46 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build dependabot-core image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "$CORE_IMAGE:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
-            --cache-from "$CORE_IMAGE:latest" \
-            .
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.0.0
       - name: Log in to the Docker registry
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
       - name: Log in to GHCR
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Push latest image
-        run: |
-          docker push "$CORE_IMAGE:latest"
-          docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE_MIRROR:latest"
-          docker push "$CORE_IMAGE_MIRROR:latest"
-      - name: Push tagged image
-        if: "contains(github.ref, 'refs/tags')"
-        run: |
-          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
-          docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE:$VERSION"
-          docker push "$CORE_IMAGE:$VERSION"
-          docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE_MIRROR:$VERSION"
-          docker push "$CORE_IMAGE_MIRROR:$VERSION"
+      - name: Docker tags
+        id: tags
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            dependabot/dependabot-core
+            ghcr.io/dependabot/dependabot-core
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+      - name: Build and push ${{ matrix.arch }} dependabot-core image
+        uses: docker/build-push-action@v3.1.1
+        with:
+          push: true
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=registry,ref=dependabot/dependabot-core:latest
+          cache-to: type=inline
+          tags: ${{ steps.tags.outputs.tags }}
+
   push-development-image:
     name: Push dependabot-core-development image to GHCR
     runs-on: ubuntu-latest
@@ -56,31 +62,33 @@ jobs:
       contents: read
       packages: write
     needs: push-core-image
-    env:
-      DEV_IMAGE: ghcr.io/dependabot/dependabot-core-development
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build dependabot-core image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "$DEV_IMAGE:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
-            --cache-from "$CORE_IMAGE:latest" \
-            --cache-from "$DEV_IMAGE:latest" \
-            -f Dockerfile.development .
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.0.0
       - name: Log in to GHCR
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Push latest image
-        run: |
-          docker push "$DEV_IMAGE:latest"
-      - name: Push tagged image
-        if: "contains(github.ref, 'refs/tags')"
-        run: |
-          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
-          docker tag "$DEV_IMAGE:latest" "$DEV_IMAGE:$VERSION"
-          docker push "$DEV_IMAGE:$VERSION"
+      - name: Docker tags
+        id: tags
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/dependabot/dependabot-core-development
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=latest
+            type=semver,pattern={{version}}
+      - name: Build and push ${{ matrix.arch }} dependabot-core-development image
+        uses: docker/build-push-action@v3.1.1
+        with:
+          push: true
+          file: Dockerfile.development
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=registry,ref=ghcr.io/dependabot/dependabot-core-development:latest
+          cache-to: type=inline
+          tags: ${{ steps.tags.outputs.tags }}
