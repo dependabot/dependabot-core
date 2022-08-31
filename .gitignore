@@ -7,6 +7,8 @@
 /dependabot-*.gem
 !bundler/spec/fixtures/projects/**/Gemfile.lock
 Gemfile.lock
+!updater/spec/fixtures/**/Gemfile.lock
+!updater/Gemfile.lock
 vendor
 !bundler/spec/fixtures/vendored_gems/vendor
 !common/spec/fixtures/projects/**/*/vendor

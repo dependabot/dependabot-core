@@ -1,0 +1,62 @@
+name: Push docker branch images
+env:
+  BASE_IMAGE: "ubuntu:20.04"
+  UPDATER_IMAGE: "dependabot/updater"
+  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
+on:
+  pull_request:
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
+
+jobs:
+  push-updater-image:
+    name: Export dependabot-updater image to build artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+      - name: Build dependabot-updater image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "$UPDATER_IMAGE:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$UPDATER_IMAGE:latest" \
+            --build-arg OMNIBUS_VERSION=$TAG \
+            -f Dockerfile.updater \
+            .
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push branch image
+        if: ${{ github.repository == 'dependabot/dependabot-core' }}
+        run: |
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
+          docker push "$UPDATER_IMAGE_MIRROR:$TAG"
+      - name: Save tagged image
+        run: |
+          docker save "$UPDATER_IMAGE:$TAG" > dependabot-updater.tar
+      - name: Archive image
+        uses: actions/upload-artifact@v3
+        with:
+          name: updater-${{ github.sha }}.tar
+          path: dependabot-updater.tar
+      - name: Set summary
+        run: echo "updater uploaded with tag $TAG" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,61 @@
+---
+name: domain_name
+version: 0.5.20190701
+type: bundler
+summary: Domain Name manipulation library for Ruby
+homepage: https://github.com/knu/ruby-domain_name
+license: other
+licenses:
+- sources: LICENSE.txt
+  text: "Copyright (c) 2011-2017 Akinori MUSHA\n\nAll rights reserved.\n\nRedistribution
+    and use in source and binary forms, with or without\nmodification, are permitted
+    provided that the following conditions\nare met:\n1. Redistributions of source
+    code must retain the above copyright\n   notice, this list of conditions and the
+    following disclaimer.\n2. Redistributions in binary form must reproduce the above
+    copyright\n   notice, this list of conditions and the following disclaimer in
+    the\n   documentation and/or other materials provided with the distribution.\n\nTHIS
+    SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND\nANY EXPRESS
+    OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\nIMPLIED WARRANTIES
+    OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\nARE DISCLAIMED.\t IN
+    NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE\nFOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL\nDAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS\nOR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION)\nHOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+    WHETHER IN CONTRACT, STRICT\nLIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY\nOUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+    OF\nSUCH DAMAGE.\n\n* lib/domain_name/punycode.rb\n\nThis file is derived from
+    the implementation of punycode available at\nhere:\n\nhttps://www.verisign.com/en_US/channel-resources/domain-registry-products/idn-sdks/index.xhtml\n\nCopyright
+    (C) 2000-2002 Verisign Inc., All rights reserved.\n\nRedistribution and use in
+    source and binary forms, with or\nwithout modification, are permitted provided
+    that the following\nconditions are met:\n\n 1) Redistributions of source code
+    must retain the above copyright\n    notice, this list of conditions and the following
+    disclaimer.\n\n 2) Redistributions in binary form must reproduce the above copyright\n
+    \   notice, this list of conditions and the following disclaimer in\n    the documentation
+    and/or other materials provided with the\n    distribution.\n\n 3) Neither the
+    name of the VeriSign Inc. nor the names of its\n    contributors may be used to
+    endorse or promote products derived\n    from this software without specific prior
+    written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+    CONTRIBUTORS\n\"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT
+    NOT\nLIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS\nFOR A
+    PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE\nCOPYRIGHT OWNER OR CONTRIBUTORS
+    BE LIABLE FOR ANY DIRECT, INDIRECT,\nINCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING,\nBUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    LOSS\nOF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED\nAND
+    ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT\nLIABILITY, OR TORT (INCLUDING
+    NEGLIGENCE OR OTHERWISE) ARISING IN\nANY WAY OUT OF THE USE OF THIS SOFTWARE,
+    EVEN IF ADVISED OF THE\nPOSSIBILITY OF SUCH DAMAGE.\n\nThis software is licensed
+    under the BSD open source license. For more\ninformation visit www.opensource.org.\n\nAuthors:\n
+    John Colosi (VeriSign)\n Srikanth Veeramachaneni (VeriSign)\n Nagesh Chigurupati
+    (Verisign)\n Praveen Srinivasan(Verisign)\n\n* lib/domain_name/etld_data.rb\n\nThis
+    file is generated from the Public Suffix List\n(https://publicsuffix.org/), which
+    is licensed under MPL 2.0:\n\nhttps://mozilla.org/MPL/2.0/\n"
+- sources: README.md
+  text: |-
+    Copyright (c) 2011-2017 Akinori MUSHA
+
+    Licensed under the 2-clause BSD license.
+
+    Some portion of this library is copyrighted by third parties and
+    licensed under MPL 2.0 or 3-clause BSD license,
+    See `LICENSE.txt` for details.
+notices: []
