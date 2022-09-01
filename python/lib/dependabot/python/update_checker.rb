@@ -144,7 +144,15 @@ module Dependabot
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
         return :pipenv if req_files.any?("Pipfile")
-        return :poetry if req_files.any?("pyproject.toml")
+
+        if req_files.any?("pyproject.toml")
+          if poetry_based?
+            return :poetry
+          else
+            return :requirements
+          end
+        end
+
         return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
         if dependency.version && !exact_requirement?(reqs)
@@ -261,22 +269,23 @@ module Dependabot
         )
       end
 
+      def poetry_based?
+        pyproject && !poetry_details.nil?
+      end
+
       def poetry_library?
-        return false unless pyproject
+        return false unless poetry_based?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
-        details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
-        return false unless details
-
         index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(poetry_details['name'])}/json/"
         )
 
         return false unless index_response.status == 200
 
         pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == details["description"]
+        pypi_info["summary"] == poetry_details["description"]
       rescue URI::InvalidURIError
         false
       end
@@ -303,6 +312,10 @@ module Dependabot
 
       def poetry_lock
         dependency_files.find { |f| f.name == "poetry.lock" }
+      end
+
+      def poetry_details
+        @poetry_details ||= TomlRB.parse(pyproject.content).dig("tool", "poetry")
       end
 
       def pip_compile_files

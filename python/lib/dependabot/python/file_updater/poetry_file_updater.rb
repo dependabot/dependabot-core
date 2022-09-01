@@ -131,7 +131,7 @@ module Dependabot
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)
-          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dep.name }
             next unless pkg_name

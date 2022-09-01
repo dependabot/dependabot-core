@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/python/file_parser/poetry_files_parser"
+require "dependabot/python/file_parser/pyproject_files_parser"
 
-RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
+RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
 
   let(:files) { [pyproject] }
@@ -226,6 +226,32 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
           expect(dependency.version).to eq("1.4.3")
           expect(dependency.requirements).to eq([])
         end
+      end
+    end
+  end
+
+  describe "parse standard python files" do
+    let(:pyproject_fixture_name) { "standard_python.toml" }
+
+    subject(:dependencies) { parser.dependency_set.dependencies }
+
+    its(:length) { is_expected.to eq(1) }
+
+    context "with a string declaration" do
+      subject(:dependency) { dependencies.first }
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("ansys-templates")
+        expect(dependency.version).to eq("0.3.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "==0.3.0",
+            file: "pyproject.toml",
+            groups: [nil],
+            source: nil
+          }]
+        )
       end
     end
   end

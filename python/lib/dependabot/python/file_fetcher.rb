@@ -5,7 +5,7 @@ require "toml-rb"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
-require "dependabot/python/file_parser/poetry_files_parser"
+require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/errors"
 
 module Dependabot
@@ -24,7 +24,7 @@ module Dependabot
         # If this repo is using a Pipfile return true
         return true if filenames.include?("Pipfile")
 
-        # If this repo is using Poetry return true
+        # If this repo is using pryproject.toml return true
         return true if filenames.include?("pyproject.toml")
 
         return true if filenames.include?("setup.py")
@@ -296,8 +296,8 @@ module Dependabot
               fetch_submodules: true
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
-            # For Poetry projects attempt to fetch a pyproject.toml at the
-            # given path instead of a setup.py. We do not require a
+            # For projects with pyproject.toml attempt to fetch a pyproject.toml
+            # at the given path instead of a setup.py. We do not require a
             # setup.py to be present, so if none can be found, simply return
             return [] unless allow_pyproject
 
@@ -395,7 +395,7 @@ module Dependabot
         return [] unless pyproject
 
         paths = []
-        Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
+        Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pyproject.dig("tool", "poetry", dep_type)
 
           parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|
