@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname "$0")/.."
+source script/_common
+
+docker_exec bash

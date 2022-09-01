@@ -1,0 +1,41 @@
+{
+  "job": {
+    "allowed-updates": [
+      {
+        "dependency-type": "direct",
+        "update-type": "all"
+      },
+      {
+        "dependency-type": "indirect",
+        "update-type": "security"
+      }
+    ],
+    "credentials-metadata": [
+      {
+        "type": "git_source",
+        "host": "github.com"
+      }
+    ],
+    "dependencies": null,
+    "directory": "/",
+    "existing-pull-requests": [],
+    "ignore-conditions": [],
+    "security-advisories": [],
+    "package_manager": "go_modules",
+    "repo-name": "dependabot-fixtures/go-modules-lib",
+    "source": {
+      "provider": "github",
+      "repo": "dependabot-fixtures/go-modules-lib",
+      "directory": "/",
+      "branch": null,
+      "hostname": "github.com",
+      "api-endpoint": "https://api.github.com/"
+    },
+    "lockfile-only": false,
+    "requirements-update-strategy": null,
+    "update-subdependencies": false,
+    "updating-a-pull-request": false,
+    "vendor-dependencies": false,
+    "security-updates-only": false
+  }
+}

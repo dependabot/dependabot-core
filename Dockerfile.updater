@@ -1,0 +1,58 @@
+ARG OMNIBUS_VERSION=required:fail_if_not_provided
+FROM dependabot/dependabot-core:$OMNIBUS_VERSION
+
+ENV DEPENDABOT_HOME /home/dependabot
+
+RUN mkdir $DEPENDABOT_HOME/dependabot-updater
+
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock $DEPENDABOT_HOME/dependabot-updater/
+
+COPY --chown=dependabot:dependabot .ruby-version ${DEPENDABOT_HOME}/.ruby-version
+COPY --chown=dependabot:dependabot .rubocop.yml ${DEPENDABOT_HOME}/.rubocop.yml
+
+WORKDIR ${DEPENDABOT_HOME}
+COPY --chown=dependabot:dependabot omnibus ${DEPENDABOT_HOME}/omnibus
+COPY --chown=dependabot:dependabot git_submodules ${DEPENDABOT_HOME}/git_submodules
+COPY --chown=dependabot:dependabot terraform ${DEPENDABOT_HOME}/terraform
+COPY --chown=dependabot:dependabot github_actions ${DEPENDABOT_HOME}/github_actions
+COPY --chown=dependabot:dependabot hex ${DEPENDABOT_HOME}/hex
+COPY --chown=dependabot:dependabot elm ${DEPENDABOT_HOME}/elm
+COPY --chown=dependabot:dependabot docker ${DEPENDABOT_HOME}/docker
+COPY --chown=dependabot:dependabot nuget ${DEPENDABOT_HOME}/nuget
+COPY --chown=dependabot:dependabot maven ${DEPENDABOT_HOME}/maven
+COPY --chown=dependabot:dependabot gradle ${DEPENDABOT_HOME}/gradle
+COPY --chown=dependabot:dependabot cargo ${DEPENDABOT_HOME}/cargo
+COPY --chown=dependabot:dependabot composer ${DEPENDABOT_HOME}/composer
+COPY --chown=dependabot:dependabot go_modules ${DEPENDABOT_HOME}/go_modules
+COPY --chown=dependabot:dependabot python ${DEPENDABOT_HOME}/python
+COPY --chown=dependabot:dependabot pub ${DEPENDABOT_HOME}/pub
+COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn
+COPY --chown=dependabot:dependabot bundler ${DEPENDABOT_HOME}/bundler
+COPY --chown=dependabot:dependabot common ${DEPENDABOT_HOME}/common
+
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+RUN bundle config set --local path 'vendor' && \
+bundle config set --local without 'development' && \
+bundle install
+
+
+# START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
+
+# TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
+# spwans a child process to npm install git dependencies.
+
+# Create the config file manually intead of using yarn/npm config set as this
+# executes the package manager outputs to every job log
+COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
+
+# END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
+
+# Add project
+COPY --chown=dependabot:dependabot updater /home/dependabot/dependabot-updater
+
+# Fix for git vulnerability since we run as root
+# see https://github.blog/2022-04-12-git-security-vulnerability-announced/
+RUN git config --global --add safe.directory /home/dependabot/dependabot-updater/repo
+
+CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]

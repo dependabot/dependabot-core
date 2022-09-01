@@ -90,6 +90,46 @@ jobs:
             --rm dependabot-core-ci bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
 
+  updater:
+    name: Updater
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+      - name: Free up disk space
+        run: |
+          sudo apt autoremove --purge && sudo apt -y clean
+          docker system prune -af --volumes
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          df -h
+      - name: GPR login
+        run: docker login docker.pkg.github.com -u x -p ${{secrets.GITHUB_TOKEN}}
+      - name: GHCR login
+        run: docker login ghcr.io -u x -p ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        run: script/build
+      - name: Lint
+        run: script/lint
+        env:
+          SKIP_BUILD: true
+      - name: Run updater tests
+        run: ./script/ci-test-updater
+        env:
+          SKIP_BUILD: true
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
