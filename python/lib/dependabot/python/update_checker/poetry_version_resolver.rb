@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -23,18 +24,26 @@ module Dependabot
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         GIT_REFERENCE_NOT_FOUND_REGEX = /
-          'git'.*pypoetry-git-(?<name>.+?).{8}',
+          (?:'git'.*pypoetry-git-(?<name>.+?).{8}', 
           'checkout',
           '(?<tag>.+?)'
-        /x.freeze
+          |
+          ...Failedtoclone
+          (?<url>.+?).gitat'(?<tag>.+?)',
+          verifyrefexistsonremote)
+        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
-            '\['git',
-            \s+'clone',
-            \s+'--recurse-submodules',
-            \s+'(--)?',
-            \s+'(?<url>.+?)'.*
-            \s+exit\s+status\s+128
-          /mx.freeze
+          (?:'\['git',
+          \s+'clone',
+          \s+'--recurse-submodules',
+          \s+'(--)?',
+          \s+'(?<url>.+?)'.*
+          \s+exit\s+status\s+128
+          |
+          \s+Failed\sto\sclone
+          \s+(?<url>.+?),
+          \s+check\syour\sgit\sconfiguration)
+        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -61,7 +70,7 @@ module Dependabot
                                    false
                                  end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("SolverProblemError") ||
+          raise unless e.message.include?("SolverProblemError") || # TODO: Remove once py3.6 is EoL
                        e.message.include?("version solving failed.")
 
           @resolvable[version] = false
@@ -117,16 +126,19 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
-          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX) ||
-             error.message.include?("verify ref exists on remote.")
+          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
-            name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
+            match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+            name = if (url = match.named_captures.fetch("url"))
+                     File.basename(URI.parse(url).path)
+                   else
+                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                       named_captures.fetch("name")
+                   end
             raise GitDependencyReferenceNotFound, name
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX) ||
-             error.message.include?("check your git configuration and permissions")
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX)
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
