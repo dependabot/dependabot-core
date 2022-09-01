@@ -34,6 +34,10 @@ module Dependabot
             end
 
           "#{source.url}/#{path}"
+
+        #This is included to prevent the incorrect release tags crashing the core
+        rescue ArgumentError
+          return
         end
 
         def commits
