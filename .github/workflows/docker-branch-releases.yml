@@ -65,4 +65,4 @@ jobs:
           name: updater-${{ github.sha }}.tar
           path: dependabot-updater.tar
       - name: Set summary
-        run: echo "updater uploaded with tag $TAG" >> $GITHUB_STEP_SUMMARY
+        run: echo "updater uploaded \`ghcr.io/dependabot/dependabot-updater/dependabot-updater:$TAG\`" >> $GITHUB_STEP_SUMMARY
