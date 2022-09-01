@@ -1,1 +1,1 @@
-inherit_from: ../.rubocop.yml
+inherit_from: ../omnibus/.rubocop.yml
