@@ -24,7 +24,7 @@ module Dependabot
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         GIT_REFERENCE_NOT_FOUND_REGEX = /
-          (?:'git'.*pypoetry-git-(?<name>.+?).{8}', 
+          (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
           'checkout',
           '(?<tag>.+?)'
           |
