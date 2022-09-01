@@ -117,14 +117,16 @@ module Dependabot
         end
 
         def handle_poetry_errors(error)
-          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX) || error.message.include?("verify ref exists on remote.")
+          if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX) ||
+             error.message.include?("verify ref exists on remote.")
             message = error.message.gsub(/\s/, "")
             name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
                    named_captures.fetch("name")
             raise GitDependencyReferenceNotFound, name
           end
 
-          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX) || error.message.include?("check your git configuration and permissions")
+          if error.message.match?(GIT_DEPENDENCY_UNREACHABLE_REGEX) ||
+             error.message.include?("check your git configuration and permissions")
             url = error.message.match(GIT_DEPENDENCY_UNREACHABLE_REGEX).
                   named_captures.fetch("url")
             raise GitDependenciesNotReachable, url
