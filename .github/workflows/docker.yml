@@ -55,6 +55,7 @@ jobs:
     name: Push dependabot-updater image to docker hub
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'dependabot/dependabot-core' }}
+    needs: push-core-image
     permissions:
       contents: read
       packages: write
