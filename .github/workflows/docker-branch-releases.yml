@@ -4,6 +4,12 @@ env:
   UPDATER_IMAGE: "dependabot/updater"
   UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
 on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
   pull_request:
     paths-ignore:
       - "CHANGELOG.md"
