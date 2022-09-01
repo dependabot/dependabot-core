@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "toml-rb"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
@@ -61,7 +62,13 @@ module Dependabot
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
         return :pipfile if changed_req_files.any?("Pipfile")
-        return :poetry if changed_req_files.any?("pyproject.toml")
+
+        if changed_req_files.any?("pyproject.toml")
+          return :poetry if poetry_based?
+
+          return :requirements
+        end
+
         return :pip_compile if changed_req_files.any? { |f| f.end_with?(".in") }
 
         :requirements
@@ -117,6 +124,12 @@ module Dependabot
         return if get_original_file("setup.cfg")
 
         raise "Missing required files!"
+      end
+
+      def poetry_based?
+        return false unless pyproject
+
+        !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
       end
 
       def pipfile

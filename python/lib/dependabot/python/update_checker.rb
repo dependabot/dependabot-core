@@ -143,7 +143,7 @@ module Dependabot
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
         return :pipenv if updating_pipfile?
-        return :poetry if updating_pyproject?
+        return pyproject_resolver if updating_pyproject?
         return :pip_compile if updating_in_file?
 
         if dependency.version && !exact_requirement?(reqs)
@@ -159,6 +159,12 @@ module Dependabot
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
+      end
+
+      def pyproject_resolver
+        return :poetry if poetry_based?
+
+        :requirements
       end
 
       def exact_requirement?(reqs)
@@ -258,22 +264,23 @@ module Dependabot
         )
       end
 
+      def poetry_based?
+        updating_pyproject? && !poetry_details.nil?
+      end
+
       def poetry_library?
-        return false unless updating_pyproject?
+        return false unless poetry_based?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
-        details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
-        return false unless details
-
         index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(poetry_details['name'])}/json/"
         )
 
         return false unless index_response.status == 200
 
         pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == details["description"]
+        pypi_info["summary"] == poetry_details["description"]
       rescue Excon::Error::Timeout
         false
       rescue URI::InvalidURIError
@@ -322,6 +329,10 @@ module Dependabot
 
       def poetry_lock
         dependency_files.find { |f| f.name == "poetry.lock" }
+      end
+
+      def poetry_details
+        @poetry_details ||= TomlRB.parse(pyproject.content).dig("tool", "poetry")
       end
 
       def pip_compile_files
