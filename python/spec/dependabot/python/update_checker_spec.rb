@@ -49,7 +49,6 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
-  let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",
@@ -296,17 +295,47 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         }]
       end
 
-      it "delegates to PoetryVersionResolver" do
-        dummy_resolver =
-          instance_double(described_class::PoetryVersionResolver)
-        allow(described_class::PoetryVersionResolver).to receive(:new).
-          and_return(dummy_resolver)
-        expect(dummy_resolver).
-          to receive(:latest_resolvable_version).
-          with(requirement: ">= 2.0.0, <= 2.6.0").
-          and_return(Gem::Version.new("2.5.0"))
-        expect(checker.latest_resolvable_version).
-          to eq(Gem::Version.new("2.5.0"))
+      let(:dependency_files) { [pyproject] }
+      let(:dependency_requirements) do
+        [{
+          file: "pyproject.toml",
+          requirement: "2.18.0",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      context "including poetry dependencies" do
+        let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
+
+        it "delegates to PoetryVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PoetryVersionResolver)
+          allow(described_class::PoetryVersionResolver).to receive(:new).
+            and_return(dummy_resolver)
+          expect(dummy_resolver).
+            to receive(:latest_resolvable_version).
+            with(requirement: ">= 2.0.0, <= 2.6.0").
+            and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("2.5.0"))
+        end
+      end
+
+      context "including pep621 dependencies" do
+        let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
+
+        it "delegates to PoetryVersionResolver" do
+          dummy_resolver =
+            instance_double(described_class::PipVersionResolver)
+          allow(described_class::PipVersionResolver).to receive(:new).
+            and_return(dummy_resolver)
+          expect(dummy_resolver).
+            to receive(:latest_resolvable_version).
+            and_return(Gem::Version.new("2.5.0"))
+          expect(checker.latest_resolvable_version).
+            to eq(Gem::Version.new("2.5.0"))
+        end
       end
     end
   end
