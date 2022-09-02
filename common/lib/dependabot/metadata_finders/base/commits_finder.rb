@@ -7,7 +7,6 @@ require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
-
 module Dependabot
   module MetadataFinders
     class Base
@@ -35,9 +34,10 @@ module Dependabot
 
           "#{source.url}/#{path}"
 
-        #This is included to prevent the incorrect release tags crashing the core
+
         rescue ArgumentError
-          return
+          # This is introduced to catch the ArgumentError exception
+          # that crashes the core as a result of using the wrong release tags.
         end
 
         def commits
