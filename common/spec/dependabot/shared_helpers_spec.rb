@@ -356,7 +356,7 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:credentials) { [] }
 
     def with_git_configured(&block)
-      Dependabot::SharedHelpers.with_git_configured(credentials: credentials) { block.call }
+      Dependabot::SharedHelpers.with_git_configured(credentials: credentials, &block)
     end
 
     let(:configured_git_config) { with_git_configured { `cat ~/.gitconfig` } }
