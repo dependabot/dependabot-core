@@ -58,9 +58,88 @@ jobs:
           - { path: terraform, name: terraform }
 
     steps:
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            bundler:
+              - Dockerfile
+              - 'common/**'
+              - 'bundler/**'
+            cargo:
+              - Dockerfile
+              - 'common/**'
+              - 'cargo/**'
+            common:
+              - Dockerfile
+              - 'common/**'
+            composer:
+              - Dockerfile
+              - 'common/**'
+              - 'composer/**'
+            docker:
+              - Dockerfile
+              - 'common/**'
+              - 'docker/**'
+            elm:
+              - Dockerfile
+              - 'common/**'
+              - 'elm/**'
+            git_submodules:
+              - Dockerfile
+              - 'common/**'
+              - 'git_submodules/**'
+            github_actions:
+              - Dockerfile
+              - 'common/**'
+              - 'github_actions/**'
+            go_modules:
+              - Dockerfile
+              - 'common/**'
+              - 'go_modules/**'
+            gradle:
+              - Dockerfile
+              - 'common/**'
+              - 'gradle/**'
+            hex:
+              - Dockerfile
+              - 'common/**'
+              - 'hex/**'
+            maven:
+              - Dockerfile
+              - 'common/**'
+              - 'maven/**'
+            npm_and_yarn:
+              - Dockerfile
+              - 'common/**'
+              - 'npm_and_yarn/**'
+            nuget:
+              - Dockerfile
+              - 'common/**'
+              - 'nuget/**'
+            omnibus:
+              - Dockerfile
+              - 'common/**'
+              - 'omnibus/**'
+            pub:
+              - Dockerfile
+              - 'common/**'
+              - 'pub/**'
+            python:
+              - Dockerfile
+              - 'common/**'
+              - 'python/**'
+            terraform:
+              - Dockerfile
+              - 'common/**'
+              - 'terraform/**'
+
       - name: Checkout code
+        if: steps.changes.outputs[inputs.path] == 'true'
         uses: actions/checkout@v3
+
       - name: Build dependabot-core image
+        if: steps.changes.outputs[inputs.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -69,7 +148,9 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
+
       - name: Build dependabot-core-ci image
+        if: steps.changes.outputs[inputs.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -78,7 +159,9 @@ jobs:
             -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
+
       - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[inputs.path] == 'true'
         run: |
           docker run \
             --env "CI=true" \
@@ -93,8 +176,6 @@ jobs:
   updater:
     name: Updater
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -107,17 +188,6 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
-      - name: Free up disk space
-        run: |
-          sudo apt autoremove --purge && sudo apt -y clean
-          docker system prune -af --volumes
-          sudo swapoff -a
-          sudo rm -f /swapfile
-          df -h
-      - name: GPR login
-        run: docker login docker.pkg.github.com -u x -p ${{secrets.GITHUB_TOKEN}}
-      - name: GHCR login
-        run: docker login ghcr.io -u x -p ${{ secrets.GITHUB_TOKEN }}
       - name: Build
         run: script/build
       - name: Lint
