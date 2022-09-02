@@ -3,17 +3,9 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'composer/**'
   pull_request:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'composer/**'
   schedule:
     - cron: "0 0 * * *"
 

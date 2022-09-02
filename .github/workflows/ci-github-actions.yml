@@ -3,17 +3,9 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'github_actions/**'
   pull_request:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'github_actions/**'
   schedule:
     - cron: "0 0 * * *"
 

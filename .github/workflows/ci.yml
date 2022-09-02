@@ -21,9 +21,88 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            bundler:
+              - Dockerfile
+              - 'common/**'
+              - 'bundler/**'
+            cargo:
+              - Dockerfile
+              - 'common/**'
+              - 'cargo/**'
+            common:
+              - Dockerfile
+              - 'common/**'
+            composer:
+              - Dockerfile
+              - 'common/**'
+              - 'composer/**'
+            docker:
+              - Dockerfile
+              - 'common/**'
+              - 'docker/**'
+            elm:
+              - Dockerfile
+              - 'common/**'
+              - 'elm/**'
+            git_submodules:
+              - Dockerfile
+              - 'common/**'
+              - 'git_submodules/**'
+            github_actions:
+              - Dockerfile
+              - 'common/**'
+              - 'github_actions/**'
+            go_modules:
+              - Dockerfile
+              - 'common/**'
+              - 'go_modules/**'
+            gradle:
+              - Dockerfile
+              - 'common/**'
+              - 'gradle/**'
+            hex:
+              - Dockerfile
+              - 'common/**'
+              - 'hex/**'
+            maven:
+              - Dockerfile
+              - 'common/**'
+              - 'maven/**'
+            npm_and_yarn:
+              - Dockerfile
+              - 'common/**'
+              - 'npm_and_yarn/**'
+            nuget:
+              - Dockerfile
+              - 'common/**'
+              - 'nuget/**'
+            omnibus:
+              - Dockerfile
+              - 'common/**'
+              - 'omnibus/**'
+            pub:
+              - Dockerfile
+              - 'common/**'
+              - 'pub/**'
+            python:
+              - Dockerfile
+              - 'common/**'
+              - 'python/**'
+            terraform:
+              - Dockerfile
+              - 'common/**'
+              - 'terraform/**'
+
       - name: Checkout code
         uses: actions/checkout@v3
+        if: steps.changes.outputs[inputs.path] == 'true'
+
       - name: Build dependabot-core image
+        if: steps.changes.outputs[inputs.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -32,7 +111,9 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
+
       - name: Build dependabot-core-ci image
+        if: steps.changes.outputs[inputs.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -41,7 +122,9 @@ jobs:
             -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
+
       - name: Run ${{ inputs.name }} tests
+        if: steps.changes.outputs[inputs.path] == 'true'
         run: |
           docker run \
             --env "CI=true" \

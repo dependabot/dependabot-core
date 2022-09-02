@@ -3,17 +3,9 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'nuget/**'
   pull_request:
     branches:
       - "main"
-    paths:
-      - Dockerfile
-      - 'common/**'
-      - 'nuget/**'
   schedule:
     - cron: "0 0 * * *"
 
