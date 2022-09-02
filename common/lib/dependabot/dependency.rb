@@ -120,9 +120,7 @@ module Dependabot
     private
 
     def check_values
-      if [version, previous_version].any?("")
-        raise ArgumentError, "blank strings must not be provided as versions"
-      end
+      raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
 
       check_requirement_fields
       check_subdependency_metadata

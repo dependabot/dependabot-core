@@ -167,7 +167,6 @@ module Dependabot
           @npmrc_scoped_registries ||=
             npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
             filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
-
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

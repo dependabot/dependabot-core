@@ -132,7 +132,6 @@ module Dependabot
         resolver.resolvable?(version: fix_version) ? fix_version : nil
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependency.requirements
         req_files = reqs.map { |r| r.fetch(:file) }
@@ -154,7 +153,6 @@ module Dependabot
           :requirements
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
         return :pipenv if pipfile_lock
