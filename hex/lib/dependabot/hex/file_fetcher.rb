@@ -82,7 +82,7 @@ module Dependabot
         mixfiles = [mixfile] + subapp_mixfiles
 
         mixfiles.flat_map do |mixfile|
-          mixfile_dir = mixfile.path.sub("/mix.exs", "").delete_prefix("/")
+          mixfile_dir = mixfile.path.to_s.delete_prefix("/").delete_suffix("/mix.exs")
 
           mixfile.content.gsub(/__DIR__/, "\"#{mixfile_dir}\"").scan(SUPPORT_FILE).map do |support_file_args|
             path = Pathname.new(File.join(*support_file_args.compact.reverse)).

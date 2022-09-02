@@ -12,7 +12,7 @@ module DummyPackageManager
     def self.remove_leading_v(version)
       return version unless version.to_s.match?(/\Av([0-9])/)
 
-      version.to_s.gsub(/\Av/, "")
+      version.to_s.delete_prefix('v')
     end
 
     def self.correct?(version)
