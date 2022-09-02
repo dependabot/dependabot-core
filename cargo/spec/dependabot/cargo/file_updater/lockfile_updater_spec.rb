@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_lockfile_content" do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }
@@ -253,7 +253,7 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
           it "updates the dependency version in the lockfile" do
             expect(updated_lockfile_content).
-              to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#"\
+              to include("git+ssh://git@github.com/BurntSushi/utf8-ranges#" \
                          "be9b8dfcaf449453cbf83ac85260ee80323f4f77")
             expect(updated_lockfile_content).to_not include("git+https://")
 

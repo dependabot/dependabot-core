@@ -301,8 +301,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
       it "raises a helpful error message" do
         expect { subject }.to raise_error(Dependabot::DependencyFileNotParseable) do |error|
           expect(error.message).to eq(
-            "This terraform provider syntax is now deprecated.\n"\
-            "See https://www.terraform.io/docs/language/providers/requirements.html "\
+            "This terraform provider syntax is now deprecated.\n" \
+            "See https://www.terraform.io/docs/language/providers/requirements.html " \
             "for the new Terraform v0.13+ provider syntax."
           )
         end

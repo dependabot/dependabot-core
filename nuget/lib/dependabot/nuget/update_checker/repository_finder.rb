@@ -191,10 +191,10 @@ module Dependabot
         def default_repository_details
           {
             repository_url: DEFAULT_REPOSITORY_URL,
-            versions_url: "https://api.nuget.org/v3-flatcontainer/"\
-                             "#{dependency.name.downcase}/index.json",
-            search_url: "https://azuresearch-usnc.nuget.org/query"\
-                             "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
+            versions_url: "https://api.nuget.org/v3-flatcontainer/" \
+                          "#{dependency.name.downcase}/index.json",
+            search_url: "https://azuresearch-usnc.nuget.org/query" \
+                        "?q=#{dependency.name.downcase}&prerelease=true&semVerLevel=2.0.0",
             auth_header: {},
             repository_type: "v3"
           }
@@ -222,7 +222,7 @@ module Dependabot
             next source_details[:token] = nil if key.match?(/^\d/)
 
             tag = key.gsub(" ", "_x0020_")
-            creds_nodes = doc.css("configuration > packageSourceCredentials "\
+            creds_nodes = doc.css("configuration > packageSourceCredentials " \
                                   "> #{tag} > add")
 
             username =

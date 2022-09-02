@@ -189,7 +189,7 @@ module Dependabot
         end
 
         def parent_node_link?(node)
-          node.type == :link || node.parent && parent_node_link?(node.parent)
+          node.type == :link || (node.parent && parent_node_link?(node.parent))
         end
       end
     end

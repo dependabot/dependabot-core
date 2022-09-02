@@ -396,7 +396,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
         it "gets the URL from the changelog_uri" do
           expect(suggested_changelog_url).to eq(
-            "https://github.com/rails/rails/blob/v5.2.2/"\
+            "https://github.com/rails/rails/blob/v5.2.2/" \
             "activerecord/CHANGELOG.md"
           )
         end

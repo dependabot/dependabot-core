@@ -46,11 +46,11 @@ module Dependabot
         workspace_root = parsed_file(cargo_toml).dig("package", "workspace")
         return unless workspace_root
 
-        msg = "This project is part of a Rust workspace but is not the "\
-              "workspace root."\
+        msg = "This project is part of a Rust workspace but is not the " \
+              "workspace root." \
 
         if cargo_toml.directory != "/"
-          msg += "Please update your settings so Dependabot points at the "\
+          msg += "Please update your settings so Dependabot points at the " \
                  "workspace root instead of #{cargo_toml.directory}."
         end
         raise Dependabot::DependencyFileNotEvaluatable, msg

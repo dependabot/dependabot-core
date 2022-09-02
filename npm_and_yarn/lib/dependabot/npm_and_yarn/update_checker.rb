@@ -188,7 +188,7 @@ module Dependabot
           source: nil
         ).parse.select(&:top_level?)
 
-        top_level_dependencies.map { |dep| [dep.name, dep] }.to_h
+        top_level_dependencies.to_h { |dep| [dep.name, dep] }
       end
 
       def build_updated_dependency(update_details)

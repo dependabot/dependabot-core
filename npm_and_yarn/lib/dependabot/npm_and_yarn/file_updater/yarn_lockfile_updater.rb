@@ -430,7 +430,7 @@ module Dependabot
 
         def raise_resolvability_error(error_message, yarn_lock)
           dependency_names = dependencies.map(&:name).join(", ")
-          msg = "Error whilst updating #{dependency_names} in "\
+          msg = "Error whilst updating #{dependency_names} in " \
                 "#{yarn_lock.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end

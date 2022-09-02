@@ -189,8 +189,8 @@ module Dependabot
         raise NotFound if response.status == 404
 
         if response.status >= 400
-          raise "Unhandled Bitbucket error!\n"\
-                "Status: #{response.status}\n"\
+          raise "Unhandled Bitbucket error!\n" \
+                "Status: #{response.status}\n" \
                 "Body: #{response.body}"
         end
 

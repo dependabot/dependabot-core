@@ -280,12 +280,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           body: {
             parents: ["basecommitsha"],
             tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-            message: "Bump business from 1.4.0 to 1.5.0\n\n"\
-                     "Bumps [business](https://github.com/gocardless/business)"\
-                     " from 1.4.0 to 1.5.0.\n"\
-                     "- [Changelog](https://github.com/gocardless/business/blo"\
-                     "b/master/CHANGELOG.md)\n"\
-                     "- [Commits](https://github.com/gocardless/business/compa"\
+            message: "Bump business from 1.4.0 to 1.5.0\n\n" \
+                     "Bumps [business](https://github.com/gocardless/business)" \
+                     " from 1.4.0 to 1.5.0.\n" \
+                     "- [Changelog](https://github.com/gocardless/business/blo" \
+                     "b/master/CHANGELOG.md)\n" \
+                     "- [Commits](https://github.com/gocardless/business/compa" \
                      "re/v3.0.0...v1.5.0)"
           }
         )
@@ -313,12 +313,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
               parents: ["basecommitsha"],
               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
               message:
-                "Bump business from 1.4.0 to 1.5.0\n\n"\
-                "Bumps [business](https://github.com/gocardless/business)"\
-                " from 1.4.0 to 1.5.0.\n"\
-                "- [Changelog](https://github.com/gocardless/business/blo"\
-                "b/master/CHANGELOG.md)\n"\
-                "- [Commits](https://github.com/gocardless/business/compa"\
+                "Bump business from 1.4.0 to 1.5.0\n\n" \
+                "Bumps [business](https://github.com/gocardless/business)" \
+                " from 1.4.0 to 1.5.0.\n" \
+                "- [Changelog](https://github.com/gocardless/business/blo" \
+                "b/master/CHANGELOG.md)\n" \
+                "- [Commits](https://github.com/gocardless/business/compa" \
                 "re/v3.0.0...v1.5.0)"
             }
           )
@@ -350,12 +350,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
                 parents: ["basecommitsha"],
                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
                 message:
-                  "Bump business from 1.4.0 to 1.5.0\n\n"\
-                  "Bumps [business](https://github.com/gocardless/business)"\
-                  " from 1.4.0 to 1.5.0.\n"\
-                  "- [Changelog](https://github.com/gocardless/business/blo"\
-                  "b/master/CHANGELOG.md)\n"\
-                  "- [Commits](https://github.com/gocardless/business/compa"\
+                  "Bump business from 1.4.0 to 1.5.0\n\n" \
+                  "Bumps [business](https://github.com/gocardless/business)" \
+                  " from 1.4.0 to 1.5.0.\n" \
+                  "- [Changelog](https://github.com/gocardless/business/blo" \
+                  "b/master/CHANGELOG.md)\n" \
+                  "- [Commits](https://github.com/gocardless/business/compa" \
                   "re/v3.0.0...v1.5.0)"
               }
             )
@@ -466,19 +466,19 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         let(:signature_key) { fixture("keys", "pgp.key") }
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
-          "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n"\
-          "parent basecommitsha\n"\
-          "author dependabot <support@dependabot.com> 978307200 +0000\n"\
-          "committer dependabot <support@dependabot.com> 978307200 +0000\n"\
-          "\n"\
-          "Bump business from 1.4.0 to 1.5.0\n"\
-          "\n"\
-          "Bumps [business](https://github.com/gocardless/business) from "\
-          "1.4.0 to 1.5.0.\n"\
-          "- [Changelog](https://github.com/gocardless/business/blob/"\
-          "master/CHANGELOG.md)\n"\
-          "- [Commits](https://github.com/gocardless/business/compare/"\
-          "v3.0.0...v1.5.0)"
+          "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n" \
+            "parent basecommitsha\n" \
+            "author dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "committer dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "\n" \
+            "Bump business from 1.4.0 to 1.5.0\n" \
+            "\n" \
+            "Bumps [business](https://github.com/gocardless/business) from " \
+            "1.4.0 to 1.5.0.\n" \
+            "- [Changelog](https://github.com/gocardless/business/blob/" \
+            "master/CHANGELOG.md)\n" \
+            "- [Commits](https://github.com/gocardless/business/compare/" \
+            "v3.0.0...v1.5.0)"
         end
         before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
 

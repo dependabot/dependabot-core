@@ -63,7 +63,7 @@ module Functions
       if spec.name == top_level.name
         "#{spec.name} (#{spec.version}) requires #{dependency_name} (#{dependency.requirement})"
       else
-        "#{top_level.name} (#{top_level.version}) requires #{dependency_name} "\
+        "#{top_level.name} (#{top_level.version}) requires #{dependency_name} " \
           "(#{dependency.requirement}) via #{spec.name} (#{spec.version})"
       end
     end

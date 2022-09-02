@@ -21,8 +21,8 @@ module Dependabot
       # - Any dependencies (incl. those in dependencyManagement or plugins)
       # - Any plugins (incl. those in pluginManagement)
       # - Any extensions
-      DEPENDENCY_SELECTOR = "project > parent, "\
-                            "dependencies > dependency, "\
+      DEPENDENCY_SELECTOR = "project > parent, " \
+                            "dependencies > dependency, " \
                             "extensions > extension"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"

@@ -133,7 +133,7 @@ def changed_packages
                  select { |gs| gs.include?("/") }.
                  map { |gs| "./" + gs.split("/").first }
 
-  compare_url = ENV["CIRCLE_COMPARE_URL"]
+  compare_url = ENV.fetch("CIRCLE_COMPARE_URL", nil)
   if compare_url.nil?
     warn "CIRCLE_COMPARE_URL not set, so changed packages can't be calculated"
     return all_packages

@@ -141,7 +141,7 @@ module Dependabot
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type
+        type = "symlink" if @linked_paths.key?(path.gsub(%r{^/}, ""))
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,

@@ -56,7 +56,7 @@ module Dependabot
             if length_change.positive?
               updated_line.sub(/(?<=\s)\s{#{length_change}}#/, "#")
             elsif length_change.negative?
-              updated_line.sub(/(?<=\s{2})#/, " " * length_change.abs + "#")
+              updated_line.sub(/(?<=\s{2})#/, (" " * length_change.abs) + "#")
             end
 
           updated_lines[updated_line_index] = updated_line
