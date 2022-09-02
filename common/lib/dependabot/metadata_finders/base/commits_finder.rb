@@ -7,6 +7,7 @@ require "dependabot/shared_helpers"
 require "dependabot/git_metadata_fetcher"
 require "dependabot/git_commit_checker"
 require "dependabot/metadata_finders/base"
+
 module Dependabot
   module MetadataFinders
     class Base
@@ -33,7 +34,6 @@ module Dependabot
             end
 
           "#{source.url}/#{path}"
-
 
         rescue ArgumentError
           # This is introduced to catch the ArgumentError exception
