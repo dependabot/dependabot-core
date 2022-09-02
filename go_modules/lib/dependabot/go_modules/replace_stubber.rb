@@ -42,7 +42,7 @@ module Dependabot
 
       def relative_replacement_path?(path)
         # https://golang.org/ref/mod#go-mod-file-replace
-        path.start_with?("./") || path.start_with?("../")
+        path.start_with?("./", "../")
       end
 
       def module_pathname(directory)
