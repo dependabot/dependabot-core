@@ -16,13 +16,12 @@ module Dependabot
 
       # See https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
       VERSION_PATTERN = 'v?([1-9][0-9]*!)?[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
-                        '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
+                        '(-[0-9A-Za-z]+(\.[0-9a-zA-Z]+)*)?' \
                         '(\+[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
 
       def self.correct?(version)
         return false if version.nil?
-
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 

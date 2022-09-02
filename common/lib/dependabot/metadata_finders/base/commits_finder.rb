@@ -34,9 +34,6 @@ module Dependabot
             end
 
           "#{source.url}/#{path}"
-        rescue ArgumentError
-          # This is introduced to catch the ArgumentError exception
-          # that crashes the core as a result of using the wrong release tags.
         end
 
         def commits
