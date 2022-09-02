@@ -40,8 +40,96 @@ jobs:
           - terraform
     steps:
     - uses: actions/checkout@v3
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          actions:
+            - Dockerfile
+            - 'common/**'
+            - 'github_actions/**'
+          bundler:
+            - Dockerfile
+            - 'common/**'
+            - 'bundler/**'
+          cargo:
+            - Dockerfile
+            - 'common/**'
+            - 'cargo/**'
+          common:
+            - Dockerfile
+            - 'common/**'
+          composer:
+            - Dockerfile
+            - 'common/**'
+            - 'composer/**'
+          docker:
+            - Dockerfile
+            - 'common/**'
+            - 'docker/**'
+          elm:
+            - Dockerfile
+            - 'common/**'
+            - 'elm/**'
+          go:
+            - Dockerfile
+            - 'common/**'
+            - 'go_modules/**'
+          gradle:
+            - Dockerfile
+            - 'common/**'
+            - 'gradle/**'
+          hex:
+            - Dockerfile
+            - 'common/**'
+            - 'hex/**'
+          maven:
+            - Dockerfile
+            - 'common/**'
+            - 'maven/**'
+          npm:
+            - Dockerfile
+            - 'common/**'
+            - 'npm_and_yarn/**'
+          nuget:
+            - Dockerfile
+            - 'common/**'
+            - 'nuget/**'
+          omnibus:
+            - Dockerfile
+            - 'common/**'
+            - 'omnibus/**'
+          pub:
+            - Dockerfile
+            - 'common/**'
+            - 'pub/**'
+          pip:
+            - Dockerfile
+            - 'common/**'
+            - 'python/**'
+          'pip-compile':
+            - Dockerfile
+            - 'common/**'
+            - 'python/**'
+          pipenv:
+            - Dockerfile
+            - 'common/**'
+            - 'python/**'
+          poetry:
+            - Dockerfile
+            - 'common/**'
+            - 'python/**'
+          submodules:
+            - Dockerfile
+            - 'common/**'
+            - 'git_submodules/**'
+          terraform:
+            - Dockerfile
+            - 'common/**'
+            - 'terraform/**'
 
     - name: Download CLI and test
+      if: steps.changes.outputs[matrix.suite] == 'true'
       run: |
         gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
         tar xzvf *.tar.gz >/dev/null 2>&1
@@ -51,16 +139,14 @@ jobs:
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
     - name: Download cache
+      if: steps.changes.outputs[matrix.suite] == 'true'
       run: |
         mkdir cache
         cd cache
         gh run download --repo dependabot/cli --name cache-${{ matrix.suite }}
 
-    - name: GPR login
-      run: docker login docker.pkg.github.com -u x -p ${{secrets.GITHUB_TOKEN}}
-    - name: GHCR login
-      run: docker login ghcr.io -u x -p ${{ secrets.GITHUB_TOKEN }}
     - name: Build dependabot-core image
+      if: steps.changes.outputs[matrix.suite] == 'true'
       env:
         DOCKER_BUILDKIT: 1
       run: |
@@ -70,6 +156,7 @@ jobs:
           --cache-from ghcr.io/dependabot/dependabot-core \
           .
     - name: Build dependabot-updater image
+      if: steps.changes.outputs[matrix.suite] == 'true'
       env:
         DOCKER_BUILDKIT: 1
         OMNIBUS_VERSION: latest
@@ -84,6 +171,7 @@ jobs:
           .
 
     - name: ${{ matrix.suite }}
+      if: steps.changes.outputs[matrix.suite] == 'true'
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.E2E_PAT }}
       run: |
@@ -96,6 +184,7 @@ jobs:
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
     - name: Create summary
+      if: steps.changes.outputs[matrix.suite] == 'true'
       run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
     # No upload at the end:
