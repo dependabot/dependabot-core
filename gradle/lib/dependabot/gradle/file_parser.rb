@@ -178,7 +178,7 @@ module Dependabot
       end
 
       def extra_groups(line)
-        line.match(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/) ? ["kotlin"] : []
+        line.match?(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/) ? ["kotlin"] : []
       end
 
       def argument_from_string(string, arg_name)

@@ -47,7 +47,7 @@ module Dependabot
             find_property_in_packages_props(property: property_name)
 
           return unless node_details
-          return node_details unless node_details[:value] =~ PROPERTY_REGEX
+          return node_details unless PROPERTY_REGEX.match?(node_details[:value])
 
           check_next_level_of_stack(node_details, stack)
         end
