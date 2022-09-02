@@ -185,11 +185,7 @@ module Dependabot
           # Remove forbidden characters (those not already replaced elsewhere)
           gsub(%r{[^A-Za-z0-9/\-_.(){}]}, "").
           # Slashes can't be followed by periods
-          gsub(%r{/\.}, "/dot-").
-          # Two or more sequential periods are forbidden
-          gsub(/\.+/, ".").
-          # Two or more sequential slashes are forbidden
-          gsub(%r{/+}, "/").
+          gsub(%r{/\.}, "/dot-").squeeze('.').squeeze('/').
           # Trailing periods are forbidden
           sub(/\.$/, "")
       end
