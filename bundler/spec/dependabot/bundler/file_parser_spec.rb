@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_imports_gemspec_large") }
 
         it "includes details of each declaration" do
-          expect(dependencies.select(&:top_level?).count).to eq(13)
+          expect(dependencies.count(&:top_level?)).to eq(13)
         end
 
         it "includes details of each sub-dependency" do
@@ -607,7 +607,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_with_require") }
 
           it "includes details of each declaration" do
-            expect(dependencies.select(&:top_level?).count).to eq(13)
+            expect(dependencies.count(&:top_level?)).to eq(13)
           end
         end
 

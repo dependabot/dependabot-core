@@ -130,7 +130,7 @@ module Dependabot
 
       def at_same_precision(new_version, old_version)
         release_precision =
-          old_version.to_s.split(".").select { |i| i.match?(/^\d+$/) }.count
+          old_version.to_s.split(".").count { |i| i.match?(/^\d+$/) }
         prerelease_precision =
           old_version.to_s.split(".").count - release_precision
 
