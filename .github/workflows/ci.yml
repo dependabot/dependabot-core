@@ -135,11 +135,11 @@ jobs:
               - 'terraform/**'
 
       - name: Checkout code
-        if: steps.changes.outputs[inputs.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         uses: actions/checkout@v3
 
       - name: Build dependabot-core image
-        if: steps.changes.outputs[inputs.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -150,7 +150,7 @@ jobs:
             .
 
       - name: Build dependabot-core-ci image
-        if: steps.changes.outputs[inputs.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -161,7 +161,7 @@ jobs:
             .
 
       - name: Run ${{ matrix.suite.name }} tests
-        if: steps.changes.outputs[inputs.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
             --env "CI=true" \
