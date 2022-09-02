@@ -78,7 +78,7 @@ module Dependabot
 
       def convert_range_req(req_string)
         req_string.scan(
-          /((?:>|<|=|<=|>=)\s*#{Pub::Version::VERSION_PATTERN})\s*/
+          /((?:>|<|=|<=|>=)\s*#{Pub::Version::VERSION_PATTERN})\s*/o
         ).map { |x| x[0].strip }
       end
 

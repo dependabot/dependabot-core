@@ -268,7 +268,7 @@ RSpec.describe Dependabot::SharedHelpers do
           (|
           \+https://github.com/dependabot/|dependabot-core|
           )|
-        }x
+        }xo
       )
     end
 

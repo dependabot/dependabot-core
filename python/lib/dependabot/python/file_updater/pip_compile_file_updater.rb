@@ -352,7 +352,7 @@ module Dependabot
         end
 
         def deps_to_augment_hashes_for(updated_content, original_content)
-          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/
+          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/o
 
           new_matches = []
           updated_content.scan(regex) { new_matches << Regexp.last_match }

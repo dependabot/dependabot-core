@@ -260,7 +260,7 @@ module Dependabot
         # Updates the version in a constraint to be the given version
         def bump_version(req_string, version_to_be_permitted)
           old_version = req_string.
-                        match(/(#{RequirementParser::VERSION})/).
+                        match(/(#{RequirementParser::VERSION})/o).
                         captures.first
 
           req_string.sub(
