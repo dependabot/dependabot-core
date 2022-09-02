@@ -39,7 +39,7 @@ module Dependabot
         potential_source_urls =
           SOURCE_KEYS.
           filter_map { |key| hex_listing.dig("meta", "links", key) }
-          
+
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         Source.from_url(source_url)

@@ -49,7 +49,7 @@ module Dependabot
 
           possible_lockfile_names.uniq.
             filter_map { |nm| dependency_files.find { |f| f.name == nm } }
-            
+
         end
 
         def npm_lockfile_details(lockfile, dependency_name, manifest_name)
