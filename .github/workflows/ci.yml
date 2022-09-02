@@ -58,6 +58,9 @@ jobs:
           - { path: terraform, name: terraform }
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - uses: dorny/paths-filter@v2
         id: changes
         with:
@@ -133,10 +136,6 @@ jobs:
               - Dockerfile
               - 'common/**'
               - 'terraform/**'
-
-      - name: Checkout code
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        uses: actions/checkout@v3
 
       - name: Build dependabot-core image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
