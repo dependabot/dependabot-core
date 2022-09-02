@@ -1,4 +1,4 @@
-name: CI Composer
+name: CI
 on:
   push:
     branches:

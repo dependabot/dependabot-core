@@ -1,4 +1,4 @@
-name: CI NPM and Yarn
+name: CI
 on:
   push:
     branches:

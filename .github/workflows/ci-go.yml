@@ -1,4 +1,4 @@
-name: CI Go
+name: CI
 on:
   push:
     branches:

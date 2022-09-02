@@ -1,4 +1,4 @@
-name: CI Maven
+name: CI
 on:
   push:
     branches:

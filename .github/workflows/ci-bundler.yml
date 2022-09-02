@@ -1,4 +1,4 @@
-name: CI Bundler
+name: CI
 on:
   push:
     branches:

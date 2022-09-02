@@ -1,4 +1,4 @@
-name: CI Python
+name: CI
 on:
   push:
     branches:

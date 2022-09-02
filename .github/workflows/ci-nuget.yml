@@ -1,4 +1,4 @@
-name: CI Nuget
+name: CI
 on:
   push:
     branches:
