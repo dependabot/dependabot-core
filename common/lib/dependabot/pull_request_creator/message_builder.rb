@@ -427,8 +427,8 @@ module Dependabot
 
       def docker_digest_from_reqs(requirements)
         requirements.
-          filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
-                    .first
+          filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+                    first
       end
 
       def previous_ref(dependency)

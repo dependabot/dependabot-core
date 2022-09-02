@@ -127,8 +127,8 @@ module Dependabot
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
           dependency.requirements.
-            filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
-                    .first.split(":").last[0..6]
+            filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+                    first.split(":").last[0..6]
         else
           dependency.version
         end
