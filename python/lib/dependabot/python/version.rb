@@ -22,6 +22,7 @@ module Dependabot
 
       def self.correct?(version)
         return false if version.nil?
+
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
