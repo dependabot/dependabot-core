@@ -1,0 +1,31 @@
+name: CI Maven
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'maven/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'maven/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: maven, name: maven }

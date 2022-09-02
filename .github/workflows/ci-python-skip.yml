@@ -1,0 +1,30 @@
+name: CI Python
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - Dockerfile
+      - 'common/**'
+      - 'python/**'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 4 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 4 }
+    steps:
+      - run: echo skipped

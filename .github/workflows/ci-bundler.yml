@@ -1,0 +1,36 @@
+name: CI Bundler
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'bundler/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'bundler/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+      ci_node_total: ${{ matrix.suite.ci_node_total }}
+      ci_node_index: ${{ matrix.suite.ci_node_index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 0 }
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 1 }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0 }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1 }

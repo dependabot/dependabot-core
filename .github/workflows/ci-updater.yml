@@ -1,0 +1,48 @@
+name: CI Updater
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
+    branches:
+      - "main"
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  updater:
+    name: Updater
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+      - name: Build
+        run: script/build
+      - name: Lint
+        run: script/lint
+        env:
+          SKIP_BUILD: true
+      - name: Run updater tests
+        run: ./script/ci-test-updater
+        env:
+          SKIP_BUILD: true
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./bin/lint

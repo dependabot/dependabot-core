@@ -1,0 +1,34 @@
+name: CI Hex
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'hex/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'hex/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+      ci_node_total: ${{ matrix.suite.ci_node_total }}
+      ci_node_index: ${{ matrix.suite.ci_node_index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0 }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1 }

@@ -1,0 +1,21 @@
+name: CI Docker
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - Dockerfile
+      - 'common/**'
+      - 'docker/**'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: docker, name: docker }
+    steps:
+      - run: echo skipped

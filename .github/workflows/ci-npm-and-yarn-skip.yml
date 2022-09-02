@@ -1,0 +1,23 @@
+name: CI NPM and Yarn
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - Dockerfile
+      - 'common/**'
+      - 'npm_and_yarn/**'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0 }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1 }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2 }
+    steps:
+      - run: echo skipped

@@ -8,7 +8,7 @@ on:
   pull_request:
     branches: [ "main" ]
     paths-ignore:
-      - docs/**
+      - 'docs/**'
       - README.md
 env:
   GH_TOKEN: ${{ secrets.E2E_PAT }}

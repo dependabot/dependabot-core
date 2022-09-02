@@ -1,0 +1,29 @@
+name: CI common
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: common, name: common }

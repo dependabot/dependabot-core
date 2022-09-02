@@ -1,0 +1,22 @@
+name: CI Go
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - Dockerfile
+      - 'common/**'
+      - 'go_modules/**'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }
+    steps:
+      - run: echo skipped

@@ -1,0 +1,34 @@
+name: CI Go
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'go_modules/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'go_modules/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+      ci_node_total: ${{ matrix.suite.ci_node_total }}
+      ci_node_index: ${{ matrix.suite.ci_node_index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }

@@ -1,0 +1,21 @@
+name: CI Terraform
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths-ignore:
+      - Dockerfile
+      - 'common/**'
+      - 'terraform/**'
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: terraform, name: terraform }
+    steps:
+      - run: echo skipped

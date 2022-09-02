@@ -1,0 +1,34 @@
+name: CI Composer
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'composer/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'composer/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+      ci_node_total: ${{ matrix.suite.ci_node_total }}
+      ci_node_index: ${{ matrix.suite.ci_node_index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0 }
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1 }

@@ -1,0 +1,42 @@
+name: CI Python
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'python/**'
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - Dockerfile
+      - 'common/**'
+      - 'python/**'
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    with:
+      name: ${{ matrix.suite.name }}
+      path: ${{ matrix.suite.path }}
+      ci_node_total: ${{ matrix.suite.ci_node_total }}
+      ci_node_index: ${{ matrix.suite.ci_node_index }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 4 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 4 }
