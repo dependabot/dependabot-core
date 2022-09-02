@@ -10,7 +10,7 @@ module Dependabot
       class DependencySet
         def initialize(dependencies = [], case_sensitive: false)
           unless dependencies.is_a?(Array) &&
-                 dependencies.all? { |dep| dep.is_a?(Dependency) }
+                 dependencies.all?(Dependency)
             raise ArgumentError, "must be an array of Dependency objects"
           end
 

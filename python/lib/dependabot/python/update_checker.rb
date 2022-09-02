@@ -144,8 +144,8 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipenv if req_files.any? { |f| f == "Pipfile" }
-        return :poetry if req_files.any? { |f| f == "pyproject.toml" }
+        return :pipenv if req_files.any?("Pipfile")
+        return :poetry if req_files.any?("pyproject.toml")
         return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
         if dependency.version && !exact_requirement?(reqs)

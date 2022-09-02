@@ -172,7 +172,7 @@ module Dependabot
 
           dependency.requirements.any? do |req|
             reqs = parse_requirement_string(req.fetch(:requirement) || "")
-            return true if reqs.any? { |r| r == "*-*" }
+            return true if reqs.any?("*-*")
             next unless reqs.any? { |r| r.include?("-") }
 
             requirement_class.
