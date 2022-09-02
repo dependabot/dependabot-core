@@ -44,7 +44,7 @@ jobs:
             -t "$UPDATER_IMAGE:$TAG" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$BASE_IMAGE" \
-            --cache-from "$UPDATER_IMAGE:latest" \
+            --cache-from "$UPDATER_IMAGE_MIRROR" \
             --build-arg OMNIBUS_VERSION=$TAG \
             -f Dockerfile.updater \
             .
@@ -56,13 +56,15 @@ jobs:
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
           docker push "$UPDATER_IMAGE_MIRROR:$TAG"
-      - name: Save tagged image
+      - name: Push latest on main
+        if: github.ref == 'refs/heads/master'
+        continue-on-error: true
         run: |
-          docker save "$UPDATER_IMAGE:$TAG" > dependabot-updater.tar
-      - name: Archive image
-        uses: actions/upload-artifact@v3
-        with:
-          name: updater-${{ github.sha }}.tar
-          path: dependabot-updater.tar
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
+          docker push "$UPDATER_IMAGE_MIRROR:latest"
       - name: Set summary
-        run: echo "updater uploaded \`ghcr.io/dependabot/dependabot-updater/dependabot-updater:$TAG\`" >> $GITHUB_STEP_SUMMARY
+        run: |
+          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
