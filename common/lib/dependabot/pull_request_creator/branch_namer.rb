@@ -91,7 +91,7 @@ module Dependabot
         dep = dependencies.first
 
         if dep.removed?
-          ""
+          "-removed"
         elsif library? && ref_changed?(dep) && new_ref(dep)
           new_ref(dep)
         elsif library?

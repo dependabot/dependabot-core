@@ -281,7 +281,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         )
       end
 
-      it { is_expected.to eq("dependabot/dummy/business-and-statesman-") }
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman--removed") }
     end
 
     context "with a : in the name" do
