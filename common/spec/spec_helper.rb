@@ -38,6 +38,7 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+  config.example_status_persistence_file_path = ".rspec_status"
 
   config.after do
     # Ensure we clear any cached timeouts between tests
