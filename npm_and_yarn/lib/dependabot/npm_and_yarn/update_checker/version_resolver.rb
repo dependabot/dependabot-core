@@ -355,7 +355,7 @@ module Dependabot
             requirement_name:
               captures.fetch("required_dep").sub(/@[^@]+$/, ""),
             requirement_version:
-              captures.fetch("required_dep").split("@").last.gsub('"', ""),
+              captures.fetch("required_dep").split("@").last.delete('"'),
             requiring_dep_name:
               captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
           }
