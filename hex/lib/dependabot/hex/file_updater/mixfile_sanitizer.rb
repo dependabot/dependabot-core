@@ -25,8 +25,8 @@ module Dependabot
 
         def sanitized_content
           mixfile_content.
-            yield_self(&method(:prevent_version_file_loading)).
-            yield_self(&method(:prevent_config_path_loading))
+            then(&method(:prevent_version_file_loading)).
+            then(&method(:prevent_config_path_loading))
         end
 
         private

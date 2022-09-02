@@ -56,7 +56,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   subject(:updated_npm_lock_content) { updater.updated_lockfile.content }
 
@@ -313,8 +313,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-dep-name-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-dep-name-npm-package",
               branch: nil,
               ref: ref
             }
@@ -327,8 +327,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-dep-name-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-dep-name-npm-package",
               branch: nil,
               ref: old_ref
             }
@@ -405,8 +405,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-scoped-dep-version-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-scoped-dep-version-npm-package",
               branch: nil,
               ref: ref
             }
@@ -419,8 +419,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-scoped-dep-version-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-scoped-dep-version-npm-package",
               branch: nil,
               ref: old_ref
             }
@@ -448,8 +448,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-dep-version-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: ref
             }
@@ -462,8 +462,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             groups: ["dependencies"],
             source: {
               type: "git",
-              url: "https://github.com/dependabot-fixtures/"\
-              "test-missing-dep-version-npm-package",
+              url: "https://github.com/dependabot-fixtures/" \
+                   "test-missing-dep-version-npm-package",
               branch: nil,
               ref: old_ref
             }

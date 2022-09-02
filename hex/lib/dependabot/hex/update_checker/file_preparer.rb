@@ -115,9 +115,9 @@ module Dependabot
             ">= #{parts.join('.')}"
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def replace_git_pin(content, filename:)
           old_pin =

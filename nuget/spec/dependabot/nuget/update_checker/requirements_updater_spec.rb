@@ -27,8 +27,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
     {
       source_url: nil,
       repo_url: "https://api.nuget.org/v3/index.json",
-      nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                  "microsoft.extensions.dependencymodel/1.2.3/"\
+      nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                  "microsoft.extensions.dependencymodel/1.2.3/" \
                   "microsoft.extensions.dependencymodel.nuspec"
     }
   end
@@ -117,8 +117,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
                 type: "nuget_repo",
                 url: "https://api.nuget.org/v3/index.json",
                 source_url: nil,
-                nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                            "microsoft.extensions.dependencymodel/1.2.3/"\
+                nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                            "microsoft.extensions.dependencymodel/1.2.3/" \
                             "microsoft.extensions.dependencymodel.nuspec"
               }
             }, {
@@ -129,8 +129,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
                 type: "nuget_repo",
                 url: "https://api.nuget.org/v3/index.json",
                 source_url: nil,
-                nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                            "microsoft.extensions.dependencymodel/1.2.3/"\
+                nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                            "microsoft.extensions.dependencymodel/1.2.3/" \
                             "microsoft.extensions.dependencymodel.nuspec"
               }
             }]
@@ -150,8 +150,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
                   type: "nuget_repo",
                   url: "https://api.nuget.org/v3/index.json",
                   source_url: nil,
-                  nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                              "microsoft.extensions.dependencymodel/1.2.3/"\
+                  nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                              "microsoft.extensions.dependencymodel/1.2.3/" \
                               "microsoft.extensions.dependencymodel.nuspec"
                 }
               }, {

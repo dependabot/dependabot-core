@@ -20,12 +20,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
       expect(lockfile).to eq(
         "etag@^1.0.0" => {
           "version" => "1.8.0",
-          "resolved" => "https://registry.yarnpkg.com/etag/-/etag-"\
+          "resolved" => "https://registry.yarnpkg.com/etag/-/etag-" \
                         "1.8.0.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0111"
         },
         "lodash@^1.2.1" => {
           "version" => "1.3.1",
-          "resolved" => "https://registry.yarnpkg.com/lodash/-/lodash-"\
+          "resolved" => "https://registry.yarnpkg.com/lodash/-/lodash-" \
                         "1.3.1.tgz#a4663b53686b895ff074e2ba504dfb76a8e2b770"
         }
       )

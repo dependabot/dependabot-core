@@ -114,8 +114,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             it "updates the requirement" do
               expect(prepared_manifest_file.content).
                 to include(
-                  "[dependencies.alias]\n"\
-                  "package = \"time\"\n"\
+                  "[dependencies.alias]\n" \
+                  "package = \"time\"\n" \
                   "version = \">= 0.1.12\""
                 )
             end
@@ -129,8 +129,8 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::FilePreparer do
             it "doesn't update the requirement" do
               expect(prepared_manifest_file.content).
                 to include(
-                  "[dependencies.alias]\n"\
-                  "package = \"time\"\n"\
+                  "[dependencies.alias]\n" \
+                  "package = \"time\"\n" \
                   "version = \"0.1.12\""
                 )
             end

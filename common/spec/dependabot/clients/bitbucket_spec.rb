@@ -71,8 +71,8 @@ RSpec.describe Dependabot::Clients::Bitbucket do
         stub_request(:post, pull_request_url).
           with(
             body: "{\"title\":\"pr_name\",\"source\":{\"branch\":{\"name\":\"source_branch\"}}," \
-              "\"destination\":{\"branch\":{\"name\":\"target_branch\"}},\"description\":\"pr_description\"," \
-              "\"reviewers\":[],\"close_source_branch\":true}",
+                  "\"destination\":{\"branch\":{\"name\":\"target_branch\"}},\"description\":\"pr_description\"," \
+                  "\"reviewers\":[],\"close_source_branch\":true}",
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Content-Type" => "application/json"

@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_lockfile_content" do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }

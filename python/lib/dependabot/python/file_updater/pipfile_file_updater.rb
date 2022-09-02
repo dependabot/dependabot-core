@@ -350,9 +350,9 @@ module Dependabot
 
           # Otherwise we have to raise, giving details of the Python versions
           # that Dependabot supports
-          msg = "Dependabot detected the following Python requirement "\
-                "for your project: '#{requirement_string}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirement " \
+                "for your project: '#{requirement_string}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end

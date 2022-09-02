@@ -24,10 +24,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       it do
         is_expected.to eq(
-          "begin\n"\
-          "require 'example/version'\n"\
-          "rescue LoadError\n"\
-          "end\n"\
+          "begin\n" \
+          "require 'example/version'\n" \
+          "rescue LoadError\n" \
+          "end\n" \
           'add_dependency "require"'
         )
       end
@@ -40,10 +40,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       it do
         is_expected.to eq(
-          "begin\n"\
-          "require_relative 'example/version'\n"\
-          "rescue LoadError\n"\
-          "end\n"\
+          "begin\n" \
+          "require_relative 'example/version'\n" \
+          "rescue LoadError\n" \
+          "end\n" \
           'add_dependency "require"'
         )
       end
@@ -100,8 +100,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "that uses a conditional" do
         let(:content) do
-          "Spec.new { |s| s.version = '0.1.0'\n "\
-          "s.post_install_message = \"a\" if true }"
+          "Spec.new { |s| s.version = '0.1.0'\n " \
+            "s.post_install_message = \"a\" if true }"
         end
         it "maintains a valid conditional" do
           expect(rewrite).to eq(
@@ -112,8 +112,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "that assigns to the metadata hash" do
         let(:content) do
-          "Spec.new { |s| s.version = '0.1.0'\n "\
-          "s.metadata['homepage'] = \"a\" }"
+          "Spec.new { |s| s.version = '0.1.0'\n " \
+            "s.metadata['homepage'] = \"a\" }"
         end
         it "removes the assignment" do
           expect(rewrite).to eq(
@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
-            "Spec.new do |s|\n              s.version = \"0.1.0\""\
+            "Spec.new do |s|\n              s.version = \"0.1.0\"" \
             "\n              \"sanitized\"\n            end"
           )
         end
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
-            "Spec.new do |s|\n              s.version = \"0.1.0\""\
+            "Spec.new do |s|\n              s.version = \"0.1.0\"" \
             "\n              \"sanitized\"\n            end"
           )
         end

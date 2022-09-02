@@ -474,7 +474,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 headers: { "content-type" => "application/json" }
               )
 
-            sub_url = "https://api.github.com/repos/dependabot/"\
+            sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
             stub_request(:get, sub_url + "?ref=sha2").
               with(headers: { "Authorization" => "token token" }).
@@ -541,7 +541,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
                 headers: { "content-type" => "application/json" }
               )
 
-            sub_url = "https://api.github.com/repos/dependabot/"\
+            sub_url = "https://api.github.com/repos/dependabot/" \
                       "manifesto/contents/"
             stub_request(:get, sub_url + "?ref=sha2").
               with(headers: { "Authorization" => "token token" }).
@@ -671,8 +671,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
       context "when a dependency file is too big to download" do
         let(:blob_url) do
-          "https://api.github.com/repos/#{repo}/git/blobs/"\
-          "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
+          "https://api.github.com/repos/#{repo}/git/blobs/" \
+            "88b4e0a1c8093fae2b4fa52534035f9f85ed0956"
         end
         before do
           stub_request(:get, url + "requirements.txt?ref=sha").
@@ -963,7 +963,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
       let(:repo_url) { base_url + "/_apis/git/repositories/bump" }
       let(:url) do
         repo_url + "/items?path=requirements.txt" \
-          "&versionDescriptor.version=sha&versionDescriptor.versionType=commit"
+                   "&versionDescriptor.version=sha&versionDescriptor.versionType=commit"
       end
 
       before do
@@ -991,8 +991,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "app/" }
           let(:url) do
             repo_url + "/items?path=app/requirements.txt" \
-              "&versionDescriptor.version=sha" \
-              "&versionDescriptor.versionType=commit"
+                       "&versionDescriptor.version=sha" \
+                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do
@@ -1005,8 +1005,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "/app" }
           let(:url) do
             repo_url + "/items?path=app/requirements.txt" \
-              "&versionDescriptor.version=sha" \
-              "&versionDescriptor.versionType=commit"
+                       "&versionDescriptor.version=sha" \
+                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do
@@ -1019,8 +1019,8 @@ RSpec.describe Dependabot::FileFetchers::Base do
           let(:directory) { "a/pp" }
           let(:url) do
             repo_url + "/items?path=a/pp/requirements.txt" \
-              "&versionDescriptor.version=sha" \
-              "&versionDescriptor.versionType=commit"
+                       "&versionDescriptor.version=sha" \
+                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do
@@ -1069,16 +1069,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         let(:repo_contents_tree_url) do
           repo_url + "/items?path=/&versionDescriptor.version=sha" \
-            "&versionDescriptor.versionType=commit"
+                     "&versionDescriptor.versionType=commit"
         end
         let(:repo_contents_url) do
           repo_url + "/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a" \
-            "?recursive=false"
+                     "?recursive=false"
         end
         let(:repo_file_url) do
           repo_url + "/items?path=requirements.txt" \
-            "&versionDescriptor.version=sha" \
-            "&versionDescriptor.versionType=commit"
+                     "&versionDescriptor.version=sha" \
+                     "&versionDescriptor.versionType=commit"
         end
 
         before do
@@ -1121,11 +1121,11 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           let(:repo_contents_tree_url) do
             repo_url + "/items?path=app&versionDescriptor.version=sha" \
-              "&versionDescriptor.versionType=commit"
+                       "&versionDescriptor.versionType=commit"
           end
           let(:repo_contents_url) do
             repo_url + "/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a" \
-              "?recursive=false"
+                       "?recursive=false"
           end
 
           before do
@@ -1141,7 +1141,7 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
           let(:url) do
             repo_url + "/items?path=app&versionDescriptor.version=sha" \
-              "&versionDescriptor.versionType=commit"
+                       "&versionDescriptor.versionType=commit"
           end
 
           it "hits the right Azure DevOps URL" do

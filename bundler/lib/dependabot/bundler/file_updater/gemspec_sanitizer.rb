@@ -90,9 +90,9 @@ module Dependabot
           def wrap_require(node)
             replace(
               node.loc.expression,
-              "begin\n"\
-              "#{node.loc.expression.source_line}\n"\
-              "rescue LoadError\n"\
+              "begin\n" \
+              "#{node.loc.expression.source_line}\n" \
+              "rescue LoadError\n" \
               "end"
             )
           end

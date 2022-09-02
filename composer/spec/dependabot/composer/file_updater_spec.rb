@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }

@@ -314,7 +314,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                 body: {
                   name: "security",
                   color: "ee0701",
-                  description: "Pull requests that address a security "\
+                  description: "Pull requests that address a security " \
                                "vulnerability"
                 }
               )
@@ -370,7 +370,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           expect(WebMock).
             to have_requested(:post, "#{repo_api_url}/labels").
             with(
-              body: "description=Pull%20requests%20that%20update%20a"\
+              body: "description=Pull%20requests%20that%20update%20a" \
                     "%20dependency%20file&name=dependencies&color=%230366d6"
             )
           expect(labeler.labels_for_pr).to include("dependencies")
@@ -432,8 +432,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             expect(WebMock).
               to have_requested(:post, "#{repo_api_url}/labels").
               with(
-                body: "description=Pull%20requests%20that%20address%20a"\
-                    "%20security%20vulnerability&name=security&color=%23ee0701"
+                body: "description=Pull%20requests%20that%20address%20a" \
+                      "%20security%20vulnerability&name=security&color=%23ee0701"
               )
             expect(labeler.labels_for_pr).to include("security")
           end
@@ -731,7 +731,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         let(:pagination_header) do
           {
             "Content-Type" => "application/json",
-            "Link" => "<#{repo_api_url}/labels?page=2&per_page=100>; "\
+            "Link" => "<#{repo_api_url}/labels?page=2&per_page=100>; " \
                       "rel=\"next\""
           }
         end
