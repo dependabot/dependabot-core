@@ -90,7 +90,9 @@ module Dependabot
       def branch_version_suffix
         dep = dependencies.first
 
-        if library? && ref_changed?(dep) && new_ref(dep)
+        if dep.removed?
+          ""
+        elsif library? && ref_changed?(dep) && new_ref(dep)
           new_ref(dep)
         elsif library?
           sanitized_requirement(dep)

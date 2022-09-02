@@ -247,6 +247,43 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
+    context "with a removed transitive dependency" do
+      let(:dependencies) { [removed_dep, parent_dep] }
+      let(:removed_dep) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: nil,
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [],
+          previous_requirements: [],
+          removed: true
+        )
+      end
+      let(:parent_dep) do
+        Dependabot::Dependency.new(
+          name: "statesman",
+          version: "1.5.0",
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman-") }
+    end
+
     context "with a : in the name" do
       let(:dependency) do
         Dependabot::Dependency.new(
