@@ -10,8 +10,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
-BREAK DOCKER
-
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
