@@ -85,7 +85,7 @@ module Dependabot
           #
           # This is kind of a bug in Bundler, and we should try to fix it,
           # but resolving it won't necessarily be easy.
-          updated_deps.map do |dep|
+          updated_deps.filter_map do |dep|
             original_dep =
               original_dependencies.find { |d| d.name == dep.fetch("name") }
             spec = specs.find { |d| d.fetch("name") == dep.fetch("name") }
@@ -93,7 +93,7 @@ module Dependabot
             next if spec.fetch("version") == original_dep.version
 
             build_dependency(original_dep, spec)
-          end.compact
+          end
         end
 
         def build_dependency(original_dep, updated_spec)

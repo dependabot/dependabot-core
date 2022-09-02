@@ -91,8 +91,7 @@ module Dependabot
           ]
 
           file = import_paths.
-                 map { |p| dependency_files.find { |f| f.name == p } }.
-                 compact.
+                 filter_map { |p| dependency_files.find { |f| f.name == p } }.
                  find { |f| deep_find_prop_node(property: property, file: f) }
 
           return unless file

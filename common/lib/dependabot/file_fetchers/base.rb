@@ -233,7 +233,7 @@ module Dependabot
         repo_path = File.join(clone_repo_contents, relative_path)
         return [] unless Dir.exist?(repo_path)
 
-        Dir.entries(repo_path).map do |name|
+        Dir.entries(repo_path).filter_map do |name|
           next if [".", ".."].include?(name)
 
           absolute_path = File.join(repo_path, name)
@@ -251,7 +251,7 @@ module Dependabot
             type: type,
             size: 0 # NOTE: added for parity with github contents API
           )
-        end.compact
+        end
       end
 
       def update_linked_paths(repo, path, commit, github_response)

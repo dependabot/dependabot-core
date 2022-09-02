@@ -127,7 +127,7 @@ module Dependabot
             doc = Nokogiri::XML(body)
             doc.remove_namespaces!
 
-            doc.xpath("/feed/entry").map do |entry|
+            doc.xpath("/feed/entry").filter_map do |entry|
               listed = entry.at_xpath("./properties/Listed")&.content&.strip
               next if listed&.casecmp("false")&.zero?
 
@@ -136,7 +136,7 @@ module Dependabot
                 repo_url: listing.fetch("listing_details").
                           fetch(:repository_url)
               )
-            end.compact
+            end
           end
         end
 
@@ -193,12 +193,12 @@ module Dependabot
           @v3_nuget_listings ||=
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v3" }.
-            map do |url_details|
+            filter_map do |url_details|
               versions = versions_for_v3_repository(url_details)
               next unless versions
 
               { "versions" => versions, "listing_details" => url_details }
-            end.compact
+            end
         end
 
         def v2_nuget_listings
@@ -208,14 +208,14 @@ module Dependabot
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
             flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
-            map do |url_details, response|
+            filter_map do |url_details, response|
               next unless response.status == 200
 
               {
                 "xml_body" => response.body,
                 "listing_details" => url_details
               }
-            end.compact
+            end
         end
 
         def fetch_paginated_v2_nuget_listings(url_details, results = {})

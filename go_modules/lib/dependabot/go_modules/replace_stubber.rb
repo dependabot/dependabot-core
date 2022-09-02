@@ -17,8 +17,7 @@ module Dependabot
 
       def stub_paths(manifest, directory)
         (manifest["Replace"] || []).
-          map { |r| r["New"]["Path"] }.
-          compact.
+          filter_map { |r| r["New"]["Path"] }.
           select { |p| stub_replace_path?(p, directory) }.
           to_h { |p| [p, "./" + Digest::SHA2.hexdigest(p)] }
       end

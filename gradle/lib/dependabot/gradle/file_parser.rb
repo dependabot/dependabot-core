@@ -59,8 +59,8 @@ module Dependabot
 
       def self.find_includes(buildfile, dependency_files)
         FileParser.find_include_names(buildfile).
-          map { |f| dependency_files.find { |bf| bf.name == f } }.
-          compact
+          filter_map { |f| dependency_files.find { |bf| bf.name == f } }
+          
       end
 
       private

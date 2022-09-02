@@ -287,7 +287,7 @@ module Dependabot
 
       def version_from_requirements
         @version_from_requirements ||=
-          dependency.requirements.map { |r| r.fetch(:requirement) }.compact.
+          dependency.requirements.filter_map { |r| r.fetch(:requirement) }.
           flat_map { |req_str| requirement_class.requirements_array(req_str) }.
           flat_map(&:requirements).
           reject { |req_array| req_array.first.start_with?("<") }.

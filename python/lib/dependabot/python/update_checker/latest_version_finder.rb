@@ -85,14 +85,14 @@ module Dependabot
         end
 
         def filter_unsupported_versions(versions_array, python_version)
-          versions_array.map do |details|
+          versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
             next details.fetch(:version) unless python_version
             next details.fetch(:version) unless python_requirement
             next unless python_requirement.satisfied_by?(python_version)
 
             details.fetch(:version)
-          end.compact
+          end
         end
 
         def filter_prerelease_versions(versions_array)
@@ -118,9 +118,9 @@ module Dependabot
         end
 
         def filter_out_of_range_versions(versions_array)
-          reqs = dependency.requirements.map do |r|
+          reqs = dependency.requirements.filter_map do |r|
             requirement_class.requirements_array(r.fetch(:requirement))
-          end.compact
+          end
 
           versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }

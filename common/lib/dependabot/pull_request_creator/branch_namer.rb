@@ -127,24 +127,24 @@ module Dependabot
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
           dependency.requirements.
-            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-            compact.first.split(":").last[0..6]
+            filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }
+            .first.split(":").last[0..6]
         else
           dependency.version
         end
       end
 
       def previous_ref(dependency)
-        previous_refs = dependency.previous_requirements.map do |r|
+        previous_refs = dependency.previous_requirements.filter_map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.uniq
+        end.uniq
         return previous_refs.first if previous_refs.count == 1
       end
 
       def new_ref(dependency)
-        new_refs = dependency.requirements.map do |r|
+        new_refs = dependency.requirements.filter_map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.uniq
+        end.uniq
         return new_refs.first if new_refs.count == 1
       end
 
