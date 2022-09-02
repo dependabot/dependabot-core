@@ -559,7 +559,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         it "includes details of each sub-dependency" do
-          expect(dependencies.reject(&:top_level?).count).to eq(23)
+          expect(dependencies.count { |dep| !dep.top_level? }).to eq(23)
 
           diff_lcs = dependencies.find { |d| d.name == "diff-lcs" }
           expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
