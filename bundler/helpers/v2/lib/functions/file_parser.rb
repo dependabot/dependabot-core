@@ -14,13 +14,13 @@ module Functions
       Bundler::Definition.build(gemfile_name, nil, {}).
         dependencies.select(&:current_platform?).
         reject { |dep| dep.source.is_a?(Bundler::Source::Gemspec) }.
-        map(&method(:serialize_bundler_dependency))
+        map { |dep| serialize_bundler_dependency(dep) }
     end
 
     def parsed_gemspec(gemspec_name:)
       Bundler.load_gemspec_uncached(gemspec_name).
         dependencies.
-        map(&method(:serialize_bundler_dependency))
+        map { |dep| serialize_bundler_dependency(dep) }
     end
 
     private

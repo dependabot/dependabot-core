@@ -23,11 +23,13 @@ module Dependabot
         PIPED_VERSION_FILE_READ_BANG =
           /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ_BANG}/.freeze
 
+        # rubocop:disable Performance/MethodObjectAsBlock
         def sanitized_content
           mixfile_content.
             then(&method(:prevent_version_file_loading)).
             then(&method(:prevent_config_path_loading))
         end
+        # rubocop:enable Performance/MethodObjectAsBlock
 
         private
 
