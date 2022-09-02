@@ -82,7 +82,7 @@ module Dependabot
                   run_poetry_command("pyenv install -s #{python_version}")
                   run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
-                    "pyenv exec pip install -r "\
+                    "pyenv exec pip install -r " \
                     "#{NativeHelpers.python_requirements_path}"
                   )
                 end
@@ -214,9 +214,9 @@ module Dependabot
           end
           return version if version
 
-          msg = "Dependabot detected the following Python requirements "\
-                "for your project: '#{requirements}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirements " \
+                "for your project: '#{requirements}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end

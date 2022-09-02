@@ -65,7 +65,7 @@ module Dependabot
             # `go mod edit` works, even if some modules have been `replace`d with
             # a local module that we don't have access to.
             local_replacements.each do |_, stub_path|
-              Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+              FileUtils.mkdir_p(stub_path)
               FileUtils.touch(File.join(stub_path, "go.mod"))
             end
 
@@ -135,8 +135,8 @@ module Dependabot
         }
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         if e.message == "Cannot detect VCS"
-          msg = e.message + " for #{dep['Path']}. Attempted to detect VCS "\
-                            "because the version looks like a git revision: "\
+          msg = e.message + " for #{dep['Path']}. Attempted to detect VCS " \
+                            "because the version looks like a git revision: " \
                             "#{dep['Version']}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end

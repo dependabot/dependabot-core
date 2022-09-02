@@ -109,8 +109,8 @@ module Dependabot
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
-        msg = "Both hostname and api_endpoint must be specified if either "\
-              "are. Alternatively, both may be left blank to use the "\
+        msg = "Both hostname and api_endpoint must be specified if either " \
+              "are. Alternatively, both may be left blank to use the " \
               "provider's defaults."
         raise msg
       end

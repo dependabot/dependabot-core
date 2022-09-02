@@ -290,8 +290,8 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.include?("No driver found to handle VCS") &&
                 !error.message.include?("@") && !error.message.include?("://")
-            msg = "Dependabot detected a VCS requirement with a local path, "\
-                  "rather than a URL. Dependabot does not support this "\
+            msg = "Dependabot detected a VCS requirement with a local path, " \
+                  "rather than a URL. Dependabot does not support this " \
                   "setup.\n\nThe underlying error was:\n\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.include?("requirements could not be resolved")
@@ -337,8 +337,8 @@ module Dependabot
             # Package is not installed: stefandoorn/sitemap-plugin-1.0.0.0
             nil
           elsif error.message.include?("does not match the expected JSON schema")
-            msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n"\
-                  "Run `composer validate` to check your composer.json and composer.lock files.\n\n"\
+            msg = "Composer failed to parse your composer.json as it does not match the expected JSON schema.\n" \
+                  "Run `composer validate` to check your composer.json and composer.lock files.\n\n" \
                   "See https://getcomposer.org/doc/04-schema.md for details on the schema."
             raise Dependabot::DependencyFileNotParseable, msg
           else

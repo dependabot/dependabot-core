@@ -198,7 +198,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           stub_request(
             :get,
             "#{repo_api_url}/pullrequests?" \
-              "searchCriteria.sourceRefName=refs/heads/" + branch_name +
+            "searchCriteria.sourceRefName=refs/heads/" + branch_name +
               "&searchCriteria.status=all" \
               "&searchCriteria.targetRefName=refs/heads/master"
           ).to_return(
@@ -229,7 +229,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           stub_request(
             :get,
             "#{repo_api_url}/pullrequests?searchCriteria.status=all" \
-              "&searchCriteria.sourceRefName=refs/heads/" + branch_name +
+            "&searchCriteria.sourceRefName=refs/heads/" + branch_name +
               "&searchCriteria.targetRefName=refs/heads/master"
           ).to_return(
             status: 200,

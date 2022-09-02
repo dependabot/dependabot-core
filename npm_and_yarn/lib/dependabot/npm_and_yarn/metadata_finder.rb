@@ -26,9 +26,9 @@ module Dependabot
         return unless npm_listing.dig("time", dependency.version)
         return if previous_releasers.include?(npm_releaser)
 
-        "This version was pushed to npm by "\
-        "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new "\
-        "releaser for #{dependency.name} since your current version."
+        "This version was pushed to npm by " \
+          "[#{npm_releaser}](https://www.npmjs.com/~#{npm_releaser}), a new " \
+          "releaser for #{dependency.name} since your current version."
       end
 
       private

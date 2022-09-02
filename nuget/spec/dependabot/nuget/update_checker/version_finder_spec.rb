@@ -51,12 +51,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
   let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
-    "https://api.nuget.org/v3-flatcontainer/"\
-    "microsoft.extensions.dependencymodel/index.json"
+    "https://api.nuget.org/v3-flatcontainer/" \
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://azuresearch-usnc.nuget.org/query"\
-    "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+    "https://azuresearch-usnc.nuget.org/query" \
+      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) { fixture("nuget_responses", "versions.json") }
@@ -215,12 +215,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
       let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-        "microsoft.extensions.dependencymodel/index.json"
+        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
+          "microsoft.extensions.dependencymodel/index.json"
       end
       let(:custom_nuget_search_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/"\
-        "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+        "https://www.myget.org/F/exceptionless/api/v3/" \
+          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
       end
       before do
         stub_request(:get, nuget_versions_url).to_return(status: 404)
@@ -254,8 +254,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         end
 
         let(:custom_v3_nuget_versions_url) do
-          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-          "microsoft.extensions.dependencymodel/index.json"
+          "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
+            "microsoft.extensions.dependencymodel/index.json"
         end
 
         before do
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
             to_return(status: 404)
 
           custom_v2_nuget_versions_url =
-            "https://www.nuget.org/api/v2/FindPackagesById()?id="\
+            "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
             "'Microsoft.Extensions.DependencyModel'"
           stub_request(:get, custom_v2_nuget_versions_url).
             to_return(
@@ -336,12 +336,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
         "https://www.myget.org/F/exceptionless/api/v3/index.json"
       end
       let(:custom_nuget_search_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/"\
-        "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
+        "https://www.myget.org/F/exceptionless/api/v3/" \
+          "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
       end
       let(:custom_nuget_versions_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
-        "microsoft.extensions.dependencymodel/index.json"
+        "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
+          "microsoft.extensions.dependencymodel/index.json"
       end
 
       before do
@@ -425,8 +425,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::VersionFinder do
     it "includes the correct versions" do
       expect(versions.count).to eq(21)
       expect(versions.first).to eq(
-        nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                    "microsoft.extensions.dependencymodel/1.0.0-rc2-002702/"\
+        nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                    "microsoft.extensions.dependencymodel/1.0.0-rc2-002702/" \
                     "microsoft.extensions.dependencymodel.nuspec",
         repo_url: "https://api.nuget.org/v3/index.json",
         source_url: nil,

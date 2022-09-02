@@ -605,8 +605,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
           expect(error.message).to include(
-            "go: github.com/deislabs/oras@v0.9.0 requires\n"\
-            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
+            "go: github.com/deislabs/oras@v0.9.0 requires\n" \
+            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: " \
             "invalid version: unknown revision"
           )
         end

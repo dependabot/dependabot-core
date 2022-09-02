@@ -161,7 +161,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
                 "password" => "token"
               }, {
                 "type" => "npm_registry",
-                "registry" => "artifactory.jfrog.com"\
+                "registry" => "artifactory.jfrog.com" \
                               "/artifactory/api/npm/dependabot/",
                 "token" => "my_token"
               }]
@@ -169,7 +169,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "only adds a single trailing slash" do
               expect(npmrc_content).
-                to eq("//artifactory.jfrog.com/"\
+                to eq("//artifactory.jfrog.com/" \
                       "artifactory/api/npm/dependabot/:_authToken=my_token")
             end
           end
@@ -194,8 +194,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n"\
-                      "//npm.fury.io/dependabot/:_authToken=my_token\n"\
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n" \
+                      "//npm.fury.io/dependabot/:_authToken=my_token\n" \
                       "//npm.fury.io/dep/:_authToken=my_other_token")
             end
 
@@ -216,9 +216,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               it "adds auth details, and scopes them correctly" do
                 expect(npmrc_content).
                   to eq(
-                    "@dependabot:registry=https://api.bintray.com/npm/"\
-                    "dependabot/npm-private\n"\
-                    "//api.bintray.com/npm/dependabot/"\
+                    "@dependabot:registry=https://api.bintray.com/npm/" \
+                    "dependabot/npm-private\n" \
+                    "//api.bintray.com/npm/dependabot/" \
                     "npm-private/:_authToken=my_token"
                   )
               end
@@ -243,10 +243,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               it "adds auth details without replacing the global registry" do
                 expect(npmrc_content).
                   to eq(
-                    "registry=https://registry.yarnpkg.com\n"\
-                    "@dependabot:always-auth=true\n"\
-                    "@dependabot:registry=https://registry.dependabot.com\n"\
-                    "\n"\
+                    "registry=https://registry.yarnpkg.com\n" \
+                    "@dependabot:always-auth=true\n" \
+                    "@dependabot:registry=https://registry.dependabot.com\n" \
+                    "\n" \
                     "//registry.dependabot.com/npm-private/:_authToken=my_token"
                   )
               end
@@ -258,8 +258,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
               it "adds auth details, and scopes them correctly" do
                 expect(npmrc_content).
                   to eq(
-                    "@dependabot:registry=https://npm.fury.io/dependabot\n"\
-                    "//npm.fury.io/dependabot/:_authToken=my_token\n"\
+                    "@dependabot:registry=https://npm.fury.io/dependabot\n" \
+                    "//npm.fury.io/dependabot/:_authToken=my_token\n" \
                     "//npm.fury.io/dep/:_authToken=my_other_token"
                   )
               end
@@ -325,9 +325,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           it "adds a global registry line, and auth details" do
             expect(npmrc_content).
-              to eq("registry = https://npm.fury.io/dependabot\n"\
-                    "_authToken = my_token\n"\
-                    "always-auth = true\n"\
+              to eq("registry = https://npm.fury.io/dependabot\n" \
+                    "_authToken = my_token\n" \
+                    "always-auth = true\n" \
                     "//npm.fury.io/dependabot/:_authToken=my_token")
           end
 
@@ -336,12 +336,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "extends the already existing npmrc" do
               expect(npmrc_content).
-                to eq("always-auth = true\n"\
-                      "strict-ssl = true\n"\
-                      "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                      "registry = https://npm.fury.io/dependabot\n"\
-                      "_authToken = my_token\n"\
-                      "always-auth = true\n\n"\
+                to eq("always-auth = true\n" \
+                      "strict-ssl = true\n" \
+                      "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                      "registry = https://npm.fury.io/dependabot\n" \
+                      "_authToken = my_token\n" \
+                      "always-auth = true\n\n" \
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
 
@@ -350,12 +350,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "extends the already existing npmrc" do
                 expect(npmrc_content).
-                  to eq("//dependabot.jfrog.io/dependabot/api/npm/"\
-                        "platform-npm/:always-auth=true\n"\
-                        "always-auth = true\n"\
-                        "registry = https://npm.fury.io/dependabot\n"\
-                        "_authToken = my_token\n"\
-                        "always-auth = true\n\n"\
+                  to eq("//dependabot.jfrog.io/dependabot/api/npm/" \
+                        "platform-npm/:always-auth=true\n" \
+                        "always-auth = true\n" \
+                        "registry = https://npm.fury.io/dependabot\n" \
+                        "_authToken = my_token\n" \
+                        "always-auth = true\n\n" \
                         "//npm.fury.io/dependabot/:_authToken=my_token")
               end
             end
@@ -366,7 +366,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "uses the yarnrc file registry" do
               expect(npmrc_content).to eq(
-                "registry = https://npm-proxy.fury.io/password/dependabot/\n\n"\
+                "registry = https://npm-proxy.fury.io/password/dependabot/\n\n" \
                 "//npm.fury.io/dependabot/:_authToken=my_token"
               )
             end
@@ -376,9 +376,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "adds a global registry line based on the lockfile details" do
                 expect(npmrc_content).
-                  to eq("registry = https://npm.fury.io/dependabot\n"\
-                        "_authToken = my_token\n"\
-                        "always-auth = true\n"\
+                  to eq("registry = https://npm.fury.io/dependabot\n" \
+                        "_authToken = my_token\n" \
+                        "always-auth = true\n" \
                         "//npm.fury.io/dependabot/:_authToken=my_token")
               end
             end
@@ -404,7 +404,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           it "adds a global registry line, and auth details" do
             expect(npmrc_content).
-              to eq("registry = https://npm.fury.io/dependabot\n"\
+              to eq("registry = https://npm.fury.io/dependabot\n" \
                     "always-auth = true")
           end
 
@@ -413,10 +413,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "extends the already existing npmrc" do
               expect(npmrc_content).
-                to eq("always-auth = true\n"\
-                      "strict-ssl = true\n"\
-                      "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                      "registry = https://npm.fury.io/dependabot\n"\
+                to eq("always-auth = true\n" \
+                      "strict-ssl = true\n" \
+                      "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                      "registry = https://npm.fury.io/dependabot\n" \
                       "always-auth = true\n")
             end
 
@@ -425,10 +425,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "extends the already existing npmrc" do
                 expect(npmrc_content).
-                  to eq("//dependabot.jfrog.io/dependabot/api/npm/"\
-                        "platform-npm/:always-auth=true\n"\
-                        "always-auth = true\n"\
-                        "registry = https://npm.fury.io/dependabot\n"\
+                  to eq("//dependabot.jfrog.io/dependabot/api/npm/" \
+                        "platform-npm/:always-auth=true\n" \
+                        "always-auth = true\n" \
+                        "registry = https://npm.fury.io/dependabot\n" \
                         "always-auth = true\n")
               end
             end
@@ -448,7 +448,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "adds a global registry line based on the lockfile details" do
                 expect(npmrc_content).
-                  to eq("registry = https://npm.fury.io/dependabot\n"\
+                  to eq("registry = https://npm.fury.io/dependabot\n" \
                         "always-auth = true")
               end
             end
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
             end
             it "adds auth details, and scopes them correctly" do
               expect(npmrc_content).
-                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n"\
+                to eq("@dependabot:registry=https://npm.fury.io/dependabot\n" \
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
           end
@@ -595,10 +595,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
           it "adds auth details without replacing the global registry" do
             expect(npmrc_content).
               to eq(
-                "registry=https://registry.yarnpkg.com\n"\
-                "@dependabot:always-auth=true\n"\
-                "@dependabot:registry=https://registry.dependabot.com\n"\
-                "\n"\
+                "registry=https://registry.yarnpkg.com\n" \
+                "@dependabot:always-auth=true\n" \
+                "@dependabot:registry=https://registry.dependabot.com\n" \
+                "\n" \
                 "//registry.dependabot.com/npm-private/:_authToken=my_token"
               )
           end
@@ -678,9 +678,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           it "adds a global registry line, and token auth details" do
             expect(npmrc_content).
-              to eq("registry = https://npm.fury.io/dependabot\n"\
-                    "_authToken = my_token\n"\
-                    "always-auth = true\n"\
+              to eq("registry = https://npm.fury.io/dependabot\n" \
+                    "_authToken = my_token\n" \
+                    "always-auth = true\n" \
                     "//npm.fury.io/dependabot/:_authToken=my_token")
           end
 
@@ -700,10 +700,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "adds a global registry line, and Basic auth details" do
               expect(npmrc_content).
-                to eq("registry = https://npm.fury.io/dependabot\n"\
-                      "_auth = c2VjcmV0OnRva2Vu\n"\
-                      "always-auth = true\n"\
-                      "always-auth = true\n"\
+                to eq("registry = https://npm.fury.io/dependabot\n" \
+                      "_auth = c2VjcmV0OnRva2Vu\n" \
+                      "always-auth = true\n" \
+                      "always-auth = true\n" \
                       "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu")
             end
           end
@@ -713,12 +713,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "populates the already existing npmrc" do
               expect(npmrc_content).
-                to eq("always-auth = true\n"\
-                      "strict-ssl = true\n"\
-                      "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                      "registry = https://npm.fury.io/dependabot\n"\
-                      "_authToken = my_token\n"\
-                      "always-auth = true\n\n"\
+                to eq("always-auth = true\n" \
+                      "strict-ssl = true\n" \
+                      "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                      "registry = https://npm.fury.io/dependabot\n" \
+                      "_authToken = my_token\n" \
+                      "always-auth = true\n\n" \
                       "//npm.fury.io/dependabot/:_authToken=my_token")
             end
 
@@ -738,13 +738,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "populates the already existing npmrc" do
                 expect(npmrc_content).
-                  to eq("always-auth = true\n"\
-                        "strict-ssl = true\n"\
-                        "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                        "registry = https://npm.fury.io/dependabot\n"\
-                        "_auth = c2VjcmV0OnRva2Vu\n"\
-                        "always-auth = true\n\n"\
-                        "always-auth = true\n"\
+                  to eq("always-auth = true\n" \
+                        "strict-ssl = true\n" \
+                        "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                        "registry = https://npm.fury.io/dependabot\n" \
+                        "_auth = c2VjcmV0OnRva2Vu\n" \
+                        "always-auth = true\n\n" \
+                        "always-auth = true\n" \
                         "//npm.fury.io/dependabot/:_auth=c2VjcmV0OnRva2Vu")
               end
             end
@@ -770,7 +770,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
           it "adds a global registry line, and token auth details" do
             expect(npmrc_content).
-              to eq("registry = https://npm.fury.io/dependabot\n"\
+              to eq("registry = https://npm.fury.io/dependabot\n" \
                     "always-auth = true")
           end
 
@@ -787,7 +787,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "adds a global registry line, and Basic auth details" do
               expect(npmrc_content).
-                to eq("registry = https://npm.fury.io/dependabot\n"\
+                to eq("registry = https://npm.fury.io/dependabot\n" \
                       "always-auth = true")
             end
           end
@@ -797,10 +797,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
             it "populates the already existing npmrc" do
               expect(npmrc_content).
-                to eq("always-auth = true\n"\
-                      "strict-ssl = true\n"\
-                      "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                      "registry = https://npm.fury.io/dependabot\n"\
+                to eq("always-auth = true\n" \
+                      "strict-ssl = true\n" \
+                      "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                      "registry = https://npm.fury.io/dependabot\n" \
                       "always-auth = true\n")
             end
 
@@ -817,10 +817,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
 
               it "populates the already existing npmrc" do
                 expect(npmrc_content).
-                  to eq("always-auth = true\n"\
-                        "strict-ssl = true\n"\
-                        "//npm.fury.io/dependabot/:_authToken=secret_token\n"\
-                        "registry = https://npm.fury.io/dependabot\n"\
+                  to eq("always-auth = true\n" \
+                        "strict-ssl = true\n" \
+                        "//npm.fury.io/dependabot/:_authToken=secret_token\n" \
+                        "registry = https://npm.fury.io/dependabot\n" \
                         "always-auth = true\n")
               end
             end

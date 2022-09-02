@@ -65,7 +65,7 @@ module Dependabot
           when "registry", "provider"
             update_registry_declaration(new_req, old_req, content)
           else
-            raise "Don't know how to update a #{new_req[:source][:type]} "\
+            raise "Don't know how to update a #{new_req[:source][:type]} " \
                   "declaration!"
           end
         end

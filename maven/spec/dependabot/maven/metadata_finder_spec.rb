@@ -41,13 +41,13 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:maven_url) do
-      "https://repo.maven.apache.org/maven2/com/google/guava/"\
-      "guava/23.3-jre/guava-23.3-jre.pom"
+      "https://repo.maven.apache.org/maven2/com/google/guava/" \
+        "guava/23.3-jre/guava-23.3-jre.pom"
     end
     let(:maven_response) { fixture("poms", "guava-23.3-jre.xml") }
     let(:mockk_url) do
-      "https://repo.maven.apache.org/maven2/io/mockk/"\
-      "mockk/1.10.0/mockk-1.10.0.pom"
+      "https://repo.maven.apache.org/maven2/io/mockk/" \
+        "mockk/1.10.0/mockk-1.10.0.pom"
     end
     let(:mockk_response) { fixture("poms", "mockk-1.10.0.pom.xml") }
 
@@ -85,12 +85,12 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
       let(:dependency_name) { "com.squareup.okhttp3:okhttp" }
       let(:dependency_version) { "3.10.0" }
       let(:maven_url) do
-        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
-        "okhttp/3.10.0/okhttp-3.10.0.pom"
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
+          "okhttp/3.10.0/okhttp-3.10.0.pom"
       end
       let(:parent_url) do
-        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
-        "parent/3.10.0/parent-3.10.0.pom"
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
+          "parent/3.10.0/parent-3.10.0.pom"
       end
 
       context "but there is in the parent" do
@@ -170,7 +170,7 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
                 to_return(status: 200,
                           body: fixture("github", "bump_repo.json"),
                           headers: { "content-type" => "application/json" })
-              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c965"\
+              stub_request(:get, url + "/contents/my-dir?ref=aa218f56b14c965" \
                                        "3891f9e74264a383fa43fefbd").
                 with(headers: { "Authorization" => "token token" }).
                 to_return(
@@ -258,8 +258,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
           fixture("poms", "okhttp-3.10.0-bad-variable.xml")
         end
         let(:parent_url) do
-          "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/"\
-          "parent//parent-.pom"
+          "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/" \
+            "parent//parent-.pom"
         end
         before do
           stub_request(:get, parent_url).to_return(status: 404, body: "")
@@ -307,8 +307,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         { type: "maven_repo", url: "https://custom.registry.org/maven2" }
       end
       let(:maven_url) do
-        "https://custom.registry.org/maven2/com/google/guava/"\
-        "guava/23.3-jre/guava-23.3-jre.pom"
+        "https://custom.registry.org/maven2/com/google/guava/" \
+          "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")
@@ -368,8 +368,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
         { type: "maven_repo", url: "https://gitlab.com/api/v4/groups/some-group/-/packages/maven" }
       end
       let(:maven_url) do
-        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/"\
-        "guava/23.3-jre/guava-23.3-jre.pom"
+        "https://gitlab.com/api/v4/groups/some-group/-/packages/maven/com/google/guava/" \
+          "guava/23.3-jre/guava-23.3-jre.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")
@@ -437,8 +437,8 @@ RSpec.describe Dependabot::Maven::MetadataFinder do
 
     context "when the Maven link resolves to a redirect" do
       let(:redirect_url) do
-        "https://repo1.maven.org/maven2/org/mockito/mockito-core/2.11.0/"\
-        "mockito-core-2.11.0.pom"
+        "https://repo1.maven.org/maven2/org/mockito/mockito-core/2.11.0/" \
+          "mockito-core-2.11.0.pom"
       end
       let(:maven_response) do
         fixture("poms", "mockito-core-2.11.0.xml")

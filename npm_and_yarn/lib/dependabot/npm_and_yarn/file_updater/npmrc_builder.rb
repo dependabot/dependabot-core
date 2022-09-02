@@ -42,9 +42,9 @@ module Dependabot
           return unless yarn_lock || package_lock
           return unless global_registry
 
-          "registry = https://#{global_registry['registry']}\n"\
-          "#{global_registry_auth_line}"\
-          "always-auth = true"
+          "registry = https://#{global_registry['registry']}\n" \
+            "#{global_registry_auth_line}" \
+            "always-auth = true"
         end
 
         def global_registry # rubocop:disable Metrics/PerceivedComplexity
@@ -114,8 +114,8 @@ module Dependabot
           return initial_content unless global_registry
 
           initial_content +
-            "registry = https://#{global_registry['registry']}\n"\
-            "#{global_registry_auth_line}"\
+            "registry = https://#{global_registry['registry']}\n" \
+            "#{global_registry_auth_line}" \
             "always-auth = true\n"
         end
 

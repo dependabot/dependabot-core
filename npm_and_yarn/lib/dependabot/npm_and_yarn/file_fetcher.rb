@@ -88,7 +88,7 @@ module Dependabot
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host("../" * i + ".npmrc")&.
+          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")&.
                    tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
@@ -107,7 +107,7 @@ module Dependabot
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host("../" * i + ".yarnrc")&.
+          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")&.
                    tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound

@@ -168,11 +168,11 @@ module Dependabot
                        max_by { |f| f.name.length }
           return unless TomlRB.parse(cargo_toml.content)["workspace"]
 
-          msg = "This project is part of a Rust workspace but is not the "\
-                "workspace root."\
+          msg = "This project is part of a Rust workspace but is not the " \
+                "workspace root." \
 
           if cargo_toml.directory != "/"
-            msg += "Please update your settings so Dependabot points at the "\
+            msg += "Please update your settings so Dependabot points at the " \
                    "workspace root instead of #{cargo_toml.directory}."
           end
           raise Dependabot::DependencyFileNotResolvable, msg

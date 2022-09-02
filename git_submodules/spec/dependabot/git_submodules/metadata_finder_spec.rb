@@ -77,8 +77,8 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://github.com/example/manifesto.git" }
       it do
         is_expected.
-          to eq("https://github.com/example/manifesto/compare/"\
-                "7638417db6d59f3c431d3e1f261cc637155684cd..."\
+          to eq("https://github.com/example/manifesto/compare/" \
+                "7638417db6d59f3c431d3e1f261cc637155684cd..." \
                 "cd8274d15fa3ae2ab983129fb037999f264ba9a7")
       end
     end
@@ -87,8 +87,8 @@ RSpec.describe Dependabot::GitSubmodules::MetadataFinder do
       let(:url) { "https://bitbucket.org/example/manifesto.git" }
       it do
         is_expected.
-          to eq("https://bitbucket.org/example/manifesto/branches/"\
-                "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7"\
+          to eq("https://bitbucket.org/example/manifesto/branches/" \
+                "compare/cd8274d15fa3ae2ab983129fb037999f264ba9a7" \
                 "..7638417db6d59f3c431d3e1f261cc637155684cd")
       end
     end

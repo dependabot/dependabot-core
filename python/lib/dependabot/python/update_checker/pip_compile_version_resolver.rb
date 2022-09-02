@@ -318,7 +318,7 @@ module Dependabot
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r"\
+          run_command("pyenv exec pip install -r" \
                       "#{NativeHelpers.python_requirements_path}")
         end
 

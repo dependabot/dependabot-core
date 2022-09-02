@@ -7,7 +7,7 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Maven
     class FileFetcher < Dependabot::FileFetchers::Base
-      MODULE_SELECTOR = "project > modules > module, "\
+      MODULE_SELECTOR = "project > modules > module, " \
                         "profile > modules > module"
 
       def self.required_files_in?(filenames)
