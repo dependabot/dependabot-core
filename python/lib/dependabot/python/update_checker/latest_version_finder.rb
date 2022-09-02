@@ -144,11 +144,14 @@ module Dependabot
           @available_versions ||=
             index_urls.flat_map do |index_url|
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
-              index_response = registry_response_for_dependency(index_url)
 
-              if [401, 403].include?(index_response.status) &&
-                 [401, 403].include?(registry_index_response(index_url).status)
-                raise PrivateSourceAuthenticationFailure, sanitized_url
+              index_response = registry_response_for_dependency(index_url)
+              if index_response.status == 401 || index_response.status == 403
+                registry_index_response = registry_index_response(index_url)
+
+                if registry_index_response.status == 401 || registry_index_response.status == 403
+                  raise PrivateSourceAuthenticationFailure, sanitized_url
+                end
               end
 
               version_links = []

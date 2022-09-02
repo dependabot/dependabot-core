@@ -239,7 +239,7 @@ module Dependabot
           files += github_client.contents(source.repo, opts)
 
           files.uniq.each do |f|
-            next unless %w(doc docs).include?(f.name) && f.type == "dir"
+            next unless f.type == "dir" && f.name.match?(/docs?/o)
 
             opts = { path: f.path, ref: ref }.compact
             files += github_client.contents(source.repo, opts)

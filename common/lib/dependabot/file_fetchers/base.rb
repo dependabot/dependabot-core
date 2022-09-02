@@ -234,7 +234,7 @@ module Dependabot
         return [] unless Dir.exist?(repo_path)
 
         Dir.entries(repo_path).filter_map do |name|
-          next if [".", ".."].include?(name)
+          next if name == "." || name == ".."
 
           absolute_path = File.join(repo_path, name)
           type = if File.symlink?(absolute_path)

@@ -47,6 +47,8 @@ module Dependabot
         PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
         # rubocop:enable Layout/LineLength
 
+        DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+
         attr_reader :dependency, :dependency_files, :credentials
 
         def initialize(dependency:, dependency_files:, credentials:)
@@ -363,7 +365,7 @@ module Dependabot
 
           pipfile_object = TomlRB.parse(pipfile_content)
 
-          %w(packages dev-packages).each do |type|
+          DEPENDENCY_TYPES.each do |type|
             names = pipfile_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name || subdep_type?(type)

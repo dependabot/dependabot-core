@@ -181,7 +181,7 @@ module Dependabot
             )
             git_specs.reject do |spec|
               uri = URI.parse(spec.fetch("auth_uri"))
-              next false unless %w(http https).include?(uri.scheme)
+              next false unless uri.scheme&.match?(/https?/o)
 
               Dependabot::RegistryClient.get(
                 url: uri.to_s

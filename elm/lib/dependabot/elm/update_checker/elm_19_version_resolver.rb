@@ -158,10 +158,8 @@ module Dependabot
           # `elm install <dependency_name>` to generate the install plan
           %w(dependencies test-dependencies).each do |type|
             json[type].delete(dependency.name) if json.dig(type, dependency.name)
-
-            %w(direct indirect).each do |category|
-              json[type][category].delete(dependency.name) if json.dig(type, category, dependency.name)
-            end
+            json[type]["direct"].delete(dependency.name) if json.dig(type, "direct", dependency.name)
+            json[type]["indirect"].delete(dependency.name) if json.dig(type, "indirect", dependency.name)
           end
 
           json["source-directories"] = []

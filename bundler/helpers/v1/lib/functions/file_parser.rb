@@ -71,15 +71,17 @@ module Functions
       }
     end
 
+    RUBYGEMS_HOSTS = [
+      "rubygems.org",
+      "www.rubygems.org"
+    ].freeze
+
     def default_rubygems?(source)
       return true if source.nil?
       return false unless source.is_a?(Bundler::Source::Rubygems)
 
       source.remotes.any? do |r|
-        [
-          "rubygems.org",
-          "www.rubygems.org"
-        ].include?(URI(r.to_s).host)
+        RUBYGEMS_HOSTS.include?(URI(r.to_s).host)
       end
     end
 
