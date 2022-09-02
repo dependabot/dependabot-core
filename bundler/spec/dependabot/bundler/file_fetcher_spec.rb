@@ -199,12 +199,12 @@ RSpec.describe Dependabot::Bundler::FileFetcher do
   context "with a file included with require_relative" do
     let(:directory) { "/Library/Homebrew/test" }
     let(:url) do
-      "https://api.github.com/repos/gocardless/bump/contents/Library/"\
-      "Homebrew/test"
+      "https://api.github.com/repos/gocardless/bump/contents/Library/" \
+        "Homebrew/test"
     end
     let(:imported_file_url) do
-      "https://api.github.com/repos/gocardless/bump/contents/Library/"\
-      "Homebrew/constants.rb"
+      "https://api.github.com/repos/gocardless/bump/contents/Library/" \
+        "Homebrew/constants.rb"
     end
 
     before do

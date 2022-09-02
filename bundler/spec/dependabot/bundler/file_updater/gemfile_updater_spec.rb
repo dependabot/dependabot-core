@@ -252,8 +252,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
           groups: [],
           source: {
             type: "git",
-            url: "http://github.com/dependabot-fixtures/"\
-            "dependabot-test-ruby-package"
+            url: "http://github.com/dependabot-fixtures/" \
+                 "dependabot-test-ruby-package"
           }
         }]
       end
@@ -264,8 +264,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
           groups: [],
           source: {
             type: "git",
-            url: "http://github.com/dependabot-fixtures/"\
-            "dependabot-test-ruby-package"
+            url: "http://github.com/dependabot-fixtures/" \
+                 "dependabot-test-ruby-package"
           }
         }]
       end
@@ -292,8 +292,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "http://github.com/dependabot-fixtures/"\
-              "dependabot-test-ruby-package",
+              url: "http://github.com/dependabot-fixtures/" \
+                   "dependabot-test-ruby-package",
               ref: "v1.1.0"
             }
           }]

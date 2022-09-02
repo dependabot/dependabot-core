@@ -125,7 +125,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "that is up-to-date" do
           let(:source) do
             {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97"\
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
@@ -512,12 +512,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               body: fixture("docker", "registry_tags", "dotnet_page_1.json"),
               headers: JSON.parse(pagination_headers)
             )
-          last = "ukD72mdD/mC8b5xV3susmJzzaTgp3hKwR9nRUW1yZZ6dLc5kfZtKLT2ICo63"\
-                 "WYvt2jq2VyIS3LWB%2Bo9HjGuiYQ6hARJz1jTFdW4jEMKPIg4kRwXypd7HXj"\
-                 "/SnA9iMm3YvNsd4LmPQrO4fpYZgnZZ8rzIIYqex6%2B3A3/mKcTsNKkKDV9V"\
-                 "R3ic6RJjYFCMOEk5/eqsfLaCDYEbtCNoxE2fBDwlzIl/W14f/F%2Bb%2BtQR"\
-                 "Gh3eUKE9nBJpVvAfibAEs215m4ePJm%2BNuVktVjHOYlRG3U03ekr1T7CPD1"\
-                 "Q%2B65wVYi0y2nCIl1/V40nkgG2WX5viYDxUuk3nEdnf55GUocnt38sDZzqB"\
+          last = "ukD72mdD/mC8b5xV3susmJzzaTgp3hKwR9nRUW1yZZ6dLc5kfZtKLT2ICo63" \
+                 "WYvt2jq2VyIS3LWB%2Bo9HjGuiYQ6hARJz1jTFdW4jEMKPIg4kRwXypd7HXj" \
+                 "/SnA9iMm3YvNsd4LmPQrO4fpYZgnZZ8rzIIYqex6%2B3A3/mKcTsNKkKDV9V" \
+                 "R3ic6RJjYFCMOEk5/eqsfLaCDYEbtCNoxE2fBDwlzIl/W14f/F%2Bb%2BtQR" \
+                 "Gh3eUKE9nBJpVvAfibAEs215m4ePJm%2BNuVktVjHOYlRG3U03ekr1T7CPD1" \
+                 "Q%2B65wVYi0y2nCIl1/V40nkgG2WX5viYDxUuk3nEdnf55GUocnt38sDZzqB" \
                  "nyglM9jvbxBzlO8="
           stub_request(:get, repo_url + "tags/list?last=#{last}").
             and_return(
@@ -722,7 +722,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }

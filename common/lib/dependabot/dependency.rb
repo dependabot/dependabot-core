@@ -139,9 +139,9 @@ module Dependabot
       optional_keys = %i(metadata)
       unless requirement_fields.flatten.
              all? { |r| required_keys.sort == (r.keys - optional_keys).sort }
-        raise ArgumentError, "each requirement must have the following "\
-                             "required keys: #{required_keys.join(', ')}."\
-                             "Optionally, it may have the following keys: "\
+        raise ArgumentError, "each requirement must have the following " \
+                             "required keys: #{required_keys.join(', ')}." \
+                             "Optionally, it may have the following keys: " \
                              "#{optional_keys.join(', ')}."
       end
 
@@ -160,7 +160,7 @@ module Dependabot
     end
 
     def symbolize_keys(hash)
-      hash.keys.map { |k| [k.to_sym, hash[k]] }.to_h
+      hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end
   end
 end

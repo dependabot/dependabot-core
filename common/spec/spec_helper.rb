@@ -38,6 +38,7 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+  config.example_status_persistence_file_path = ".rspec_status"
 
   config.after do
     # Ensure we clear any cached timeouts between tests
@@ -104,7 +105,7 @@ def build_tmp_repo(project, path: "projects")
 
   tmp_dir = Dependabot::Utils::BUMP_TMP_DIR_PATH
   prefix = Dependabot::Utils::BUMP_TMP_FILE_PREFIX
-  Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
+  FileUtils.mkdir_p(tmp_dir)
   tmp_repo = Dir.mktmpdir(prefix, tmp_dir)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
   FileUtils.mkpath(tmp_repo_path)
@@ -157,7 +158,7 @@ def github_credentials
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
   end
 end

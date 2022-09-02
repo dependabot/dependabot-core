@@ -124,8 +124,8 @@ module Dependabot
 
     def initialize(source)
       @source = sanitize_source(source)
-      msg = "The following source could not be reached as it requires "\
-            "authentication (and any provided details were invalid or lacked "\
+      msg = "The following source could not be reached as it requires " \
+            "authentication (and any provided details were invalid or lacked " \
             "the required permissions): #{@source}"
       super(msg)
     end
@@ -173,7 +173,7 @@ module Dependabot
       @dependency_urls =
         dependency_urls.flatten.map { |uri| filter_sensitive_data(uri) }
 
-      msg = "The following git URLs could not be retrieved: "\
+      msg = "The following git URLs could not be retrieved: " \
             "#{@dependency_urls.join(', ')}"
       super(msg)
     end
@@ -185,7 +185,7 @@ module Dependabot
     def initialize(dependency)
       @dependency = dependency
 
-      msg = "The branch or reference specified for #{@dependency} could not "\
+      msg = "The branch or reference specified for #{@dependency} could not " \
             "be retrieved"
       super(msg)
     end
@@ -196,7 +196,7 @@ module Dependabot
 
     def initialize(*dependencies)
       @dependencies = dependencies.flatten
-      msg = "The following path based dependencies could not be retrieved: "\
+      msg = "The following path based dependencies could not be retrieved: " \
             "#{@dependencies.join(', ')}"
       super(msg)
     end
@@ -210,8 +210,8 @@ module Dependabot
       @declared_path = declared_path
       @discovered_path = discovered_path
 
-      msg = "The module path '#{@declared_path}' found in #{@go_mod} doesn't "\
-            "match the actual path '#{@discovered_path}' in the dependency's "\
+      msg = "The module path '#{@declared_path}' found in #{@go_mod} doesn't " \
+            "match the actual path '#{@discovered_path}' in the dependency's " \
             "go.mod"
       super(msg)
     end

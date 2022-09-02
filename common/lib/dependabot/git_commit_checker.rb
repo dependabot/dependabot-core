@@ -274,8 +274,8 @@ module Dependabot
     end
 
     def bitbucket_commit_comparison_status(ref1, ref2)
-      url = "https://api.bitbucket.org/2.0/repositories/"\
-            "#{listing_source_repo}/commits/?"\
+      url = "https://api.bitbucket.org/2.0/repositories/" \
+            "#{listing_source_repo}/commits/?" \
             "include=#{ref2}&exclude=#{ref1}"
 
       client = Clients::BitbucketWithRetries.

@@ -220,8 +220,8 @@ module Dependabot
           content.scan(/['"]#{sections_regex}['"]\s*:\s*\{/m) do
             mtch = Regexp.last_match
             declaration_blocks <<
-              mtch.to_s +
-              mtch.post_match[0..closing_bracket_index(mtch.post_match)]
+              (mtch.to_s +
+              mtch.post_match[0..closing_bracket_index(mtch.post_match)])
           end
 
           declaration_blocks.reduce(content.dup) do |new_content, block|

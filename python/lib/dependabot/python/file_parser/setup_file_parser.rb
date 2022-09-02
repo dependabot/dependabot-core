@@ -128,7 +128,7 @@ module Dependabot
           tests_require = get_regexed_req_array(TESTS_REQUIRE_REGEX)
           extras_require = get_regexed_req_dict(EXTRAS_REQUIRE_REGEX)
 
-          tmp = "from setuptools import setup\n\n"\
+          tmp = "from setuptools import setup\n\n" \
                 "setup(name=\"sanitized-package\",version=\"0.0.1\","
 
           tmp += "install_requires=#{install_requires}," if install_requires

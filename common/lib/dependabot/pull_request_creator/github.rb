@@ -219,7 +219,7 @@ module Dependabot
         retry_count ||= 0
         retry_count += 1
         if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} "\
+          raise "Repeatedly failed to create or update branch #{branch_name} " \
                 "with commit #{commit.sha}."
         end
 
@@ -269,7 +269,7 @@ module Dependabot
 
       def add_reviewers_to_pull_request(pull_request)
         reviewers_hash =
-          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
+          reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
 
         github_client_for_source.request_pull_request_review(
           source.repo,
@@ -299,7 +299,7 @@ module Dependabot
 
       def comment_with_invalid_reviewer(pull_request, message)
         reviewers_hash =
-          reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }.to_h
+          reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
         reviewers += (reviewers_hash[:team_reviewers] || []).
@@ -315,9 +315,9 @@ module Dependabot
 
         msg = "Dependabot tried to add #{reviewers_string} as "
         msg += reviewers.count > 1 ? "reviewers" : "a reviewer"
-        msg += " to this PR, but received the following error from GitHub:\n\n"\
+        msg += " to this PR, but received the following error from GitHub:\n\n" \
                "```\n" \
-               "#{message}\n"\
+               "#{message}\n" \
                "```"
 
         github_client_for_source.add_comment(
