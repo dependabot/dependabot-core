@@ -105,18 +105,6 @@ module Dependabot
         end
       end
 
-      def included_in_pipenv_deps?(dep_name)
-        return false unless pipfile
-
-        pipenv_dependencies.dependencies.map(&:name).include?(dep_name)
-      end
-
-      def included_in_poetry_deps?(dep_name)
-        return false unless using_poetry?
-
-        poetry_dependencies.dependencies.map(&:name).include?(dep_name)
-      end
-
       def blocking_marker?(dep)
         return false if dep["markers"] == "None"
         return true if dep["markers"].include?("<")
