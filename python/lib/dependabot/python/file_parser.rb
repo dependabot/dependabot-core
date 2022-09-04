@@ -18,8 +18,6 @@ module Dependabot
       require_relative "file_parser/poetry_files_parser"
       require_relative "file_parser/setup_file_parser"
 
-      POETRY_DEPENDENCY_TYPES =
-        %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
       DEPENDENCY_GROUP_KEYS = [
         {
           pipfile: "packages",
