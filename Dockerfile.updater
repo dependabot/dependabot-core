@@ -6,11 +6,8 @@ ENV DEPENDABOT_HOME /home/dependabot
 RUN mkdir $DEPENDABOT_HOME/dependabot-updater
 
 COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock $DEPENDABOT_HOME/dependabot-updater/
-
 COPY --chown=dependabot:dependabot .ruby-version ${DEPENDABOT_HOME}/.ruby-version
 COPY --chown=dependabot:dependabot .rubocop.yml ${DEPENDABOT_HOME}/.rubocop.yml
-
-WORKDIR ${DEPENDABOT_HOME}
 COPY --chown=dependabot:dependabot omnibus ${DEPENDABOT_HOME}/omnibus
 COPY --chown=dependabot:dependabot git_submodules ${DEPENDABOT_HOME}/git_submodules
 COPY --chown=dependabot:dependabot terraform ${DEPENDABOT_HOME}/terraform
