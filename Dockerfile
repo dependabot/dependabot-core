@@ -268,12 +268,12 @@ USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-RUN bash /opt/composer/helpers/v1/build
-RUN bash /opt/composer/helpers/v2/build
+RUN bash /opt/composer/helpers/v1/build \
+  && bash /opt/composer/helpers/v2/build
 
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
-RUN bash /opt/bundler/helpers/v1/build
-RUN bash /opt/bundler/helpers/v2/build
+RUN bash /opt/bundler/helpers/v1/build \
+  && bash /opt/bundler/helpers/v2/build
 
 COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
