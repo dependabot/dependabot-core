@@ -40,7 +40,7 @@ bundle install
 # TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
 # spawns a child process to npm install git dependencies.
 
-# Create the config file manually intead of using yarn/npm config set as this
+# Create the config file manually instead of using yarn/npm config set as this
 # executes the package manager outputs to every job log
 COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
 
