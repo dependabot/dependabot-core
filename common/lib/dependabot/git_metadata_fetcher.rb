@@ -88,7 +88,7 @@ module Dependabot
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
 
-      env = { "PATH" => ENV["PATH"] }
+      env = { "PATH" => ENV.fetch("PATH", nil) }
       command = "git ls-remote #{service_pack_uri}"
       command = SharedHelpers.escape_command(command)
 
@@ -125,7 +125,7 @@ module Dependabot
         full_ref_name = line.split.last
         next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
-        peeled_lines << line && next if line.strip.end_with?("^{}")
+        (peeled_lines << line) && next if line.strip.end_with?("^{}")
 
         ref_name = full_ref_name.sub(%r{^refs/(tags|heads)/}, "").strip
         sha = sha_for_update_pack_line(line)

@@ -1,0 +1,153 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/go-modules-lib
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 29 Oct 2020 19:16:47 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"b531dfa6aa0f0a5745dfb82327e7106362f8d945f6bc982a6a4573fb55b363f8"
+      Last-Modified:
+      - Thu, 18 Oct 2018 21:49:07 GMT
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '54'
+      X-Ratelimit-Reset:
+      - '1603999545'
+      X-Ratelimit-Used:
+      - '6'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '1216'
+      X-Github-Request-Id:
+      - C7D4:0DB0:11A7A:35521:5F9B151E
+    body:
+      encoding: ASCII-8BIT
+      string: '{"id":153008541,"node_id":"MDEwOlJlcG9zaXRvcnkxNTMwMDg1NDE=","name":"go-modules-lib","full_name":"dependabot-fixtures/go-modules-lib","private":false,"owner":{"login":"dependabot-fixtures","id":44116593,"node_id":"MDEyOk9yZ2FuaXphdGlvbjQ0MTE2NTkz","avatar_url":"https://avatars0.githubusercontent.com/u/44116593?v=4","gravatar_id":"","url":"https://api.github.com/users/dependabot-fixtures","html_url":"https://github.com/dependabot-fixtures","followers_url":"https://api.github.com/users/dependabot-fixtures/followers","following_url":"https://api.github.com/users/dependabot-fixtures/following{/other_user}","gists_url":"https://api.github.com/users/dependabot-fixtures/gists{/gist_id}","starred_url":"https://api.github.com/users/dependabot-fixtures/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/dependabot-fixtures/subscriptions","organizations_url":"https://api.github.com/users/dependabot-fixtures/orgs","repos_url":"https://api.github.com/users/dependabot-fixtures/repos","events_url":"https://api.github.com/users/dependabot-fixtures/events{/privacy}","received_events_url":"https://api.github.com/users/dependabot-fixtures/received_events","type":"Organization","site_admin":false},"html_url":"https://github.com/dependabot-fixtures/go-modules-lib","description":null,"fork":false,"url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib","forks_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/forks","keys_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/keys{/key_id}","collaborators_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/collaborators{/collaborator}","teams_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/teams","hooks_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/hooks","issue_events_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/issues/events{/number}","events_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/events","assignees_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/assignees{/user}","branches_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/branches{/branch}","tags_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/tags","blobs_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/blobs{/sha}","git_tags_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/tags{/sha}","git_refs_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/refs{/sha}","trees_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/trees{/sha}","statuses_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/statuses/{sha}","languages_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/languages","stargazers_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/stargazers","contributors_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contributors","subscribers_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/subscribers","subscription_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/subscription","commits_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/commits{/sha}","git_commits_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/commits{/sha}","comments_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/comments{/number}","issue_comment_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/issues/comments{/number}","contents_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/contents/{+path}","compare_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/compare/{base}...{head}","merges_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/merges","archive_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/{archive_format}{/ref}","downloads_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/downloads","issues_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/issues{/number}","pulls_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/pulls{/number}","milestones_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/milestones{/number}","notifications_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/notifications{?since,all,participating}","labels_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/labels{/name}","releases_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/releases{/id}","deployments_url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/deployments","created_at":"2018-10-14T19:03:22Z","updated_at":"2018-10-18T21:49:07Z","pushed_at":"2018-10-18T21:49:05Z","git_url":"git://github.com/dependabot-fixtures/go-modules-lib.git","ssh_url":"git@github.com:dependabot-fixtures/go-modules-lib.git","clone_url":"https://github.com/dependabot-fixtures/go-modules-lib.git","svn_url":"https://github.com/dependabot-fixtures/go-modules-lib","homepage":null,"size":2,"stargazers_count":0,"watchers_count":0,"language":"Go","has_issues":true,"has_projects":true,"has_downloads":true,"has_wiki":true,"has_pages":false,"forks_count":0,"mirror_url":null,"archived":false,"disabled":false,"open_issues_count":0,"license":null,"forks":0,"open_issues":0,"watchers":0,"default_branch":"master","temp_clone_token":null,"organization":{"login":"dependabot-fixtures","id":44116593,"node_id":"MDEyOk9yZ2FuaXphdGlvbjQ0MTE2NTkz","avatar_url":"https://avatars0.githubusercontent.com/u/44116593?v=4","gravatar_id":"","url":"https://api.github.com/users/dependabot-fixtures","html_url":"https://github.com/dependabot-fixtures","followers_url":"https://api.github.com/users/dependabot-fixtures/followers","following_url":"https://api.github.com/users/dependabot-fixtures/following{/other_user}","gists_url":"https://api.github.com/users/dependabot-fixtures/gists{/gist_id}","starred_url":"https://api.github.com/users/dependabot-fixtures/starred{/owner}{/repo}","subscriptions_url":"https://api.github.com/users/dependabot-fixtures/subscriptions","organizations_url":"https://api.github.com/users/dependabot-fixtures/orgs","repos_url":"https://api.github.com/users/dependabot-fixtures/repos","events_url":"https://api.github.com/users/dependabot-fixtures/events{/privacy}","received_events_url":"https://api.github.com/users/dependabot-fixtures/received_events","type":"Organization","site_admin":false},"network_count":0,"subscribers_count":0}'
+  recorded_at: Thu, 29 Oct 2020 19:16:47 GMT
+- request:
+    method: get
+    uri: https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/refs/heads/master
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - Octokit Ruby Gem 4.19.0
+      Accept:
+      - application/vnd.github.v3+json
+      Content-Type:
+      - application/json
+      Accept-Encoding:
+      - gzip;q=1.0,deflate;q=0.6,identity;q=0.3
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Server:
+      - GitHub.com
+      Date:
+      - Thu, 29 Oct 2020 19:16:47 GMT
+      Content-Type:
+      - application/json; charset=utf-8
+      Status:
+      - 200 OK
+      Cache-Control:
+      - public, max-age=60, s-maxage=60
+      Vary:
+      - Accept, Accept-Encoding, Accept, X-Requested-With
+      Etag:
+      - W/"469a0496e7fe8fc3a9eec96b43115f66c1921ec6bd966a9fa014f48657cbaced"
+      Last-Modified:
+      - Thu, 18 Oct 2018 21:49:07 GMT
+      X-Poll-Interval:
+      - '300'
+      X-Github-Media-Type:
+      - github.v3; format=json
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes,
+        X-Poll-Interval, X-GitHub-Media-Type, Deprecation, Sunset
+      Access-Control-Allow-Origin:
+      - "*"
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      X-Frame-Options:
+      - deny
+      X-Content-Type-Options:
+      - nosniff
+      X-Xss-Protection:
+      - 1; mode=block
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Content-Security-Policy:
+      - default-src 'none'
+      X-Ratelimit-Limit:
+      - '60'
+      X-Ratelimit-Remaining:
+      - '53'
+      X-Ratelimit-Reset:
+      - '1603999545'
+      X-Ratelimit-Used:
+      - '7'
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - '237'
+      X-Github-Request-Id:
+      - C7D5:1CFD:18366:409A2:5F9B151F
+    body:
+      encoding: ASCII-8BIT
+      string: '{"ref":"refs/heads/master","node_id":"MDM6UmVmMTUzMDA4NTQxOnJlZnMvaGVhZHMvbWFzdGVy","url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/refs/heads/master","object":{"sha":"160300187fedba9292e56b0277db8fffa369b560","type":"commit","url":"https://api.github.com/repos/dependabot-fixtures/go-modules-lib/git/commits/160300187fedba9292e56b0277db8fffa369b560"}}'
+  recorded_at: Thu, 29 Oct 2020 19:16:47 GMT
+recorded_with: VCR 6.0.0

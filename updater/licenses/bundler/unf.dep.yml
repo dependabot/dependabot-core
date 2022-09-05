@@ -1,0 +1,33 @@
+---
+name: unf
+version: 0.1.4
+type: bundler
+summary: A wrapper library to bring Unicode Normalization Form support to Ruby/JRuby
+homepage: https://github.com/knu/ruby-unf
+license: other
+licenses:
+- sources: LICENSE
+  text: "Copyright (c) 2011, 2012 Akinori MUSHA\n\nAll rights reserved.\n\nRedistribution
+    and use in source and binary forms, with or without\nmodification, are permitted
+    provided that the following conditions\nare met:\n1. Redistributions of source
+    code must retain the above copyright\n   notice, this list of conditions and the
+    following disclaimer.\n2. Redistributions in binary form must reproduce the above
+    copyright\n   notice, this list of conditions and the following disclaimer in
+    the\n   documentation and/or other materials provided with the distribution.\n\nTHIS
+    SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND\nANY EXPRESS
+    OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\nIMPLIED WARRANTIES
+    OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE\nARE DISCLAIMED.\t IN
+    NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE\nFOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL\nDAMAGES (INCLUDING, BUT NOT
+    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS\nOR SERVICES; LOSS OF USE, DATA, OR
+    PROFITS; OR BUSINESS INTERRUPTION)\nHOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+    WHETHER IN CONTRACT, STRICT\nLIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY\nOUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+    OF\nSUCH DAMAGE.\n"
+- sources: README.md
+  text: |-
+    Copyright (c) 2011, 2012, 2013 Akinori MUSHA
+
+    Licensed under the 2-clause BSD license.
+    See `LICENSE` for details.
+notices: []

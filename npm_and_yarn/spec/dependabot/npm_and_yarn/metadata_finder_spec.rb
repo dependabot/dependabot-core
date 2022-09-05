@@ -454,8 +454,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "gives details of the new releaser" do
         expect(maintainer_changes).to eq(
-          "This version was pushed to npm by "\
-          "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser "\
+          "This version was pushed to npm by " \
+          "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser " \
           "for etag since your current version."
         )
       end

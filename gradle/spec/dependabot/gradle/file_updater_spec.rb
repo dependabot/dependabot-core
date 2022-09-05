@@ -70,7 +70,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
       its(:content) do
         is_expected.to include(
-          "compile group: 'co.aikar', name: 'acf-paper', version: "\
+          "compile group: 'co.aikar', name: 'acf-paper', version: " \
           "'0.6.0-SNAPSHOT', changing: true"
         )
       end
@@ -281,7 +281,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           describe "the build.gradle file" do
             its(:content) do
               is_expected.to include(
-                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "compile group: 'co.aikar', name: 'acf-paper', version: " \
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
@@ -295,7 +295,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             its(:content) do
               is_expected.to include(
-                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "compile group: 'co.aikar', name: 'acf-paper', version: " \
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end

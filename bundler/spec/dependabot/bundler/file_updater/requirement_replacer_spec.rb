@@ -68,9 +68,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RequirementReplacer do
 
       context "within a source block" do
         let(:content) do
-          "source 'https://example.com' do\n"\
-          "  gem \"business\", \"~> 1.0\", require: true\n"\
-          "end"
+          "source 'https://example.com' do\n" \
+            "  gem \"business\", \"~> 1.0\", require: true\n" \
+            "end"
         end
         it { is_expected.to include(%(gem "business", "~> 1.5.0", require:)) }
       end

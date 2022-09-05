@@ -196,7 +196,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             it "falls back to looking for the changelog as usual" do
               expect(subject).
                 to eq(
-                  "https://github.com/gocardless/business/"\
+                  "https://github.com/gocardless/business/" \
                   "blob/master/CHANGELOG.md"
                 )
             end
@@ -235,7 +235,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           it "gets the right URL" do
             expect(subject).
               to eq(
-                "https://github.com/gocardless/business/blob/v1.4.0/"\
+                "https://github.com/gocardless/business/blob/v1.4.0/" \
                 "CHANGELOG.md"
               )
           end
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
         it "gets the right URL" do
           expect(subject).
-            to eq("https://github.com/gocardless/business/blob/master/module"\
+            to eq("https://github.com/gocardless/business/blob/master/module" \
                   "/CHANGELOG.md")
         end
 
@@ -362,7 +362,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it "gets the right URL" do
             expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master"\
+              to eq("https://github.com/gocardless/business/blob/master" \
                     "/CHANGELOG.md")
           end
         end
@@ -418,7 +418,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it "gets the right URL" do
             expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/"\
+              to eq("https://github.com/gocardless/business/blob/master/" \
                     "CHANGELOG.md")
           end
         end
@@ -474,7 +474,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it "finds the changelog as normal" do
             expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/"\
+              to eq("https://github.com/gocardless/business/blob/master/" \
                     "CHANGELOG.md")
           end
         end
@@ -485,7 +485,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
           it "finds the changelog as normal" do
             expect(subject).
-              to eq("https://github.com/gocardless/business/blob/master/"\
+              to eq("https://github.com/gocardless/business/blob/master/" \
                     "CHANGELOG.md")
           end
         end
@@ -551,8 +551,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
     context "with a bitbucket source" do
       let(:bitbucket_url) do
-        "https://api.bitbucket.org/2.0/repositories/org/business/src"\
-        "?pagelen=100"
+        "https://api.bitbucket.org/2.0/repositories/org/business/src" \
+          "?pagelen=100"
       end
       let(:bitbucket_repo_url) do
         "https://api.bitbucket.org/2.0/repositories/org/business"
@@ -658,15 +658,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     let(:dependency_previous_version) { "1.0.0" }
 
     let(:expected_pruned_changelog) do
-      "## 1.4.0 - December 24, 2014\n\n"\
-      "- Add support for custom calendar load paths\n"\
-      "- Remove the 'sepa' calendar\n\n\n"\
-      "## 1.3.0 - December 2, 2014\n\n"\
-      "- Add `Calendar#previous_business_day`\n\n\n"\
-      "## 1.2.0 - November 15, 2014\n\n"\
-      "- Add TARGET calendar\n\n\n"\
-      "## 1.1.0 - September 30, 2014\n\n"\
-      "- Add 2015 holiday definitions"
+      "## 1.4.0 - December 24, 2014\n\n" \
+        "- Add support for custom calendar load paths\n" \
+        "- Remove the 'sepa' calendar\n\n\n" \
+        "## 1.3.0 - December 2, 2014\n\n" \
+        "- Add `Calendar#previous_business_day`\n\n\n" \
+        "## 1.2.0 - November 15, 2014\n\n" \
+        "- Add TARGET calendar\n\n\n" \
+        "## 1.1.0 - September 30, 2014\n\n" \
+        "- Add 2015 holiday definitions"
     end
 
     context "with a github repo" do
@@ -674,8 +674,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
       let(:github_changelog_url) do
-        "https://api.github.com/repos/gocardless/business/contents/"\
-        "CHANGELOG.md?ref=master"
+        "https://api.github.com/repos/gocardless/business/contents/" \
+          "CHANGELOG.md?ref=master"
       end
       let(:github_contents_response) do
         fixture("github", "business_files.json")
@@ -773,9 +773,9 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           include_context "with multiple git sources"
 
           let(:expected_pruned_changelog) do
-            "## v2.2.0\n"\
-            "- [Fetch all history for all tags and branches when "\
-            "fetch-depth=0](https://github.com/actions/checkout/pull/258)\n"\
+            "## v2.2.0\n" \
+              "- [Fetch all history for all tags and branches when " \
+              "fetch-depth=0](https://github.com/actions/checkout/pull/258)\n" \
           end
 
           context "when there's a new ref" do
@@ -788,8 +788,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
             fixture("github", "scrapy_docs_files.json")
           end
           let(:github_changelog_url) do
-            "https://api.github.com/repos/scrapy/scrapy/contents/docs/"\
-            "news.rst?ref=master"
+            "https://api.github.com/repos/scrapy/scrapy/contents/docs/" \
+              "news.rst?ref=master"
           end
           let(:changelog_body) do
             fixture("github", "changelog_contents_rst.json")
@@ -798,12 +798,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
           let(:dependency_previous_version) { "1.15.1" }
 
           let(:unconverted_text) do
-            "1.16.0 (2019-02-12)\n"\
-            "-------------------\n"\
-            "\n"\
-            "* ``pytest-selenium`` now requires pytest 3.6 or later.\n"\
-            "* Fixed `issue <https://github.com/pytest-dev/"\
-            "pytest-selenium/issues/216>`_ with TestingBot local tunnel."
+            "1.16.0 (2019-02-12)\n" \
+              "-------------------\n" \
+              "\n" \
+              "* ``pytest-selenium`` now requires pytest 3.6 or later.\n" \
+              "* Fixed `issue <https://github.com/pytest-dev/" \
+              "pytest-selenium/issues/216>`_ with TestingBot local tunnel."
           end
 
           it "does not convert the rst" do
@@ -849,8 +849,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         end
 
         let(:github_changelog_url) do
-          "https://api.github.com/repos/mperham/sidekiq/contents/"\
-          "Pro-Changes.md?ref=master"
+          "https://api.github.com/repos/mperham/sidekiq/contents/" \
+            "Pro-Changes.md?ref=master"
         end
 
         it { is_expected.to eq(expected_pruned_changelog) }
@@ -898,8 +898,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
 
     context "with a bitbucket source" do
       let(:bitbucket_url) do
-        "https://api.bitbucket.org/2.0/repositories/org/business/src"\
-        "?pagelen=100"
+        "https://api.bitbucket.org/2.0/repositories/org/business/src" \
+          "?pagelen=100"
       end
       let(:bitbucket_repo_url) do
         "https://api.bitbucket.org/2.0/repositories/org/business"
@@ -1036,8 +1036,8 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://api.github.com/repos/gocardless/business/contents/"
       end
       let(:github_upgrade_guide_url) do
-        "https://api.github.com/repos/gocardless/business/contents/"\
-        "UPGRADE.md?ref=master"
+        "https://api.github.com/repos/gocardless/business/contents/" \
+          "UPGRADE.md?ref=master"
       end
       let(:github_contents_response) do
         fixture("github", "business_files_with_upgrade_guide.json")

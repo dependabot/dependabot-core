@@ -101,7 +101,7 @@ module Dependabot
               when "!="
                 []
               else
-                raise "Unexpected operation for unsatisfied Gemfile "\
+                raise "Unexpected operation for unsatisfied Gemfile " \
                       "requirement: #{op}"
               end
             end

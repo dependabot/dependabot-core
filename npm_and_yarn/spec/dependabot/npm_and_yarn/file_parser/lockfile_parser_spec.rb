@@ -202,9 +202,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it "finds the one matching the requirement" do
           expect(lockfile_details).to eq(
             "version" => "2.2.1",
-            "resolved" => "https://registry.yarnpkg.com/ansi-styles/-/"\
-                           "ansi-styles-2.2.1.tgz#"\
-                           "b432dd3358b634cf75e1e4664368240533c1ddbe"
+            "resolved" => "https://registry.yarnpkg.com/ansi-styles/-/" \
+                          "ansi-styles-2.2.1.tgz#" \
+                          "b432dd3358b634cf75e1e4664368240533c1ddbe"
           )
         end
 

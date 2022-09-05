@@ -34,8 +34,8 @@ module Dependabot
 
             unless path_node.type == :str
               path = gemfile.path
-              msg = "Dependabot only supports uninterpolated string arguments "\
-                    "for path dependencies. Got "\
+              msg = "Dependabot only supports uninterpolated string arguments " \
+                    "for path dependencies. Got " \
                     "`#{path_node.loc.expression.source}`"
               raise Dependabot::DependencyFileNotParseable.new(path, msg)
             end

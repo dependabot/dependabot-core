@@ -2,13 +2,16 @@
 AllCops:
   DisplayCopNames: true
   Exclude:
-  - "*/vendor/**/*"
-  - "*/bin/**/*"
-  - "**/tmp/**/*"
-  - "*/spec/fixtures/**/*"
+    - "*/vendor/**/*"
+    - "*/bin/**/*"
+    - "**/tmp/**/*"
+    - "*/spec/fixtures/**/*"
+  NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: true
+Gemspec/RequireMFA:
+  Enabled: false
 Layout/DotPosition:
   EnforcedStyle: trailing
 Layout/EmptyLinesAroundAttributeAccessor:
@@ -25,6 +28,8 @@ Layout/SpaceAroundMethodCallOperator:
   Enabled: false
 Layout/SpaceBeforeBrackets:
   Enabled: true
+Layout/LineContinuationLeadingSpace:
+  Enabled: false
 Lint/AmbiguousAssignment:
   Enabled: true
 Lint/BinaryOperatorWithIdenticalOperands:
@@ -99,9 +104,9 @@ Metrics/AbcSize:
   Max: 35
 Metrics/BlockLength:
   Exclude:
-  - "*/Rakefile"
-  - "**/spec/**/*"
-  - "*/dependabot-*.gemspec"
+    - "*/Rakefile"
+    - "**/spec/**/*"
+    - "*/dependabot-*.gemspec"
   Max: 35
 Metrics/ClassLength:
   Max: 350
@@ -209,3 +214,9 @@ Style/StringLiterals:
   EnforcedStyle: double_quotes
 Style/SwapValues:
   Enabled: true
+Style/OpenStructUse:
+  Enabled: false
+Style/SpecialGlobalVars:
+  Enabled: false
+Style/SelectByRegexp:
+  Enabled: false

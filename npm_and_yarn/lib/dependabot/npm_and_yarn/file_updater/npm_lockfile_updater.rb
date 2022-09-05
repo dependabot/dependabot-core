@@ -385,7 +385,7 @@ module Dependabot
 
         def raise_resolvability_error(error_message)
           dependency_names = dependencies.map(&:name).join(", ")
-          msg = "Error whilst updating #{dependency_names} in "\
+          msg = "Error whilst updating #{dependency_names} in " \
                 "#{lockfile.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
@@ -397,11 +397,11 @@ module Dependabot
           # issues on the error message (issue detail) on the backend
           #
           # ToDo: add an error ID to issues to make it easier to unique them
-          msg = "Error whilst updating dependencies in #{lockfile.name}:\n"\
-                "#{error_message}\n\n"\
-                "It looks like your lockfile has some corrupt entries with "\
-                "missing versions and needs to be re-generated.\n"\
-                "You'll need to remove #{lockfile.name} and #{modules_path} "\
+          msg = "Error whilst updating dependencies in #{lockfile.name}:\n" \
+                "#{error_message}\n\n" \
+                "It looks like your lockfile has some corrupt entries with " \
+                "missing versions and needs to be re-generated.\n" \
+                "You'll need to remove #{lockfile.name} and #{modules_path} " \
                 "before you run npm install."
           raise Dependabot::DependencyFileNotResolvable, msg
         end

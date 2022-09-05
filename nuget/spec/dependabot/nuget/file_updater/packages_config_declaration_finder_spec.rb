@@ -47,7 +47,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
           expect(declaration_strings.count).to eq(1)
 
           expect(declaration_strings.first).
-            to eq('<package id="NuGet.Core" version="2.11.1" '\
+            to eq('<package id="NuGet.Core" version="2.11.1" ' \
                   'targetFramework="net46" />')
         end
 
@@ -58,7 +58,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
             expect(declaration_strings.count).to eq(1)
 
             expect(declaration_strings.first).
-              to eq('<package id="NuGet.Core" version="2.11.1" '\
+              to eq('<package id="NuGet.Core" version="2.11.1" ' \
                     'targetFramework="net46" />')
           end
         end

@@ -1,0 +1,7 @@
+{
+    "name": "dependabot/test-project",
+    "require": {
+        "dependabot/dummy-pkg-a": "^2.0.0",
+        "dependabot/dummy-pkg-b": "^1.1.0"
+    }
+}

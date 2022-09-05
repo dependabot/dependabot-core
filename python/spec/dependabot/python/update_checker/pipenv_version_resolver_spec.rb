@@ -114,8 +114,8 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).to start_with(
-              "CRITICAL:pipenv.patched.notpip._internal.resolution.resolvelib.factory:"\
-              "Could not find a version that satisfies the requirement "\
+              "CRITICAL:pipenv.patched.notpip._internal.resolution.resolvelib.factory:" \
+              "Could not find a version that satisfies the requirement " \
               "pytest==10.4.0"
             )
           end

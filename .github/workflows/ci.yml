@@ -60,7 +60,85 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            bundler:
+              - Dockerfile
+              - 'common/**'
+              - 'bundler/**'
+            cargo:
+              - Dockerfile
+              - 'common/**'
+              - 'cargo/**'
+            common:
+              - Dockerfile
+              - 'common/**'
+            composer:
+              - Dockerfile
+              - 'common/**'
+              - 'composer/**'
+            docker:
+              - Dockerfile
+              - 'common/**'
+              - 'docker/**'
+            elm:
+              - Dockerfile
+              - 'common/**'
+              - 'elm/**'
+            git_submodules:
+              - Dockerfile
+              - 'common/**'
+              - 'git_submodules/**'
+            github_actions:
+              - Dockerfile
+              - 'common/**'
+              - 'github_actions/**'
+            go_modules:
+              - Dockerfile
+              - 'common/**'
+              - 'go_modules/**'
+            gradle:
+              - Dockerfile
+              - 'common/**'
+              - 'gradle/**'
+            hex:
+              - Dockerfile
+              - 'common/**'
+              - 'hex/**'
+            maven:
+              - Dockerfile
+              - 'common/**'
+              - 'maven/**'
+            npm_and_yarn:
+              - Dockerfile
+              - 'common/**'
+              - 'npm_and_yarn/**'
+            nuget:
+              - Dockerfile
+              - 'common/**'
+              - 'nuget/**'
+            omnibus:
+              - Dockerfile
+              - 'common/**'
+              - 'omnibus/**'
+            pub:
+              - Dockerfile
+              - 'common/**'
+              - 'pub/**'
+            python:
+              - Dockerfile
+              - 'common/**'
+              - 'python/**'
+            terraform:
+              - Dockerfile
+              - 'common/**'
+              - 'terraform/**'
+
       - name: Build dependabot-core image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -69,7 +147,9 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
+
       - name: Build dependabot-core-ci image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -78,7 +158,9 @@ jobs:
             -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
+
       - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
             --env "CI=true" \
@@ -89,6 +171,33 @@ jobs:
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm dependabot-core-ci bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+
+  updater:
+    name: Updater
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+      - name: Build
+        run: script/build
+      - name: Lint
+        run: script/lint
+        env:
+          SKIP_BUILD: true
+      - name: Run updater tests
+        run: ./script/ci-test-updater
+        env:
+          SKIP_BUILD: true
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint:
     name: Lint

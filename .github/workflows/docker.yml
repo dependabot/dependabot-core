@@ -3,6 +3,8 @@ env:
   BASE_IMAGE: "ubuntu:20.04"
   CORE_IMAGE: "dependabot/dependabot-core"
   CORE_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-core"
+  UPDATER_IMAGE: "dependabot/dependabot-updater"
+  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
 on:
   push:
     branches:
@@ -49,6 +51,49 @@ jobs:
           docker push "$CORE_IMAGE:$VERSION"
           docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE_MIRROR:$VERSION"
           docker push "$CORE_IMAGE_MIRROR:$VERSION"
+  push-updater-image:
+    name: Push dependabot-updater image to docker hub
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'dependabot/dependabot-core' }}
+    needs: push-core-image
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-updater image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          docker build \
+            -t "$UPDATER_IMAGE:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$UPDATER_IMAGE:latest" \
+            --build-arg OMNIBUS_VERSION=$VERSION \
+            -f Dockerfile.updater \
+            .
+      - name: Log in to the Docker registry
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push latest image
+        run: |
+          docker push "$UPDATER_IMAGE:latest"
+          docker tag "$UPDATER_IMAGE:latest" "$UPDATER_IMAGE_MIRROR:latest"
+          docker push "$UPDATER_IMAGE_MIRROR:latest"
+      - name: Push tagged image
+        if: "contains(github.ref, 'refs/tags')"
+        run: |
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          docker tag "$UPDATER_IMAGE:latest" "$UPDATER_IMAGE:$VERSION"
+          docker push "$UPDATER_IMAGE:$VERSION"
+          docker tag "$UPDATER_IMAGE:latest" "$UPDATER_IMAGE_MIRROR:$VERSION"
+          docker push "$UPDATER_IMAGE_MIRROR:$VERSION"
   push-development-image:
     name: Push dependabot-core-development image to GHCR
     runs-on: ubuntu-latest

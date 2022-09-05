@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -268,7 +268,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                   file: "Dockerfile",
                   source: {
                     registry: "registry-host.io:5000",
-                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                             "e4c8dfc38288cf73aa07485005"
                   }
                 }]
@@ -297,8 +297,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "that uses Amazon ECR" do
             let(:dockerfile_fixture_name) { "private_ecr_digest" }
             let(:repo_url) do
-              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/"\
-              "docker-php/"
+              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
+                "docker-php/"
             end
 
             context "without credentials" do
@@ -384,7 +384,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                       source: {
                         registry:
                           "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                                 "e4c8dfc38288cf73aa07485005"
                       }
                     }]
@@ -832,7 +832,7 @@ RSpec.describe Dependabot::Docker::FileParser do
               groups: [],
               file: "digest.yaml",
               source: {
-                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+                digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                         "fc38288cf73aa07485005"
               }
             }]
@@ -898,7 +898,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                   file: "private_digest.yaml",
                   source: {
                     registry: "registry-host.io:5000",
-                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                             "e4c8dfc38288cf73aa07485005"
                   }
                 }]
@@ -927,8 +927,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "that uses Amazon ECR" do
             let(:podfile_fixture_name) { "private_ecr_digest.yaml" }
             let(:repo_url) do
-              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/"\
-              "docker-php/"
+              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
+                "docker-php/"
             end
 
             context "without credentials" do
@@ -1014,7 +1014,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                       source: {
                         registry:
                           "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76"\
+                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
                                 "e4c8dfc38288cf73aa07485005"
                       }
                     }]

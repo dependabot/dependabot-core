@@ -1,0 +1,39 @@
+name: dependabot-updater
+cache_path: 'licenses'
+sources:
+  bundler: true
+allowed:
+  - apache-2.0
+  - bsd-2-clause
+  - bsd-3-clause
+  - cc0-1.0
+  - isc
+  - lgpl-3.0-only
+  - mit
+  - unlicense
+  - other
+bundler:
+  without:
+    - development
+    - test
+ignored:
+  bundler:
+  # Internal gems
+  - dependabot-omnibus
+  - dependabot-bundler
+  - dependabot-cargo
+  - dependabot-common
+  - dependabot-composer
+  - dependabot-docker
+  - dependabot-elm
+  - dependabot-git_submodules
+  - dependabot-github_actions
+  - dependabot-go_modules
+  - dependabot-gradle
+  - dependabot-hex
+  - dependabot-maven
+  - dependabot-npm_and_yarn
+  - dependabot-nuget
+  - dependabot-pub
+  - dependabot-python
+  - dependabot-terraform

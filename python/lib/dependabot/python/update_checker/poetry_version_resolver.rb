@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -23,18 +24,26 @@ module Dependabot
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         GIT_REFERENCE_NOT_FOUND_REGEX = /
-          'git'.*pypoetry-git-(?<name>.+?).{8}',
+          (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
           'checkout',
           '(?<tag>.+?)'
-        /x.freeze
+          |
+          ...Failedtoclone
+          (?<url>.+?).gitat'(?<tag>.+?)',
+          verifyrefexistsonremote)
+        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
-            '\['git',
-            \s+'clone',
-            \s+'--recurse-submodules',
-            \s+'(--)?',
-            \s+'(?<url>.+?)'.*
-            \s+exit\s+status\s+128
-          /mx.freeze
+          (?:'\['git',
+          \s+'clone',
+          \s+'--recurse-submodules',
+          \s+'(--)?',
+          \s+'(?<url>.+?)'.*
+          \s+exit\s+status\s+128
+          |
+          \s+Failed\sto\sclone
+          \s+(?<url>.+?),
+          \s+check\syour\sgit\sconfiguration)
+        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -61,7 +70,8 @@ module Dependabot
                                    false
                                  end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("SolverProblemError")
+          raise unless e.message.include?("SolverProblemError") || # TODO: Remove once py3.6 is EoL
+                       e.message.include?("version solving failed.")
 
           @resolvable[version] = false
         end
@@ -82,7 +92,7 @@ module Dependabot
                   run_poetry_command("pyenv install -s #{python_version}")
                   run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
-                    "pyenv exec pip install -r "\
+                    "pyenv exec pip install -r " \
                     "#{NativeHelpers.python_requirements_path}"
                   )
                 end
@@ -118,8 +128,13 @@ module Dependabot
         def handle_poetry_errors(error)
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
-            name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
+            match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+            name = if (url = match.named_captures.fetch("url"))
+                     File.basename(URI.parse(url).path)
+                   else
+                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                       named_captures.fetch("name")
+                   end
             raise GitDependencyReferenceNotFound, name
           end
 
@@ -130,7 +145,8 @@ module Dependabot
           end
 
           raise unless error.message.include?("SolverProblemError") ||
-                       error.message.include?("PackageNotFound")
+                       error.message.include?("PackageNotFound") ||
+                       error.message.include?("version solving failed.")
 
           check_original_requirements_resolvable
 
@@ -161,7 +177,8 @@ module Dependabot
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("SolverProblemError") ||
-                           e.message.include?("PackageNotFound")
+                           e.message.include?("PackageNotFound") ||
+                           e.message.include?("version solving failed.")
 
               msg = clean_error_message(e.message)
               raise DependencyFileNotResolvable, msg
@@ -214,9 +231,9 @@ module Dependabot
           end
           return version if version
 
-          msg = "Dependabot detected the following Python requirements "\
-                "for your project: '#{requirements}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirements " \
+                "for your project: '#{requirements}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end

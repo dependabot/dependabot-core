@@ -592,7 +592,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
           it "updates the version in the POM" do
             expect(updated_pom_file.content).
-              to include("<artifactId>basic-pom</artifactId>\n  "\
+              to include("<artifactId>basic-pom</artifactId>\n  " \
                          "<version>5.0.0.RELEASE</version>")
             expect(updated_pom_file.content).
               to include("<version>4.5.3</version>")

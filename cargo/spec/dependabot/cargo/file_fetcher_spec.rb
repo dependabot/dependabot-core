@@ -223,7 +223,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
           "https://api.github.com/repos/gocardless/bump/contents/my_dir/"
         end
         before do
-          stub_request(:get, "https://api.github.com/repos/gocardless/bump/"\
+          stub_request(:get, "https://api.github.com/repos/gocardless/bump/" \
                              "contents/my_dir?ref=sha").
             with(headers: { "Authorization" => "token token" }).
             to_return(

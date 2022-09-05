@@ -56,13 +56,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
   let(:pom_body) { fixture("poms", "property_pom.xml") }
 
   let(:maven_central_metadata_url_beans) do
-    "https://repo.maven.apache.org/maven2/"\
-    "org/springframework/spring-beans/maven-metadata.xml"
+    "https://repo.maven.apache.org/maven2/" \
+      "org/springframework/spring-beans/maven-metadata.xml"
   end
 
   let(:maven_central_metadata_url_context) do
-    "https://repo.maven.apache.org/maven2/"\
-    "org/springframework/spring-context/maven-metadata.xml"
+    "https://repo.maven.apache.org/maven2/" \
+      "org/springframework/spring-context/maven-metadata.xml"
   end
 
   before do
@@ -221,13 +221,13 @@ RSpec.describe Dependabot::Maven::UpdateChecker::PropertyUpdater do
       let(:dependency_version) { "1.0.0-M2" }
 
       let(:maven_central_metadata_url_runner) do
-        "https://repo.maven.apache.org/maven2/"\
-        "org/junit/platform/junit-platform-runner/maven-metadata.xml"
+        "https://repo.maven.apache.org/maven2/" \
+          "org/junit/platform/junit-platform-runner/maven-metadata.xml"
       end
 
       let(:maven_central_metadata_url_surefire_provider) do
-        "https://repo.maven.apache.org/maven2/"\
-        "org/junit/platform/junit-platform-surefire-provider/maven-metadata.xml"
+        "https://repo.maven.apache.org/maven2/" \
+          "org/junit/platform/junit-platform-surefire-provider/maven-metadata.xml"
       end
 
       before do
