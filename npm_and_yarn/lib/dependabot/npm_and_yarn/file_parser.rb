@@ -159,7 +159,7 @@ module Dependabot
 
       def workspace_package_names
         @workspace_package_names ||=
-          package_files.map { |f| JSON.parse(f.content)["name"] }.compact
+          package_files.filter_map { |f| JSON.parse(f.content)["name"] }
       end
 
       def version_for(name, requirement, manifest_name)

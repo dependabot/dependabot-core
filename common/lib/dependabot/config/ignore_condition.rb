@@ -28,7 +28,7 @@ module Dependabot
       private
 
       def transformed_update_types
-        update_types.map(&:downcase).map(&:strip).compact
+        update_types.map(&:downcase).filter_map(&:strip)
       end
 
       def versions_by_type(dependency)

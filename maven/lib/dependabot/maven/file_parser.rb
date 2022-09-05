@@ -283,7 +283,7 @@ module Dependabot
 
       def internal_dependency_names
         @internal_dependency_names ||=
-          dependency_files.map do |pom|
+          dependency_files.filter_map do |pom|
             doc = Nokogiri::XML(pom.content)
             group_id = doc.at_css("project > groupId") ||
                        doc.at_css("project > parent > groupId")
@@ -292,7 +292,7 @@ module Dependabot
             next unless group_id && artifact_id
 
             [group_id.content.strip, artifact_id.content.strip].join(":")
-          end.compact
+          end
       end
 
       def check_required_files

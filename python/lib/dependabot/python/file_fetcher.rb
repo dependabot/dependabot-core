@@ -13,6 +13,7 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/.freeze
       CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/.freeze
+      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -372,7 +373,7 @@ module Dependabot
         return [] unless pipfile
 
         paths = []
-        %w(packages dev-packages).each do |dep_type|
+        DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pipfile[dep_type]
 
           parsed_pipfile[dep_type].each do |_, req|

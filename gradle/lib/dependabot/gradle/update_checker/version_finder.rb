@@ -185,7 +185,7 @@ module Dependabot
         end
 
         def check_response(response, repository_url)
-          return unless [401, 403].include?(response.status)
+          return unless response.status == 401 || response.status == 403
           return if @forbidden_urls.include?(repository_url)
           return if central_repo_urls.include?(repository_url)
 

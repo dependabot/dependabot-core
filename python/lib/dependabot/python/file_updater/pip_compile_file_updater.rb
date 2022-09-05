@@ -92,7 +92,7 @@ module Dependabot
             # Remove any .python-version file before parsing the reqs
             FileUtils.remove_entry(".python-version", true)
 
-            dependency_files.map do |file|
+            dependency_files.filter_map do |file|
               next unless file.name.end_with?(".txt")
 
               updated_content = File.read(file.name)
@@ -102,12 +102,12 @@ module Dependabot
               next if updated_content == file.content
 
               file.dup.tap { |f| f.content = updated_content }
-            end.compact
+            end
           end
         end
 
         def update_manifest_files
-          dependency_files.map do |file|
+          dependency_files.filter_map do |file|
             next unless file.name.end_with?(".in")
 
             file = file.dup
@@ -116,7 +116,7 @@ module Dependabot
 
             file.content = updated_content
             file
-          end.compact
+          end
         end
 
         def update_uncompiled_files(updated_files)
@@ -352,7 +352,7 @@ module Dependabot
         end
 
         def deps_to_augment_hashes_for(updated_content, original_content)
-          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/
+          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/o
 
           new_matches = []
           updated_content.scan(regex) { new_matches << Regexp.last_match }

@@ -214,11 +214,11 @@ module Dependabot
       end
 
       def latest_resolvable_version_with_no_unlock_for_git_dependency
-        reqs = dependency.requirements.map do |r|
+        reqs = dependency.requirements.filter_map do |r|
           next if r.fetch(:requirement).nil?
 
           requirement_class.requirements_array(r.fetch(:requirement))
-        end.compact
+        end
 
         current_version =
           if existing_version_is_sha? ||

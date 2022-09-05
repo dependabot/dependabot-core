@@ -61,7 +61,7 @@ module Dependabot
         def dependency_type(dependency_node)
           val = dependency_node.attribute("developmentDependency")&.value&.strip ||
                 dependency_node.at_xpath("./developmentDependency")&.content&.strip
-          val.to_s.downcase == "true" ? "devDependencies" : "dependencies"
+          val.to_s.casecmp("true").zero? ? "devDependencies" : "dependencies"
         end
       end
     end

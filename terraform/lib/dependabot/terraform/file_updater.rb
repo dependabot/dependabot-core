@@ -313,7 +313,7 @@ module Dependabot
       end
 
       def registry_host_for(dependency)
-        source = dependency.requirements.map { |r| r[:source] }.compact.first
+        source = dependency.requirements.filter_map { |r| r[:source] }.first
         source[:registry_hostname] || source["registry_hostname"] || "registry.terraform.io"
       end
 

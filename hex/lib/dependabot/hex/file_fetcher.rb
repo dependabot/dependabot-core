@@ -64,14 +64,14 @@ module Dependabot
         subapp_directories += umbrella_app_directories
         subapp_directories += sub_project_directories
 
-        subapp_directories.map do |dir|
+        subapp_directories.filter_map do |dir|
           fetch_file_from_host("#{dir}/mix.exs")
         rescue Dependabot::DependencyFileNotFound
           # If the folder doesn't have a mix.exs it *might* be because it's
           # not an app. Ignore the fact we couldn't fetch one and proceed with
           # updating (it will blow up later if there are problems)
           nil
-        end.compact
+        end
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         # If the path specified in apps_path doesn't exist then it's not being
         # used. We can just return an empty array of subapp files.
@@ -82,7 +82,7 @@ module Dependabot
         mixfiles = [mixfile] + subapp_mixfiles
 
         mixfiles.flat_map do |mixfile|
-          mixfile_dir = mixfile.path.sub("/mix.exs", "").delete_prefix("/")
+          mixfile_dir = mixfile.path.to_s.delete_prefix("/").delete_suffix("/mix.exs")
 
           mixfile.content.gsub(/__DIR__/, "\"#{mixfile_dir}\"").scan(SUPPORT_FILE).map do |support_file_args|
             path = Pathname.new(File.join(*support_file_args.compact.reverse)).

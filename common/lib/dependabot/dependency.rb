@@ -120,9 +120,7 @@ module Dependabot
     private
 
     def check_values
-      if [version, previous_version].any? { |v| v == "" }
-        raise ArgumentError, "blank strings must not be provided as versions"
-      end
+      raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
 
       check_requirement_fields
       check_subdependency_metadata
@@ -130,8 +128,8 @@ module Dependabot
 
     def check_requirement_fields
       requirement_fields = [requirements, previous_requirements].compact
-      unless requirement_fields.all? { |r| r.is_a?(Array) } &&
-             requirement_fields.flatten.all? { |r| r.is_a?(Hash) }
+      unless requirement_fields.all?(Array) &&
+             requirement_fields.flatten.all?(Hash)
         raise ArgumentError, "requirements must be an array of hashes"
       end
 
@@ -154,7 +152,7 @@ module Dependabot
       return unless subdependency_metadata
 
       unless subdependency_metadata.is_a?(Array) &&
-             subdependency_metadata.all? { |r| r.is_a?(Hash) }
+             subdependency_metadata.all?(Hash)
         raise ArgumentError, "subdependency_metadata must be an array of hashes"
       end
     end

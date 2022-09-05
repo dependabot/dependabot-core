@@ -63,7 +63,7 @@ module Dependabot
         def updating_from_git_to_npm?
           return false unless updated_source.nil?
 
-          original_source = requirements.map { |r| r[:source] }.compact.first
+          original_source = requirements.filter_map { |r| r[:source] }.first
           original_source&.fetch(:type) == "git"
         end
 

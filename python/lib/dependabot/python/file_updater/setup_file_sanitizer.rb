@@ -38,22 +38,22 @@ module Dependabot
 
         def install_requires_array
           @install_requires_array ||=
-            parsed_setup_file.dependencies.map do |dep|
+            parsed_setup_file.dependencies.filter_map do |dep|
               next unless dep.requirements.first[:groups].
                           include?("install_requires")
 
               dep.name + dep.requirements.first[:requirement].to_s
-            end.compact
+            end
         end
 
         def setup_requires_array
           @setup_requires_array ||=
-            parsed_setup_file.dependencies.map do |dep|
+            parsed_setup_file.dependencies.filter_map do |dep|
               next unless dep.requirements.first[:groups].
                           include?("setup_requires")
 
               dep.name + dep.requirements.first[:requirement].to_s
-            end.compact
+            end
         end
 
         def extras_require_hash
