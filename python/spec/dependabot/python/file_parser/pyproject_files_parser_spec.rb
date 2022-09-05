@@ -254,5 +254,13 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         )
       end
     end
+
+    context "with dependencies with empty requirements" do
+      let(:pyproject_fixture_name) { "no_requirements.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to eq(0) }
+    end
   end
 end

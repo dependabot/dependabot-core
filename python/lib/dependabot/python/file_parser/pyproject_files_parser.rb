@@ -75,6 +75,9 @@ module Dependabot
             # probably blocked. Ignore it.
             next if dep["markers"].include?("<")
 
+            # If no requirement, don't add it
+            next if dep["requirement"].empty?
+
             dependencies <<
               Dependency.new(
                 name: normalised_name(dep["name"], dep["extras"]),
