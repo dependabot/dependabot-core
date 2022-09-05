@@ -291,6 +291,20 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
+    context "when lockfile_only is set in the job" do
+      let(:lockfile_only) { true }
+
+      it "still tries to unlock requirements of dependencies" do
+        allow(checker).
+          to receive(:can_update?).with(requirements_to_unlock: :own).
+          and_return(true)
+        expect(logger).
+          to receive(:info).
+          with("<job_1> Requirements to unlock own")
+        updater.run
+      end
+    end
+
     context "when no dependencies are allowed" do
       let(:allowed_updates) { [{ "dependency-name" => "typoed-dep-name" }] }
 

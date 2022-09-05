@@ -26,7 +26,7 @@ module Dependabot
       @lockfile_only                = attributes.fetch(:lockfile_only)
       @package_manager              = attributes.fetch(:package_manager)
       @reject_external_code         = attributes.fetch(:reject_external_code, false)
-      @requirements_update_strategy = attributes.fetch(:requirements_update_strategy)
+      @requirements_update_strategy = build_update_strategy(attributes.fetch(:requirements_update_strategy))
       @security_advisories          = attributes.fetch(:security_advisories)
       @security_updates_only        = attributes.fetch(:security_updates_only)
       @source                       = build_source(attributes.fetch(:source))
@@ -41,10 +41,6 @@ module Dependabot
     def clone?
       vendor_dependencies? ||
         Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
-    end
-
-    def lockfile_only?
-      @lockfile_only
     end
 
     def updating_a_pull_request?
@@ -158,6 +154,12 @@ module Dependabot
         name_normaliser.call(name1),
         name_normaliser.call(name2)
       )
+    end
+
+    def build_update_strategy(requirements_update_strategy)
+      return requirements_update_strategy unless requirements_update_strategy.nil?
+
+      @lockfile_only ? "lockfile_only" : nil
     end
 
     def build_source(source_details)

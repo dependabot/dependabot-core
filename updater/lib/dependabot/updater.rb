@@ -472,7 +472,7 @@ module Dependabot
     end
 
     def requirements_to_unlock(checker)
-      if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
+      if !checker.requirements_unlocked_or_can_be?
         if checker.can_update?(requirements_to_unlock: :none) then :none
         else
           :update_not_possible
