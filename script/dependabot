@@ -2,24 +2,24 @@
 
 dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
-  -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
-  -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
-  -v "$(pwd)"/bin:/home/dependabot/bin \
-  -v "$(pwd)"/bundler:/home/dependabot/bundler \
-  -v "$(pwd)"/cargo:/home/dependabot/cargo \
-  -v "$(pwd)"/common:/home/dependabot/common \
-  -v "$(pwd)"/composer:/home/dependabot/composer \
-  -v "$(pwd)"/docker:/home/dependabot/docker \
-  -v "$(pwd)"/elm:/home/dependabot/elm \
-  -v "$(pwd)"/git_submodules:/home/dependabot/git_submodules \
-  -v "$(pwd)"/github_actions:/home/dependabot/github_actions \
-  -v "$(pwd)"/go_modules:/home/dependabot/go_modules \
-  -v "$(pwd)"/gradle:/home/dependabot/gradle \
-  -v "$(pwd)"/hex:/home/dependabot/hex \
-  -v "$(pwd)"/maven:/home/dependabot/maven \
-  -v "$(pwd)"/npm_and_yarn:/home/dependabot/npm_and_yarn \
-  -v "$(pwd)"/nuget:/home/dependabot/nuget \
-  -v "$(pwd)"/pub:/home/dependabot/pub \
-  -v "$(pwd)"/python:/home/dependabot/python \
-  -v "$(pwd)"/terraform:/home/dependabot/terraform \
+  -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-core/updater/bin \
+  -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-core/updater/lib \
+  -v "$(pwd)"/bin:/home/dependabot/dependabot-core/bin \
+  -v "$(pwd)"/bundler:/home/dependabot/dependabot-core/bundler \
+  -v "$(pwd)"/cargo:/home/dependabot/dependabot-core/cargo \
+  -v "$(pwd)"/common:/home/dependabot/dependabot-core/common \
+  -v "$(pwd)"/composer:/home/dependabot/dependabot-core/composer \
+  -v "$(pwd)"/docker:/home/dependabot/dependabot-core/docker \
+  -v "$(pwd)"/elm:/home/dependabot/dependabot-core/elm \
+  -v "$(pwd)"/git_submodules:/home/dependabot/dependabot-core/git_submodules \
+  -v "$(pwd)"/github_actions:/home/dependabot/dependabot-core/github_actions \
+  -v "$(pwd)"/go_modules:/home/dependabot/dependabot-core/go_modules \
+  -v "$(pwd)"/gradle:/home/dependabot/dependabot-core/gradle \
+  -v "$(pwd)"/hex:/home/dependabot/dependabot-core/hex \
+  -v "$(pwd)"/maven:/home/dependabot/dependabot-core/maven \
+  -v "$(pwd)"/npm_and_yarn:/home/dependabot/dependabot-core/npm_and_yarn \
+  -v "$(pwd)"/nuget:/home/dependabot/dependabot-core/nuget \
+  -v "$(pwd)"/pub:/home/dependabot/dependabot-core/pub \
+  -v "$(pwd)"/python:/home/dependabot/dependabot-core/python \
+  -v "$(pwd)"/terraform:/home/dependabot/dependabot-core/terraform \
   "$@"

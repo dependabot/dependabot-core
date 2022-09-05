@@ -339,3 +339,6 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
+
+ENV CODE_DIR=${HOME}/dependabot-core
+RUN mkdir $CODE_DIR

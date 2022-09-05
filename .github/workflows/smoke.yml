@@ -220,6 +220,9 @@ jobs:
       if: steps.changes.outputs[matrix.suite] == 'true'
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DEPENDABOT_JOB_PATH: /home/dependabot/dependabot-core/updater/job.json
+        DEPENDABOT_OUTPUT_PATH: /home/dependabot/dependabot-core/updater/output/output.json
+        DEPENDABOT_REPO_CONTENTS_PATH: /home/dependabot/dependabot-core/updater/repo
       run: |
         set -o pipefail
         ./dependabot test -f=smoke.yaml -o=result.yaml --cache=cache --timeout=20m --updater-image=dependabot/updater:latest 2>&1 | tee -a log.txt
