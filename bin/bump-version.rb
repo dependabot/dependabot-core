@@ -39,15 +39,14 @@ def proposed_changes(version, _new_version)
     {
       title: title,
       author: author,
-      number: pr_number,
-      link: "https://github.com/dependabot/dependabot-core/pull/#{pr_number}"
+      number: pr_number
     }
   end
 
   pr_details.map do |details|
     line = "- #{details[:title]}"
     line += " (@#{details[:author]})" unless dependabot_team.include?(details[:author])
-    line += " [##{details[:number]}](#{details[:link]})"
+    line += " PR ##{details[:number]}"
     line
   end
 end
