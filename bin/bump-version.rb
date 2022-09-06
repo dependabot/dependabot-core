@@ -45,7 +45,7 @@ def proposed_changes(version, _new_version)
 
   pr_details.map do |details|
     line = "- #{details[:title]}"
-    line += " (@#{details[:author]})" unless dependabot_team.include?(details[:author])
+    line += " (@\u200#{details[:author]})" unless dependabot_team.include?(details[:author])
     line += " PR ##{details[:number]}"
     line
   end
