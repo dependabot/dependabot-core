@@ -45,68 +45,120 @@ jobs:
       id: changes
       with:
         filters: |
-          shared: &shared
+          actions:
             - Dockerfile
             - Dockerfile.updater
             - 'common/**'
             - 'updater/**'
-          actions:
-            - *shared
             - 'github_actions/**'
           bundler:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'bundler/**'
           cargo:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'cargo/**'
           composer:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'composer/**'
           docker:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'docker/**'
           elm:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'elm/**'
           go:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'go_modules/**'
           gradle:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'maven/**'
             - 'gradle/**'
           hex:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'hex/**'
           maven:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'maven/**'
           npm:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'nuget/**'
           pub:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'pub/**'
           pip:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'python/**'
           'pip-compile':
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'python/**'
           pipenv:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'python/**'
           poetry:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'python/**'
           submodules:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'git_submodules/**'
           terraform:
-            - *shared
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
             - 'terraform/**'
 
     - name: Download CLI and test
