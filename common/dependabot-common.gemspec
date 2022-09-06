@@ -39,7 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "debase-ruby_core_source", "0.10.16"
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
-  spec.add_development_dependency "parallel_tests", "~> 3.11.1"
+  spec.add_development_dependency "parallel_tests", "~> 3.12.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
