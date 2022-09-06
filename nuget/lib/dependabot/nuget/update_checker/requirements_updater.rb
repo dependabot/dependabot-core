@@ -38,7 +38,7 @@ module Dependabot
                 # replace anything that looks like a version with the new
                 # version
                 req[:requirement].sub(
-                  /#{Nuget::Version::VERSION_PATTERN}/,
+                  /#{Nuget::Version::VERSION_PATTERN}/o,
                   latest_version.to_s
                 )
               end

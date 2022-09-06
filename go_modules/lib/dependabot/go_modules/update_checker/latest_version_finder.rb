@@ -52,7 +52,7 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version
-          return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
+          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
 
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
@@ -62,7 +62,7 @@ module Dependabot
         end
 
         def fetch_lowest_security_fix_version
-          return dependency.version if dependency.version =~ PSEUDO_VERSION_REGEX
+          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
 
           relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
@@ -110,7 +110,7 @@ module Dependabot
         def handle_subprocess_error(error)
           if RESOLVABILITY_ERROR_REGEXES.any? { |rgx| error.message =~ rgx }
             ResolvabilityErrors.handle(error.message, credentials: credentials, goprivate: @goprivate)
-          elsif INVALID_VERSION_REGEX =~ error.message
+          elsif INVALID_VERSION_REGEX.match?(error.message)
             raise Dependabot::DependencyFileNotResolvable, error.message
           end
 

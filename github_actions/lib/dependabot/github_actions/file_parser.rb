@@ -109,7 +109,7 @@ module Dependabot
         steps = json_object.fetch("steps", [])
 
         uses_strings =
-          if steps.is_a?(Array) && steps.all? { |s| s.is_a?(Hash) }
+          if steps.is_a?(Array) && steps.all?(Hash)
             steps.
               map { |step| step.fetch("uses", nil) }.
               select { |use| use.is_a?(String) }

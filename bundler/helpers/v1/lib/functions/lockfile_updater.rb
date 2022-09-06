@@ -160,9 +160,9 @@ module Functions
       potentials_deps =
         error.cause.conflicts.values.
         flat_map(&:requirement_trees).
-        map do |tree|
+        filter_map do |tree|
           tree.find { |req| allowed_new_unlocks.include?(req.name) }
-        end.compact.map(&:name)
+        end.map(&:name)
 
       # If there are specific dependencies we can unlock, unlock them
       return dependencies_to_unlock.append(*potentials_deps) if potentials_deps.any?

@@ -188,9 +188,7 @@ module Dependabot
 
         def in_repo_path(&block)
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              block.call
-            end
+            SharedHelpers.with_git_configured(credentials: credentials, &block)
           end
         end
 

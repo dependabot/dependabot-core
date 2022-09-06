@@ -51,7 +51,7 @@ module Dependabot
     # @return [Boolean]
     def fixed_by?(dependency)
       # Handle case mismatch between the security advisory and parsed name
-      return false unless dependency_name.downcase == dependency.name.downcase
+      return false unless dependency_name.casecmp(dependency.name).zero?
       return false unless package_manager == dependency.package_manager
       # TODO: Support no previous version to the same level as dependency graph
       # and security alerts. We currently ignore dependency updates without a

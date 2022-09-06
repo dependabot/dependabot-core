@@ -18,7 +18,9 @@ module Dependabot
         return [] unless repo_contents_path && vendor_dir
 
         Dir.chdir(repo_contents_path) do
+          # rubocop:disable Performance/DeletePrefix
           relative_dir = Pathname.new(base_directory).sub(%r{\A/}, "").join(vendor_dir)
+          # rubocop:enable Performance/DeletePrefix
 
           status = SharedHelpers.run_shell_command(
             "git status --untracked-files all --porcelain v1 #{relative_dir}"

@@ -9,7 +9,7 @@ module Dependabot
       private
 
       def look_up_source
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url =
           if info.nil?

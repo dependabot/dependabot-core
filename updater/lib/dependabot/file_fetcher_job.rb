@@ -152,6 +152,11 @@ module Dependabot
           }
         when Octokit::Unauthorized
           { "error-type": "octokit_unauthorized" }
+        when Octokit::ServerError
+          # If we get a 500 from GitHub there's very little we can do about it,
+          # and responsibility for fixing it is on them, not us. As a result we
+          # quietly log these as errors
+          { "error-type": "unknown_error" }
         when *Octokit::RATE_LIMITED_ERRORS
           # If we get a rate-limited error we let dependabot-api handle the
           # retry by re-enqueing the update job after the reset
@@ -161,11 +166,6 @@ module Dependabot
               "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
             }
           }
-        when Octokit::ServerError
-          # If we get a 500 from GitHub there's very little we can do about it,
-          # and responsibility for fixing it is on them, not us. As a result we
-          # quietly log these as errors
-          { "error-type": "unknown_error" }
         else
           logger_error error.message
           error.backtrace.each { |line| logger_error line }

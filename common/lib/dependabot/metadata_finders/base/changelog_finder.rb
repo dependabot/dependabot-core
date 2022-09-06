@@ -239,7 +239,7 @@ module Dependabot
           files += github_client.contents(source.repo, opts)
 
           files.uniq.each do |f|
-            next unless %w(doc docs).include?(f.name) && f.type == "dir"
+            next unless f.type == "dir" && f.name.match?(/docs?/o)
 
             opts = { path: f.path, ref: ref }.compact
             files += github_client.contents(source.repo, opts)
@@ -300,16 +300,16 @@ module Dependabot
         end
 
         def previous_ref
-          previous_refs = dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
-          new_refs = dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return new_refs.first if new_refs.count == 1
         end
 

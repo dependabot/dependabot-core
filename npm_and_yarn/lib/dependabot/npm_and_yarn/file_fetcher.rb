@@ -200,7 +200,7 @@ module Dependabot
         resolution_objects = parsed_manifest.values_at("resolutions").compact
         manifest_objects = dependency_objects + resolution_objects
 
-        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all? { |o| o.is_a?(Hash) }
+        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all?(Hash)
 
         resolution_deps = resolution_objects.flat_map(&:to_a).
                           map do |path, value|

@@ -78,6 +78,7 @@ jobs:
           gradle:
             - Dockerfile
             - 'common/**'
+            - 'maven/**'
             - 'gradle/**'
           hex:
             - Dockerfile

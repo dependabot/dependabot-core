@@ -57,7 +57,7 @@ jobs:
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
           docker push "$UPDATER_IMAGE_MIRROR:$TAG"
       - name: Push latest on main
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         continue-on-error: true
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"

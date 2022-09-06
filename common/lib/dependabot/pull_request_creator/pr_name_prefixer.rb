@@ -280,8 +280,7 @@ module Dependabot
           reject { |c| c.author&.type == "Bot" }.
           reject { |c| c.commit&.message&.start_with?("Merge") }.
           map(&:commit).
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 
@@ -292,8 +291,7 @@ module Dependabot
         @recent_gitlab_commit_messages.
           reject { |c| c.author_email == dependabot_email }.
           reject { |c| c.message&.start_with?("merge !") }.
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 
@@ -304,8 +302,7 @@ module Dependabot
         @recent_azure_commit_messages.
           reject { |c| azure_commit_author_email(c) == dependabot_email }.
           reject { |c| c.fetch("comment")&.start_with?("Merge") }.
-          map { |c| c.fetch("comment") }.
-          compact.
+          filter_map { |c| c.fetch("comment") }.
           map(&:strip)
       end
 
@@ -315,8 +312,7 @@ module Dependabot
 
         @recent_bitbucket_commit_messages.
           reject { |c| bitbucket_commit_author_email(c) == dependabot_email }.
-          map { |c| c.fetch("message", nil) }.
-          compact.
+          filter_map { |c| c.fetch("message", nil) }.
           reject { |m| m.start_with?("Merge") }.
           map(&:strip)
       end
@@ -327,8 +323,7 @@ module Dependabot
         @recent_codecommit_commit_messages.commits.
           reject { |c| c.author.email == dependabot_email }.
           reject { |c| c.message&.start_with?("Merge") }.
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 

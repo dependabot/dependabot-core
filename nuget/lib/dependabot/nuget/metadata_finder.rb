@@ -63,7 +63,7 @@ module Dependabot
 
       def extract_source_repo(body)
         JSON.parse(body).fetch("data", []).each do |search_result|
-          next unless search_result["id"].downcase == dependency.name.downcase
+          next unless search_result["id"].casecmp(dependency.name).zero?
 
           if search_result.key?("projectUrl")
             source = Source.from_url(search_result.fetch("projectUrl"))
