@@ -86,6 +86,10 @@ module Dependabot
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
+    def head_commit_for_local_branch(name)
+      local_repo_git_metadata_fetcher.head_commit_for_ref(name)
+    end
+
     def local_tags_for_latest_version_commit_sha
       tags = allowed_version_tags
       max_tag = max_version_tag(tags)
