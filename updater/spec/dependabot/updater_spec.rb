@@ -771,8 +771,20 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "does build pull request message" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new)
+    it "builds pull request message" do
+      expect(Dependabot::PullRequestCreator::MessageBuilder).
+        to receive(:new).with(
+          source: job.source,
+          files: an_instance_of(Array),
+          dependencies: an_instance_of(Array),
+          credentials: credentials,
+          commit_message_options: {
+            include_scope: commit_message_include_scope,
+            prefix: commit_message_prefix,
+            prefix_development: commit_message_prefix_development
+          },
+          github_redirection_service: "github-redirect.dependabot.com"
+        )
       updater.run
     end
 
