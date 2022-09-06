@@ -10,13 +10,15 @@ on:
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
-  pull_request:
+  pull_request_review:
+    types: [submitted]
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
 
 jobs:
   push-updater-image:
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
     name: Export dependabot-updater image to build artifacts
     runs-on: ubuntu-latest
     permissions:
