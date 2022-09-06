@@ -61,10 +61,10 @@ jobs:
             - 'cargo/**'
           composer:
             - *shared
-            - 'updater/**'
+            - 'composer/**'
           docker:
             - *shared
-            - 'updater/**'
+            - 'docker/**'
           elm:
             - *shared
             - 'elm/**'
