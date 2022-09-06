@@ -171,7 +171,7 @@ module Dependabot
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }
           return authed_url if authed_url
 
-          cleaned_url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}, "")
+          cleaned_url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}o, "")
           authed_url = authed_base_url(cleaned_url)
           return authed_url if credential_for(cleaned_url)
 

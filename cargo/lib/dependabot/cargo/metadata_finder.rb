@@ -33,15 +33,14 @@ module Dependabot
       def find_source_from_crates_listing
         potential_source_urls =
           SOURCE_KEYS.
-          map { |key| crates_listing.dig("crate", key) }.
-          compact
+          filter_map { |key| crates_listing.dig("crate", key) }
 
         source_url = potential_source_urls.find { |url| Source.from_url(url) }
         Source.from_url(source_url)
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)

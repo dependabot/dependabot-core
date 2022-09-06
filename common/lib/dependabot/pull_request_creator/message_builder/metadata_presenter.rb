@@ -112,7 +112,7 @@ module Dependabot
 
           msg = ""
 
-          commits.reverse.first(10).each do |commit|
+          commits.last(10).reverse_each do |commit|
             title = commit[:message].strip.split("\n").first
             title = title.slice(0..76) + "..." if title && title.length > 80
             title = title&.gsub(/(?<=[^\w.-])([_*`~])/, '\\1')

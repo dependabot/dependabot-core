@@ -117,11 +117,11 @@ module Dependabot
       end
 
       def trim_version(version)
-        version.split("-").map do |v|
+        version.split("-").filter_map do |v|
           parts = v.split(".")
           parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
           parts&.join(".")
-        end.compact.reject(&:empty?).join("-")
+        end.reject(&:empty?).join("-")
       end
 
       def convert_dates(version, other_version)

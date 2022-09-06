@@ -33,8 +33,7 @@ module Dependabot
           requirement_files.flat_map do |file|
             file.content.lines.
               select { |l| l.include?(";") && l.include?("python") }.
-              map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
-              compact.
+              filter_map { |l| l.match(/python_version(?<req>.*?["'].*?['"])/) }.
               map { |re| re.named_captures.fetch("req").gsub(/['"]/, "") }.
               select { |r| valid_requirement?(r) }
           end

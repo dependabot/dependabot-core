@@ -198,7 +198,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/AbcSize
         def updated_version_requirement_string
           lower_bound =
             if requirements_to_unlock == :none
@@ -207,7 +206,7 @@ module Dependabot
               ">= #{dependency.version}"
             else
               version_for_requirement =
-                dependency.requirements.map { |r| r[:requirement] }.compact.
+                dependency.requirements.filter_map { |r| r[:requirement] }.
                 reject { |req_string| req_string.start_with?("<") }.
                 select { |req_string| req_string.match?(VERSION_REGEX) }.
                 map { |req_string| req_string.match(VERSION_REGEX) }.
@@ -232,7 +231,6 @@ module Dependabot
 
           lower_bound + ", <= #{latest_allowable_version}"
         end
-        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
 
         # TODO: Extract error handling and share between the lockfile updater
@@ -317,7 +315,7 @@ module Dependabot
 
             source = url.gsub(%r{/packages.json$}, "")
             raise Dependabot::PrivateSourceTimedOut, source
-          elsif error.message.start_with?("Allowed memory size") || error.message.start_with?("Out of memory")
+          elsif error.message.start_with?("Allowed memory size", "Out of memory")
             raise Dependabot::OutOfMemory
           elsif error.error_context[:process_termsig] == Dependabot::SharedHelpers::SIGKILL
             # If the helper was SIGKILL-ed, assume the OOMKiller did it

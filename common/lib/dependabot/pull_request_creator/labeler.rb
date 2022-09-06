@@ -105,7 +105,9 @@ module Dependabot
           new_version_parts = version(dep).split(/[.+]/)
           old_version_parts = previous_version(dep)&.split(/[.+]/) || []
           all_parts = new_version_parts.first(3) + old_version_parts.first(3)
+          # rubocop:disable Performance/RedundantEqualityComparisonBlock
           next 0 unless all_parts.all? { |part| part.to_i.to_s == part }
+          # rubocop:enable Performance/RedundantEqualityComparisonBlock
           next 1 if new_version_parts[0] != old_version_parts[0]
           next 2 if new_version_parts[1] != old_version_parts[1]
 

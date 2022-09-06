@@ -64,7 +64,7 @@ module Dependabot
 
         all_version_listings.
           reject { |v, _| Time.parse(times[v]) > cutoff }.
-          map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }.compact
+          filter_map { |_, d| d.fetch("_npmUser", nil)&.fetch("name", nil) }
       end
 
       def find_source_from_registry

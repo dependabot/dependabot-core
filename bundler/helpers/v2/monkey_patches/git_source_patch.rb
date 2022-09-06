@@ -13,7 +13,7 @@ module Bundler
         # Instead, we convert all `git@github.com:` URLs to use HTTPS.
         def configured_uri_for(uri)
           uri = uri.gsub(%r{git@(.*?):/?}, 'https://\1/')
-          if /https?:/ =~ uri
+          if /https?:/.match?(uri)
             remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth

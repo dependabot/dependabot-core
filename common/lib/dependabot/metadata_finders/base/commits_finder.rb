@@ -136,18 +136,18 @@ module Dependabot
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
 
-          previous_refs = dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
           return unless git_source?(dependency.previous_requirements)
 
-          new_refs = dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return new_refs.first if new_refs.count == 1
         end
 

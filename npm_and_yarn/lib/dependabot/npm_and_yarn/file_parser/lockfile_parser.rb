@@ -48,8 +48,7 @@ module Dependabot
             %w(yarn.lock package-lock.json npm-shrinkwrap.json)
 
           possible_lockfile_names.uniq.
-            map { |nm| dependency_files.find { |f| f.name == nm } }.
-            compact
+            filter_map { |nm| dependency_files.find { |f| f.name == nm } }
         end
 
         def npm_lockfile_details(lockfile, dependency_name, manifest_name)

@@ -262,30 +262,39 @@ RUN DART_ARCH=${TARGETARCH} \
   && dart --version
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
-COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
-COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
-COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
-COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
-COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
-
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
-  MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN bash /opt/bundler/helpers/v1/build
-RUN bash /opt/bundler/helpers/v2/build
-RUN bash /opt/composer/helpers/v1/build
-RUN bash /opt/composer/helpers/v2/build
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
+RUN bash /opt/composer/helpers/v1/build \
+  && bash /opt/composer/helpers/v2/build
+
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+RUN bash /opt/bundler/helpers/v1/build \
+  && bash /opt/bundler/helpers/v2/build
+
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
+
+COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+ENV MIX_HOME="/opt/hex/mix"
 RUN bash /opt/hex/helpers/build
-RUN bash /opt/npm_and_yarn/helpers/build
+
+COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
+
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+RUN bash /opt/npm_and_yarn/helpers/build
+
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 RUN bash /opt/python/helpers/build
+
+COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
+
+ENV PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin"
 
 ENV HOME="/home/dependabot"
 

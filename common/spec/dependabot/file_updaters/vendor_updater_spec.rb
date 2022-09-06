@@ -179,6 +179,6 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
   private
 
   def in_cloned_repository(repo_contents_path, &block)
-    Dir.chdir(repo_contents_path) { block.call }
+    Dir.chdir(repo_contents_path, &block)
   end
 end

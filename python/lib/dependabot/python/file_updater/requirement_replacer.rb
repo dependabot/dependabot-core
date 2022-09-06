@@ -52,7 +52,7 @@ module Dependabot
           if add_space_after_operators?
             new_req_string =
               new_req_string.
-              gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/, '\1 ')
+              gsub(/(#{RequirementParser::COMPARISON})\s*(?=\d)/o, '\1 ')
           end
 
           new_req_string
@@ -92,7 +92,7 @@ module Dependabot
         def add_space_after_operators?
           original_dependency_declaration_string(old_requirement).
             match(RequirementParser::REQUIREMENTS).
-            to_s.match?(/#{RequirementParser::COMPARISON}\s+\d/)
+            to_s.match?(/#{RequirementParser::COMPARISON}\s+\d/o)
         end
 
         def original_declaration_replacement_regex

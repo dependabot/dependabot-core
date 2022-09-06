@@ -155,11 +155,11 @@ module Dependabot
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
-          requirements.map do |r|
+          requirements.filter_map do |r|
             next unless r[:file].start_with?("#{path}/")
 
             r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
-          end.compact
+          end
         end
 
         # rubocop:disable Metrics/AbcSize

@@ -185,8 +185,7 @@ module Dependabot
           # NOTE: This matches an error message from composer plugins used to install ACF PRO
           # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
           # https://github.com/pivvenit/acf-pro-installer/blob/f2d4812839ee2c333709b0ad4c6c134e4c25fd6d/src/Exceptions/MissingKeyException.php#L25
-          if error.message.start_with?("Could not find a key for ACF PRO") ||
-             error.message.start_with?("Could not find a license key for ACF PRO")
+          if error.message.start_with?("Could not find a key for ACF PRO", "Could not find a license key for ACF PRO")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
           end
 

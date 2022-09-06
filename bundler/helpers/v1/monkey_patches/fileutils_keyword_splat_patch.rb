@@ -11,7 +11,7 @@ module BundlerFileUtilsKeywordSplatPatch
     opts = {}
     opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
     Dir.entries(path, **opts).
-      reject { |n| [".", ".."].include?(n) }.
+      reject { |n| n == "." || n == ".." }.
       map { |n| self.class.new(prefix, join(rel, n.untaint)) }
   end
 end

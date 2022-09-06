@@ -104,7 +104,7 @@ module Dependabot
 
           urls = repositories.
                  select { |h| h["type"] == "composer" }.
-                 map { |h| h["url"] }.compact.
+                 filter_map { |h| h["url"] }.
                  map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
           unless repositories.any? { |rep| rep["packagist.org"] == false }
