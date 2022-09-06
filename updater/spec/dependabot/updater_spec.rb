@@ -196,6 +196,10 @@ RSpec.describe Dependabot::Updater do
         to_return(status: 200, body: fixture("rubygems-info-a"))
       stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
         to_return(status: 200, body: fixture("rubygems-info-b"))
+
+      message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
+      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
+      allow(message_builder).to receive(:message).and_return(nil)
     end
 
     let(:dependency_files) do
@@ -767,8 +771,8 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "does not build pull request message" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
+    it "does build pull request message" do
+      expect(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new)
       updater.run
     end
 
