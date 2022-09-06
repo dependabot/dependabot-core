@@ -1608,27 +1608,6 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when build_pull_request_message is set" do
-      let(:experiments) { { "build-pull-request-message" => true } }
-
-      it "builds pull request message" do
-        expect(Dependabot::PullRequestCreator::MessageBuilder).
-          to receive(:new).with(
-            source: job.source,
-            files: an_instance_of(Array),
-            dependencies: an_instance_of(Array),
-            credentials: credentials,
-            commit_message_options: {
-              include_scope: commit_message_include_scope,
-              prefix: commit_message_prefix,
-              prefix_development: commit_message_prefix_development
-            },
-            github_redirection_service: "github-redirect.dependabot.com"
-          )
-        updater.run
-      end
-    end
-
     describe "experiments" do
       let(:experiments) do
         { "large-hadron-collider" => true }
