@@ -18,7 +18,7 @@ on:
 
 jobs:
   push-updater-image:
-    if: github.event.review.state == 'approved'
+    if: github.event_name == 'push' || github.event.review.state == 'approved'
     name: Export dependabot-updater image to build artifacts
     runs-on: ubuntu-latest
     permissions:
