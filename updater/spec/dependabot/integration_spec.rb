@@ -37,6 +37,9 @@ RSpec.describe Dependabot::EndToEndJob do
     allow(Dependabot::Environment).to receive(:token).and_return("some_token")
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
     allow(Dependabot.logger).to receive(:info).and_call_original
+    message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
+    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
+    allow(message_builder).to receive(:message).and_return(nil)
   end
 
   describe "bundler" do

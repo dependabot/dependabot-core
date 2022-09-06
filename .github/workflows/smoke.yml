@@ -41,92 +41,124 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: dorny/paths-filter@v2
+      if: github.event_name != 'workflow_dispatch'
       id: changes
       with:
         filters: |
           actions:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'github_actions/**'
           bundler:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'bundler/**'
           cargo:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'cargo/**'
-          common:
-            - Dockerfile
-            - 'common/**'
           composer:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'composer/**'
           docker:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'docker/**'
           elm:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'elm/**'
           go:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'go_modules/**'
           gradle:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'maven/**'
             - 'gradle/**'
           hex:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'hex/**'
           maven:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'maven/**'
           npm:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'nuget/**'
-          omnibus:
-            - Dockerfile
-            - 'common/**'
-            - 'omnibus/**'
           pub:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'pub/**'
           pip:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'python/**'
           'pip-compile':
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'python/**'
           pipenv:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'python/**'
           poetry:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'python/**'
           submodules:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'git_submodules/**'
           terraform:
             - Dockerfile
+            - Dockerfile.updater
             - 'common/**'
+            - 'updater/**'
             - 'terraform/**'
 
     - name: Download CLI and test

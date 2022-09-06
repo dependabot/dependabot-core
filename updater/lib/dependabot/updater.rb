@@ -959,8 +959,6 @@ module Dependabot
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/CyclomaticComplexity
     def pr_message(dependencies, files)
-      return nil unless job.build_pull_request_message?
-
       Dependabot::PullRequestCreator::MessageBuilder.new(
         source: job.source,
         dependencies: dependencies,
