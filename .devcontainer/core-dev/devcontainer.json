@@ -1,6 +1,9 @@
 {
-  "name": "Ruby",
-  "dockerFile": "../Dockerfile.development",
+  "name": "core-dev",
+  "build": {
+    "dockerfile": "../../Dockerfile.development",
+    "cacheFrom": "ghcr.io/dependabot/dependabot-core-development"
+  },
 
   "workspaceFolder": "/home/dependabot/dependabot-core",
 
@@ -120,11 +123,11 @@
   // "postCreateCommand": "ruby --version"
 
   "extensions": [
-		"rebornix.ruby",
-		"castwide.solargraph",
-		"misogi.ruby-rubocop",
-		"groksrc.ruby",
-		"hoovercj.ruby-linter",
-		"miguel-savignano.ruby-symbols"
+    "rebornix.ruby",
+    "castwide.solargraph",
+    "misogi.ruby-rubocop",
+    "groksrc.ruby",
+    "hoovercj.ruby-linter",
+    "miguel-savignano.ruby-symbols"
   ]
 }
