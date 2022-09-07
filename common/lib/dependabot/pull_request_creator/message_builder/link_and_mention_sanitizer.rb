@@ -42,7 +42,7 @@ module Dependabot
           sanitize_mentions(doc)
           sanitize_links(doc)
           sanitize_nwo_text(doc)
-          
+
           mode = unsafe ? :UNSAFE : :DEFAULT
           doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
