@@ -41,7 +41,8 @@ module Dependabot
           sanitize_team_mentions(doc)
           sanitize_mentions(doc)
           sanitize_links(doc)
-
+          sanitize_nwo_text(doc)
+          
           mode = unsafe ? :UNSAFE : :DEFAULT
           doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
@@ -106,17 +107,27 @@ module Dependabot
             elsif node.type == :text &&
                   node.string_content.match?(GITHUB_REF_REGEX)
               node.string_content = replace_github_host(node.string_content)
-            elsif node.type == :text &&
-                  node.string_content.match?(GITHUB_NWO_REGEX) &&
-                  !parent_node_link?(node)
-              match = node.string_content.match(GITHUB_NWO_REGEX)
-              repo = match.named_captures.fetch("repo")
-              number = match.named_captures.fetch("number")
-              new_node = build_nwo_text_node("#{repo}##{number}")
-              node.insert_before(new_node)
-              node.delete
             end
           end
+        end
+
+        def sanitize_nwo_text(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(GITHUB_NWO_REGEX) &&
+               !parent_node_link?(node)
+              replace_nwo_node(node)
+            end
+          end
+        end
+
+        def replace_nwo_node(node)
+          match = node.string_content.match(GITHUB_NWO_REGEX)
+          repo = match.named_captures.fetch("repo")
+          number = match.named_captures.fetch("number")
+          new_node = build_nwo_text_node("#{repo}##{number}")
+          node.insert_before(new_node)
+          node.delete
         end
 
         def replace_github_host(text)
