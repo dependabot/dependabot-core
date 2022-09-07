@@ -1516,15 +1516,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
-            package_manager: "npm_and_yarn",
-            vulnerable_versions: ["< 1.0.1"]
-          )
-        ]
-      end
 
       it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
         expect(described_class::ConflictingDependencyResolver).
