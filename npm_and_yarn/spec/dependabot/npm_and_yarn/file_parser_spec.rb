@@ -1275,6 +1275,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
           end
         end
       end
+
+      describe "with a yarn Berry compatible lockfile" do
+        let(:files) { project_dependency_files("yarn_berry/simple") }
+
+        its(:length) { is_expected.to eq(2) }
+        context "with a version specified" do
+          describe "the first dependency" do
+            subject { top_level_dependencies.first }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("fetch-factory") }
+            its(:version) { is_expected.to eq("0.0.1") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil # TODO: Determine yarn berry sources, for now assume everything is on npmjs.org
+                }]
+              )
+            end
+          end
+        end
+      end
     end
 
     describe "sub-dependencies" do
