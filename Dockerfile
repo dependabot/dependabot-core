@@ -119,6 +119,10 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && npm install -g npm@8.19.2 \
   && rm -rf ~/.npm
 
+# Install yarn berry and set it to a stable version
+RUN npm install -g yarn@berry \
+  && yarn set version 3.2.3 \
+  && rm -rf ~/.npm
 
 ### ELM
 
