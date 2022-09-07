@@ -96,6 +96,7 @@ module Dependabot
             parse_yarn_lock(yarn_lock).each do |req, details|
               next unless semver_version_for(details["version"])
               next if alias_package?(req)
+              next if req == "__metadata"
 
               # NOTE: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
