@@ -42,7 +42,7 @@ jobs:
       - name: Check if pull request is approved
         if: github.ref != 'refs/heads/main'
         run: |
-          DECISION=$(gh pr view --json reviewDecision -t {{.reviewDecision}})
+          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision -t {{.reviewDecision}})
           echo "Review decision is: $DECISION"
           echo "DECISION=$DECISION" >> $GITHUB_ENV
 
