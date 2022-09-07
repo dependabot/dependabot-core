@@ -104,8 +104,8 @@ module Dependabot
           target_version: lowest_security_fix_version
         )
 
-        vulnerable = vulnerability_audit.select do |v|
-          !v["fix_available"] && v["explanation"]
+        vulnerable = [vulnerability_audit].select do |hash|
+          !hash["fix_available"] && hash["explanation"]
         end
 
         conflicts + vulnerable
