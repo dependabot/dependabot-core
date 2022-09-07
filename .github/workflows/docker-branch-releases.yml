@@ -10,15 +10,17 @@ on:
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
-  pull_request_review:
-    types: [submitted]
+  pull_request:
+    branches:
+      - main
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   push-updater-image:
-    if: github.event_name == 'push' || github.event.review.state == 'approved'
     name: Export dependabot-updater image to build artifacts
     runs-on: ubuntu-latest
     permissions:
@@ -29,7 +31,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+        # sets DECISION=APPROVED for convenience of if statements below on main branch
+      - name: Check if on main
+        if: github.ref == 'refs/heads/main'
+        run: echo "DECISION=APPROVED" >> $GITHUB_ENV
+
+        # when not on main, sets DECISION to the PR's review decision, handling the push-after-approval case
+      - name: Check if pull request is approved
+        if: github.ref != 'refs/heads/main'
+        run: echo "DECISION=$(gh pr view --json reviewDecision -t {{.reviewDecision}})" >> $GITHUB_ENV
+
       - name: Build dependabot-core image
+        if: env.DECISION == "APPROVED"
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -38,7 +52,9 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
+
       - name: Build dependabot-updater image
+        if: env.DECISION == "APPROVED"
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -50,21 +66,26 @@ jobs:
             --build-arg OMNIBUS_VERSION=$TAG \
             -f Dockerfile.updater \
             .
+
       - name: Log in to GHCR
+        if: env.DECISION == "APPROVED"
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Push branch image
-        if: ${{ github.repository == 'dependabot/dependabot-core' }}
+        if: env.DECISION == "APPROVED"
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
           docker push "$UPDATER_IMAGE_MIRROR:$TAG"
+
       - name: Push latest on main
         if: github.ref == 'refs/heads/main'
-        continue-on-error: true
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
           docker push "$UPDATER_IMAGE_MIRROR:latest"
+
       - name: Set summary
+        if: env.DECISION == "APPROVED"
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
