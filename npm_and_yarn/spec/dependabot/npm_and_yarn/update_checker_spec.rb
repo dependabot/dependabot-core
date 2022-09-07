@@ -1557,7 +1557,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
             package_manager: "npm_and_yarn",
-            vulnerable_versions: ["< 1.0.1"]
+            vulnerable_versions: ["< 1.0.2"]
           )
         ]
       end
