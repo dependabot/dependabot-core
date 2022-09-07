@@ -107,7 +107,8 @@ module Dependabot
                   node.string_content.match?(GITHUB_REF_REGEX)
               node.string_content = replace_github_host(node.string_content)
             elsif node.type == :text &&
-                  node.string_content.match?(GITHUB_NWO_REGEX)
+                  node.string_content.match?(GITHUB_NWO_REGEX) &&
+                  !parent_node_link?(node)
               match = node.string_content.match(GITHUB_NWO_REGEX)
               repo = match.named_captures.fetch("repo")
               number = match.named_captures.fetch("number")
