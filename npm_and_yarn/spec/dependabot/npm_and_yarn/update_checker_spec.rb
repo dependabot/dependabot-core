@@ -1492,7 +1492,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
   end
 
   describe "#conflicting_dependencies" do
-    let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
     let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
     let(:options) { { npm_transitive_security_updates: true } }
     let(:credentials) do
@@ -1514,6 +1513,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "with a conflicting dependency" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
       let(:security_advisories) do
@@ -1558,6 +1558,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "with a conflicting dependency and an unsatisfiable vulnerablity" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
       let(:security_advisories) do
