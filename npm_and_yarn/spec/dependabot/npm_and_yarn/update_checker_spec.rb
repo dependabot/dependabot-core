@@ -1557,7 +1557,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           Dependabot::SecurityAdvisory.new(
             dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
             package_manager: "npm_and_yarn",
-            vulnerable_versions: ["< 1.0.3"]
+            vulnerable_versions: ["< 1.0.1"]
           )
         ]
       end
@@ -1604,25 +1604,17 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
 
     context "with an unsatisfiable vulnerablity" do
-      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
-      let(:dependency_version) { "2.0.0" }
-      let(:target_version) { Dependabot::NpmAndYarn::Version.new("2.0.2") }
+      let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_unlocked") }
+      let(:dependency_version) { "1.0.0" }
+      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
       let(:security_advisories) do
         [
           Dependabot::SecurityAdvisory.new(
-            dependency_name: "@dependabot-fixtures/npm-parent-dependency",
+            dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
             package_manager: "npm_and_yarn",
-            vulnerable_versions: ["< 1.0.3"]
+            vulnerable_versions: ["< 1.0.1"]
           )
         ]
-      end
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "@dependabot-fixtures/npm-parent-dependency",
-          version: dependency_version,
-          requirements: [],
-          package_manager: "npm_and_yarn"
-        )
       end
 
       it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
@@ -1643,12 +1635,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         conflicting_dependencies_result = checker.send(:conflicting_dependencies)
 
+        debugger
         expect(conflicting_dependencies_result.count).to eq(1)
 
         expect(conflicting_dependencies_result.first).
           to eq(
-            "dependency_name" => "@dependabot-fixtures/npm-parent-dependency",
-            "explanation" => "No patched version available for @dependabot-fixtures/npm-parent-dependency",
+            "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
+            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
             "fix_available" => false,
             "fix_updates" => [],
             "top_level_ancestors" => []
