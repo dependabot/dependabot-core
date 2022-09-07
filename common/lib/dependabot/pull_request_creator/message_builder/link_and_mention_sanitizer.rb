@@ -99,7 +99,7 @@ module Dependabot
                 last_match = subnode.string_content.match(GITHUB_REF_REGEX)
                 number = last_match.named_captures.fetch("number")
                 repo = last_match.named_captures.fetch("repo")
-                subnode.string_content = insert_space_in_link_text("#{repo}##{number}")
+                subnode.string_content = "#{repo}##{number}"
               end
 
               node.url = replace_github_host(node.url)
@@ -111,7 +111,9 @@ module Dependabot
               match = node.string_content.match(GITHUB_NWO_REGEX)
               repo = match.named_captures.fetch("repo")
               number = match.named_captures.fetch("number")
-              node.string_content = insert_space_in_link_text("#{repo}##{number}")
+              new_node = build_nwo_text_node("#{repo}##{number}")
+              node.insert_before(new_node)
+              node.delete
             end
           end
         end
@@ -177,6 +179,12 @@ module Dependabot
           code_node.string_content = insert_zero_width_space_in_mention(text)
           [code_node]
         end
+        
+        def build_nwo_text_node(text)
+          code_node = CommonMarker::Node.new(:code)
+          code_node.string_content = text
+          code_node
+        end
 
         def create_link_node(url, text)
           link_node = CommonMarker::Node.new(:link)
@@ -193,10 +201,6 @@ module Dependabot
         # the content of the pull request body in plain text.
         def insert_zero_width_space_in_mention(mention)
           mention.sub("@", "@\u200B").encode("utf-8")
-        end
-
-        def insert_space_in_link_text(text)
-          text.sub("#", " #").encode("utf-8")
         end
 
         def parent_node_link?(node)

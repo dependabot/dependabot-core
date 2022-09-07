@@ -252,7 +252,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       it do
         is_expected.to eq(
           "<p>Check out <a href=\"https://github-redirect.com/my/repo/" \
-          "issues/5\">my/repo #5</a></p>\n"
+          "issues/5\"><code>my/repo#5</code></a></p>\n"
         )
       end
     end
@@ -263,7 +263,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       it do
         is_expected.to eq(
           "<p>Check out <a href=\"https://github-redirect.com/my/repo/" \
-          "issues/5\">my/repo #5</a></p>\n"
+          "issues/5\"><code>my/repo#5</code></a></p>\n"
         )
       end
     end
@@ -276,7 +276,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       it do
         is_expected.to eq(
           "<p><a href=\"https://github-redirect.com/rust-num/num-traits/" \
-          "pull/144\">rust-num/num-traits #144</a></p>\n"
+          "pull/144\"><code>rust-num/num-traits#144</code></a></p>\n"
         )
       end
     end
@@ -287,7 +287,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
       it do
         is_expected.to eq(
-          "<p>dsp-testing/dependabot-ts-definitely-typed #25</p>\n"
+          "<p><code>dsp-testing/dependabot-ts-definitely-typed#25</code></p>\n"
         )
       end
     end
