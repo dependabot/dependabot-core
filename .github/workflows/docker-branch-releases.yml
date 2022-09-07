@@ -41,7 +41,10 @@ jobs:
         # when not on main, sets DECISION to the PR's review decision, handling the push-after-approval case
       - name: Check if pull request is approved
         if: github.ref != 'refs/heads/main'
-        run: echo "DECISION=$(gh pr view --json reviewDecision -t {{.reviewDecision}})" >> $GITHUB_ENV
+        run: |
+          DECISION=$(gh pr view --json reviewDecision -t {{.reviewDecision}})
+          echo "Review decision is: $DECISION"
+          echo "DECISION=$DECISION" >> $GITHUB_ENV
 
       - name: Build dependabot-core image
         if: env.DECISION == 'APPROVED'
