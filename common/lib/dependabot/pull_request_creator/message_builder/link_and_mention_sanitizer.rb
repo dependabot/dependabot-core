@@ -14,6 +14,7 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
+        # [^/\s#]+ means one or more characters not matching (^) the class /, whitespace (\s), or #
         GITHUB_NWO_REGEX = %r{(?<repo>#{GITHUB_USERNAME}/[^/\s#]+)#(?<number>\d+)}.freeze
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
         # regex to match a team mention on github
