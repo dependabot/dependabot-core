@@ -14,6 +14,7 @@ module Dependabot
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
         }x.freeze
+        GITHUB_NWO_REGEX = %r{(?<repo>#{GITHUB_USERNAME}/[^/\s#]+)#(?<number>\d+)}.freeze
         MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}.freeze
         # regex to match a team mention on github
         TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}.freeze
@@ -98,13 +99,19 @@ module Dependabot
                 last_match = subnode.string_content.match(GITHUB_REF_REGEX)
                 number = last_match.named_captures.fetch("number")
                 repo = last_match.named_captures.fetch("repo")
-                subnode.string_content = "#{repo}##{number}"
+                subnode.string_content = insert_space_in_link_text("#{repo}##{number}")
               end
 
               node.url = replace_github_host(node.url)
             elsif node.type == :text &&
                   node.string_content.match?(GITHUB_REF_REGEX)
               node.string_content = replace_github_host(node.string_content)
+            elsif node.type == :text &&
+                  node.string_content.match?(GITHUB_NWO_REGEX)
+              match = node.string_content.match(GITHUB_NWO_REGEX)
+              repo = match.named_captures.fetch("repo")
+              number = match.named_captures.fetch("number")
+              node.string_content = insert_space_in_link_text("#{repo}##{number}")
             end
           end
         end
@@ -186,6 +193,10 @@ module Dependabot
         # the content of the pull request body in plain text.
         def insert_zero_width_space_in_mention(mention)
           mention.sub("@", "@\u200B").encode("utf-8")
+        end
+
+        def insert_space_in_link_text(text)
+          text.sub("#", " #").encode("utf-8")
         end
 
         def parent_node_link?(node)
