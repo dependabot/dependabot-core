@@ -55,6 +55,7 @@ module Dependabot
           Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
+            source_types = %w(directory file url)
             poetry_object.fetch(key).each do |dep_name, _|
               next if excluded_names.include?(normalise(dep_name))
 
@@ -62,7 +63,7 @@ module Dependabot
 
               next unless (locked_version = locked_details&.fetch("version"))
 
-              next if %w(directory file url).include?(locked_details&.dig("source", "type"))
+              next if source_types.include?(locked_details&.dig("source", "type"))
 
               if locked_details&.dig("source", "type") == "git"
                 poetry_object[key][dep_name] = {

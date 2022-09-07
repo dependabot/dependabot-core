@@ -76,7 +76,7 @@ module Dependabot
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
@@ -198,7 +198,7 @@ module Dependabot
       def registry_url
         return "https://rubygems.org/" if new_source_type == "default"
 
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
         info[:url] || info.fetch("url")
       end
 

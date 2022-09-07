@@ -64,7 +64,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
         updated_files.find do |f|
-          %w(build.gradle build.gradle.kts).include?(f.name)
+          Dependabot::Gradle::FileUpdater::SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
         end
       end
 

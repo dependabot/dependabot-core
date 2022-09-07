@@ -48,6 +48,11 @@ RSpec.describe Dependabot::Python::Version do
         let(:version_string) { "1.0.0+abc 123" }
         it { is_expected.to eq(false) }
       end
+
+      context "that includes two dashes" do
+        let(:version_string) { "v1.8.0--failed-release-attempt" }
+        it { is_expected.to eq(false) }
+      end
     end
   end
 

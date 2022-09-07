@@ -64,10 +64,6 @@ module Dependabot
       @reject_external_code
     end
 
-    def build_pull_request_message?
-      experiments.fetch(:build_pull_request_message, false)
-    end
-
     # rubocop:disable Metrics/PerceivedComplexity
     def allowed_update?(dependency)
       allowed_updates.any? do |update|

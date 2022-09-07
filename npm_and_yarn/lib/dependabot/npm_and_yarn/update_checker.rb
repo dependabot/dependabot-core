@@ -96,13 +96,19 @@ module Dependabot
       end
 
       def conflicting_dependencies
-        ConflictingDependencyResolver.new(
+        conflicts = ConflictingDependencyResolver.new(
           dependency_files: dependency_files,
           credentials: credentials
         ).conflicting_dependencies(
           dependency: dependency,
           target_version: lowest_security_fix_version
         )
+
+        vulnerable = [vulnerability_audit].select do |hash|
+          !hash["fix_available"] && hash["explanation"]
+        end
+
+        conflicts + vulnerable
       end
 
       private
@@ -214,11 +220,11 @@ module Dependabot
       end
 
       def latest_resolvable_version_with_no_unlock_for_git_dependency
-        reqs = dependency.requirements.map do |r|
+        reqs = dependency.requirements.filter_map do |r|
           next if r.fetch(:requirement).nil?
 
           requirement_class.requirements_array(r.fetch(:requirement))
-        end.compact
+        end
 
         current_version =
           if existing_version_is_sha? ||

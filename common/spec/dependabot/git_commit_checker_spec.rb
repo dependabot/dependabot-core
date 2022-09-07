@@ -884,6 +884,29 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#head_commit_for_local_branch" do
+    let(:tip_of_example) { "303b8a83c87d5c6d749926cf02620465a5dcd0f2" }
+
+    subject { checker.head_commit_for_local_branch("example") }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    let(:upload_pack_fixture) { "monolog" }
+
+    it { is_expected.to eq(tip_of_example) }
+  end
+
   describe "#local_tag_for_latest_version" do
     subject { checker.local_tag_for_latest_version }
     let(:repo_url) { "https://github.com/gocardless/business.git" }

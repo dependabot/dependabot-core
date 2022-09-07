@@ -54,6 +54,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     "https://github.com/actions/setup-node.git/info/refs" \
       "?service=git-upload-pack"
   end
+  let(:git_commit_checker) do
+    Dependabot::GitCommitChecker.new(
+      dependency: dependency,
+      credentials: github_credentials,
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
+    )
+  end
   before do
     stub_request(:get, service_pack_url).
       to_return(
@@ -128,7 +136,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to be_falsey }
       end
 
-      context "that is a git commit SHA" do
+      context "that is a git commit SHA pointing to the tip of a branch" do
         let(:upload_pack_fixture) { "setup-node" }
         let(:reference) { "1c24df3" }
 
@@ -141,6 +149,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
               body: comparison_response,
               headers: { "Content-Type" => "application/json" }
             )
+
+          checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+          allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
         end
 
         context "when the specified commit has diverged from the latest release" do
@@ -202,9 +213,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   describe "#latest_version" do
     subject { checker.latest_version }
 
+    let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
+
     context "given a dependency with a branch reference" do
       let(:reference) { "master" }
-      it { is_expected.to eq("d963e800e3592dd31d6c76252092562d0bc7a3ba") }
+      it { is_expected.to eq(tip_of_master) }
     end
 
     context "given a dependency with a tag reference" do
@@ -276,9 +289,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           }
         end
 
-        allow_any_instance_of(Dependabot::GitCommitChecker).
-          to receive(:local_tags_for_latest_version_commit_sha).
-          and_return(version_tags)
+        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+        allow(git_commit_checker).to receive(:local_tags_for_latest_version_commit_sha).and_return(version_tags)
       end
 
       context "using the major version" do
@@ -325,7 +337,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("3")) }
     end
 
-    context "given a git commit SHA" do
+    context "given a git commit SHA pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
 
       let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
@@ -337,6 +349,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             body: comparison_response,
             headers: { "Content-Type" => "application/json" }
           )
+
+        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
       end
 
       context "when the specified commit has diverged from the latest release" do
@@ -370,6 +385,70 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         expect(subject).to eq(Gem::Version.new("2.2.0"))
       end
     end
+
+    context "that is a git commit SHA not pointing to the tip of a branch" do
+      let(:reference) { "1c24df3" }
+      let(:exit_status) { double(success?: true) }
+
+      before do
+        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(false)
+        allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return(reference)
+
+        allow(Open3).to receive(:capture2e).with(anything, "git fetch #{reference}").and_return(["", exit_status])
+      end
+
+      context "and it's in the current (default) branch" do
+        before do
+          allow(Open3).to receive(:capture2e).
+            with(anything, "git branch --contains #{reference}").
+            and_return(["* master\n", exit_status])
+        end
+
+        it "can update to the latest version" do
+          expect(subject).to eq(tip_of_master)
+        end
+      end
+
+      context "and it's on a different branch" do
+        let(:tip_of_releases_v1) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+
+        before do
+          allow(Open3).to receive(:capture2e).
+            with(anything, "git branch --contains #{reference}").
+            and_return(["releases/v1\n", exit_status])
+        end
+
+        it "can update to the latest version" do
+          expect(subject).to eq(tip_of_releases_v1)
+        end
+      end
+
+      context "and multiple branches include it, the current (default) branch among them" do
+        before do
+          allow(Open3).to receive(:capture2e).
+            with(anything, "git branch --contains #{reference}").
+            and_return(["* master\nv1.1\n", exit_status])
+        end
+
+        it "can update to the latest version" do
+          expect(subject).to eq(tip_of_master)
+        end
+      end
+
+      context "and multiple branches include it, the current (default) branch NOT among them" do
+        before do
+          allow(Open3).to receive(:capture2e).
+            with(anything, "git branch --contains #{reference}").
+            and_return(["3.3-stable\nproduction\n", exit_status])
+        end
+
+        it "raises an error" do
+          expect { subject }.
+            to raise_error("Multiple ambiguous branches (3.3-stable, production) include #{reference}!")
+        end
+      end
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -387,7 +466,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(dependency.requirements) }
     end
 
-    context "given a git commit SHA" do
+    context "given a git commit SHA pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
 
       let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
@@ -399,6 +478,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             body: comparison_response,
             headers: { "Content-Type" => "application/json" }
           )
+
+        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
+        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
       end
 
       context "when the specified reference is not in the latest release" do

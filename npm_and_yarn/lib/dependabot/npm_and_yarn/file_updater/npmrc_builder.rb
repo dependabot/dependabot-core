@@ -89,7 +89,7 @@ module Dependabot
           if package_lock
             @dependency_urls +=
               parsed_package_lock.fetch("dependencies", {}).
-              map { |_, details| details["resolved"] }.compact.
+              filter_map { |_, details| details["resolved"] }.
               select { |url| url.is_a?(String) }.
               reject { |url| url.start_with?("git") }
           end
@@ -166,8 +166,7 @@ module Dependabot
 
           @npmrc_scoped_registries ||=
             npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
-            map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }.
-            compact
+            filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
         end
 
         # rubocop:disable Metrics/PerceivedComplexity

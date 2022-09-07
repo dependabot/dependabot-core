@@ -36,7 +36,7 @@ module Dependabot
         def fetch_updated_dependency_files
           reqs = dependency.requirements.zip(dependency.previous_requirements)
 
-          reqs.map do |(new_req, old_req)|
+          reqs.filter_map do |(new_req, old_req)|
             next if new_req == old_req
 
             file = get_original_file(new_req.fetch(:file)).dup
@@ -46,7 +46,7 @@ module Dependabot
 
             file.content = updated_content
             file
-          end.compact
+          end
         end
 
         def updated_requirement_or_setup_file_content(new_req, old_req)

@@ -31,7 +31,7 @@ module Dependabot
           )
         end
 
-        updated_files.select! { |f| f.name.end_with?("pom.xml") || f.name.end_with?("extensions.xml") }
+        updated_files.select! { |f| f.name.end_with?("pom.xml", "extensions.xml") }
         updated_files.reject! { |f| dependency_files.include?(f) }
 
         raise "No files changed!" if updated_files.none?

@@ -93,13 +93,13 @@ module Dependabot
       end
 
       def build_unfetchable_deps(unfetchable_deps)
-        unfetchable_deps.map do |path|
+        unfetchable_deps.filter_map do |path|
           PathDependencyBuilder.new(
             path: path,
             directory: directory,
             lockfile: composer_lock
           ).dependency_file
-        end.compact
+        end
       end
 
       def expand_path(path)

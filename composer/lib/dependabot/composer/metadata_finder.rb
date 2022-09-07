@@ -18,7 +18,7 @@ module Dependabot
       def source_from_dependency
         source_url =
           dependency.requirements.
-          map { |r| r.fetch(:source) }.compact.
+          filter_map { |r| r.fetch(:source) }.
           first&.fetch(:url, nil)
 
         Source.from_url(source_url)

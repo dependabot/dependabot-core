@@ -53,7 +53,7 @@ module Dependabot
             new(settings_file: settings_file).
             subproject_paths
 
-          subproject_paths.map do |path|
+          subproject_paths.filter_map do |path|
             if @buildfile_name
               fetch_file_from_host(File.join(path, @buildfile_name))
             else
@@ -62,7 +62,7 @@ module Dependabot
           rescue Dependabot::DependencyFileNotFound
             # Gradle itself doesn't worry about missing subprojects, so we don't
             nil
-          end.compact
+          end
         end
       end
 
@@ -78,14 +78,14 @@ module Dependabot
           map { |path| path.gsub("$rootDir", ".") }.
           uniq
 
-        dependency_plugin_paths.map do |path|
+        dependency_plugin_paths.filter_map do |path|
           fetch_file_from_host(path)
         rescue Dependabot::DependencyFileNotFound
           next nil if file_exists_in_submodule?(path)
           next nil if path.include?("${")
 
           raise
-        end.compact
+        end
       end
       # rubocop:enable Metrics/PerceivedComplexity
 

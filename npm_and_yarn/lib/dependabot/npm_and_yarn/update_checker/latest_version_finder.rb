@@ -121,9 +121,9 @@ module Dependabot
         end
 
         def filter_out_of_range_versions(versions_array)
-          reqs = dependency.requirements.map do |r|
+          reqs = dependency.requirements.filter_map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
-          end.compact
+          end
 
           versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }

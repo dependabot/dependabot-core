@@ -196,6 +196,10 @@ RSpec.describe Dependabot::Updater do
         to_return(status: 200, body: fixture("rubygems-info-a"))
       stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
         to_return(status: 200, body: fixture("rubygems-info-b"))
+
+      message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
+      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
+      allow(message_builder).to receive(:message).and_return(nil)
     end
 
     let(:dependency_files) do
@@ -767,8 +771,20 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "does not build pull request message" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
+    it "builds pull request message" do
+      expect(Dependabot::PullRequestCreator::MessageBuilder).
+        to receive(:new).with(
+          source: job.source,
+          files: an_instance_of(Array),
+          dependencies: an_instance_of(Array),
+          credentials: credentials,
+          commit_message_options: {
+            include_scope: commit_message_include_scope,
+            prefix: commit_message_prefix,
+            prefix_development: commit_message_prefix_development
+          },
+          github_redirection_service: "github-redirect.dependabot.com"
+        )
       updater.run
     end
 
@@ -1604,27 +1620,6 @@ RSpec.describe Dependabot::Updater do
 
       it "still processes the other jobs" do
         expect(service).to receive(:create_pull_request).once
-        updater.run
-      end
-    end
-
-    context "when build_pull_request_message is set" do
-      let(:experiments) { { "build-pull-request-message" => true } }
-
-      it "builds pull request message" do
-        expect(Dependabot::PullRequestCreator::MessageBuilder).
-          to receive(:new).with(
-            source: job.source,
-            files: an_instance_of(Array),
-            dependencies: an_instance_of(Array),
-            credentials: credentials,
-            commit_message_options: {
-              include_scope: commit_message_include_scope,
-              prefix: commit_message_prefix,
-              prefix_development: commit_message_prefix_development
-            },
-            github_redirection_service: "github-redirect.dependabot.com"
-          )
         updater.run
       end
     end

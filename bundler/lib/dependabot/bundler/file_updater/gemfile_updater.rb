@@ -6,6 +6,8 @@ module Dependabot
   module Bundler
     class FileUpdater
       class GemfileUpdater
+        GEMFILE_FILENAMES = %w(Gemfile gems.rb).freeze
+
         require_relative "git_pin_replacer"
         require_relative "git_source_remover"
         require_relative "requirement_replacer"
@@ -68,13 +70,13 @@ module Dependabot
         def remove_git_source?(dependency)
           old_gemfile_req =
             dependency.previous_requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
 
           return false unless old_gemfile_req&.dig(:source, :type) == "git"
 
           new_gemfile_req =
             dependency.requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
 
           new_gemfile_req[:source].nil?
         end
@@ -82,7 +84,7 @@ module Dependabot
         def update_git_pin?(dependency)
           new_gemfile_req =
             dependency.requirements.
-            find { |f| %w(Gemfile gems.rb).include?(f[:file]) }
+            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
           return false unless new_gemfile_req&.dig(:source, :type) == "git"
 
           # If the new requirement is a git dependency with a ref then there's
