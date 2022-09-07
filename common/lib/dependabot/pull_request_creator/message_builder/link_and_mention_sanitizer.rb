@@ -191,7 +191,7 @@ module Dependabot
           code_node.string_content = insert_zero_width_space_in_mention(text)
           [code_node]
         end
-        
+
         def build_nwo_text_node(text)
           code_node = CommonMarker::Node.new(:code)
           code_node.string_content = text
