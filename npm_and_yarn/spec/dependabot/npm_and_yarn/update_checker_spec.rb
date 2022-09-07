@@ -1547,9 +1547,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         expect(conflicting_dependencies_result.count).to eq(1)
         expect(conflicting_dependencies_result.first).
           to eq(
-            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires "\
-              "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via "\
-              "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
+            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires " \
+                             "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via " \
+                             "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
             "name" => "@dependabot-fixtures/npm-intermediate-dependency",
             "requirement" => "1.0.0",
             "version" => "0.0.1"
@@ -1592,9 +1592,9 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         expect(conflicting_dependencies_result.first).
           to eq(
-            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires "\
-              "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via "\
-              "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
+            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires " \
+                             "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via " \
+                             "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
             "name" => "@dependabot-fixtures/npm-intermediate-dependency",
             "requirement" => "1.0.0",
             "version" => "0.0.1"
