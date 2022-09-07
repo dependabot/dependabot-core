@@ -281,6 +281,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
     end
 
+    context "with a GitHub NWO and PR number" do
+      let(:text) do
+        "dsp-testing/dependabot-ts-definitely-typed#25"
+      end
+      it do
+        is_expected.to eq(
+          "<p><code>dsp-testing/dependabot-ts-definitely-typed#25</code></p>\n"
+        )
+      end
+    end
+
     context "with a GitHub link in rdoc" do
       let(:text) do
         "{Issue 111}[https://github.com/dependabot/dependabot-core/issues/111]"
