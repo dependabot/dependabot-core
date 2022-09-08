@@ -6,6 +6,7 @@ require "dependabot/dependency_file"
 require "dependabot/file_fetchers"
 require "dependabot/end_to_end_job"
 require "dependabot/api_client"
+require "dependabot/instrumentation"
 
 RSpec.describe Dependabot::EndToEndJob do
   subject(:end_to_end_job) { Dependabot::EndToEndJob.new }
