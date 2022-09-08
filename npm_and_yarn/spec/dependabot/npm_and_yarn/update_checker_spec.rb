@@ -1491,6 +1491,119 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     end
   end
 
+  describe "#conflicting_dependencies" do
+    let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
+    let(:options) { { npm_transitive_security_updates: true } }
+    let(:credentials) do
+      [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }]
+    end
+
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "@dependabot-fixtures/npm-transitive-dependency",
+        version: dependency_version,
+        requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+
+    context "with a conflicting dependency" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+      let(:dependency_version) { "1.0.0" }
+      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
+
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+        expect(described_class::ConflictingDependencyResolver).
+          to receive(:new).
+          with(
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).and_call_original
+
+        expect(described_class::VulnerabilityAuditor).
+          to receive(:new).
+          with(
+            dependency_files: dependency_files,
+            credentials: credentials,
+            allow_removal: false
+          ).and_call_original
+
+        conflicting_dependencies_result = checker.send(:conflicting_dependencies)
+
+        expect(conflicting_dependencies_result.count).to eq(1)
+        expect(conflicting_dependencies_result.first).
+          to eq(
+            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires " \
+                             "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via " \
+                             "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
+            "name" => "@dependabot-fixtures/npm-intermediate-dependency",
+            "requirement" => "1.0.0",
+            "version" => "0.0.1"
+          )
+      end
+    end
+
+    context "with a conflicting dependency and an unsatisfiable vulnerablity" do
+      let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
+      let(:dependency_version) { "1.0.0" }
+      let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: "@dependabot-fixtures/npm-transitive-dependency",
+            package_manager: "npm_and_yarn",
+            vulnerable_versions: ["< 1.0.2"]
+          )
+        ]
+      end
+
+      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+        expect(described_class::ConflictingDependencyResolver).
+          to receive(:new).
+          with(
+            dependency_files: dependency_files,
+            credentials: credentials
+          ).and_call_original
+
+        expect(described_class::VulnerabilityAuditor).
+          to receive(:new).
+          with(
+            dependency_files: dependency_files,
+            credentials: credentials,
+            allow_removal: false
+          ).and_call_original
+
+        conflicting_dependencies_result = checker.send(:conflicting_dependencies)
+
+        expect(conflicting_dependencies_result.count).to eq(2)
+
+        expect(conflicting_dependencies_result.first).
+          to eq(
+            "explanation" => "@dependabot-fixtures/npm-parent-dependency@2.0.0 requires " \
+                             "@dependabot-fixtures/npm-transitive-dependency@1.0.0 via " \
+                             "@dependabot-fixtures/npm-intermediate-dependency@0.0.1",
+            "name" => "@dependabot-fixtures/npm-intermediate-dependency",
+            "requirement" => "1.0.0",
+            "version" => "0.0.1"
+          )
+
+        expect(conflicting_dependencies_result.last).
+          to eq(
+            "dependency_name" => "@dependabot-fixtures/npm-transitive-dependency",
+            "explanation" => "No patched version available for @dependabot-fixtures/npm-transitive-dependency",
+            "fix_available" => false,
+            "fix_updates" => [],
+            "top_level_ancestors" => []
+          )
+      end
+    end
+  end
+
   context "when types dependency specified" do
     let(:registry_listing_url) { "https://registry.npmjs.org/jquery" }
     let(:registry_response) do
