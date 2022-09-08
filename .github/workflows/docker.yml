@@ -15,7 +15,7 @@ jobs:
   push-core-image:
     name: Push dependabot-core image to docker hub
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'dependabot/dependabot-core' }}
+    if: github.repository == 'dependabot/dependabot-core'
     permissions:
       contents: read
       packages: write
@@ -44,7 +44,7 @@ jobs:
           docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE_MIRROR:latest"
           docker push "$CORE_IMAGE_MIRROR:latest"
       - name: Push tagged image
-        if: "contains(github.ref, 'refs/tags')"
+        if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
           docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE:$VERSION"
@@ -52,9 +52,9 @@ jobs:
           docker tag "$CORE_IMAGE:latest" "$CORE_IMAGE_MIRROR:$VERSION"
           docker push "$CORE_IMAGE_MIRROR:$VERSION"
   push-updater-image:
-    name: Push dependabot-updater image to docker hub
+    name: Push tagged dependabot-updater image
     runs-on: ubuntu-latest
-    if: ${{ github.repository == 'dependabot/dependabot-core' }}
+    if: contains(github.ref, 'refs/tags')
     needs: push-core-image
     permissions:
       contents: read
@@ -75,19 +75,10 @@ jobs:
             --build-arg OMNIBUS_VERSION=$VERSION \
             -f Dockerfile.updater \
             .
-      - name: Log in to the Docker registry
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
       - name: Log in to GHCR
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Push latest image
-        run: |
-          docker push "$UPDATER_IMAGE:latest"
-          docker tag "$UPDATER_IMAGE:latest" "$UPDATER_IMAGE_MIRROR:latest"
-          docker push "$UPDATER_IMAGE_MIRROR:latest"
       - name: Push tagged image
-        if: "contains(github.ref, 'refs/tags')"
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
           docker tag "$UPDATER_IMAGE:latest" "$UPDATER_IMAGE:$VERSION"
@@ -124,7 +115,7 @@ jobs:
         run: |
           docker push "$DEV_IMAGE:latest"
       - name: Push tagged image
-        if: "contains(github.ref, 'refs/tags')"
+        if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
           docker tag "$DEV_IMAGE:latest" "$DEV_IMAGE:$VERSION"
