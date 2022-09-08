@@ -145,8 +145,10 @@ module Dependabot
         end
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
-          updates = top_level_dependency_updates.collect { |dep| "#{dep[:name]}@#{dep[:version]}" }.join(" ")
-          command = "yarn add #{updates}"
+          updates = top_level_dependency_updates.collect do |dep|
+            "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
+          end
+          command = "yarn add #{updates.join(' ')}"
           SharedHelpers.run_shell_command(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
