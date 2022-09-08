@@ -2970,6 +2970,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       end
     end
 
+    #############################
+    # Yarn Berry specific tests #
+    #############################
+    describe "Yarn berry specific" do
+      describe "the updated yarn_lock" do
+        let(:files) { project_dependency_files("yarn_berry/simple") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+      end
+    end
+
     #######################
     # Yarn specific tests #
     #######################
