@@ -69,7 +69,8 @@ module Dependabot
         old_commit: old_commit,
         files: files,
         credentials: credentials,
-        pull_request_number: pull_request_number
+        pull_request_number: pull_request_number,
+        author_details: author_details
       )
     end
   end

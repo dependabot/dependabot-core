@@ -11,7 +11,7 @@ on:
       - docs/**
       - README.md
 env:
-  GH_TOKEN: ${{ secrets.E2E_PAT }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -164,10 +164,10 @@ jobs:
     - name: Download CLI and test
       if: steps.changes.outputs[matrix.suite] == 'true'
       run: |
-        gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
+        gh release download --repo dependabot/cli-releases -p "*linux-amd64.tar.gz"
         tar xzvf *.tar.gz >/dev/null 2>&1
         ./dependabot --version
-        URL=https://api.github.com/repos/dependabot/cli/contents/testdata/smoke-${{ matrix.suite }}.yaml
+        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite }}.yaml
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
@@ -176,7 +176,7 @@ jobs:
       run: |
         mkdir cache
         cd cache
-        gh run download --repo dependabot/cli --name cache-${{ matrix.suite }}
+        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite }}
 
     - name: Build dependabot-core image
       if: steps.changes.outputs[matrix.suite] == 'true'
@@ -206,7 +206,7 @@ jobs:
     - name: ${{ matrix.suite }}
       if: steps.changes.outputs[matrix.suite] == 'true'
       env:
-        LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.E2E_PAT }}
+        LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -o pipefail
         ./dependabot test -f=smoke.yaml -o=result.yaml --cache=cache --timeout=20m --updater-image=dependabot/updater:latest 2>&1 | tee -a log.txt
