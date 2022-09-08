@@ -365,17 +365,19 @@ module Dependabot
     def listing_tags
       return [] unless listing_source_url
 
-      tags = listing_repo_git_metadata_fetcher.tags
+      @listing_tags ||= begin
+        tags = listing_repo_git_metadata_fetcher.tags
 
-      if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
-        tags = tags.map do |tag|
-          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+        if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+          tags = tags.map do |tag|
+            tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+          end
         end
-      end
 
-      tags
-    rescue GitDependenciesNotReachable
-      []
+        tags
+      rescue GitDependenciesNotReachable
+        []
+      end
     end
 
     def listing_upload_pack
