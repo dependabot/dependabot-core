@@ -17,9 +17,10 @@ module Dependabot
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
 
-        def initialize(dependencies:, dependency_files:, credentials:)
+        def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
           @dependencies = dependencies
           @dependency_files = dependency_files
+          @repo_contents_path = repo_contents_path
           @credentials = credentials
         end
 
@@ -35,7 +36,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :dependency_files, :credentials
+        attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
 
         UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/.freeze
         TIMEOUT_FETCHING_PACKAGE =
@@ -51,7 +52,8 @@ module Dependabot
         end
 
         def updated_yarn_lock(yarn_lock)
-          SharedHelpers.in_a_temporary_directory do
+          base_dir = dependency_files.first.directory
+          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             write_temporary_dependency_files
             lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
             path = Pathname.new(yarn_lock.name).dirname.to_s
@@ -284,7 +286,8 @@ module Dependabot
 
           @resolvable_before_update[yarn_lock.name] =
             begin
-              SharedHelpers.in_a_temporary_directory do
+              base_dir = dependency_files.first.directory
+              SharedHelpers.SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
                 write_temporary_dependency_files(update_package_json: false)
                 lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
                 path = Pathname.new(yarn_lock.name).dirname.to_s

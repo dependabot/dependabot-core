@@ -14,7 +14,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     described_class.new(
       dependency_files: files,
       dependencies: dependencies,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
     )
   end
   let(:dependencies) { [dependency] }
@@ -55,6 +56,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   end
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:repo_contents_path) { nil }
 
   before { FileUtils.mkdir_p(tmp_path) }
 
@@ -2975,7 +2977,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     #############################
     describe "Yarn berry specific" do
       describe "the updated yarn_lock" do
-        let(:files) { project_dependency_files("yarn_berry/simple") }
+        let(:project_name) { "yarn_berry/simple" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
 
         it "does not downgrade the lockfile to the yarn 1 format" do
           expect(updated_yarn_lock.content).to include("__metadata")
@@ -2983,6 +2987,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
         it "has details of the updated item" do
           expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "updates the .yarn/cache folder" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
+              ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
+              ".yarn/install-state.gz",
+              "package.json",
+              "yarn.lock"
+            ]
+          )
         end
       end
     end
