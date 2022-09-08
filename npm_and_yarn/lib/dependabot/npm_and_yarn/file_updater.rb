@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/file_updaters/vendor_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
@@ -53,10 +54,53 @@ module Dependabot
           )
         end
 
+        # There's probably a way to avoid this duplication between the
+        # vendor_updater and install_state_updater
+        base_dir = updated_files.first.directory
+        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
+        end
+
         updated_files
       end
 
       private
+
+      # Dynamically fetch the vendor cache folder from yarn
+      def vendor_cache_dir
+        return @vendor_cache_dir if defined?(@vendor_cache_dir)
+
+        @vendor_cache_dir = if File.exist?(".yarnrc.yml")
+                              YAML.load_file(".yarnrc.yml").fetch("cacheFolder", "./.yarn/cache")
+                            else
+                              "./.yarn/cache"
+                            end
+      end
+
+      def install_state_path
+        return @install_state_path if defined?(@install_state_path)
+
+        @install_state_path = if File.exist?(".yarnrc.yml")
+                                YAML.load_file(".yarnrc.yml").fetch("installStatePath", "./.yarn/install-state.gz")
+                              else
+                                "./.yarn/install-state.gz"
+                              end
+      end
+
+      def vendor_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: vendor_cache_dir
+        )
+      end
+
+      def install_state_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: install_state_path
+        )
+      end
 
       def filtered_dependency_files
         @filtered_dependency_files ||=
@@ -175,6 +219,7 @@ module Dependabot
           YarnLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           )
       end
