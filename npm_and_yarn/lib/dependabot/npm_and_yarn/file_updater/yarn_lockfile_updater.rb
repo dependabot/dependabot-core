@@ -105,13 +105,14 @@ module Dependabot
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
                 if yarn_berry?(yarn_lock)
-                  return run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
-                                                          yarn_lock: yarn_lock)
-                end
+                  run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
+                                                   yarn_lock: yarn_lock)
+                else
 
-                run_yarn_top_level_updater(
-                  top_level_dependency_updates: top_level_dependency_updates
-                )
+                  run_yarn_top_level_updater(
+                    top_level_dependency_updates: top_level_dependency_updates
+                  )
+                end
               else
                 run_yarn_subdependency_updater(lockfile_name: yarn_lock.name)
               end
@@ -138,7 +139,7 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def yarn_berry?(yarn_lock)
-          yaml = YAML.load(yarn_lock.content)
+          yaml = YAML.safe_load(yarn_lock.content)
           yaml.key?("__metadata")
         rescue StandardError
           false
@@ -146,6 +147,10 @@ module Dependabot
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
           updates = top_level_dependency_updates.collect do |dep|
+            # when there are multiple requirements, we're dealing with a
+            # workspace-like setup, where there are multiple package.json files
+            # that pull in the same dependency. It appears that these are always
+            # updated to a single new version, so we just pick the first one.
             "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
           end
           command = "yarn add #{updates.join(' ')}"
