@@ -87,7 +87,7 @@ module Dependabot
         return nil if req_string == "*"
 
         req_string = req_string.gsub("~=", "~>")
-        req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
+        req_string = req_string.gsub(/(?<=\d)[<=>].*\Z/, "")
 
         if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
