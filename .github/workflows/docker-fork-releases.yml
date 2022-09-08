@@ -25,15 +25,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-        # The PR must be approved. This is mostly to ensure you've typed the correct PR.
       - name: Check if pull request is approved
+        # The PR must be approved. This is mostly to ensure you've typed the correct PR.
+        # Note: forks will have a blank review decision without approval. Not NEEDS_REVIEW.
         run: |
           DECISION=$(gh pr view ${{ github.event.inputs.pr }} --json reviewDecision -t {{.reviewDecision}})
           echo "Review decision is: $DECISION"
           [[ $DECISION == "APPROVED" ]] || exit 1
 
       - name: Checkout the fork
-        run: gh pr checkout ${{ github.event.inputs.pr }}
+        # This checks out the fork and cherry-picks the changes onto main, creating a new merge SHA tag.
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          gh pr checkout ${{ github.event.inputs.pr }} --branch docker-branch-release-workflow
+          git reset main
+          git add .
+          git commit -m squashed
+          PICK=$(git rev-parse HEAD)
+          git checkout main
+          git cherry-pick $PICK
+          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Build dependabot-core image
         env:
