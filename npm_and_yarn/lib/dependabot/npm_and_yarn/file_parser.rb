@@ -94,6 +94,7 @@ module Dependabot
           manifest_name: file.name
         )
         version = version_for(name, requirement, file.name)
+
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
         return if workspace_package_names.include?(name)
@@ -154,7 +155,7 @@ module Dependabot
       end
 
       def aliased_package_name?(name)
-        name.include?("@npm:")
+        name.match?(/@npm:(.+@(?!npm))/)
       end
 
       def workspace_package_names
@@ -326,6 +327,7 @@ module Dependabot
               dependency_files.
               select { |f| f.name.end_with?("package.json") }.
               reject { |f| f.name == "package.json" }.
+              reject { |f| f.name.include?("node_modules/") }.
               reject(&:support_file?)
 
             [
