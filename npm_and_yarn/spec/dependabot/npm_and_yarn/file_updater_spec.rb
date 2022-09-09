@@ -3001,6 +3001,101 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           )
         end
       end
+
+      context "with workspaces" do
+        let(:files) { project_dependency_files("yarn_berry/workspaces") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the yarn.lock and all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+
+          expect(lockfile.content).to include(%("lodash@npm:1.3.1, lodash@npm:^1.3.1":))
+          expect(lockfile.content).to_not include("lodash@npm:^1.2.1:")
+          expect(lockfile.content).to_not include("workspace-aggregator")
+
+          expect(package.content).to include('"lodash": "1.3.1"')
+          expect(package.content).to include("\"./packages/*\",\n")
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
+        end
+
+        context "with a dependency that doesn't appear in all the workspaces" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the yarn.lock and the correct package_json" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(yarn.lock packages/package1/package.json))
+
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            expect(lockfile.content).to include("chalk@npm:0.4.0")
+            expect(lockfile.content).to_not include("workspace-aggregator")
+          end
+        end
+      end
     end
 
     #######################
