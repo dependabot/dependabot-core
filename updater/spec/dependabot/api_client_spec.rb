@@ -122,8 +122,8 @@ RSpec.describe Dependabot::ApiClient do
             with do |req|
               data = JSON.parse(req.body)["data"]
               expect(data["dependencies"].first["removed"]).to eq(true)
-              expect(data["dependencies"].first["version"]).to be_nil
-              expect(data["dependencies"].last["removed"]).to eq(false)
+              expect(data["dependencies"].first.key?("version")).to eq(false)
+              expect(data["dependencies"].last.key?("removed")).to eq(false)
               expect(data["dependencies"].last["version"]).to eq("1.8.0")
               true
             end)

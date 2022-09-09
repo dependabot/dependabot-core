@@ -188,8 +188,8 @@ module Dependabot
             "previous-version": dep.previous_version,
             requirements: dep.requirements,
             "previous-requirements": dep.previous_requirements,
-            removed: dep.removed?
-          }
+            removed: dep.removed? ? true : nil
+          }.compact
         end,
         "updated-dependency-files": updated_dependency_files,
         "base-commit-sha": base_commit_sha
