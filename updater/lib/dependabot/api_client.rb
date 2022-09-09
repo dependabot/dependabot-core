@@ -184,12 +184,13 @@ module Dependabot
         dependencies: dependencies.map do |dep|
           {
             name: dep.name,
-            version: dep.version,
             "previous-version": dep.previous_version,
             requirements: dep.requirements,
-            "previous-requirements": dep.previous_requirements,
+            "previous-requirements": dep.previous_requirements
+          }.merge({
+            version: dep.version,
             removed: dep.removed? ? true : nil
-          }.compact
+          }.compact)
         end,
         "updated-dependency-files": updated_dependency_files,
         "base-commit-sha": base_commit_sha
