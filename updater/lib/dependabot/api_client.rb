@@ -187,7 +187,8 @@ module Dependabot
             version: dep.version,
             "previous-version": dep.previous_version,
             requirements: dep.requirements,
-            "previous-requirements": dep.previous_requirements
+            "previous-requirements": dep.previous_requirements,
+            removed: dep.removed?
           }
         end,
         "updated-dependency-files": updated_dependency_files,

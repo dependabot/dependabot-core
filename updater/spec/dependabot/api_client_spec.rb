@@ -101,6 +101,34 @@ RSpec.describe Dependabot::ApiClient do
             end)
       end
     end
+
+    context "with a removed dependency" do
+      let(:removed_dependency) do
+        Dependabot::Dependency.new(
+          name: "removed",
+          package_manager: "bundler",
+          previous_version: "1.7.0",
+          requirements: [],
+          previous_requirements: [],
+          removed: true
+        )
+      end
+
+      it "encodes fields" do
+        client.create_pull_request(1, [removed_dependency, dependency], dependency_files, base_commit, message)
+        expect(WebMock).
+          to(have_requested(:post, create_pull_request_url).
+            with(headers: { "Authorization" => "token" }).
+            with do |req|
+              data = JSON.parse(req.body)["data"]
+              expect(data["dependencies"].first["removed"]).to eq(true)
+              expect(data["dependencies"].first["version"]).to be_nil
+              expect(data["dependencies"].last["removed"]).to eq(false)
+              expect(data["dependencies"].last["version"]).to eq("1.8.0")
+              true
+            end)
+      end
+    end
   end
 
   describe "update_pull_request" do
