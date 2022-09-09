@@ -55,7 +55,7 @@ module Dependabot
         end
 
         # There's probably a way to avoid this duplication between the
-        # vendor_updater and install_state_updater
+        # vendor_updater and install_state_updater, but yeah.
         base_dir = updated_files.first.directory
         vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
         install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
