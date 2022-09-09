@@ -193,13 +193,18 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def version_commit_message_intro
+        dependency = dependencies.first
+
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
+        return transitive_multidependency_intro if dependencies.count > 1 &&
+          dependencies.any?{ |dep| dep.top_level? } &&
+          dependencies.any?{ |dep| !dep.top_level? }
+
         return multidependency_intro if dependencies.count > 1
 
-        dependency = dependencies.first
         msg = "Bumps #{dependency_links.first} " \
               "#{from_version_msg(previous_version(dependency))}" \
               "to #{new_version(dependency)}."
@@ -237,6 +242,22 @@ module Dependabot
         "Bumps #{dependency_links[0..-2].join(', ')} " \
           "and #{dependency_links[-1]}. These " \
           "dependencies needed to be updated together."
+      end
+
+      def transitive_multidependency_intro
+        dependency = dependencies.first
+
+        msg = "Bumps #{dependency_links[0]} to #{new_version(dependency)}"
+
+        msg += if dependencies.count > 2
+                 " and updates ancestor dependencies #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}. "
+               else
+                 " and updates ancestor dependency #{dependency_links[1]}. "
+               end
+
+        msg += "These dependencies need to be updated together."
+
+        msg
       end
 
       def from_version_msg(previous_version)
