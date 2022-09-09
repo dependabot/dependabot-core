@@ -69,7 +69,7 @@ RSpec.describe Dependabot::FileFetcherJob do
           )
         expect(api_client).to receive(:mark_job_as_processed)
 
-        perform_job
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
       end
     end
 
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::FileFetcherJob do
           )
         expect(api_client).to receive(:mark_job_as_processed)
 
-        perform_job
+        expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
       end
     end
 
@@ -123,7 +123,7 @@ RSpec.describe Dependabot::FileFetcherJob do
           )
         expect(api_client).to receive(:mark_job_as_processed)
 
-        perform_job
+        expect { perform_job }.to output(/Repository is rate limited, attempting to retry/).to_stdout_from_any_process
       end
     end
 
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::FileFetcherJob do
         end
         expect(api_client).to receive(:mark_job_as_processed)
 
-        perform_job
+        expect { perform_job }.to output(/Something went wrong/).to_stdout_from_any_process
 
         expect(Dir.exist?(Dependabot::Environment.repo_contents_path)).to be_truthy
         expect(Dir.empty?(Dependabot::Environment.repo_contents_path)).to be_truthy
