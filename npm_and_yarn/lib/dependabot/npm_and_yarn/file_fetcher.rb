@@ -67,7 +67,7 @@ module Dependabot
 
       def yarn_version
         @yarn_version ||= begin
-          package = JSON.load(package_json.content)
+          package = JSON.parse(package_json.content)
           if (pkgmanager = package.fetch("packageManager"))
             @yarn_version = get_yarn_version_from_path(pkgmanager)
           elsif yarn_lock
@@ -137,7 +137,7 @@ module Dependabot
 
       def yarnrc_yml
         @yarnrc_yml ||= fetch_file_if_present(".yarnrc.yml")&.
-                       tap { |f| f.support_file = true}
+                       tap { |f| f.support_file = true }
       end
 
       def lerna_json
