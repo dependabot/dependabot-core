@@ -282,7 +282,11 @@ module Dependabot
         record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
 
         deps = existing_pr.map do |dep|
-          "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+          if dep.fetch("dependency-removed", false)
+            "#{dep.fetch('dependency-name')}@removed"
+          else
+            "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+          end
         end
 
         return logger_info(
@@ -425,8 +429,9 @@ module Dependabot
       updated_dependencies = existing_pull_request.map do |dep|
         {
           "dependency-name": dep.fetch("dependency-name"),
-          "dependency-version": dep.fetch("dependency-version")
-        }
+          "dependency-version": dep.fetch("dependency-version", nil),
+          "dependency-removed": dep.fetch("dependency-removed", nil)
+        }.compact
       end
       record_error(
         {
@@ -574,7 +579,7 @@ module Dependabot
         select { |pr| pr.count == 1 }.
         map(&:first).
         select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-        any? { |pr| pr.fetch("dependency-version") == latest_version }
+        any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
     end
 
     def existing_pull_request(updated_dependencies)
@@ -582,8 +587,9 @@ module Dependabot
         updated_dependencies.map do |dep|
           {
             "dependency-name" => dep.name,
-            "dependency-version" => dep.version
-          }
+            "dependency-version" => dep.version,
+            "dependency-removed" => dep.removed? ? true : nil
+          }.compact
         end
       )
 
@@ -744,8 +750,9 @@ module Dependabot
       created_pull_requests << dependencies.map do |dep|
         {
           "dependency-name" => dep.name,
-          "dependency-version" => dep.version
-        }
+          "dependency-version" => dep.version,
+          "dependency-removed" => dep.removed? ? true : nil
+        }.compact
       end
     end
 

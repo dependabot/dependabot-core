@@ -1006,6 +1006,86 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
+    context "when a PR already exists for a removed dependency" do
+      let(:existing_pull_requests) do
+        [
+          [
+            {
+              "dependency-name" => "dummy-pkg-c",
+              "dependency-version" => "1.4.0"
+            },
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "dependency-removed" => true
+            }
+          ]
+        ]
+      end
+
+      let(:security_updates_only) { true }
+      let(:security_advisories) do
+        [{ "dependency-name" => "dummy-pkg-b",
+           "affected-versions" => ["1.1.0"] }]
+      end
+
+      before do
+        allow(checker).
+          to receive(:latest_version).
+          and_return(Gem::Version.new("1.3.0"))
+        allow(checker).to receive(:vulnerable?).and_return(true)
+        allow(checker).to receive(:updated_dependencies).and_return([
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            previous_version: "1.1.0",
+            requirements: [],
+            previous_requirements: [],
+            removed: true
+          ),
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-c",
+            package_manager: "bundler",
+            version: "1.4.0",
+            previous_version: "1.3.0",
+            requirements: [
+              { file: "Gemfile", requirement: "~> 1.4.0", groups: [], source: nil }
+            ],
+            previous_requirements: [
+              { file: "Gemfile", requirement: "~> 1.3.0", groups: [], source: nil }
+            ]
+          )
+        ])
+      end
+
+      it "creates an update job error and short-circuits" do
+        expect(checker).to receive(:up_to_date?).and_return(false)
+        expect(checker).to receive(:can_update?).and_return(true)
+        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(service).to_not receive(:create_pull_request)
+        expect(service).to receive(:record_update_job_error).
+          with(
+            1,
+            error_type: "pull_request_exists_for_security_update",
+            error_details: {
+              "updated-dependencies": [
+                {
+                  "dependency-name": "dummy-pkg-c",
+                  "dependency-version": "1.4.0"
+                },
+                {
+                  "dependency-name": "dummy-pkg-b",
+                  "dependency-removed": true
+                }
+              ]
+            }
+          )
+        expect(logger).
+          to receive(:info).
+          with("<job_1> Pull request already exists for dummy-pkg-c@1.4.0, dummy-pkg-b@removed")
+        updater.run
+      end
+    end
+
     context "when a list of dependencies is specified" do
       let(:requested_dependencies) { ["dummy-pkg-b"] }
 
