@@ -115,6 +115,8 @@ module Dependabot
                     top_level_dependency_updates: top_level_dependency_updates
                   )
                 end
+              elsif yarn_berry?(yarn_lock)
+                run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(lockfile_name: yarn_lock.name)
               end
@@ -157,6 +159,17 @@ module Dependabot
           end
           command = "yarn add #{updates.join(' ')}"
           SharedHelpers.run_shell_command(command)
+          { yarn_lock.name => File.read(yarn_lock.name) }
+        end
+
+        def run_yarn_berry_subdependency_updater(yarn_lock:)
+          dep = sub_dependencies.first
+          update = "#{dep.name}@#{dep.version}"
+
+          command = "yarn add #{update}"
+          SharedHelpers.run_shell_command(command)
+          SharedHelpers.run_shell_command("yarn dedupe")
+          SharedHelpers.run_shell_command("yarn remove #{dep.name}")
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
