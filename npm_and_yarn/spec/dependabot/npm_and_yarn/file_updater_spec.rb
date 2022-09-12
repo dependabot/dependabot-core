@@ -3096,6 +3096,21 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           end
         end
       end
+
+      context "with a sub-dependency" do
+        let(:files) { project_dependency_files("yarn_berry/no_lockfile_change") }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.1.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_yarn_lock.content).
+            to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
+        end
+      end
     end
 
     #######################
