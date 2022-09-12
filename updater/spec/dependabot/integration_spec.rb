@@ -175,18 +175,18 @@ RSpec.describe Dependabot::EndToEndJob do
         expect(api_client).to receive(:record_update_job_error).
           with(job_id, { error_type: "unknown_error", error_details: nil })
 
-        end_to_end_job.run
+        expect { end_to_end_job.run }.to output(/oh no!/).to_stdout_from_any_process
       end
 
       it "indicates there was an error in the summary" do
         expect(Dependabot.logger).not_to receive(:info).with(/Changes to Dependabot Pull Requests/)
         expect(Dependabot.logger).to receive(:info).with(/Dependabot encountered '1' error/)
 
-        end_to_end_job.run
+        expect { end_to_end_job.run }.to output(/oh no!/).to_stdout_from_any_process
       end
 
       it "does not raise an exception" do
-        expect { end_to_end_job.run }.not_to raise_error
+        expect { end_to_end_job.run }.to output(/oh no!/).to_stdout_from_any_process
       end
 
       context "when GITHUB_ACTIONS is set" do
@@ -195,7 +195,8 @@ RSpec.describe Dependabot::EndToEndJob do
         end
 
         it "raises an exception" do
-          expect { end_to_end_job.run }.to raise_error(Dependabot::RunFailure)
+          expect { end_to_end_job.run }.to raise_error(Dependabot::RunFailure).
+            and output(/oh no!/).to_stdout_from_any_process
         end
       end
     end

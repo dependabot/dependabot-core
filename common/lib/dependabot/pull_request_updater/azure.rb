@@ -53,7 +53,7 @@ module Dependabot
       end
 
       # Currently the PR diff in ADO shows difference in commits instead of actual diff in files.
-      # This workaround is done to get the target branch commit history on the source branch alongwith file changes
+      # This workaround puts the target branch commit history on the source branch along with the file changes.
       def update_source_branch
         # 1) Push the file changes to a newly created temporary branch (from base commit)
         new_commit = create_temp_branch
