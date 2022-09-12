@@ -347,7 +347,8 @@ module Dependabot
           DockerRegistry2::Registry.new(
             "https://#{registry_hostname}",
             user: registry_credentials&.fetch("username", nil),
-            password: registry_credentials&.fetch("password", nil)
+            password: registry_credentials&.fetch("password", nil),
+            read_timeout: 10
           )
       end
 
