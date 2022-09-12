@@ -28,6 +28,10 @@ module Dependabot
           'checkout',
           '(?<tag>.+?)'
           |
+          Failed to checkout
+          (?<tag>.+?)
+          (?<url>.+?).git at '(?<tag>.+?)'
+          |
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
@@ -78,6 +82,7 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
@@ -97,6 +102,11 @@ module Dependabot
                   )
                 end
 
+                # use system git instead of the pure Python dulwich
+                unless python_version&.start_with?("3.6")
+                  run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
+                end
+
                 # Shell out to Poetry, which handles everything for us.
                 run_poetry_command(poetry_update_command)
 
@@ -113,6 +123,7 @@ module Dependabot
               end
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
