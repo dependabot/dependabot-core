@@ -5,7 +5,7 @@
         "composer/composer": "^1.10.9"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^2.9",
+        "friendsofphp/php-cs-fixer": "^3.0",
         "phpstan/phpstan": "~1.8.5"
     },
     "autoload": {
