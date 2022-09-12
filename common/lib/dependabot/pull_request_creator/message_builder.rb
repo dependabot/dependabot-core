@@ -255,7 +255,7 @@ module Dependabot
                  " and updates ancestor dependency #{dependency_links[1]}. "
                end
 
-        msg += "These dependencies need to be updated together."
+        msg += "These dependencies need to be updated together.\n"
 
         msg
       end
