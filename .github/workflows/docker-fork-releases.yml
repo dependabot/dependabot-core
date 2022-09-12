@@ -81,6 +81,7 @@ jobs:
 
       - name: Set summary
         run: |
+          echo "generated for PR ${{ github.event.inputs.pr }}" > $GITHUB_STEP_SUMMARY
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
