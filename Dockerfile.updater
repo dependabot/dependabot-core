@@ -40,7 +40,7 @@ bundle install
 # START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
 # TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
-# spwans a child process to npm install git dependencies.
+# spawns a child process to npm install git dependencies.
 
 # Create the config file manually intead of using yarn/npm config set as this
 # executes the package manager outputs to every job log
