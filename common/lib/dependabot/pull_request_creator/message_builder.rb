@@ -192,6 +192,8 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
         dependency = dependencies.first
 
@@ -200,8 +202,8 @@ module Dependabot
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
         return transitive_multidependency_intro if dependencies.count > 1 &&
-          dependencies.any?{ |dep| dep.top_level? } &&
-          dependencies.any?{ |dep| !dep.top_level? }
+                                                   dependencies.any?(&:top_level?) &&
+                                                   dependencies.any? { |dep| !dep.top_level? }
 
         return multidependency_intro if dependencies.count > 1
 
@@ -221,6 +223,8 @@ module Dependabot
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/AbcSize
 
       def multidependency_property_intro
         dependency = dependencies.first
@@ -250,7 +254,8 @@ module Dependabot
         msg = "Bumps #{dependency_links[0]} to #{new_version(dependency)}"
 
         msg += if dependencies.count > 2
-                 " and updates ancestor dependencies #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}. "
+                 " and updates ancestor dependencies #{dependency_links[0..-2].join(', ')} " \
+                   "and #{dependency_links[-1]}. "
                else
                  " and updates ancestor dependency #{dependency_links[1]}. "
                end
