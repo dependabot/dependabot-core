@@ -234,9 +234,9 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.61.0 --pr
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.2.8
-ARG TERRAFORM_AMD64_CHECKSUM=3e9c46d6f37338e90d5018c156d89961b0ffb0f355249679593aff99f9abe2a2
-ARG TERRAFORM_ARM64_CHECKSUM=26c05cadb05cdaa8ac64b90b982b4e9350715ec2e9995a6b03bb964d230de055
+ARG TERRAFORM_VERSION=1.2.9
+ARG TERRAFORM_AMD64_CHECKSUM=0e0fc38641addac17103122e1953a9afad764a90e74daf4ff8ceeba4e362f2fb
+ARG TERRAFORM_ARM64_CHECKSUM=6da7bf01f5a72e61255c2d80eddeba51998e2bb1f50a6d81b0d3b71e70e18531
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \

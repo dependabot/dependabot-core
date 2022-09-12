@@ -177,6 +177,11 @@ module Dependabot
                                    "#{NativeHelpers.python_requirements_path}")
               end
 
+              # use system git instead of the pure Python dulwich
+              unless python_version&.start_with?("3.6")
+                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
+              end
+
               run_poetry_command(poetry_update_command)
 
               return File.read("poetry.lock") if File.exist?("poetry.lock")
