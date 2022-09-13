@@ -203,7 +203,8 @@ module Dependabot
 
         return transitive_multidependency_intro if dependencies.count > 1 &&
                                                    dependencies.any?(&:top_level?) &&
-                                                   dependencies.any? { |dep| !dep.top_level? }
+                                                   dependencies.any? { |dep| !dep.top_level? } &&
+                                                   dependencies.none?(&:removed?)
 
         return multidependency_intro if dependencies.count > 1
 
