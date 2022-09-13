@@ -10,6 +10,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
 
+    context "with only a requirements.in" do
+      let(:filenames) { %w(requirements.in) }
+      it { is_expected.to eq(true) }
+    end
+
     context "with only a requirements.txt" do
       let(:filenames) { %w(requirements.txt) }
       it { is_expected.to eq(true) }
@@ -103,6 +108,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
           body: fixture("github", "contents_todo_txt.json"),
           headers: json_header
         )
+    end
+
+    context "with only a requirements.in" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements_in.json")
+      end
+      before do
+        stub_request(:get, url + "requirements.in?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_in_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the requirements.in file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["requirements.in"])
+      end
     end
 
     context "with only a requirements.txt" do

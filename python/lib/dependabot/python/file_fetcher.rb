@@ -81,7 +81,12 @@ module Dependabot
       end
 
       def check_required_files_present
-        return if requirements_txt_files.any? || setup_file || setup_cfg_file || pipfile || pyproject
+        return if requirements_txt_files.any? ||
+                  requirements_in_files.any? ||
+                  setup_file ||
+                  setup_cfg_file ||
+                  pipfile ||
+                  pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
