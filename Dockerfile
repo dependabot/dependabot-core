@@ -290,6 +290,9 @@ RUN bash /opt/pub/helpers/build
 
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
+# Our native helpers pull in yarn 1, so we need to reset the version globally to
+# 3.2.3.
+RUN corepack prepare yarn@3.2.3 --activate
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 RUN bash /opt/python/helpers/build
