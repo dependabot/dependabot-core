@@ -24,8 +24,6 @@ jobs:
   push-updater-image:
     name: Export dependabot-updater image to build artifacts
     runs-on: ubuntu-latest
-    # can't run on forks since it requires write access to GHCR
-    if: github.event.pull_request == '' || github.event.pull_request.head.repo.name == github.repository
     permissions:
       contents: read
       packages: write
