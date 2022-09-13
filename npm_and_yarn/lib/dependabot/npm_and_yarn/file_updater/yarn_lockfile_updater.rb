@@ -150,6 +150,12 @@ module Dependabot
         end
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
+          registry_creds = credentials.select { |cred| cred.fetch("type") == "npm_registry" }
+          if registry_creds
+            command = %(yarn config set npmAuthIdent
+              #{Base64.encode64(registry_creds.first.fetch('token')).delete("\n")})
+            SharedHelpers.run_shell_command(command)
+          end
           updates = top_level_dependency_updates.collect do |dep|
             # when there are multiple requirements, we're dealing with a
             # workspace-like setup, where there are multiple package.json files
@@ -165,7 +171,12 @@ module Dependabot
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = sub_dependencies.first
           update = "#{dep.name}@#{dep.version}"
-
+          registry_creds = credentials.select { |cred| cred.fetch("type") == "npm_registry" }
+          if registry_creds
+            command = %(yarn config set npmAuthIdent
+              #{Base64.encode64(registry_creds.first.fetch('token')).delete("\n")})
+            SharedHelpers.run_shell_command(command)
+          end
           command = "yarn add #{update}"
           SharedHelpers.run_shell_command(command)
           SharedHelpers.run_shell_command("yarn dedupe")
