@@ -4,6 +4,10 @@ updates:
     directory: "/common"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "bundler"
+    directory: "/updater"
+    schedule:
+      interval: "weekly"
 
   # Watch the per-ecosystem gemspecs
   - package-ecosystem: "bundler"
