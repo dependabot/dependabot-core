@@ -32,7 +32,7 @@ module Dependabot
         [matches[1] || "=", Pub::Version.new(matches[2])]
       end
 
-      # For consistency with other langauges, we define a requirements array.
+      # For consistency with other languages, we define a requirements array.
       # Dart doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
       def self.requirements_array(requirement_string)

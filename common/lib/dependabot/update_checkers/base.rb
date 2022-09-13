@@ -120,7 +120,7 @@ module Dependabot
         Utils.requirement_class_for_package_manager(dependency.package_manager)
       end
 
-      # For some langauges, the manifest file may be constructed such that
+      # For some languages, the manifest file may be constructed such that
       # Dependabot has no way to update it (e.g., if it fetches its versions
       # from a web API). This method is overridden in those cases.
       def requirements_unlocked_or_can_be?
