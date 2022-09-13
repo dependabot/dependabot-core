@@ -9,6 +9,7 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       YAML_REGEXP = /^[^\.]+\.ya?ml$/i.freeze
       DOCKER_REGEXP = /dockerfile/i.freeze
+      HELM_REGEXP = /values[\-a-zA-Z_0-9]*\.yaml/i.freeze
 
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
@@ -85,10 +86,14 @@ module Dependabot
       def correctly_encoded_yamlfiles
         candidate_files = yamlfiles.select { |f| f.content.valid_encoding? }
         candidate_files.select do |f|
-          # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
-          # in a multi-resource file had better be a valid k8s resource
-          content = ::YAML.safe_load(f.content, aliases: true)
-          likely_kubernetes_resource?(content)
+          if f.type == "file" && f.name.match?(HELM_REGEXP)
+            true
+          else
+            # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource
+            # in a multi-resource file had better be a valid k8s resource
+            content = ::YAML.safe_load(f.content, aliases: true)
+            likely_kubernetes_resource?(content)
+          end
         rescue ::Psych::Exception
           false
         end

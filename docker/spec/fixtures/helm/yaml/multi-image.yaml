@@ -1,0 +1,10 @@
+foo:
+  image:
+    repository: 'nginx'
+    tag: 1.14.2
+    registry: burns.azurecr.io
+
+bar:
+  image:
+    repository: 'canonical/ubuntu'
+    tag: 18.04
