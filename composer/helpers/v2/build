@@ -17,7 +17,7 @@ cp -r \
   "$helpers_dir/.php-cs-fixer.php" \
   "$helpers_dir/composer.json" \
   "$helpers_dir/composer.lock" \
-  "$helpers_dir/phpstan.neon" \
+  "$helpers_dir/phpstan.dist.neon" \
   "$install_dir"
 
 cd "$install_dir"
