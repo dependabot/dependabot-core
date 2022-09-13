@@ -719,6 +719,28 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
+    context "with a yarn berry lockfile" do
+      context "updating a dependency with a peer requirement" do
+        let(:dependency_files) { project_dependency_files("yarn_berry/peer_dependency") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-dom",
+            version: "15.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+      end
+    end
+
     context "with a yarn.lock" do
       context "updating a dependency without peer dependency issues" do
         let(:dependency_files) { project_dependency_files("yarn/simple") }
