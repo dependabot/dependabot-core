@@ -188,7 +188,7 @@ RUN add-apt-repository ppa:ondrej/php \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer1 --version=1.10.26
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=2.3.9
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=2.4.1
 
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
