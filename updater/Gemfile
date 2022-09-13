@@ -29,8 +29,8 @@ gem "terminal-table", "~> 3.0.2"
 group :test do
   gem "byebug", "~> 11.1"
   gem "rspec", "~> 3.11"
-  gem "rubocop", "~> 1.33.0"
-  gem "rubocop-performance", "~> 1.14.2"
+  gem "rubocop", "~> 1.36.0"
+  gem "rubocop-performance", "~> 1.15.0"
   gem "vcr", "~> 6.1"
   gem "webmock", "~> 3.17"
 end
