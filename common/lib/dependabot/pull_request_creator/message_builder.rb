@@ -200,8 +200,7 @@ module Dependabot
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
         return transitive_multidependency_intro if dependencies.count > 1 &&
-                                                   dependencies.any?(&:top_level?) &&
-                                                   dependencies.any? { |dep| !dep.top_level? } &&
+                                                   updating_top_level_and_transitive_dependencies? &&
                                                    dependencies.none?(&:removed?)
 
         return multidependency_intro if dependencies.count > 1
@@ -281,6 +280,11 @@ module Dependabot
         dependencies.first.
           requirements.
           any? { |r| r.dig(:metadata, :dependency_set) }
+      end
+
+      def updating_top_level_and_transitive_dependencies?
+        dependencies.any?(&:top_level?) &&
+          dependencies.any? { |dep| !dep.top_level? }
       end
 
       def property_name
