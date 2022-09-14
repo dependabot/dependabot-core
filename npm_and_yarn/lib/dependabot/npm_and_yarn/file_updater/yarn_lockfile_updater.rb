@@ -168,7 +168,7 @@ module Dependabot
 
           command = "yarn add #{update}"
           SharedHelpers.run_shell_command(command)
-          SharedHelpers.run_shell_command("yarn dedupe")
+          SharedHelpers.run_shell_command("yarn dedupe #{dep.name}")
           SharedHelpers.run_shell_command("yarn remove #{dep.name}")
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
