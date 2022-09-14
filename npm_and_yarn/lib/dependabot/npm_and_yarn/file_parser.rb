@@ -247,6 +247,16 @@ module Dependabot
           manifest_name: manifest_name
         )&.fetch("resolved", nil)
 
+        if lockfile_parser.yarn_berry?
+          resolution = lockfile_parser.lockfile_details(
+            dependency_name: name,
+            requirement: requirement,
+            manifest_name: manifest_name
+          )&.fetch("resolution", nil)
+          package_match = resolution.match(/__archiveUrl=(?<package_url>.+)/) if resolution
+          resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url")) if package_match
+        end
+
         return unless resolved_url
         return unless resolved_url.start_with?("http")
         return if resolved_url.match?(/(?<!pkg\.)github/)

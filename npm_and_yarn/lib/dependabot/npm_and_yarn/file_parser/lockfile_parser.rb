@@ -35,6 +35,13 @@ module Dependabot
           nil
         end
 
+        def yarn_berry?
+          yaml = YAML.safe_load(yarn_locks.first.content)
+          yaml.key?("__metadata")
+        rescue StandardError
+          false
+        end
+
         private
 
         attr_reader :dependency_files
