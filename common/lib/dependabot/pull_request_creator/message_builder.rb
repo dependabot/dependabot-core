@@ -192,7 +192,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
@@ -222,7 +221,6 @@ module Dependabot
       end
 
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/AbcSize
 
       def multidependency_property_intro
