@@ -195,8 +195,6 @@ module Dependabot
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
-        dependency = dependencies.first
-
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
@@ -208,6 +206,7 @@ module Dependabot
 
         return multidependency_intro if dependencies.count > 1
 
+        dependency = dependencies.first
         msg = "Bumps #{dependency_links.first} " \
               "#{from_version_msg(previous_version(dependency))}" \
               "to #{new_version(dependency)}."
