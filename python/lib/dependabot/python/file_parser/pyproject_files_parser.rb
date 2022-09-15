@@ -25,7 +25,7 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          dependency_set += pyproject_dependencies
+          dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
           dependency_set += lockfile_dependencies if lockfile
 
           dependency_set
@@ -38,7 +38,7 @@ module Dependabot
         def pyproject_dependencies
           if using_poetry?
             poetry_dependencies
-          elsif using_pep621?
+          else
             pep621_dependencies
           end
         end
