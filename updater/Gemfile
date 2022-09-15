@@ -32,7 +32,7 @@ group :test do
   gem "rubocop", "~> 1.36.0"
   gem "rubocop-performance", "~> 1.15.0"
   gem "vcr", "~> 6.1"
-  gem "webmock", "~> 3.17"
+  gem "webmock", "~> 3.18"
 end
 
 group :development do
