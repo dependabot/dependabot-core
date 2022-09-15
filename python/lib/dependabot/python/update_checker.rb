@@ -145,13 +145,7 @@ module Dependabot
         # which resolver to use based on the filename of its requirements
         return :pipenv if req_files.any?("Pipfile")
 
-        if req_files.any?("pyproject.toml")
-          if poetry_based?
-            return :poetry
-          else
-            return :requirements
-          end
-        end
+        return pyproject_resolver if req_files.any?("pyproject.toml")
 
         return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
@@ -168,6 +162,12 @@ module Dependabot
         return :pip_compile if pip_compile_files.any?
 
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
+      end
+
+      def pyproject_resolver
+        return :poetry if poetry_based?
+
+        :requirements
       end
 
       def exact_requirement?(reqs)

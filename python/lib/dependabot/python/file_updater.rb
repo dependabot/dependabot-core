@@ -64,11 +64,9 @@ module Dependabot
         return :pipfile if changed_req_files.any?("Pipfile")
 
         if changed_req_files.any?("pyproject.toml")
-          if poetry_based?
-            return :poetry
-          else
-            return :requirements
-          end
+          return :poetry if poetry_based?
+
+          return :requirements
         end
 
         return :pip_compile if changed_req_files.any? { |f| f.end_with?(".in") }

@@ -116,12 +116,12 @@ module Dependabot
         end
 
         def using_poetry?
-         !parsed_pyproject.dig("tool", "poetry").nil?
-       end
+          !parsed_pyproject.dig("tool", "poetry").nil?
+        end
 
-       def using_pep621?
-         !parsed_pyproject.dig("project", "dependencies").nil?
-       end
+        def using_pep621?
+          !parsed_pyproject.dig("project", "dependencies").nil?
+        end
 
         # Create a DependencySet where each element has no requirement. Any
         # requirements will be added when combining the DependencySet with
