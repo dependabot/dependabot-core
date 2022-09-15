@@ -465,7 +465,7 @@ $network_trace_count = 0
 ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
   $network_trace_count += 1
   payload = args.last
-  puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
+  puts "🌍 #{payload[:scheme]}://#{payload[:host]}#{payload[:path]}"
 end
 
 $package_manager_version_log = []
