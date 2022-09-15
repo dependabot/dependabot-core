@@ -19,13 +19,15 @@ import toml
 # https://github.com/pypa/pip/blob/0bb3ac87f5bb149bd75cceac000844128b574385/src/pip/_internal/req/req_file.py#L35
 COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
+
 def parse_pep621_dependencies(pyproject_path):
     dependencies = toml.load(pyproject_path)['project']['dependencies']
 
     requirement_packages = []
 
     def version_from_req(specifier_set):
-        if len(specifier_set) == 1 and next(iter(specifier_set)).operator in {"==", "==="}:
+        if (len(specifier_set) == 1 and
+                next(iter(specifier_set)).operator in {"==", "==="}):
             return next(iter(specifier_set)).version
 
     for dependency in dependencies:
@@ -45,6 +47,7 @@ def parse_pep621_dependencies(pyproject_path):
             })
 
     return json.dumps({"result": requirement_packages})
+
 
 def parse_requirements(directory):
     # Parse the requirements.txt
