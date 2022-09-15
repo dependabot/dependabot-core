@@ -17,9 +17,10 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
   let(:pyproject_body) do
     fixture("pyproject_files", pyproject_fixture_name)
   end
-  let(:pyproject_fixture_name) { "pyproject.toml" }
 
-  describe "parse" do
+  describe "parse poetry files" do
+    let(:pyproject_fixture_name) { "poetry.toml" }
+
     subject(:dependencies) { parser.dependency_set.dependencies }
 
     context "without a lockfile" do
@@ -102,17 +103,17 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
     end
 
     context "with a lockfile" do
-      let(:files) { [pyproject, pyproject_lock] }
-      let(:pyproject_lock) do
+      let(:files) { [pyproject, poetry_lock] }
+      let(:poetry_lock) do
         Dependabot::DependencyFile.new(
-          name: "pyproject.lock",
+          name: "poetry.lock",
           content: pyproject_lock_body
         )
       end
       let(:pyproject_lock_body) do
         fixture("pyproject_locks", pyproject_lock_fixture_name)
       end
-      let(:pyproject_lock_fixture_name) { "pyproject.lock" }
+      let(:pyproject_lock_fixture_name) { "poetry.lock" }
 
       its(:length) { is_expected.to eq(36) }
 
@@ -120,11 +121,11 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         expect(dependencies.map(&:name)).to_not include("python")
       end
 
-      context "that is called poetry.lock" do
-        let(:files) { [pyproject, poetry_lock] }
-        let(:poetry_lock) do
+      context "that is called pyproject.lock (legacy name)" do
+        let(:files) { [pyproject, pyproject_lock] }
+        let(:pyproject_lock) do
           Dependabot::DependencyFile.new(
-            name: "poetry.lock",
+            name: "pyproject.lock",
             content: pyproject_lock_body
           )
         end

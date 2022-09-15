@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
         let(:pyproject) do
           Dependabot::DependencyFile.new(
             name: "pyproject.toml",
-            content: fixture("pyproject_files", "pyproject.toml")
+            content: fixture("pyproject_files", "poetry.toml")
           )
         end
 

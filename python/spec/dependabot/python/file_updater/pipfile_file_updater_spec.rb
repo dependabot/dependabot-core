@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         let(:pyproject) do
           Dependabot::DependencyFile.new(
             name: "pyproject.toml",
-            content: fixture("pyproject_files", "pyproject.toml")
+            content: fixture("pyproject_files", "poetry.toml")
           )
         end
 
