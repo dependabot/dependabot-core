@@ -281,7 +281,7 @@ GEM
     unf_ext (0.0.8.2)
     unicode-display_width (2.2.0)
     vcr (6.1.0)
-    webmock (3.17.1)
+    webmock (3.18.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -319,7 +319,7 @@ DEPENDENCIES
   sentry-raven (~> 3.1)
   terminal-table (~> 3.0.2)
   vcr (~> 6.1)
-  webmock (~> 3.17)
+  webmock (~> 3.18)
 
 BUNDLED WITH
    2.2.20
