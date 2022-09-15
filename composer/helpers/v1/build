@@ -14,10 +14,10 @@ helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
   "$helpers_dir/bin" \
   "$helpers_dir/src" \
-  "$helpers_dir/.php_cs" \
+  "$helpers_dir/.php-cs-fixer.dist.php" \
   "$helpers_dir/composer.json" \
   "$helpers_dir/composer.lock" \
-  "$helpers_dir/phpstan.neon" \
+  "$helpers_dir/phpstan.dist.neon" \
   "$install_dir"
 
 cd "$install_dir"

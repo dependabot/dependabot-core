@@ -36,7 +36,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
   spec.add_development_dependency "debase", "0.2.3"
-  spec.add_development_dependency "debase-ruby_core_source", "0.10.16"
+  spec.add_development_dependency "debase-ruby_core_source", "0.10.17"
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "parallel_tests", "~> 3.12.0"
@@ -44,7 +44,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
   spec.add_development_dependency "rubocop", "~> 1.36.0"
-  spec.add_development_dependency "rubocop-performance", "~> 1.14.2"
+  spec.add_development_dependency "rubocop-performance", "~> 1.15.0"
   spec.add_development_dependency "ruby-debug-ide", "~> 0.7.3"
   spec.add_development_dependency "simplecov", "~> 0.21.0"
   spec.add_development_dependency "simplecov-console", "~> 0.9.1"

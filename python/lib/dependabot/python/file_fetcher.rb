@@ -81,7 +81,12 @@ module Dependabot
       end
 
       def check_required_files_present
-        return if requirements_txt_files.any? || setup_file || setup_cfg_file || pipfile || pyproject
+        return if requirements_txt_files.any? ||
+                  requirements_in_files.any? ||
+                  setup_file ||
+                  setup_cfg_file ||
+                  pipfile ||
+                  pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -169,7 +174,7 @@ module Dependabot
         repo_contents.
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 200_000 }.
+          reject { |f| f.size > 500_000 }.
           map { |f| fetch_file_from_host(f.name) }.
           select { |f| requirements_file?(f) }.
           each { |f| @req_txt_and_in_files << f }
@@ -189,7 +194,7 @@ module Dependabot
         repo_contents(dir: relative_reqs_dir).
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 200_000 }.
+          reject { |f| f.size > 500_000 }.
           map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
           select { |f| requirements_file?(f) }
       end

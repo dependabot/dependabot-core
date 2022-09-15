@@ -6,7 +6,7 @@ module Dependabot
   module Docker
     # Lifted from the bundler package manager
     class Requirement < Gem::Requirement
-      # For consistency with other langauges, we define a requirements array.
+      # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
       def self.requirements_array(requirement_string)

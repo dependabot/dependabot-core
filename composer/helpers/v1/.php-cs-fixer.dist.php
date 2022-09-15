@@ -2,7 +2,8 @@
 $finder = PhpCsFixer\Finder::create()
     ->in(__DIR__ . '/src')
     ->in(__DIR__ . '/bin');
-return PhpCsFixer\Config::create()
+$config = new PhpCsFixer\Config();
+return $config
     ->setRules([
         '@Symfony' => true,
         'array_syntax' => ['syntax' => 'short'],
@@ -10,11 +11,10 @@ return PhpCsFixer\Config::create()
         'concat_space' => ['spacing' => 'one'],
         'declare_strict_types' => true,
         'increment_style' => ['style' => 'post'],
-        'is_null' => ['use_yoda_style' => false],
         'list_syntax' => ['syntax' => 'short'],
-        'method_argument_space' => ['ensure_fully_multiline' => true],
+        'method_argument_space' => ['on_multiline' => 'ensure_fully_multiline'],
         'modernize_types_casting' => true,
-        'no_multiline_whitespace_before_semicolons' => true,
+        'multiline_whitespace_before_semicolons' => true,
         'no_useless_else' => true,
         'no_useless_return' => true,
         'ordered_imports' => true,
