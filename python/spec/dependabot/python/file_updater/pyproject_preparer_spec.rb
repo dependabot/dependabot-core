@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   end
   let(:lockfile) { nil }
   let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
-  let(:pyproject_fixture_name) { "pyproject.toml" }
+  let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
   describe "#add_auth_env_vars" do
     it "adds auth env vars when a token is present" do
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
     it "doesn't break when there are no private sources" do
       preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
-        pyproject_content: fixture("pyproject_files", "pyproject.toml"),
+        pyproject_content: pyproject_content,
         lockfile: nil
       )
       expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     let(:pyproject_lock_body) do
       fixture("pyproject_locks", pyproject_lock_fixture_name)
     end
-    let(:pyproject_lock_fixture_name) { "pyproject.lock" }
+    let(:pyproject_lock_fixture_name) { "poetry.lock" }
 
     context "with no dependencies to except" do
       let(:dependencies) { [] }
