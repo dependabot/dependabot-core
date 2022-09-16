@@ -245,7 +245,7 @@ module Dependabot
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          return text unless source.provider == "github"
+          return text unless source.provider == "github" || source.provider == "gitlab"
 
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
