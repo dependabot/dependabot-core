@@ -151,11 +151,11 @@ module Dependabot
 
         def setup_yarn_creds
           registry_creds = credentials.select { |cred| cred.fetch("type") == "npm_registry" }
-          if registry_creds
-            command = %(yarn config set npmAuthIdent
-              #{Base64.encode64(registry_creds.first.fetch('token')).delete("\n")})
-            SharedHelpers.run_shell_command(command)
-          end
+          return unless registry_creds.first
+
+          command = %(yarn config set npmAuthIdent
+            #{Base64.encode64(registry_creds.first.fetch('token')).delete("\n")})
+          SharedHelpers.run_shell_command(command)
         end
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
