@@ -85,8 +85,10 @@ jobs:
       - name: Push latest on main
         if: github.ref == 'refs/heads/main'
         run: |
+          DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
-          docker push "$UPDATER_IMAGE_MIRROR:latest"
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$DATE_BASED_VERSION"
+          docker push --all-tags "$UPDATER_IMAGE_MIRROR"
 
       - name: Set summary
         if: env.DECISION == 'APPROVED'
