@@ -1,0 +1,8 @@
+{
+  "name": "yarn3-private-registry",
+  "packageManager": "yarn@3.2.3",
+  "dependencies": {
+    "@dsp-testing/my-package": "1.0.2",
+    "jquery": "^3.6.1"
+  }
+}

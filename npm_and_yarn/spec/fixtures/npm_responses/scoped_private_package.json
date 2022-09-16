@@ -1,0 +1,86 @@
+{
+    "_id" : "@dsp-testing/my-package",
+    "_rev" : "1-0",
+    "name" : "@dsp-testing/my-package",
+    "description" : "",
+    "dist-tags" : {
+      "latest" : "1.0.4"
+    },
+    "versions" : {
+      "1.0.3" : {
+        "name" : "@dsp-testing/my-package",
+        "description" : "",
+        "version" : "1.0.3",
+        "author" : "",
+        "repository" : "git@github.com:dsp-testing/npm-private-registry.git",
+        "main" : "index.js",
+        "license" : "ISC",
+        "scripts" : {
+          "test" : "echo \"Error: no test specified\" && exit 1"
+        },
+        "publishConfig" : {
+          "@dsp-testing:registry" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/"
+        },
+        "_id" : "@dsp-testing/my-package@1.0.3",
+        "dist" : {
+          "tarball" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/@dsp-testing/my-package/-/@dsp-testing/my-package-1.0.3.tgz",
+          "shasum" : "2753f24bf66e98e2be3eb98e8929a04b15862287",
+          "integrity" : "sha512-cMojTFUcXelSducIO+YNk4HuGTeidUyLlLohUUwHQFn5lirwFssHD2XeL+PXYYjMuhit3a09LepBt4X+EvKEhg=="
+        }
+      },
+      "1.0.4" : {
+        "name" : "@dsp-testing/my-package",
+        "description" : "",
+        "version" : "1.0.4",
+        "author" : "",
+        "repository" : "git@github.com:dsp-testing/npm-private-registry.git",
+        "main" : "index.js",
+        "license" : "ISC",
+        "scripts" : {
+          "test" : "echo \"Error: no test specified\" && exit 1"
+        },
+        "publishConfig" : {
+          "@dsp-testing:registry" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/"
+        },
+        "_id" : "@dsp-testing/my-package@1.0.4",
+        "dist" : {
+          "tarball" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/@dsp-testing/my-package/-/@dsp-testing/my-package-1.0.4.tgz",
+          "shasum" : "df5cfe11999e1691e97a4883c2cf50615cc36ff5",
+          "integrity" : "sha512-RrD1S1yqIoj3VGoej0PqHa4ZmVks4984yILeqC01fOTV/wHcsgtRGMDCrlrNtba5pGEjaXHl4OZtKNRlg4FoTg=="
+        }
+      },
+      "1.0.2" : {
+        "name" : "@dsp-testing/my-package",
+        "description" : "",
+        "version" : "1.0.2",
+        "author" : "",
+        "repository" : "git@github.com:dsp-testing/npm-private-registry.git",
+        "main" : "index.js",
+        "license" : "ISC",
+        "scripts" : {
+          "test" : "echo \"Error: no test specified\" && exit 1"
+        },
+        "publishConfig" : {
+          "@dsp-testing:registry" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/"
+        },
+        "_id" : "@dsp-testing/my-package@1.0.2",
+        "dist" : {
+          "tarball" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/@dsp-testing/my-package/-/@dsp-testing/my-package-1.0.2.tgz",
+          "shasum" : "879cb1c8724afddbd445178aa17922fc4e247df9",
+          "integrity" : "sha512-kh9XJKg9nsmaohtCohbX9xnhPxMhz+rCvNtXLi90EUTS5zyWxtEJNb+BegW+JGvCud4q1moGCeYYLQX4nOuCjw=="
+        }
+      }
+    },
+    "author" : "",
+    "time" : {
+      "unpublished" : null,
+      "1.0.3" : "2022-09-13T13:02:49.915Z",
+      "1.0.4" : "2022-09-13T13:02:22.523Z",
+      "created" : "2022-09-13T13:02:22.523Z",
+      "modified" : "2022-09-13T13:03:02.071Z",
+      "1.0.2" : "2022-09-13T13:03:02.071Z"
+    },
+    "repository" : "git@github.com:dsp-testing/npm-private-registry.git",
+    "users" : { },
+    "license" : "ISC"
+  }

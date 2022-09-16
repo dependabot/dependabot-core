@@ -3111,6 +3111,20 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
         end
       end
+
+      context "with a private registry" do
+        let(:files) { project_dependency_files("yarn_berry/private_registry") }
+        let(:dependency_name) { "@dsp-testing/my-package" }
+        let(:version) { "1.0.4" }
+        let(:previous_version) { "1.0.2" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_yarn_lock.content).
+            to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 1.0.4))
+        end
+      end
     end
 
     #######################

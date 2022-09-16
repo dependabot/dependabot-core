@@ -1,0 +1,21 @@
+{
+    "name" : "@dsp-testing/my-package",
+    "description" : "",
+    "version" : "1.0.4",
+    "author" : "",
+    "repository" : "git@github.com:dsp-testing/npm-private-registry.git",
+    "main" : "index.js",
+    "license" : "ISC",
+    "scripts" : {
+      "test" : "echo \"Error: no test specified\" && exit 1"
+    },
+    "publishConfig" : {
+      "@dsp-testing:registry" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/"
+    },
+    "_id" : "@dsp-testing/my-package@1.0.4",
+    "dist" : {
+      "tarball" : "https://pavera.jfrog.io/artifactory/api/npm/pavera-npm/@dsp-testing/my-package/-/@dsp-testing/my-package-1.0.4.tgz",
+      "shasum" : "df5cfe11999e1691e97a4883c2cf50615cc36ff5",
+      "integrity" : "sha512-RrD1S1yqIoj3VGoej0PqHa4ZmVks4984yILeqC01fOTV/wHcsgtRGMDCrlrNtba5pGEjaXHl4OZtKNRlg4FoTg=="
+    }
+  }
