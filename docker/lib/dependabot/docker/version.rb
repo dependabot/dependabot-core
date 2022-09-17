@@ -5,6 +5,9 @@ require "dependabot/utils"
 module Dependabot
   module Docker
     class Version < Gem::Version
+      def initialize(version)
+        super(version.tr("_", "."))
+      end
     end
   end
 end

@@ -43,7 +43,7 @@ module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX =
-        /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
+        /v?(?<version>[0-9]+(?:(?:\.[_a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
       VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
       VERSION_WITH_PFX_AND_SFX =
