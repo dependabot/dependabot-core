@@ -167,7 +167,11 @@ module Dependabot
 
         parsed = JSON.parse(stdout)
         flutter_version = parsed["frameworkVersion"]
-        dart_version = parsed["dartSdkVersion"].split.first
+        dart_version = parsed["dartSdkVersion"]&.split&.first
+        if !(flutter_version && dart_version)
+          raise Dependabot::DependabotError,
+                "Bad output from `flutter --version`: #{stdout}"
+        end
         Dependabot.logger.info(
           prefixed_log_message(
             "Installed the Flutter SDK version: #{flutter_version} with Dart #{dart_version}."
