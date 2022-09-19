@@ -71,6 +71,7 @@ Future<void> main(List<String> args) async {
 
     final bestFlutterRelease =
         inferBestFlutterRelease(parseSdkConstraints(pubspec), flutterReleases);
+
     if (bestFlutterRelease == null) {
       fail(
         'No flutter release matching sdk constraints.',

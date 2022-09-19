@@ -5,6 +5,7 @@ require "open3"
 require "digest"
 
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/shared_helpers"
 require "dependabot/pub/requirement"
 
@@ -106,6 +107,11 @@ module Dependabot
       def ensure_right_flutter_release
         @ensure_right_flutter_release ||= begin
           versions = Helpers.run_infer_sdk_versions url: options[:flutter_releases_url]
+          if versions
+            Dependabot.logger.info(prefixed_log_message("Installing the Flutter SDK version: #{versions['flutter']} from channel #{versions['channel']} with Dart #{versions['dart']}"))
+          else
+            Dependabot.logger.info(prefixed_log_message("Failed to infer the flutter version. Attempting to use latest stable release."))
+          end
           flutter_ref = if versions
                           "refs/tags/#{versions['flutter']}"
                         else
@@ -138,9 +144,12 @@ module Dependabot
           end
 
           parsed = JSON.parse(stdout)
+          flutter_version = parsed["frameworkVersion"]
+          dart_version = parsed["dartSdkVersion"].split.first
+          Dependabot.logger.info(prefixed_log_message("Installed the Flutter SDK version: #{flutter_version} with Dart #{dart_version}."))
           {
-            "flutter" => parsed["frameworkVersion"],
-            "dart" => parsed["dartSdkVersion"].split.first
+            "flutter" => flutter_version,
+            "dart" => dart_version
           }
         end
       end
