@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/experiments"
 require "dependabot/utils"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"

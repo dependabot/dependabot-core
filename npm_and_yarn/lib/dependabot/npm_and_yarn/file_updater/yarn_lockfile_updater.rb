@@ -8,6 +8,7 @@ require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/experiments"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -143,6 +144,8 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def yarn_berry?(yarn_lock)
+          return false unless Experiments.enabled?(:yarn_berry)
+
           yaml = YAML.safe_load(yarn_lock.content)
           yaml.key?("__metadata")
         rescue StandardError

@@ -96,8 +96,8 @@ module Dependabot
             parse_yarn_lock(yarn_lock).each do |req, details|
               next unless semver_version_for(details["version"])
               next if alias_package?(req)
-              next if workspace_package?(req)
-              next if req == "__metadata"
+              next if Experiments.enabled?(:yarn_berry) && workspace_package?(req)
+              next if Experiments.enabled?(:yarn_berry) && req == "__metadata"
 
               # NOTE: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
@@ -190,7 +190,7 @@ module Dependabot
         end
 
         def alias_package?(requirement)
-          requirement.match?(/@npm:(.+@(?!npm))/)
+          Experiments.enabled?(:yarn_berry) ? requirement.match?(/@npm:(.+@(?!npm))/) : requirement.include?("@npm:")
         end
 
         def workspace_package?(requirement)
