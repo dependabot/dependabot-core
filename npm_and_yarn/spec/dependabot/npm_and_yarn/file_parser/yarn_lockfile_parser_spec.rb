@@ -5,6 +5,10 @@ require "dependabot/dependency_file"
 require "dependabot/npm_and_yarn/file_parser/yarn_lockfile_parser"
 
 RSpec.describe Dependabot::NpmAndYarn::FileParser::YarnLockfileParser do
+  before do
+    Dependabot::Experiments.register(:yarn_berry, true)
+  end
+
   subject(:yarn_lockfile_parser) do
     described_class.new(lockfile: yarn_lockfile)
   end
