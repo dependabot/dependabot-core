@@ -62,7 +62,7 @@ module Dependabot
       def ensure_flutter_repo
         return if File.directory?("/tmp/flutter/.git")
 
-        Dependabot.logger.info(prefixed_log_message("Cloning the flutter repo https://github.com/flutter/flutter."))
+        Dependabot.logger.info "Cloning the flutter repo https://github.com/flutter/flutter."
         # Make a flutter checkout
         _, stderr, status = Open3.capture3(
           {},
@@ -78,7 +78,7 @@ module Dependabot
       # Will ensure that /tmp/flutter contains the flutter repo checked out at `ref`.
       def check_out_flutter_ref(ref)
         ensure_flutter_repo
-        Dependabot.logger.info(prefixed_log_message("Checking out Flutter version #{ref}"))
+        Dependabot.logger.info "Checking out Flutter version #{ref}"
         # Ensure we have the right version (by tag)
         _, stderr, status = Open3.capture3(
           {},
@@ -112,17 +112,13 @@ module Dependabot
           flutter_ref =
             if versions
               Dependabot.logger.info(
-                prefixed_log_message(
-                  "Installing the Flutter SDK version: #{versions['flutter']} " \
-                  "from channel #{versions['channel']} with Dart #{versions['dart']}"
-                )
+                "Installing the Flutter SDK version: #{versions['flutter']} " \
+                "from channel #{versions['channel']} with Dart #{versions['dart']}"
               )
               "refs/tags/#{versions['flutter']}"
             else
               Dependabot.logger.info(
-                prefixed_log_message(
-                  "Failed to infer the flutter version. Attempting to use latest stable release."
-                )
+                "Failed to infer the flutter version. Attempting to use latest stable release."
               )
               # Choose the 'stable' version if the tool failed to infer a version.
               "stable"
@@ -136,9 +132,7 @@ module Dependabot
 
       def run_flutter_doctor
         Dependabot.logger.info(
-          prefixed_log_message(
-            "Running `flutter doctor` to install artifacts and create flutter/version."
-          )
+          "Running `flutter doctor` to install artifacts and create flutter/version."
         )
         _, stderr, status = Open3.capture3(
           {},
@@ -151,7 +145,7 @@ module Dependabot
 
       # Runs `flutter version` and returns the dart and flutter version numbers in a map.
       def run_flutter_version
-        Dependabot.logger.info(prefixed_log_message("Running `flutter --version`"))
+        Dependabot.logger.info "Running `flutter --version`"
         # Run `flutter --version --machine` to get the current flutter version.
         stdout, stderr, status = Open3.capture3(
           {},
@@ -173,9 +167,7 @@ module Dependabot
                 "Bad output from `flutter --version`: #{stdout}"
         end
         Dependabot.logger.info(
-          prefixed_log_message(
-            "Installed the Flutter SDK version: #{flutter_version} with Dart #{dart_version}."
-          )
+          "Installed the Flutter SDK version: #{flutter_version} with Dart #{dart_version}."
         )
         {
           "flutter" => flutter_version,
