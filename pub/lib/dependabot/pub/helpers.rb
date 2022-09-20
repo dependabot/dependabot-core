@@ -5,6 +5,7 @@ require "open3"
 require "digest"
 
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/shared_helpers"
 require "dependabot/pub/requirement"
 
@@ -61,6 +62,7 @@ module Dependabot
       def ensure_flutter_repo
         return if File.directory?("/tmp/flutter/.git")
 
+        Dependabot.logger.info "Cloning the flutter repo https://github.com/flutter/flutter."
         # Make a flutter checkout
         _, stderr, status = Open3.capture3(
           {},
@@ -76,6 +78,7 @@ module Dependabot
       # Will ensure that /tmp/flutter contains the flutter repo checked out at `ref`.
       def check_out_flutter_ref(ref)
         ensure_flutter_repo
+        Dependabot.logger.info "Checking out Flutter version #{ref}"
         # Ensure we have the right version (by tag)
         _, stderr, status = Open3.capture3(
           {},
@@ -106,43 +109,70 @@ module Dependabot
       def ensure_right_flutter_release
         @ensure_right_flutter_release ||= begin
           versions = Helpers.run_infer_sdk_versions url: options[:flutter_releases_url]
-          flutter_ref = if versions
-                          "refs/tags/#{versions['flutter']}"
-                        else
-                          # Choose the 'stable' version if the tool failed to infer a version.
-                          "stable"
-                        end
+          flutter_ref =
+            if versions
+              Dependabot.logger.info(
+                "Installing the Flutter SDK version: #{versions['flutter']} " \
+                "from channel #{versions['channel']} with Dart #{versions['dart']}"
+              )
+              "refs/tags/#{versions['flutter']}"
+            else
+              Dependabot.logger.info(
+                "Failed to infer the flutter version. Attempting to use latest stable release."
+              )
+              # Choose the 'stable' version if the tool failed to infer a version.
+              "stable"
+            end
 
           check_out_flutter_ref flutter_ref
-
-          # Run `flutter --version` to make Flutter download engine artifacts and create flutter/version.
-          _, stderr, status = Open3.capture3(
-            {},
-            "/tmp/flutter/bin/flutter",
-            "doctor",
-            chdir: "/tmp/flutter/"
-          )
-          raise Dependabot::DependabotError, "Running 'flutter doctor' failed: #{stderr}" unless status.success?
-
-          # Run `flutter --version --machine` to get the current flutter version.
-          stdout, stderr, status = Open3.capture3(
-            {},
-            "/tmp/flutter/bin/flutter",
-            "--version",
-            "--machine",
-            chdir: "/tmp/flutter/"
-          )
-          unless status.success?
-            raise Dependabot::DependabotError,
-                  "Running 'flutter --version --machine' failed: #{stderr}"
-          end
-
-          parsed = JSON.parse(stdout)
-          {
-            "flutter" => parsed["frameworkVersion"],
-            "dart" => parsed["dartSdkVersion"].split.first
-          }
+          run_flutter_doctor
+          run_flutter_version
         end
+      end
+
+      def run_flutter_doctor
+        Dependabot.logger.info(
+          "Running `flutter doctor` to install artifacts and create flutter/version."
+        )
+        _, stderr, status = Open3.capture3(
+          {},
+          "/tmp/flutter/bin/flutter",
+          "doctor",
+          chdir: "/tmp/flutter/"
+        )
+        raise Dependabot::DependabotError, "Running 'flutter doctor' failed: #{stderr}" unless status.success?
+      end
+
+      # Runs `flutter version` and returns the dart and flutter version numbers in a map.
+      def run_flutter_version
+        Dependabot.logger.info "Running `flutter --version`"
+        # Run `flutter --version --machine` to get the current flutter version.
+        stdout, stderr, status = Open3.capture3(
+          {},
+          "/tmp/flutter/bin/flutter",
+          "--version",
+          "--machine",
+          chdir: "/tmp/flutter/"
+        )
+        unless status.success?
+          raise Dependabot::DependabotError,
+                "Running 'flutter --version --machine' failed: #{stderr}"
+        end
+
+        parsed = JSON.parse(stdout)
+        flutter_version = parsed["frameworkVersion"]
+        dart_version = parsed["dartSdkVersion"]&.split&.first
+        unless flutter_version && dart_version
+          raise Dependabot::DependabotError,
+                "Bad output from `flutter --version`: #{stdout}"
+        end
+        Dependabot.logger.info(
+          "Installed the Flutter SDK version: #{flutter_version} with Dart #{dart_version}."
+        )
+        {
+          "flutter" => flutter_version,
+          "dart" => dart_version
+        }
       end
 
       def run_dependency_services(command, stdin_data: nil)

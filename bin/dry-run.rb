@@ -224,6 +224,10 @@ option_parse = OptionParser.new do |opts|
         [o.strip.downcase.to_sym, true]
       end
     end
+
+    $options[:updater_options].each do |name, val|
+      Dependabot::Experiment.register(name, val)
+    end
   end
 
   opts.on("--security-updates-only",
@@ -465,7 +469,7 @@ $network_trace_count = 0
 ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
   $network_trace_count += 1
   payload = args.last
-  puts "🌍 #{payload[:scheme]}//#{payload[:host]}:#{payload[:port]}#{payload[:path]}"
+  puts "🌍 #{payload[:scheme]}://#{payload[:host]}#{payload[:path]}"
 end
 
 $package_manager_version_log = []

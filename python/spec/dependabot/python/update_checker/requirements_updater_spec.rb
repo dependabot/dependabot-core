@@ -147,12 +147,24 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
           context "that supports the new version" do
             let(:requirement_txt_req_string) { "~=1.3" }
             its([:requirement]) { is_expected.to eq("~=1.5") }
+
+            context "with the bump_versions_if_necessary update strategy" do
+              let(:update_strategy) { :bump_versions_if_necessary }
+
+              its([:requirement]) { is_expected.to eq("~=1.3") }
+            end
           end
 
           context "that needs to be updated and maintain its precision" do
             let(:requirement_txt_req_string) { "~=1.3" }
             let(:latest_resolvable_version) { "2.1.0" }
             its([:requirement]) { is_expected.to eq("~=2.1") }
+
+            context "with the bump_versions_if_necessary update strategy" do
+              let(:update_strategy) { :bump_versions_if_necessary }
+
+              its([:requirement]) { is_expected.to eq("~=2.1") }
+            end
           end
         end
 

@@ -976,8 +976,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
           end
 
-          it "does not sanitize github links" do
-            expect(pr_message).not_to include(github_redirection_service)
+          it "sanitizes github links" do
+            expect(pr_message).to include(github_redirection_service)
           end
         end
 

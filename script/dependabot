@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dependabot "$@" --debug \
+dependabot "$@" \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \

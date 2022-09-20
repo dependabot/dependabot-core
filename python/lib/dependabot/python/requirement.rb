@@ -60,6 +60,9 @@ module Dependabot
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
 
+          # Standard python doesn't support whitespace in requirements, but Poetry does.
+          req_string = req_string.gsub(/(\d +)([<=>])/, '\1,\2')
+
           req_string.split(",").map(&:strip).map do |r|
             convert_python_constraint_to_ruby_constraint(r)
           end
