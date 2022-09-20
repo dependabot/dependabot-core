@@ -224,6 +224,10 @@ option_parse = OptionParser.new do |opts|
         [o.strip.downcase.to_sym, true]
       end
     end
+
+    $options[:updater_options].each do |name, val|
+      Dependabot::Experiments.register(name, val)
+    end
   end
 
   opts.on("--security-updates-only",

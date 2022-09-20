@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
@@ -21,7 +22,7 @@ module Dependabot
       private
 
       def kubernetes_enabled?
-        options.key?(:kubernetes_updates) && options[:kubernetes_updates]
+        Experiments.enabled?(:kubernetes_updates)
       end
 
       def fetch_files

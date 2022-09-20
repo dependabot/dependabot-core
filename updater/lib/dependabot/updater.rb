@@ -62,6 +62,10 @@ module Dependabot
     def run
       return unless job
 
+      job.experiments.each do |name, value|
+        Dependabot::Experiments.register(name, value)
+      end
+
       if job.updating_a_pull_request?
         logger_info("Starting PR update job for #{job.source.repo}")
         check_and_update_existing_pr_with_error_handling(dependencies)
