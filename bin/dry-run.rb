@@ -226,7 +226,7 @@ option_parse = OptionParser.new do |opts|
     end
 
     $options[:updater_options].each do |name, val|
-      Dependabot::Experiment.register(name, val)
+      Dependabot::Experiments.register(name, val)
     end
   end
 
