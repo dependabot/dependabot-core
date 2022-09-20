@@ -18,11 +18,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     described_class.new(
       source: source,
       credentials: credentials,
-      repo_contents_path: nil,
-      options: options
+      repo_contents_path: nil
     )
   end
-  let(:options) { {} }
   let(:directory) { "/" }
   let(:github_url) { "https://api.github.com/" }
   let(:url) { github_url + "repos/gocardless/bump/contents/" }
@@ -184,7 +182,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
-    let(:options) { { kubernetes_updates: true } }
+    before do
+      Dependabot::Experiments.register(:kubernetes_updates, true)
+    end
 
     it "fetches the pod.yaml" do
       expect(file_fetcher_instance.files.count).to eq(1)
@@ -211,7 +211,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     context "with kubernetes not enabled" do
-      let(:options) { { kubernetes_updates: false } }
+      before do
+        Dependabot::Experiments.register(:kubernetes_updates, false)
+      end
 
       it "raises a helpful error" do
         expect { file_fetcher_instance.files }.
@@ -247,7 +249,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
     let(:kubernetes_2_fixture) { fixture("github", "contents_kubernetes.json") }
-    let(:options) { { kubernetes_updates: true } }
+    before do
+      Dependabot::Experiments.register(:kubernetes_updates, true)
+    end
 
     it "fetches both YAMLs" do
       expect(file_fetcher_instance.files.count).to eq(2)
