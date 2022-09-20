@@ -181,7 +181,7 @@ module Dependabot
       updated_files = generate_dependency_files_for(updated_deps)
       updated_deps = updated_deps.reject do |d|
         next false if d.name == checker.dependency.name
-        next true if d.requirements == d.previous_requirements
+        next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
@@ -308,7 +308,7 @@ module Dependabot
       updated_files = generate_dependency_files_for(updated_deps)
       updated_deps = updated_deps.reject do |d|
         next false if d.name == checker.dependency.name
-        next true if d.requirements == d.previous_requirements
+        next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
