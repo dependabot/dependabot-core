@@ -735,7 +735,11 @@ module Dependabot
         dependency_names = updated_dependencies.map(&:name)
         logger_info("Updating #{dependency_names.join(', ')}")
       end
-      updater = file_updater_for(updated_dependencies)
+
+      # Removal is only supported for transitive dependencies which are removed as a
+      # side effect of the parent update
+      deps_to_update = updated_dependencies.reject(&:removed?)
+      updater = file_updater_for(deps_to_update)
       updater.updated_dependency_files
     end
 
