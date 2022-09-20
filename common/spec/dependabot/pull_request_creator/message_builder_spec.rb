@@ -1242,6 +1242,71 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
       end
 
+      context "and transitive security vulnerabilities fixed" do
+        let(:dependencies) { [transitive_dependency, dependency] }
+        let(:transitive_dependency) do
+          Dependabot::Dependency.new(
+            name: "statesman",
+            version: "1.6.0",
+            previous_version: "1.5.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+
+        before do
+          statesman_repo_url =
+            "https://api.github.com/repos/gocardless/statesman"
+          stub_request(:get, statesman_repo_url).
+            to_return(status: 200,
+                      body: fixture("github", "statesman_repo.json"),
+                      headers: json_header)
+          stub_request(:get, "#{statesman_repo_url}/contents/").
+            to_return(status: 200,
+                      body: fixture("github", "statesman_files.json"),
+                      headers: json_header)
+          stub_request(:get, "#{statesman_repo_url}/releases?per_page=100").
+            to_return(status: 200,
+                      body: fixture("github", "business_releases.json"),
+                      headers: json_header)
+          stub_request(:get, "https://api.github.com/repos/gocardless/" \
+                             "statesman/contents/CHANGELOG.md?ref=master").
+            to_return(status: 200,
+                      body: fixture("github", "changelog_contents.json"),
+                      headers: json_header)
+          stub_request(:get, "https://rubygems.org/api/v1/gems/statesman.json").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response_statesman.json")
+            )
+
+          service_pack_url =
+            "https://github.com/gocardless/statesman.git/info/refs" \
+            "?service=git-upload-pack"
+          stub_request(:get, service_pack_url).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "no_tags"),
+              headers: {
+                "content-type" => "application/x-git-upload-pack-advertisement"
+              }
+            )
+        end
+
+        it "includes details of both dependencies" do
+          expect(pr_message).
+            to start_with(
+              "Bumps [statesman](https://github.com/gocardless/statesman) to 1.6.0 " \
+              "and updates ancestor dependency [business](https://github.com/gocardless/business). " \
+              "These dependencies need to be updated together.\n\n" \
+              "Updates `statesman` from 1.5.0 to 1.6.0\n" \
+              "<details>\n" \
+              "<summary>Release notes</summary>\n"
+            )
+        end
+      end
+
       context "and an upgrade guide that can be pulled in" do
         let(:dependency) do
           Dependabot::Dependency.new(
