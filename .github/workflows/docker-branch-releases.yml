@@ -46,6 +46,11 @@ jobs:
           echo "Review decision is: $DECISION"
           echo "DECISION=$DECISION" >> $GITHUB_ENV
 
+      # overwrite the previous result if this is a fork since forks can't publish to GHCR
+      - name: Skip forks
+        if: github.event.pull_request.head.repo.fork
+        run: echo "DECISION=FORK" >> $GITHUB_ENV
+
       - name: Build dependabot-core image
         if: env.DECISION == 'APPROVED'
         env:
