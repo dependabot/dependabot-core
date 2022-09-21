@@ -181,7 +181,7 @@ module Dependabot
       updated_files = generate_dependency_files_for(updated_deps)
       updated_deps = updated_deps.reject do |d|
         next false if d.name == checker.dependency.name
-        next true if d.requirements == d.previous_requirements
+        next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
@@ -308,7 +308,7 @@ module Dependabot
       updated_files = generate_dependency_files_for(updated_deps)
       updated_deps = updated_deps.reject do |d|
         next false if d.name == checker.dependency.name
-        next true if d.requirements == d.previous_requirements
+        next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
@@ -735,7 +735,11 @@ module Dependabot
         dependency_names = updated_dependencies.map(&:name)
         logger_info("Updating #{dependency_names.join(', ')}")
       end
-      updater = file_updater_for(updated_dependencies)
+
+      # Removal is only supported for transitive dependencies which are removed as a
+      # side effect of the parent update
+      deps_to_update = updated_dependencies.reject(&:removed?)
+      updater = file_updater_for(deps_to_update)
       updater.updated_dependency_files
     end
 

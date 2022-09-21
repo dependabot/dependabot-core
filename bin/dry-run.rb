@@ -743,10 +743,9 @@ dependencies.each do |dep|
   updater = file_updater_for(deps_to_update)
   updated_files = updater.updated_dependency_files
 
-  # Currently unused but used to create pull requests (from the updater)
-  updated_deps.reject do |d|
+  updated_deps = updated_deps.reject do |d|
     next false if d.name == checker.dependency.name
-    next true if d.requirements == d.previous_requirements
+    next true if d.top_level? && d.requirements == d.previous_requirements
 
     d.version == d.previous_version
   end
