@@ -1612,10 +1612,10 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "includes details of both dependencies" do
           expect(pr_message).
             to eq(
-              "Bumps [statesman](https://github.com/gocardless/statesman) " \
-              "and [business](https://github.com/gocardless/business). " \
-              "These dependencies needed to be updated together.\n" \
-              "Removes `statesman`\n" \
+              "Removes [statesman](https://github.com/gocardless/statesman). It's no longer used after updating " \
+              "ancestor dependency [business](https://github.com/gocardless/business). " \
+              "These dependencies need to be updated together.\n\n" \
+              "Removes `statesman`\n\n" \
               "Updates `business` from 1.4.0 to 1.5.0\n" \
               "<details>\n" \
               "<summary>Changelog</summary>\n" \
