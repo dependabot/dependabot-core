@@ -198,9 +198,10 @@ module Dependabot
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
 
+        return transitive_removed_dependency_intro if dependencies.count > 1 && removing_a_transitive_dependency?
+
         return transitive_multidependency_intro if dependencies.count > 1 &&
-                                                   updating_top_level_and_transitive_dependencies? &&
-                                                   dependencies.none?(&:removed?)
+                                                   updating_top_level_and_transitive_dependencies?
 
         return multidependency_intro if dependencies.count > 1
 
@@ -262,6 +263,21 @@ module Dependabot
         msg
       end
 
+      def transitive_removed_dependency_intro
+        msg = "Removes #{dependency_links[0]}. It's no longer used after updating"
+
+        msg += if dependencies.count > 2
+                 " ancestor dependencies #{dependency_links[0..-2].join(', ')} " \
+                   "and #{dependency_links[-1]}. "
+               else
+                 " ancestor dependency #{dependency_links[1]}. "
+               end
+
+        msg += "These dependencies need to be updated together.\n"
+
+        msg
+      end
+
       def from_version_msg(previous_version)
         return "" unless previous_version
 
@@ -278,6 +294,10 @@ module Dependabot
         dependencies.first.
           requirements.
           any? { |r| r.dig(:metadata, :dependency_set) }
+      end
+
+      def removing_a_transitive_dependency?
+        dependencies.any?(&:removed?)
       end
 
       def updating_top_level_and_transitive_dependencies?
