@@ -155,7 +155,7 @@ module Dependabot
       end
 
       def aliased_package_name?(name)
-        name.match?(/@npm:(.+@(?!npm))/)
+        name.include?("@npm:")
       end
 
       def workspace_package_names
