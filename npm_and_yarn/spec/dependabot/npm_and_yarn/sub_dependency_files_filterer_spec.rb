@@ -3,9 +3,14 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/experiments"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
 RSpec.describe Dependabot::NpmAndYarn::SubDependencyFilesFilterer do
+  before do
+    Dependabot::Experiments.register(:yarn_berry, true)
+  end
+
   subject(:files_requiring_update) do
     described_class.new(
       dependency_files: dependency_files,
