@@ -1615,7 +1615,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
               "Removes [statesman](https://github.com/gocardless/statesman). It's no longer used after updating " \
               "ancestor dependency [business](https://github.com/gocardless/business). " \
               "These dependencies need to be updated together.\n\n" \
-              "Removes `statesman`\n" \
+              "Removes `statesman`\n\n" \
               "Updates `business` from 1.4.0 to 1.5.0\n" \
               "<details>\n" \
               "<summary>Changelog</summary>\n" \

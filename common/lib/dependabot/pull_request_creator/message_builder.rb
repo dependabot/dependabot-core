@@ -366,7 +366,7 @@ module Dependabot
 
         dependencies.map do |dep|
           msg = if dep.removed?
-                  "\nRemoves `#{dep.display_name}`"
+                  "\nRemoves `#{dep.display_name}`\n"
                 else
                   "\nUpdates `#{dep.display_name}` " \
                     "#{from_version_msg(previous_version(dep))}" \
