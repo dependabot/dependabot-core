@@ -33,7 +33,7 @@ module Dependabot
                 requirements: [{
                   requirement: version,
                   file: global_json.name,
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil
                 }]
               )
