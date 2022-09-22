@@ -2,7 +2,6 @@
 
 require "dependabot/dependency"
 require "dependabot/errors"
-require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_updater/npmrc_builder"
