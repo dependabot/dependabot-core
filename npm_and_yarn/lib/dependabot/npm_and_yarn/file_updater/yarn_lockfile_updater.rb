@@ -4,6 +4,7 @@ require "uri"
 
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
@@ -161,7 +162,7 @@ module Dependabot
             "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
           end
           command = "yarn add #{updates.join(' ')}"
-          SharedHelpers.run_shell_command(command)
+          Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
@@ -169,10 +170,11 @@ module Dependabot
           dep = sub_dependencies.first
           update = "#{dep.name}@#{dep.version}"
 
-          command = "yarn add #{update}"
-          SharedHelpers.run_shell_command(command)
-          SharedHelpers.run_shell_command("yarn dedupe #{dep.name}")
-          SharedHelpers.run_shell_command("yarn remove #{dep.name}")
+          Helpers.run_yarn_commands(
+            "yarn add #{update}",
+            "yarn dedupe #{dep.name}",
+            "yarn remove #{dep.name}"
+          )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
