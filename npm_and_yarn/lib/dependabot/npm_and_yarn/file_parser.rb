@@ -7,6 +7,7 @@ require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/git_metadata_fetcher"
@@ -36,7 +37,8 @@ module Dependabot
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
-        dependencies = dependency_set.dependencies
+
+        dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
         # TODO: Currently, Dependabot can't handle dependencies that have both
         # a git source *and* a non-git source. Fix that!

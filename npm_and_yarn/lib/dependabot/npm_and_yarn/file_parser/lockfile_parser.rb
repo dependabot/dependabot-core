@@ -17,7 +17,8 @@ module Dependabot
           dependency_set += yarn_lock_dependencies if yarn_locks.any?
           dependency_set += package_lock_dependencies if package_locks.any?
           dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
-          dependency_set.dependencies
+
+          Helpers.dependencies_with_all_versions_metadata(dependency_set)
         end
 
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
