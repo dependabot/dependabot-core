@@ -8,7 +8,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     described_class.new(
       dependency_files: files,
       dependencies: dependencies,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: nil
     )
   end
   let(:dependencies) { [dependency] }

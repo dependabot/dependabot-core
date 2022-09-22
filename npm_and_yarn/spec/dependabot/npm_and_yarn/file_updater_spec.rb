@@ -14,7 +14,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
     described_class.new(
       dependency_files: files,
       dependencies: dependencies,
-      credentials: credentials
+      credentials: credentials,
+      repo_contents_path: repo_contents_path
     )
   end
   let(:dependencies) { [dependency] }
@@ -55,8 +56,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
   end
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
+  let(:repo_contents_path) { nil }
 
-  before { FileUtils.mkdir_p(tmp_path) }
+  before do
+    FileUtils.mkdir_p(tmp_path)
+    Dependabot::Experiments.register(:yarn_berry, true)
+  end
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -2966,6 +2971,147 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           let(:files) { project_dependency_files("npm6/npmrc_no_lockfile") }
 
           specify { expect(updated_files.map(&:name)).to eq(["package.json"]) }
+        end
+      end
+    end
+
+    #############################
+    # Yarn Berry specific tests #
+    #############################
+    describe "Yarn berry specific" do
+      describe "the updated yarn_lock" do
+        let(:project_name) { "yarn_berry/simple" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "updates the .yarn/cache folder" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
+              ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
+              ".yarn/install-state.gz",
+              "package.json",
+              "yarn.lock"
+            ]
+          )
+        end
+      end
+
+      context "with workspaces" do
+        let(:files) { project_dependency_files("yarn_berry/workspaces") }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the yarn.lock and all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+
+          expect(lockfile.content).to include(%("lodash@npm:1.3.1, lodash@npm:^1.3.1":))
+          expect(lockfile.content).to_not include("lodash@npm:^1.2.1:")
+          expect(lockfile.content).to_not include("workspace-aggregator")
+
+          expect(package.content).to include('"lodash": "1.3.1"')
+          expect(package.content).to include("\"./packages/*\",\n")
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
+        end
+
+        context "with a dependency that doesn't appear in all the workspaces" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the yarn.lock and the correct package_json" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(yarn.lock packages/package1/package.json))
+
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            expect(lockfile.content).to include("chalk@npm:0.4.0")
+            expect(lockfile.content).to_not include("workspace-aggregator")
+          end
+        end
+      end
+
+      context "with a sub-dependency" do
+        let(:files) { project_dependency_files("yarn_berry/no_lockfile_change") }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.1.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_yarn_lock.content).
+            to include(%("acorn@npm:^5.0.0, acorn@npm:^5.1.2":\n  version: 5.7.3))
         end
       end
     end
