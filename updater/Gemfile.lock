@@ -143,7 +143,7 @@ GEM
       aws-eventstream (~> 1, >= 1.0.2)
     byebug (11.1.3)
     citrus (3.0.2)
-    commonmarker (0.23.5)
+    commonmarker (0.23.6)
     concurrent-ruby (1.1.10)
     crack (0.4.5)
       rexml
