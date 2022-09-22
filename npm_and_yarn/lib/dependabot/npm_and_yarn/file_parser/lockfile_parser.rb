@@ -192,7 +192,7 @@ module Dependabot
         def alias_package?(requirement)
           if Experiments.enabled?(:yarn_berry)
             requirement.match?(/@npm:(.+@(?!npm))/)
-          else  
+          else
             requirement.include?("@npm:")
           end
         end
