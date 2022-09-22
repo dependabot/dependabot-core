@@ -209,7 +209,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency", :bundler_v2_only do
+      describe "a github dependency" do
         let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
@@ -220,31 +220,6 @@ RSpec.describe Dependabot::Bundler::FileParser do
             source: {
               type: "git",
               url: "https://github.com/dependabot-fixtures/business.git",
-              branch: "master",
-              ref: "master"
-            },
-            groups: [:default]
-          }]
-        end
-
-        it { is_expected.to be_a(Dependabot::Dependency) }
-        its(:requirements) { is_expected.to eq(expected_requirements) }
-        its(:version) do
-          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
-        end
-      end
-
-      describe "a github dependency", :bundler_v1_only do
-        let(:dependency_files) { bundler_project_dependency_files("github_source") }
-
-        subject { dependencies.find { |d| d.name == "business" } }
-        let(:expected_requirements) do
-          [{
-            requirement: ">= 0",
-            file: "Gemfile",
-            source: {
-              type: "git",
-              url: "git://github.com/dependabot-fixtures/business.git",
               branch: "master",
               ref: "master"
             },
@@ -580,11 +555,11 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_imports_gemspec_large") }
 
         it "includes details of each declaration" do
-          expect(dependencies.select(&:top_level?).count).to eq(13)
+          expect(dependencies.count(&:top_level?)).to eq(13)
         end
 
         it "includes details of each sub-dependency" do
-          expect(dependencies.reject(&:top_level?).count).to eq(23)
+          expect(dependencies.count { |dep| !dep.top_level? }).to eq(23)
 
           diff_lcs = dependencies.find { |d| d.name == "diff-lcs" }
           expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
@@ -632,7 +607,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
           let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_with_require") }
 
           it "includes details of each declaration" do
-            expect(dependencies.select(&:top_level?).count).to eq(13)
+            expect(dependencies.count(&:top_level?)).to eq(13)
           end
         end
 
@@ -759,7 +734,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       parser.parse
 
       expect(events.last.payload).to eq(
-        { ecosystem: "bundler", package_managers: { "bundler" => PackageManagerHelper.bundler_major_version } }
+        { ecosystem: "bundler", package_managers: { "bundler" => PackageManagerHelper.bundler_version } }
       )
     end
   end

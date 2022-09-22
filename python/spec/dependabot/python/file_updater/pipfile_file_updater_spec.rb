@@ -301,7 +301,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
           expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
 
           expect(json_lockfile["default"]["raven"]["version"]).to eq("==6.7.0")
-          expect(json_lockfile["default"]["blinker"]["version"]).to eq("==1.4")
+          expect(json_lockfile["default"]["blinker"]["version"]).to eq("==1.5")
         end
       end
 

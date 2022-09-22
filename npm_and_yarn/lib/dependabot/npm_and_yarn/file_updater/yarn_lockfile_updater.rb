@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 require "dependabot/npm_and_yarn/file_updater"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
@@ -153,11 +155,11 @@ module Dependabot
         def requirements_for_path(requirements, path)
           return requirements if path.to_s == "."
 
-          requirements.map do |r|
+          requirements.filter_map do |r|
             next unless r[:file].start_with?("#{path}/")
 
             r.merge(file: r[:file].gsub(/^#{Regexp.quote("#{path}/")}/, ""))
-          end.compact
+          end
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -428,7 +430,7 @@ module Dependabot
 
         def raise_resolvability_error(error_message, yarn_lock)
           dependency_names = dependencies.map(&:name).join(", ")
-          msg = "Error whilst updating #{dependency_names} in "\
+          msg = "Error whilst updating #{dependency_names} in " \
                 "#{yarn_lock.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
@@ -436,7 +438,7 @@ module Dependabot
         def handle_timeout(error_message, yarn_lock)
           url = error_message.match(TIMEOUT_FETCHING_PACKAGE).
                 named_captures["url"]
-          return if url.start_with?("https://registry.npmjs.org")
+          raise if URI(url).host == "registry.npmjs.org"
 
           package_name = error_message.match(TIMEOUT_FETCHING_PACKAGE).
                          named_captures["package"]
@@ -482,7 +484,7 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          yarnrc_global_registry.include?("registry.npmjs.org")
+          URI(yarnrc_global_registry).host == "registry.npmjs.org"
         end
 
         def yarnrc_content

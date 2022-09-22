@@ -4,13 +4,12 @@ on:
     branches:
       - "main"
   pull_request:
-    branches:
-      - "main"
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
   schedule:
     - cron: "0 0 * * *"
-permissions:
-  contents: read
-  packages: write
+
 jobs:
   ci:
     name: CI
@@ -19,90 +18,189 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: bundler, name: bundler1 }
-          - { path: bundler, name: bundler2 }
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 0 }
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 1 }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0 }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1 }
           - { path: cargo, name: cargo }
           - { path: common, name: common }
-          - { path: composer, name: composer }
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0 }
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1 }
           - { path: docker, name: docker }
           - { path: elm, name: elm }
           - { path: git_submodules, name: git_submodules }
           - { path: github_actions, name: github_actions }
-          - { path: go_modules, name: go_modules }
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }
           - { path: gradle, name: gradle }
-          - { path: hex, name: hex }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0 }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1 }
           - { path: maven, name: maven }
-          - { path: npm_and_yarn, name: npm_and_yarn }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0 }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1 }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2 }
           - { path: nuget, name: nuget }
           - { path: omnibus, name: omnibus }
-          - { path: python, name: python }
-          - { path: python, name: python_slow }
-          - { path: pub, name: pub }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python, ci_node_total: 5, ci_node_index: 4 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 0 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 1 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 2 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 3 }
+          - { path: python, name: python_slow, ci_node_total: 5, ci_node_index: 4 }
+          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 0 }
+          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 1 }
           - { path: terraform, name: terraform }
-    env:
-      BASE_IMAGE: ubuntu:18.04
-      CORE_IMAGE: dependabot/dependabot-core
-      CORE_BRANCH_IMAGE: ghcr.io/dependabot/dependabot-core-branch
-      CORE_CI_IMAGE: ghcr.io/dependabot/dependabot-core-ci
-      CODE_DIR: /home/dependabot/dependabot-core
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Prepare BRANCH_REF environment variable
-        run: echo "BRANCH_REF=$(echo '${{ github.ref }}' | sed -E 's/[^A-Za-z0-9]+/-/g')" >> $GITHUB_ENV
-      - name: Log in to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      - name: Build dependabot-core image for branch
+        uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            bundler:
+              - Dockerfile
+              - 'common/**'
+              - 'bundler/**'
+            cargo:
+              - Dockerfile
+              - 'common/**'
+              - 'cargo/**'
+            common:
+              - Dockerfile
+              - 'common/**'
+            composer:
+              - Dockerfile
+              - 'common/**'
+              - 'composer/**'
+            docker:
+              - Dockerfile
+              - 'common/**'
+              - 'docker/**'
+            elm:
+              - Dockerfile
+              - 'common/**'
+              - 'elm/**'
+            git_submodules:
+              - Dockerfile
+              - 'common/**'
+              - 'git_submodules/**'
+            github_actions:
+              - Dockerfile
+              - 'common/**'
+              - 'github_actions/**'
+            go_modules:
+              - Dockerfile
+              - 'common/**'
+              - 'go_modules/**'
+            gradle:
+              - Dockerfile
+              - 'common/**'
+              - 'maven/**'
+              - 'gradle/**'
+            hex:
+              - Dockerfile
+              - 'common/**'
+              - 'hex/**'
+            maven:
+              - Dockerfile
+              - 'common/**'
+              - 'maven/**'
+            npm_and_yarn:
+              - Dockerfile
+              - 'common/**'
+              - 'npm_and_yarn/**'
+            nuget:
+              - Dockerfile
+              - 'common/**'
+              - 'nuget/**'
+            omnibus:
+              - Dockerfile
+              - 'common/**'
+              - 'omnibus/**'
+            pub:
+              - Dockerfile
+              - 'common/**'
+              - 'pub/**'
+            python:
+              - Dockerfile
+              - 'common/**'
+              - 'python/**'
+            terraform:
+              - Dockerfile
+              - 'common/**'
+              - 'terraform/**'
+
+      - name: Build dependabot-core image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "$CORE_IMAGE:latest" \
-            -t "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
+            -t "dependabot/dependabot-core:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
-            --cache-from "$CORE_IMAGE:latest" \
-            --cache-from "$CORE_BRANCH_IMAGE:$BRANCH_REF" \
+            --cache-from ghcr.io/dependabot/dependabot-core \
             .
-      - name: Push dependabot-core-branch image to GHCR
-        env:
-          ACCESS_CANARY: ${{ secrets.ACCESS_CANARY }}
-        if: env.ACCESS_CANARY != ''
-        run: |
-          docker push "$CORE_BRANCH_IMAGE:$BRANCH_REF"
+
       - name: Build dependabot-core-ci image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "$CORE_CI_IMAGE:latest" \
-            -t "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             -f Dockerfile.ci \
+            -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$CORE_CI_IMAGE:latest" \
-            --cache-from "$CORE_CI_IMAGE:branch--$BRANCH_REF" \
             .
-      - name: Push dependabot-core-ci image to GHCR
-        env:
-          ACCESS_CANARY: ${{ secrets.ACCESS_CANARY }}
-        if: env.ACCESS_CANARY != ''
-        run: |
-          docker push "$CORE_CI_IMAGE:latest"
-          docker push "$CORE_CI_IMAGE:branch--$BRANCH_REF"
+
       - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
-            --rm "$CORE_CI_IMAGE:branch--$BRANCH_REF" bash -c \
+            --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
+            --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
+            --rm dependabot-core-ci bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
-  lint:
-    name: lint
+
+  updater:
+    name: Updater
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt-get update -y && sudo apt-get install --no-install-recommends shellcheck
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+      - name: Build
+        run: script/build
+      - name: Lint
+        run: script/lint
+        env:
+          SKIP_BUILD: true
+      - name: Run updater tests
+        run: ./script/ci-test-updater
+        env:
+          SKIP_BUILD: true
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - run: ./bin/lint

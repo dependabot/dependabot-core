@@ -56,7 +56,7 @@ module Dependabot
             if length_change.positive?
               updated_line.sub(/(?<=\s)\s{#{length_change}}#/, "#")
             elsif length_change.negative?
-              updated_line.sub(/(?<=\s{2})#/, " " * length_change.abs + "#")
+              updated_line.sub(/(?<=\s{2})#/, (" " * length_change.abs) + "#")
             end
 
           updated_lines[updated_line_index] = updated_line
@@ -73,7 +73,7 @@ module Dependabot
         class Rewriter < Parser::TreeRewriter
           # TODO: Ideally we wouldn't have to ignore all of these, but
           # implementing each one will be tricky.
-          SKIPPED_TYPES = %i(send lvar dstr begin if splat const or).freeze
+          SKIPPED_TYPES = %i(send lvar dstr begin if case splat const or).freeze
 
           def initialize(dependency:, file_type:, updated_requirement:,
                          insert_if_bare:)

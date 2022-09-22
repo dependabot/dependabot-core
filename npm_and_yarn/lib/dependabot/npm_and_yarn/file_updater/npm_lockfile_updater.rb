@@ -45,9 +45,9 @@ module Dependabot
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
-        # NOTE: error message returned from arborist/npm 7 when trying to
+        # NOTE: error message returned from arborist/npm 8 when trying to
         # fetching a invalid/non-existent git ref
-        NPM7_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
+        NPM8_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
         NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
 
         def updated_lockfile_content
@@ -141,8 +141,8 @@ module Dependabot
         end
 
         def run_npm_top_level_updater(top_level_dependencies:)
-          if npm7?
-            run_npm_7_top_level_updater(top_level_dependencies: top_level_dependencies)
+          if npm8?
+            run_npm8_top_level_updater(top_level_dependencies: top_level_dependencies)
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -156,7 +156,7 @@ module Dependabot
           end
         end
 
-        def run_npm_7_top_level_updater(top_level_dependencies:)
+        def run_npm8_top_level_updater(top_level_dependencies:)
           dependencies_in_current_package_json = top_level_dependencies.any? do |dependency|
             dependency_in_package_json?(dependency)
           end
@@ -195,8 +195,8 @@ module Dependabot
         end
 
         def run_npm_subdependency_updater
-          if npm7?
-            run_npm_7_subdependency_updater
+          if npm8?
+            run_npm8_subdependency_updater
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -206,9 +206,9 @@ module Dependabot
           end
         end
 
-        def run_npm_7_subdependency_updater
+        def run_npm8_subdependency_updater
           dependency_names = sub_dependencies.map(&:name)
-          SharedHelpers.run_shell_command(NativeHelpers.npm7_subdependency_update_command(dependency_names))
+          SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command(dependency_names))
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
@@ -365,12 +365,12 @@ module Dependabot
              error_message.include?("Non-registry package missing package") ||
              error_message.include?("Invalid tag name") ||
              error_message.match?(NPM6_MISSING_GIT_REF) ||
-             error_message.match?(NPM7_MISSING_GIT_REF)) &&
+             error_message.match?(NPM8_MISSING_GIT_REF)) &&
              !resolvable_before_update?
             raise_resolvability_error(error_message)
           end
 
-          # NOTE: This check was introduced in npm7/arborist
+          # NOTE: This check was introduced in npm8/arborist
           if error_message.include?("must provide string spec")
             msg = "Error parsing your package.json manifest: the version requirement must be a string"
             raise Dependabot::DependencyFileNotParseable, msg
@@ -385,7 +385,7 @@ module Dependabot
 
         def raise_resolvability_error(error_message)
           dependency_names = dependencies.map(&:name).join(", ")
-          msg = "Error whilst updating #{dependency_names} in "\
+          msg = "Error whilst updating #{dependency_names} in " \
                 "#{lockfile.path}:\n#{error_message}"
           raise Dependabot::DependencyFileNotResolvable, msg
         end
@@ -397,11 +397,11 @@ module Dependabot
           # issues on the error message (issue detail) on the backend
           #
           # ToDo: add an error ID to issues to make it easier to unique them
-          msg = "Error whilst updating dependencies in #{lockfile.name}:\n"\
-                "#{error_message}\n\n"\
-                "It looks like your lockfile has some corrupt entries with "\
-                "missing versions and needs to be re-generated.\n"\
-                "You'll need to remove #{lockfile.name} and #{modules_path} "\
+          msg = "Error whilst updating dependencies in #{lockfile.name}:\n" \
+                "#{error_message}\n\n" \
+                "It looks like your lockfile has some corrupt entries with " \
+                "missing versions and needs to be re-generated.\n" \
+                "You'll need to remove #{lockfile.name} and #{modules_path} " \
                 "before you run npm install."
           raise Dependabot::DependencyFileNotResolvable, msg
         end
@@ -499,7 +499,9 @@ module Dependabot
         # Takes a JSON string and detects if it is spaces or tabs and how many
         # levels deep it is indented.
         def detect_indentation(json)
-          indentation = json.scan(/^\s+/).min_by(&:length)
+          indentation = json.scan(/^[[:blank:]]+/).min_by(&:length)
+          return "" if indentation.nil? # let npm set the default if we can't detect any indentation
+
           indentation_size = indentation.length
           indentation_type = indentation.scan(/\t/).any? ? "\t" : " "
 
@@ -609,10 +611,10 @@ module Dependabot
           # Restore lockfile name attribute from the original lockfile
           updated_lockfile_content = replace_project_name(updated_lockfile_content, parsed_updated_lockfile_content)
 
-          # Restore npm 7 "packages" "name" entry from package.json if previously set
+          # Restore npm 8 "packages" "name" entry from package.json if previously set
           updated_lockfile_content = restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
 
-          # Switch back npm 7 lockfile "packages" requirements from the package.json
+          # Switch back npm 8 lockfile "packages" requirements from the package.json
           updated_lockfile_content = restore_locked_package_dependencies(
             updated_lockfile_content, parsed_updated_lockfile_content
           )
@@ -634,7 +636,7 @@ module Dependabot
         end
 
         def restore_packages_name(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm7?
+          return updated_lockfile_content unless npm8?
 
           current_name = parsed_updated_lockfile_content.dig("packages", "", "name")
           original_name = parsed_lockfile.dig("packages", "", "name")
@@ -679,7 +681,7 @@ module Dependabot
         end
 
         # NOTE: This is a workaround to "sync" what's in package.json
-        # requirements and the `packages.""` entry in npm 7 v2 lockfiles. These
+        # requirements and the `packages.""` entry in npm 8 v2 lockfiles. These
         # get out of sync because we lock git dependencies (that are not being
         # updated) to a specific sha to prevent unrelated updates and the way we
         # invoke the `npm install` cli, where we might tell npm to install a
@@ -688,7 +690,7 @@ module Dependabot
         # need to copy this from the manifest to the lockfile after the update
         # has finished.
         def restore_locked_package_dependencies(updated_lockfile_content, parsed_updated_lockfile_content)
-          return updated_lockfile_content unless npm7?
+          return updated_lockfile_content unless npm8?
 
           dependency_names_to_restore = (dependencies.map(&:name) + git_dependencies_to_lock.keys).uniq
 
@@ -729,10 +731,10 @@ module Dependabot
             # updates the lockfile "from" field to the new git commit when we
             # run npm install
             original_from = %("from": "#{details[:from]}")
-            if npm7?
+            if npm8?
               # NOTE: The `from` syntax has changed in npm 7 to inclued the dependency name
-              npm7_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
-              updated_lockfile_content = updated_lockfile_content.gsub(npm7_locked_from, original_from)
+              npm8_locked_from = %("from": "#{dependency_name}@#{details[:version]}")
+              updated_lockfile_content = updated_lockfile_content.gsub(npm8_locked_from, original_from)
             else
               npm6_locked_from = %("from": "#{details[:version]}")
               updated_lockfile_content = updated_lockfile_content.gsub(npm6_locked_from, original_from)
@@ -796,10 +798,10 @@ module Dependabot
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
-        def npm7?
-          return @npm7 if defined?(@npm7)
+        def npm8?
+          return @npm8 if defined?(@npm8)
 
-          @npm7 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm7"
+          @npm8 = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile.content) == "npm8"
         end
 
         def sanitized_package_json_content(content)

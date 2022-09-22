@@ -23,6 +23,7 @@ module Dependabot
         def commits_url
           return unless source
           return if source.provider == "azure" # TODO: Fetch Azure commits
+          return if source.provider == "codecommit" # TODO: Fetch Codecommit commits
 
           path =
             case source.provider
@@ -44,6 +45,7 @@ module Dependabot
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
           when "azure" then [] # TODO: Fetch Azure commits
+          when "codecommit" then [] # TODO: Fetch Codecommit commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
@@ -134,18 +136,18 @@ module Dependabot
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
 
-          previous_refs = dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
           return unless git_source?(dependency.previous_requirements)
 
-          new_refs = dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.uniq
+          end.uniq
           return new_refs.first if new_refs.count == 1
         end
 
@@ -210,7 +212,7 @@ module Dependabot
           elsif new_tag
             "commits/#{new_tag}"
           else
-            "commits/master"
+            "commits/#{default_gitlab_branch}"
           end
         end
 
@@ -320,6 +322,11 @@ module Dependabot
         def reliable_source_directory?
           MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
             include?(dependency.package_manager)
+        end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
         end
       end
     end

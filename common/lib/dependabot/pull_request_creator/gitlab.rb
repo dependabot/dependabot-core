@@ -92,6 +92,27 @@ module Dependabot
         )
       end
 
+      def create_commit
+        return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
+
+        gitlab_client_for_source.create_commit(
+          source.repo,
+          branch_name,
+          commit_message,
+          file_actions
+        )
+      end
+
+      def file_actions
+        files.map do |file|
+          {
+            action: file_action(file),
+            file_path: file.type == "symlink" ? file.symlink_target : file.path,
+            content: file.content
+          }
+        end
+      end
+
       # @param [DependencyFile] file
       def file_action(file)
         if file.operation == Dependabot::DependencyFile::Operation::DELETE
@@ -101,25 +122,6 @@ module Dependabot
         else
           "update"
         end
-      end
-
-      def create_commit
-        return create_submodule_update_commit if files.count == 1 && files.first.type == "submodule"
-
-        actions = files.map do |file|
-          {
-            action: file_action(file),
-            file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
-          }
-        end
-
-        gitlab_client_for_source.create_commit(
-          source.repo,
-          branch_name,
-          commit_message,
-          actions
-        )
       end
 
       def create_submodule_update_commit
@@ -145,24 +147,30 @@ module Dependabot
           assignee_ids: assignees,
           labels: labeler.labels_for_pr.join(","),
           milestone_id: milestone,
-          target_project_id: target_project_id
+          target_project_id: target_project_id,
+          reviewer_ids: approvers_hash[:reviewers]
         )
       end
 
       def annotate_merge_request(merge_request)
-        add_approvers_to_merge_request(merge_request) if approvers&.any?
+        add_approvers_to_merge_request(merge_request)
       end
 
       def add_approvers_to_merge_request(merge_request)
-        approvers_hash =
-          approvers.keys.map { |k| [k.to_sym, approvers[k]] }.to_h
+        return unless approvers_hash[:approvers] || approvers_hash[:group_approvers]
 
-        gitlab_client_for_source.edit_merge_request_approvers(
+        gitlab_client_for_source.create_merge_request_level_rule(
           target_project_id || source.repo,
           merge_request.iid,
-          approver_ids: approvers_hash[:approvers],
-          approver_group_ids: approvers_hash[:group_approvers]
+          name: "dependency-updates",
+          approvals_required: 1,
+          user_ids: approvers_hash[:approvers],
+          group_ids: approvers_hash[:group_approvers]
         )
+      end
+
+      def approvers_hash
+        @approvers_hash ||= approvers&.transform_keys(&:to_sym) || {}
       end
 
       def default_branch

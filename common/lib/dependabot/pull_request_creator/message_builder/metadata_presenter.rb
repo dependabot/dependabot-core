@@ -63,7 +63,7 @@ module Dependabot
         def release_cascade
           return "" unless releases_text && releases_url
 
-          msg = "*Sourced from [#{dependency.display_name}'s releases]"\
+          msg = "*Sourced from [#{dependency.display_name}'s releases]" \
                 "(#{releases_url}).*\n\n"
           msg += quote_and_truncate(releases_text)
           msg = link_issues(text: msg)
@@ -80,8 +80,8 @@ module Dependabot
         def changelog_cascade
           return "" unless changelog_url && changelog_text
 
-          msg = "*Sourced from "\
-                "[#{dependency.display_name}'s changelog]"\
+          msg = "*Sourced from " \
+                "[#{dependency.display_name}'s changelog]" \
                 "(#{changelog_url}).*\n\n"
           msg += quote_and_truncate(changelog_text)
           msg = link_issues(text: msg)
@@ -95,8 +95,8 @@ module Dependabot
         def upgrade_guide_cascade
           return "" unless upgrade_guide_url && upgrade_guide_text
 
-          msg = "*Sourced from "\
-                "[#{dependency.display_name}'s upgrade guide]"\
+          msg = "*Sourced from " \
+                "[#{dependency.display_name}'s upgrade guide]" \
                 "(#{upgrade_guide_url}).*\n\n"
           msg += quote_and_truncate(upgrade_guide_text)
           msg = link_issues(text: msg)
@@ -112,7 +112,7 @@ module Dependabot
 
           msg = ""
 
-          commits.reverse.first(10).each do |commit|
+          commits.last(10).reverse_each do |commit|
             title = commit[:message].strip.split("\n").first
             title = title.slice(0..76) + "..." if title && title.length > 80
             title = title&.gsub(/(?<=[^\w.-])([_*`~])/, '\\1')
@@ -124,8 +124,8 @@ module Dependabot
 
           msg +=
             if commits.count > 10
-              "- Additional commits viewable in "\
-              "[compare view](#{commits_url})\n"
+              "- Additional commits viewable in " \
+                "[compare view](#{commits_url})\n"
             else
               "- See full diff in [compare view](#{commits_url})\n"
             end
@@ -146,6 +146,7 @@ module Dependabot
 
         def build_details_tag(summary:, body:)
           # Azure DevOps does not support <details> tag (https://developercommunity.visualstudio.com/content/problem/608769/add-support-for-in-markdown.html)
+          # Bitbucket does not support <details> tag (https://jira.atlassian.com/browse/BCLOUD-20231)
           # CodeCommit does not support the <details> tag (no url available)
           if source_provider_supports_html?
             msg = "<details>\n<summary>#{summary}</summary>\n\n"
@@ -174,8 +175,8 @@ module Dependabot
 
         def vulnerability_source_line(details)
           if details["source_url"] && details["source_name"]
-            "*Sourced from [#{details['source_name']}]"\
-            "(#{details['source_url']}).*\n\n"
+            "*Sourced from [#{details['source_name']}]" \
+              "(#{details['source_url']}).*\n\n"
           elsif details["source_name"]
             "*Sourced from #{details['source_name']}.*\n\n"
           else
@@ -240,12 +241,10 @@ module Dependabot
         end
 
         def source_provider_supports_html?
-          !%w(azure codecommit).include?(source.provider)
+          !%w(azure bitbucket codecommit).include?(source.provider)
         end
 
         def sanitize_links_and_mentions(text, unsafe: false)
-          return text unless source.provider == "github"
-
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
             sanitize_links_and_mentions(text: text, unsafe: unsafe)

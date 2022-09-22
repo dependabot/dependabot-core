@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 
 module Dependabot
   module Pub
@@ -11,22 +11,28 @@ module Dependabot
       private
 
       def look_up_source
-        repo = pub_listing.dig("latest", "pubspec", "repository")
+        source = dependency.requirements&.first&.dig(:source)
+        if source&.dig("type") == "git"
+          result = Source.from_url(source.dig("description", "url"))
+          result.directory = source.dig("description", "path")
+          result.commit = source.dig("description", "resolved-ref")
+          return result
+        end
+        repository_url = source&.dig("description", "url") || "https://pub.dev"
+
+        listing = repository_listing(repository_url)
+        repo = listing.dig("latest", "pubspec", "repository")
+        # The repository field did not always exist in pubspec.yaml, and some
+        # packages specify a git repository in the "homepage" field.
+        repo ||= listing.dig("latest", "pubspec", "homepage")
         return nil unless repo
 
         Source.from_url(repo)
       end
 
-      def pub_listing
-        return @pub_listing unless @pub_listing.nil?
-
-        response = Excon.get(
-          "https://pub.dev/api/packages/#{dependency.name}",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
-        @pub_listing = JSON.parse(response.body)
+      def repository_listing(repository_url)
+        response = Dependabot::RegistryClient.get(url: "#{repository_url}/api/packages/#{dependency.name}")
+        JSON.parse(response.body)
       end
     end
   end

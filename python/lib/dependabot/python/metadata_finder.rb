@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require "excon"
+require "uri"
+
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
@@ -63,11 +65,7 @@ module Dependabot
         @source_from_description ||=
           potential_source_urls.find do |url|
             full_url = Source.from_url(url).url
-            response = Excon.get(
-              full_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
@@ -92,11 +90,7 @@ module Dependabot
         @source_from_homepage ||=
           potential_source_urls.find do |url|
             full_url = Source.from_url(url).url
-            response = Excon.get(
-              full_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
             response.body.include?(normalised_dependency_name)
@@ -107,16 +101,14 @@ module Dependabot
         homepage_url = pypi_listing.dig("info", "home_page")
 
         return unless homepage_url
-        return if homepage_url.include?("pypi.python.org")
-        return if homepage_url.include?("pypi.org")
+        return if [
+          "pypi.org",
+          "pypi.python.org"
+        ].include?(URI(homepage_url).host)
 
         @homepage_response ||=
           begin
-            Excon.get(
-              homepage_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
                  Excon::Error::TooManyRedirects, ArgumentError
             nil
@@ -149,15 +141,15 @@ module Dependabot
            Regexp.last_match.captures[1].include?("@")
           protocol, user, pass, url = Regexp.last_match.captures
 
-          Excon.get(
-            "#{protocol}://#{url}",
-            user: user,
-            password: pass,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: "#{protocol}://#{url}",
+            options: {
+              user: user,
+              password: pass
+            }
           )
         else
-          Excon.get(url, idempotent: true, **SharedHelpers.excon_defaults)
+          Dependabot::RegistryClient.get(url: url)
         end
       end
 

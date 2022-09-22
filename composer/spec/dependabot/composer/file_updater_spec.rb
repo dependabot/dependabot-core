@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -110,7 +110,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
       it "updates the dependency version and plugin-api-version (to match instaled composer) in the lockfile" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
         expect(parsed_updated_lockfile_content["prefer-stable"]).to be(false)
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.2.0")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.3.0")
       end
     end
 
@@ -146,7 +146,7 @@ RSpec.describe Dependabot::Composer::FileUpdater do
 
       it "updates the dependency and does not downgrade the composer version" do
         expect(updated_lockfile_entry["version"]).to eq("1.22.1")
-        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.2.0")
+        expect(parsed_updated_lockfile_content["plugin-api-version"]).to eq("2.3.0")
       end
     end
   end

@@ -39,9 +39,9 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:nuget_url) do
-      "https://api.nuget.org/v3-flatcontainer/"\
-      "microsoft.extensions.dependencymodel/2.1.0/"\
-      "microsoft.extensions.dependencymodel.nuspec"
+      "https://api.nuget.org/v3-flatcontainer/" \
+        "microsoft.extensions.dependencymodel/2.1.0/" \
+        "microsoft.extensions.dependencymodel.nuspec"
     end
     let(:nuget_response) do
       fixture(
@@ -74,17 +74,17 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           type: "nuget_repo",
           url: "https://www.myget.org/F/exceptionless/api/v3/index.json",
           source_url: nil,
-          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/"\
-                      "flatcontainer/microsoft.extensions."\
-                      "dependencymodel/2.1.0/"\
+          nuspec_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                      "flatcontainer/microsoft.extensions." \
+                      "dependencymodel/2.1.0/" \
                       "microsoft.extensions.dependencymodel.nuspec"
         }
       end
 
       let(:nuget_url) do
-        "https://www.myget.org/F/exceptionless/api/v3/"\
-        "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/"\
-        "microsoft.extensions.dependencymodel.nuspec"
+        "https://www.myget.org/F/exceptionless/api/v3/" \
+          "flatcontainer/microsoft.extensions.dependencymodel/2.1.0/" \
+          "microsoft.extensions.dependencymodel.nuspec"
       end
 
       it { is_expected.to eq("https://github.com/dotnet/core-setup") }
@@ -118,9 +118,9 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         end
 
         let(:nuget_url) do
-          "https://api.nuget.org/v3-flatcontainer/"\
-          "microsoft.extensions.dependencymodel/2.1.0/"\
-          "microsoft.extensions.dependencymodel.nuspec"
+          "https://api.nuget.org/v3-flatcontainer/" \
+            "microsoft.extensions.dependencymodel/2.1.0/" \
+            "microsoft.extensions.dependencymodel.nuspec"
         end
 
         it { is_expected.to eq("https://github.com/dotnet/core-setup") }
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
             "password" => "token"
           }, {
             "type" => "nuget_feed",
-            "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+            "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
                      "index.json"
           }]
         end
@@ -162,7 +162,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
               "password" => "token"
             }, {
               "type" => "nuget_feed",
-              "url" => "https://www.myget.org/F/exceptionless/api/v3/"\
+              "url" => "https://www.myget.org/F/exceptionless/api/v3/" \
                        "index.json",
               "token" => "my:passw0rd"
             }]
@@ -170,6 +170,79 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
 
           it { is_expected.to eq("https://github.com/dotnet/core-setup") }
         end
+      end
+
+      context "that doesn't support .nuspec routes" do
+        before do
+          # registry doesn't support .nuspec route, so returns 404
+          stub_request(:get, nuget_url).to_return(status: 404)
+          # fallback begins by getting the search URL from the index
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
+            to_return(status: 200, body: fixture("nuspecs", "index.json"))
+          # next query for the package at the search URL returned
+          stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0").
+            to_return(status: 200, body: fixture("nuspecs", "microsoft.extensions.dependencymodel-results.json"))
+        end
+
+        # data was extracted from the projectUrl in the search results
+        it { is_expected.to eq "https://github.com/dotnet/core-setup" }
+      end
+
+      context "the index returns XML" do
+        before do
+          # registry doesn't support .nuspec route, so returns 404
+          stub_request(:get, nuget_url).to_return(status: 404)
+          # fallback tries to get the index, but gets a 200 with XML
+          # This might be due to artifactory not supporting index?
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
+            to_return(status: 200, body: '<?xml version="1.0" encoding="UTF-8"?><hello>world</hello>')
+        end
+
+        # no exceptions
+        it { is_expected.to be_nil }
+      end
+
+      context "the search results do not contain a projectUrl" do
+        before do
+          # registry doesn't support .nuspec route, so returns 404
+          stub_request(:get, nuget_url).to_return(status: 404)
+          # fallback begins by getting the search URL from the index
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
+            to_return(status: 200, body: fixture("nuspecs", "index.json"))
+          # the search results have a blank projectUrl field AND missing the licenseUrl field entirely
+          stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0").
+            to_return(status: 200, body: '{"data":[{"id":"Microsoft.Extensions.DependencyModel","projectUrl":""}]}')
+        end
+
+        # no exceptions
+        it { is_expected.to be_nil }
+      end
+
+      context "and it fails to get the index" do
+        before do
+          # registry is in a bad state
+          stub_request(:get, nuget_url).to_return(status: 500)
+          # it falls back to get search URL from the index, but it fails too
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
+            to_return(status: 500, body: "internal server error")
+        end
+
+        it { is_expected.to be_nil }
+      end
+
+      context "and it fails to get the search results" do
+        before do
+          # registry doesn't support .nuspec route, so returns 404
+          stub_request(:get, nuget_url).to_return(status: 404)
+          # fallback begins by getting the search URL from the index
+          stub_request(:get, "https://www.myget.org/F/exceptionless/api/v3/index.json").
+            to_return(status: 200, body: fixture("nuspecs", "index.json"))
+          # oops, we're a little overloaded
+          stub_request(:get, "https://azuresearch-usnc.nuget.org/query?prerelease=true&q=microsoft.extensions.dependencymodel&semVerLevel=2.0.0").
+            to_return(status: 503, body: "")
+        end
+
+        it { is_expected.to be_nil }
       end
     end
   end

@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/composer/version"
 
 module Dependabot
@@ -18,7 +18,7 @@ module Dependabot
       def source_from_dependency
         source_url =
           dependency.requirements.
-          map { |r| r.fetch(:source) }.compact.
+          filter_map { |r| r.fetch(:source) }.
           first&.fetch(:url, nil)
 
         Source.from_url(source_url)
@@ -48,11 +48,7 @@ module Dependabot
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Excon.get(
-          "https://packagist.org/p/#{dependency.name.downcase}.json",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: "https://packagist.org/p/#{dependency.name.downcase}.json")
 
         return nil unless response.status == 200
 

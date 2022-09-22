@@ -1,0 +1,50 @@
+[
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "f9e54abedd85bf7ae17745e2b234b884b624f39a",
+    "size": 0,
+    "url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/.github?ref=main",
+    "html_url": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/tree/main/.github",
+    "git_url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/trees/f9e54abedd85bf7ae17745e2b234b884b624f39a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/.github?ref=main",
+      "git": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/trees/f9e54abedd85bf7ae17745e2b234b884b624f39a",
+      "html": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/tree/main/.github"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "size": 11357,
+    "url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/LICENSE?ref=main",
+    "html_url": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/LICENSE",
+    "git_url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+    "download_url": "https://raw.githubusercontent.com/JonasAlfredsson/checkout-qemu-buildx/main/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/LICENSE?ref=main",
+      "git": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "html": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "9a701d80134e36d07ac1e9f9afef877a800543db",
+    "size": 1147,
+    "url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/README.md?ref=main",
+    "html_url": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/README.md",
+    "git_url": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/9a701d80134e36d07ac1e9f9afef877a800543db",
+    "download_url": "https://raw.githubusercontent.com/JonasAlfredsson/checkout-qemu-buildx/main/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/contents/README.md?ref=main",
+      "git": "https://api.github.com/repos/JonasAlfredsson/checkout-qemu-buildx/git/blobs/9a701d80134e36d07ac1e9f9afef877a800543db",
+      "html": "https://github.com/JonasAlfredsson/checkout-qemu-buildx/blob/main/README.md"
+    }
+  }
+]

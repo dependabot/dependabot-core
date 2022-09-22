@@ -121,9 +121,9 @@ module Dependabot
         end
 
         def filter_out_of_range_versions(versions_array)
-          reqs = dependency.requirements.map do |r|
+          reqs = dependency.requirements.filter_map do |r|
             NpmAndYarn::Requirement.requirements_array(r.fetch(:requirement))
-          end.compact
+          end
 
           versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
@@ -227,18 +227,16 @@ module Dependabot
 
           @yanked[version] =
             begin
-              status = Excon.get(
-                dependency_url + "/#{version}",
-                idempotent: true,
-                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+              status = Dependabot::RegistryClient.get(
+                url: dependency_url + "/#{version}",
+                headers: registry_auth_headers
               ).status
 
               if status == 404 && dependency_registry != "registry.npmjs.org"
                 # Some registries don't handle escaped package names properly
-                status = Excon.get(
-                  dependency_url.gsub("%2F", "/") + "/#{version}",
-                  idempotent: true,
-                  **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+                status = Dependabot::RegistryClient.get(
+                  url: dependency_url.gsub("%2F", "/") + "/#{version}",
+                  headers: registry_auth_headers
                 ).status
               end
 
@@ -257,10 +255,9 @@ module Dependabot
 
           @version_endpoint_working =
             begin
-              Excon.get(
-                dependency_url + "/latest",
-                idempotent: true,
-                **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+              Dependabot::RegistryClient.get(
+                url: dependency_url + "/latest",
+                headers: registry_auth_headers
               ).status < 400
             rescue Excon::Error::Timeout, Excon::Error::Socket
               # Give the benefit of the doubt if the registry is playing up
@@ -285,19 +282,15 @@ module Dependabot
               if git_dependency?
                 nil
               else
-                retry_count ||= 0
-                retry_count += 1
-                raise_npm_details_error(e) if retry_count > 2
-                sleep(rand(3.0..10.0)) && retry
+                raise_npm_details_error(e)
               end
             end
         end
 
         def fetch_npm_response
-          response = Excon.get(
-            dependency_url,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+          response = Dependabot::RegistryClient.get(
+            url: dependency_url,
+            headers: registry_auth_headers
           )
 
           return response unless response.status == 500
@@ -310,12 +303,12 @@ module Dependabot
           return unless decoded_token.include?(":")
 
           username, password = decoded_token.split(":")
-          Excon.get(
-            dependency_url,
-            user: username,
-            password: password,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: dependency_url,
+            options: {
+              user: username,
+              password: password
+            }
           )
         end
 
@@ -352,11 +345,7 @@ module Dependabot
           if dependency_registry == "registry.npmjs.org"
             return false unless dependency.name.start_with?("@")
 
-            web_response = Excon.get(
-              "https://www.npmjs.com/package/#{dependency.name}",
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            web_response = Dependabot::RegistryClient.get(url: "https://www.npmjs.com/package/#{dependency.name}")
             # NOTE: returns 429 when the login page is rate limited
             return web_response.body.include?("Forgot password?") ||
                    web_response.status == 429

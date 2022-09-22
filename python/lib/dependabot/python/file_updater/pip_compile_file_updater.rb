@@ -71,20 +71,20 @@ module Dependabot
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
-              name_part = "pyenv exec pip-compile "\
-                          "#{pip_compile_options(filename)} -P "\
+              name_part = "pyenv exec pip-compile " \
+                          "#{pip_compile_options(filename)} -P " \
                           "#{dependency.name}"
               version_part = "#{dependency.version} #{filename}"
               # Don't escape pyenv `dep-name==version` syntax
               run_pip_compile_command(
-                "#{SharedHelpers.escape_command(name_part)}=="\
+                "#{SharedHelpers.escape_command(name_part)}==" \
                 "#{SharedHelpers.escape_command(version_part)}",
                 allow_unsafe_shell_command: true
               )
               # Run pip-compile a second time, without an update argument, to
               # ensure it resets the right comments.
               run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} "\
+                "pyenv exec pip-compile #{pip_compile_options(filename)} " \
                 "#{filename}"
               )
             end
@@ -92,7 +92,7 @@ module Dependabot
             # Remove any .python-version file before parsing the reqs
             FileUtils.remove_entry(".python-version", true)
 
-            dependency_files.map do |file|
+            dependency_files.filter_map do |file|
               next unless file.name.end_with?(".txt")
 
               updated_content = File.read(file.name)
@@ -102,12 +102,12 @@ module Dependabot
               next if updated_content == file.content
 
               file.dup.tap { |f| f.content = updated_content }
-            end.compact
+            end
           end
         end
 
         def update_manifest_files
-          dependency_files.map do |file|
+          dependency_files.filter_map do |file|
             next unless file.name.end_with?(".in")
 
             file = file.dup
@@ -116,7 +116,7 @@ module Dependabot
 
             file.content = updated_content
             file
-          end.compact
+          end
         end
 
         def update_uncompiled_files(updated_files)
@@ -132,7 +132,7 @@ module Dependabot
                   reject { |file| updated_filenames.include?(file.name) }
 
           args = dependency.to_h
-          args = args.keys.map { |k| [k.to_sym, args[k]] }.to_h
+          args = args.keys.to_h { |k| [k.to_sym, args[k]] }
           args[:requirements] = new_reqs
           args[:previous_requirements] = old_reqs
 
@@ -223,7 +223,8 @@ module Dependabot
           return if run_command("pyenv versions").include?("#{python_version}\n")
 
           run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install -r "\
+          run_command("pyenv exec pip install --upgrade pip")
+          run_command("pyenv exec pip install -r " \
                       "#{NativeHelpers.python_requirements_path}")
         end
 
@@ -351,7 +352,7 @@ module Dependabot
         end
 
         def deps_to_augment_hashes_for(updated_content, original_content)
-          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/
+          regex = /^#{RequirementParser::INSTALL_REQ_WITH_REQUIREMENT}/o
 
           new_matches = []
           updated_content.scan(regex) { new_matches << Regexp.last_match }

@@ -2,13 +2,13 @@
 
 set -e
 
-if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
 
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/composer/v2"
-mkdir -p $install_dir
+mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
@@ -17,7 +17,7 @@ cp -r \
   "$helpers_dir/.php-cs-fixer.php" \
   "$helpers_dir/composer.json" \
   "$helpers_dir/composer.lock" \
-  "$helpers_dir/phpstan.neon" \
+  "$helpers_dir/phpstan.dist.neon" \
   "$install_dir"
 
 cd "$install_dir"

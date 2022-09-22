@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/registry_client"
 
 module Dependabot
   module Bundler
@@ -75,7 +76,7 @@ module Dependabot
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
@@ -105,8 +106,8 @@ module Dependabot
 
         rubygems_marshalled_gemspec_response.gsub("\x06;", "\n").
           scan(Dependabot::Source::SOURCE_REGEX) do
-            github_urls << Regexp.last_match.to_s +
-                           Regexp.last_match.post_match.split("\n").first
+            github_urls << (Regexp.last_match.to_s +
+                           Regexp.last_match.post_match.split("\n").first)
           end
 
         github_urls.find do |url|
@@ -123,14 +124,13 @@ module Dependabot
         return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
 
         gemspec_uri =
-          "#{registry_url}quick/Marshal.4.8/"\
+          "#{registry_url}quick/Marshal.4.8/" \
           "#{dependency.name}-#{dependency.version}.gemspec.rz"
 
         response =
-          Excon.get(
-            gemspec_uri,
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+          Dependabot::RegistryClient.get(
+            url: gemspec_uri,
+            headers: registry_auth_headers
           )
 
         return @rubygems_marshalled_gemspec_response = nil if response.status >= 400
@@ -145,10 +145,9 @@ module Dependabot
         return @rubygems_api_response if defined?(@rubygems_api_response)
 
         response =
-          Excon.get(
-            "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults(headers: registry_auth_headers)
+          Dependabot::RegistryClient.get(
+            url: "#{registry_url}api/v1/gems/#{dependency.name}.json",
+            headers: registry_auth_headers
           )
         return @rubygems_api_response = {} if response.status >= 400
 
@@ -186,11 +185,7 @@ module Dependabot
         return response_body if source_url
 
         rubygems_response =
-          Excon.get(
-            "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          Dependabot::RegistryClient.get(url: "https://rubygems.org/api/v1/gems/#{dependency.name}.json")
         parsed_rubygems_body = JSON.parse(rubygems_response.body)
         rubygems_digest =
           parsed_rubygems_body.values_at("version", "authors", "info").hash
@@ -203,7 +198,7 @@ module Dependabot
       def registry_url
         return "https://rubygems.org/" if new_source_type == "default"
 
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
         info[:url] || info.fetch("url")
       end
 

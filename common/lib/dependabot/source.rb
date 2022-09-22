@@ -21,8 +21,8 @@ module Dependabot
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+      (?<repo>(?!\.git|/tree|/blob)[\w./-]+?)(?:\.git)?
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?$
     }x.freeze
 
     BITBUCKET_SOURCE = %r{
@@ -109,8 +109,8 @@ module Dependabot
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
-        msg = "Both hostname and api_endpoint must be specified if either "\
-              "are. Alternatively, both may be left blank to use the "\
+        msg = "Both hostname and api_endpoint must be specified if either " \
+              "are. Alternatively, both may be left blank to use the " \
               "provider's defaults."
         raise msg
       end

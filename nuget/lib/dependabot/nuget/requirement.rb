@@ -21,7 +21,7 @@ module Dependabot
         [matches[1] || "=", Nuget::Version.new(matches[2])]
       end
 
-      # For consistency with other langauges, we define a requirements array.
+      # For consistency with other languages, we define a requirements array.
       # Dotnet doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
       def self.requirements_array(requirement_string)
@@ -88,6 +88,8 @@ module Dependabot
       end
 
       def convert_wildcard_req(req_string)
+        return ">= 0-a" if req_string == "*-*"
+
         return ">= 0" if req_string.start_with?("*")
 
         defined_part = req_string.split("*").first

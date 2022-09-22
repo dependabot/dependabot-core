@@ -1,0 +1,11 @@
+---
+name: docker_registry2
+version: 1.12.0
+type: bundler
+summary: Docker v2 registry HTTP API client
+homepage: https://github.com/deitch/docker_registry2
+license: mit
+licenses:
+- sources: README.md
+  text: MIT License.
+notices: []

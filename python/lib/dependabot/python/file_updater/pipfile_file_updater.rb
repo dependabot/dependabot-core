@@ -18,6 +18,8 @@ module Dependabot
         require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"
 
+        DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+
         attr_reader :dependencies, :dependency_files, :credentials
 
         def initialize(dependencies:, dependency_files:, credentials:)
@@ -145,7 +147,7 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
 
           dependencies.each do |dep|
-            %w(packages dev-packages).each do |type|
+            DEPENDENCY_TYPES.each do |type|
               names = pipfile_object[type]&.keys || []
               pkg_name = names.find { |nm| normalise(nm) == dep.name }
               next unless pkg_name || subdep_type?(type)
@@ -350,9 +352,9 @@ module Dependabot
 
           # Otherwise we have to raise, giving details of the Python versions
           # that Dependabot supports
-          msg = "Dependabot detected the following Python requirement "\
-                "for your project: '#{requirement_string}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirement " \
+                "for your project: '#{requirement_string}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end

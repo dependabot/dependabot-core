@@ -6,7 +6,7 @@ require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 require "dependabot/python/requirement"
 require "dependabot/python/requirement_parser"
@@ -107,10 +107,7 @@ module Dependabot
       private
 
       def latest_version_resolvable_with_full_unlock?
-        # Full unlock checks aren't implemented for pip because they're not
-        # relevant (pip doesn't have a resolver). This method always returns
-        # false to ensure `updated_dependencies_after_full_unlock` is never
-        # called.
+        # Full unlock checks aren't implemented for Python (yet)
         false
       end
 
@@ -135,7 +132,6 @@ module Dependabot
         resolver.resolvable?(version: fix_version) ? fix_version : nil
       end
 
-      # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependency.requirements
         req_files = reqs.map { |r| r.fetch(:file) }
@@ -147,8 +143,8 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipenv if req_files.any? { |f| f == "Pipfile" }
-        return :poetry if req_files.any? { |f| f == "pyproject.toml" }
+        return :pipenv if req_files.any?("Pipfile")
+        return :poetry if req_files.any?("pyproject.toml")
         return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
 
         if dependency.version && !exact_requirement?(reqs)
@@ -157,7 +153,6 @@ module Dependabot
           :requirements
         end
       end
-      # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
         return :pipenv if pipfile_lock
@@ -241,7 +236,7 @@ module Dependabot
         return ">= #{dependency.version}" if dependency.version
 
         version_for_requirement =
-          dependency.requirements.map { |r| r[:requirement] }.compact.
+          dependency.requirements.filter_map { |r| r[:requirement] }.
           reject { |req_string| req_string.start_with?("<") }.
           select { |req_string| req_string.match?(VERSION_REGEX) }.
           map { |req_string| req_string.match(VERSION_REGEX) }.
@@ -274,10 +269,8 @@ module Dependabot
         details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
         return false unless details
 
-        index_response = Excon.get(
-          "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
+        index_response = Dependabot::RegistryClient.get(
+          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
         )
 
         return false unless index_response.status == 200

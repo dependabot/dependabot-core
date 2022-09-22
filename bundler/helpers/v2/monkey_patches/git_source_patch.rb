@@ -13,7 +13,7 @@ module Bundler
         # Instead, we convert all `git@github.com:` URLs to use HTTPS.
         def configured_uri_for(uri)
           uri = uri.gsub(%r{git@(.*?):/?}, 'https://\1/')
-          if /https?:/ =~ uri
+          if /https?:/.match?(uri)
             remote = Bundler::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
@@ -50,7 +50,7 @@ module Bundler
 
           Bundler.rubygems.set_installed_by_version(spec)
           Bundler.rubygems.validate(spec)
-          File.open(spec_path, "wb") { |file| file.write(spec.to_ruby) }
+          File.binwrite(spec_path, spec.to_ruby)
         end
         $LOAD_PATH.shift until $LOAD_PATH.empty?
         original_load_paths.each { |p| $LOAD_PATH << p }

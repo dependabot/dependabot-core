@@ -27,8 +27,8 @@ module Dependabot
         "sp" => 7
       }.freeze
       VERSION_PATTERN =
-        "[0-9a-zA-Z]+"\
-        '(?>\.[0-9a-zA-Z]*)*'\
+        "[0-9a-zA-Z]+" \
+        '(?>\.[0-9a-zA-Z]*)*' \
         '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
       ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
 
@@ -117,11 +117,11 @@ module Dependabot
       end
 
       def trim_version(version)
-        version.split("-").map do |v|
+        version.split("-").filter_map do |v|
           parts = v.split(".")
           parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
           parts&.join(".")
-        end.compact.reject(&:empty?).join("-")
+        end.reject(&:empty?).join("-")
       end
 
       def convert_dates(version, other_version)

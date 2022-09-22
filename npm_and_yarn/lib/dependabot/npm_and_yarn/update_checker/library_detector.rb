@@ -36,12 +36,7 @@ module Dependabot
           return false unless project_description
 
           # Check if the project is listed on npm. If it is, it's a library
-          @project_npm_response ||= Excon.get(
-            "https://registry.npmjs.org/#{escaped_project_name}",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-
+          @project_npm_response ||= Dependabot::RegistryClient.get(url: "https://registry.npmjs.org/#{escaped_project_name}")
           return false unless @project_npm_response.status == 200
 
           @project_npm_response.body.force_encoding("UTF-8").encode.

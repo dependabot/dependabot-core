@@ -1,0 +1,46 @@
+# frozen_string_literal: true
+
+# Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
+# However, we actually *want* to manipulate Gemfiles for other repos.
+Bundler.settings.set_command_option(:frozen, "0")
+
+require "dependabot/sentry"
+Raven.configure do |config|
+  config.processors += [ExceptionSanitizer]
+end
+
+require "logger"
+require "dependabot/logger"
+
+class LoggerFormatter < Logger::Formatter
+  # Strip out timestamps as these are included in the runner's logger
+  def call(severity, _datetime, _progname, msg)
+    "#{severity} #{msg2str(msg)}\n"
+  end
+end
+
+Dependabot.logger = Logger.new($stdout).tap do |logger|
+  logger.formatter = LoggerFormatter.new
+end
+
+# We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
+# order for that configuration to take effect, we need to make sure that these
+# registration commands have been executed.
+require "dependabot/python"
+require "dependabot/terraform"
+require "dependabot/elm"
+require "dependabot/docker"
+require "dependabot/git_submodules"
+require "dependabot/github_actions"
+require "dependabot/composer"
+require "dependabot/nuget"
+require "dependabot/gradle"
+require "dependabot/maven"
+require "dependabot/hex"
+require "dependabot/cargo"
+require "dependabot/go_modules"
+require "dependabot/npm_and_yarn"
+require "dependabot/bundler"
+require "dependabot/pub"
+
+require "dependabot/instrumentation"

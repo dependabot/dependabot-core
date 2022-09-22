@@ -2,13 +2,13 @@
 
 set -e
 
-if [ -z $DEPENDABOT_NATIVE_HELPERS_PATH ]; then
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
   echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
 
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
-mkdir -p $install_dir
+mkdir -p "$install_dir"
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
 cp -r \
@@ -20,8 +20,6 @@ cp -r \
 
 cd "$install_dir"
 
-# NOTE: Sets `BUNDLED WITH` to match the installed v2 version in Gemfile.lock
-# forcing specs and native helpers to run with the same version
-BUNDLER_VERSION=2.2.33 bundle config --local path ".bundle"
-BUNDLER_VERSION=2.2.33 bundle config --local without "test"
-BUNDLER_VERSION=2.2.33 bundle install
+bundle config --local path ".bundle"
+bundle config --local without "test"
+bundle install

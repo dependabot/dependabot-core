@@ -104,6 +104,49 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       it { is_expected.to eq("dependabot-dummy-business-1.5.0") }
     end
 
+    context "with a maximum length" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          max_length: max_length
+        )
+      end
+
+      context "with a maximum length longer than branch name" do
+        let(:max_length) { 35 }
+
+        it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
+        its(:length) { is_expected.to eq(31) }
+      end
+
+      context "with a maximum length shorter than branch name" do
+        let(:dependency_name) { "business-and-work-and-desks-and-tables-and-chairs-and-lunch" }
+
+        context "with a maximum length longer than sha1 length" do
+          let(:max_length) { 50 }
+
+          it { is_expected.to eq("dependabot#{Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")}") }
+          its(:length) { is_expected.to eq(50) }
+        end
+
+        context "with a maximum length equal than sha1 length" do
+          let(:max_length) { 40 }
+
+          it { is_expected.to eq(Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")) }
+          its(:length) { is_expected.to eq(40) }
+        end
+
+        context "with a maximum length shorter than sha1 length" do
+          let(:max_length) { 20 }
+
+          it { is_expected.to eq(Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")[0...20]) }
+          its(:length) { is_expected.to eq(20) }
+        end
+      end
+    end
+
     context "with multiple dependencies" do
       let(:dependencies) { [dependency, dep2] }
       let(:dep2) do
@@ -245,6 +288,43 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
 
         it { is_expected.to eq("dependabot/gradle/my.group-1.5.0") }
       end
+    end
+
+    context "with a removed transitive dependency" do
+      let(:dependencies) { [removed_dep, parent_dep] }
+      let(:removed_dep) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: nil,
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [],
+          previous_requirements: [],
+          removed: true
+        )
+      end
+      let(:parent_dep) do
+        Dependabot::Dependency.new(
+          name: "statesman",
+          version: "1.5.0",
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman--removed") }
     end
 
     context "with a : in the name" do
@@ -416,7 +496,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             groups: [],
             source: {
               type: "digest",
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                       "fc38288cf73aa07485005"
             }
           }],
@@ -426,7 +506,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             groups: [],
             source: {
               type: "digest",
-              digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\
+              digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                       "aaaaaaaaaaaaaaaaaaaaa"
             }
           }]

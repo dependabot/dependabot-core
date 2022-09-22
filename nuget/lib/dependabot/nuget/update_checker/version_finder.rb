@@ -127,7 +127,7 @@ module Dependabot
             doc = Nokogiri::XML(body)
             doc.remove_namespaces!
 
-            doc.xpath("/feed/entry").map do |entry|
+            doc.xpath("/feed/entry").filter_map do |entry|
               listed = entry.at_xpath("./properties/Listed")&.content&.strip
               next if listed&.casecmp("false")&.zero?
 
@@ -136,7 +136,7 @@ module Dependabot
                 repo_url: listing.fetch("listing_details").
                           fetch(:repository_url)
               )
-            end.compact
+            end
           end
         end
 
@@ -172,6 +172,7 @@ module Dependabot
 
           dependency.requirements.any? do |req|
             reqs = parse_requirement_string(req.fetch(:requirement) || "")
+            return true if reqs.any?("*-*")
             next unless reqs.any? { |r| r.include?("-") }
 
             requirement_class.
@@ -192,12 +193,12 @@ module Dependabot
           @v3_nuget_listings ||=
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v3" }.
-            map do |url_details|
+            filter_map do |url_details|
               versions = versions_for_v3_repository(url_details)
               next unless versions
 
               { "versions" => versions, "listing_details" => url_details }
-            end.compact
+            end
         end
 
         def v2_nuget_listings
@@ -207,21 +208,20 @@ module Dependabot
             dependency_urls.
             select { |details| details.fetch(:repository_type) == "v2" }.
             flat_map { |url_details| fetch_paginated_v2_nuget_listings(url_details) }.
-            map do |url_details, response|
+            filter_map do |url_details, response|
               next unless response.status == 200
 
               {
                 "xml_body" => response.body,
                 "listing_details" => url_details
               }
-            end.compact
+            end
         end
 
         def fetch_paginated_v2_nuget_listings(url_details, results = {})
-          response = Excon.get(
-            url_details[:versions_url],
-            idempotent: true,
-            **SharedHelpers.excon_defaults(excon_options.merge(headers: url_details[:auth_header]))
+          response = Dependabot::RegistryClient.get(
+            url: url_details[:versions_url],
+            headers: url_details[:auth_header]
           )
 
           # NOTE: Short circuit if we get a circular next link
@@ -231,7 +231,10 @@ module Dependabot
 
           if (link_href = fetch_v2_next_link_href(response.body))
             url_details = url_details.dup
-            url_details[:versions_url] = link_href
+            # Some Nuget repositories, such as JFrog's Artifactory, URL encode the "next" href
+            # link in the paged results. If the href is not URL decoded, the paging parameters
+            # are ignored and the first page is always returned.
+            url_details[:versions_url] = CGI.unescape(link_href)
             fetch_paginated_v2_nuget_listings(url_details, results)
           end
 
@@ -257,12 +260,9 @@ module Dependabot
             fetch_versions_from_search_url(repository_details)
           # Otherwise, use the versions URL
           elsif repository_details[:versions_url]
-            response = Excon.get(
-              repository_details[:versions_url],
-              idempotent: true,
-              **SharedHelpers.excon_defaults(
-                excon_options.merge(headers: repository_details[:auth_header])
-              )
+            response = Dependabot::RegistryClient.get(
+              url: repository_details[:versions_url],
+              headers: repository_details[:auth_header]
             )
             return unless response.status == 200
 
@@ -272,12 +272,9 @@ module Dependabot
         end
 
         def fetch_versions_from_search_url(repository_details)
-          response = Excon.get(
-            repository_details[:search_url],
-            idempotent: true,
-            **SharedHelpers.excon_defaults(
-              excon_options.merge(headers: repository_details[:auth_header])
-            )
+          response = Dependabot::RegistryClient.get(
+            url: repository_details[:search_url],
+            headers: repository_details[:auth_header]
           )
           return unless response.status == 200
 
@@ -329,7 +326,7 @@ module Dependabot
           # For large JSON files we sometimes need a little longer than for
           # other languages. For example, see:
           # https://dotnet.myget.org/F/aspnetcore-dev/api/v3/query?
-          # q=microsoft.aspnetcore.mvc&prerelease=true
+          # q=microsoft.aspnetcore.mvc&prerelease=true&semVerLevel=2.0.0
           {
             connect_timeout: 30,
             write_timeout: 30,

@@ -8,13 +8,13 @@ module Dependabot
       end
 
       def self.native_helpers_root
-        helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+        helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "npm_and_yarn") unless helpers_root.nil?
 
         File.join(__dir__, "../../../helpers")
       end
 
-      def self.npm7_subdependency_update_command(dependency_names)
+      def self.npm8_subdependency_update_command(dependency_names)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to

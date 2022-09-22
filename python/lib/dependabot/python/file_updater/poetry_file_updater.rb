@@ -105,7 +105,6 @@ module Dependabot
               content = sanitize(content)
               content = freeze_other_dependencies(content)
               content = freeze_dependencies_being_updated(content)
-              content = add_private_sources(content)
               content
             end
         end
@@ -150,12 +149,6 @@ module Dependabot
           poetry_object[subdep_type][dependency.name] = dep.version
         end
 
-        def add_private_sources(pyproject_content)
-          PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            replace_sources(credentials)
-        end
-
         def subdep_type
           category =
             TomlRB.parse(lockfile.content).fetch("package", []).
@@ -175,11 +168,18 @@ module Dependabot
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(pyproject_content)
+              add_auth_env_vars
 
               if python_version && !pre_installed_python?(python_version)
                 run_poetry_command("pyenv install -s #{python_version}")
-                run_poetry_command("pyenv exec pip install -r"\
+                run_poetry_command("pyenv exec pip install --upgrade pip")
+                run_poetry_command("pyenv exec pip install -r" \
                                    "#{NativeHelpers.python_requirements_path}")
+              end
+
+              # use system git instead of the pure Python dulwich
+              unless python_version&.start_with?("3.6")
+                run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
               end
 
               run_poetry_command(poetry_update_command)
@@ -229,6 +229,12 @@ module Dependabot
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
+        end
+
+        def add_auth_env_vars
+          Python::FileUpdater::PyprojectPreparer.
+            new(pyproject_content: pyproject.content).
+            add_auth_env_vars(credentials)
         end
 
         def python_version

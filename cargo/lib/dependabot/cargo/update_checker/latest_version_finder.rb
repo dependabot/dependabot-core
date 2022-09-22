@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/cargo/update_checker"
 require "dependabot/update_checkers/version_filters"
+require "dependabot/registry_client"
 
 module Dependabot
   module Cargo
@@ -83,19 +84,8 @@ module Dependabot
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          response = Excon.get(
-            "https://crates.io/api/v1/crates/#{dependency.name}",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
-
+          response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
           @crates_listing = JSON.parse(response.body)
-        rescue Excon::Error::Timeout
-          retrying ||= false
-          raise if retrying
-
-          retrying = true
-          sleep(rand(1.0..5.0)) && retry
         end
 
         def wants_prerelease?

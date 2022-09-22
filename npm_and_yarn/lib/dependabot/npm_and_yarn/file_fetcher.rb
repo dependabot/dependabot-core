@@ -3,7 +3,9 @@
 require "json"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -43,8 +45,23 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
+        instrument_package_manager_version
 
         fetched_files.uniq
+      end
+
+      def instrument_package_manager_version
+        package_managers = {}
+
+        package_managers["npm"] =  Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = 1 if yarn_lock
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
+
+        Dependabot.instrument(
+          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
+          ecosystem: "npm",
+          package_managers: package_managers
+        )
       end
 
       def package_json
@@ -71,7 +88,7 @@ module Dependabot
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host("../" * i + ".npmrc")&.
+          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")&.
                    tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
@@ -90,7 +107,7 @@ module Dependabot
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host("../" * i + ".yarnrc")&.
+          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")&.
                    tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
@@ -123,7 +140,7 @@ module Dependabot
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
-          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar")
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -132,7 +149,7 @@ module Dependabot
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
             # Unfetchable tarballs should not be re-fetched as a package
-            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar")
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar", ".tar.gz")
           end
         end
 
@@ -183,7 +200,7 @@ module Dependabot
         resolution_objects = parsed_manifest.values_at("resolutions").compact
         manifest_objects = dependency_objects + resolution_objects
 
-        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all? { |o| o.is_a?(Hash) }
+        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all?(Hash)
 
         resolution_deps = resolution_objects.flat_map(&:to_a).
                           map do |path, value|
@@ -274,7 +291,7 @@ module Dependabot
 
           if matches_double_glob && !nested
             dependency_files +=
-              expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+              find_directories(File.join(path, "*")).flat_map do |nested_path|
                 fetch_lerna_packages_from_path(nested_path, true)
               end
           end
@@ -292,30 +309,58 @@ module Dependabot
             [] # Invalid lerna.json, which must not be in use
           end
 
-        paths_array.flat_map do |path|
-          # The packages/!(not-this-package) syntax is unique to Yarn
-          if path.include?("*") || path.include?("!(")
-            expanded_paths(path)
-          else
-            path
-          end
-        end
+        paths_array.flat_map { |path| recursive_find_directories(path) }
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(path)
-        ignored_paths = path.scan(/!\((.*?)\)/).flatten
+      def find_directories(glob)
+        return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        unglobbed_path =
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
+          split("*").
+          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
-        path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
-        unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
-                         "."
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
+        paths =
+          repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }.
-          reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
+          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+
+        matching_paths(glob, paths)
+      end
+
+      def matching_paths(glob, paths)
+        ignored_glob = yarn_ignored_glob(glob)
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+
+        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        return results unless ignored_glob
+
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+      end
+
+      def recursive_find_directories(glob, prefix = "")
+        return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        glob = glob.gsub(%r{^\./}, "")
+        glob_parts = glob.split("/")
+
+        paths = find_directories(prefix + glob_parts.first)
+        next_parts = glob_parts.drop(1)
+        return paths if next_parts.empty?
+
+        paths = paths.flat_map do |expanded_path|
+          recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
+        end
+
+        matching_paths(prefix + glob, paths)
+      end
+
+      # The packages/!(not-this-package) syntax is unique to Yarn
+      def yarn_ignored_glob(glob)
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       def parsed_package_json

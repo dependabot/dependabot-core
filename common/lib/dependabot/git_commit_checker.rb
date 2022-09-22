@@ -50,7 +50,7 @@ module Dependabot
       return true if dependency.version&.start_with?(ref)
 
       # Check the specified `ref` isn't actually a branch
-      !local_upload_pack.match?("refs/heads/#{ref}")
+      !local_upload_pack.match?(%r{ refs/heads/#{ref}$})
     end
 
     def pinned_ref_looks_like_version?
@@ -86,25 +86,31 @@ module Dependabot
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
-    # rubocop:disable Metrics/AbcSize
-    def local_tag_for_latest_version
-      tags =
-        local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
-      filtered = tags.
-                 reject { |t| tag_included_in_ignore_requirements?(t) }
-      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
-        raise Dependabot::AllVersionsIgnored
-      end
+    def head_commit_for_local_branch(name)
+      local_repo_git_metadata_fetcher.head_commit_for_ref(name)
+    end
 
-      tag = filtered.
-            reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }.
-            max_by do |t|
-              version = t.name.match(VERSION_REGEX).named_captures.
-                        fetch("version")
-              version_class.new(version)
-            end
+    def local_tags_for_latest_version_commit_sha
+      tags = allowed_version_tags
+      max_tag = max_version_tag(tags)
+
+      return [] unless max_tag
+
+      tags.
+        select { |t| t.commit_sha == max_tag.commit_sha }.
+        map do |t|
+          version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
+          {
+            tag: t.name,
+            version: version_class.new(version),
+            commit_sha: t.commit_sha,
+            tag_sha: t.tag_sha
+          }
+        end
+    end
+
+    def local_tag_for_latest_version
+      tag = max_version_tag(allowed_version_tags)
 
       return unless tag
 
@@ -116,8 +122,29 @@ module Dependabot
         tag_sha: tag.tag_sha
       }
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/PerceivedComplexity
+
+    def max_version_tag(tags)
+      tags.
+        max_by do |t|
+        version = t.name.match(VERSION_REGEX).named_captures.
+                  fetch("version")
+        version_class.new(version)
+      end
+    end
+
+    def allowed_version_tags
+      tags =
+        local_tags.
+        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags.
+                 reject { |t| tag_included_in_ignore_requirements?(t) }
+      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
+        raise Dependabot::AllVersionsIgnored
+      end
+
+      filtered.
+        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+    end
 
     def current_version
       return unless dependency.version && version_tag?(dependency.version)
@@ -217,6 +244,7 @@ module Dependabot
         when "github" then github_commit_comparison_status(tag, commit)
         when "gitlab" then gitlab_commit_comparison_status(tag, commit)
         when "bitbucket" then bitbucket_commit_comparison_status(tag, commit)
+        when "codecommit" then nil # TODO: get codecommit comparison status
         else raise "Unknown source"
         end
 
@@ -250,8 +278,8 @@ module Dependabot
     end
 
     def bitbucket_commit_comparison_status(ref1, ref2)
-      url = "https://api.bitbucket.org/2.0/repositories/"\
-            "#{listing_source_repo}/commits/?"\
+      url = "https://api.bitbucket.org/2.0/repositories/" \
+            "#{listing_source_repo}/commits/?" \
             "include=#{ref2}&exclude=#{ref1}"
 
       client = Clients::BitbucketWithRetries.
@@ -337,17 +365,19 @@ module Dependabot
     def listing_tags
       return [] unless listing_source_url
 
-      tags = listing_repo_git_metadata_fetcher.tags
+      @listing_tags ||= begin
+        tags = listing_repo_git_metadata_fetcher.tags
 
-      if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
-        tags = tags.map do |tag|
-          tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+        if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
+          tags = tags.map do |tag|
+            tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
+          end
         end
-      end
 
-      tags
-    rescue GitDependenciesNotReachable
-      []
+        tags
+      rescue GitDependenciesNotReachable
+        []
+      end
     end
 
     def listing_upload_pack

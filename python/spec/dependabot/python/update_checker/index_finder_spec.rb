@@ -180,7 +180,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             expect { subject }.
               to raise_error(error_class) do |error|
                 expect(error.source).
-                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}"\
+                  to eq("https://pypi.weasyldev.com/${SECURE_NAME}" \
                         "/source/+simple/")
               end
           end
@@ -189,7 +189,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
             let(:credentials) do
               [{
                 "type" => "python_index",
-                "index-url" => "https://pypi.weasyldev.com/weasyl/"\
+                "index-url" => "https://pypi.weasyldev.com/weasyl/" \
                                "source/+simple",
                 "replaces-base" => false
               }]
@@ -232,6 +232,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
                 [{
                   "type" => "python_index",
                   "index-url" => "https://pypi.weasyldev.com/source/+simple",
+                  "token" => "user:pass",
                   "replaces-base" => false
                 }]
               end
@@ -240,7 +241,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
                 expect(index_urls).to match_array(
                   [
                     "https://pypi.org/simple/",
-                    "https://pypi.weasyldev.com/source/+simple/"
+                    "https://user:pass@pypi.weasyldev.com/source/+simple/"
                   ]
                 )
               end

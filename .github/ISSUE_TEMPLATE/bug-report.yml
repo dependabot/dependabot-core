@@ -1,0 +1,91 @@
+name: 🐛 Bug report
+description: Report a bug in dependabot-core to help us fix it
+labels: ["T: bug 🐞"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For support on the GitHub-integrated Dependabot service, please contact [GitHub support](https://support.github.com/).
+        This issue-tracker is meant for issues related to Dependabot's updating logic, a good rule of thumb is that if you have questions about the _diff_ in a PR, it belongs here, otherwise the GitHub support team is best equipped to help you.
+
+        The more information you can provide, the easier it will be to reproduce the issue and find a fix.
+
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search existing issues to avoid creating duplicates.
+      options:
+        - label: I have searched the existing issues
+          required: true
+
+  - type: input
+    attributes:
+      label: Package ecosystem
+      description: Are you using npm, Docker, Bundler, etc.
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Package manager version
+      description: If applicable, specify the package manager version you're using (e.g., npm `7.1`, pip-compile `5.0`, etc.)
+    validations:
+      required: false
+
+  - type: input
+    attributes:
+      label: Language version
+      description: If applicable, specify the language version you're using (e.g., Node.js `14.1`, Ruby `2.7`, etc.)
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Manifest location and content before the Dependabot update
+      description: |
+        If applicable, specify the path to each manifest file (`/client/package.json`, `/Gemfile`, etc.)
+        If applicable, attach each manifest file or provide a link to each manifest file.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: dependabot.yml content
+      description: If using GitHub-native Dependabot, attach your `dependabot.yml` file or provide a link to it.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Updated dependency
+      description: If applicable, the dependency name and to and from versions.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: What you expected to see, versus what you actually saw
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Native package manager behavior
+      description: If applicable, what output do you see when you update the dependency using the native package manager (e.g., Bundler, npm, etc.)?
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Images of the diff or a link to the PR, issue, or logs
+      description: If applicable, add links to public PRs or Issues that Dependabot opened, and/or paste in any related logs.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Smallest manifest that reproduces the issue
+      description: Want to make a 🤖 smile? You can do it! Show us the smallest manifest file (or set of files) that reproduces this problem. Remove anything that's not essential to reproduce this issue, and it will help us address the problem more quickly. ✨
+    validations:
+      required: false

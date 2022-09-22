@@ -14,31 +14,31 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/.freeze,
-          /go (?:get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
+          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
           # (Private) module could not be found
           /cannot find module providing package/.freeze,
           # Package in module was likely renamed or removed
           /module .* found \(.*\), but does not contain package/m.freeze,
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
-          /go: .*: invalid pseudo-version/m.freeze,
+          /go(?: get)?: .*: invalid pseudo-version/m.freeze,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go: .*: unknown revision/m.freeze,
+          /go(?: get)?: .*: unknown revision/m.freeze,
           # Package pointing to a proxy that 404s
-          /go: .*: unrecognized import path/m.freeze
+          /go(?: get)?: .*: unrecognized import path/m.freeze
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* has non-.* module path "(.*)" at/,
-          /go: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
+          /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?: .* unexpected module path "(.*)"/,
           /go(?: get)?: ([^@\s]+)(?:@[^\s]+)?:? .* declares its path as: ([\S]*)/m
         ].freeze
 
@@ -154,16 +154,17 @@ module Dependabot
         end
 
         def run_go_get(dependencies = [])
+          # `go get` will fail if there are no go files in the directory.
+          # For example, if a `//go:build` tag excludes all files when run
+          # on a particular architecture. However, dropping a go file with
+          # a `package ...` line in it will always make `go get` succeed...
+          # Even when the package name doesn't match the rest of the files
+          # in the directory! I assume this is because it doesn't actually
+          # compile anything when it runs.
           tmp_go_file = "#{SecureRandom.hex}.go"
+          File.write(tmp_go_file, "package dummypkg\n")
 
-          package = Dir.glob("[^\._]*.go").any? do |path|
-            !File.read(path).include?("// +build")
-          end
-
-          File.write(tmp_go_file, "package dummypkg\n") unless package
-
-          # TODO: go 1.18 will make `-d` the default behavior, so remove the flag then
-          command = +"go get -d"
+          command = +"go get"
           # `go get` accepts multiple packages, each separated by a space
           dependencies.each do |dep|
             version = "v" + dep.version.sub(/^v/i, "")
@@ -174,7 +175,7 @@ module Dependabot
           _, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
         ensure
-          File.delete(tmp_go_file) if File.exist?(tmp_go_file)
+          FileUtils.rm_f(tmp_go_file)
         end
 
         def parse_manifest
@@ -187,18 +188,16 @@ module Dependabot
 
         def in_repo_path(&block)
           SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              block.call
-            end
+            SharedHelpers.with_git_configured(credentials: credentials, &block)
           end
         end
 
         def build_module_stubs(stub_paths)
           # Create a fake empty module for each local module so that
-          # `go get -d` works, even if some modules have been `replace`d
+          # `go get` works, even if some modules have been `replace`d
           # with a local module that we don't have access to.
           stub_paths.each do |stub_path|
-            Dir.mkdir(stub_path) unless Dir.exist?(stub_path)
+            FileUtils.mkdir_p(stub_path)
             FileUtils.touch(File.join(stub_path, "go.mod"))
             FileUtils.touch(File.join(stub_path, "main.go"))
           end

@@ -38,7 +38,7 @@ module Dependabot
                 # replace anything that looks like a version with the new
                 # version
                 req[:requirement].sub(
-                  /#{Nuget::Version::VERSION_PATTERN}/,
+                  /#{Nuget::Version::VERSION_PATTERN}/o,
                   latest_version.to_s
                 )
               end
@@ -58,6 +58,8 @@ module Dependabot
         end
 
         def update_wildcard_requirement(req_string)
+          return req_string if req_string == "*-*"
+
           return req_string if req_string == "*"
 
           precision = req_string.split("*").first.split(/\.|\-/).count

@@ -362,7 +362,9 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
 
       before do
         allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "go get -d").and_return(["", stderr, exit_status])
+        allow(Open3).to receive(:capture3).with(anything,
+                                                "go get github.com/spf13/viper@v1.7.1").and_return(["", stderr,
+                                                                                                    exit_status])
       end
 
       it { expect { subject }.to raise_error(Dependabot::DependencyFileNotResolvable, /The remote end hung up/) }
@@ -603,8 +605,8 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
         expect { updater.updated_go_sum_content }.
           to raise_error(error_class) do |error|
           expect(error.message).to include(
-            "go: github.com/deislabs/oras@v0.9.0 requires\n"\
-            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: "\
+            "go: github.com/deislabs/oras@v0.9.0 requires\n" \
+            "	github.com/docker/distribution@v0.0.0-00010101000000-000000000000: " \
             "invalid version: unknown revision"
           )
         end

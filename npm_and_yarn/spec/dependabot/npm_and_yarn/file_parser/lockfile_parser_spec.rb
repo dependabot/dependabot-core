@@ -202,9 +202,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
         it "finds the one matching the requirement" do
           expect(lockfile_details).to eq(
             "version" => "2.2.1",
-            "resolved" => "https://registry.yarnpkg.com/ansi-styles/-/"\
-                           "ansi-styles-2.2.1.tgz#"\
-                           "b432dd3358b634cf75e1e4664368240533c1ddbe"
+            "resolved" => "https://registry.yarnpkg.com/ansi-styles/-/" \
+                          "ansi-styles-2.2.1.tgz#" \
+                          "b432dd3358b634cf75e1e4664368240533c1ddbe"
           )
         end
 
@@ -267,8 +267,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for an npm7 workspace project with a direct dependency that's installed in the workspace's node_modules" do
-      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package") }
+    context "for an npm8 workspace project with a direct dependency that's installed in the workspace's node_modules" do
+      let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package") }
       let(:dependency_name) { "yargs" }
       let(:manifest_name) { "packages/build/package.json" }
 
@@ -282,8 +282,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for an npm7 workspace project with a direct dependency that's installed in the top-level node_modules" do
-      let(:dependency_files) { project_dependency_files("npm7/workspace_nested_package_top_level") }
+    context "for an npm8 workspace project with a direct dependency that's installed in the top-level node_modules" do
+      let(:dependency_files) { project_dependency_files("npm8/workspace_nested_package_top_level") }
       let(:dependency_name) { "uuid" }
       let(:manifest_name) { "api/package.json" }
 
@@ -297,8 +297,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
       end
     end
 
-    context "for a non-workspace npm 7 lockfile" do
-      let(:dependency_files) { project_dependency_files("npm7/simple") }
+    context "for a non-workspace npm 8 lockfile" do
+      let(:dependency_files) { project_dependency_files("npm8/simple") }
       let(:dependency_name) { "fetch-factory" }
       let(:manifest_name) { "package.json" }
 

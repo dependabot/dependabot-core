@@ -89,8 +89,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
 
         it "locks the dependency" do
           expect(updated_content).to include(
-            "[packages.pythonfinder]\n"\
-            "git = \"https://github.com/sarugaku/pythonfinder.git\"\n"\
+            "[packages.pythonfinder]\n" \
+            "git = \"https://github.com/sarugaku/pythonfinder.git\"\n" \
             "ref = \"9ee85b83290850f99dec2c0ec58a084305047347\"\n"
           )
         end
@@ -101,8 +101,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
 
           it "leaves the dependency alone" do
             expect(updated_content).to include(
-              "[packages.pythonfinder]\n"\
-              "git = \"https://github.com/sarugaku/pythonfinder.git\"\n"\
+              "[packages.pythonfinder]\n" \
+              "git = \"https://github.com/sarugaku/pythonfinder.git\"\n" \
               "ref = \"v0.1.2\"\n"
             )
           end

@@ -5,13 +5,15 @@ require "rubygems_version_patch"
 module Dependabot
   class SecurityAdvisory
     attr_reader :dependency_name, :package_manager,
-                :vulnerable_versions, :safe_versions
+                :vulnerable_versions, :safe_versions,
+                :vulnerable_version_strings
 
     def initialize(dependency_name:, package_manager:,
                    vulnerable_versions: [], safe_versions: [])
       @dependency_name = dependency_name
       @package_manager = package_manager
-      @vulnerable_versions = vulnerable_versions || []
+      @vulnerable_version_strings = vulnerable_versions || []
+      @vulnerable_versions = []
       @safe_versions = safe_versions || []
 
       convert_string_version_requirements
@@ -49,7 +51,7 @@ module Dependabot
     # @return [Boolean]
     def fixed_by?(dependency)
       # Handle case mismatch between the security advisory and parsed name
-      return false unless dependency_name.downcase == dependency.name.downcase
+      return false unless dependency_name.casecmp(dependency.name).zero?
       return false unless package_manager == dependency.package_manager
       # TODO: Support no previous version to the same level as dependency graph
       # and security alerts. We currently ignore dependency updates without a
@@ -59,6 +61,9 @@ module Dependabot
 
       # Ignore deps that weren't previously vulnerable
       return false unless affects_version?(dependency.previous_version)
+
+      # Removing a dependency is a way to fix the vulnerability
+      return true if dependency.removed?
 
       # Select deps that are now fixed
       !affects_version?(dependency.version)
@@ -91,7 +96,7 @@ module Dependabot
     private
 
     def convert_string_version_requirements
-      @vulnerable_versions = vulnerable_versions.flat_map do |vuln_str|
+      @vulnerable_versions = vulnerable_version_strings.flat_map do |vuln_str|
         next vuln_str unless vuln_str.is_a?(String)
 
         requirement_class.requirements_array(vuln_str)
@@ -107,13 +112,13 @@ module Dependabot
     def check_version_requirements
       unless vulnerable_versions.is_a?(Array) &&
              vulnerable_versions.all? { |i| requirement_class <= i.class }
-        raise ArgumentError, "vulnerable_versions must be an array "\
+        raise ArgumentError, "vulnerable_versions must be an array " \
                              "of #{requirement_class} instances"
       end
 
       unless safe_versions.is_a?(Array) &&
              safe_versions.all? { |i| requirement_class <= i.class }
-        raise ArgumentError, "safe_versions must be an array "\
+        raise ArgumentError, "safe_versions must be an array " \
                              "of #{requirement_class} instances"
       end
     end

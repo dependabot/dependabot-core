@@ -1,12 +1,15 @@
 {
+    "name": "dependabot/composer-v1-helper",
+    "description": "A helper package for Dependabot to perform updates using Composer",
+    "license": "The Prosperity Public License 2.0.0",
     "require": {
         "php": "^7.4",
         "ext-json": "*",
-        "composer/composer": "^1.10.9"
+        "composer/composer": "^1"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.9",
-        "phpstan/phpstan": "~1.4.2"
+        "phpstan/phpstan": "~1.8.5"
     },
     "autoload": {
         "psr-4": {

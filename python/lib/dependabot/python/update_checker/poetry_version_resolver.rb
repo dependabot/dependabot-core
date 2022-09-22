@@ -3,6 +3,7 @@
 require "excon"
 require "toml-rb"
 require "open3"
+require "uri"
 require "dependabot/dependency"
 require "dependabot/errors"
 require "dependabot/shared_helpers"
@@ -23,18 +24,30 @@ module Dependabot
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
         GIT_REFERENCE_NOT_FOUND_REGEX = /
-          'git'.*pypoetry-git-(?<name>.+?).{8}',
+          (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
           'checkout',
           '(?<tag>.+?)'
-        /x.freeze
+          |
+          Failed to checkout
+          (?<tag>.+?)
+          (?<url>.+?).git at '(?<tag>.+?)'
+          |
+          ...Failedtoclone
+          (?<url>.+?).gitat'(?<tag>.+?)',
+          verifyrefexistsonremote)
+        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
-            '\['git',
-            \s+'clone',
-            \s+'--recurse-submodules',
-            \s+'(--)?',
-            \s+'(?<url>.+?)'.*
-            \s+exit\s+status\s+128
-          /mx.freeze
+          (?:'\['git',
+          \s+'clone',
+          \s+'--recurse-submodules',
+          \s+'(--)?',
+          \s+'(?<url>.+?)'.*
+          \s+exit\s+status\s+128
+          |
+          \s+Failed\sto\sclone
+          \s+(?<url>.+?),
+          \s+check\syour\sgit\sconfiguration)
+        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -61,13 +74,15 @@ module Dependabot
                                    false
                                  end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          raise unless e.message.include?("SolverProblemError")
+          raise unless e.message.include?("SolverProblemError") || # TODO: Remove once py3.6 is EoL
+                       e.message.include?("version solving failed.")
 
           @resolvable[version] = false
         end
 
         private
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
@@ -76,13 +91,20 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
+                add_auth_env_vars
 
                 if python_version && !pre_installed_python?(python_version)
                   run_poetry_command("pyenv install -s #{python_version}")
+                  run_poetry_command("pyenv exec pip install --upgrade pip")
                   run_poetry_command(
-                    "pyenv exec pip install -r "\
+                    "pyenv exec pip install -r " \
                     "#{NativeHelpers.python_requirements_path}"
                   )
+                end
+
+                # use system git instead of the pure Python dulwich
+                unless python_version&.start_with?("3.6")
+                  run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
                 end
 
                 # Shell out to Poetry, which handles everything for us.
@@ -101,6 +123,7 @@ module Dependabot
               end
             end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
@@ -116,8 +139,13 @@ module Dependabot
         def handle_poetry_errors(error)
           if error.message.gsub(/\s/, "").match?(GIT_REFERENCE_NOT_FOUND_REGEX)
             message = error.message.gsub(/\s/, "")
-            name = message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
-                   named_captures.fetch("name")
+            match = message.match(GIT_REFERENCE_NOT_FOUND_REGEX)
+            name = if (url = match.named_captures.fetch("url"))
+                     File.basename(URI.parse(url).path)
+                   else
+                     message.match(GIT_REFERENCE_NOT_FOUND_REGEX).
+                       named_captures.fetch("name")
+                   end
             raise GitDependencyReferenceNotFound, name
           end
 
@@ -128,7 +156,8 @@ module Dependabot
           end
 
           raise unless error.message.include?("SolverProblemError") ||
-                       error.message.include?("PackageNotFound")
+                       error.message.include?("PackageNotFound") ||
+                       error.message.include?("version solving failed.")
 
           check_original_requirements_resolvable
 
@@ -159,7 +188,8 @@ module Dependabot
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
               raise unless e.message.include?("SolverProblemError") ||
-                           e.message.include?("PackageNotFound")
+                           e.message.include?("PackageNotFound") ||
+                           e.message.include?("version solving failed.")
 
               msg = clean_error_message(e.message)
               raise DependencyFileNotResolvable, msg
@@ -194,6 +224,12 @@ module Dependabot
           end
         end
 
+        def add_auth_env_vars
+          Python::FileUpdater::PyprojectPreparer.
+            new(pyproject_content: pyproject.content).
+            add_auth_env_vars(credentials)
+        end
+
         def python_version
           requirements = python_requirement_parser.user_specified_requirements
           requirements = requirements.
@@ -206,9 +242,9 @@ module Dependabot
           end
           return version if version
 
-          msg = "Dependabot detected the following Python requirements "\
-                "for your project: '#{requirements}'.\n\nCurrently, the "\
-                "following Python versions are supported in Dependabot: "\
+          msg = "Dependabot detected the following Python requirements " \
+                "for your project: '#{requirements}'.\n\nCurrently, the " \
+                "following Python versions are supported in Dependabot: " \
                 "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
           raise DependencyFileNotResolvable, msg
         end
@@ -227,7 +263,6 @@ module Dependabot
         def updated_pyproject_content(updated_requirement:)
           content = pyproject.content
           content = sanitize_pyproject_content(content)
-          content = add_private_sources(content)
           content = freeze_other_dependencies(content)
           content = set_target_dependency_req(content, updated_requirement)
           content
@@ -236,7 +271,6 @@ module Dependabot
         def sanitized_pyproject_content
           content = pyproject.content
           content = sanitize_pyproject_content(content)
-          content = add_private_sources(content)
           content
         end
 
@@ -244,12 +278,6 @@ module Dependabot
           Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject_content).
             sanitize
-        end
-
-        def add_private_sources(pyproject_content)
-          Python::FileUpdater::PyprojectPreparer.
-            new(pyproject_content: pyproject_content).
-            replace_sources(credentials)
         end
 
         def freeze_other_dependencies(pyproject_content)

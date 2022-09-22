@@ -175,11 +175,25 @@ module Dependabot
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def updated_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
 
+          case update_strategy
+          when :bump_versions
+            update_requirement(req)
+          when :bump_versions_if_necessary
+            update_requirement_if_needed(req)
+          end
+        end
+
+        def update_requirement_if_needed(req)
+          return req if new_version_satisfies?(req)
+
+          update_requirement(req)
+        end
+
+        def update_requirement(req)
           requirement_strings = req[:requirement].split(",").map(&:strip)
 
           new_requirement =
@@ -197,7 +211,6 @@ module Dependabot
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def new_version_satisfies?(req)
           requirement_class.
@@ -260,7 +273,7 @@ module Dependabot
         # Updates the version in a constraint to be the given version
         def bump_version(req_string, version_to_be_permitted)
           old_version = req_string.
-                        match(/(#{RequirementParser::VERSION})/).
+                        match(/(#{RequirementParser::VERSION})/o).
                         captures.first
 
           req_string.sub(

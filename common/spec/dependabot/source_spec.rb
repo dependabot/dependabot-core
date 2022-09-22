@@ -256,6 +256,13 @@ RSpec.describe Dependabot::Source do
       its(:directory) { is_expected.to eq("dir") }
     end
 
+    context "with a GitLab subgroup URL" do
+      let(:url) { "https://gitlab.com/org/group/abc/blob/master/dir/readme.md" }
+      its(:provider) { is_expected.to eq("gitlab") }
+      its(:repo) { is_expected.to eq("org/group/abc") }
+      its(:directory) { is_expected.to eq("dir") }
+    end
+
     context "with an Azure DevOps URL" do
       let(:url) { "https://dev.azure.com/greysteil/_git/dependabot-test?path" }
       its(:provider) { is_expected.to eq("azure") }

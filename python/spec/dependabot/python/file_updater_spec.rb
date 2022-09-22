@@ -54,7 +54,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -165,6 +165,55 @@ RSpec.describe Dependabot::Python::FileUpdater do
           to receive(:new).and_call_original
         expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
+    context "with multiple manifests declaring the same dependency" do
+      let(:dependency_files) { [pyproject, requirements] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pytest.toml")
+        )
+      end
+      let(:requirements_fixture_name) { "version_specified.txt" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "3.5.0",
+          previous_version: "3.4.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "3.5.0",
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "==3.5.0",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "3.4.0",
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "==3.4.0",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      # Perhaps ideally we'd replace both, but this is where we're at right now.
+      # See https://github.com/dependabot/dependabot-core/pull/4969
+      it "replaces one of the outdated dependencies" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files[0].content).to include('pytest = "3.5.0"')
       end
     end
 

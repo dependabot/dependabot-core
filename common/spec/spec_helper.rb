@@ -10,6 +10,8 @@ require "stackprof"
 require "uri"
 
 require "dependabot/dependency_file"
+require "dependabot/experiments"
+require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
 require_relative "warning_monkey_patch"
 
@@ -37,6 +39,15 @@ RSpec.configure do |config|
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
   config.raise_errors_for_deprecations!
+  config.example_status_persistence_file_path = ".rspec_status"
+
+  config.after do
+    # Ensure we clear any cached timeouts between tests
+    Dependabot::RegistryClient.clear_cache!
+
+    # Ensure we reset any experiments between tests
+    Dependabot::Experiments.reset!
+  end
 
   config.around do |example|
     if example.metadata[:profile]
@@ -98,7 +109,7 @@ def build_tmp_repo(project, path: "projects")
 
   tmp_dir = Dependabot::Utils::BUMP_TMP_DIR_PATH
   prefix = Dependabot::Utils::BUMP_TMP_FILE_PREFIX
-  Dir.mkdir(tmp_dir) unless Dir.exist?(tmp_dir)
+  FileUtils.mkdir_p(tmp_dir)
   tmp_repo = Dir.mktmpdir(prefix, tmp_dir)
   tmp_repo_path = Pathname.new(tmp_repo).expand_path
   FileUtils.mkpath(tmp_repo_path)
@@ -114,8 +125,8 @@ def build_tmp_repo(project, path: "projects")
   tmp_repo_path.to_s
 end
 
-def project_dependency_files(project)
-  project_path = File.expand_path(File.join("spec/fixtures/projects", project))
+def project_dependency_files(project, directory: "/")
+  project_path = File.expand_path(File.join("spec/fixtures/projects", project, directory))
 
   raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
 
@@ -127,7 +138,8 @@ def project_dependency_files(project)
       content = File.read(filename)
       Dependabot::DependencyFile.new(
         name: filename,
-        content: content
+        content: content,
+        directory: directory
       )
     end
   end
@@ -150,7 +162,7 @@ def github_credentials
       "type" => "git_source",
       "host" => "github.com",
       "username" => "x-access-token",
-      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV["LOCAL_GITHUB_ACCESS_TOKEN"]
+      "password" => ENV["DEPENDABOT_TEST_ACCESS_TOKEN"] || ENV.fetch("LOCAL_GITHUB_ACCESS_TOKEN", nil)
     }]
   end
 end

@@ -1,4 +1,6 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
+
+ARG TARGETARCH=amd64
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -8,9 +10,6 @@ ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
 
-# Everything from `make` onwards in apt-get install is only installed to ensure
-# Python support works with all packages (which may require specific libraries
-# at install time).
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
@@ -25,12 +24,18 @@ RUN apt-get update \
     file \
     zlib1g-dev \
     liblzma-dev \
+    libyaml-dev \
+    libgdbm-dev \
+    bison \
     tzdata \
     zip \
     unzip \
     locales \
     openssh-client \
     software-properties-common \
+    # Everything from here onwards is only installed to ensure
+    # Python support works with all packages (which may require
+    # specific libraries at install time).
     make \
     libpq-dev \
     libssl-dev \
@@ -63,64 +68,78 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ### RUBY
 
-# Install Ruby 2.7, update RubyGems, and install Bundler
+ARG RUBY_VERSION=2.7.6
+ARG RUBY_INSTALL_VERSION=0.8.3
+
+ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
+
+ARG BUNDLER_V1_VERSION=1.17.3
+ARG BUNDLER_V2_VERSION=2.3.14
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-# Disable the outdated rubygems installation from being loaded
-ENV DEBIAN_DISABLE_RUBYGEMS_INTEGRATION=true
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
     BUNDLE_BIN=".bundle/bin"
 ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
-RUN apt-add-repository ppa:brightbox/ruby-ng \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends ruby2.7 ruby2.7-dev \
-  && gem update --system 3.2.20 \
-  && gem install bundler -v 1.17.3 --no-document \
-  && gem install bundler -v 2.2.33 --no-document \
-  && rm -rf /var/lib/gems/2.7.0/cache/* \
-  && rm -rf /var/lib/apt/lists/*
 
+# Install Ruby, update RubyGems, and install Bundler
+RUN mkdir -p /tmp/ruby-install \
+ && cd /tmp/ruby-install \
+ && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
+ && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
+ && cd ruby-install-$RUBY_INSTALL_VERSION/ \
+ && make \
+ && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
+ && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
+ && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-install
 
 ### PYTHON
 
-# Install Python 3.10 with pyenv.
+# Install Python with pyenv.
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git clone https://github.com/pyenv/pyenv.git --branch v2.2.4 --single-branch --depth=1 /usr/local/.pyenv \
-  && pyenv install 3.10.2 \
-  && pyenv global 3.10.2 \
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
+  # This is the version of CPython that gets installed
+  && pyenv install 3.10.5 \
+  && pyenv global 3.10.5 \
   && rm -Rf /tmp/python-build*
 USER root
 
 
 ### JAVASCRIPT
 
-# Install Node 16.0 and npm v8
+# Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@v8.5.1 \
+  && npm install -g npm@8.19.2 \
   && rm -rf ~/.npm
 
 
 ### ELM
 
-# Install Elm 0.19
+# Install Elm
+# This is currently amd64 only, see:
+# - https://github.com/elm/compiler/issues/2007
+# - https://github.com/elm/compiler/issues/2232
 ENV PATH="$PATH:/node_modules/.bin"
-RUN curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
+RUN [ "$TARGETARCH" != "amd64" ] \
+  || (curl -sSLfO "https://github.com/elm/compiler/releases/download/0.19.0/binaries-for-linux.tar.gz" \
   && tar xzf binaries-for-linux.tar.gz \
   && mv elm /usr/local/bin/elm19 \
-  && rm -f binaries-for-linux.tar.gz
+  && rm -f binaries-for-linux.tar.gz)
 
 
 ### PHP
 
-# Install PHP 7.4 and Composer
+# Install PHP and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.25 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.2.6 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:1.10.26 /usr/bin/composer /usr/local/bin/composer1
+COPY --from=composer:2.3.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -150,6 +169,7 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-xml \
     php7.4-zip \
     php7.4-zmq \
+    php7.4-mcrypt \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
@@ -167,14 +187,17 @@ USER root
 ### GO
 
 # Install Go
-ARG GOLANG_VERSION=1.17.7
-ARG GOLANG_CHECKSUM=02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259
+ARG GOLANG_VERSION=1.19
+# You can find the sha here: https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
+ARG GOLANG_AMD64_CHECKSUM=464b6b66591f6cf055bc5df90a9750bf5fbc9d038722bb84a9d56a2bea974be6
+ARG GOLANG_ARM64_CHECKSUM=efa97fac9574fc6ef6c9ff3e3758fb85f1439b046573bf434cccb5e012bd00c8
+
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
-  && curl --http1.1 -o go.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
-  && echo "$GOLANG_CHECKSUM go.tar.gz" | sha256sum -c - \
-  && tar -xzf go.tar.gz -C /opt \
-  && rm go.tar.gz
+  && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
+  && printf "$GOLANG_AMD64_CHECKSUM go-amd64.tar.gz\n$GOLANG_ARM64_CHECKSUM go-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
+  && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
+  && rm go-${TARGETARCH}.tar.gz
 
 
 ### ELIXIR
@@ -182,12 +205,9 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.12.3
-ARG ELIXIR_CHECKSUM=db092caa32b55195eeb24a17e0ab98bb2fea38d2f638bc42fee45a6dfcd3ba0782618d27e281c545651f93914481866b9d34b6d284c7f763d197e87847fdaef4
-# This version is currently pinned to OTP 23, due to an issue that we only hit
-# in production, where traffic is routed through a proxy that OTP 24 doesn't
-# play nice with.
-ARG ERLANG_VERSION=1:23.3.4.5-1
+ARG ELIXIR_VERSION=v1.13.4
+ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
+ARG ERLANG_VERSION=1:24.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
@@ -202,97 +222,87 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
 
 ### RUST
 
-# Install Rust 1.58.0
+# Install Rust
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.58.0 --profile minimal
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.61.0 --profile minimal
 
 
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.1.6
-RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add -
-RUN apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
-  && apt-get update -y \
-  && apt-get install -y --no-install-recommends terraform=${TERRAFORM_VERSION} \
-  && terraform -help \
-  && rm -rf /var/lib/apt/lists/*
-
+ARG TERRAFORM_VERSION=1.2.9
+ARG TERRAFORM_AMD64_CHECKSUM=0e0fc38641addac17103122e1953a9afad764a90e74daf4ff8ceeba4e362f2fb
+ARG TERRAFORM_ARM64_CHECKSUM=6da7bf01f5a72e61255c2d80eddeba51998e2bb1f50a6d81b0d3b71e70e18531
+RUN cd /tmp \
+  && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
+  && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
+  && unzip -d /usr/local/bin terraform-${TARGETARCH}.tar.gz \
+  && rm terraform-${TARGETARCH}.tar.gz
 
 ### DART
 
-# Install Dart 
+# Install Dart
 ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
-ARG DART_VERSION=2.15.1
-RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-x64-release.zip" > "/tmp/dart-sdk.zip" \
+
+ARG DART_VERSION=2.17.0
+RUN DART_ARCH=${TARGETARCH} \
+  && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
+  && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
   && mkdir -p "$PUB_CACHE" \
   && chown dependabot:dependabot "$PUB_CACHE" \
   && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
   && chmod -R o+rx "/opt/dart/dart-sdk" \
   && rm "/tmp/dart-sdk.zip" \
   && dart --version
-# We pull the dependency_services from the dart-lang/pub repo as it is not
-# exposed from the Dart SDK (yet...).
-RUN git clone https://github.com/dart-lang/pub.git /opt/dart/pub \
-  && git -C /opt/dart/pub checkout 941191f7f83ad60259348860197cfcdd83bb8e6f \
-  && dart pub global activate --source path /opt/dart/pub \
-  && chmod -R o+r "/opt/dart/pub" \
-  && chown -R dependabot:dependabot "$PUB_CACHE" \
-  && chown -R dependabot:dependabot /opt/dart/pub
-
-# Install Flutter
-ARG FLUTTER_VERSION=2.8.1
-RUN curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz" > "/tmp/flutter.xz" \
-  && tar xf "/tmp/flutter.xz" -C /opt/dart \
-  && rm "/tmp/flutter.xz" \
-  && chmod -R o+rx "/opt/dart/flutter" \
-  && chown -R dependabot:dependabot "/opt/dart/flutter" \
-  && runuser -l dependabot -c "/opt/dart/flutter/bin/flutter --version" \
-  # To reduce space usage we delete all of the flutter sdk except the few
-  # things needed for pub resolutions:
-  # * The version file
-  # * The flutter sdk packages.
-  && find "/opt/dart/flutter" \
-    ! -path '/opt/dart/flutter/version' \
-    ! -path '/opt/dart/flutter/packages/*' \
-    ! -path '/opt/dart/flutter/packages' \
-    ! -path '/opt/dart/flutter/bin/cache/pkg/*' \
-    ! -path /opt/dart/flutter/bin/cache/pkg \
-    ! -path /opt/dart/flutter/bin/cache \
-    ! -path /opt/dart/flutter/bin \
-    ! -path /opt/dart/flutter \
-    -delete
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
-COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
-COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
-COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
-COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
-COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
-
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt" \
-  PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin" \
-  MIX_HOME="/opt/hex/mix"
 
 USER dependabot
-RUN bash /opt/bundler/helpers/v1/build
-RUN bash /opt/bundler/helpers/v2/build
-RUN bash /opt/composer/helpers/v1/build
-RUN bash /opt/composer/helpers/v2/build
+
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
+RUN bash /opt/composer/helpers/v1/build \
+  && bash /opt/composer/helpers/v2/build
+
+COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
+RUN bash /opt/bundler/helpers/v1/build \
+  && bash /opt/bundler/helpers/v2/build
+
+COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
+
+COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
+ENV MIX_HOME="/opt/hex/mix"
 RUN bash /opt/hex/helpers/build
+
+COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
+RUN bash /opt/pub/helpers/build
+
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
+
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 RUN bash /opt/python/helpers/build
+
+COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
+
+ENV PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin"
 
 ENV HOME="/home/dependabot"
 
 WORKDIR ${HOME}
+
+# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
+ENV PATH="$HOME/bin:$PATH"
+# Configure cargo to use git CLI so the above takes effect
+RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml

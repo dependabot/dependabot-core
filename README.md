@@ -1,8 +1,10 @@
-<p align="center">
-  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/logo-with-name-horizontal.svg?v5" alt="Dependabot" width="336">
-</p>
-
-# Dependabot
+<h1 align="center">
+    <picture>
+        <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/7659/174594540-5e29e523-396a-465b-9a6e-6cab5b15a568.svg">
+        <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/7659/174594559-0b3ddaa7-e75b-4f10-9dee-b51431a9fd4c.svg">
+        <img src="https://user-images.githubusercontent.com/7659/174594540-5e29e523-396a-465b-9a6e-6cab5b15a568.svg" alt="Dependabot" width="336">
+    </picture>
+</h1>
 
 Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
@@ -94,6 +96,9 @@ $ bin/dry-run.rb go_modules rsc/quote
 => updating 2 dependencies
 ...
 ```
+
+Note: If the dependency files are not in the top-level directory, then you must
+also pass the path to the subdirectory as an argument: `--dir /<subdirectory>`.
 
 ### Running the tests
 
@@ -217,6 +222,9 @@ Once that's finished, start the `Debug Dry Run` configuration `(F5)` and you'll 
 to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
 
+There is also support to debug individual test runs by running the `Debug Tests` configuration `(F5)`
+and you'll be promted to select an ecosystem and provide an rspec path.
+
 ⚠️ The `Clone Repository ...` commands of the Remote Containers extension are currently
 missing some functionality and are therefore not supported. You have to clone the
 repository manually and use the `Reopen in Container` or `Open Folder in Container...`
@@ -308,7 +316,7 @@ the following:
   arrangement.
 
 If you make a significant contribution to Dependabot Core then you will be asked
-to transfer the IP of that contribution to Dependabot Ltd so that it can be
+to transfer the IP of that contribution to GitHub Inc. so that it can be
 licensed in the same way as the above.
 
 ## History

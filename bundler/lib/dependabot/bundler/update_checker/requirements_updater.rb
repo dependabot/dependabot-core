@@ -28,7 +28,7 @@ module Dependabot
 
         def updated_requirements
           requirements.map do |req|
-            if req[:file].match?(/\.gemspec/)
+            if req[:file].include?(".gemspec")
               update_gemspec_requirement(req)
             else
               # If a requirement doesn't come from a gemspec, it must be from
@@ -101,7 +101,7 @@ module Dependabot
               when "!="
                 []
               else
-                raise "Unexpected operation for unsatisfied Gemfile "\
+                raise "Unexpected operation for unsatisfied Gemfile " \
                       "requirement: #{op}"
               end
             end

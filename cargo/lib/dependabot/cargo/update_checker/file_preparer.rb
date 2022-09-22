@@ -206,8 +206,7 @@ module Dependabot
               dependency.version
             else
               version_from_requirement =
-                dependency.requirements.map { |r| r.fetch(:requirement) }.
-                compact.
+                dependency.requirements.filter_map { |r| r.fetch(:requirement) }.
                 flat_map { |req_str| Cargo::Requirement.new(req_str) }.
                 flat_map(&:requirements).
                 reject { |req_array| req_array.first.start_with?("<") }.

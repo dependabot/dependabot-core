@@ -13,6 +13,8 @@
 **/.bundle
 **/coverage
 **/Gemfile.lock
+!updater/Gemfile.lock
+!updater/spec/fixtures/**/Gemfile.lock
 **/node_modules
 !**/spec/fixtures/*
 git.store

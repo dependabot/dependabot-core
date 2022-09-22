@@ -732,7 +732,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
           let(:lockfile_fixture_name) { "feature_dependency" }
 
           describe "the first dependency" do
-            subject(:dependency) { dependencies.select(&:top_level?).first }
+            subject(:dependency) { dependencies.find(&:top_level?) }
 
             it "has the right details" do
               expect(dependency).to be_a(Dependabot::Dependency)
@@ -753,7 +753,7 @@ RSpec.describe Dependabot::Cargo::FileParser do
             let(:manifest_fixture_name) { "feature_dependency_no_version" }
 
             describe "the first dependency" do
-              subject(:dependency) { dependencies.select(&:top_level?).first }
+              subject(:dependency) { dependencies.find(&:top_level?) }
 
               it "has the right details" do
                 expect(dependency).to be_a(Dependabot::Dependency)

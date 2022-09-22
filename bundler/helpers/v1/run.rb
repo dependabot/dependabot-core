@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-require "bundler"
+gem "bundler", "~> 1.17"
+require "bundler/setup"
 require "json"
 
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
@@ -14,7 +15,9 @@ end
 # Bundler monkey patches
 require "definition_ruby_version_patch"
 require "definition_bundler_version_patch"
+require "fileutils_keyword_splat_patch"
 require "git_source_patch"
+require "resolver_spec_group_sane_eql"
 
 require "functions"
 

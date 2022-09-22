@@ -48,7 +48,6 @@ module Dependabot
 
     attr_reader :url, :credentials
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def fetch_upload_pack_for(uri)
       response = fetch_raw_upload_pack_for(uri)
       return response.body if response.status == 200
@@ -70,15 +69,10 @@ module Dependabot
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     rescue Excon::Error::Socket, Excon::Error::Timeout
-      retry_count ||= 0
-      retry_count += 1
-
-      sleep(rand(0.9)) && retry if retry_count <= 2 && uri.match?(KNOWN_HOSTS)
       raise if uri.match?(KNOWN_HOSTS)
 
       raise Dependabot::GitDependenciesNotReachable, [uri]
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def fetch_raw_upload_pack_for(uri)
       url = service_pack_uri(uri)
@@ -94,7 +88,7 @@ module Dependabot
       service_pack_uri = uri
       service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
 
-      env = { "PATH" => ENV["PATH"] }
+      env = { "PATH" => ENV.fetch("PATH", nil) }
       command = "git ls-remote #{service_pack_uri}"
       command = SharedHelpers.escape_command(command)
 
@@ -131,7 +125,7 @@ module Dependabot
         full_ref_name = line.split.last
         next unless full_ref_name.start_with?("refs/tags", "refs/heads")
 
-        peeled_lines << line && next if line.strip.end_with?("^{}")
+        (peeled_lines << line) && next if line.strip.end_with?("^{}")
 
         ref_name = full_ref_name.sub(%r{^refs/(tags|heads)/}, "").strip
         sha = sha_for_update_pack_line(line)

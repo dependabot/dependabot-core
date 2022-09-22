@@ -310,7 +310,7 @@ module Dependabot
         # https://developercommunity.visualstudio.com/content/problem/608770/remove-4000-character-limit-on-pull-request-descri.html
         pr_description = pr_description.dup.force_encoding(Encoding::UTF_16)
         if pr_description.length > MAX_PR_DESCRIPTION_LENGTH
-          truncated_msg = "...\n\n_Description has been truncated_".dup.force_encoding(Encoding::UTF_16)
+          truncated_msg = (+"...\n\n_Description has been truncated_").force_encoding(Encoding::UTF_16)
           truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
           pr_description = (pr_description[0..truncate_length] + truncated_msg)
         end

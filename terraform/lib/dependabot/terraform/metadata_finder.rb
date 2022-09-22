@@ -31,14 +31,14 @@ module Dependabot
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
       end
 
       def find_source_from_registry_details
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
         hostname = info[:registry_hostname] || info["registry_hostname"]
 
         RegistryClient.

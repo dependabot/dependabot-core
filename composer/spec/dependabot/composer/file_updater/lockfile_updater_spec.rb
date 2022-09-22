@@ -53,7 +53,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
   end
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "the updated lockfile" do
     subject(:updated_lockfile_content) do
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.2.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.3.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       it "raises a helpful error" do
         expect { updated_lockfile_content }.to raise_error do |error|
           expect(error.message).to include("Your requirements could not be resolved to an installable set of packages.")
-          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.2.0]")
+          expect(error.message).to include("requires composer-plugin-api ^1.0 -> found composer-plugin-api[2.3.0]")
           expect(error).to be_a Dependabot::DependencyFileNotResolvable
         end
       end

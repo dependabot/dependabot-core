@@ -1,0 +1,16 @@
+{
+  "name": "test-yarn",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "me",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/core": "^7.4.0",
+    "jquery": "3.4",
+    "node-forge": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/babel__core": "7.0.5",
+    "@types/node-forge": "1.0.0"
+  }
+}

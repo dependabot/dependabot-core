@@ -169,8 +169,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with source code hosted on GitHub" do
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
         let(:service_pack_url) do
-          "https://github.com/gocardless/business.git/info/refs"\
-          "?service=git-upload-pack"
+          "https://github.com/gocardless/business.git/info/refs" \
+            "?service=git-upload-pack"
         end
         before do
           stub_request(:get, service_pack_url).
@@ -289,12 +289,12 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
-          "https://bitbucket.org/gocardless/business.git/info/refs"\
-          "?service=git-upload-pack"
+          "https://bitbucket.org/gocardless/business.git/info/refs" \
+            "?service=git-upload-pack"
         end
         let(:bitbucket_url) do
-          "https://api.bitbucket.org/2.0/repositories/"\
-          "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
+          "https://api.bitbucket.org/2.0/repositories/" \
+            "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
         before do
           stub_request(:get, service_pack_url).
@@ -522,7 +522,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         let(:git_url) do
           "https://github.com/gocardless/business.git" \
-          "/info/refs?service=git-upload-pack"
+            "/info/refs?service=git-upload-pack"
         end
 
         context "that can be reached just fine" do
@@ -563,7 +563,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       let(:git_url) do
         "https://github.com/gocardless/business.git" \
-        "/info/refs?service=git-upload-pack"
+          "/info/refs?service=git-upload-pack"
       end
 
       context "that can be reached just fine" do
@@ -673,7 +673,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         let(:git_url) do
           "https://bitbucket.org/gocardless/business.git" \
-          "/info/refs?service=git-upload-pack"
+            "/info/refs?service=git-upload-pack"
         end
 
         context "that needs credentials to succeed" do
@@ -711,7 +711,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               let(:source) do
                 {
                   type: "git",
-                  url: "https://x-access-token:token@bitbucket.org/gocardless/"\
+                  url: "https://x-access-token:token@bitbucket.org/gocardless/" \
                        "business",
                   branch: "master",
                   ref: "master"
@@ -884,6 +884,29 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#head_commit_for_local_branch" do
+    let(:tip_of_example) { "303b8a83c87d5c6d749926cf02620465a5dcd0f2" }
+
+    subject { checker.head_commit_for_local_branch("example") }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    let(:upload_pack_fixture) { "monolog" }
+
+    it { is_expected.to eq(tip_of_example) }
+  end
+
   describe "#local_tag_for_latest_version" do
     subject { checker.local_tag_for_latest_version }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
@@ -1042,6 +1065,71 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_tags_for_latest_version_commit_sha" do
+    subject { checker.local_tags_for_latest_version_commit_sha }
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+    let(:upload_pack_fixture) { "no_tags" }
+
+    context "with no tags on GitHub" do
+      it { is_expected.to eq([]) }
+    end
+
+    context "but GitHub returns a 404" do
+      let(:url) { "https://github.com/gocardless/business.git" }
+
+      before do
+        stub_request(:get, service_pack_url).to_return(status: 404)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+      end
+
+      it "raises a helpful error" do
+        expect { checker.local_tags_for_latest_version_commit_sha }.
+          to raise_error(Dependabot::GitDependenciesNotReachable)
+      end
+    end
+
+    context "with tags on GitHub" do
+      context "but no version tags" do
+        let(:upload_pack_fixture) { "no_versions" }
+        it { is_expected.to eq([]) }
+      end
+
+      context "with version tags" do
+        let(:upload_pack_fixture) { "actions-checkout" }
+        let(:tags) do
+          [{
+            commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+            tag: "v2",
+            tag_sha: anything,
+            version: anything
+          },
+           {
+             commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+             tag: "v2.3.4",
+             tag_sha: anything,
+             version: anything
+           }]
+        end
+
+        it { is_expected.to match_array(tags) }
+      end
+    end
+  end
+
   describe "#local_tag_for_pinned_version" do
     subject { checker.local_tag_for_pinned_version }
 
@@ -1119,7 +1207,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     let(:git_url) do
       "https://github.com/gocardless/business.git" \
-      "/info/refs?service=git-upload-pack"
+        "/info/refs?service=git-upload-pack"
     end
 
     context "that can be reached just fine" do

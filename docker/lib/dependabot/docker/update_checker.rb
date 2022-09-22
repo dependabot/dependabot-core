@@ -43,7 +43,7 @@ module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX =
-        /v?(?<version>[0-9]+(?:(?:\.[a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
+        /v?(?<version>[0-9]+(?:(?:\.[_a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
       VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
       VERSION_WITH_PFX_AND_SFX =
@@ -146,8 +146,7 @@ module Dependabot
           # Prune out any downgrade tags before checking for pre-releases
           # (which requires a call to the registry for each tag, so can be slow)
           candidate_tags = comparable_tags_from_registry(version)
-          non_downgrade_tags = remove_version_downgrades(candidate_tags, version)
-          candidate_tags = non_downgrade_tags if non_downgrade_tags.any?
+          candidate_tags = remove_version_downgrades(candidate_tags, version)
 
           unless prerelease?(version)
             candidate_tags =
@@ -348,7 +347,8 @@ module Dependabot
           DockerRegistry2::Registry.new(
             "https://#{registry_hostname}",
             user: registry_credentials&.fetch("username", nil),
-            password: registry_credentials&.fetch("password", nil)
+            password: registry_credentials&.fetch("password", nil),
+            read_timeout: 10
           )
       end
 

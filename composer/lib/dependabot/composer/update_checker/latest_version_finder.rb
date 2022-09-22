@@ -104,7 +104,7 @@ module Dependabot
 
           urls = repositories.
                  select { |h| h["type"] == "composer" }.
-                 map { |h| h["url"] }.compact.
+                 filter_map { |h| h["url"] }.
                  map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
           unless repositories.any? { |rep| rep["packagist.org"] == false }
@@ -121,12 +121,12 @@ module Dependabot
         def fetch_registry_versions_from_url(url)
           cred = registry_credentials.find { |c| url.include?(c["registry"]) }
 
-          response = Excon.get(
-            url,
-            idempotent: true,
-            user: cred&.fetch("username", nil),
-            password: cred&.fetch("password", nil),
-            **SharedHelpers.excon_defaults
+          response = Dependabot::RegistryClient.get(
+            url: url,
+            options: {
+              user: cred&.fetch("username", nil),
+              password: cred&.fetch("password", nil)
+            }
           )
 
           parse_registry_response(response, url)

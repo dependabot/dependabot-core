@@ -42,13 +42,15 @@ module Dependabot
           return unless yarn_lock || package_lock
           return unless global_registry
 
-          "registry = https://#{global_registry['registry']}\n"\
-          "#{global_registry_auth_line}"\
-          "always-auth = true"
+          "registry = https://#{global_registry['registry']}\n" \
+            "#{global_registry_auth_line}" \
+            "always-auth = true"
         end
 
         def global_registry # rubocop:disable Metrics/PerceivedComplexity
-          @global_registry ||=
+          return @global_registry if defined?(@global_registry)
+
+          @global_registry =
             registry_credentials.find do |cred|
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
@@ -87,7 +89,7 @@ module Dependabot
           if package_lock
             @dependency_urls +=
               parsed_package_lock.fetch("dependencies", {}).
-              map { |_, details| details["resolved"] }.compact.
+              filter_map { |_, details| details["resolved"] }.
               select { |url| url.is_a?(String) }.
               reject { |url| url.start_with?("git") }
           end
@@ -112,8 +114,8 @@ module Dependabot
           return initial_content unless global_registry
 
           initial_content +
-            "registry = https://#{global_registry['registry']}\n"\
-            "#{global_registry_auth_line}"\
+            "registry = https://#{global_registry['registry']}\n" \
+            "#{global_registry_auth_line}" \
             "always-auth = true\n"
         end
 
@@ -132,21 +134,24 @@ module Dependabot
         def credential_lines_for_npmrc
           lines = []
           registry_credentials.each do |cred|
-            registry = cred.fetch("registry").sub(%r{\/?$}, "/")
+            registry = cred.fetch("registry")
 
             lines += registry_scopes(registry) if registry_scopes(registry)
 
             token = cred.fetch("token", nil)
             next unless token
 
+            # We need to ensure the registry uri ends with a trailing slash in the npmrc file
+            # but we do not want to add one if it already exists
+            registry_with_trailing_slash = registry.sub(%r{\/?$}, "/")
             if token.include?(":")
               encoded_token = Base64.encode64(token).delete("\n")
-              lines << "//#{registry}:_auth=#{encoded_token}"
+              lines << "//#{registry_with_trailing_slash}:_auth=#{encoded_token}"
             elsif Base64.decode64(token).ascii_only? &&
                   Base64.decode64(token).include?(":")
-              lines << %(//#{registry}:_auth=#{token.delete("\n")})
+              lines << %(//#{registry_with_trailing_slash}:_auth=#{token.delete("\n")})
             else
-              lines << "//#{registry}:_authToken=#{token}"
+              lines << "//#{registry_with_trailing_slash}:_authToken=#{token}"
             end
           end
 
@@ -161,15 +166,13 @@ module Dependabot
 
           @npmrc_scoped_registries ||=
             npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
-            map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }.
-            compact
+            filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
         def registry_scopes(registry)
           # Central registries don't just apply to scopes
           return if CENTRAL_REGISTRIES.include?(registry)
-
           return unless dependency_urls
 
           other_regs =

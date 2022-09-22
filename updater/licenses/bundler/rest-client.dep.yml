@@ -1,0 +1,141 @@
+---
+name: rest-client
+version: 2.1.0
+type: bundler
+summary: Simple HTTP and REST client for Ruby, inspired by microframework syntax for
+  specifying actions.
+homepage: https://github.com/rest-client/rest-client
+license: mit
+licenses:
+- sources: LICENSE
+  text: |
+    The MIT License (MIT)
+
+    Copyright (c) 2008-2014 Rest Client Authors
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+notices:
+- sources: AUTHORS
+  text: |-
+    The Ruby REST Client would not be what it is today without the help of
+    the following kind souls:
+
+    Adam Jacob
+    Adam Wiggins
+    Adrian Rangel
+    Alex Tomlins
+    Aman Gupta
+    Andy Brody
+    Avi Deitcher
+    Blake Mizerany
+    Brad Ediger
+    Braintree
+    Brian Donovan
+    Caleb Land
+    Chris Dinn
+    Chris Frohoff
+    Chris Green
+    Coda Hale
+    Crawford
+    Cyril Rohr
+    Dan Mayer
+    Dario Hamidi
+    Darren Coxall
+    David Backeus
+    David Perkowski
+    Dmitri Dolguikh
+    Dusty Doris
+    Dylan Egan
+    El Draper
+    Evan Broder
+    Evan Smith
+    François Beausoleil
+    Gabriele Cirulli
+    Garry Shutler
+    Giovanni Cappellotto
+    Greg Borenstein
+    Harm Aarts
+    Hiro Asari
+    Hugh McGowan
+    Ian Warshak
+    Igor Zubkov
+    Ivan Makfinsky
+    JH. Chabran
+    James Edward Gray II
+    Jari Bakken
+    Jeff Pereira
+    Jeff Remer
+    Jeffrey Hardy
+    Jeremy Kemper
+    Joe Rafaniello
+    John Barnette
+    Jon Rowe
+    Jordi Massaguer Pla
+    Joshua J. Campoverde
+    Juan Alvarez
+    Julien Kirch
+    Jun Aruga
+    Justin Coyne
+    Justin Lambert
+    Keith Rarick
+    Kenichi Kamiya
+    Kevin Read
+    Kosuke Asami
+    Kyle Meyer
+    Kyle VanderBeek
+    Lars Gierth
+    Lawrence Leonard Gilbert
+    Lee Jarvis
+    Lennon Day-Reynolds
+    Lin Jen-Shin
+    Magne Matre Gåsland
+    Marc-André Cournoyer
+    Marius Butuc
+    Matthew Manning
+    Michael Klett
+    Michael Rykov
+    Michael Westbom
+    Mike Fletcher
+    Nelson Elhage
+    Nicholas Wieland
+    Nick Hammond
+    Nick Plante
+    Niko Dittmann
+    Nikolay Shebanov
+    Oscar Del Ben
+    Pablo Astigarraga
+    Paul Dlug
+    Pedro Belo
+    Pedro Chambino
+    Philip Corliss
+    Pierre-Louis Gottfrois
+    Rafael Ssouza
+    Richard Schneeman
+    Rick Olson
+    Robert Eanes
+    Rodrigo Panachi
+    Sam Norbury
+    Samuel Cochran
+    Syl Turner
+    T. Watanabe
+    Tekin
+    W. Andrew Loe III
+    Waynn Lue
+    Xavier Shay
+    tpresa

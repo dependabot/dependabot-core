@@ -70,7 +70,7 @@ module Dependabot
           dependency_files.each do |file|
             path = File.join(@repo_contents_path, directory, file.name)
             path = Pathname.new(path).expand_path
-            FileUtils.mkdir_p(path.dirname) unless Dir.exist?(path.dirname)
+            FileUtils.mkdir_p(path.dirname)
             File.write(path, file.content)
           end
 

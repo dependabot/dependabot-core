@@ -6,6 +6,7 @@ RUN git config --global user.name dependabot-ci \
 ARG CODE_DIR=/home/dependabot/dependabot-core
 WORKDIR ${CODE_DIR}
 
+COPY --chown=dependabot:dependabot .ruby-version ${CODE_DIR}/.ruby-version
 COPY --chown=dependabot:dependabot .rubocop.yml ${CODE_DIR}/.rubocop.yml
 COPY --chown=dependabot:dependabot omnibus ${CODE_DIR}/omnibus
 COPY --chown=dependabot:dependabot git_submodules ${CODE_DIR}/git_submodules

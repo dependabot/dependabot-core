@@ -48,15 +48,14 @@ module Dependabot
             %w(yarn.lock package-lock.json npm-shrinkwrap.json)
 
           possible_lockfile_names.uniq.
-            map { |nm| dependency_files.find { |f| f.name == nm } }.
-            compact
+            filter_map { |nm| dependency_files.find { |f| f.name == nm } }
         end
 
         def npm_lockfile_details(lockfile, dependency_name, manifest_name)
           parsed_lockfile = parse_package_lock(lockfile)
 
-          if Helpers.npm_version(lockfile.content) == "npm7"
-            # NOTE: npm 7 sometimes doesn't install workspace dependencies in the
+          if Helpers.npm_version(lockfile.content) == "npm8"
+            # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
             # workspace folder so we need to fallback to checking top-level
             nested_details = parsed_lockfile.dig("packages", node_modules_path(manifest_name, dependency_name))
             details = nested_details || parsed_lockfile.dig("packages", "node_modules/#{dependency_name}")

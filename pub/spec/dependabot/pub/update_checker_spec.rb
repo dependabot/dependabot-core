@@ -32,6 +32,9 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         res.body = File.read(File.join("..", "..", f))
       end
     end
+    @server.mount_proc "/flutter_releases.json" do |_req, res|
+      res.body = File.read(File.join(__dir__, "..", "..", "fixtures", "flutter_releases.json"))
+    end
   end
 
   after do
@@ -56,23 +59,29 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       }],
       ignored_versions: ignored_versions,
       options: {
-        pub_hosted_url: "http://localhost:#{@server[:Port]}"
-      }
+        pub_hosted_url: "http://localhost:#{@server[:Port]}",
+        flutter_releases_url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
+      },
+      raise_on_ignored: raise_on_ignored,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
 
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
 
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
       # This version is ignored by dependency_services, but will be seen by base
-      version: "0.0.0",
+      version: dependency_version,
       requirements: requirements,
       package_manager: "pub"
     )
   end
+  let(:dependency_version) { "0.0.0" }
 
+  let(:requirements_update_strategy) { nil } # nil means "auto".
   let(:dependency_name) { "retry" }
   let(:requirements) { [] }
 
@@ -81,6 +90,10 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     files.each do |file|
       # Simulate that the lockfile was from localhost:
       file.content.gsub!("https://pub.dartlang.org", "http://localhost:#{@server[:Port]}")
+      if defined?(git_dir)
+        file.content.gsub!("$GIT_DIR", git_dir)
+        file.content.gsub!("$REF", dependency_version)
+      end
     end
     files
   end
@@ -107,28 +120,102 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             }],
             "previous_version" => "1.14.13",
             "requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^1.15.0", source: nil
+              file: "pubspec.yaml", groups: ["direct"], requirement: "^1.16.0", source: nil
             }],
-            "version" => "1.15.0" }
+            "version" => "1.16.0" }
         ]
       end
     end
 
     context "unlocking own" do
       let(:requirements_to_unlock) { :own }
-      it "can update" do
-        expect(can_update).to be_truthy
-        expect(updated_dependencies).to eq [
-          { "name" => "collection",
-            "package_manager" => "pub",
-            "previous_requirements" => [],
-            # Dependabot lifts this from the original dependency.
-            "previous_version" => "0.0.0",
-            "requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^1.15.0", source: nil
-            }],
-            "version" => "1.15.0" }
-        ]
+      context "with auto-strategy" do
+        context "app (no version)" do
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "collection",
+                "package_manager" => "pub",
+                "previous_requirements" => [],
+                # Dependabot lifts this from the original dependency.
+                "previous_version" => "0.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^1.16.0", source: nil
+                }],
+                "version" => "1.16.0" }
+            ]
+          end
+        end
+        context "library (has version)" do
+          let(:project) { "can_update_library" }
+
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "collection",
+                "package_manager" => "pub",
+                "previous_requirements" => [],
+                # Dependabot lifts this from the original dependency.
+                "previous_version" => "0.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+                }],
+                "version" => "1.16.0" }
+            ]
+          end
+        end
+      end
+      context "with bump_versions strategy" do
+        let(:requirements_update_strategy) { "bump_versions" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.16.0", source: nil
+              }],
+              "version" => "1.16.0" }
+          ]
+        end
+      end
+      context "with bump_versions_if_necessary strategy" do
+        let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+              }],
+              "version" => "1.16.0" }
+          ]
+        end
+      end
+      context "with widen_ranges strategy" do
+        let(:requirements_update_strategy) { "widen_ranges" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "collection",
+              "package_manager" => "pub",
+              "previous_requirements" => [],
+              # Dependabot lifts this from the original dependency.
+              "previous_version" => "0.0.0",
+              "requirements" => [{
+                # No widening needed for this update.
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^1.14.13", source: nil
+              }],
+              "version" => "1.16.0" }
+          ]
+        end
       end
     end
 
@@ -143,14 +230,14 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
             # Dependabot lifts this from the original dependency.
             "previous_version" => "0.0.0",
             "requirements" => [],
-            "version" => "1.15.0" }
+            "version" => "1.16.0" }
         ]
       end
     end
 
     context "will not upgrade to ignored version" do
       let(:requirements_to_unlock) { :none }
-      let(:ignored_versions) { ["1.15.0"] }
+      let(:ignored_versions) { ["1.16.0"] }
       it "cannot update" do
         expect(can_update).to be_falsey
       end
@@ -161,20 +248,114 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
 
     context "unlocking all" do
       let(:requirements_to_unlock) { :all }
-      it "can update" do
-        expect(can_update).to be_truthy
-        expect(updated_dependencies).to eq [
-          { "name" => "retry",
-            "package_manager" => "pub",
-            "previous_requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
-            }],
-            "previous_version" => "2.0.0",
-            "requirements" => [{
-              file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
-            }],
-            "version" => "3.1.0" }
-        ]
+      context "with auto-strategy" do
+        context "app (no version)" do
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+        context "app (version but publish_to: none)" do
+          let(:project) { "can_update_publish_to_none" }
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+        context "library (has version)" do
+          let(:project) { "can_update_library" }
+          it "can update" do
+            expect(can_update).to be_truthy
+            expect(updated_dependencies).to eq [
+              { "name" => "retry",
+                "package_manager" => "pub",
+                "previous_requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+                }],
+                "previous_version" => "2.0.0",
+                "requirements" => [{
+                  file: "pubspec.yaml", groups: ["direct"], requirement: ">=2.0.0 <4.0.0", source: nil
+                }],
+                "version" => "3.1.0" }
+            ]
+          end
+        end
+      end
+      context "with bump_versions strategy" do
+        let(:requirements_update_strategy) { "bump_versions" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
+      end
+      context "with bump_versions_if_necessary strategy" do
+        let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
+      end
+      context "with widen_ranges strategy" do
+        let(:requirements_update_strategy) { "widen_ranges" }
+        it "can update" do
+          expect(can_update).to be_truthy
+          expect(updated_dependencies).to eq [
+            { "name" => "retry",
+              "package_manager" => "pub",
+              "previous_requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+              }],
+              "previous_version" => "2.0.0",
+              "requirements" => [{
+                file: "pubspec.yaml", groups: ["direct"], requirement: ">=2.0.0 <4.0.0", source: nil
+              }],
+              "version" => "3.1.0" }
+          ]
+        end
       end
     end
 
@@ -293,6 +474,141 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         expect(checker.latest_version.to_s).to eq "1.0.0"
         expect(can_update).to be_falsey
       end
+    end
+  end
+
+  context "when raise_on_ignored is true" do
+    let(:raise_on_ignored) { true }
+
+    context "when later versions are allowed" do
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.14.13" }
+      let(:ignored_versions) { ["< 1.14.13"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version" do
+      let(:dependency_name) { "path" }
+      let(:dependency_version) { "1.8.0" }
+      let(:ignored_versions) { ["> 1.8.0"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is on the latest version but it's ignored" do
+      let(:dependency_name) { "path" }
+      let(:dependency_version) { "1.8.0" }
+      let(:ignored_versions) { [">= 0"] }
+
+      it "doesn't raise an error" do
+        expect { checker.latest_version }.to_not raise_error
+      end
+    end
+
+    context "when the user is ignoring all later versions" do
+      let(:dependency_name) { "collection" }
+      let(:dependency_version) { "1.14.13" }
+      let(:ignored_versions) { ["> 1.14.13"] }
+      let(:raise_on_ignored) { true }
+
+      it "raises an error" do
+        expect { checker.latest_version }.to raise_error(Dependabot::AllVersionsIgnored)
+      end
+    end
+  end
+
+  context "With a git dependency" do
+    include_context :uses_temp_dir
+
+    let(:project) { "git_dependency" }
+
+    let(:git_dir) { File.join(temp_dir, "foo.git") }
+    let(:foo_pubspec) { File.join(git_dir, "pubspec.yaml") }
+
+    let(:dependency_name) { "foo" }
+    let(:dependency_version) do
+      FileUtils.mkdir_p git_dir
+      run_git ["init"], git_dir
+
+      File.write(foo_pubspec, '{"name":"foo", "version": "1.0.0", "environment": {"sdk": "^2.0.0"}}')
+      run_git ["add", "."], git_dir
+      run_git ["commit", "-am", "some commit message"], git_dir
+      ref = run_git(%w(rev-parse HEAD), git_dir).strip
+      ref
+    end
+    let(:requirements_to_unlock) { :all }
+    let(:requirements_update_strategy) { "bump_versions_if_necessary" }
+
+    it "updates to latest git commit" do
+      dependency_version # triggers the initial commit.
+      File.write(foo_pubspec, '{"name":"foo", "version": "2.0.0", "environment": {"sdk": "^2.0.0"}}')
+      run_git ["add", "."], git_dir
+      run_git ["commit", "-am", "some commit message"], git_dir
+      new_ref = run_git(%w(rev-parse HEAD), git_dir).strip
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "foo",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "any", source: nil
+          }],
+          "previous_version" => dependency_version,
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "any", source: nil
+          }],
+          "version" => new_ref }
+      ]
+    end
+  end
+
+  context "works for a flutter project" do
+    include_context :uses_temp_dir
+
+    let(:project) { "requires_flutter" }
+    let(:requirements_to_unlock) { :all }
+    let(:dependency_name) { "retry" }
+    it "can update" do
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "retry",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+          }],
+          "previous_version" => "2.0.0",
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+          }],
+          "version" => "3.1.0" }
+      ]
+    end
+  end
+
+  context "works for a flutter project requiring a flutter beta" do
+    include_context :uses_temp_dir
+
+    let(:project) { "requires_latest_beta" }
+    let(:requirements_to_unlock) { :all }
+    let(:dependency_name) { "retry" }
+    it "can update" do
+      expect(can_update).to be_truthy
+      expect(updated_dependencies).to eq [
+        { "name" => "retry",
+          "package_manager" => "pub",
+          "previous_requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^2.0.0", source: nil
+          }],
+          "previous_version" => "2.0.0",
+          "requirements" => [{
+            file: "pubspec.yaml", groups: ["direct"], requirement: "^3.1.0", source: nil
+          }],
+          "version" => "3.1.0" }
+      ]
     end
   end
 end

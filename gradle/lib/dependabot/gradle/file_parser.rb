@@ -59,8 +59,7 @@ module Dependabot
 
       def self.find_includes(buildfile, dependency_files)
         FileParser.find_include_names(buildfile).
-          map { |f| dependency_files.find { |bf| bf.name == f } }.
-          compact
+          filter_map { |f| dependency_files.find { |bf| bf.name == f } }
       end
 
       private
@@ -161,9 +160,9 @@ module Dependabot
 
         plugin_blocks.each do |blk|
           blk.lines.each do |line|
-            name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/
+            name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o
             name = line.match(name_regex)&.named_captures&.fetch("id")
-            version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/
+            version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/o
             version = line.match(version_regex)&.named_captures&.
                 fetch("version")
             next unless name && version
@@ -178,7 +177,7 @@ module Dependabot
       end
 
       def extra_groups(line)
-        line.match(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/) ? ["kotlin"] : []
+        line.match?(/kotlin(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o) ? ["kotlin"] : []
       end
 
       def argument_from_string(string, arg_name)

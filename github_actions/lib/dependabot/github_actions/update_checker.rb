@@ -59,32 +59,62 @@ module Dependabot
       end
 
       def fetch_latest_version_for_git_dependency
-        return git_commit_checker.head_commit_for_current_branch unless git_commit_checker.pinned?
+        return current_commit unless git_commit_checker.pinned?
 
         # If the dependency is pinned to a tag that looks like a version then
         # we want to update that tag.
-        if git_commit_checker.pinned_ref_looks_like_version? &&
-           git_commit_checker.local_tag_for_latest_version
-          latest_tag = git_commit_checker.local_tag_for_latest_version
-          latest_version = latest_tag.fetch(:version)
+        if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
+          latest_version = latest_version_tag.fetch(:version)
           return version_class.new(dependency.version) if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
           return latest_version
         end
 
-        # If the dependency is pinned to a commit SHA and the latest
-        # version-like tag includes that commit then we want to update to that
-        # version-like tag. We return a version (not a commit SHA) so that we
-        # get nice behaviour in PullRequestCreator::MessageBuilder
-        if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version])
-          return latest_tag.fetch(:version)
+        if git_commit_checker.pinned_ref_looks_like_commit_sha? && latest_version_tag
+          latest_version = latest_version_tag.fetch(:version)
+          return latest_commit_for_pinned_ref unless git_commit_checker.branch_or_ref_in_release?(latest_version)
+
+          return latest_version
         end
 
         # If the dependency is pinned to a tag that doesn't look like a
         # version or a commit SHA then there's nothing we can do.
         nil
+      end
+
+      def latest_commit_for_pinned_ref
+        @latest_commit_for_pinned_ref ||=
+          SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
+            ref_branch = find_container_branch(current_commit)
+
+            git_commit_checker.head_commit_for_local_branch(ref_branch)
+          end
+      end
+
+      def latest_version_tag
+        @latest_version_tag ||= begin
+          return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
+
+          latest_tags = git_commit_checker.local_tags_for_latest_version_commit_sha
+
+          # Find the latest version with the same precision as the pinned version.
+          # Falls back to a version with the closest precision if no exact match.
+          current_dots = dependency.version.split(".").length
+          latest_tags.max do |a, b|
+            next a[:version] <=> b[:version] unless shortened_semver_version_eq?(a[:version], b[:version])
+
+            a_dots = a[:version].to_s.split(".").length
+            b_dots = b[:version].to_s.split(".").length
+            a_diff = (a_dots - current_dots).abs
+            b_diff = (b_dots - current_dots).abs
+            next -(a_diff <=> b_diff) unless a_diff == b_diff
+
+            # preference to a less specific version if we have a tie
+            next 1 if a_dots < current_dots
+
+            -1
+          end
+        end
       end
 
       def updated_source
@@ -93,21 +123,31 @@ module Dependabot
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
-           (new_tag = git_commit_checker.local_tag_for_latest_version) &&
+           (new_tag = latest_version_tag) &&
            new_tag.fetch(:commit_sha) != current_commit
           return dependency_source_details.merge(ref: new_tag.fetch(:tag))
         end
 
-        # Update the git commit if updating a pinned commit
+        # Update the pinned git commit if one is available
         if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
-           (latest_tag = git_commit_checker.local_tag_for_latest_version) &&
-           git_commit_checker.branch_or_ref_in_release?(latest_tag[:version]) &&
-           (latest_commit = latest_tag.fetch(:commit_sha)) != current_commit
-          return dependency_source_details.merge(ref: latest_commit)
+           (new_commit_sha = latest_commit_sha) &&
+           new_commit_sha != current_commit
+          return dependency_source_details.merge(ref: new_commit_sha)
         end
 
         # Otherwise return the original source
         dependency_source_details
+      end
+
+      def latest_commit_sha
+        new_tag = latest_version_tag
+        return unless new_tag
+
+        if git_commit_checker.branch_or_ref_in_release?(new_tag.fetch(:version))
+          new_tag.fetch(:commit_sha)
+        else
+          latest_commit_for_pinned_ref
+        end
       end
 
       def dependency_source_details
@@ -151,6 +191,30 @@ module Dependabot
         return false unless base_split.length <= other_split.length
 
         other_split[0..base_split.length - 1] == base_split
+      end
+
+      def shortened_semver_version_eq?(base_version, other_version)
+        base = base_version.to_s
+        other = other_version.to_s
+
+        shortened_semver_eq?(base, other) || shortened_semver_eq?(other, base)
+      end
+
+      def find_container_branch(sha)
+        SharedHelpers.run_shell_command("git fetch #{current_commit}")
+
+        branches_including_ref = SharedHelpers.run_shell_command("git branch --contains #{sha}").split("\n")
+
+        current_branch = branches_including_ref.find { |line| line.start_with?("* ") }
+
+        if current_branch
+          current_branch.delete_prefix("* ")
+        elsif branches_including_ref.size > 1
+          # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
+          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{current_commit}!"
+        else
+          branches_including_ref.first
+        end
       end
     end
   end

@@ -1,20 +1,23 @@
 # frozen_string_literal: true
 
+require "digest"
+
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length
 
       def initialize(dependencies:, files:, target_branch:, separator: "/",
-                     prefix: "dependabot")
+                     prefix: "dependabot", max_length: nil)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
         @separator     = separator
         @prefix        = prefix
+        @max_length    = max_length
       end
 
       def new_branch_name
@@ -37,7 +40,15 @@ module Dependabot
           end
 
         # Some users need branch names without slashes
-        sanitize_ref(File.join(prefixes, @name).gsub("/", separator))
+        sanitized_name = sanitize_ref(File.join(prefixes, @name).gsub("/", separator))
+
+        # Shorten the ref in case users refs have length limits
+        if @max_length && (sanitized_name.length > @max_length)
+          sha = Digest::SHA1.hexdigest(sanitized_name)[0, @max_length]
+          sanitized_name[[@max_length - sha.size, 0].max..] = sha
+        end
+
+        sanitized_name
       end
 
       private
@@ -90,7 +101,9 @@ module Dependabot
       def branch_version_suffix
         dep = dependencies.first
 
-        if library? && ref_changed?(dep) && new_ref(dep)
+        if dep.removed?
+          "-removed"
+        elsif library? && ref_changed?(dep) && new_ref(dep)
           new_ref(dep)
         elsif library?
           sanitized_requirement(dep)
@@ -127,24 +140,24 @@ module Dependabot
         elsif dependency.version == dependency.previous_version &&
               package_manager == "docker"
           dependency.requirements.
-            map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
-            compact.first.split(":").last[0..6]
+            filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+            first.split(":").last[0..6]
         else
           dependency.version
         end
       end
 
       def previous_ref(dependency)
-        previous_refs = dependency.previous_requirements.map do |r|
+        previous_refs = dependency.previous_requirements.filter_map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.uniq
+        end.uniq
         return previous_refs.first if previous_refs.count == 1
       end
 
       def new_ref(dependency)
-        new_refs = dependency.requirements.map do |r|
+        new_refs = dependency.requirements.filter_map do |r|
           r.dig(:source, "ref") || r.dig(:source, :ref)
-        end.compact.uniq
+        end.uniq
         return new_refs.first if new_refs.count == 1
       end
 
@@ -179,17 +192,13 @@ module Dependabot
 
       def sanitize_ref(ref)
         # This isn't a complete implementation of git's ref validation, but it
-        # covers most cases that crop up. Its list of allowed charactersr is a
+        # covers most cases that crop up. Its list of allowed characters is a
         # bit stricter than git's, but that's for cosmetic reasons.
         ref.
           # Remove forbidden characters (those not already replaced elsewhere)
           gsub(%r{[^A-Za-z0-9/\-_.(){}]}, "").
           # Slashes can't be followed by periods
-          gsub(%r{/\.}, "/dot-").
-          # Two or more sequential periods are forbidden
-          gsub(/\.+/, ".").
-          # Two or more sequential slashes are forbidden
-          gsub(%r{/+}, "/").
+          gsub(%r{/\.}, "/dot-").squeeze(".").squeeze("/").
           # Trailing periods are forbidden
           sub(/\.$/, "")
       end

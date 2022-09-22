@@ -123,12 +123,12 @@ module Dependabot
       end
 
       def updated_manifest_files
-        package_files.map do |file|
+        package_files.filter_map do |file|
           updated_content = updated_package_json_content(file)
           next if updated_content == file.content
 
           updated_file(file: file, content: updated_content)
-        end.compact
+        end
       end
 
       def updated_lockfiles

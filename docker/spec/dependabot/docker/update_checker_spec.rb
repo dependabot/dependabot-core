@@ -125,7 +125,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "that is up-to-date" do
           let(:source) do
             {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97"\
+              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
@@ -413,8 +413,46 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
+    context "when the dependencies have a underscore" do
+      let(:dependency_name) { "eclipse-temurin" }
+      let(:tags_fixture_name) { "eclipse-temurin.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/library/eclipse-temurin/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+
+        # Stub the latest version to return a different digest
+        ["17.0.2_8-jre-alpine", "latest"].each do |version|
+          stub_request(:head, repo_url + "manifests/#{version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+      end
+
+      context "followed by numbers" do
+        let(:version) { "17.0.1_12-jre-alpine" }
+        it { is_expected.to eq("17.0.2_8-jre-alpine") }
+      end
+    end
+
     context "when the dependency has a namespace" do
       let(:dependency_name) { "moj/ruby" }
+      let(:version) { "2.4.0" }
       let(:tags_fixture_name) { "ruby.json" }
       before do
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
@@ -511,12 +549,12 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               body: fixture("docker", "registry_tags", "dotnet_page_1.json"),
               headers: JSON.parse(pagination_headers)
             )
-          last = "ukD72mdD/mC8b5xV3susmJzzaTgp3hKwR9nRUW1yZZ6dLc5kfZtKLT2ICo63"\
-                 "WYvt2jq2VyIS3LWB%2Bo9HjGuiYQ6hARJz1jTFdW4jEMKPIg4kRwXypd7HXj"\
-                 "/SnA9iMm3YvNsd4LmPQrO4fpYZgnZZ8rzIIYqex6%2B3A3/mKcTsNKkKDV9V"\
-                 "R3ic6RJjYFCMOEk5/eqsfLaCDYEbtCNoxE2fBDwlzIl/W14f/F%2Bb%2BtQR"\
-                 "Gh3eUKE9nBJpVvAfibAEs215m4ePJm%2BNuVktVjHOYlRG3U03ekr1T7CPD1"\
-                 "Q%2B65wVYi0y2nCIl1/V40nkgG2WX5viYDxUuk3nEdnf55GUocnt38sDZzqB"\
+          last = "ukD72mdD/mC8b5xV3susmJzzaTgp3hKwR9nRUW1yZZ6dLc5kfZtKLT2ICo63" \
+                 "WYvt2jq2VyIS3LWB%2Bo9HjGuiYQ6hARJz1jTFdW4jEMKPIg4kRwXypd7HXj" \
+                 "/SnA9iMm3YvNsd4LmPQrO4fpYZgnZZ8rzIIYqex6%2B3A3/mKcTsNKkKDV9V" \
+                 "R3ic6RJjYFCMOEk5/eqsfLaCDYEbtCNoxE2fBDwlzIl/W14f/F%2Bb%2BtQR" \
+                 "Gh3eUKE9nBJpVvAfibAEs215m4ePJm%2BNuVktVjHOYlRG3U03ekr1T7CPD1" \
+                 "Q%2B65wVYi0y2nCIl1/V40nkgG2WX5viYDxUuk3nEdnf55GUocnt38sDZzqB" \
                  "nyglM9jvbxBzlO8="
           stub_request(:get, repo_url + "tags/list?last=#{last}").
             and_return(
@@ -643,6 +681,38 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
     end
+
+    context "when the docker registery only knows about versions older than the current version" do
+      let(:dependency_name) { "jetstack/cert-manager-controller" }
+      let(:version) { "v1.7.2" }
+      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {
+              registry: "quay.io",
+              tag: "v1.7.2",
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+            }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "truncated_tag_list.json" }
+
+      before do
+        tags_url = "https://quay.io/v2/jetstack/cert-manager-controller/tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      it { is_expected.to eq("v1.7.2") }
+    end
   end
 
   describe "#latest_resolvable_version" do
@@ -689,7 +759,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -715,7 +785,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86"\
+                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }

@@ -61,7 +61,7 @@ module Dependabot
 
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
         def parse_requirements_from(req, type)
-          [req].flatten.compact.map do |requirement|
+          [req].flatten.compact.filter_map do |requirement|
             next if requirement.is_a?(Hash) && (UNSUPPORTED_DEPENDENCY_TYPES & requirement.keys).any?
 
             check_requirements(requirement)
@@ -72,7 +72,7 @@ module Dependabot
               source: nil,
               groups: [type]
             }
-          end.compact
+          end
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -81,8 +81,9 @@ module Dependabot
         def lockfile_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
+          source_types = %w(directory git url)
           parsed_lockfile.fetch("package", []).each do |details|
-            next if %w(directory git url).include?(details.dig("source", "type"))
+            next if source_types.include?(details.dig("source", "type"))
 
             dependencies <<
               Dependency.new(

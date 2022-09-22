@@ -99,7 +99,7 @@ module Dependabot
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.compact.
+              dependency.requirements.filter_map { |r| r[:requirement] }.
               reject { |req_string| req_string.start_with?("<") }.
               select { |req_string| req_string.match?(version_regex) }.
               map { |req_string| req_string.match(version_regex) }.
@@ -115,9 +115,9 @@ module Dependabot
             ">= #{parts.join('.')}"
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def replace_git_pin(content, filename:)
           old_pin =

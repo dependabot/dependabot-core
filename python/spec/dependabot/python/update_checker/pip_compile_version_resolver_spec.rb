@@ -140,41 +140,6 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
       end
 
-      context "when unlocking causes a conflict (in the sub-dependencies)" do
-        let(:manifest_fixture_name) { "unresolvable_if_unpinned.in" }
-        let(:generated_fixture_name) do
-          "pip_compile_unresolvable_if_unpinned.txt"
-        end
-        let(:dependency_name) { "boto3" }
-        let(:dependency_version) { "1.7.84" }
-        let(:updated_requirement) { ">= 1.7.84, <= 1.9.28" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: ">=1.7,<1.8",
-            groups: [],
-            source: nil
-          }]
-        end
-        it { is_expected.to be nil }
-
-        context "and updating would cause a conflict" do
-          let(:dependency_name) { "moto" }
-          let(:dependency_version) { "1.3.6" }
-          let(:updated_requirement) { ">= 1.3.6, <= 1.3.7" }
-
-          let(:dependency_requirements) do
-            [{
-              file: "requirements/test.in",
-              requirement: nil,
-              groups: [],
-              source: nil
-            }]
-          end
-          it { is_expected.to be nil }
-        end
-      end
-
       context "with multiple requirement.in files" do
         let(:dependency_files) do
           [manifest_file, manifest_file2, generated_file, generated_file2]
@@ -219,34 +184,11 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { subject }.
               to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message).
-                  to include("Could not find a version that matches boto3")
+                  to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                             "package versions have conflicting dependencies.")
               end
           end
         end
-      end
-    end
-
-    context "with an unresolvable requirement" do
-      let(:manifest_fixture_name) { "unresolvable.in" }
-      let(:dependency_files) { [manifest_file] }
-      let(:dependency_name) { "boto3" }
-      let(:dependency_version) { nil }
-      let(:updated_requirement) { ">= 0, <= 1.9.28" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "==1.9.27",
-          groups: [],
-          source: nil
-        }]
-      end
-
-      it "raises a helpful error" do
-        expect { subject }.
-          to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).
-              to include("Could not find a version that matches boto3")
-          end
       end
     end
 
@@ -273,7 +215,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to include("Could not find a version that matches jupyter-server")
+              to include("Could not find a version that satisfies the requirement jupyter-server<=18.1.0,>=17.3.0")
           end
       end
     end
@@ -438,7 +380,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to include("Could not find a version that matches boto3")
+                to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                           "package versions have conflicting dependencies.")
             end
         end
       end
