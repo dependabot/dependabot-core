@@ -190,7 +190,11 @@ module Dependabot
         end
 
         def alias_package?(requirement)
-          Experiments.enabled?(:yarn_berry) ? requirement.match?(/@npm:(.+@(?!npm))/) : requirement.include?("@npm:")
+          if Experiments.enabled?(:yarn_berry)
+            requirement.match?(/@npm:(.+@(?!npm))/)
+          else  
+            requirement.include?("@npm:")
+          end
         end
 
         def workspace_package?(requirement)
