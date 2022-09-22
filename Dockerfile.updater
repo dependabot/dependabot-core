@@ -55,8 +55,4 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 # Add project
 COPY --chown=dependabot:dependabot updater /home/dependabot/dependabot-updater
 
-# Fix for git vulnerability since we run as root
-# see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-RUN git config --global --add safe.directory /home/dependabot/dependabot-updater/repo
-
 CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]
