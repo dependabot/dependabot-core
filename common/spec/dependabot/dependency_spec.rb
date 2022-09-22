@@ -270,4 +270,38 @@ RSpec.describe Dependabot::Dependency do
       it { is_expected.to eq(nil) }
     end
   end
+
+  describe "#metadata" do
+    it "stores metadata given to initialize" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      expect(dependency.metadata).to eq(foo: 42)
+    end
+
+    it "is mutable" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+
+      dependency.metadata[:all_versions] = []
+      expect(dependency.metadata).to eq(foo: 42, all_versions: [])
+    end
+
+    it "is not serialized" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      expect(dependency.to_h.keys).not_to include("metadata")
+    end
+  end
 end
