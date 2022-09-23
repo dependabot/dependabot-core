@@ -23,8 +23,12 @@ module Dependabot
       def self.run_yarn_commands(*commands)
         # We never want to execute postinstall scripts
         SharedHelpers.run_shell_command("yarn config set enableScripts false")
-        SharedHelpers.run_shell_command("yarn config set httpProxy #{ENV.fetch('HTTP_PROXY', '')}")
-        SharedHelpers.run_shell_command("yarn config set httpsProxy #{ENV.fetch('HTTPS_PROXY', '')}")
+        if (http_proxy = ENV.fetch("HTTP_PROXY", false))
+          SharedHelpers.run_shell_command("yarn config set httpProxy #{http_proxy}")
+        end
+        if (https_proxy = ENV.fetch("HTTPS_PROXY", false))
+          SharedHelpers.run_shell_command("yarn config set httpsProxy #{https_proxy}")
+        end
         commands.each { |cmd| SharedHelpers.run_shell_command(cmd) }
       end
     end
