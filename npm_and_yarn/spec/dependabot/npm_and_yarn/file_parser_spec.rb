@@ -1408,24 +1408,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
       it "stores all versions of the dependency in its metadata" do
         name = "@dependabot-fixtures/npm-transitive-dependency"
         dependency = subject.find { |dep| dep.name == name }
+
         expect(dependency.metadata[:all_versions]).to eq([
           Dependabot::Dependency.new(
             name: name,
-            version: "1.0.0",
-            requirements: [],
+            version: "1.0.1",
+            requirements: [{
+              requirement: "1.0.1",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
             package_manager: "npm_and_yarn"
           ),
           Dependabot::Dependency.new(
             name: name,
-            version: "1.0.1",
-            requirements: [
-              {
-                requirement: "1.0.1",
-                file: "package.json",
-                groups: ["dependencies"],
-                source: { type: "registry", url: "https://registry.npmjs.org" }
-              }
-            ],
+            version: "1.0.0",
+            requirements: [],
             package_manager: "npm_and_yarn"
           )
         ])

@@ -4,6 +4,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "set"
 
 module Dependabot
   module NpmAndYarn
@@ -15,6 +16,20 @@ module Dependabot
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
+
+      def vulnerable?
+        super ||
+          begin
+            all_versions = Set.new([
+              dependency.version,
+              *dependency.metadata.fetch(:all_versions, []).filter_map(&:version)
+            ]).filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+
+            security_advisories.any? do |advisory|
+              all_versions.any? { |v| advisory.vulnerable?(v) }
+            end
+          end
+      end
 
       def latest_version
         @latest_version ||=
