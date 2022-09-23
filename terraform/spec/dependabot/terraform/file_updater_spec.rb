@@ -178,12 +178,12 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         updated_file = subject.find { |file| file.name == "main.tf" }
 
         expect(updated_file.content).to include(<<~HCL)
-          module "s3-webapp" {
+          module "s3-webapp-first" {
             source  = "app.terraform.io/example-org-5d3190/s3-webapp/aws"
             version = "0.11.0"
           }
 
-          module "s3-webapp" {
+          module "s3-webapp-second" {
             source  = "app.terraform.io/example-org-5d3190/s3-webapp/aws"
             version = "0.11.0"
           }
