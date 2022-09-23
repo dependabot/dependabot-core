@@ -33,7 +33,12 @@ module Dependabot
         def +(other)
           raise ArgumentError, "must be a DependencySet" unless other.is_a?(DependencySet)
 
-          other.dependencies.each { |dep| self << dep }
+          other_names = other.dependencies.map(&:name)
+          other_names.each do |name|
+            all_versions = other.all_versions_for_name(name)
+            all_versions.each { |dep| self << dep }
+          end
+
           self
         end
 
