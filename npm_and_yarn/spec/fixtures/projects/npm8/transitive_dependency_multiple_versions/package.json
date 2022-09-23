@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@dependabot-fixtures/npm-transitive-dependency": "1.0.1",
-    "@dependabot-fixtures/npm-intermediate-dependency": "0.0.1"
+    "@dependabot-fixtures/npm-intermediate-dependency": "0.0.1",
+    "@dependabot-fixtures/npm-transitive-dependency": "1.0.1"
   }
 }
