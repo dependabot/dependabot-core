@@ -46,6 +46,8 @@ module Dependabot
         updated_files
       end
 
+      private
+
       def requirement_changed?(file, dependency)
         changed_requirements =
           (dependency.requirements - dependency.previous_requirements) |
@@ -53,8 +55,6 @@ module Dependabot
 
         changed_requirements.any? { |f| f[:file] == file.name }
       end
-
-      private
 
       def updated_terraform_file_content(file)
         content = file.content.dup
