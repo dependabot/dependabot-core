@@ -312,10 +312,19 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       )
     end
 
-    it "maintains a sorted list of all versions added" do
-      dependency_set = described_class.new << foo_v1 << foo_sha << foo_v1_1
+    context "maintains a list of all versions added" do
+      it "sorted by version" do
+        dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
 
-      expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1, foo_v1_1, foo_sha])
+        expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1, foo_v1_1, foo_sha])
+      end
+
+      it "optionally in insertion order" do
+        dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
+
+        expect(dependency_set.all_versions_for_name("foo", in_insertion_order: true)).
+          to eq([foo_v1_1, foo_sha, foo_v1])
+      end
     end
 
     it "preserves all versions when combined with another dependency set" do
@@ -329,9 +338,9 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
           version: "1.0",
           requirements: (
             foo_v1.requirements +
+            foo_sha.requirements +
             foo_v1_1.requirements +
-            foo_v1_1_alt.requirements +
-            foo_sha.requirements
+            foo_v1_1_alt.requirements
           ).uniq,
           package_manager: "dummy"
         )
