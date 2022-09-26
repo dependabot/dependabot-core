@@ -60,17 +60,17 @@ module Dependabot
         return dependencies unless gemfile
 
         [gemfile, *evaled_gemfiles].each do |file|
+          gemfile_declaration_finder = GemfileDeclarationFinder.new(gemfile: file)
+
           parsed_gemfile.each do |dep|
-            gemfile_declaration_finder =
-              GemfileDeclarationFinder.new(dependency: dep, gemfile: file)
-            next unless gemfile_declaration_finder.gemfile_includes_dependency?
+            next unless gemfile_declaration_finder.gemfile_includes_dependency?(dep)
 
             dependencies <<
               Dependency.new(
                 name: dep.fetch("name"),
                 version: dependency_version(dep.fetch("name"))&.to_s,
                 requirements: [{
-                  requirement: gemfile_declaration_finder.enhanced_req_string,
+                  requirement: gemfile_declaration_finder.enhanced_req_string(dep),
                   groups: dep.fetch("groups").map(&:to_sym),
                   source: dep.fetch("source")&.transform_keys(&:to_sym),
                   file: file.name

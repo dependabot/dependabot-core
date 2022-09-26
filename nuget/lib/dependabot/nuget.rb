@@ -15,4 +15,11 @@ Dependabot::PullRequestCreator::Labeler.
   register_label_details("nuget", name: ".NET", colour: "7121c6")
 
 require "dependabot/dependency"
-Dependabot::Dependency.register_production_check("nuget", ->(_) { true })
+Dependabot::Dependency.register_production_check(
+  "nuget",
+  lambda do |groups|
+    return true if groups.empty?
+
+    groups.include?("dependencies")
+  end
+)

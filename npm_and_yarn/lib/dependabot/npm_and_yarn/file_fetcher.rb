@@ -42,6 +42,7 @@ module Dependabot
         fetched_files << lerna_json if lerna_json
         fetched_files << npmrc if npmrc
         fetched_files << yarnrc if yarnrc
+        fetched_files << yarnrc_yml if yarnrc_yml
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
@@ -53,8 +54,8 @@ module Dependabot
       def instrument_package_manager_version
         package_managers = {}
 
-        package_managers["npm"] =  Helpers.npm_version_numeric(package_lock.content) if package_lock
-        package_managers["yarn"] = 1 if yarn_lock
+        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = yarn_version if yarn_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
 
         Dependabot.instrument(
@@ -62,6 +63,22 @@ module Dependabot
           ecosystem: "npm",
           package_managers: package_managers
         )
+      end
+
+      def yarn_version
+        return @yarn_version if defined?(@yarn_version)
+
+        package = JSON.parse(package_json.content)
+        if (pkgmanager = package.fetch("packageManager", nil))
+          get_yarn_version_from_path(pkgmanager)
+        elsif yarn_lock
+          1
+        end
+      end
+
+      def get_yarn_version_from_path(path)
+        version_match = path.match(/yarn@(?<version>\d+.\d+.\d+)/)
+        version_match&.named_captures&.fetch("version", nil)
       end
 
       def package_json
@@ -116,6 +133,11 @@ module Dependabot
         end
 
         @yarnrc
+      end
+
+      def yarnrc_yml
+        @yarnrc_yml ||= fetch_file_if_present(".yarnrc.yml")&.
+                       tap { |f| f.support_file = true }
       end
 
       def lerna_json

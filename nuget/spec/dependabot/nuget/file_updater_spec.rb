@@ -338,13 +338,13 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
           requirements: [{
             file: "global.json",
             requirement: "1.0.52",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           previous_requirements: [{
             file: "global.json",
             requirement: "1.0.45",
-            groups: [],
+            groups: ["dependencies"],
             source: nil
           }],
           package_manager: "nuget"

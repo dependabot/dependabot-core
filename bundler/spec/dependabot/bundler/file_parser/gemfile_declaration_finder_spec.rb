@@ -7,7 +7,7 @@ require "dependabot/bundler/file_parser/gemfile_declaration_finder"
 
 RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
   let(:checker) do
-    described_class.new(dependency: dependency, gemfile: gemfile)
+    described_class.new(gemfile: gemfile)
   end
 
   let(:dependency) do
@@ -25,7 +25,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
 
   describe "#gemfile_includes_dependency?" do
     subject(:gemfile_includes_dependency) do
-      checker.gemfile_includes_dependency?
+      checker.gemfile_includes_dependency?(dependency)
     end
 
     context "when the file does not include the dependency" do
@@ -61,7 +61,7 @@ RSpec.describe Dependabot::Bundler::FileParser::GemfileDeclarationFinder do
   end
 
   describe "#enhanced_req_string" do
-    subject(:enhanced_req_string) { checker.enhanced_req_string }
+    subject(:enhanced_req_string) { checker.enhanced_req_string(dependency) }
 
     context "when the file does not include the dependency" do
       let(:dependency_name) { "dependabot-core" }

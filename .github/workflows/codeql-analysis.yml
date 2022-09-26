@@ -22,6 +22,7 @@ on:
       - 'CHANGELOG.md'
       - 'common/lib/dependabot/version.rb'
   schedule:
+    if: ${{ github.repository == 'dependabot/dependabot-core' }}
     - cron: '41 4 * * 3'
 
 jobs:

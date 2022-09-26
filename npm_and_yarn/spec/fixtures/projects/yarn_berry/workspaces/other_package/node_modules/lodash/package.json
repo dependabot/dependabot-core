@@ -1,0 +1,61 @@
+{
+  "name": "lodash",
+  "version": "1.3.1",
+  "description": "A utility library delivering consistency, customization, performance, and extras.",
+  "homepage": "http://lodash.com/",
+  "license": "MIT",
+  "main": "./dist/lodash.js",
+  "keywords": [
+    "browser",
+    "client",
+    "functional",
+    "performance",
+    "server",
+    "speed",
+    "util"
+  ],
+  "author": "John-David Dalton <john.david.dalton@gmail.com> (http://allyoucanleet.com/)",
+  "contributors": [
+    "John-David Dalton <john.david.dalton@gmail.com> (http://allyoucanleet.com/)",
+    "Blaine Bublitz <blaine@iceddev.com> (http://iceddev.com/)",
+    "Kit Cambridge <github@kitcambridge.be> (http://kitcambridge.be/)",
+    "Mathias Bynens <mathias@qiwi.be> (http://mathiasbynens.be/)"
+  ],
+  "bugs": {
+    "url": "https://github.com/lodash/lodash/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lodash/lodash.git"
+  },
+  "engines": [
+    "node",
+    "rhino"
+  ],
+  "jam": {
+    "main": "./dist/lodash.compat.js"
+  },
+  "volo": {
+    "type": "directory",
+    "ignore": [
+      ".*",
+      "*.custom.*",
+      "*.min.*",
+      "*.template.*",
+      "*.d.ts",
+      "*.map",
+      "*.md",
+      "*.txt",
+      "lodash.js",
+      "index.js",
+      "bower.json",
+      "component.json",
+      "doc",
+      "modularize",
+      "node_modules",
+      "perf",
+      "test",
+      "vendor"
+    ]
+  }
+}
