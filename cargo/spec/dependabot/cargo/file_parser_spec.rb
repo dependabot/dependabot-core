@@ -365,6 +365,58 @@ RSpec.describe Dependabot::Cargo::FileParser do
         end
       end
 
+      context "with workspace dependencies" do
+        let(:manifest_fixture_name) { "workspace_dependencies_root" }
+        let(:lockfile_fixture_name) { "workspace_dependencies" }
+        let(:files) do
+          [
+            manifest,
+            lockfile,
+            workspace_child
+          ]
+        end
+        let(:workspace_child) do
+          Dependabot::DependencyFile.new(
+            name: "lib/inherit_ws_dep/Cargo.toml",
+            content: fixture("manifests", "workspace_dependencies_child")
+          )
+        end
+
+        describe "top level dependencies" do
+          subject(:top_level_dependencies) do
+            dependencies.select(&:top_level?)
+          end
+
+          its(:length) { is_expected.to eq(1) }
+
+          describe "the first dependency" do
+            subject(:dependency) { top_level_dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("log")
+              expect(dependency.version).to eq("0.4.0")
+              expect(dependency.requirements).to eq(
+                [
+                  {
+                    requirement: "=0.4.0",
+                    file: "Cargo.toml",
+                    groups: ["workspace.dependencies"],
+                    source: nil
+                  },
+                  {
+                    requirement: nil,
+                    file: "lib/inherit_ws_dep/Cargo.toml",
+                    groups: ["dependencies"],
+                    source: nil,
+                  }
+                ]
+              )
+            end
+          end
+        end
+      end
+
       context "with a git dependency" do
         let(:manifest_fixture_name) { "git_dependency" }
 
