@@ -4,6 +4,7 @@ require "raven"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
 require "dependabot/environment"
+require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_parsers"
 require "dependabot/file_updaters"
@@ -65,6 +66,8 @@ module Dependabot
       job.experiments.each do |name, value|
         Dependabot::Experiments.register(name, value)
       end
+
+      Dependabot::Utils.register_always_clone("npm_and_yarn") if Dependabot::Experiments.enabled?(:yarn_berry)
 
       if job.updating_a_pull_request?
         logger_info("Starting PR update job for #{job.source.repo}")

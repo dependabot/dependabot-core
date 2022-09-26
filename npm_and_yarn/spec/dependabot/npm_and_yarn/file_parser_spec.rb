@@ -32,6 +32,10 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     }]
   end
 
+  before do
+    Dependabot::Experiments.register(:yarn_berry, true)
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -1270,6 +1274,87 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
                 file: "packages/other_package/package.json",
                 groups: ["devDependencies"],
                 source: { type: "registry", url: "https://registry.npmjs.org" }
+              }]
+            )
+          end
+        end
+      end
+
+      describe "with a yarn Berry compatible lockfile" do
+        let(:files) { project_dependency_files("yarn_berry/simple") }
+
+        its(:length) { is_expected.to eq(2) }
+        context "with a version specified" do
+          describe "the first dependency" do
+            subject { top_level_dependencies.first }
+
+            it { is_expected.to be_a(Dependabot::Dependency) }
+            its(:name) { is_expected.to eq("fetch-factory") }
+            its(:version) { is_expected.to eq("0.0.1") }
+            its(:requirements) do
+              is_expected.to eq(
+                [{
+                  requirement: "^0.0.1",
+                  file: "package.json",
+                  groups: ["dependencies"],
+                  source: nil # TODO: Determine yarn berry sources, for now assume everything is on npmjs.org
+                }]
+              )
+            end
+          end
+        end
+      end
+
+      context "with workspaces" do
+        let(:files) { project_dependency_files("yarn_berry/workspaces") }
+        its(:length) { is_expected.to eq(3) }
+
+        describe "the etag dependency" do
+          subject { top_level_dependencies.find { |d| d.name == "etag" } }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("etag") }
+          its(:version) { is_expected.to eq("1.8.1") }
+          its(:requirements) do
+            is_expected.to match_array(
+              [{
+                requirement: "^1.1.0",
+                file: "packages/package1/package.json",
+                groups: ["devDependencies"],
+                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.0.0",
+                file: "other_package/package.json",
+                groups: ["devDependencies"],
+                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }]
+            )
+          end
+        end
+
+        describe "the duplicated dependency" do
+          subject { top_level_dependencies.find { |d| d.name == "lodash" } }
+
+          it { is_expected.to be_a(Dependabot::Dependency) }
+          its(:name) { is_expected.to eq("lodash") }
+          its(:version) { is_expected.to eq("1.2.0") }
+          its(:requirements) do
+            is_expected.to match_array(
+              [{
+                requirement: "1.2.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "other_package/package.json",
+                groups: ["dependencies"],
+                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
+              }, {
+                requirement: "^1.2.1",
+                file: "packages/package1/package.json",
+                groups: ["dependencies"],
+                source: nil # TODO: { type: "registry", url: "https://registry.yarnpkg.com" }
               }]
             )
           end
