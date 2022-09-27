@@ -462,7 +462,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
 
           context "and with commit messages explicitly configured" do
-            let(:commit_message_options) { super().update(prefix: "chore(dependencies)") }
+            let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
 
             it do
               is_expected.to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
