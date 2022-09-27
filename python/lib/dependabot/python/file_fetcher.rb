@@ -24,7 +24,7 @@ module Dependabot
         # If this repo is using a Pipfile return true
         return true if filenames.include?("Pipfile")
 
-        # If this repo is using pryproject.toml return true
+        # If this repo is using pyproject.toml return true
         return true if filenames.include?("pyproject.toml")
 
         return true if filenames.include?("setup.py")
