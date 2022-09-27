@@ -130,19 +130,13 @@ module Dependabot
 
         return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
 
-        return false unless transitive_security_updates_enabled? && security_advisories.any?
+        return false unless security_advisories.any?
 
         vulnerability_audit["fix_available"]
       end
 
-      def transitive_security_updates_enabled?
-        options.key?(:npm_transitive_security_updates)
-      end
-
       def updated_dependencies_after_full_unlock
-        if !dependency.top_level? && transitive_security_updates_enabled? && security_advisories.any?
-          return conflicting_updated_dependencies
-        end
+        return conflicting_updated_dependencies if !dependency.top_level? && security_advisories.any?
 
         version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
