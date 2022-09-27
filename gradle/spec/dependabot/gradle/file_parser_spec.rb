@@ -472,7 +472,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       context "specified in short form" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
-        its(:length) { is_expected.to eq(32) }
+        its(:length) { is_expected.to eq(33) }
 
         it "handles packaging types" do
           expect(dependencies.map(&:name)).
@@ -570,7 +570,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
       context "specified in a dependencySet" do
         let(:buildfile_fixture_name) { "root_build.gradle.kts" }
 
-        its(:length) { is_expected.to eq(32) }
+        its(:length) { is_expected.to eq(33) }
 
         describe "a dependencySet dependency" do
           subject(:dependency) do
@@ -636,6 +636,27 @@ RSpec.describe Dependabot::Gradle::FileParser do
                 groups: %w(plugins kotlin),
                 source: nil,
                 metadata: nil
+              }]
+            )
+          end
+        end
+
+        describe "a plugin dependency using a version variable" do
+          subject(:dependency) do
+            dependencies.find { |d| d.name == "org.unbroken-dome.helm" }
+          end
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("org.unbroken-dome.helm")
+            expect(dependency.version).to eq("1.6.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "1.6.0",
+                file: "build.gradle.kts",
+                groups: %w(plugins),
+                source: nil,
+                metadata: { property_name: "helmVersion" }
               }]
             )
           end
@@ -738,7 +759,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(41) }
+        its(:length) { is_expected.to eq(42) }
 
         describe "the last dependency" do
           subject(:dependency) { dependencies.last }

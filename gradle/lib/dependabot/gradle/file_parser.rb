@@ -162,9 +162,8 @@ module Dependabot
           blk.lines.each do |line|
             name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o
             name = line.match(name_regex)&.named_captures&.fetch("id")
-            version_regex = /version\s+['"](?<version>#{VSN_PART})['"]/o
-            version = line.match(version_regex)&.named_captures&.
-                fetch("version")
+            version_regex = /version\s+['"]?(?<version>#{VSN_PART})['"]?/o
+            version = format_plugin_version(line.match(version_regex)&.named_captures&.fetch("version"))
             next unless name && version
 
             details = { name: name, group: "plugins", extra_groups: extra_groups(line), version: version }
@@ -174,6 +173,10 @@ module Dependabot
         end
 
         dependency_set
+      end
+
+      def format_plugin_version(version)
+        version&.match?(/^\w+$/) ? "$#{version}" : version
       end
 
       def extra_groups(line)
