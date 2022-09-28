@@ -740,10 +740,10 @@ dependencies.each do |dep|
   end
 
   if $options[:security_updates_only] &&
-    updated_deps.none? { |d| security_fix?(d) }
-   puts "    (updated version is still vulnerable 🚨)"
-   log_conflicting_dependencies(checker.conflicting_dependencies)
-   next
+     updated_deps.none? { |d| security_fix?(d) }
+    puts "    (updated version is still vulnerable 🚨)"
+    log_conflicting_dependencies(checker.conflicting_dependencies)
+    next
   end
 
   # Removal is only supported for transitive dependencies which are removed as a
