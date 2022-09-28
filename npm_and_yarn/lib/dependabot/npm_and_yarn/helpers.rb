@@ -47,7 +47,7 @@ module Dependabot
 
         names = dependency_set.dependencies.map(&:name)
         names.each do |name|
-          all_versions = dependency_set.all_versions_for_name(name, in_insertion_order: true)
+          all_versions = dependency_set.all_versions_for_name(name)
           all_versions.each do |dep|
             metadata_versions = dep.metadata.fetch(:all_versions, [])
             if metadata_versions.any?
@@ -57,8 +57,7 @@ module Dependabot
             end
           end
           dependency = working_set.dependency_for_name(name)
-          dependency.metadata[:all_versions] =
-            working_set.all_versions_for_name(name, in_insertion_order: true)
+          dependency.metadata[:all_versions] = working_set.all_versions_for_name(name)
           dependencies << dependency
         end
 

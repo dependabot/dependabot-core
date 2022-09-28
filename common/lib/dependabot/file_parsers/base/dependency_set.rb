@@ -35,18 +35,18 @@ module Dependabot
 
           other_names = other.dependencies.map(&:name)
           other_names.each do |name|
-            all_versions = other.all_versions_for_name(name, in_insertion_order: true)
+            all_versions = other.all_versions_for_name(name)
             all_versions.each { |dep| self << dep }
           end
 
           self
         end
 
-        def all_versions_for_name(name, in_insertion_order: false)
+        def all_versions_for_name(name, sort: false)
           key = key_for_name(name)
           return [] unless @dependencies.key?(key)
 
-          @dependencies[key].all_versions(in_insertion_order: in_insertion_order)
+          @dependencies[key].all_versions(sort: sort)
         end
 
         def dependency_for_name(name)
@@ -76,8 +76,8 @@ module Dependabot
             @combined = nil
           end
 
-          def all_versions(in_insertion_order:)
-            in_insertion_order ? @all_versions.dup : sorted
+          def all_versions(sort:)
+            sort ? sorted : @all_versions.dup
           end
 
           def <<(dep)

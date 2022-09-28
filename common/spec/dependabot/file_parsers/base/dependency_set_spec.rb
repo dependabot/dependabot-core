@@ -312,19 +312,15 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       )
     end
 
-    context "maintains a list of all versions added" do
-      it "sorted by version" do
-        dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
+    it "returns all versions in the order they were added by default" do
+      dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
+      expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1_1, foo_sha, foo_v1])
+    end
 
-        expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1, foo_v1_1, foo_sha])
-      end
-
-      it "optionally in insertion order" do
-        dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
-
-        expect(dependency_set.all_versions_for_name("foo", in_insertion_order: true)).
-          to eq([foo_v1_1, foo_sha, foo_v1])
-      end
+    it "optionally returns all versions sorted by version ascending, nulls and shas last" do
+      dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
+      expect(dependency_set.all_versions_for_name("foo", sort: true)).
+        to eq([foo_v1, foo_v1_1, foo_sha])
     end
 
     it "preserves all versions when combined with another dependency set" do
@@ -348,13 +344,13 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
 
       expect(combined_set.all_versions_for_name("foo")).to eq([
         foo_v1,
+        foo_sha,
         Dependabot::Dependency.new(
           name: "foo",
           version: "1.1",
           package_manager: "dummy",
           requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
-        ),
-        foo_sha
+        )
       ])
     end
 
