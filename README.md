@@ -58,27 +58,53 @@ following commands in the cloned Git repository:
 
 You can read more about this in the [Git for Windows wiki](https://github.com/git-for-windows/git/wiki/Git-cannot-create-a-file-or-directory-with-a-long-path).
 
-## Setup
+## Running with the `dependabot` CLI
 
-To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
-Elm, and Rust installed. However, if you just wish to run it for a single
-language you can get away with just having that language and Ruby.
+Some ecosystems in Dependabot Core have specific system dependencies.
+For example, running the `composer` ecosystem requires
+a particular version of `php` and other libraries to be installed.
+As such, we use containers to build and run Dependabot Core.
 
-While you can run Dependabot Core without Docker, we provide a development
-Dockerfile that bakes in all required dependencies. In most cases this is the
-best way to work with the project.
+The official Docker images are hosted
+on Docker Hub at [`dependabot/dependabot-core`](https://hub.docker.com/r/dependabot/dependabot-core)
+and on GitHub Container Registry at [`ghcr.io/dependabot/dependabot-core`](https://github.com/dependabot/dependabot-core/pkgs/container/dependabot-core).
 
-## Running with Docker
+You can use the [`dependabot` CLI][dependabot-cli]
+to simulate a Dependabot update job for the provided ecosystem and repo.
+To test out the behavior of a development version of `dependabot-core`,
+build `Dockerfile.updater` and
+run the `dependabot update` subcommand
+passing the image tag to the `--updater-image` option.
 
-Start by pulling the developer image from the [GitHub Container Registry][ghcr-core-dev] and then start the developer shell:
+```console
+$ docker build . -f Dockerfile.updater \
+                 -t dependabot-updater-dev
 
-```shell
-$ docker pull ghcr.io/dependabot/dependabot-core-development:latest
-$ docker tag ghcr.io/dependabot/dependabot-core-development dependabot/dependabot-core-development
-$ bin/docker-dev-shell
-=> running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
+$ dependabot update go_modules rsc/quote --dry-run \
+                    --updater-image dependabot-updater-dev
+# ...
++----------------------------------------------------+
+|        Changes to Dependabot Pull Requests         |
++---------+------------------------------------------+
+| created | rsc.io/quote/v3 ( from 3.0.0 to 3.1.0 )  |
+| created | rsc.io/sampler ( from 1.3.0 to 1.99.99 ) |
++---------+------------------------------------------+
 ```
+
+You can start an interactive debugging session
+by passing the `--debug` option to the `dependabot update` subcommand.
+
+```console
+$ dependabot update go_modules rsc/quote --dry-run \
+                    --updater-image dependabot-updater-dev
+                    --debug
+
+~/dependabot-updater $ pwd
+/home/dependabot/dependabot-updater
+```
+
+For more information,
+check out the [`dependabot/cli` repo][dependabot-cli].
 
 ### Dry run script
 
@@ -329,6 +355,7 @@ recurring payments from Europe, check them out.
 
 
 [dependabot]: https://dependabot.com
+[dependabot-cli]: https://github.com/dependabot/cli
 [dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
 [contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
