@@ -223,7 +223,7 @@ to select a package manager and a repository to perform a dry run on.
 Feel free to place breakpoints on the code.
 
 There is also support to debug individual test runs by running the `Debug Tests` configuration `(F5)`
-and you'll be promted to select an ecosystem and provide an rspec path.
+and you'll be prompted to select an ecosystem and provide an rspec path.
 
 ⚠️ The `Clone Repository ...` commands of the Remote Containers extension are currently
 missing some functionality and are therefore not supported. You have to clone the
