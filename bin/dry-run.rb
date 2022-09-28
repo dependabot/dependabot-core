@@ -464,13 +464,13 @@ end
 # rubocop:enable Metrics/MethodLength
 
 def log_conflicting_dependencies(conflicting_dependencies)
-  if conflicting_dependencies.any?
-    puts " => The update is not possible because of the following conflicting " \
-         "dependencies:"
+  return unless conflicting_dependencies.any?
 
-    conflicting_dependencies.each do |conflicting_dep|
-      puts "   #{conflicting_dep['explanation']}"
-    end
+  puts " => The update is not possible because of the following conflicting " \
+       "dependencies:"
+
+  conflicting_dependencies.each do |conflicting_dep|
+    puts "   #{conflicting_dep['explanation']}"
   end
 end
 
