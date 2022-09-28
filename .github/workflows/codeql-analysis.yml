@@ -22,13 +22,13 @@ on:
       - 'CHANGELOG.md'
       - 'common/lib/dependabot/version.rb'
   schedule:
-    if: ${{ github.repository == 'dependabot/dependabot-core' }}
     - cron: '41 4 * * 3'
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core' }}
     permissions:
       actions: read
       contents: read
