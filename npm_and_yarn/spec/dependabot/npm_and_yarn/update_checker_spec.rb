@@ -213,6 +213,39 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           end
         end
       end
+
+      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable",
+              :vcr do
+        let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_but_updateable") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-but-updateable" }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["< 2.0.0"]
+            )
+          ]
+        end
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+            version: dependency_version,
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it "can't update without unlocking" do
+          expect(subject).to eq(false)
+        end
+
+        it "allows full unlocking" do
+          expect(checker.can_update?(requirements_to_unlock: :all)).to eq(true)
+        end
+      end
     end
 
     context "for a scoped package name" do
@@ -1457,6 +1490,64 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               version: "10.0.1"
             )
           )
+        end
+      end
+
+      context "when a transitive dependency is able to update without unlocking its parent but is still vulnerable" do
+        let(:dependency_files) { project_dependency_files("npm8/transitive_dependency_locked_but_updateable") }
+        let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-but-updateable" }
+
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["< 2.0.0"]
+            )
+          ]
+        end
+        let(:dependency_version) { "1.0.0" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+            version: dependency_version,
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it "correctly updates the transitive dependency by unlocking the parent" do
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq([
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [],
+              previous_version: "1.0.0",
+              requirements: [],
+              version: "2.0.0"
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
+              package_manager: "npm_and_yarn",
+              previous_requirements: [{
+                requirement: "^1.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
+              previous_version: "1.0.0",
+              requirements: [{
+                requirement: "^1.0.0",
+                file: "package.json",
+                groups: ["dependencies"],
+                source: nil
+              }],
+              version: "1.0.1"
+            )
+          ])
         end
       end
     end
