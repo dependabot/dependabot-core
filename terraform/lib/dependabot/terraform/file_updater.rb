@@ -52,15 +52,17 @@ module Dependabot
       # To detect any changes in dependencies we need to overwrite an implementation from the base class
       #
       # Example (for simplicity other parameters are skipped):
-      # previous_requirements  = [{requirement: "0.9.1"}, {requirement: "0.11.0"}]
+      # previous_requirements = [{requirement: "0.9.1"}, {requirement: "0.11.0"}]
       # requirements = [{requirement: "0.11.0"}, {requirement: "0.11.0"}]
       #
       # Simple difference between arrays gives:
-      # requirements - previous_requirements = []
+      # requirements - previous_requirements
+      #  => []
       # which loses an information that one of our requirements has changed.
       #
       # By using symmetric difference:
-      # (requirements - previous_requirements) | (previous_requirements - requirements) = [{requirement: "0.9.1"}]
+      # (requirements - previous_requirements) | (previous_requirements - requirements)
+      #  => [{requirement: "0.9.1"}]
       # we can detect that change.
       def requirement_changed?(file, dependency)
         changed_requirements =
