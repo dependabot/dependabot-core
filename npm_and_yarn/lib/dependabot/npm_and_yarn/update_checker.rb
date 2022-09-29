@@ -46,8 +46,8 @@ module Dependabot
         raise "Dependency not vulnerable!" unless vulnerable?
         # NOTE: we currently don't resolve transitive/sub-dependencies as
         # npm/yarn don't provide any control over updating to a specific
-        # sub-dependency
-        return latest_resolvable_version unless dependency.top_level?
+        # sub-dependency version
+        return latest_resolvable_transitive_security_fix_version_with_no_unlock unless dependency.top_level?
 
         # TODO: Might want to check resolvability here?
         lowest_security_fix_version
@@ -211,6 +211,16 @@ module Dependabot
           package_manager: original_dep.package_manager,
           removed: removed
         )
+      end
+
+      def latest_resolvable_transitive_security_fix_version_with_no_unlock
+        fix_possible = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(
+          [latest_resolvable_version].compact,
+          security_advisories
+        ).any?
+        return nil unless fix_possible
+
+        latest_resolvable_version
       end
 
       def latest_resolvable_version_with_no_unlock_for_git_dependency

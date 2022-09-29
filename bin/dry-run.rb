@@ -463,6 +463,17 @@ def handle_dependabot_error(error:, dependency:)
 end
 # rubocop:enable Metrics/MethodLength
 
+def log_conflicting_dependencies(conflicting_dependencies)
+  return unless conflicting_dependencies.any?
+
+  puts " => The update is not possible because of the following conflicting " \
+       "dependencies:"
+
+  conflicting_dependencies.each do |conflicting_dep|
+    puts "   #{conflicting_dep['explanation']}"
+  end
+end
+
 StackProf.start(raw: true) if $options[:profile]
 
 $network_trace_count = 0
@@ -715,16 +726,7 @@ dependencies.each do |dep|
       puts "    (no update possible 🙅‍♀️)"
     end
 
-    conflicting_dependencies = checker.conflicting_dependencies
-    if conflicting_dependencies.any?
-      puts " => The update is not possible because of the following conflicting " \
-           "dependencies:"
-
-      conflicting_dependencies.each do |conflicting_dep|
-        puts "   #{conflicting_dep['explanation']}"
-      end
-    end
-
+    log_conflicting_dependencies(checker.conflicting_dependencies)
     next
   end
 
@@ -734,6 +736,13 @@ dependencies.each do |dep|
 
   if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
     puts "    (no update possible, peer dependency can be updated)"
+    next
+  end
+
+  if $options[:security_updates_only] &&
+     updated_deps.none? { |d| security_fix?(d) }
+    puts "    (updated version is still vulnerable 🚨)"
+    log_conflicting_dependencies(checker.conflicting_dependencies)
     next
   end
 
@@ -748,11 +757,6 @@ dependencies.each do |dep|
     next true if d.top_level? && d.requirements == d.previous_requirements
 
     d.version == d.previous_version
-  end
-
-  if $options[:security_updates_only] &&
-     updated_deps.none? { |d| security_fix?(d) }
-    puts "    (updated version is still vulnerable 🚨)"
   end
 
   if $options[:write]

@@ -46,6 +46,9 @@ bundle install
 # executes the package manager outputs to every job log
 COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
 
+# For Yarn Berry we can set this via an environment variable
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
 # Add project
