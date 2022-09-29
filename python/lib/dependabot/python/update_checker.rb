@@ -100,8 +100,8 @@ module Dependabot
         # If passed in as an option (in the base class) honour that option
         return @requirements_update_strategy.to_sym if @requirements_update_strategy
 
-        # Otherwise, check if this is a poetry library or not
-        poetry_library? ? :widen_ranges : :bump_versions
+        # Otherwise, check if this is a library or not
+        library? ? :widen_ranges : :bump_versions
       end
 
       private
@@ -268,19 +268,19 @@ module Dependabot
         updating_pyproject? && !poetry_details.nil?
       end
 
-      def poetry_library?
-        return false unless poetry_based?
+      def library?
+        return unless updating_pyproject?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
         index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(poetry_details['name'])}/json/"
+          url: "https://pypi.org/pypi/#{normalised_name(library_details['name'])}/json/"
         )
 
         return false unless index_response.status == 200
 
         pypi_info = JSON.parse(index_response.body)["info"] || {}
-        pypi_info["summary"] == poetry_details["description"]
+        pypi_info["summary"] == library_details["description"]
       rescue Excon::Error::Timeout
         false
       rescue URI::InvalidURIError
@@ -331,8 +331,20 @@ module Dependabot
         dependency_files.find { |f| f.name == "poetry.lock" }
       end
 
+      def library_details
+        @library_details ||= poetry_details || standard_details
+      end
+
       def poetry_details
-        @poetry_details ||= TomlRB.parse(pyproject.content).dig("tool", "poetry")
+        @poetry_details ||= toml_content.dig("tool", "poetry")
+      end
+
+      def standard_details
+        @standard_details ||= toml_content["project"]
+      end
+
+      def toml_content
+        @toml_content ||= TomlRB.parse(pyproject.content)
       end
 
       def pip_compile_files
