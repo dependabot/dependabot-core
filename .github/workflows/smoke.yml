@@ -29,6 +29,7 @@ jobs:
           - hex
           - maven
           - npm
+          - npm-remove-transitive
           - nuget
           - pip
           - pip-compile
@@ -106,6 +107,12 @@ jobs:
             - 'updater/**'
             - 'maven/**'
           npm:
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          'npm-remove-transitive':
             - Dockerfile
             - Dockerfile.updater
             - 'common/**'
