@@ -317,12 +317,6 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1_1, foo_sha, foo_v1])
     end
 
-    it "optionally returns all versions sorted by version ascending, nulls and shas last" do
-      dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
-      expect(dependency_set.all_versions_for_name("foo", sort: true)).
-        to eq([foo_v1, foo_v1_1, foo_sha])
-    end
-
     it "preserves all versions when combined with another dependency set" do
       set_a = described_class.new << foo_v1
       set_b = described_class.new << foo_sha << foo_v1_1 << foo_v1_1_alt

@@ -42,11 +42,9 @@ module Dependabot
           self
         end
 
-        def all_versions_for_name(name, sort: false)
+        def all_versions_for_name(name)
           key = key_for_name(name)
-          return [] unless @dependencies.key?(key)
-
-          @dependencies[key].all_versions(sort: sort)
+          @dependencies.key?(key) ? @dependencies[key].all_versions : []
         end
 
         def dependency_for_name(name)
@@ -80,15 +78,11 @@ module Dependabot
         # `DependencySet#dependency_for_name`. The list of individual versions of the
         # dependency is accessible via `DependencySet#all_versions_for_name`.
         class DependencySlot
-          attr_reader :combined
+          attr_reader :all_versions, :combined
 
           def initialize
             @all_versions = []
             @combined = nil
-          end
-
-          def all_versions(sort:)
-            sort ? sorted : @all_versions.dup
           end
 
           def <<(dep)
@@ -149,19 +143,6 @@ module Dependabot
               package_manager: old_dep.package_manager,
               subdependency_metadata: subdependency_metadata
             )
-          end
-
-          def sorted
-            @all_versions.sort! do |a, b|
-              a_ok = version_class.correct?(a.version)
-              b_ok = version_class.correct?(b.version)
-
-              next version_class.new(a.version) <=> version_class.new(b.version) if a_ok && b_ok
-              next 1 if b_ok
-              next -1 if a_ok
-
-              0
-            end
           end
 
           def version_class
