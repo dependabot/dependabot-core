@@ -26,7 +26,7 @@ module Dependabot
         def <<(dep)
           raise ArgumentError, "must be a Dependency object" unless dep.is_a?(Dependency)
 
-          @dependencies[key_for(dep)] << dep
+          @dependencies[key_for_dependency(dep)] << dep
           self
         end
 
@@ -64,10 +64,21 @@ module Dependabot
           case_sensitive? ? name : name.downcase
         end
 
-        def key_for(dep)
+        def key_for_dependency(dep)
           key_for_name(dep.name)
         end
 
+        # There can only be one entry per dependency name in a `DependencySet`. Each entry
+        # is assigned a `DependencySlot`.
+        #
+        # In some ecosystems (like `npm_and_yarn`), however, multiple versions of a
+        # dependency may be encountered and added to the set. The `DependencySlot` retains
+        # all added versions and presents a single unified dependency for the entry
+        # that combines the attributes of these versions.
+        #
+        # The combined dependency is accessible via `DependencySet#dependencies` or
+        # `DependencySet#dependency_for_name`. The list of individual versions of the
+        # dependency is accessible via `DependencySet#all_versions_for_name`.
         class DependencySlot
           attr_reader :combined
 
@@ -84,7 +95,7 @@ module Dependabot
             return self if @all_versions.include?(dep)
 
             @combined = if @combined
-                          combine(@combined, dep)
+                          combined_dependency(@combined, dep)
                         else
                           Dependency.new(
                             name: dep.name,
@@ -102,7 +113,7 @@ module Dependabot
               @all_versions << dep
             else
               same_version = @all_versions[index_of_same_version]
-              @all_versions[index_of_same_version] = combine(same_version, dep)
+              @all_versions[index_of_same_version] = combined_dependency(same_version, dep)
             end
 
             self
@@ -110,8 +121,11 @@ module Dependabot
 
           private
 
-          def combine(old_dep, new_dep)
-            version = if old_dep.requirements.any?
+          # Produces a new dependency by merging the attributes of `old_dep` with those of
+          # `new_dep`. Requirements and subdependency metadata will be combined and deduped.
+          # The version of the combined dependency is determined by the logic below.
+          def combined_dependency(old_dep, new_dep)
+            version = if old_dep.top_level? # Prefer a direct dependency over a transitive one
                         old_dep.version || new_dep.version
                       elsif !version_class.correct?(new_dep.version)
                         old_dep.version
