@@ -1327,7 +1327,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 file: "package.json",
                 requirement: "2.0.2",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               previous_requirements: [{
                 file: "package.json",
@@ -1391,7 +1394,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 requirement: "2.0.2",
                 file: "package.json",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               version: "2.0.2"
             ),
@@ -1412,7 +1418,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 requirement: "2.1.1",
                 file: "package.json",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               version: "2.1.1"
             ),
@@ -1433,7 +1442,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 requirement: "3.0.0",
                 file: "package.json",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               version: "3.0.0"
             ),
@@ -1485,7 +1497,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 requirement: "10.0.1",
                 file: "package.json",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               version: "10.0.1"
             )
@@ -1543,7 +1558,10 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                 requirement: "^1.0.0",
                 file: "package.json",
                 groups: ["dependencies"],
-                source: nil
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
               }],
               version: "1.0.1"
             )

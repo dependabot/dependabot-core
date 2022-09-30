@@ -202,7 +202,7 @@ module Dependabot
           version: version,
           requirements: RequirementsUpdater.new(
             requirements: original_dep.requirements,
-            updated_source: original_dep == dependency ? updated_source : nil,
+            updated_source: original_dep == dependency ? updated_source : original_source(original_dep),
             latest_resolvable_version: version,
             update_strategy: requirements_update_strategy
           ).updated_requirements,
@@ -379,8 +379,12 @@ module Dependabot
       end
 
       def dependency_source_details
+        original_source(dependency)
+      end
+
+      def original_source(updated_dependency)
         sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
+          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
           sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first
