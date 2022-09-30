@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"
 
@@ -33,6 +34,8 @@ module Dependabot
       @update_subdependencies       = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request      = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies          = attributes.fetch(:vendor_dependencies, false)
+
+      register_experiments
     end
 
     def clone?
@@ -140,6 +143,14 @@ module Dependabot
     end
 
     private
+
+    def register_experiments
+      experiments.each do |name, value|
+        Dependabot::Experiments.register(name, value)
+      end
+
+      Dependabot::Utils.register_always_clone("npm_and_yarn") if Dependabot::Experiments.enabled?(:yarn_berry)
+    end
 
     def name_match?(name1, name2)
       WildcardMatcher.match?(
