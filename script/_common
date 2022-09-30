@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 export LOCAL_IMAGE="dependabot/updater:latest"
 export GPR_IMAGE="docker.pkg.github.com/dependabot/dependabot-updater/dependabot-updater"
 
@@ -6,6 +7,7 @@ function docker_build() {
 
   extract_version
 
+  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build $DOCKER_BUILD_ARGS -f Dockerfile.updater -t "$LOCAL_IMAGE" --build-arg OMNIBUS_VERSION .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)

@@ -38,8 +38,6 @@ function build() {
   export UPDATER=dependabot/dependabot-updater
 
   # shellcheck disable=SC2034  # shellcheck isn't smart enough to realize `docker build` uses `TARGETARCH`
-  local TARGETARCH;
-  # shellcheck disable=SC2034  # shellcheck isn't smart enough to realize `docker build` uses `TARGETARCH`
   case "$(uname -m)"
   in
     amd64 | x86_64) TARGETARCH=amd64 ;;
