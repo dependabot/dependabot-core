@@ -15,7 +15,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       includes_security_fixes: includes_security_fixes,
       dependencies: [dependency],
       label_language: label_language,
-      automerge_candidate: automerge_candidate
+      automerge_candidate: automerge_candidate,
+      vulnerabilities_fixed: vulnerabilities_fixed
     )
   end
 
@@ -32,6 +33,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
   end
   let(:custom_labels) { nil }
   let(:includes_security_fixes) { false }
+  let(:vulnerabilities_fixed) { {} }
   let(:label_language) { false }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -296,8 +298,9 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "for an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
+        let(:vulnerabilities_fixed) { { "package" => { "severity" => "HIGH" } } }
 
-        context "when the 'security' label doesn't yet exist" do
+        context "when the 'security' and severity labels don't yet exist" do
           before do
             stub_request(:post, "#{repo_api_url}/labels").
               to_return(status: 201,
@@ -305,7 +308,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                         headers: json_header)
           end
 
-          it "creates a 'security' label" do
+          it "creates a 'security' and severity labels" do
             labeler.create_default_labels_if_required
 
             expect(WebMock).
@@ -318,11 +321,21 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                                "vulnerability"
                 }
               )
-            expect(labeler.labels_for_pr).to include("security")
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/labels").
+              with(
+                body: {
+                  name: "severity:high",
+                  color: "ed9121",
+                  description: "Pull requests that address a security " \
+                               "vulnerability with high severity"
+                }
+              )
+            expect(labeler.labels_for_pr).to include("security", "severity:high")
           end
         end
 
-        context "when a 'security' label already exist" do
+        context "when a 'security' and severity labels already exist" do
           let(:labels_fixture_name) { "labels_with_security.json" }
 
           it "does not creates a 'security' label" do
@@ -417,8 +430,9 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
       context "for an update that fixes a security vulnerability" do
         let(:includes_security_fixes) { true }
+        let(:vulnerabilities_fixed) { { "package" => { "severity" => "HIGH" } } }
 
-        context "when the 'security' label doesn't yet exist" do
+        context "when the 'security' and severity labels don't yet exist" do
           before do
             stub_request(:post, "#{repo_api_url}/labels").
               to_return(status: 201,
@@ -426,7 +440,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                         headers: json_header)
           end
 
-          it "creates a 'security' label" do
+          it "creates 'security' and severity labels" do
             labeler.create_default_labels_if_required
 
             expect(WebMock).
@@ -435,11 +449,17 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                 body: "description=Pull%20requests%20that%20address%20a" \
                       "%20security%20vulnerability&name=security&color=%23ee0701"
               )
-            expect(labeler.labels_for_pr).to include("security")
+            expect(WebMock).
+              to have_requested(:post, "#{repo_api_url}/labels").
+              with(
+                body: "description=Pull%20requests%20that%20address%20a" \
+                      "%20security%20vulnerability%20with%20high%20severity&name=severity%3Ahigh&color=%23ed9121"
+              )
+            expect(labeler.labels_for_pr).to include("security", "severity:high")
           end
         end
 
-        context "when a 'security' label already exist" do
+        context "when 'security' and severoty labels already exist" do
           before do
             stub_request(:get, "#{repo_api_url}/labels?per_page=100").
               to_return(status: 200,

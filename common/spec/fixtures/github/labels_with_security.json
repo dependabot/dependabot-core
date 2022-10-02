@@ -56,6 +56,13 @@
         "default": true
     },
     {
+      "id": 618335053,
+      "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/severityhigh",
+      "name": "severity:high",
+      "color": "ed9121",
+      "default": true
+  },
+    {
         "id": 618335051,
         "url": "https://api.github.com/repos/dependabot/dependabot-core/labels/wontfix",
         "name": "wontfix",

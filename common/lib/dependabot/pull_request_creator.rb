@@ -248,7 +248,8 @@ module Dependabot
           includes_security_fixes: includes_security_fixes?,
           dependencies: dependencies,
           label_language: label_language?,
-          automerge_candidate: automerge_candidate?
+          automerge_candidate: automerge_candidate?,
+          vulnerabilities_fixed: vulnerabilities_fixed
         )
     end
 

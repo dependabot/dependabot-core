@@ -4,10 +4,16 @@ require "octokit"
 require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
-    class Labeler
+    class Labeler # rubocop:disable Metrics/ClassLength
       DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i.freeze
       DEFAULT_DEPENDENCIES_LABEL = "dependencies"
       DEFAULT_SECURITY_LABEL = "security"
+      VULNERABILITY_SEVERITY_LABELS = {
+        "severity:low" => "00b140",
+        "severity:moderate" => "eee600",
+        "severity:high" => "ed9121",
+        "severity:critical" => "ff0000"
+      }.freeze
 
       @package_manager_labels = {}
 
@@ -28,7 +34,7 @@ module Dependabot
 
       def initialize(source:, custom_labels:, credentials:, dependencies:,
                      includes_security_fixes:, label_language:,
-                     automerge_candidate:)
+                     automerge_candidate:, vulnerabilities_fixed: {})
         @source                  = source
         @custom_labels           = custom_labels
         @credentials             = credentials
@@ -36,17 +42,20 @@ module Dependabot
         @includes_security_fixes = includes_security_fixes
         @label_language          = label_language
         @automerge_candidate     = automerge_candidate
+        @vulnerabilities_fixed   = vulnerabilities_fixed
       end
 
       def create_default_labels_if_required
         create_default_dependencies_label_if_required
         create_default_security_label_if_required
+        create_default_severity_labels_if_required
         create_default_language_label_if_required
       end
 
       def labels_for_pr
         [
           *default_labels_for_pr,
+          *fixed_vulnerability_severity_labels,
           includes_security_fixes? ? security_label : nil,
           label_update_type? ? semver_label : nil,
           automerge_candidate? ? automerge_label : nil
@@ -165,6 +174,12 @@ module Dependabot
         create_security_label
       end
 
+      def create_default_severity_labels_if_required
+        return unless includes_security_fixes?
+
+        create_severity_labels
+      end
+
       def create_default_language_label_if_required
         return unless label_language?
         return if custom_labels
@@ -201,6 +216,14 @@ module Dependabot
       def security_label
         labels.find { |l| l == DEFAULT_SECURITY_LABEL } ||
           labels.find { |l| l.match?(/security/i) }
+      end
+
+      def severity_label_exists?(label)
+        severity_labels.find { |l| l == label }
+      end
+
+      def severity_labels
+        @severity_labels ||= labels.select { |l| l.start_with?("severity:") }
       end
 
       def label_update_type?
@@ -301,6 +324,15 @@ module Dependabot
         end
       end
 
+      def create_severity_labels
+        case source.provider
+        when "github" then create_github_severity_labels
+        when "gitlab" then create_gitlab_severity_labels
+        when "azure" then @labels # Azure does not have centralised labels
+        else raise "Unsupported provider #{source.provider}"
+        end
+      end
+
       def create_language_label
         case source.provider
         when "github" then create_github_language_label
@@ -344,12 +376,43 @@ module Dependabot
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
       end
 
+      def create_github_severity_labels
+        fixed_vulnerability_severity_labels.each do |label|
+          next if severity_label_exists?(label)
+
+          severity = label.gsub("severity:", "")
+          github_client_for_source.add_label(
+            source.repo, label, VULNERABILITY_SEVERITY_LABELS[label],
+            description: "Pull requests that address a security vulnerability with #{severity} severity",
+            accept: "application/vnd.github.symmetra-preview+json"
+          )
+        rescue Octokit::UnprocessableEntity => e
+          raise unless e.errors.first.fetch(:code) == "already_exists"
+        end
+
+        @labels = [*@labels, *fixed_vulnerability_severity_labels].uniq
+      end
+
       def create_gitlab_security_label
         gitlab_client_for_source.create_label(
           source.repo, DEFAULT_SECURITY_LABEL, "#ee0701",
           description: "Pull requests that address a security vulnerability"
         )
         @labels = [*@labels, DEFAULT_SECURITY_LABEL].uniq
+      end
+
+      def create_gitlab_severity_labels
+        fixed_vulnerability_severity_labels.each do |label|
+          next if severity_label_exists?(label)
+
+          severity = label.gsub("severity:", "")
+          gitlab_client_for_source.create_label(
+            source.repo, label, "##{VULNERABILITY_SEVERITY_LABELS[label]}",
+            description: "Pull requests that address a security vulnerability with #{severity} severity"
+          )
+        end
+
+        @labels = [*@labels, *fixed_vulnerability_severity_labels].uniq
       end
 
       def create_github_language_label
@@ -408,6 +471,15 @@ module Dependabot
 
       def version_class
         Utils.version_class_for_package_manager(package_manager)
+      end
+
+      def fixed_vulnerability_severity_labels
+        @fixed_vulnerability_severity_labels ||= @vulnerabilities_fixed.
+                                                 values.
+                                                 reject { |vuln| vuln["severity"].empty? }.
+                                                 map { |vuln| "severity:#{vuln['severity'].downcase}" }.
+                                                 select { |label| VULNERABILITY_SEVERITY_LABELS[label] }.
+                                                 uniq
       end
     end
   end
