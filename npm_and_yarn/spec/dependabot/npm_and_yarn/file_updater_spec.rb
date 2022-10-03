@@ -2995,7 +2995,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the .yarn/cache folder" do
           expect(updated_files.map(&:name)).to match_array(
             [
-              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
               ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
               ".yarn/install-state.gz",
               "package.json",
