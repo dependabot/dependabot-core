@@ -3096,6 +3096,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             expect(lockfile.content).to include("chalk@npm:0.4.0")
             expect(lockfile.content).to_not include("workspace-aggregator")
           end
+
+          it "does not add the dependency to the top-level workspace" do
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            parsed_lockfile = YAML.safe_load(lockfile.content)
+            expect(parsed_lockfile.dig("bump-test@workspace:.", "dependencies").keys).not_to include("chalk")
+          end
         end
       end
 

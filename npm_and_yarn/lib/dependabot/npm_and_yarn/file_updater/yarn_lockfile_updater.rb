@@ -161,7 +161,7 @@ module Dependabot
             # updated to a single new version, so we just pick the first one.
             "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
           end
-          command = "yarn add #{updates.join(' ')} --mode=update-lockfile"
+          command = "yarn up #{updates.join(' ')} --mode=update-lockfile"
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
