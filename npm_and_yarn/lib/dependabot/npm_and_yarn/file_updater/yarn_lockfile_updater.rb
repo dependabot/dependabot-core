@@ -154,16 +154,25 @@ module Dependabot
         end
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
-          updates = top_level_dependency_updates.collect do |dep|
-            # when there are multiple requirements, we're dealing with a
-            # workspace-like setup, where there are multiple package.json files
-            # that pull in the same dependency. It appears that these are always
-            # updated to a single new version, so we just pick the first one.
-            "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
-          end
-          command = "yarn up #{updates.join(' ')} --mode=update-lockfile"
+          # If the requirements have changed, it means we've updated the
+          # package.json file(s), and we can just run yarn install to get the
+          # lockfile in the right state. Otherwise we'll need to manually update
+          # the lockfile.
+          command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
+                      "yarn install --mode=update-lockfile"
+                    else
+                      updates = top_level_dependency_updates.collect do |dep|
+                        dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
+                      end
+                      "yarn up #{updates.join(' ')} --mode=update-lockfile"
+                    end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
+        end
+
+        def requirements_changed?(dependency_name)
+          dep = top_level_dependencies.first { |d| d.name == dependency_name }
+          dep.requirements != dep.previous_requirements
         end
 
         def run_yarn_berry_subdependency_updater(yarn_lock:)
