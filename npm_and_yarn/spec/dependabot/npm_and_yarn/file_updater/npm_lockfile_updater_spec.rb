@@ -299,6 +299,58 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
             to eq("0.0.2")
         end
       end
+
+      context "when updating both top level and sub dependencies" do
+        let(:files) do
+          project_dependency_files("#{npm_version}/transitive_dependency_locked_by_intermediate_top_and_sub")
+        end
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-transitive-dependency",
+              version: "1.0.1",
+              previous_version: "1.0.0",
+              requirements: [{
+                file: "package.json",
+                requirement: "1.0.1",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
+              previous_requirements: [{
+                file: "package.json",
+                requirement: "1.0.0",
+                groups: ["dependencies"],
+                source: {
+                  type: "registry",
+                  url: "https://registry.npmjs.org"
+                }
+              }],
+              package_manager: "npm_and_yarn"
+            ),
+            Dependabot::Dependency.new(
+              name: "@dependabot-fixtures/npm-intermediate-dependency",
+              version: "0.0.2",
+              previous_version: "0.0.1",
+              requirements: [],
+              previous_requirements: [],
+              package_manager: "npm_and_yarn"
+            )
+          ]
+        end
+
+        it "updates top level and sub dependencies" do
+          expected_updated_npm_lock_content = fixture(
+            "updated_projects",
+            npm_version,
+            "transitive_dependency_locked_by_intermediate_top_and_sub",
+            "package-lock.json"
+          )
+          expect(updated_npm_lock_content).to eq(expected_updated_npm_lock_content)
+        end
+      end
     end
 
     describe "#{npm_version} errors" do

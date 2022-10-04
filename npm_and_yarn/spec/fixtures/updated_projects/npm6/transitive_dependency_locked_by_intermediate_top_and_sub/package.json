@@ -1,0 +1,18 @@
+{
+  "name": "transitive-dependency-locked-by-intermediate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dependabot-fixtures/npm-parent-dependency": "2.0.2",
+    "@dependabot-fixtures/npm-transitive-dependency": "1.0.1"
+  }
+}

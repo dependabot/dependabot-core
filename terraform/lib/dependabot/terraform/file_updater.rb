@@ -48,6 +48,30 @@ module Dependabot
 
       private
 
+      # Terraform allows to use a module from the same source multiple times
+      # To detect any changes in dependencies we need to overwrite an implementation from the base class
+      #
+      # Example (for simplicity other parameters are skipped):
+      # previous_requirements = [{requirement: "0.9.1"}, {requirement: "0.11.0"}]
+      # requirements = [{requirement: "0.11.0"}, {requirement: "0.11.0"}]
+      #
+      # Simple difference between arrays gives:
+      # requirements - previous_requirements
+      #  => []
+      # which loses an information that one of our requirements has changed.
+      #
+      # By using symmetric difference:
+      # (requirements - previous_requirements) | (previous_requirements - requirements)
+      #  => [{requirement: "0.9.1"}]
+      # we can detect that change.
+      def requirement_changed?(file, dependency)
+        changed_requirements =
+          (dependency.requirements - dependency.previous_requirements) |
+          (dependency.previous_requirements - dependency.requirements)
+
+        changed_requirements.any? { |f| f[:file] == file.name }
+      end
+
       def updated_terraform_file_content(file)
         content = file.content.dup
 
@@ -89,7 +113,7 @@ module Dependabot
 
       def update_registry_declaration(new_req, old_req, updated_content)
         regex = new_req[:source][:type] == "provider" ? provider_declaration_regex : registry_declaration_regex
-        updated_content.sub!(regex) do |regex_match|
+        updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
           end

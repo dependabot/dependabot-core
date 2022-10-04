@@ -277,6 +277,12 @@ RSpec.describe Dependabot::Job do
       it "transforms the keys" do
         expect(job.experiments).to eq(simple: false, kebab_case: true)
       end
+
+      it "registers the experiments with Dependabot::Experiments" do
+        job
+        expect(Dependabot::Experiments.enabled?(:kebab_case)).to be_truthy
+        expect(Dependabot::Experiments.enabled?(:simpe)).to be_falsey
+      end
     end
 
     context "with experimental values" do
@@ -284,6 +290,33 @@ RSpec.describe Dependabot::Job do
 
       it "preserves the values" do
         expect(job.experiments).to eq(timeout_per_operation_seconds: 600)
+      end
+    end
+
+    describe "yarn_berry experiment" do
+      let(:experiments) { { "yarn_berry" => true } }
+      let(:package_manager) { "npm_and_yarn" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ansi-regex",
+          package_manager: "npm_and_yarn",
+          version: "6.0.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^6.0.0",
+              groups: ["devDependencies"],
+              source: {
+                type: "registry",
+                url: "https://registry.npmjs.org"
+              }
+            }
+          ]
+        )
+      end
+
+      it "enables cloning when yarn_berry is enabled" do
+        expect(job.clone?).to be_truthy
       end
     end
   end

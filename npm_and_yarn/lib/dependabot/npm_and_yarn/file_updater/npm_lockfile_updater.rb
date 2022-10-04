@@ -112,7 +112,7 @@ module Dependabot
         end
 
         def run_current_npm_update
-          run_npm_updater(top_level_dependencies: top_level_dependencies)
+          run_npm_updater(top_level_dependencies: top_level_dependencies, sub_dependencies: sub_dependencies)
         end
 
         def run_previous_npm_update
@@ -127,16 +127,31 @@ module Dependabot
             )
           end
 
-          run_npm_updater(top_level_dependencies: previous_top_level_dependencies)
+          previous_sub_dependencies = sub_dependencies.map do |d|
+            Dependabot::Dependency.new(
+              name: d.name,
+              package_manager: d.package_manager,
+              version: d.previous_version,
+              previous_version: d.previous_version,
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+
+          run_npm_updater(top_level_dependencies: previous_top_level_dependencies,
+                          sub_dependencies: previous_sub_dependencies)
         end
 
-        def run_npm_updater(top_level_dependencies:)
+        def run_npm_updater(top_level_dependencies:, sub_dependencies:)
           SharedHelpers.with_git_configured(credentials: credentials) do
+            updated_files = {}
             if top_level_dependencies.any?
-              run_npm_top_level_updater(top_level_dependencies: top_level_dependencies)
-            else
-              run_npm_subdependency_updater
+              updated_files.merge!(run_npm_top_level_updater(top_level_dependencies: top_level_dependencies))
             end
+            if sub_dependencies.any?
+              updated_files.merge!(run_npm_subdependency_updater(sub_dependencies: sub_dependencies))
+            end
+            updated_files
           end
         end
 
@@ -194,9 +209,9 @@ module Dependabot
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
-        def run_npm_subdependency_updater
+        def run_npm_subdependency_updater(sub_dependencies:)
           if npm8?
-            run_npm8_subdependency_updater
+            run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -206,7 +221,7 @@ module Dependabot
           end
         end
 
-        def run_npm8_subdependency_updater
+        def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
           SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command(dependency_names))
           { lockfile_basename => File.read(lockfile_basename) }
