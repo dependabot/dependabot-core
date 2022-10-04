@@ -17,18 +17,18 @@ module Dependabot
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
 
-      def vulnerable?
-        super ||
-          begin
-            all_versions = Set.new([
-              dependency.version,
-              *dependency.metadata.fetch(:all_versions, []).filter_map(&:version)
-            ]).filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+      def up_to_date?
+        return false if security_update? &&
+                        dependency.version &&
+                        version_class.correct?(dependency.version) &&
+                        vulnerable_versions.any? &&
+                        !vulnerable_versions.include?(version_class.new(dependency.version))
 
-            security_advisories.any? do |advisory|
-              all_versions.any? { |v| advisory.vulnerable?(v) }
-            end
-          end
+        super
+      end
+
+      def vulnerable?
+        super || vulnerable_versions.any?
       end
 
       def latest_version
@@ -118,6 +118,7 @@ module Dependabot
           dependency: dependency,
           target_version: lowest_security_fix_version
         )
+        return conflicts unless defined?(@vulnerability_audit)
 
         vulnerable = [vulnerability_audit].select do |hash|
           !hash["fix_available"] && hash["explanation"]
@@ -138,6 +139,20 @@ module Dependabot
             dependency: dependency,
             security_advisories: security_advisories
           )
+      end
+
+      def vulnerable_versions
+        @vulnerable_versions ||=
+          begin
+            all_versions = Set.new([
+              dependency.version,
+              *dependency.metadata.fetch(:all_versions, []).filter_map(&:version)
+            ]).filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+
+            all_versions.select do |v|
+              security_advisories.any? { |advisory| advisory.vulnerable?(v) }
+            end
+          end
       end
 
       def latest_version_resolvable_with_full_unlock?
@@ -391,6 +406,10 @@ module Dependabot
 
         @library =
           LibraryDetector.new(package_json_file: package_json).library?
+      end
+
+      def security_update?
+        security_advisories.any?
       end
 
       def dependency_source_details
