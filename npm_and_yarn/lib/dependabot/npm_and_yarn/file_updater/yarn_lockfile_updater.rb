@@ -178,6 +178,7 @@ module Dependabot
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = sub_dependencies.first
           update = "#{dep.name}@#{dep.version}"
+
           Helpers.run_yarn_commands(
             "yarn add #{update} --mode=update-lockfile",
             "yarn dedupe #{dep.name} --mode=update-lockfile",
