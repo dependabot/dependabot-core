@@ -3,6 +3,7 @@
 set -e
 
 shellcheck \
+  --source-path=SCRIPTDIR \
   ./bin/ci-test \
   ./bin/docker-dev-shell \
   ./bin/lint \
