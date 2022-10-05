@@ -304,4 +304,54 @@ RSpec.describe Dependabot::Dependency do
       expect(dependency.to_h.keys).not_to include("metadata")
     end
   end
+
+  describe "#all_versions" do
+    it "returns an empty array by default" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy"
+      )
+
+      expect(dependency.all_versions).to eq([])
+    end
+
+    it "returns the dependency version if all_version metadata isn't present" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        version: "1.0.0"
+      )
+
+      expect(dependency.all_versions).to eq(["1.0.0"])
+    end
+
+    it "returns all_version metadata if present" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        version: "1.0.0",
+        metadata: {
+          all_versions: [
+            described_class.new(
+              name: "dep",
+              requirements: [],
+              package_manager: "dummy",
+              version: "1.0.0"
+            ),
+            described_class.new(
+              name: "dep",
+              requirements: [],
+              package_manager: "dummy",
+              version: "2.0.0"
+            )
+          ]
+        }
+      )
+
+      expect(dependency.all_versions).to eq(["1.0.0", "2.0.0"])
+    end
+  end
 end
