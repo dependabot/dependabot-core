@@ -112,8 +112,9 @@ module Dependabot
         version_class_for_package_manager(dependency.package_manager)
       return false unless version_class.correct?(dependency.version)
 
-      version = version_class.new(dependency.version)
-      security_advisories.any? { |a| a.vulnerable?(version) }
+      all_versions = dependency.all_versions.
+                     filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+      security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
     end
 
     def security_fix?(dependency)
