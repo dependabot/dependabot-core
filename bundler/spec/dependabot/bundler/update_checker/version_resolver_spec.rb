@@ -47,7 +47,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
   end
   let(:source) { nil }
   let(:requirement_string) { ">= 0" }
-  let(:rubygems_url) { "https://index.rubygems.org/api/v1/" }
 
   describe "#latest_resolvable_version_details" do
     subject { resolver.latest_resolvable_version_details }
@@ -141,11 +140,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:requirement_string) { "~> 2.3.0" }
 
           let(:dependency_files) { bundler_project_dependency_files("bundler_specified") }
-
-          before do
-            stub_request(:get, rubygems_url + "versions/bundler.json").
-              to_return(status: 200, body: fixture("rubygems_responses", "versions-bundler.json"))
-          end
 
           it "returns nil as resolution returns the bundler version installed by core" do
             expect(subject).to be_nil
