@@ -3004,6 +3004,32 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "when updating only the lockfile" do
+        let(:files) { project_dependency_files("yarn_berry/lockfile_only_change") }
+
+        let(:dependency_name) { "babel-jest" }
+        let(:version) { "22.4.4" }
+        let(:previous_version) { "22.0.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^22.0.4",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "has details of the updated item, but doesn't update everything" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          # Updates the desired dependency
+          expect(parsed_lockfile["babel-jest@npm:^22.0.4"]["version"]).to eq("22.4.4")
+
+          # Doesn't update unrelated dependencies
+          expect(parsed_lockfile["eslint@npm:^4.14.0"]["version"]).to eq("4.14.0")
+        end
+      end
+
       context "with workspaces" do
         let(:files) { project_dependency_files("yarn_berry/workspaces") }
 
@@ -3095,6 +3121,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@npm:0.4.0")
             expect(lockfile.content).to_not include("workspace-aggregator")
+          end
+
+          it "does not add the dependency to the top-level workspace" do
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            parsed_lockfile = YAML.safe_load(lockfile.content)
+            expect(parsed_lockfile.dig("bump-test@workspace:.", "dependencies").keys).not_to include("chalk")
           end
         end
       end
