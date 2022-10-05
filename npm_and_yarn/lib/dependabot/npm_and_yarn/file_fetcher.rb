@@ -30,6 +30,19 @@ module Dependabot
         "Repo must contain a package.json."
       end
 
+      # Overridden to pull any yarn data or plugins which may be stored with Git LFS.
+      def _clone_repo_contents(target_directory:)
+        path = super(target_directory: target_directory)
+        begin
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            SharedHelpers.run_shell_command("git -C #{path} lfs pull --include .yarn")
+            path
+          end
+        rescue StandardError
+          path
+        end
+      end
+
       private
 
       def fetch_files
