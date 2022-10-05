@@ -55,6 +55,8 @@ module Dependabot
         def updated_yarn_lock(yarn_lock)
           base_dir = dependency_files.first.directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
+            # Pull any yarn data or plugins which may be stored with Git LFS
+            SharedHelpers.run_shell_command("git lfs pull --include .yarn")
             write_temporary_dependency_files
             lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
             path = Pathname.new(yarn_lock.name).dirname.to_s
