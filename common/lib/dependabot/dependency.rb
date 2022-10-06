@@ -106,6 +106,15 @@ module Dependabot
       display_name_builder.call(name)
     end
 
+    # Returns all detected versions of the dependency. Only ecosystems that
+    # support this feature will return more than the current version.
+    def all_versions
+      all_versions = metadata[:all_versions]
+      return [version].compact unless all_versions
+
+      all_versions.filter_map(&:version)
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end

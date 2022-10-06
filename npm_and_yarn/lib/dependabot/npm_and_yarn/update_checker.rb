@@ -118,7 +118,6 @@ module Dependabot
           dependency: dependency,
           target_version: lowest_security_fix_version
         )
-        return conflicts unless defined?(@vulnerability_audit)
 
         vulnerable = [vulnerability_audit].select do |hash|
           !hash["fix_available"] && hash["explanation"]
@@ -144,10 +143,8 @@ module Dependabot
       def vulnerable_versions
         @vulnerable_versions ||=
           begin
-            all_versions = Set.new([
-              dependency.version,
-              *dependency.metadata.fetch(:all_versions, []).filter_map(&:version)
-            ]).filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+            all_versions = dependency.all_versions.
+                           filter_map { |v| version_class.new(v) if version_class.correct?(v) }
 
             all_versions.select do |v|
               security_advisories.any? { |advisory| advisory.vulnerable?(v) }

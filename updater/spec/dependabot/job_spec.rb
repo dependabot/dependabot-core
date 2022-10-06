@@ -158,6 +158,53 @@ RSpec.describe Dependabot::Job do
 
         it { is_expected.to eq(true) }
       end
+
+      context "for a security fix that doesn't apply" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => ["> 1.8.0"],
+              "patched-versions" => [],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "for a security fix that doesn't apply to some versions" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => ["> 1.8.0"],
+              "patched-versions" => [],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        it "should be allowed" do
+          dependency.metadata[:all_versions] = [
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: []
+            ),
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              package_manager: "bundler",
+              version: "1.9.0",
+              requirements: []
+            )
+          ]
+
+          is_expected.to eq(true)
+        end
+      end
     end
 
     context "and a dependency whitelist that includes the dependency" do
