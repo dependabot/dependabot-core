@@ -118,7 +118,6 @@ module Dependabot
           dependency: dependency,
           target_version: lowest_security_fix_version
         )
-        return conflicts unless defined?(@vulnerability_audit)
 
         vulnerable = [vulnerability_audit].select do |hash|
           !hash["fix_available"] && hash["explanation"]
