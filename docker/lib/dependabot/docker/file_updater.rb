@@ -18,7 +18,6 @@ module Dependabot
 
       def updated_dependency_files
         updated_files = []
-
         dependency_files.each do |file|
           next unless requirement_changed?(file, dependency)
 
@@ -153,11 +152,27 @@ module Dependabot
       end
 
       def updated_yaml_content(file)
-        updated_content = update_image(file)
+        updated_content = file.name == "values.yaml" ? update_helm(file) : update_image(file)
 
         raise "Expected content to change!" if updated_content == file.content
 
         updated_content
+      end
+
+      def update_helm(file)
+        # TODO: this won't work if two images have the same tag version
+        old_tags = old_helm_tags(file)
+        return if old_tags.empty?
+
+        modified_content = file.content
+
+        old_tags.each do |old_tag|
+          old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+#{old_tag}(?=\s|$)/
+          modified_content = modified_content.gsub(old_tag_regex) do |old_img_tag|
+            old_img_tag.gsub(old_tag.to_s, new_yaml_tag(file).to_s)
+          end
+        end
+        modified_content
       end
 
       def update_image(file)
@@ -176,11 +191,16 @@ module Dependabot
       end
 
       def new_yaml_image(file)
-        elt = dependency.requirements.find { |r| r[:file] == file.name }
-        prefix = elt.fetch(:source)[:registry] ? "#{elt.fetch(:source)[:registry]}/" : ""
-        digest = elt.fetch(:source)[:digest] ? "@#{elt.fetch(:source)[:digest]}" : ""
-        tag = elt.fetch(:source)[:tag] ? ":#{elt.fetch(:source)[:tag]}" : ""
+        element = dependency.requirements.find { |r| r[:file] == file.name }
+        prefix = element.fetch(:source)[:registry] ? "#{element.fetch(:source)[:registry]}/" : ""
+        digest = element.fetch(:source)[:digest] ? "@#{element.fetch(:source)[:digest]}" : ""
+        tag = element.fetch(:source)[:tag] ? ":#{element.fetch(:source)[:tag]}" : ""
         "#{prefix}#{dependency.name}#{tag}#{digest}"
+      end
+
+      def new_yaml_tag(file)
+        element = dependency.requirements.find { |r| r[:file] == file.name }
+        element.fetch(:source)[:tag] || ""
       end
 
       def old_yaml_images(file)
@@ -191,6 +211,14 @@ module Dependabot
             digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
             tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
             "#{prefix}#{dependency.name}#{tag}#{digest}"
+          end
+      end
+
+      def old_helm_tags(file)
+        dependency.
+          previous_requirements.
+          select { |r| r[:file] == file.name }.map do |r|
+            r.fetch(:source)[:tag] || ""
           end
       end
     end

@@ -214,6 +214,8 @@ module Dependabot
         images =
           if !img.nil? && img.is_a?(String) && !img.empty?
             [img]
+          elsif !img.nil? && img.is_a?(Hash) && !img.empty?
+            parse_helm(img)
           else
             []
           end
@@ -224,6 +226,22 @@ module Dependabot
       def manifest_files
         # Dependencies include both Dockerfiles and yaml, select yaml.
         dependency_files.select { |f| f.type == "file" && f.name.match?(/^[^\.]+\.ya?ml/i) }
+      end
+
+      def parse_helm(img_hash)
+        repo = img_hash.fetch("repository", nil)
+        tag = img_hash.key?("tag") ? img_hash.fetch("tag", nil) : img_hash.fetch("version", nil)
+        registry = img_hash.fetch("registry", nil)
+
+        if !repo.nil? && !registry.nil? && !tag.nil?
+          ["#{registry}/#{repo}:#{tag}"]
+        elsif !repo.nil? && !tag.nil?
+          ["#{repo}:#{tag}"]
+        elsif !repo.nil?
+          [repo]
+        else
+          []
+        end
       end
     end
   end

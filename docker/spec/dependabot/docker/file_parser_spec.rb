@@ -1318,4 +1318,111 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
   end
+
+  let(:helmfiles) { [helmfile] }
+  let(:helmfile) do
+    Dependabot::DependencyFile.new(name: helmfile_fixture_name, content: helmfile_body)
+  end
+  let(:helmfile_body) do
+    fixture("helm", "yaml", helmfile_fixture_name)
+  end
+  let(:helmfile_fixture_name) { "values.yaml" }
+  let(:helm_parser) { described_class.new(dependency_files: helmfiles, source: source) }
+
+  describe "YAML parse" do
+    subject(:dependencies) { helm_parser.parse }
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the first dependency" do
+      subject(:dependency) { dependencies.first }
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "values.yaml",
+          source: { registry: "registry.example.com", tag: "1.14.2" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("nginx")
+        expect(dependency.version).to eq("1.14.2")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    context "with no image" do
+      let(:helmfile_fixture_name) { "empty.yaml" }
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with no registry" do
+      let(:helmfile_fixture_name) { "no-registry.yaml" }
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "no-registry.yaml",
+            source: { registry: "mcr.microsoft.com", tag: "v1.2.3" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("sql/sql")
+          expect(dependency.version).to eq("v1.2.3")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    context "with multiple images" do
+      let(:helmfile_fixture_name) { "multi-image.yaml" }
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "multi-image.yaml",
+            source: { registry: "burns.azurecr.io", tag: "1.14.2" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("nginx")
+          expect(dependency.version).to eq("1.14.2")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+
+      describe "the second dependency" do
+        subject(:dependency) { dependencies.last }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "multi-image.yaml",
+            source: { tag: "18.04" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("canonical/ubuntu")
+          expect(dependency.version).to eq("18.04")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+  end
 end
