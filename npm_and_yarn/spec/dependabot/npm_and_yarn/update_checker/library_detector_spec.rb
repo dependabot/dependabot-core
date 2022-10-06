@@ -74,7 +74,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
     end
 
     context "with a custom global registry" do
-      let(:project_name) { "npm8/library_with_npmrc" }
+      let(:project_name) { "npm8/library_with_global_registry" }
 
       context "not listed in registry" do
         before do
@@ -88,6 +88,38 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::LibraryDetector do
       context "listed on registry" do
         before do
           stub_request(:get, "http://example.com/dependabot/etag").
+            to_return(status: 200, body: body)
+        end
+
+        context "with a description that matches" do
+          let(:body) { fixture("npm_responses", "etag.json") }
+          it { is_expected.to eq(true) }
+        end
+
+        context "with a description that doesn't match" do
+          let(:body) do
+            fixture("npm_responses", "is_number.json")
+          end
+          it { is_expected.to eq(false) }
+        end
+      end
+    end
+
+    context "with a custom scoped registry" do
+      let(:project_name) { "npm8/library_with_scoped_registry" }
+
+      context "not listed in registry" do
+        before do
+          stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag").
+            to_return(status: 404)
+        end
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "listed on registry" do
+        before do
+          stub_request(:get, "http://example.com/dependabot/@dependabot%2Fetag").
             to_return(status: 200, body: body)
         end
 

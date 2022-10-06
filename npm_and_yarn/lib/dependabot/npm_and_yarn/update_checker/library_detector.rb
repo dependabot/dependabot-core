@@ -38,7 +38,7 @@ module Dependabot
           return false unless project_description
 
           # Check if the project is listed on npm. If it is, it's a library
-          url = "#{global_registry.chomp('/')}/#{escaped_project_name}"
+          url = "#{registry.chomp('/')}/#{escaped_project_name}"
           @project_npm_response ||= Dependabot::RegistryClient.get(url: url)
           return false unless @project_npm_response.status == 200
 
@@ -60,15 +60,13 @@ module Dependabot
           @parsed_package_json ||= JSON.parse(package_json_file.content)
         end
 
-        def global_registry
+        def registry
           NpmAndYarn::UpdateChecker::RegistryFinder.new(
-            dependency: project_name,
+            dependency: nil,
             credentials: credentials,
-            npmrc_file: dependency_files.
-              find { |f| f.name.end_with?(".npmrc") },
-            yarnrc_file: dependency_files.
-              find { |f| f.name.end_with?(".yarnrc") }
-          ).global_registry
+            npmrc_file: dependency_files.find { |f| f.name.end_with?(".npmrc") },
+            yarnrc_file: dependency_files.find { |f| f.name.end_with?(".yarnrc") }
+          ).registry_from_rc(project_name)
         end
       end
     end
