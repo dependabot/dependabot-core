@@ -303,6 +303,22 @@ RSpec.describe Dependabot::Dependency do
       )
       expect(dependency.to_h.keys).not_to include("metadata")
     end
+
+    it "isn't utilized by the equality operator" do
+      dependency1 = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      dependency2 = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 43 }
+      )
+      expect(dependency1).to eq(dependency2)
+    end
   end
 
   describe "#all_versions" do
