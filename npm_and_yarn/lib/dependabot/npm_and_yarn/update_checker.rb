@@ -375,7 +375,11 @@ module Dependabot
         return true if dependency_files.any? { |f| f.name == "lerna.json" }
 
         @library =
-          LibraryDetector.new(package_json_file: package_json).library?
+          LibraryDetector.new(
+            package_json_file: package_json,
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).library?
       end
 
       def dependency_source_details

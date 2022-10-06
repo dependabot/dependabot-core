@@ -8,8 +8,10 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class LibraryDetector
-        def initialize(package_json_file:)
+        def initialize(package_json_file:, credentials:, dependency_files:)
           @package_json_file = package_json_file
+          @credentials = credentials
+          @dependency_files = dependency_files
         end
 
         def library?
@@ -20,7 +22,7 @@ module Dependabot
 
         private
 
-        attr_reader :package_json_file
+        attr_reader :package_json_file, :credentials, :dependency_files
 
         def package_json_may_be_for_library?
           return false unless project_name
@@ -36,7 +38,8 @@ module Dependabot
           return false unless project_description
 
           # Check if the project is listed on npm. If it is, it's a library
-          @project_npm_response ||= Dependabot::RegistryClient.get(url: "https://registry.npmjs.org/#{escaped_project_name}")
+          url = "#{global_registry.chomp('/')}/#{escaped_project_name}"
+          @project_npm_response ||= Dependabot::RegistryClient.get(url: url)
           return false unless @project_npm_response.status == 200
 
           @project_npm_response.body.force_encoding("UTF-8").encode.
@@ -55,6 +58,17 @@ module Dependabot
 
         def parsed_package_json
           @parsed_package_json ||= JSON.parse(package_json_file.content)
+        end
+
+        def global_registry
+          NpmAndYarn::UpdateChecker::RegistryFinder.new(
+            dependency: project_name,
+            credentials: credentials,
+            npmrc_file: dependency_files.
+              find { |f| f.name.end_with?(".npmrc") },
+            yarnrc_file: dependency_files.
+              find { |f| f.name.end_with?(".yarnrc") }
+          ).global_registry
         end
       end
     end
