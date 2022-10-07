@@ -599,6 +599,37 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           end
         end
       end
+
+      context "with double backslashes in plugin" do
+        let(:pom_body) { fixture("poms", "plugin_with_double_backslashes.xml") }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "com.diffplug.spotless:spotless-maven-plugin",
+              version: "2.27.1",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "2.27.1",
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "2.27.0",
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        its(:content) do
+          is_expected.to include("<order>java,javax,org,com,,\\\\#</order>")
+        end
+      end
     end
 
     context "the updated extensions.xml file" do
