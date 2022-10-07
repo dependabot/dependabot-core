@@ -243,11 +243,18 @@ module Dependabot
       def source_for(name, requirement, manifest_name)
         return git_source_for(requirement) if git_url?(requirement)
 
-        resolved_url = lockfile_parser.lockfile_details(
+        lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
           requirement: requirement,
           manifest_name: manifest_name
-        )&.fetch("resolved", nil)
+        )
+        resolved_url = lockfile_details&.fetch("resolved", nil)
+
+        if Experiments.enabled?(:yarn_berry) && resolved_url.nil?
+          resolution = lockfile_details&.fetch("resolution", nil)
+          package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
+          resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
+        end
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")

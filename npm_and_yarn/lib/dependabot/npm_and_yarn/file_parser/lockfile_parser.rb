@@ -78,7 +78,7 @@ module Dependabot
             details_candidates.first.last
           else
             details_candidates.find do |k, _|
-              k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
+              k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
             end&.last
           end
         end

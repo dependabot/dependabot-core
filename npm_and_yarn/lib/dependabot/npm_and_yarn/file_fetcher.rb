@@ -69,15 +69,15 @@ module Dependabot
         return @yarn_version if defined?(@yarn_version)
 
         package = JSON.parse(package_json.content)
-        if (pkgmanager = package.fetch("packageManager", nil))
-          get_yarn_version_from_path(pkgmanager)
+        if Experiments.enabled?(:yarn_berry) && (package_manager = package.fetch("packageManager", nil))
+          get_yarn_version_from_package_json(package_manager)
         elsif yarn_lock
           1
         end
       end
 
-      def get_yarn_version_from_path(path)
-        version_match = path.match(/yarn@(?<version>\d+.\d+.\d+)/)
+      def get_yarn_version_from_package_json(package_manager)
+        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
         version_match&.named_captures&.fetch("version", nil)
       end
 

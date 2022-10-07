@@ -218,6 +218,24 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           it { is_expected.to eq(nil) }
         end
       end
+
+      context "that have multiple requirements" do
+        let(:dependency_files) { project_dependency_files("yarn_berry/multiple_requirements") }
+        let(:dependency_name) { "postcss" }
+        let(:requirement) { "^8.4.17" }
+
+        it "finds the one matching the requirement" do
+          expect(lockfile_details).to eq(
+            "version" => "8.4.17",
+            "resolution" => "postcss@npm:8.4.17",
+            "dependencies" => { "nanoid" => "^3.3.4", "picocolors" => "^1.0.0", "source-map-js" => "^1.0.2" },
+            "checksum" => "a6d9096dd711e17f7b1d18ff5dcb4fdedf3941d5a3dc8b0e4ea" \
+                          "873b8f31972d57f73d6da9a8aed7ff389eb52190ed34f6a94f299a7f5ddc68b08a24a48f77eb9",
+            "languageName" => "node",
+            "linkType" => "hard"
+          )
+        end
+      end
     end
 
     context "for npm lockfiles" do

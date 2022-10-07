@@ -37,6 +37,40 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
   end
   let(:source) { nil }
 
+  describe "registry_from_rc" do
+    subject { finder.registry_from_rc(dependency_name) }
+
+    let(:dependency_name) { "some_dep" }
+
+    it { is_expected.to eq("https://registry.npmjs.org") }
+
+    context "with a global npm registry" do
+      let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com") }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
+    context "with a global yarn registry" do
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: 'registry "http://example.com"') }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
+    context "with a scoped npm registry" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "@dependabot:registry=http://example.com") }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
+    context "with a scoped yarn registry" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: '"@dependabot:registry" "http://example.com"') }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+  end
+
   describe "registry" do
     subject { finder.registry }
 

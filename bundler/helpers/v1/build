@@ -2,26 +2,34 @@
 
 set -e
 
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
-  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
-  exit 1
+  install_dir="$helpers_dir"
+else
+  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v1"
+  mkdir -p "$install_dir"
+
+  cp -r \
+    "$helpers_dir/lib" \
+    "$helpers_dir/monkey_patches" \
+    "$helpers_dir/run.rb" \
+    "$helpers_dir/Gemfile" \
+    "$install_dir"
 fi
-
-install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v1"
-mkdir -p "$install_dir"
-
-helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cp -r \
-  "$helpers_dir/lib" \
-  "$helpers_dir/monkey_patches" \
-  "$helpers_dir/run.rb" \
-  "$helpers_dir/Gemfile" \
-  "$install_dir"
 
 cd "$install_dir"
 
+export GEM_HOME=$install_dir/.bundle
+
+gem install bundler -v 1.17.3 --no-document
+
+BUNDLER_VERSION=1.17.3 bundle config --local path.system true
+
+if [ -n "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  BUNDLER_VERSION=1.17.3 bundle config --local without "test"
+fi
+
 # NOTE: Sets `BUNDLED WITH` to match the installed v1 version in Gemfile.lock
 # forcing native helpers to run with the same version
-BUNDLER_VERSION=1.17.3 bundle config --local path ".bundle"
-BUNDLER_VERSION=1.17.3 bundle config --local without "test"
 BUNDLER_VERSION=1.17.3 bundle install
