@@ -4,6 +4,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "set"
 
 module Dependabot
   module NpmAndYarn
@@ -15,6 +16,20 @@ module Dependabot
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
+
+      def up_to_date?
+        return false if security_update? &&
+                        dependency.version &&
+                        version_class.correct?(dependency.version) &&
+                        vulnerable_versions.any? &&
+                        !vulnerable_versions.include?(version_class.new(dependency.version))
+
+        super
+      end
+
+      def vulnerable?
+        super || vulnerable_versions.any?
+      end
 
       def latest_version
         @latest_version ||=
@@ -123,6 +138,18 @@ module Dependabot
             dependency: dependency,
             security_advisories: security_advisories
           )
+      end
+
+      def vulnerable_versions
+        @vulnerable_versions ||=
+          begin
+            all_versions = dependency.all_versions.
+                           filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+
+            all_versions.select do |v|
+              security_advisories.any? { |advisory| advisory.vulnerable?(v) }
+            end
+          end
       end
 
       def latest_version_resolvable_with_full_unlock?
@@ -380,6 +407,10 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).library?
+      end
+
+      def security_update?
+        security_advisories.any?
       end
 
       def dependency_source_details

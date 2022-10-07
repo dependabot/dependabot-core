@@ -65,6 +65,82 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     Dependabot::Experiments.register(:yarn_berry, true)
   end
 
+  describe "#vulnerable?" do
+    context "when the dependency has multiple versions" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "1.0.0",
+          requirements: (foo_v1.requirements + foo_v2.requirements).uniq,
+          package_manager: "npm_and_yarn",
+          metadata: { all_versions: [foo_v1, foo_v2] }
+        )
+      end
+
+      let(:foo_v1) do
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "1.0.0",
+          requirements: [{
+            file: "package.json",
+            requirement: "^1.0.0",
+            groups: nil,
+            source: nil
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      let(:foo_v2) do
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "2.0.0",
+          requirements: [{
+            file: "package-lock.json",
+            requirement: "^2.0.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          }],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      context "if any of the versions is vulnerable" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "foo",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: [">=2.0.0 <2.0.3"],
+              safe_versions: [">=1.0.0 <2.0.0", ">=2.0.3"]
+            )
+          ]
+        end
+
+        it "returns true" do
+          expect(checker.vulnerable?).to eq(true)
+        end
+      end
+
+      context "if none of the versions is vulnerable" do
+        let(:security_advisories) do
+          [
+            Dependabot::SecurityAdvisory.new(
+              dependency_name: "foo",
+              package_manager: "npm_and_yarn",
+              vulnerable_versions: ["<1.0.0"],
+              safe_versions: [">=1.0.0"]
+            )
+          ]
+        end
+
+        it "returns false" do
+          expect(checker.vulnerable?).to eq(false)
+        end
+      end
+    end
+  end
+
   describe "#up_to_date?", :vcr do
     context "with no lockfile" do
       let(:dependency_files) { project_dependency_files("npm6/peer_dependency_typescript_no_lockfile") }

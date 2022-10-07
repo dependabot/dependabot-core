@@ -40,6 +40,29 @@ module Dependabot
         end
         commands.each { |cmd| SharedHelpers.run_shell_command(cmd) }
       end
+
+      def self.dependencies_with_all_versions_metadata(dependency_set)
+        working_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+        dependencies = []
+
+        names = dependency_set.dependencies.map(&:name)
+        names.each do |name|
+          all_versions = dependency_set.all_versions_for_name(name)
+          all_versions.each do |dep|
+            metadata_versions = dep.metadata.fetch(:all_versions, [])
+            if metadata_versions.any?
+              metadata_versions.each { |a| working_set << a }
+            else
+              working_set << dep
+            end
+          end
+          dependency = working_set.dependency_for_name(name)
+          dependency.metadata[:all_versions] = working_set.all_versions_for_name(name)
+          dependencies << dependency
+        end
+
+        dependencies
+      end
     end
   end
 end

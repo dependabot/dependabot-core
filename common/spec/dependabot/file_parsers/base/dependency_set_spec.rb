@@ -234,4 +234,134 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       end
     end
   end
+
+  context "when multiple versions of a dependency are added" do
+    let(:foo_v1) do
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "1.0",
+        requirements: [],
+        package_manager: "dummy"
+      )
+    end
+
+    let(:foo_v1_1) do # rubocop:disable Naming/VariableNumber
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "1.1",
+        requirements: [{
+          requirement: "^1",
+          file: "Dummyfile",
+          groups: nil,
+          source: nil
+        }],
+        package_manager: "dummy"
+      )
+    end
+
+    let(:foo_v1_1_alt) do
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "1.1",
+        requirements: [{
+          requirement: "^1",
+          file: "Dummyfile.lock",
+          groups: ["prod"],
+          source: {
+            type: "registry",
+            url: "https://registry.dummy.org"
+          }
+        }],
+        package_manager: "dummy"
+      )
+    end
+
+    let(:foo_sha) do
+      Dependabot::Dependency.new(
+        name: "foo",
+        version: "d5ac0584ee9ae7bd9288220a39780f155b9ad4c8",
+        requirements: [{
+          requirement: "^1",
+          file: "Dummyfile.lock",
+          groups: ["prod"],
+          source: {
+            type: "git",
+            url: "https://github.com/acme-inc/foo",
+            branch: nil,
+            ref: "main"
+          }
+        }],
+        package_manager: "dummy"
+      )
+    end
+
+    it "merges each into a single combined dependency" do
+      dependency_set = described_class.new << foo_v1 << foo_sha << foo_v1_1
+
+      expect(dependency_set.dependency_for_name("foo")).to eq(
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "1.0",
+          requirements: (
+            foo_v1.requirements +
+            foo_sha.requirements +
+            foo_v1_1.requirements
+          ).uniq,
+          package_manager: "dummy"
+        )
+      )
+    end
+
+    it "returns all versions in the order they were added by default" do
+      dependency_set = described_class.new << foo_v1_1 << foo_sha << foo_v1
+      expect(dependency_set.all_versions_for_name("foo")).to eq([foo_v1_1, foo_sha, foo_v1])
+    end
+
+    it "preserves all versions when combined with another dependency set" do
+      set_a = described_class.new << foo_v1
+      set_b = described_class.new << foo_sha << foo_v1_1 << foo_v1_1_alt
+      combined_set = set_a + set_b
+
+      expect(combined_set.dependency_for_name("foo")).to eq(
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "1.0",
+          requirements: (
+            foo_v1.requirements +
+            foo_sha.requirements +
+            foo_v1_1.requirements +
+            foo_v1_1_alt.requirements
+          ).uniq,
+          package_manager: "dummy"
+        )
+      )
+
+      expect(combined_set.all_versions_for_name("foo")).to eq([
+        foo_v1,
+        foo_sha,
+        Dependabot::Dependency.new(
+          name: "foo",
+          version: "1.1",
+          package_manager: "dummy",
+          requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
+        )
+      ])
+    end
+
+    context "and the same version is added multiple times" do
+      it "combines each into the the existing version" do
+        dependency_set = described_class.new << foo_v1_1 << foo_v1_1_alt << foo_sha
+
+        expect(dependency_set.all_versions_for_name("foo")).to eq([
+          Dependabot::Dependency.new(
+            name: "foo",
+            version: "1.1",
+            package_manager: "dummy",
+            requirements: (foo_v1_1.requirements + foo_v1_1_alt.requirements).uniq
+          ),
+          foo_sha
+        ])
+      end
+    end
+  end
 end

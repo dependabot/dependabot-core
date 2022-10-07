@@ -37,11 +37,11 @@ module Dependabot
 
     attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements,
-                :subdependency_metadata
+                :subdependency_metadata, :metadata
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: [], removed: false)
+                   subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -54,6 +54,7 @@ module Dependabot
                                   map { |h| symbolize_keys(h) }
       end
       @removed = removed
+      @metadata = symbolize_keys(metadata || {})
 
       check_values
     end
@@ -103,6 +104,15 @@ module Dependabot
       return name unless display_name_builder
 
       display_name_builder.call(name)
+    end
+
+    # Returns all detected versions of the dependency. Only ecosystems that
+    # support this feature will return more than the current version.
+    def all_versions
+      all_versions = metadata[:all_versions]
+      return [version].compact unless all_versions
+
+      all_versions.filter_map(&:version)
     end
 
     def ==(other)
