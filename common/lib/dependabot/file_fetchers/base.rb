@@ -518,6 +518,16 @@ module Dependabot
               git clone --no-tags --no-recurse-submodules --depth 1#{br_opt} #{source.url} #{path}
             CMD
           )
+          if source.commit
+            # This code will only be called for testing. Production will never pass a commit
+            # since Dependabot always wants to test the latest commit on a branch.
+            Dir.chdir(path) do
+              # Need to fetch the commit due to the --depth 1 above.
+              SharedHelpers.run_shell_command("git fetch --depth 1 origin #{source.commit}")
+              # Set HEAD to this commit so later calls so git reset HEAD will work.
+              SharedHelpers.run_shell_command("git reset --hard #{source.commit}")
+            end
+          end
           path
         end
       end
