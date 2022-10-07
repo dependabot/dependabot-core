@@ -56,6 +56,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       it { is_expected.to eq("http://example.com") }
     end
 
+    context "with a global yarn registry not wrapped in quotes" do
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: "registry http://example.com") }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
     context "with a scoped npm registry" do
       let(:dependency_name) { "@dependabot/some_dep" }
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "@dependabot:registry=http://example.com") }
@@ -66,6 +72,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
     context "with a scoped yarn registry" do
       let(:dependency_name) { "@dependabot/some_dep" }
       let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: '"@dependabot:registry" "http://example.com"') }
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
+    context "with a scoped yarn registry not wrapped in quotes" do
+      let(:dependency_name) { "@dependabot/some_dep" }
+      let(:yarnrc_file) { Dependabot::DependencyFile.new(name: ".yarnrc", content: '"@dependabot:registry" http://example.com') }
 
       it { is_expected.to eq("http://example.com") }
     end

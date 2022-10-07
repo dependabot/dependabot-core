@@ -18,11 +18,11 @@ module Dependabot
         NPM_GLOBAL_REGISTRY_REGEX =
           /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
         YARN_GLOBAL_REGISTRY_REGEX =
-          /^(?:--)?registry\s+['"](?<registry>.*)['"]/.freeze
+          /^(?:--)?registry\s+((['"](?<registry>.*)['"])|(?<registry>.*))/.freeze
         NPM_SCOPED_REGISTRY_REGEX =
           /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
         YARN_SCOPED_REGISTRY_REGEX =
-          /['"](?<scope>@[^:]+):registry['"]\s['"](?<registry>.*)['"]/.freeze
+          /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/.freeze
 
         def initialize(dependency:, credentials:, npmrc_file: nil,
                        yarnrc_file: nil)
