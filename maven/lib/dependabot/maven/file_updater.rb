@@ -89,10 +89,9 @@ module Dependabot
         updated_content = file.content
 
         original_file_declarations(dependency, previous_req).each do |old_dec|
-          updated_content = updated_content.gsub(
-            old_dec,
+          updated_content = updated_content.gsub(old_dec) do
             updated_file_declaration(old_dec, previous_req, requirement)
-          )
+          end
         end
 
         raise "Expected content to change!" if updated_content == file.content
