@@ -19,6 +19,10 @@ module Dependabot
           /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
         YARN_GLOBAL_REGISTRY_REGEX =
           /^(?:--)?registry\s+['"](?<registry>.*)['"]/.freeze
+        NPM_SCOPED_REGISTRY_REGEX =
+          /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
+        YARN_SCOPED_REGISTRY_REGEX =
+          /['"](?<scope>@[^:]+):registry['"]\s['"](?<registry>.*)['"]/.freeze
 
         def initialize(dependency:, credentials:, npmrc_file: nil,
                        yarnrc_file: nil)
@@ -46,6 +50,13 @@ module Dependabot
           end
         end
 
+        def registry_from_rc(dependency_name)
+          return global_registry unless dependency_name.start_with?("@") && dependency_name.include?("/")
+
+          scope = dependency_name.split("/").first
+          scoped_registry(scope)
+        end
+
         private
 
         attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file
@@ -64,7 +75,7 @@ module Dependabot
               nil
             end&.fetch("registry")
 
-          @first_registry_with_dependency_details ||= global_registry
+          @first_registry_with_dependency_details ||= global_registry.sub(%r{/+$}, "").sub(%r{^.*?//}, "")
         end
 
         def registry_url
@@ -194,22 +205,32 @@ module Dependabot
           npmrc_file&.content.to_s.scan(NPM_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "")
-            return registry
+            return Regexp.last_match[:registry].strip
           end
 
           yarnrc_file&.content.to_s.scan(YARN_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            registry = Regexp.last_match[:registry].strip.
-                       sub(%r{/+$}, "").
-                       sub(%r{^.*?//}, "")
-            return registry
+            return Regexp.last_match[:registry].strip
           end
 
-          "registry.npmjs.org"
+          "https://registry.npmjs.org"
+        end
+
+        def scoped_registry(scope)
+          npmrc_file&.content.to_s.scan(NPM_SCOPED_REGISTRY_REGEX) do
+            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+
+            return Regexp.last_match[:registry].strip
+          end
+
+          yarnrc_file&.content.to_s.scan(YARN_SCOPED_REGISTRY_REGEX) do
+            next if Regexp.last_match[:registry].include?("${") || Regexp.last_match[:scope] != scope
+
+            return Regexp.last_match[:registry].strip
+          end
+
+          global_registry
         end
 
         # npm registries expect slashes to be escaped
