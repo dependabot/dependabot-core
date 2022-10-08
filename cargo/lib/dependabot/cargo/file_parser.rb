@@ -56,6 +56,8 @@ module Dependabot
         raise Dependabot::DependencyFileNotEvaluatable, msg
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def manifest_dependencies
         dependency_set = DependencySet.new
@@ -79,10 +81,21 @@ module Dependabot
               end
             end
           end
+
+          workspace = parsed_file(file).fetch("workspace", {})
+          workspace.fetch("dependencies", {}).each do |name, requirement|
+            next unless name == name_from_declaration(name, requirement)
+            next if lockfile && !version_from_lockfile(name, requirement)
+
+            dependency_set <<
+              build_dependency(name, requirement, "workspace.dependencies", file)
+          end
         end
 
         dependency_set
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
 
       def build_dependency(name, requirement, type, file)
