@@ -136,7 +136,7 @@ module Dependabot
       # NOTE: Prevent security only updates from turning into latest version
       # updates if the current version is no longer vulnerable. This happens
       # when a security update is applied by the user directly and the existing
-      # pull request is reabased.
+      # pull request is rebased.
       if job.security_updates_only? &&
          dependencies.none? { |d| job.allowed_update?(d) }
         lead_dependency = dependencies.first
@@ -278,7 +278,7 @@ module Dependabot
       if (existing_pr = existing_pull_request(updated_deps))
         # Create a update job error to prevent dependabot-api from creating a
         # update_not_possible error, this is likely caused by a update job retry
-        # so should be invisble to users (as the first job completed with a pull
+        # so should be invisible to users (as the first job completed with a pull
         # request)
         record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
 
@@ -355,7 +355,7 @@ module Dependabot
     def record_dependency_file_not_supported_error(checker)
       logger_info(
         "Dependabot can't update vulnerable dependencies for projects " \
-        "without a lockfile or pinned version requirement as as the currently " \
+        "without a lockfile or pinned version requirement as the currently " \
         "installed version of #{checker.dependency.name} isn't known."
       )
 
@@ -775,7 +775,7 @@ module Dependabot
 
     def close_pull_request(reason:)
       reason_string = reason.to_s.tr("_", " ")
-      logger_info("Telling backed to close pull request for " \
+      logger_info("Telling backend to close pull request for " \
                   "#{job.dependencies.join(', ')} - #{reason_string}")
       service.close_pull_request(job_id, job.dependencies, reason)
     end

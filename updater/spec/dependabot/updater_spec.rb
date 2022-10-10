@@ -378,8 +378,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:info).with(
               "<job_1> Dependabot can't update vulnerable dependencies for " \
               "projects without a lockfile or pinned version requirement as " \
-              "as the currently installed version of " \
-              "dummy-pkg-b isn't known."
+              "the currently installed version of dummy-pkg-b isn't known."
             )
 
           updater.run
