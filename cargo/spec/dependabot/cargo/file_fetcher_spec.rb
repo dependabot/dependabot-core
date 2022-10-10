@@ -157,6 +157,20 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         end
       end
 
+      context "with a blank path" do
+        let(:parent_fixture) do
+          fixture(
+            "github",
+            "contents_cargo_manifest_path_deps_blank.json"
+          )
+        end
+
+        it "fetches the path dependency's Cargo.toml" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(%w(Cargo.toml))
+        end
+      end
+
       context "for a target dependency" do
         let(:parent_fixture) do
           fixture(
