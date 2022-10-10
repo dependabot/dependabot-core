@@ -264,6 +264,16 @@ module Dependabot
           end
         end
 
+        # Paths specified for workspace-wide dependencies
+        workspace = parsed_file(file).fetch("workspace", {})
+        workspace.fetch("dependencies", {}).each do |_, details|
+          next unless details.is_a?(Hash)
+          next unless details["path"]
+          next unless path == File.join(details["path"], "Cargo.toml")
+
+          return true if details["git"].nil?
+        end
+
         # Paths specified as replacements
         parsed_file(file).fetch("replace", {}).each do |_, details|
           next unless details.is_a?(Hash)
