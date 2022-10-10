@@ -1,16 +1,15 @@
 {
-  "name": "transitive-dependency-multiple-versions",
+  "name": "vuln-multiversion",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@dependabot-fixtures/npm-intermediate-dependency": "0.0.1",
-    "@dependabot-fixtures/npm-transitive-dependency": "1.0.1"
+    "is-accessor-descriptor": "^1.0.0",
+    "kind-of": "^3.2.2"
   }
 }

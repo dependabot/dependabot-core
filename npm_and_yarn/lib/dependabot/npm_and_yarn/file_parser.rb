@@ -87,7 +87,7 @@ module Dependabot
       end
 
       def lockfile_dependencies
-        DependencySet.new(lockfile_parser.parse)
+        lockfile_parser.parse_set
       end
 
       def build_dependency(file:, type:, name:, requirement:)
