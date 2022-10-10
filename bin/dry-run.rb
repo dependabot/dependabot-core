@@ -539,6 +539,7 @@ $files = if $repo_contents_path
              fetcher.files
            end
          end
+$original_files = $files.dup
 
 # Parse the dependency files
 puts "=> parsing dependency files"
@@ -654,6 +655,9 @@ def security_fix?(dependency)
   end
 end
 
+
+group_updated_deps = []
+group_updated_files = {}
 puts "=> updating #{dependencies.count} dependencies: #{dependencies.map(&:name).join(', ')}"
 
 # rubocop:disable Metrics/BlockLength
@@ -773,35 +777,54 @@ dependencies.each do |dep|
     end
   end
 
+  files_by_name = $files.group_by(&:name)
   updated_files.each do |updated_file|
     if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
-      puts "deleted #{updated_file.name}"
+      files_by_name.delete(updated_file.name)
     else
-      original_file = $files.find { |f| f.name == updated_file.name }
-      if original_file
-        show_diff(original_file, updated_file)
-      else
-        puts "added #{updated_file.name}"
-      end
+      files_by_name[updated_file.name] = updated_file
     end
   end
+  $files = files_by_name.values
 
-  if $options[:pull_request]
-    msg = Dependabot::PullRequestCreator::MessageBuilder.new(
-      dependencies: updated_deps,
-      files: updated_files,
-      credentials: $options[:credentials],
-      source: $source,
-      commit_message_options: $update_config.commit_message_options.to_h,
-      github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
-    ).message
-    puts "Pull Request Title: #{msg.pr_name}"
-    puts "--description--\n#{msg.pr_message}\n--/description--"
-    puts "--commit--\n#{msg.commit_message}\n--/commit--"
+  # TODO: this should consider if the same dependency is updated multiple times
+  group_updated_deps += updated_deps
+  updated_files.each do |updated_file|
+    group_updated_files[updated_file.name] = updated_file
   end
+
 rescue StandardError => e
   handle_dependabot_error(error: e, dependency: dep)
 end
+
+if $options[:pull_request]
+  msg = Dependabot::PullRequestCreator::MessageBuilder.new(
+    dependencies: group_updated_deps,
+    files: group_updated_files.values,
+    credentials: $options[:credentials],
+    source: $source,
+    commit_message_options: $update_config.commit_message_options.to_h,
+    github_redirection_service: Dependabot::PullRequestCreator::DEFAULT_GITHUB_REDIRECTION_SERVICE
+  ).message
+  puts "Pull Request Title: #{msg.pr_name}"
+  puts "--description--\n#{msg.pr_message}\n--/description--"
+  puts "--commit--\n#{msg.commit_message}\n--/commit--"
+end
+
+group_updated_files.values.each do |updated_file|
+  if updated_file.operation == Dependabot::DependencyFile::Operation::DELETE
+    puts "deleted #{updated_file.name}"
+  else
+    original_file = $original_files.find { |f| f.name == updated_file.name }
+    if original_file
+      show_diff(original_file, updated_file)
+    else
+      puts "added #{updated_file.name}"
+    end
+  end
+end
+
+
 
 StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
