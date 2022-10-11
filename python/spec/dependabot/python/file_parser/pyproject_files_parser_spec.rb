@@ -270,5 +270,24 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       its(:length) { is_expected.to eq(0) }
     end
+
+    context "with a PDM project" do
+      let(:pyproject_fixture_name) { "pdm_example.toml" }
+      let(:pdm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "pdm.lock",
+          content: pdm_lock_body
+        )
+      end
+      let(:pdm_lock_body) do
+        fixture("pyproject_locks", pyproject_lock_fixture_name)
+      end
+      let(:pyproject_lock_fixture_name) { "pdm_example.lock" }
+      let(:files) { [pyproject, pdm_lock] }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to eq(0) }
+    end
   end
 end

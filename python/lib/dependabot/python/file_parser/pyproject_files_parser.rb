@@ -70,6 +70,12 @@ module Dependabot
         def pep621_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
+          # PDM is not yet supported, so we want to ignore it for now because in
+          # the current state of things, going on would result in updating
+          # pyproject.toml but leaving pdm.lock out of sync, which is
+          # undesirable. Leave PDM alone until properly supported
+          return dependencies if using_pdm?
+
           parsed_pep621_dependencies.each do |dep|
             # If a requirement has a `<` or `<=` marker then updating it is
             # probably blocked. Ignore it.
@@ -121,6 +127,10 @@ module Dependabot
 
         def using_pep621?
           !parsed_pyproject.dig("project", "dependencies").nil?
+        end
+
+        def using_pdm?
+          using_pep621? && pdm_lock
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -225,6 +235,11 @@ module Dependabot
         def poetry_lock
           @poetry_lock ||=
             dependency_files.find { |f| f.name == "poetry.lock" }
+        end
+
+        def pdm_lock
+          @pdm_lock ||=
+            dependency_files.find { |f| f.name == "pdm.lock" }
         end
       end
     end
