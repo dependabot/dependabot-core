@@ -7,10 +7,12 @@ require "octokit"
 
 module Dependabot
   class FileFetcherJob < BaseJob
+    REF_UNKNOWN = "unknown"
+
     def perform_job
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
-        base_commit_sha
+        logger_info("Could not determine base_commit_sha") if base_commit_sha == REF_UNKNOWN
         dependency_files
         clone_repo_contents
       rescue StandardError => e
@@ -85,11 +87,11 @@ module Dependabot
     end
 
     def base_commit_sha
-      @base_commit_sha ||= file_fetcher.commit || "unknown"
+      @base_commit_sha ||= file_fetcher.commit || REF_UNKNOWN
     rescue StandardError
       # If an error occurs, set the commit SHA instance variable (so that we
       # don't raise when recording the error later) and re-raise
-      @base_commit_sha = "unknown"
+      @base_commit_sha = REF_UNKNOWN
       raise
     end
 
