@@ -159,7 +159,7 @@ module Dependabot
 
         path_dependency_details(fetched_files).each do |name, path|
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
-          raise PathDependenciesNotReachable, name if path.start_with?("/")
+          raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
 
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
@@ -236,7 +236,7 @@ module Dependabot
           select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
           map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
-            raise PathDependenciesNotReachable, name if path.start_with?("/")
+            raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
 
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
