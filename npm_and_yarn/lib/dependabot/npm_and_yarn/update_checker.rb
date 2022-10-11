@@ -190,16 +190,18 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
 
-        # We don't need to update this but need to include it so it's described
-        # in the PR and we'll pass validation that this dependency is at a
-        # non-vulnerable version.
+        # We don't need to directly update the target dependency if it will
+        # be updated as a side effect of updating the parent. However, we need
+        # to include it so it's described in the PR and we'll pass validation
+        # that this dependency is at a non-vulnerable version.
         if updated_deps.none? { |dep| dep.name == dependency.name }
           target_version = vulnerability_audit["target_version"]
           updated_deps << build_updated_dependency(
             dependency: dependency,
             version: target_version,
             previous_version: dependency.version,
-            removed: target_version.nil?
+            removed: target_version.nil?,
+            metadata: { information_only: true } # Instruct updater to not directly update this dependency
           )
         end
 
@@ -223,6 +225,7 @@ module Dependabot
         removed = update_details.fetch(:removed, false)
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
+        metadata = update_details.fetch(:metadata, {})
 
         Dependency.new(
           name: original_dep.name,
@@ -236,7 +239,8 @@ module Dependabot
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager,
-          removed: removed
+          removed: removed,
+          metadata: metadata
         )
       end
 
