@@ -115,6 +115,10 @@ module Dependabot
       all_versions.filter_map(&:version)
     end
 
+    def multiple_versions?
+      all_versions.count > 1
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end

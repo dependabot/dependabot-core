@@ -152,7 +152,21 @@ module Dependabot
           end
       end
 
+      def numeric_version_can_update?(requirements_to_unlock:)
+        # For security updates with a multi version dependency we want this
+        # to unlock :all to go through the VulnerabilityAuditor
+        if security_update_to_handle_with_vulnerability_auditor?
+          return false unless requirements_to_unlock == :all
+
+          vulnerability_audit["fix_available"]
+        end
+
+        super
+      end
+
       def latest_version_resolvable_with_full_unlock?
+        return vulnerability_audit["fix_available"] if security_update_to_handle_with_vulnerability_auditor?
+
         return false unless latest_version
 
         return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
@@ -167,6 +181,10 @@ module Dependabot
 
         version_resolver.dependency_updates_from_full_unlock.
           map { |update_details| build_updated_dependency(update_details) }
+      end
+
+      def security_update_to_handle_with_vulnerability_auditor?
+        security_advisories.any? && dependency.multiple_versions?
       end
 
       # rubocop:disable Metrics/AbcSize
