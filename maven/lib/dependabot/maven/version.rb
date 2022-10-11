@@ -43,6 +43,10 @@ module Dependabot
         super(version.to_s.tr("_", "-"))
       end
 
+      def inspect
+        "#<#{self.class} #{@version_string}>"
+      end
+
       def to_s
         @version_string
       end

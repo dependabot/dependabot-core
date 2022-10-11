@@ -57,8 +57,10 @@ module Dependabot
           version_details =
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
-              dependency_metadata(repository_details).
-                css("versions > version").
+              xml = dependency_metadata(repository_details)
+              next [] unless xml
+
+              break xml.css("versions > version").
                 select { |node| version_class.correct?(node.content) }.
                 map { |node| version_class.new(node.content) }.
                 map { |version| { version: version, source_url: url } }
@@ -166,15 +168,16 @@ module Dependabot
             headers: repository_details.fetch("auth_headers")
           )
           check_response(response, repository_details.fetch("url"))
+          return unless response.status < 400
 
           Nokogiri::XML(response.body)
         rescue URI::InvalidURIError
-          Nokogiri::XML("")
+          nil
         rescue Excon::Error::Socket, Excon::Error::Timeout,
                Excon::Error::TooManyRedirects
           raise if central_repo_urls.include?(repository_details["url"])
 
-          Nokogiri::XML("")
+          nil
         end
 
         def check_response(response, repository_url)
