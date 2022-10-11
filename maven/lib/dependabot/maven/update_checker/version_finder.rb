@@ -58,7 +58,7 @@ module Dependabot
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
               xml = dependency_metadata(repository_details)
-              next [] unless xml
+              next [] if xml.blank?
 
               break xml.css("versions > version").
                 select { |node| version_class.correct?(node.content) }.
