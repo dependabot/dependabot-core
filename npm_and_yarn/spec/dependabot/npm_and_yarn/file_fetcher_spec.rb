@@ -158,6 +158,23 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
     end
+
+    context "with a path dependency that is an absolute path" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "package_json_with_path_content_file_absolute.json"),
+            headers: json_header
+          )
+      end
+
+      it "raises PathDependenciesNotReachable" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::PathDependenciesNotReachable)
+      end
+    end
   end
 
   context "with a yarn.lock but no package-lock.json file" do
