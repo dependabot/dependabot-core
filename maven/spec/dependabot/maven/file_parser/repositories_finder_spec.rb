@@ -29,12 +29,12 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
       let(:base_pom_fixture_name) { "custom_repositories_pom.xml" }
 
       it "includes the additional declarations" do
-        expect(repository_urls).to match_array(
+        expect(repository_urls).to eq(
           %w(
-            https://repo.maven.apache.org/maven2
-            http://repository.jboss.org/maven2
             http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
             http://plugin-repository.jboss.org/maven2
+            https://repo.maven.apache.org/maven2
           )
         )
       end
@@ -43,7 +43,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         let(:base_pom_fixture_name) { "property_repo_pom.xml" }
 
         it "handles the property interpolation" do
-          expect(repository_urls).to match_array(
+          expect(repository_urls).to eq(
             %w(
               http://download.eclipse.org/technology/m2e/releases
               http://download.eclipse.org/releases/neon
@@ -51,8 +51,8 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
               https://dl.bintray.com/pmd/pmd-eclipse-plugin/updates
               http://findbugs.cs.umd.edu/eclipse
               http://download.eclipse.org/tools/orbit/downloads/drops/R20160221192158/repository
-              https://repo.maven.apache.org/maven2
               http://repository.sonatype.org/content/groups/sonatype-public-grid
+              https://repo.maven.apache.org/maven2
             )
           )
         end
@@ -70,12 +70,12 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
 
         context "checking the parent's repositories" do
           it "doesn't include the declarations from the child" do
-            expect(repository_urls).to match_array(
+            expect(repository_urls).to eq(
               %w(
-                https://repo.maven.apache.org/maven2
-                http://repository.jboss.org/maven2
                 http://scala-tools.org/repo-releases
+                http://repository.jboss.org/maven2
                 http://plugin-repository.jboss.org/maven2
+                https://repo.maven.apache.org/maven2
               )
             )
           end
@@ -85,13 +85,13 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           let(:pom) { child_pom }
 
           it "includes the declarations from the parent and the child" do
-            expect(repository_urls).to match_array(
+            expect(repository_urls).to eq(
               %w(
-                https://repo.maven.apache.org/maven2
-                http://repository.jboss.org/maven2
-                http://scala-tools.org/repo-releases
-                http://plugin-repository.jboss.org/maven2
                 http://child-repository.jboss.org/maven2
+                http://scala-tools.org/repo-releases
+                http://repository.jboss.org/maven2
+                http://plugin-repository.jboss.org/maven2
+                https://repo.maven.apache.org/maven2
               )
             )
           end
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           context "when asked to exclude inherited repos" do
             it "excludes the declarations in the parent" do
               expect(finder.repository_urls(pom: pom, exclude_inherited: true)).
-                to match_array(
+                to eq(
                   %w(
                     http://child-repository.jboss.org/maven2
                     https://repo.maven.apache.org/maven2
@@ -130,7 +130,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
 
             it "returns the repositories relevant to the child" do
-              expect(repository_urls).to match_array(
+              expect(repository_urls).to eq(
                 %w(
                   http://child-repository.jboss.org/maven2
                   https://repo.maven.apache.org/maven2
@@ -145,7 +145,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
 
             it "returns the repositories relevant to the child" do
-              expect(repository_urls).to match_array(
+              expect(repository_urls).to eq(
                 %w(
                   http://child-repository.jboss.org/maven2
                   https://repo.maven.apache.org/maven2
@@ -163,13 +163,13 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
 
             it "includes the declarations from the parent and the child" do
-              expect(repository_urls).to match_array(
+              expect(repository_urls).to eq(
                 %w(
-                  https://repo.maven.apache.org/maven2
-                  http://repository.jboss.org/maven2
-                  http://scala-tools.org/repo-releases
-                  http://plugin-repository.jboss.org/maven2
                   http://child-repository.jboss.org/maven2
+                  http://scala-tools.org/repo-releases
+                  http://repository.jboss.org/maven2
+                  http://plugin-repository.jboss.org/maven2
+                  https://repo.maven.apache.org/maven2
                 )
               )
             end
@@ -191,7 +191,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
               end
 
               it "returns the repositories relevant to the child" do
-                expect(repository_urls).to match_array(
+                expect(repository_urls).to eq(
                   %w(
                     http://child-repository.jboss.org/maven2
                     https://repo.maven.apache.org/maven2
@@ -210,13 +210,13 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             end
 
             it "includes the declarations from the parent and the child" do
-              expect(repository_urls).to match_array(
+              expect(repository_urls).to eq(
                 %w(
-                  https://repo.maven.apache.org/maven2
-                  http://repository.jboss.org/maven2
-                  http://scala-tools.org/repo-releases
-                  http://plugin-repository.jboss.org/maven2
                   http://child-repository.jboss.org/maven2
+                  http://scala-tools.org/repo-releases
+                  http://repository.jboss.org/maven2
+                  http://plugin-repository.jboss.org/maven2
+                  https://repo.maven.apache.org/maven2
                 )
               )
             end

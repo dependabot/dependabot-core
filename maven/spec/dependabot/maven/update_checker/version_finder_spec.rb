@@ -707,9 +707,12 @@ RSpec.describe Dependabot::Maven::UpdateChecker::VersionFinder do
             fixture("maven_central_metadata", "with_date_releases.xml")
           stub_request(:get, maven_central_metadata_url).
             to_return(status: 200, body: body)
+          # 404 causes Dependabot to fall back to the central repo
+          stub_request(:get, jboss_metadata_url).
+            to_return(status: 404)
         end
 
-        its(:count) { is_expected.to eq(87) }
+        its(:count) { is_expected.to eq(17) }
 
         describe "the first version" do
           subject { versions.first }
