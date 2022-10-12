@@ -39,6 +39,18 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         )
       end
 
+      context "that overwrites central" do
+        let(:base_pom_fixture_name) { "overwrite_central_pom.xml" }
+
+        it "does not include central" do
+          expect(repository_urls).to eq(
+            %w(
+              https://example.com
+            )
+          )
+        end
+      end
+
       context "that use properties" do
         let(:base_pom_fixture_name) { "property_repo_pom.xml" }
 

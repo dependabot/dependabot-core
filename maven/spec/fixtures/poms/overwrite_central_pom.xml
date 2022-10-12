@@ -12,16 +12,13 @@
 
   <repositories>
     <repository>
-      <id>wrong</id>
-      <url>http://host:port/content/groups/public</url>
+      <id>central</id>
+      <url>https://example.com</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
     </repository>
   </repositories>
-  <pluginRepositories>
-    <pluginRepository>
-      <id>wrong</id>
-      <url>http://host:port/content/groups/public</url>
-    </pluginRepository>
-  </pluginRepositories>
 
   <dependencies>
     <dependency>
