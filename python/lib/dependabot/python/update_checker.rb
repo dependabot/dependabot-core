@@ -277,6 +277,8 @@ module Dependabot
 
         pypi_info = JSON.parse(index_response.body)["info"] || {}
         pypi_info["summary"] == details["description"]
+      rescue Excon::Error::Timeout
+        false
       rescue URI::InvalidURIError
         false
       end

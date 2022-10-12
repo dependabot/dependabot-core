@@ -36,6 +36,9 @@ module Dependabot
           end.uniq
         end
 
+        def index_url_for_dependency(dependency_name)
+          return main_index_url if main_index_url
+        end
         private
 
         attr_reader :dependency_files, :credentials

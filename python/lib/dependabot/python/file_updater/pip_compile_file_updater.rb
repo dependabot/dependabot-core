@@ -220,7 +220,7 @@ module Dependabot
         end
 
         def install_required_python
-          return if run_command("pyenv versions").include?("#{python_version}\n")
+          return if run_command("pyenv versions").include?("#{python_version}")
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")
@@ -449,6 +449,8 @@ module Dependabot
                 "--extra-index-url=#{authed_url}"
               end
             end
+          index_finder = Dependabot::Python::UpdateChecker::IndexFinder.new(dependency_files: dependency_files, credentials: credentials)
+          ["--index-url=#{index_finder.index_url_for_dependency('')}"]
         end
 
         def includes_unsafe_packages?(content)

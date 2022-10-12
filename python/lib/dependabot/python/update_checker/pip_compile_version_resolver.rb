@@ -244,6 +244,8 @@ module Dependabot
                 "--extra-index-url=#{authed_url}"
               end
             end
+          index_finder = IndexFinder.new(dependency_files: dependency_files, credentials: credentials)
+          ["--index-url=#{index_finder.index_url_for_dependency('')}"]
         end
 
         def run_pip_compile_command(command)
@@ -314,8 +316,7 @@ module Dependabot
         end
 
         def install_required_python
-          return if run_command("pyenv versions").include?("#{python_version}\n")
-
+          return if run_command("pyenv versions").include?("#{python_version}")
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")
           run_command("pyenv exec pip install -r" \
