@@ -733,9 +733,10 @@ module Dependabot
         logger_info("Updating #{dependency_names.join(', ')}")
       end
 
-      # Removal is only supported for transitive dependencies which are removed as a
-      # side effect of the parent update
-      deps_to_update = updated_dependencies.reject(&:removed?)
+      # Ignore dependencies that are tagged as information_only. These will be
+      # updated indirectly as a result of a parent dependency update and are
+      # only included here to be included in the PR info.
+      deps_to_update = updated_dependencies.reject(&:informational_only?)
       updater = file_updater_for(deps_to_update)
       updater.updated_dependency_files
     end

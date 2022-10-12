@@ -228,7 +228,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
         [{ file: "mix.exs", requirement: "~> 1.2.1", groups: [], source: nil }]
       end
 
-      it { is_expected.to eq(Gem::Version.new("1.3.4")) }
+      it { is_expected.to eq(Gem::Version.new("1.3.5")) }
     end
 
     context "when the user is ignoring the latest version" do

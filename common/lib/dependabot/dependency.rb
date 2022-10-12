@@ -115,6 +115,13 @@ module Dependabot
       all_versions.filter_map(&:version)
     end
 
+    # This dependency is being indirectly updated by an update to another
+    # dependency. We don't need to try and update it ourselves but want to
+    # surface it to the user in the PR.
+    def informational_only?
+      metadata[:information_only]
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end
