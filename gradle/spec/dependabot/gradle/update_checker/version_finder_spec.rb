@@ -694,6 +694,34 @@ RSpec.describe Dependabot::Gradle::UpdateChecker::VersionFinder do
           )
       end
 
+      context "with credentials" do
+        let(:credentials) do
+          [{
+            "type" => "maven_repository",
+            "url" => "https://dl.bintray.com/magnusja/maven/",
+            "username" => "username",
+            "password" => "password"
+          }]
+        end
+
+        before do
+          stub_request(:get, google_metadata_url).
+            to_return(status: 404, body: "")
+          stub_request(:get, magnusja_metadata_url).
+            with(basic_auth: %w(username password)).
+            to_return(
+              status: 200,
+              body: fixture("google_metadata", "com_google_guava.xml")
+            )
+        end
+
+        it "calls custom repo using defined credentials" do
+          subject
+
+          expect(a_request(:get, magnusja_metadata_url)).to have_been_made.once
+        end
+      end
+
       describe "the first version" do
         subject { versions.first }
 

@@ -205,7 +205,7 @@ module Dependabot
 
           @repositories =
             details.reject do |repo|
-              next if repo["auth_headers"]
+              next unless repo["auth_headers"].empty?
 
               # Reject this entry if an identical one with non-empty auth_headers exists
               details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
