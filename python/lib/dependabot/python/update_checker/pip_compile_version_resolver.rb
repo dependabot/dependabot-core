@@ -244,8 +244,6 @@ module Dependabot
                 "--extra-index-url=#{authed_url}"
               end
             end
-          index_finder = IndexFinder.new(dependency_files: dependency_files, credentials: credentials)
-          ["--index-url=#{index_finder.index_url_for_dependency('')}"]
         end
 
         def run_pip_compile_command(command)

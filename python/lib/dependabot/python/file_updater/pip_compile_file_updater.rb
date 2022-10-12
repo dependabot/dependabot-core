@@ -449,8 +449,6 @@ module Dependabot
                 "--extra-index-url=#{authed_url}"
               end
             end
-          index_finder = Dependabot::Python::UpdateChecker::IndexFinder.new(dependency_files: dependency_files, credentials: credentials)
-          ["--index-url=#{index_finder.index_url_for_dependency('')}"]
         end
 
         def includes_unsafe_packages?(content)
