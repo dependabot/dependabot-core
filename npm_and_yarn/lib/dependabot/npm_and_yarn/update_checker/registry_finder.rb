@@ -25,11 +25,12 @@ module Dependabot
           /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/.freeze
 
         def initialize(dependency:, credentials:, npmrc_file: nil,
-                       yarnrc_file: nil)
+                       yarnrc_file: nil, yarnrc_yml_file: nil)
           @dependency = dependency
           @credentials = credentials
           @npmrc_file = npmrc_file
           @yarnrc_file = yarnrc_file
+          @yarnrc_yml_file = yarnrc_yml_file
         end
 
         def registry
@@ -59,7 +60,7 @@ module Dependabot
 
         private
 
-        attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file
+        attr_reader :dependency, :credentials, :npmrc_file, :yarnrc_file, :yarnrc_yml_file
 
         def first_registry_with_dependency_details
           @first_registry_with_dependency_details ||=
@@ -214,6 +215,8 @@ module Dependabot
             return Regexp.last_match[:registry].strip
           end
 
+          return parsed_yarnrc_yml["npmRegistryServer"] if parsed_yarnrc_yml&.key?("npmRegistryServer")
+
           "https://registry.npmjs.org"
         end
 
@@ -230,6 +233,11 @@ module Dependabot
             return Regexp.last_match[:registry].strip
           end
 
+          if parsed_yarnrc_yml
+            yarn_berry_registry = parsed_yarnrc_yml.dig("npmScopes", scope.delete_prefix("@"), "npmRegistryServer")
+            return yarn_berry_registry if yarn_berry_registry
+          end
+
           global_registry
         end
 
@@ -244,6 +252,13 @@ module Dependabot
                     sort_by { |source| self.class.central_registry?(source[:url]) ? 1 : 0 }
 
           sources.find { |s| s[:type] == "registry" }&.fetch(:url)
+        end
+
+        def parsed_yarnrc_yml
+          return unless yarnrc_yml_file
+          return @parsed_yarnrc_yml if defined? @parsed_yarnrc_yml
+
+          @parsed_yarnrc_yml = YAML.safe_load(yarnrc_yml_file.content)
         end
       end
     end
