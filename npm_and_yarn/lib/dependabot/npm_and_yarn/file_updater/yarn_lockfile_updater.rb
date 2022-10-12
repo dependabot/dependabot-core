@@ -474,7 +474,8 @@ module Dependabot
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file,
-            yarnrc_file: yarnrc_file
+            yarnrc_file: yarnrc_file,
+            yarnrc_yml_file: yarnrc_yml_file
           ).registry
 
           return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
@@ -577,6 +578,10 @@ module Dependabot
 
         def npmrc_file
           dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def yarnrc_yml_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
         end
       end
     end
