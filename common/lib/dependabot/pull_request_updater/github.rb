@@ -182,28 +182,30 @@ module Dependabot
       end
 
       def commit_message
-        # Take the commit message from the old commit
-        commit_being_updated.message
+        fallback_message =
+          "#{pull_request.title}\n\nDependabot looked everywhere and " \
+          "was unable to find the original pull request head commit, " \
+          "#{old_commit}."
+
+        # Take the commit message from the old commit. If the old commit can't
+        # be found, use the PR title as the commit message.
+        commit_being_updated&.message || fallback_message
       end
 
       def commit_being_updated
-        @commit_being_updated ||=
+        return @commit_being_updated if defined?(@commit_being_updated)
+
+        @commit_being_updated =
           if pull_request.commits == 1
             github_client_for_source.
               git_commit(source.repo, pull_request.head.sha)
           else
-            author_name = author_details&.fetch(:name, nil) || "dependabot"
             commits =
               github_client_for_source.
-              pull_request_commits(source.repo, pull_request_number).
-              reverse
+              pull_request_commits(source.repo, pull_request_number)
 
-            commit =
-              commits.find { |c| c.sha == old_commit } ||
-              commits.find { |c| c.commit.author.name.include?(author_name) } ||
-              commits.first
-
-            commit.commit
+            commit = commits.find { |c| c.sha == old_commit }
+            commit&.commit
           end
       end
 

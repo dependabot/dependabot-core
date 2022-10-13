@@ -361,6 +361,27 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             )
         end
       end
+
+      context "the original PR head commit cannot be found" do
+        let(:old_commit) { "oldcommitsha" }
+
+        it "generates a reasonable fallback commit message" do
+          updater.update
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            with(
+              body: {
+                parents: ["basecommitsha"],
+                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                message:
+                  "Bump business from 1.4.0 to 1.5.0\n\n" \
+                  "Dependabot looked everywhere and was unable to find " \
+                  "the original pull request head commit, oldcommitsha."
+              }
+            )
+        end
+      end
     end
 
     context "when the default branch has changed" do
