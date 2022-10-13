@@ -62,6 +62,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "with .yarn data stored in git-lfs" do
+    let(:source) do
+      Dependabot::Source.new(
+        provider: "github",
+        repo: repo,
+        directory: directory
+      )
+    end
+    let(:url) { "https://api.github.com/repos/jtbandes/dependabot-yarn-lfs-fixture/contents/" }
+    let(:repo) { "jtbandes/dependabot-yarn-lfs-fixture" }
+    let(:repo_contents_path) { Dir.mktmpdir }
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    let(:file_fetcher_instance) do
+      described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
+    end
+
+    it "pulls files from lfs after cloning" do
+      # Calling #files triggers the clone
+      expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("package.json", "yarn.lock", ".yarnrc.yml")
+      expect(File.read(
+        File.join(repo_contents_path, ".yarn", "releases", "yarn-3.2.4.cjs")
+      )).to start_with("#!/usr/bin/env node")
+
+      # LFS files not needed by dependabot are not pulled
+      expect(File.read(
+        File.join(repo_contents_path, ".pnp.cjs")
+      )).to start_with("version https://git-lfs.github.com/spec/v1")
+    end
+  end
+
   context "with a .npmrc file" do
     before do
       stub_request(:get, url + "?ref=sha").
