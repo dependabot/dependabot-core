@@ -340,7 +340,7 @@ module Dependabot
           write_lockfiles
 
           File.write(".npmrc", npmrc_content)
-          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
+          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
 
           package_files.each do |file|
             path = file.name
@@ -526,7 +526,7 @@ module Dependabot
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
-        def yarnrc_specifies_npm_reg?
+        def yarnrc_specifies_private_reg?
           return false unless yarnrc_file
 
           regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
@@ -539,11 +539,16 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          URI(yarnrc_global_registry).host == "registry.npmjs.org"
+          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
+            r.include?(URI(yarnrc_global_registry).host)
+          end
         end
 
         def yarnrc_content
-          'registry "https://registry.npmjs.org"'
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).yarnrc_content
         end
 
         def sanitized_package_json_content(content)

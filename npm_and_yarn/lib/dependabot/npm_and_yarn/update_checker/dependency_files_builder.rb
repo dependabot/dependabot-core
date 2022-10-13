@@ -17,6 +17,7 @@ module Dependabot
           write_lock_files
 
           File.write(".npmrc", npmrc_content)
+          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
 
           package_files.each do |file|
             path = file.name
@@ -69,6 +70,24 @@ module Dependabot
           end
         end
 
+        def yarnrc_specifies_private_reg?
+          return false unless yarnrc_file
+
+          regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
+          yarnrc_global_registry =
+            yarnrc_file.content.
+            lines.find { |line| line.match?(regex) }&.
+            match(regex)&.
+            named_captures&.
+            fetch("registry")
+
+          return false unless yarnrc_global_registry
+
+          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
+            r.include?(URI(yarnrc_global_registry).host)
+          end
+        end
+
         # Duplicated in NpmLockfileUpdater
         # Remove the dependency we want to update from the lockfile and let
         # yarn find the latest resolvable version and fix the lockfile
@@ -87,6 +106,17 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).npmrc_content
+        end
+
+        def yarnrc_file
+          dependency_files.find { |f| f.name == ".yarnrc" }
+        end
+
+        def yarnrc_content
+          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).yarnrc_content
         end
       end
     end

@@ -12,6 +12,7 @@ module Dependabot
           https://registry.npmjs.org
           http://registry.npmjs.org
           https://registry.yarnpkg.com
+          http://registry.yarnpkg.com
         ).freeze
         NPM_AUTH_TOKEN_REGEX =
           %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
