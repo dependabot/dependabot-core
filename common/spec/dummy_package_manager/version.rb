@@ -20,6 +20,10 @@ module DummyPackageManager
       version = Version.remove_leading_v(version)
       super
     end
+
+    def to_semver
+      @original_version
+    end
   end
 end
 

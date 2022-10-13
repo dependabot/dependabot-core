@@ -9,6 +9,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
   let(:dependency_version) { "1.2.3" }
   let(:ignore_condition) { described_class.new(dependency_name: dependency_name) }
   let(:security_updates_only) { false }
+  let(:package_manager) { "dummy" }
 
   describe "#ignored_versions" do
     subject(:ignored_versions) { ignore_condition.ignored_versions(dependency, security_updates_only) }
@@ -16,7 +17,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       Dependabot::Dependency.new(
         name: dependency_name,
         requirements: [],
-        package_manager: "dummy",
+        package_manager: package_manager,
         version: dependency_version
       )
     end
@@ -25,7 +26,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     def expect_allowed(versions)
       reqs = ignored_versions.map { |v| Gem::Requirement.new(v.split(",").map(&:strip)) }
       versions.each do |v|
-        version = Gem::Version.new(v)
+        version = Dependabot::Utils.version_class_for_package_manager(package_manager).new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
         expect(ignored).to eq(false), "Expected #{v} to be allowed, but was ignored"
       end
@@ -34,7 +35,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
     def expect_ignored(versions)
       reqs = ignored_versions.map { |v| Gem::Requirement.new(v.split(",").map(&:strip)) }
       versions.each do |v|
-        version = Gem::Version.new(v)
+        version = Dependabot::Version.new(v)
         ignored = reqs.any? { |req| req.satisfied_by?(version) }
         expect(ignored).to eq(true), "Expected #{v} to be ignored, but was allowed"
       end
@@ -283,6 +284,24 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
           let(:update_types) { ["version-update:semver-major"] }
           it "returns the expected range" do
             expect(ignored_versions).to eq([])
+          end
+        end
+      end
+
+      context "with a semver dependency, but according to another package manager" do
+        let(:dependency_version) { "v11.0.14" }
+
+        context "with ignore_major_versions" do
+          let(:update_types) { ["version-update:semver-major"] }
+
+          it "ignores expected versions" do
+            expect_allowed(["11"])
+            expect_ignored(["17"])
+            expect_allowed([dependency_version])
+          end
+
+          it "returns the expected range" do
+            expect(ignored_versions).to eq([">= 12.a"])
           end
         end
       end
