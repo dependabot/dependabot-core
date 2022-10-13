@@ -32,7 +32,7 @@ module Dependabot
       end
 
       def versions_by_type(dependency)
-        return [] unless dependency.version
+        return [] unless rubygems_compatible?(dependency.version)
 
         transformed_update_types.flat_map do |t|
           case t
@@ -49,8 +49,6 @@ module Dependabot
       end
 
       def ignore_patch(version)
-        return [] unless rubygems_compatible?(version)
-
         parts = version.split(".")
         version_parts = parts.fill(0, parts.length...2)
         upper_parts = version_parts.first(1) + [version_parts[1].to_i + 1]
@@ -61,8 +59,6 @@ module Dependabot
       end
 
       def ignore_minor(version)
-        return [] unless rubygems_compatible?(version)
-
         parts = version.split(".")
         version_parts = parts.fill(0, parts.length...2)
         lower_parts = version_parts.first(1) + [version_parts[1].to_i + 1] + ["a"]
@@ -74,8 +70,6 @@ module Dependabot
       end
 
       def ignore_major(version)
-        return [] unless rubygems_compatible?(version)
-
         version_parts = version.split(".")
         lower_parts = [version_parts[0].to_i + 1] + ["a"]
         lower_bound = ">= #{lower_parts.join('.')}"
