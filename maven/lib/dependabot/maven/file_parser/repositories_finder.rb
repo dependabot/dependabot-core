@@ -26,8 +26,9 @@ module Dependabot
         CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
         SUPER_POM = { url: CENTRAL_REPO_URL, id: "central" }
 
-        def initialize(dependency_files:, evaluate_properties: true)
+        def initialize(dependency_files:, credentials: [], evaluate_properties: true)
           @dependency_files = dependency_files
+          @credentials = credentials
 
           # We need the option not to evaluate properties so as not to have a
           # circular dependency between this class and the PropertyValueFinder
@@ -39,7 +40,7 @@ module Dependabot
         def repository_urls(pom:, exclude_inherited: false)
           entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
           ids = Set.new
-          entries.map do |entry|
+          urls_from_credentials + entries.map do |entry|
             next if entry[:id] && ids.include?(entry[:id])
 
             ids.add(entry[:id]) unless entry[:id].nil?
@@ -119,7 +120,7 @@ module Dependabot
         end
 
         def fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
-          (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
+          (urls_from_credentials + repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
             @maven_responses ||= {}
@@ -153,6 +154,12 @@ module Dependabot
           "#{base_repo_url}/" \
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
             "#{artifact_id}-#{version}.pom"
+        end
+
+        def urls_from_credentials
+          @credentials.
+            select { |cred| cred["type"] == "maven_repository" }.
+            filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         def contains_property?(value)

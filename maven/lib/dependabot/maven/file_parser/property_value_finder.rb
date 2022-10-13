@@ -17,8 +17,9 @@ module Dependabot
 
         DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
 
-        def initialize(dependency_files:)
+        def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
+          @credentials = credentials
         end
 
         def property_details(property_name:, callsite_pom:)
@@ -119,6 +120,7 @@ module Dependabot
           @repositories_finder ||=
             RepositoriesFinder.new(
               dependency_files: dependency_files,
+              credentials: @credentials,
               evaluate_properties: false
             )
         end

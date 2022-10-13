@@ -5,8 +5,13 @@ require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
 
 RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
-  let(:finder) { described_class.new(dependency_files: dependency_files) }
-
+  let(:finder) do
+    described_class.new(
+      dependency_files: dependency_files,
+      credentials: credentials
+    )
+  end
+  let(:credentials) { [] }
   let(:dependency_files) { [base_pom] }
   let(:base_pom) do
     Dependabot::DependencyFile.new(
@@ -46,6 +51,25 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           expect(repository_urls).to eq(
             %w(
               https://example.com
+            )
+          )
+        end
+      end
+
+      context "with credentials" do
+        let(:base_pom_fixture_name) { "basic_pom.xml" }
+        let(:credentials) do
+          [
+            { "type" => "maven_repository", "url" => "https://example.com" },
+            { "type" => "git_source", "url" => "https://github.com" } # ignored since it's not maven
+          ]
+        end
+
+        it "adds the credential urls first" do
+          expect(repository_urls).to eq(
+            %w(
+              https://example.com
+              https://repo.maven.apache.org/maven2
             )
           )
         end
