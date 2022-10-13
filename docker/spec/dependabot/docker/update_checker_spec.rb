@@ -448,6 +448,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:version) { "17.0.1_12-jre-alpine" }
         it { is_expected.to eq("17.0.2_8-jre-alpine") }
       end
+
+      context "followed by numbers and with less components than other version but higher underscore part" do
+        let(:version) { "11.0.16_8-jdk" }
+        it { is_expected.to eq("11.0.16.1_1-jdk") }
+      end
     end
 
     context "when the dependency has a namespace" do

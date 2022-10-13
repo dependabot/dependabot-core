@@ -13,6 +13,10 @@ module Dependabot
         [new(requirement_string)]
       end
 
+      def satisfied_by?(version)
+        super(version.release_part)
+      end
+
       # Patches Gem::Requirement to make it accept requirement strings like
       # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
       def initialize(*requirements)
