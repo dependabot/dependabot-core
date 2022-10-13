@@ -214,7 +214,7 @@ module Dependabot
         response = patch(source.api_endpoint +
                            source.organization + "/" + source.project +
                            "/_apis/git/repositories/" + source.unscoped_repo +
-                           "/pullrequests/" + pull_request_id.to_s + "?api-version=6.0", content.to_json)
+                           "/pullrequests/" + pull_request_id.to_s + "?api-version=5.1", content.to_json)
 
         JSON.parse(response.body)
       end

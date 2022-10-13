@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Clients::Azure do
     let(:trans_work_items) { true }
     let(:pull_request_id) { 42 }
     let(:autocomplete_pull_request_url) do
-      base_url + "/_apis/git/repositories/#{source.unscoped_repo}/pullrequests/42?api-version=6.0"
+      base_url + "/_apis/git/repositories/#{source.unscoped_repo}/pullrequests/42?api-version=5.1"
     end
 
     context "when response is 200" do
