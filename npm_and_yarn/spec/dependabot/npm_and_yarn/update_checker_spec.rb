@@ -1361,6 +1361,22 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         )
     end
 
+    # Dependency doesn't consider metadata as part of equality checks
+    # so this allows us to check that the metadata is updated in tests.
+    RSpec::Matchers.define :including_metadata do |expected|
+      match do |actual|
+        actual == expected && actual.metadata == expected.metadata
+      end
+    end
+
+    def contain_exactly_including_metadata(*expected)
+      contain_exactly(*expected.map { |e| including_metadata(e) })
+    end
+
+    def eq_including_metadata(expected_array)
+      eq(expected_array).and contain_exactly_including_metadata(*expected_array)
+    end
+
     context "for a security update for a locked transitive dependency" do
       let(:dependency_files) { project_dependency_files("npm8/locked_transitive_dependency") }
       let(:registry_listing_url) { "https://registry.npmjs.org/locked-transitive-dependency" }
@@ -1385,14 +1401,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
       it "correctly updates the transitive dependency" do
         expect(checker.send(:updated_dependencies_after_full_unlock)).
-          to eq([
+          to eq_including_metadata([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
               version: "1.0.1",
               package_manager: "npm_and_yarn",
               previous_version: "1.0.0",
               requirements: [],
-              previous_requirements: []
+              previous_requirements: [],
+              metadata: { information_only: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
@@ -1426,14 +1443,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-intermediate" }
 
         it "correctly updates the transitive dependency" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq([
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
               package_manager: "npm_and_yarn",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
-              version: "1.0.1"
+              version: "1.0.1",
+              metadata: { information_only: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-intermediate-dependency",
@@ -1452,7 +1470,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         let(:registry_listing_url) { "https://registry.npmjs.org/transitive-dependency-locked-by-multiple" }
 
         it "correctly updates the transitive dependency" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency",
               package_manager: "npm_and_yarn",
@@ -1531,7 +1549,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
-              version: "1.0.1"
+              version: "1.0.1",
+              metadata: { information_only: true }
             )
           )
         end
@@ -1547,14 +1566,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "correctly updates the parent dependency and removes the transitive because removal is enabled" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly(
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to contain_exactly_including_metadata(
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency",
               package_manager: "npm_and_yarn",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
-              removed: true
+              removed: true,
+              metadata: { information_only: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-remove-dependency",
@@ -1608,14 +1628,15 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
         end
 
         it "correctly updates the transitive dependency by unlocking the parent" do
-          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq([
+          expect(checker.send(:updated_dependencies_after_full_unlock)).to eq_including_metadata([
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-transitive-dependency-with-more-versions",
               package_manager: "npm_and_yarn",
               previous_requirements: [],
               previous_version: "1.0.0",
               requirements: [],
-              version: "2.0.0"
+              version: "2.0.0",
+              metadata: { information_only: true }
             ),
             Dependabot::Dependency.new(
               name: "@dependabot-fixtures/npm-parent-dependency-with-more-versions",
