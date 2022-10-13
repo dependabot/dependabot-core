@@ -413,7 +413,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
-    context "when the dependencies have a underscore" do
+    context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
       let(:repo_url) do
