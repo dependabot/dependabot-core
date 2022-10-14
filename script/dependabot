@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dependabot "$@" \
+dependabot \
   -v "$(pwd)"/.core-bash_history:/home/dependabot/.bash_history \
   -v "$(pwd)"/updater/bin:/home/dependabot/dependabot-updater/bin \
   -v "$(pwd)"/updater/lib:/home/dependabot/dependabot-updater/lib \
@@ -21,4 +21,5 @@ dependabot "$@" \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
   -v "$(pwd)"/pub:/home/dependabot/pub \
   -v "$(pwd)"/python:/home/dependabot/python \
-  -v "$(pwd)"/terraform:/home/dependabot/terraform
+  -v "$(pwd)"/terraform:/home/dependabot/terraform \
+  "$@"
