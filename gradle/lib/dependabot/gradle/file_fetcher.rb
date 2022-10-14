@@ -27,55 +27,72 @@ module Dependabot
       private
 
       def fetch_files
-        fetched_files = []
-        fetched_files << buildfile if buildfile
-        fetched_files << settings_file if settings_file
-        fetched_files += subproject_buildfiles
-        fetched_files += dependency_script_plugins
-        check_required_files_present
-        fetched_files
+        files = all_buildfiles_in_build(".")
+        check_required_files_present(files)
+        files
       end
 
-      def buildfile
-        @buildfile ||= begin
-          file = supported_build_file
-          @buildfile_name ||= file.name if file
-          file
-        end
+      def all_buildfiles_in_build(root_dir)
+        files = [buildfile(root_dir), settings_file(root_dir)].compact
+        files += subproject_buildfiles(root_dir)
+        files += dependency_script_plugins(root_dir)
+        files + included_builds(root_dir).
+                flat_map { |dir| all_buildfiles_in_build(dir) }
       end
 
-      def subproject_buildfiles
-        return [] unless settings_file
+      def included_builds(root_dir)
+        builds = []
 
-        @subproject_buildfiles ||= begin
-          subproject_paths =
-            SettingsFileParser.
-            new(settings_file: settings_file).
-            subproject_paths
+        # buildSrc is implicit: included but not declared in settings.gradle
+        buildsrc = repo_contents(dir: root_dir, raise_errors: false).
+                   find { |item| item.type == "dir" && item.name == "buildSrc" }
+        builds << clean_join(root_dir, "buildSrc") if buildsrc
 
-          subproject_paths.filter_map do |path|
-            if @buildfile_name
-              fetch_file_from_host(File.join(path, @buildfile_name))
-            else
-              supported_file(SUPPORTED_BUILD_FILE_NAMES.map { |f| File.join(path, f) })
-            end
-          rescue Dependabot::DependencyFileNotFound
-            # Gradle itself doesn't worry about missing subprojects, so we don't
-            nil
+        return builds unless settings_file(root_dir)
+
+        builds += SettingsFileParser.
+                  new(settings_file: settings_file(root_dir)).
+                  included_build_paths.
+                  map { |p| clean_join(root_dir, p) }
+
+        builds.uniq
+      end
+
+      def clean_join(*parts)
+        Pathname.new(File.join(*parts)).cleanpath.to_path
+      end
+
+      def subproject_buildfiles(root_dir)
+        return [] unless settings_file(root_dir)
+
+        subproject_paths =
+          SettingsFileParser.
+          new(settings_file: settings_file(root_dir)).
+          subproject_paths
+
+        subproject_paths.filter_map do |path|
+          if @buildfile_name
+            fetch_file_from_host(File.join(root_dir, path, @buildfile_name))
+          else
+            buildfile(File.join(root_dir, path))
           end
+        rescue Dependabot::DependencyFileNotFound
+          # Gradle itself doesn't worry about missing subprojects, so we don't
+          nil
         end
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      def dependency_script_plugins
-        return [] unless buildfile
+      def dependency_script_plugins(root_dir)
+        return [] unless buildfile(root_dir)
 
         dependency_plugin_paths =
-          FileParser.find_include_names(buildfile).
+          FileParser.find_include_names(buildfile(root_dir)).
           reject { |path| path.include?("://") }.
           reject { |path| !path.include?("/") && path.split(".").count > 2 }.
           select { |filename| filename.include?("dependencies") }.
           map { |path| path.gsub("$rootDir", ".") }.
+          map { |path| File.join(root_dir, path) }.
           uniq
 
         dependency_plugin_paths.filter_map do |path|
@@ -89,10 +106,10 @@ module Dependabot
       end
       # rubocop:enable Metrics/PerceivedComplexity
 
-      def check_required_files_present
-        return if buildfile || (subproject_buildfiles && !subproject_buildfiles.empty?)
+      def check_required_files_present(files)
+        return if files.any?
 
-        path = Pathname.new(File.join(directory, "build.gradle")).cleanpath.to_path
+        path = clean_join(directory, "build.gradle")
         path += "(.kts)?"
         raise Dependabot::DependencyFileNotFound, path
       end
@@ -104,24 +121,35 @@ module Dependabot
         false
       end
 
-      def settings_file
-        @settings_file ||= supported_settings_file
+      def buildfile(dir)
+        file = find_first(dir, SUPPORTED_BUILD_FILE_NAMES) || return
+        @buildfile_name ||= File.basename(file.name)
+        file
       end
 
-      def supported_build_file
-        supported_file(SUPPORTED_BUILD_FILE_NAMES)
+      def settings_file(dir)
+        find_first(dir, SUPPORTED_SETTINGS_FILE_NAMES)
       end
 
-      def supported_settings_file
-        supported_file(SUPPORTED_SETTINGS_FILE_NAMES)
-      end
-
-      def supported_file(supported_file_names)
-        supported_file_names.each do |supported_file_name|
-          file = fetch_file_if_present(supported_file_name)
-          return file if file
+      def find_first(dir, supported_names)
+        paths = supported_names.
+                map { |name| clean_join(dir, name) }.
+                each do |path|
+          return cached_files[path] || next
         end
+        fetch_first_if_present(paths)
+      end
 
+      def cached_files
+        @cached_files ||= {}
+      end
+
+      def fetch_first_if_present(paths)
+        paths.each do |path|
+          file = fetch_file_if_present(path) || next
+          cached_files[path] = file
+          return file
+        end
         nil
       end
     end
