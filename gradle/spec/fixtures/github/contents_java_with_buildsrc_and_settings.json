@@ -1,0 +1,50 @@
+[
+  {
+    "name": "build.gradle",
+    "path": "build.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/git/git/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/git/git/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/git/git/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/git/git/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/git/git/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/git/git/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/git/git/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "settings.gradle",
+    "path": "settings.gradle",
+    "sha": "f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "size": 2355,
+    "url": "https://api.github.com/repos/git/git/contents/build.gradle?ref=main",
+    "html_url": "https://github.com/git/git/blob/main/build.gradle",
+    "git_url": "https://api.github.com/repos/git/git/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+    "download_url": "https://raw.githubusercontent.com/git/git/main/build.gradle",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/git/git/contents/build.gradle?ref=main",
+      "git": "https://api.github.com/repos/git/git/git/blobs/f036f9f0357a50b02a422923f0bb0c3719eaf8ae",
+      "html": "https://github.com/git/git/blob/main/build.gradle"
+    }
+  },
+  {
+    "name": "buildSrc",
+    "path": "buildSrc",
+    "sha": "5df7f650b80fef281199e7d1c6bf53c6a5280802",
+    "size": 0,
+    "url": "https://api.github.com/repos/git/git/contents/dependencies?ref=main",
+    "html_url": "https://github.com/git/git/tree/main/dependencies",
+    "git_url": "https://api.github.com/repos/git/git/git/trees/5df7f650b80fef281199e7d1c6bf53c6a5280802",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/git/git/contents/dependencies?ref=main",
+      "git": "https://api.github.com/repos/git/git/git/trees/5df7f650b80fef281199e7d1c6bf53c6a5280802",
+      "html": "https://github.com/git/git/tree/main/dependencies"
+    }
+  }
+]
