@@ -115,9 +115,7 @@ module Dependabot
         end
 
         def requirement_class
-          Utils.requirement_class_for_package_manager(
-            dependency.package_manager
-          )
+          dependency.requirement_class
         end
 
         def gemfile

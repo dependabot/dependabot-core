@@ -199,11 +199,15 @@ module Dependabot
       self == other
     end
 
-    private
+    def requirement_class
+      Utils.requirement_class_for_package_manager(package_manager)
+    end
 
     def version_class
       Utils.version_class_for_package_manager(package_manager)
     end
+
+    private
 
     def check_values
       raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")

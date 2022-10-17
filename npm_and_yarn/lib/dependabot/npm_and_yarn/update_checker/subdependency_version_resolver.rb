@@ -145,7 +145,7 @@ module Dependabot
         end
 
         def version_class
-          NpmAndYarn::Version
+          dependency.version_class
         end
 
         def updated_dependency
