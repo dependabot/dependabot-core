@@ -191,21 +191,17 @@ module Dependabot
         def repositories
           return @repositories if defined?(@repositories)
 
-          details = pom_repository_details + credentials_repository_details
-
-          @repositories =
-            details.reject do |repo|
-              next if repo["auth_headers"]
-
-              # Reject this entry if an identical one with non-empty auth_headers exists
-              details.any? { |r| r["url"] == repo["url"] && r["auth_headers"] != {} }
-            end
+          @repositories = credentials_repository_details
+          pom_repository_details.each do |repo|
+            @repositories << repo unless @repositories.any? { |r| r["url"] == repo["url"] }
+          end
+          @repositories
         end
 
         def pom_repository_details
           @pom_repository_details ||=
             Maven::FileParser::RepositoriesFinder.
-            new(dependency_files: dependency_files).
+            new(dependency_files: dependency_files, credentials: credentials).
             repository_urls(pom: pom).
             map do |url|
               { "url" => url, "auth_headers" => {} }
