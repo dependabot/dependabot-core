@@ -21,51 +21,52 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    DEPENDENCY_TYPES = ['dependencies', 'optional-dependencies']
+    project_toml = toml.load(pyproject_path)['project']
 
-    def version_from_req(specifier_set):
-        if (len(specifier_set) == 1 and
-                next(iter(specifier_set)).operator in {"==", "==="}):
-            return next(iter(specifier_set)).version
-
-    def flatten(foo):
-        for x in foo:
-            if hasattr(x, '__iter__') and not isinstance(x, str):
-                for y in flatten(x):
-                    yield y
-            else:
-                yield x
-
-    def parse_dependencies(dependency_type):
-        dependencies = []
+    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
         requirement_packages = []
 
-        try:
-            project = toml.load(pyproject_path)['project']
-            if dependency_type in project:
-                dependencies = flatten(project[dependency_type])
-            for dependency in dependencies:
+        def version_from_req(specifier_set):
+            if (len(specifier_set) == 1 and
+                    next(iter(specifier_set)).operator in {"==", "==="}):
+                return next(iter(specifier_set)).version
+
+        for dependency in dependencies:
+            try:
                 req = Requirement(dependency)
+            except InvalidRequirement as e:
+                print(json.dumps({"error": repr(e)}))
+                exit(1)
+            else:
                 requirement_packages.append({
                     "name": req.name,
                     "version": version_from_req(req.specifier),
                     "markers": str(req.marker) or None,
                     "file": pyproject_path,
                     "requirement": str(req.specifier),
-                    "requirement_type": dependency_type,
                     "extras": sorted(list(req.extras))
                 })
-        except KeyError as e:
-            print(json.dumps({"error": repr(e)}))
-            exit(1)
-        except InvalidRequirement as e:
-            print(json.dumps({"error": repr(e)}))
-            exit(1)
-        else:
-            return requirement_packages
 
-    parsed_dependencies = list(map(parse_dependencies, DEPENDENCY_TYPES))
-    return json.dumps({"result": parsed_dependencies})
+        return requirement_packages
+
+    dependencies = parse_toml_section_pep621_dependencies(
+        pyproject_path,
+        project_toml['dependencies']
+    )
+
+    optional_dependencies_toml = project_toml['optional-dependencies']
+
+    if optional_dependencies_toml:
+        for group in optional_dependencies_toml:
+            group_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                optional_dependencies_toml[group]
+            )
+
+            dependencies.extend(group_dependencies)
+
+    return json.dumps({"result": dependencies})
+
 
 def parse_requirements(directory):
     # Parse the requirements.txt
