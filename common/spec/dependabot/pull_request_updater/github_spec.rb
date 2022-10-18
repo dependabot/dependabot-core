@@ -376,9 +376,10 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
                 parents: ["basecommitsha"],
                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
                 message:
-                  "Bump business from 1.4.0 to 1.5.0\n\n" \
-                  "Dependabot looked everywhere and was unable to find " \
-                  "the original pull request head commit, oldcommitsha."
+                  "Bump business from 1.4.0 to 1.5.0" \
+                  "\n\n" \
+                  "Dependabot couldn't find the original pull request " \
+                  "head commit, oldcommitsha."
               }
             )
         end

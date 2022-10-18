@@ -183,8 +183,9 @@ module Dependabot
 
       def commit_message
         fallback_message =
-          "#{pull_request.title}\n\nDependabot looked everywhere and " \
-          "was unable to find the original pull request head commit, " \
+          "#{pull_request.title}" \
+          "\n\n" \
+          "Dependabot couldn't find the original pull request head commit, " \
           "#{old_commit}."
 
         # Take the commit message from the old commit. If the old commit can't
