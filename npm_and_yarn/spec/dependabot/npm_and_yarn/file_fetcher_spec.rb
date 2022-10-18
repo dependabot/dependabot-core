@@ -70,8 +70,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         directory: directory
       )
     end
-    let(:url) { "https://api.github.com/repos/jtbandes/dependabot-yarn-lfs-fixture/contents/" }
-    let(:repo) { "jtbandes/dependabot-yarn-lfs-fixture" }
+    let(:url) { "https://api.github.com/repos/dependabot-fixtures/yarn-berry-lfs-fixture/contents/" }
+    let(:repo) { "dependabot-fixtures/yarn-berry-lfs-fixture" }
     let(:repo_contents_path) { Dir.mktmpdir }
     after { FileUtils.rm_rf(repo_contents_path) }
 
