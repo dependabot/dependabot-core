@@ -413,7 +413,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
-    context "when the dependencies have a underscore" do
+    context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
       let(:repo_url) do
@@ -447,6 +447,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "followed by numbers" do
         let(:version) { "17.0.1_12-jre-alpine" }
         it { is_expected.to eq("17.0.2_8-jre-alpine") }
+      end
+
+      context "followed by numbers and with less components than other version but higher underscore part" do
+        let(:version) { "11.0.16_8-jdk" }
+        it { is_expected.to eq("11.0.16.1_1-jdk") }
       end
     end
 

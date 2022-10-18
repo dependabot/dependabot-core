@@ -43,8 +43,6 @@ module Dependabot
       end
 
       def capitalize_first_word?
-        return !commit_message_options[:prefix]&.strip&.match?(/\A[a-z]/) if commit_message_options.key?(:prefix)
-
         return capitalise_first_word_from_last_dependabot_commit_style if last_dependabot_commit_style
 
         capitalise_first_word_from_previous_commits
