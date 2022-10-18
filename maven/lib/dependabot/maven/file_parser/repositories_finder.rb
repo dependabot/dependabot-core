@@ -21,13 +21,9 @@ module Dependabot
         REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
 
-        # The Central Repository is included in the Super POM, which is
-        # always inherited from.
-        CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
-        SUPER_POM = { url: CENTRAL_REPO_URL, id: "central" }
-
-        def initialize(dependency_files:, evaluate_properties: true)
+        def initialize(dependency_files: [], credentials: [], evaluate_properties: true)
           @dependency_files = dependency_files
+          @credentials = credentials
 
           # We need the option not to evaluate properties so as not to have a
           # circular dependency between this class and the PropertyValueFinder
@@ -35,11 +31,16 @@ module Dependabot
           @evaluate_properties = evaluate_properties
         end
 
+        def central_repo_url
+          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred["replaces-base"] == true }
+          base ? base["url"] : "https://repo.maven.apache.org/maven2"
+        end
+
         # Collect all repository URLs from this POM and its parents
         def repository_urls(pom:, exclude_inherited: false)
           entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
           ids = Set.new
-          entries.map do |entry|
+          urls_from_credentials + entries.map do |entry|
             next if entry[:id] && ids.include?(entry[:id])
 
             ids.add(entry[:id]) unless entry[:id].nil?
@@ -51,6 +52,12 @@ module Dependabot
 
         attr_reader :dependency_files
 
+        # The Central Repository is included in the Super POM, which is
+        # always inherited from.
+        def super_pom
+          { url: central_repo_url, id: "central" }
+        end
+
         def gather_repository_urls(pom:, exclude_inherited: false)
           repos_in_pom =
             Nokogiri::XML(pom.content).
@@ -60,11 +67,11 @@ module Dependabot
             select { |entry| entry[:url].start_with?("http") }.
             map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
 
-          return repos_in_pom + [SUPER_POM] if exclude_inherited
+          return repos_in_pom + [super_pom] if exclude_inherited
 
           urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
           unless (parent = parent_pom(pom, urls_in_pom))
-            return repos_in_pom + [SUPER_POM]
+            return repos_in_pom + [super_pom]
           end
 
           repos_in_pom + gather_repository_urls(pom: parent)
@@ -119,13 +126,13 @@ module Dependabot
         end
 
         def fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
-          (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
+          (urls_from_credentials + repo_urls + [central_repo_url]).uniq.each do |base_url|
             url = remote_pom_url(group_id, artifact_id, version, base_url)
 
             @maven_responses ||= {}
             @maven_responses[url] ||= Dependabot::RegistryClient.get(
               url: url,
-              # We attempt to find dependencies in private repos before failing over to the CENTRAL_REPO_URL,
+              # We attempt to find dependencies in private repos before failing over to the central repository,
               # but this can burn a lot of a job's time against slow servers due to our `read_timeout` being 20 seconds.
               #
               # In order to avoid the overall job timing out, we only make one retry attempt
@@ -153,6 +160,12 @@ module Dependabot
           "#{base_repo_url}/" \
             "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
             "#{artifact_id}-#{version}.pom"
+        end
+
+        def urls_from_credentials
+          @credentials.
+            select { |cred| cred["type"] == "maven_repository" }.
+            filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         def contains_property?(value)

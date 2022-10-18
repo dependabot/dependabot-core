@@ -5,8 +5,13 @@ require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
 
 RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
-  let(:finder) { described_class.new(dependency_files: dependency_files) }
-
+  let(:finder) do
+    described_class.new(
+      dependency_files: dependency_files,
+      credentials: credentials
+    )
+  end
+  let(:credentials) { [] }
   let(:dependency_files) { [base_pom] }
   let(:base_pom) do
     Dependabot::DependencyFile.new(
@@ -15,6 +20,24 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
     )
   end
   let(:base_pom_fixture_name) { "basic_pom.xml" }
+
+  describe "#central_repo_url" do
+    it "returns the central repo URL by default" do
+      expect(finder.central_repo_url).to eq("https://repo.maven.apache.org/maven2")
+    end
+    context "if replaces-base is present" do
+      let(:credentials) do
+        [{
+          "type" => "maven_repository",
+          "url" => "https://example.com",
+          "replaces-base" => true
+        }]
+      end
+      it "returns that URL instead" do
+        expect(finder.central_repo_url).to eq("https://example.com")
+      end
+    end
+  end
 
   describe "#repository_urls" do
     subject(:repository_urls) { finder.repository_urls(pom: pom) }
@@ -46,6 +69,25 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
           expect(repository_urls).to eq(
             %w(
               https://example.com
+            )
+          )
+        end
+      end
+
+      context "with credentials" do
+        let(:base_pom_fixture_name) { "basic_pom.xml" }
+        let(:credentials) do
+          [
+            { "type" => "maven_repository", "url" => "https://example.com" },
+            { "type" => "git_source", "url" => "https://github.com" } # ignored since it's not maven
+          ]
+        end
+
+        it "adds the credential urls first" do
+          expect(repository_urls).to eq(
+            %w(
+              https://example.com
+              https://repo.maven.apache.org/maven2
             )
           )
         end

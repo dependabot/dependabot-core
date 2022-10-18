@@ -71,7 +71,7 @@ module Dependabot
         commit_message = cfg&.dig(:"commit-message") || {}
         Dependabot::Config::UpdateConfig::CommitMessageOptions.new(
           prefix: commit_message[:prefix],
-          prefix_development: commit_message[:"prefix-development"],
+          prefix_development: commit_message[:"prefix-development"] || commit_message[:prefix],
           include: commit_message[:include]
         )
       end
