@@ -21,32 +21,51 @@ COMMENT_RE = re.compile(r'(^|\s+)#.*$')
 
 
 def parse_pep621_dependencies(pyproject_path):
-    dependencies = toml.load(pyproject_path)['project']['dependencies']
+    project_toml = toml.load(pyproject_path)['project']
 
-    requirement_packages = []
+    def parse_toml_section_pep621_dependencies(pyproject_path, dependencies):
+        requirement_packages = []
 
-    def version_from_req(specifier_set):
-        if (len(specifier_set) == 1 and
-                next(iter(specifier_set)).operator in {"==", "==="}):
-            return next(iter(specifier_set)).version
+        def version_from_req(specifier_set):
+            if (len(specifier_set) == 1 and
+                    next(iter(specifier_set)).operator in {"==", "==="}):
+                return next(iter(specifier_set)).version
 
-    for dependency in dependencies:
-        try:
-            req = Requirement(dependency)
-        except InvalidRequirement as e:
-            print(json.dumps({"error": repr(e)}))
-            exit(1)
-        else:
-            requirement_packages.append({
-                "name": req.name,
-                "version": version_from_req(req.specifier),
-                "markers": str(req.marker) or None,
-                "file": pyproject_path,
-                "requirement": str(req.specifier),
-                "extras": sorted(list(req.extras))
-            })
+        for dependency in dependencies:
+            try:
+                req = Requirement(dependency)
+            except InvalidRequirement as e:
+                print(json.dumps({"error": repr(e)}))
+                exit(1)
+            else:
+                requirement_packages.append({
+                    "name": req.name,
+                    "version": version_from_req(req.specifier),
+                    "markers": str(req.marker) or None,
+                    "file": pyproject_path,
+                    "requirement": str(req.specifier),
+                    "extras": sorted(list(req.extras))
+                })
 
-    return json.dumps({"result": requirement_packages})
+        return requirement_packages
+
+    dependencies = parse_toml_section_pep621_dependencies(
+        pyproject_path,
+        project_toml['dependencies']
+    )
+
+    if 'optional-dependencies' in project_toml:
+        optional_dependencies_toml = project_toml['optional-dependencies']
+
+        for group in optional_dependencies_toml:
+            group_dependencies = parse_toml_section_pep621_dependencies(
+                pyproject_path,
+                optional_dependencies_toml[group]
+            )
+
+            dependencies.extend(group_dependencies)
+
+    return json.dumps({"result": dependencies})
 
 
 def parse_requirements(directory):
