@@ -3,10 +3,12 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/file_parser/pom_fetcher"
 
 RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
   let(:finder) do
     described_class.new(
+      pom_fetcher: pom_fetcher,
       dependency_files: dependency_files,
       credentials: credentials
     )
@@ -19,6 +21,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
       content: fixture("poms", base_pom_fixture_name)
     )
   end
+  let(:pom_fetcher) { Dependabot::Maven::FileParser::PomFetcher.new(dependency_files: dependency_files) }
   let(:base_pom_fixture_name) { "basic_pom.xml" }
 
   describe "#central_repo_url" do

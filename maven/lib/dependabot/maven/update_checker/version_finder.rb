@@ -198,10 +198,18 @@ module Dependabot
           @repositories
         end
 
+        def repository_finder
+          @repository_finder ||=
+            Maven::FileParser::RepositoriesFinder.new(
+              pom_fetcher: Maven::FileParser::PomFetcher.new(dependency_files: dependency_files),
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
+        end
+
         def pom_repository_details
           @pom_repository_details ||=
-            Maven::FileParser::RepositoriesFinder.
-            new(dependency_files: dependency_files, credentials: credentials).
+            repository_finder.
             repository_urls(pom: pom).
             map do |url|
               { "url" => url, "auth_headers" => {} }
@@ -271,9 +279,7 @@ module Dependabot
         end
 
         def central_repo_urls
-          central_url_without_protocol =
-            Maven::FileParser::RepositoriesFinder.new(credentials: credentials).central_repo_url.
-            gsub(%r{^.*://}, "")
+          central_url_without_protocol = repository_finder.central_repo_url.gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
         end
