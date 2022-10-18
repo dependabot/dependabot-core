@@ -149,7 +149,7 @@ module Dependabot
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
-          Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
+          Maven::FileParser::RepositoriesFinder.new(credentials: credentials).central_repo_url
       end
 
       def maven_repo_dependency_url

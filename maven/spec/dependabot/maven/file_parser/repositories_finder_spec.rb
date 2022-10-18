@@ -21,6 +21,24 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
   end
   let(:base_pom_fixture_name) { "basic_pom.xml" }
 
+  describe "#central_repo_url" do
+    it "returns the central repo URL by default" do
+      expect(finder.central_repo_url).to eq("https://repo.maven.apache.org/maven2")
+    end
+    context "if replaces-base is present" do
+      let(:credentials) do
+        [{
+          "type" => "maven_repository",
+          "url" => "https://example.com",
+          "replaces-base" => true
+        }]
+      end
+      it "returns that URL instead" do
+        expect(finder.central_repo_url).to eq("https://example.com")
+      end
+    end
+  end
+
   describe "#repository_urls" do
     subject(:repository_urls) { finder.repository_urls(pom: pom) }
     let(:pom) { base_pom }

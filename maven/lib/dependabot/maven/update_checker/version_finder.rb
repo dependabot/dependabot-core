@@ -272,7 +272,7 @@ module Dependabot
 
         def central_repo_urls
           central_url_without_protocol =
-            Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.
+            Maven::FileParser::RepositoriesFinder.new(credentials: credentials).central_repo_url.
             gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
