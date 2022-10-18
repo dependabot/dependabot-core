@@ -15,7 +15,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
-      commit_message_options: { signoff_details: signoff_details, trailers: trailers },
+      commit_message_options: commit_message_options,
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -41,6 +41,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:credentials) { github_credentials }
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
+  let(:commit_message_options) { { signoff_details: signoff_details, trailers: trailers } }
   let(:signoff_details) { nil }
   let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
@@ -443,6 +444,29 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it do
             is_expected.to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
+          end
+        end
+
+        context "and capitalizes the message but not the prefix" do
+          before do
+            stub_request(:get, watched_repo_url + "/commits?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "commits_angular_sentence_case.json"),
+                headers: json_header
+              )
+          end
+
+          it do
+            is_expected.to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
+          end
+
+          context "and with commit messages explicitly configured" do
+            let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
+
+            it do
+              is_expected.to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
+            end
           end
         end
 
