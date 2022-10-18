@@ -24,8 +24,8 @@ ARG RUBYGEMS_SYSTEM_VERSION=3.3.22
 
 # system arguments
 ARG TARGETARCH=amd64
-ARG USER_GID=$USER_UID
 ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
 # git arguments
 # place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
@@ -129,11 +129,10 @@ RUN apt-get update \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/* \
   # add the dependabot user and group if they don't exist
-  && if ! getent group "$USER_GID"; then \
-       groupadd --gid "$USER_GID" dependabot \
-     else \
-       GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" \
-     fi \
+  && if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt \
   # install ruby, update rubygems, and install budler
@@ -151,11 +150,12 @@ RUN apt-get update \
   && rm -rf /tmp/ruby-install \
   # install python with pyenv
   && mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT" \
-  && runuser -l dependabot -c "git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.5 --single-branch --depth=1 /usr/local/.pyenv \
+  && su dependabot -c "git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.5 --single-branch --depth=1 /usr/local/.pyenv \
                               # this is the version of CPython that gets installed
                               && pyenv install 3.10.7 \
                               && pyenv global 3.10.7 \
                               && rm -Rf /tmp/python-build*" \
+  && exit \
   # install node and npm
   && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends nodejs \
@@ -202,13 +202,14 @@ RUN apt-get update \
     php7.4-zmq \
     php7.4-mcrypt \
   && rm -rf /var/lib/apt/lists/* \
-  && runuser -l dependabot -c "mkdir /tmp/composer-cache \
+  && su dependabot -c "mkdir /tmp/composer-cache \
                               && cd /tmp/composer-cache \
-                              && echo '{'require':{'psr/log': '^1.1.3'}}' > composer.json \
+                              && echo '{\"require\":{\"psr/log\": \"^1.1.3\"}}' > composer.json \
                               && composer update --no-scripts --dry-run \
                               && cd /tmp \
                               && rm -rf /home/dependabot/.cache/composer/files \
-                              && rm -rf /tmp/composer-cache" \
+                              && rm -rf /tmp/composer-cache && exit" \
+  && exit \
   # install go
   && cd /tmp \
   && curl --http1.1 -o go-${TARGETARCH}.tar.gz https://dl.google.com/go/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz \
@@ -228,7 +229,8 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/* \
   # install rust
   && mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME" \
-  && runuser -l dependabot -c "curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --profile minimal" \
+  && su dependabot -c "curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --profile minimal && exit" \
+  && exit \
   # install terraform
   && cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
