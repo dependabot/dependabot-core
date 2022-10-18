@@ -205,13 +205,11 @@ module Dependabot
         reqs = dependency.requirements
         return if reqs.none?
 
-        requirement =
-          case resolver_type
-          when :pipenv then reqs.find { |r| r[:file] == "Pipfile" }
-          when :poetry then reqs.find { |r| r[:file] == "pyproject.toml" }
-          when :pip_compile then reqs.find { |r| r[:file].end_with?(".in") }
-          when :requirements then reqs.find { |r| r[:file].end_with?(".txt") }
-          end
+        requirement = reqs.find do |r|
+          file = r[:file]
+
+          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+        end
 
         requirement&.fetch(:requirement)
       end
