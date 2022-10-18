@@ -87,6 +87,7 @@ module Dependabot
           end
       end
 
+      # rubocop:disable Metrics/AbcSize
       def application_pr_name
         pr_name = "bump "
         pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
@@ -116,6 +117,7 @@ module Dependabot
             end
           end
       end
+      # rubocop:enable Metrics/AbcSize
 
       def pr_name_prefix
         pr_name_prefixer.pr_name_prefix
