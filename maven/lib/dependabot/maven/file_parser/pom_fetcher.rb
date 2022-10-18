@@ -55,9 +55,6 @@ module Dependabot
             next unless response.status == 200
             next unless pom?(response.body)
 
-            # ensure the response is valid XML, some registries return JSON 404 in a 200 body
-            next if Nokogiri::XML(response.body).errors.any?
-
             dependency_file = DependencyFile.new(
               name: "remote_pom.xml",
               content: response.body
