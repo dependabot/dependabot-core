@@ -292,6 +292,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     end
 
     context "with multiple commits on the branch" do
+      let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
+
       before do
         stub_request(:get, pull_request_url).
           to_return(status: 200,
@@ -338,7 +340,6 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
               headers: json_header
             )
         end
-        let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
 
         it "has the right commit message" do
           updater.update
