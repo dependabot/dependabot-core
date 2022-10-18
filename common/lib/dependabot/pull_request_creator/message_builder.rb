@@ -78,8 +78,12 @@ module Dependabot
               "#{from_version_msg(old_library_requirement(dependencies.first))}" \
               "to #{new_library_requirement(dependencies.first)}"
           else
-            names = dependencies.map(&:name)
-            "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+            names = dependencies.map(&:name).uniq
+            if names.count == 1
+              "requirements for #{names.first}"
+            else
+              "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+            end
           end
       end
 
@@ -104,8 +108,12 @@ module Dependabot
               "#{from_version_msg(previous_version(dependency))}" \
               "to #{new_version(dependency)}"
           else
-            names = dependencies.map(&:name)
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
+            names = dependencies.map(&:name).uniq
+            if names.count == 1
+              names.first
+            else
+              "#{names[0..-2].join(', ')} and #{names[-1]}"
+            end
           end
       end
 
