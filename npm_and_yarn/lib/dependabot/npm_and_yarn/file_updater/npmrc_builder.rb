@@ -42,7 +42,9 @@ module Dependabot
           return unless yarn_lock || package_lock
           return unless global_registry
 
-          "registry = https://#{global_registry['registry']}\n" \
+          registry = global_registry["registry"]
+          registry = "https://#{registry}" unless registry.start_with?("http")
+          "registry = #{registry}\n" \
             "#{global_registry_auth_line}" \
             "always-auth = true"
         end
@@ -113,8 +115,10 @@ module Dependabot
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 
+          registry = global_registry["registry"]
+          registry = "https://#{registry}" unless registry.start_with?("http")
           initial_content +
-            "registry = https://#{global_registry['registry']}\n" \
+            "registry = #{registry}\n" \
             "#{global_registry_auth_line}" \
             "always-auth = true\n"
         end
