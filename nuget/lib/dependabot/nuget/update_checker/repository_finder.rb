@@ -11,6 +11,7 @@ module Dependabot
     class UpdateChecker
       class RepositoryFinder
         DEFAULT_REPOSITORY_URL = "https://api.nuget.org/v3/index.json"
+        DEFAULT_REPOSITORY_API_KEY = "nuget.org"
 
         def initialize(dependency:, credentials:, config_files: [])
           @dependency  = dependency
@@ -30,7 +31,7 @@ module Dependabot
           @find_dependency_urls ||=
             known_repositories.flat_map do |details|
               if details.fetch(:url) == DEFAULT_REPOSITORY_URL
-                # Save a request for the default URL, since we already how
+                # Save a request for the default URL, since we already know how
                 # it addresses packages
                 next default_repository_details
               end
@@ -151,25 +152,24 @@ module Dependabot
         def repos_from_config_file(config_file)
           doc = Nokogiri::XML(config_file.content)
           doc.remove_namespaces!
-          sources =
-            doc.css("configuration > packageSources > add").map do |node|
-              {
-                key:
-                  node.attribute("key")&.value&.strip ||
-                    node.at_xpath("./key")&.content&.strip,
-                url:
-                  node.attribute("value")&.value&.strip ||
-                    node.at_xpath("./value")&.content&.strip
-              }
-            end
+          # analogous to having a root config with the default repository
+          base_sources = [{ url: DEFAULT_REPOSITORY_URL, key: "nuget.org" }]
 
+          sources = []
+          doc.css("configuration > packageSources").children.each do |node|
+            if node.name == "clear"
+              sources.clear
+              base_sources.clear
+            else
+              key = node.attribute("key")&.value&.strip || node.at_xpath("./key")&.content&.strip
+              url = node.attribute("value")&.value&.strip || node.at_xpath("./value")&.content&.strip
+              sources << { url: url, key: key }
+            end
+          end
+          sources += base_sources # TODO: quirky overwrite behavior
           disabled_sources = disabled_sources(doc)
           sources.reject! do |s|
             disabled_sources.include?(s[:key])
-          end
-
-          unless doc.css("configuration > packageSources > clear").any?
-            sources << { url: DEFAULT_REPOSITORY_URL, key: nil }
           end
 
           sources.reject! do |s|
@@ -202,7 +202,7 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def disabled_sources(doc)
-          doc.css("configuration > disabledPackageSources > add").map do |node|
+          doc.css("configuration > disabledPackageSources > add").filter_map do |node|
             value = node.attribute("value")&.value ||
                     node.at_xpath("./value")&.content
 
