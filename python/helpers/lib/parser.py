@@ -54,9 +54,9 @@ def parse_pep621_dependencies(pyproject_path):
         project_toml['dependencies']
     )
 
-    optional_dependencies_toml = project_toml['optional-dependencies']
+    if 'optional-dependencies' in project_toml:
+        optional_dependencies_toml = project_toml['optional-dependencies']
 
-    if optional_dependencies_toml:
         for group in optional_dependencies_toml:
             group_dependencies = parse_toml_section_pep621_dependencies(
                 pyproject_path,

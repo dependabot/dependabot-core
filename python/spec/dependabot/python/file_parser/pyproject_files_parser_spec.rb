@@ -289,5 +289,15 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
 
       its(:length) { is_expected.to eq(0) }
     end
+
+    context "with optional dependencies" do
+      let(:pyproject_fixture_name) { "optional_dependencies.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
+      # is ignored because it has markers
+      its(:length) { is_expected.to eq(4) }
+    end
   end
 end
