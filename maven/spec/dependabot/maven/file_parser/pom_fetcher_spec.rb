@@ -55,6 +55,21 @@ RSpec.describe Dependabot::Maven::FileParser::PomFetcher do
         expect(fetch_remote_parent_pom.name).to eq("remote_pom.xml")
         expect(fetch_remote_parent_pom.content).to include("snapshot")
       end
+
+      context "but the response is malformed" do
+        before do
+          stub_request(:get, "https://repo.maven.apache.org/maven2/" \
+                             "org/springframework/boot/" \
+                             "spring-boot-starter-parent/" \
+                             "1.5.10-SNAPSHOT/" \
+                             "maven-metadata.xml").
+            to_return(status: 200, body: "<error>404</error>")
+        end
+
+        it "returns nil" do
+          expect(fetch_remote_parent_pom).to be_nil
+        end
+      end
     end
   end
 end
