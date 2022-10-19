@@ -3,10 +3,12 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/file_parser/pom_fetcher"
 
 RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
   let(:finder) do
     described_class.new(
+      pom_fetcher: pom_fetcher,
       dependency_files: dependency_files,
       credentials: credentials
     )
@@ -19,7 +21,26 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
       content: fixture("poms", base_pom_fixture_name)
     )
   end
+  let(:pom_fetcher) { Dependabot::Maven::FileParser::PomFetcher.new(dependency_files: dependency_files) }
   let(:base_pom_fixture_name) { "basic_pom.xml" }
+
+  describe "#central_repo_url" do
+    it "returns the central repo URL by default" do
+      expect(finder.central_repo_url).to eq("https://repo.maven.apache.org/maven2")
+    end
+    context "if replaces-base is present" do
+      let(:credentials) do
+        [{
+          "type" => "maven_repository",
+          "url" => "https://example.com",
+          "replaces-base" => true
+        }]
+      end
+      it "returns that URL instead" do
+        expect(finder.central_repo_url).to eq("https://example.com")
+      end
+    end
+  end
 
   describe "#repository_urls" do
     subject(:repository_urls) { finder.repository_urls(pom: pom) }

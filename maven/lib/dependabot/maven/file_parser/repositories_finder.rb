@@ -15,18 +15,15 @@ module Dependabot
     class FileParser
       class RepositoriesFinder
         require_relative "property_value_finder"
+        require_relative "pom_fetcher"
         # In theory we should check the artifact type and either look in
         # <repositories> or <pluginRepositories>. In practice it's unlikely
         # anyone makes this distinction.
         REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
 
-        # The Central Repository is included in the Super POM, which is
-        # always inherited from.
-        CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
-        SUPER_POM = { url: CENTRAL_REPO_URL, id: "central" }
-
-        def initialize(dependency_files:, credentials: [], evaluate_properties: true)
+        def initialize(pom_fetcher:, dependency_files: [], credentials: [], evaluate_properties: true)
+          @pom_fetcher = pom_fetcher
           @dependency_files = dependency_files
           @credentials = credentials
 
@@ -34,6 +31,11 @@ module Dependabot
           # circular dependency between this class and the PropertyValueFinder
           # class
           @evaluate_properties = evaluate_properties
+        end
+
+        def central_repo_url
+          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred["replaces-base"] == true }
+          base ? base["url"] : "https://repo.maven.apache.org/maven2"
         end
 
         # Collect all repository URLs from this POM and its parents
@@ -52,6 +54,12 @@ module Dependabot
 
         attr_reader :dependency_files
 
+        # The Central Repository is included in the Super POM, which is
+        # always inherited from.
+        def super_pom
+          { url: central_repo_url, id: "central" }
+        end
+
         def gather_repository_urls(pom:, exclude_inherited: false)
           repos_in_pom =
             Nokogiri::XML(pom.content).
@@ -61,11 +69,11 @@ module Dependabot
             select { |entry| entry[:url].start_with?("http") }.
             map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
 
-          return repos_in_pom + [SUPER_POM] if exclude_inherited
+          return repos_in_pom + [super_pom] if exclude_inherited
 
           urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
           unless (parent = parent_pom(pom, urls_in_pom))
-            return repos_in_pom + [SUPER_POM]
+            return repos_in_pom + [super_pom]
           end
 
           repos_in_pom + gather_repository_urls(pom: parent)
@@ -88,73 +96,14 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          return internal_dependency_poms[name] if internal_dependency_poms[name]
+          return @pom_fetcher.internal_dependency_poms[name] if @pom_fetcher.internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 
-          fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
+          urls = urls_from_credentials + repo_urls + [central_repo_url]
+          @pom_fetcher.fetch_remote_parent_pom(group_id, artifact_id, version, urls)
         end
         # rubocop:enable Metrics/PerceivedComplexity
-
-        def internal_dependency_poms
-          return @internal_dependency_poms if @internal_dependency_poms
-
-          @internal_dependency_poms = {}
-          dependency_files.each do |pom|
-            doc = Nokogiri::XML(pom.content)
-            group_id = doc.at_css("project > groupId") ||
-                       doc.at_css("project > parent > groupId")
-            artifact_id = doc.at_css("project > artifactId")
-
-            next unless group_id && artifact_id
-
-            dependency_name = [
-              group_id.content.strip,
-              artifact_id.content.strip
-            ].join(":")
-
-            @internal_dependency_poms[dependency_name] = pom
-          end
-
-          @internal_dependency_poms
-        end
-
-        def fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
-          (urls_from_credentials + repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
-            url = remote_pom_url(group_id, artifact_id, version, base_url)
-
-            @maven_responses ||= {}
-            @maven_responses[url] ||= Dependabot::RegistryClient.get(
-              url: url,
-              # We attempt to find dependencies in private repos before failing over to the CENTRAL_REPO_URL,
-              # but this can burn a lot of a job's time against slow servers due to our `read_timeout` being 20 seconds.
-              #
-              # In order to avoid the overall job timing out, we only make one retry attempt
-              options: { retry_limit: 1 }
-            )
-            next unless @maven_responses[url].status == 200
-            next unless pom?(@maven_responses[url].body)
-
-            dependency_file = DependencyFile.new(
-              name: "remote_pom.xml",
-              content: @maven_responses[url].body
-            )
-
-            return dependency_file
-          rescue Excon::Error::Socket, Excon::Error::Timeout,
-                 Excon::Error::TooManyRedirects, URI::InvalidURIError
-            nil
-          end
-
-          # If a parent POM couldn't be found, return `nil`
-          nil
-        end
-
-        def remote_pom_url(group_id, artifact_id, version, base_repo_url)
-          "#{base_repo_url}/" \
-            "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
-            "#{artifact_id}-#{version}.pom"
-        end
 
         def urls_from_credentials
           @credentials.
@@ -194,15 +143,11 @@ module Dependabot
         # values from parent POMs)
         def property_value_finder
           @property_value_finder ||=
-            PropertyValueFinder.new(dependency_files: dependency_files)
+            PropertyValueFinder.new(dependency_files: dependency_files, credentials: @credentials)
         end
 
         def property_regex
           Maven::FileParser::PROPERTY_REGEX
-        end
-
-        def pom?(content)
-          !Nokogiri::XML(content).at_css("project > artifactId").nil?
         end
       end
     end
