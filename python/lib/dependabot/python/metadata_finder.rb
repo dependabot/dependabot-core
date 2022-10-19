@@ -159,9 +159,9 @@ module Dependabot
         credential_urls =
           credentials.
           select { |cred| cred["type"] == "python_index" }.
-          map { |c| AuthedUrlBuilder.authed_url(credential: c) }
+          map { |c| AuthedUrlBuilder.authed_url(credential: c) unless c.fetch("replaces_base", false) }
 
-        (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
+        (credential_urls + [Helpers.replaced_base_url(credentials) || MAIN_PYPI_URL]).map do |base_url|
           base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
       end

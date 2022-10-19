@@ -269,10 +269,10 @@ module Dependabot
         details = TomlRB.parse(pyproject.content).dig("tool", "poetry")
         return false unless details
 
+        base_url = Helpers.replaced_base_url(credentials) || "https://pypi.org/pypi"
         index_response = Dependabot::RegistryClient.get(
-          url: "https://pypi.org/pypi/#{normalised_name(details['name'])}/json/"
+          url: base_url.gsub(%r{/$}, "") + "/#{normalised_name(details['name'])}/json"
         )
-
         return false unless index_response.status == 200
 
         pypi_info = JSON.parse(index_response.body)["info"] || {}

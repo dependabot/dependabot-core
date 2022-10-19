@@ -72,7 +72,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
-                install_required_python
+                Helpers.install_required_python(python_version)
 
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
@@ -311,15 +311,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
             File.write(file.name, file.content)
           end
-        end
-
-        def install_required_python
-          return if run_command("pyenv versions").include?("\ #{python_version}")
-
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r" \
-                      "#{NativeHelpers.python_requirements_path}")
         end
 
         def sanitized_setup_file_content(file)

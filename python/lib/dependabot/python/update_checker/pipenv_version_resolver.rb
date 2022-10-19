@@ -323,13 +323,7 @@ module Dependabot
             nil
           end
 
-          return if run_command("pyenv versions").include?("\ #{python_version}")
-
-          requirements_path = NativeHelpers.python_requirements_path
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r " \
-                      "#{requirements_path}")
+          Helpers.install_required_python(python_version)
         end
 
         def sanitized_setup_file_content(file)
