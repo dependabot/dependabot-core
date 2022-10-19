@@ -309,7 +309,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies with the same name" do
-          let(:dependencies) { [dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
           it { is_expected.to eq("Bump business") }
         end
 
@@ -699,7 +709,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies with the same name" do
-          let(:dependencies) { [dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
           it { is_expected.to eq("Update requirements for business") }
         end
 
