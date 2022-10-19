@@ -121,10 +121,14 @@ module Dependabot
         end
 
         def run_yarn_berry_updater(path, lockfile_name)
-          Helpers.run_yarn_commands(
-            "yarn up -R #{dependency.name}",
-          )
-          { lockfile_name => File.read(lockfile_name) }
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              Helpers.run_yarn_commands(
+                "yarn up -R #{dependency.name}"
+              )
+              { lockfile_name => File.read(lockfile_name) }
+            end
+          end
         end
 
         def run_npm_updater(path, lockfile_name, lockfile_content)
