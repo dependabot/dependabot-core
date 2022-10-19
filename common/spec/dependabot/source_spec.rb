@@ -256,6 +256,13 @@ RSpec.describe Dependabot::Source do
       its(:directory) { is_expected.to eq("dir") }
     end
 
+    context "with a GitLab changelog link" do
+      let(:url) { "https://gitlab.com/oauth-xx/oauth2/-/tree/v2.0.9/CHANGELOG.md" }
+      its(:provider) { is_expected.to eq("gitlab") }
+      its(:repo) { is_expected.to eq("oauth-xx/oauth2") }
+      its(:directory) { is_expected.to be_nil }
+    end
+
     context "with a GitLab subgroup URL" do
       let(:url) { "https://gitlab.com/org/group/abc/blob/master/dir/readme.md" }
       its(:provider) { is_expected.to eq("gitlab") }
