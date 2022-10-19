@@ -59,13 +59,24 @@ module Dependabot
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
           path = Pathname.new(lockfile.name).dirname.to_s
 
-          updated_files = if lockfile.name.end_with?("yarn.lock")
+          updated_files = if lockfile.name.end_with?("yarn.lock") && yarn_berry?(lockfile)
+                            run_yarn_berry_updater(path, lockfile_name)
+                          elsif lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
                           else
                             run_npm_updater(path, lockfile_name, lockfile.content)
                           end
 
           updated_files.fetch(lockfile_name)
+        end
+
+        def yarn_berry?(yarn_lock)
+          return false unless Experiments.enabled?(:yarn_berry)
+
+          yaml = YAML.safe_load(yarn_lock.content)
+          yaml.key?("__metadata")
+        rescue StandardError
+          false
         end
 
         def version_from_updated_lockfiles(updated_lockfiles)
@@ -107,6 +118,13 @@ module Dependabot
           raise if retry_count > 2
 
           sleep(rand(3.0..10.0)) && retry
+        end
+
+        def run_yarn_berry_updater(path, lockfile_name)
+          Helpers.run_yarn_commands(
+            "yarn up -R #{dependency.name}",
+          )
+          { lockfile_name => File.read(lockfile_name) }
         end
 
         def run_npm_updater(path, lockfile_name, lockfile_content)
