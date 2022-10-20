@@ -57,7 +57,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     )
   end
   let(:requirements_fixture_name) { "version_specified.txt" }
-  let(:dependency) do
+  let(:requirements_dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
       version: dependency_version,
@@ -75,6 +75,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       source: nil
     }]
   end
+
+  let(:dependency) { requirements_dependency }
 
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
@@ -507,44 +509,56 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       let(:dependency_files) { [requirements_file, pyproject] }
       let(:pyproject_fixture_name) { "caret_version.toml" }
 
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "requests",
-          version: "1.2.3",
-          requirements: [{
-            file: "pyproject.toml",
-            requirement: "^1.0.0",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "pip"
-        )
-      end
-
-      let(:pypi_url) { "https://pypi.org/simple/requests/" }
-      let(:pypi_response) do
-        fixture("pypi", "pypi_simple_response_requests.html")
-      end
-
-      context "for a library" do
-        before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-            to_return(
-              status: 200,
-              body: fixture("pypi", "pypi_response_pendulum.json")
-            )
+      context "and updating a dependency inside" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: "1.2.3",
+            requirements: [{
+              file: "pyproject.toml",
+              requirement: "^1.0.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
         end
 
-        its([:requirement]) { is_expected.to eq(">=1,<3") }
-      end
-
-      context "for a non-library" do
-        before do
-          stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
-            to_return(status: 404)
+        let(:pypi_url) { "https://pypi.org/simple/requests/" }
+        let(:pypi_response) do
+          fixture("pypi", "pypi_simple_response_requests.html")
         end
 
-        its([:requirement]) { is_expected.to eq("^2.19.1") }
+        context "for a library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
+              to_return(
+                status: 200,
+                body: fixture("pypi", "pypi_response_pendulum.json")
+              )
+          end
+
+          its([:requirement]) { is_expected.to eq(">=1,<3") }
+        end
+
+        context "for a non-library" do
+          before do
+            stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
+              to_return(status: 404)
+          end
+
+          its([:requirement]) { is_expected.to eq("^2.19.1") }
+        end
+      end
+
+      context "and updating a dependency in an additional requirements file" do
+        let(:dependency_files) { super().append(requirements_file) }
+
+        let(:dependency) { requirements_dependency }
+
+        it "does not get affected by whether it's a library or not and updates using the :increase strategy" do
+          expect(subject[:requirement]).to eq("==2.6.0")
+        end
       end
     end
 

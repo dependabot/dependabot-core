@@ -89,7 +89,7 @@ module Dependabot
 
       def updated_requirements
         RequirementsUpdater.new(
-          requirements: dependency.requirements,
+          requirements: requirements,
           latest_resolvable_version: preferred_resolvable_version&.to_s,
           update_strategy: requirements_update_strategy,
           has_lockfile: !(pipfile_lock || poetry_lock || pyproject_lock).nil?
@@ -133,8 +133,7 @@ module Dependabot
       end
 
       def resolver_type
-        reqs = dependency.requirements
-        req_files = reqs.map { |r| r.fetch(:file) }
+        reqs = requirements
 
         # If there are no requirements then this is a sub-dependency. It
         # must come from one of Pipenv, Poetry or pip-tools, and can't come
@@ -143,9 +142,9 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipenv if req_files.any?("Pipfile")
-        return :poetry if req_files.any?("pyproject.toml")
-        return :pip_compile if req_files.any? { |f| f.end_with?(".in") }
+        return :pipenv if updating_pipfile?
+        return :poetry if updating_pyproject?
+        return :pip_compile if updating_in_file?
 
         if dependency.version && !exact_requirement?(reqs)
           subdependency_resolver
@@ -202,16 +201,14 @@ module Dependabot
       end
 
       def current_requirement_string
-        reqs = dependency.requirements
+        reqs = requirements
         return if reqs.none?
 
-        requirement =
-          case resolver_type
-          when :pipenv then reqs.find { |r| r[:file] == "Pipfile" }
-          when :poetry then reqs.find { |r| r[:file] == "pyproject.toml" }
-          when :pip_compile then reqs.find { |r| r[:file].end_with?(".in") }
-          when :requirements then reqs.find { |r| r[:file].end_with?(".txt") }
-          end
+        requirement = reqs.find do |r|
+          file = r[:file]
+
+          file == "Pipfile" || file == "pyproject.toml" || file.end_with?(".in") || file.end_with?(".txt")
+        end
 
         requirement&.fetch(:requirement)
       end
@@ -236,7 +233,7 @@ module Dependabot
         return ">= #{dependency.version}" if dependency.version
 
         version_for_requirement =
-          dependency.requirements.filter_map { |r| r[:requirement] }.
+          requirements.filter_map { |r| r[:requirement] }.
           reject { |req_string| req_string.start_with?("<") }.
           select { |req_string| req_string.match?(VERSION_REGEX) }.
           map { |req_string| req_string.match(VERSION_REGEX) }.
@@ -262,7 +259,7 @@ module Dependabot
       end
 
       def poetry_library?
-        return false unless pyproject
+        return false unless updating_pyproject?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
@@ -281,6 +278,26 @@ module Dependabot
         false
       rescue URI::InvalidURIError
         false
+      end
+
+      def updating_pipfile?
+        requirement_files.any?("Pipfile")
+      end
+
+      def updating_pyproject?
+        requirement_files.any?("pyproject.toml")
+      end
+
+      def updating_in_file?
+        requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def requirement_files
+        requirements.map { |r| r.fetch(:file) }
+      end
+
+      def requirements
+        dependency.requirements
       end
 
       def normalised_name(name)
