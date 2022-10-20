@@ -243,6 +243,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
+      context "and the latest version being also a branch" do
+        let(:upload_pack_fixture) { "msbuild" }
+
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.3")) }
+      end
+
       context "that is a major-only tag of the the latest version" do
         let(:reference) { "v1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1")) }
