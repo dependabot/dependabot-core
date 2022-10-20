@@ -7,7 +7,7 @@ dependencies:
   yaml: ^3.1.1
   args: ^2.3.1
   collection: ^1.16.0
-  pub_semver: ^2.1.1
+  pub_semver: ^2.1.2
   http: ^0.13.5
   pub:
     git:
