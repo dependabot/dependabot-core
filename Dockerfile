@@ -203,6 +203,7 @@ RUN cd /tmp \
   && rm go-${TARGETARCH}.tar.gz
 
 
+
 ### ELIXIR
 
 # Install Erlang, Elixir and Hex
@@ -303,6 +304,9 @@ RUN bash /opt/terraform/helpers/build
 ENV PATH="$PATH:/opt/terraform/bin:/opt/python/bin:/opt/go_modules/bin"
 
 ENV HOME="/home/dependabot"
+
+ENV PATH="/home/dependabot/go/bin:$PATH"
+RUN go install golang.org/x/vuln/cmd/govulncheck@latest
 
 WORKDIR ${HOME}
 

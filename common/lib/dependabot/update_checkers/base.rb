@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "json"
+ "json"
 require "dependabot/utils"
 require "dependabot/security_advisory"
 

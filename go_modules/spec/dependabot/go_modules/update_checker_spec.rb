@@ -15,12 +15,13 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       dependency_files: dependency_files,
       credentials: github_credentials,
       security_advisories: security_advisories,
+      repo_contents_path: repo_contents_path,
       ignored_versions: []
     )
   end
 
   let(:security_advisories) { [] }
-
+  let(:repo_contents_path) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -137,6 +138,50 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
 
       it "raises an error " do
         expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
+          expect(error.message).to eq("Dependency not vulnerable!")
+        end
+      end
+    end
+
+    context "when the current version is vulnerable and a vulnerable function was called" do
+      let(:dependency_name) { "github.com/theupdateframework/go-tuf" }
+      let(:dependency_version) { "0.3.1" }
+      let(:project_name) { "vulnerable_function_called" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 0.3.2"]
+          )
+        ]
+      end
+
+      it "updates the vulnerable dependency" do
+        is_expected.to eq(Dependabot::GoModules::Version.new("0.3.2"))
+      end
+    end
+
+    context "when the current version is vulnerable but no vulnerable function call was found" do
+      let(:dependency_name) { "github.com/theupdateframework/go-tuf" }
+      let(:dependency_version) { "0.3.1" }
+      let(:project_name) { "vulnerable_function_not_called" }
+      let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "go_modules",
+            vulnerable_versions: ["< 0.3.2"]
+          )
+        ]
+      end
+
+      it "raises an error " do
+        expect { lowest_resolvable_security_fix_version }.to raise_error(RuntimeError) do |error|
           expect(error.message).to eq("Dependency not vulnerable!")
         end
       end

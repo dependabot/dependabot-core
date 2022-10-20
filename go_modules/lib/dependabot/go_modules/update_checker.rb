@@ -61,6 +61,30 @@ module Dependabot
         end
       end
 
+      def vulnerable?
+        return super unless repo_contents_path
+
+        # If we're not on a vulnerable range, let's not bother checking
+        return false unless super
+
+        directory = dependency_files.first.directory
+        SharedHelpers.in_a_temporary_repo_directory(directory, repo_contents_path) do
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            command = SharedHelpers.escape_command("govulncheck --json ./...")
+            stdout, _, status = Open3.capture3(environment, command)
+            # Fall back to original behavior
+            return super unless status.success?
+
+            res = JSON.parse(stdout) || {}
+
+            # Considering us vulnerable if govulncheck finds any vulns that come
+            # from the package in question. This should be improved by filtering
+            # down to the right CVE, but this get's us going for now.
+            res["Vulns"]&.any? { |v| v["ModPath"] == dependency.name }
+          end
+        end
+      end
+
       private
 
       def latest_version_finder
@@ -83,6 +107,10 @@ module Dependabot
 
       def updated_dependencies_after_full_unlock
         raise NotImplementedError
+      end
+
+      def environment
+        { "GOPRIVATE" => @goprivate }
       end
 
       # Override the base class's check for whether this is a git dependency,
