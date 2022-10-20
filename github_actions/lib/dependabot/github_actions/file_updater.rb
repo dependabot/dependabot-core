@@ -65,16 +65,34 @@ module Dependabot
             gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
 
           # Replace the old declaration that's preceded by a non-word character
-          # and followed by a whitespace character (comments) or EOL
+          # and followed by a whitespace character (comments) or EOL.
+          # If the declaration is followed by a comment, attempt to update
+          # any version comments associated with SHA source refs.
           updated_content =
             updated_content.
             gsub(
-              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?=\s|"|'|$)/,
-              new_declaration
-            )
+              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?<comment>\s+#.*)?(?=\s|"|'|$)/
+            ) do |match|
+              comment = Regexp.last_match(:comment)
+              match.gsub!(old_declaration, new_declaration)
+              if comment && (updated_comment = updated_version_comment(comment, new_req))
+                match.gsub!(comment, updated_comment)
+              end
+              match
+            end
         end
 
         updated_content
+      end
+
+      def updated_version_comment(comment, new_req)
+        raise "No comment!" unless comment
+        return unless dependency.previous_version && dependency.version
+
+        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
+        return unless git_checker.ref_looks_like_commit_sha?(new_req.fetch(:source).fetch(:ref))
+
+        comment.gsub(dependency.previous_version, dependency.version)
       end
     end
   end

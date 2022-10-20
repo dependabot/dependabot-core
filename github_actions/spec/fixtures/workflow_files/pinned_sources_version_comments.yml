@@ -1,0 +1,17 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # 2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # @v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # pin @v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # tag=v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81  #   v2.1.0
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0
+    - uses: actions/checkout@01aecc # v2.1.0
+  integration:
+    - uses: actions/checkout@v2.1.0 # comments that include the version (v2.1.0) shouldn't be updated for non-SHA refs
+    - uses: actions/checkout@01aecc#v2.1.0 # this shouldn't be updated, because the version is part of the ref, not a comment.
