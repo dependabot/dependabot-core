@@ -259,7 +259,7 @@ module Dependabot
       end
 
       def poetry_library?
-        return false unless pyproject
+        return false unless updating_pyproject?
 
         # Hit PyPi and check whether there are details for a library with a
         # matching name and description
