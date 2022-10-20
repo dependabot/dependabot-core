@@ -158,10 +158,10 @@ module Dependabot
       def possible_listing_urls
         credential_urls =
           credentials.
-          select { |cred| cred["type"] == "python_index" }.
-          map { |c| AuthedUrlBuilder.authed_url(credential: c) unless c.fetch("replaces_base", false) }
-
-        (credential_urls + [Helpers.replaced_base_url(credentials) || MAIN_PYPI_URL]).map do |base_url|
+          select { |cred| cred["type"] == "python_index" && !cred.fetch("replaces-base") }.
+          map { |c| AuthedUrlBuilder.authed_url(credential: c) }
+        main_url = Helpers.replaced_base_url(credentials) || MAIN_PYPI_URL
+        (credential_urls + [main_url]).map do |base_url|
           base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
       end

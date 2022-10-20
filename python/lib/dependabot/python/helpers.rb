@@ -3,10 +3,10 @@
 module Dependabot
   module Python
     module Helpers
-
       def self.replaced_base_url(credentials)
-        credentials.
-        select { |cred| cred["type"] == "python_index" && cred.fetch("replaces_base", false)}
+        replaces_base = credentials.
+                        find { |cred| cred["type"] == "python_index" && cred.fetch("replaces-base", false) }
+        AuthedUrlBuilder.authed_url(credential: replaces_base)
       end
 
       def self.install_required_python(python_version)
@@ -15,7 +15,7 @@ module Dependabot
         SharedHelpers.run_shell_command("pyenv install -s #{python_version}")
         SharedHelpers.run_shell_command("pyenv exec pip install --upgrade pip")
         SharedHelpers.run_shell_command("pyenv exec pip install -r" \
-                    "#{NativeHelpers.python_requirements_path}")
+                                        "#{NativeHelpers.python_requirements_path}")
       end
     end
   end

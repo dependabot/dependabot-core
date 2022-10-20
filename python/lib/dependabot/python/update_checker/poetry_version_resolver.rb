@@ -82,7 +82,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
@@ -116,7 +115,6 @@ module Dependabot
               end
             end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
