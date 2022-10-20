@@ -31,6 +31,9 @@ module Dependabot
           # circular dependency between this class and the PropertyValueFinder
           # class
           @evaluate_properties = evaluate_properties
+          # Aggregates URLs seen in POMs to avoid short term memory loss.
+          # For instance a repository in a child POM might apply to the parent too.
+          @known_urls = []
         end
 
         def central_repo_url
@@ -42,12 +45,17 @@ module Dependabot
         def repository_urls(pom:, exclude_inherited: false)
           entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
           ids = Set.new
-          urls_from_credentials + entries.map do |entry|
+          @known_urls += entries.map do |entry|
             next if entry[:id] && ids.include?(entry[:id])
 
             ids.add(entry[:id]) unless entry[:id].nil?
-            entry[:url]
-          end.uniq.compact
+            entry
+          end
+          @known_urls = @known_urls.uniq.compact
+
+          urls = urls_from_credentials + @known_urls.map { |entry| entry[:url] }
+          urls += [central_repo_url] unless @known_urls.any? { |entry| entry[:id] == super_pom[:id] }
+          urls.uniq
         end
 
         private
@@ -69,11 +77,11 @@ module Dependabot
             select { |entry| entry[:url].start_with?("http") }.
             map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
 
-          return repos_in_pom + [super_pom] if exclude_inherited
+          return repos_in_pom if exclude_inherited
 
           urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
           unless (parent = parent_pom(pom, urls_in_pom))
-            return repos_in_pom + [super_pom]
+            return repos_in_pom
           end
 
           repos_in_pom + gather_repository_urls(pom: parent)
