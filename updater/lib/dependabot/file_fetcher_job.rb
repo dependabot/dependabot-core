@@ -10,9 +10,9 @@ module Dependabot
     def perform_job
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
+        clone_repo_contents
         base_commit_sha
         dependency_files
-        clone_repo_contents
       rescue StandardError => e
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
           remaining = rate_limit_error_remaining(e)
@@ -94,12 +94,14 @@ module Dependabot
     end
 
     def file_fetcher
+      return @file_fetcher if defined? @file_fetcher
+
       args = {
         source: job.source,
         credentials: job_definition.fetch("credentials", []),
         options: job.experiments
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone?
+      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || job.already_cloned?
       @file_fetcher ||=
         Dependabot::FileFetchers.for_package_manager(job.package_manager).
         new(**args)
