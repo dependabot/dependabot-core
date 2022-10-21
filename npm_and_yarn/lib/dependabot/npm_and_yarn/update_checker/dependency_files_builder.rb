@@ -16,8 +16,12 @@ module Dependabot
         def write_temporary_dependency_files
           write_lock_files
 
-          File.write(".npmrc", npmrc_content)
-          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          if yarn_berry?(yarn_locks.first)
+            File.write(".yarnrc.yml", yarnrc_yml_content)
+          else
+            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_locks.first)
+            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          end
 
           package_files.each do |file|
             path = file.name
@@ -112,11 +116,29 @@ module Dependabot
           dependency_files.find { |f| f.name == ".yarnrc" }
         end
 
+
         def yarnrc_content
           NpmAndYarn::FileUpdater::NpmrcBuilder.new(
             credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content
+        end
+
+        def yarn_berry?(yarn_lock)
+          return false unless Experiments.enabled?(:yarn_berry)
+
+          yaml = YAML.safe_load(yarn_lock.content)
+          yaml.key?("__metadata")
+        rescue StandardError
+          false
+        end
+
+        def yarnrc_yml_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+        end
+
+        def yarnrc_yml_content
+          yarnrc_yml_file.content
         end
       end
     end

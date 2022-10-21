@@ -339,8 +339,12 @@ module Dependabot
         def write_temporary_dependency_files(update_package_json: true)
           write_lockfiles
 
-          File.write(".npmrc", npmrc_content)
-          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          if yarn_berry?(yarn_lock)
+            File.write(".yarnrc.yml", yarnrc_yml_content)
+          else
+            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_lock)
+            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          end
 
           package_files.each do |file|
             path = file.name
@@ -549,6 +553,10 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content
+        end
+
+        def yarnrc_yml_content
+          yarnrc_yml_file.content
         end
 
         def sanitized_package_json_content(content)

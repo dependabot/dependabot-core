@@ -46,10 +46,7 @@ module Dependabot
               build_yarnrc_content_from_lockfile
             end
 
-          return initial_content || "" unless registry_credentials.any?
-
-          # We still want to write out the credentials to the npmrc file if we can't build a .yarnrc
-          ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
+          return initial_content || ""
         end
 
         private
@@ -200,9 +197,9 @@ module Dependabot
             match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
             named_captures&.fetch("registry")
 
-          return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
+          return "registry \"#{yarnrc_global_registry}\"\n" if yarnrc_global_registry
 
-          build_npmrc_content_from_lockfile
+          build_yarnrc_content_from_lockfile
         end
 
         def credential_lines_for_npmrc
