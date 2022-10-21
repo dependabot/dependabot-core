@@ -126,15 +126,6 @@ module Dependabot
             "https://api.nuget.org/v3-flatcontainer/" \
             "#{dependency.name.downcase}/#{dependency.version}/" \
             "#{dependency.name.downcase}.nuspec"
-        elsif source&.key?(:nuspec_url)
-          source.fetch("nuspec_url") ||
-            "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
-        else
-          "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
         end
       end
 
