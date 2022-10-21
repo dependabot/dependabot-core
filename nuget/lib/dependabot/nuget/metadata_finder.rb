@@ -122,10 +122,7 @@ module Dependabot
                  find { |r| r&.fetch(:source) }&.fetch(:source)
 
         if source&.key?(:nuspec_url)
-          source.fetch(:nuspec_url) ||
-            "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
+          source.fetch(:nuspec_url)
         end
       end
 
