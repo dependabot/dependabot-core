@@ -3,6 +3,7 @@
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/experiments"
 require "dependabot/file_parsers/base/dependency_set"
 require "dependabot/python/file_parser"
 require "dependabot/python/requirement"
@@ -35,10 +36,14 @@ module Dependabot
 
         attr_reader :dependency_files
 
+        def pep621_enabled?
+          Experiments.enabled?(:pep621)
+        end
+
         def pyproject_dependencies
           if using_poetry?
             poetry_dependencies
-          else
+          elsif pep621_enabled?
             pep621_dependencies
           end
         end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "dependabot/experiments"
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -68,8 +69,14 @@ module Dependabot
         [pipfile, pipfile_lock].compact
       end
 
+      def pep621_enabled?
+        Experiments.enabled?(:pep621)
+      end
+
       def pyproject_files
-        [pyproject, pyproject_lock, poetry_lock, pdm_lock].compact
+        supported = [pyproject, pyproject_lock, poetry_lock]
+        supported += [pdm_lock] if pep621_enabled?
+        supported.compact
       end
 
       def requirement_files

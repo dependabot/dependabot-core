@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "dependabot/experiments"
 require "dependabot/dependency_file"
 require "dependabot/python/file_parser/pyproject_files_parser"
 
@@ -231,6 +232,10 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   end
 
   describe "parse standard python files" do
+    before do
+      Dependabot::Experiments.register(:pep621, true)
+    end
+
     let(:pyproject_fixture_name) { "standard_python.toml" }
 
     subject(:dependencies) { parser.dependency_set.dependencies }

@@ -378,6 +378,8 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
 
       before do
+        Dependabot::Experiments.register(:pep621, true)
+
         stub_request(:get, url + "pyproject.toml?ref=sha").
           with(headers: { "Authorization" => "token token" }).
           to_return(

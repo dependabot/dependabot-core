@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "toml-rb"
+require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
@@ -46,6 +47,10 @@ module Dependabot
 
       private
 
+      def pep621_enabled?
+        Experiments.enabled?(:pep621)
+      end
+
       # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependencies.flat_map(&:requirements)
@@ -66,7 +71,10 @@ module Dependabot
         if changed_req_files.any?("pyproject.toml")
           return :poetry if poetry_based?
 
-          return :requirements
+          return :requirements if pep621_enabled?
+
+          # poetry was the default before PEP621 was supported
+          :poetry
         end
 
         return :pip_compile if changed_req_files.any? { |f| f.end_with?(".in") }

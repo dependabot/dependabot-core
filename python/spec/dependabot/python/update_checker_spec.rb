@@ -323,6 +323,10 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
 
       context "including pep621 dependencies" do
+        before do
+          Dependabot::Experiments.register(:pep621, true)
+        end
+
         let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
 
         it "delegates to PoetryVersionResolver" do
@@ -592,6 +596,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
     end
 
     context "when there is a pyproject.toml file with standard python dependencies" do
+      before do
+        Dependabot::Experiments.register(:pep621, true)
+      end
       let(:dependency_files) { [pyproject] }
       let(:pyproject_fixture_name) { "standard_python_tilde_version.toml" }
 

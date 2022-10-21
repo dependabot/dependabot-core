@@ -4,6 +4,7 @@ require "excon"
 require "toml-rb"
 
 require "dependabot/dependency"
+require "dependabot/experiments"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/registry_client"
@@ -161,10 +162,17 @@ module Dependabot
         raise "Claimed to be a sub-dependency, but no lockfile exists!"
       end
 
+      def pep621_enabled?
+        Experiments.enabled?(:pep621)
+      end
+
       def pyproject_resolver
         return :poetry if poetry_based?
 
-        :requirements
+        return :requirements if pep621_enabled?
+
+        # poetry was the default before PEP621 was supported
+        :poetry
       end
 
       def exact_requirement?(reqs)
