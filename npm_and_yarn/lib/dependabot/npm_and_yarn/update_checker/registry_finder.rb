@@ -65,8 +65,10 @@ module Dependabot
         def first_registry_with_dependency_details
           @first_registry_with_dependency_details ||=
             known_registries.find do |details|
+              url = "#{details['registry'].gsub(%r{/+$}, '')}/#{escaped_dependency_name}"
+              url = "https://#{url}" unless url.start_with?("http")
               response = Dependabot::RegistryClient.get(
-                url: "https://#{details['registry'].gsub(%r{/+$}, '')}/#{escaped_dependency_name}",
+                url: url,
                 headers: auth_header_for(details["token"])
               )
               response.status < 400 && JSON.parse(response.body)
@@ -80,6 +82,8 @@ module Dependabot
         end
 
         def registry_url
+          return registry if registry.start_with?("http")
+
           protocol =
             if registry_source_url
               registry_source_url.split("://").first
@@ -202,23 +206,36 @@ module Dependabot
           end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def global_registry
+          return @global_registry if defined? @global_registry
+
           npmrc_file&.content.to_s.scan(NPM_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            return Regexp.last_match[:registry].strip
+            return @global_registry = Regexp.last_match[:registry].strip
           end
 
           yarnrc_file&.content.to_s.scan(YARN_GLOBAL_REGISTRY_REGEX) do
             next if Regexp.last_match[:registry].include?("${")
 
-            return Regexp.last_match[:registry].strip
+            return @global_registry = Regexp.last_match[:registry].strip
           end
 
-          return parsed_yarnrc_yml["npmRegistryServer"] if parsed_yarnrc_yml&.key?("npmRegistryServer")
+          if parsed_yarnrc_yml&.key?("npmRegistryServer")
+            return @global_registry = parsed_yarnrc_yml["npmRegistryServer"]
+          end
+
+          replaces_base = credentials.find { |cred| cred["type"] == "npm_registry" && cred["replaces-base"] == true }
+          if replaces_base
+            registry = replaces_base["registry"]
+            registry = "https://#{registry}" unless registry.start_with?("http")
+            return @global_registry = registry
+          end
 
           "https://registry.npmjs.org"
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def scoped_registry(scope)
           npmrc_file&.content.to_s.scan(NPM_SCOPED_REGISTRY_REGEX) do
