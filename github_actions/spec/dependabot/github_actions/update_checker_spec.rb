@@ -243,6 +243,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
+      context "and the latest version being also a branch" do
+        let(:upload_pack_fixture) { "msbuild" }
+
+        it { is_expected.to eq(Dependabot::GithubActions::Version.new("1.1.3")) }
+      end
+
       context "that is a major-only tag of the the latest version" do
         let(:reference) { "v1" }
         it { is_expected.to eq(Dependabot::GithubActions::Version.new("v1")) }
@@ -297,8 +303,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1" }
         let(:latest_versions) { ["2.1", "2.1.0"] }
 
-        it "chooses the closest precision version" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        it "does not choose a version with different precision" do
+          expect(subject).to be_nil
         end
       end
 
@@ -306,8 +312,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1.0" }
         let(:latest_versions) { ["2", "2.1.0"] }
 
-        it "choses the lower precision version when equidistant" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("2"))
+        it "does not choose a version with different precision" do
+          expect(subject).to be_nil
         end
       end
 
@@ -315,17 +321,17 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         let(:reference) { "v1.0.0" }
         let(:latest_versions) { ["2", "2.1"] }
 
-        it "chooses the closest precision version" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        it "does not choose a version with different precision" do
+          expect(subject).to be_nil
         end
       end
 
-      context "when a lower version is tagged to the same commit" do
+      context "using the full version" do
         let(:reference) { "v1.0.0" }
         let(:latest_versions) { ["1.0.5", "2", "2.1"] }
 
-        it "chooses the closest precision of the latest version" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("2.1"))
+        it "chooses a higher version with the same precision" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("1.0.5"))
         end
       end
     end

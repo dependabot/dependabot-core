@@ -138,7 +138,7 @@ module Dependabot
       def property_value_finder
         @property_value_finder ||=
           Maven::FileParser::PropertyValueFinder.
-          new(dependency_files: dependency_files)
+          new(dependency_files: dependency_files, credentials: credentials)
       end
 
       def version_comes_from_multi_dependency_property?

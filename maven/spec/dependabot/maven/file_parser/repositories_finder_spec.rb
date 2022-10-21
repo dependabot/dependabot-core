@@ -3,10 +3,12 @@
 require "spec_helper"
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/file_parser/pom_fetcher"
 
 RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
   let(:finder) do
     described_class.new(
+      pom_fetcher: pom_fetcher,
       dependency_files: dependency_files,
       credentials: credentials
     )
@@ -19,6 +21,7 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
       content: fixture("poms", base_pom_fixture_name)
     )
   end
+  let(:pom_fetcher) { Dependabot::Maven::FileParser::PomFetcher.new(dependency_files: dependency_files) }
   let(:base_pom_fixture_name) { "basic_pom.xml" }
 
   describe "#central_repo_url" do
@@ -58,6 +61,45 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
             http://repository.jboss.org/maven2
             http://plugin-repository.jboss.org/maven2
             https://repo.maven.apache.org/maven2
+          )
+        )
+      end
+
+      it "remembers what it's seen" do
+        custom_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "custom_repositories_pom.xml")
+        )
+        expect(finder.repository_urls(pom: custom_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://repo.maven.apache.org/maven2
+          )
+        )
+        base_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "basic_pom.xml")
+        )
+        expect(finder.repository_urls(pom: base_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://repo.maven.apache.org/maven2
+          )
+        )
+        overwrite_central_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "overwrite_central_pom.xml")
+        )
+        expect(finder.repository_urls(pom: overwrite_central_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://example.com
           )
         )
       end
