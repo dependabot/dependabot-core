@@ -28,8 +28,8 @@ If you believe you have found a security vulnerability in Dependabot please subm
 ## What's in this repo?
 
 Dependabot Core is a collection of packages for automating dependency updating
-in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
-.NET. It can also update git submodules, Docker files, and Terraform files.
+in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java, .NET and 
+Cocoapods. It can also update git submodules, Docker files, and Terraform files.
 Highlights include:
 
 - Logic to check for the latest version of a dependency *that's resolvable given

@@ -1,0 +1,29 @@
+PODS:
+  - Alamofire (4.9.1)
+  - Nimble (2.0.0)
+
+DEPENDENCIES:
+  - Alamofire (from `https://github.com/Alamofire/Alamofire.git`, branch `hotfix`)
+  - Nimble (~> 2.0.0)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - Nimble
+
+EXTERNAL SOURCES:
+  Alamofire:
+    :branch: hotfix
+    :git: https://github.com/Alamofire/Alamofire.git
+
+CHECKOUT OPTIONS:
+  Alamofire:
+    :commit: 747c8db8d57b68d5e35275f10c92d55f982adbd4
+    :git: https://github.com/Alamofire/Alamofire.git
+
+SPEC CHECKSUMS:
+  Alamofire: 06ca7705f7e5b3613b5d2fa65efb3910cab34d75
+  Nimble: 472e75466819eb8c06299233e87c694a9b51328a
+
+PODFILE CHECKSUM: 86a82c05bb090cda9eef254deb5fe62fa2e662fe
+
+COCOAPODS: 1.2.1

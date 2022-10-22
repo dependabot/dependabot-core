@@ -33,6 +33,7 @@
 # - docker
 # - terraform
 # - pub
+# - cocoapods
 
 # rubocop:disable Style/GlobalVars
 
@@ -48,6 +49,7 @@ end
 
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
+$LOAD_PATH << "./cocoapods/lib"
 $LOAD_PATH << "./common/lib"
 $LOAD_PATH << "./composer/lib"
 $LOAD_PATH << "./docker/lib"
@@ -87,6 +89,7 @@ require "dependabot/config/file_fetcher"
 require "dependabot/bundler"
 require "dependabot/cargo"
 require "dependabot/composer"
+require "dependabot/cocoapods"
 require "dependabot/docker"
 require "dependabot/elm"
 require "dependabot/git_submodules"

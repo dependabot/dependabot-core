@@ -20,6 +20,7 @@ jobs:
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0 }
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1 }
           - { path: cargo, name: cargo }
+          - { path: cocoapods, name: cocoapods }
           - { path: common, name: common }
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0 }
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1 }

@@ -19,6 +19,7 @@ COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/
 
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
+COPY --chown=dependabot:dependabot cocoapods/Gemfile cocoapods/dependabot-cocoapods.gemspec ${CODE_DIR}/cocoapods/
 COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
 COPY --chown=dependabot:dependabot docker/Gemfile docker/dependabot-docker.gemspec ${CODE_DIR}/docker/
 COPY --chown=dependabot:dependabot elm/Gemfile elm/dependabot-elm.gemspec ${CODE_DIR}/elm/
