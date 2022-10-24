@@ -62,7 +62,7 @@ module Dependabot
     def pinned_ref_looks_like_version?
       return false unless pinned?
 
-      dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
+      version_tag?(dependency_source_details.fetch(:ref))
     end
 
     def pinned_ref_looks_like_commit_sha?
