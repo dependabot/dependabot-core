@@ -61,7 +61,9 @@ module Dependabot
           install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
             updated_files << file
           end
-          updated_files << pnp_updater.updated_vendor_cache_files(base_directory: base_dir).find { |file| file.name==".pnp.cjs"}
+          pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+            updated_files << file if file.name == ".pnp.cjs"
+          end
         end
 
         updated_files
