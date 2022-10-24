@@ -69,6 +69,7 @@ module Dependabot
       end
 
       def commit
+        return cloned_commit if cloned_commit
         return source.commit if source.commit
 
         branch = target_branch || default_branch_for_repo
@@ -472,6 +473,16 @@ module Dependabot
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
+
+      def cloned_commit
+        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
+
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          Dir.chdir(repo_contents_path) do
+            return SharedHelpers.run_shell_command("git rev-parse HEAD")&.strip
+          end
+        end
+      end
 
       def default_branch_for_repo
         @default_branch_for_repo ||= client_for_provider.
