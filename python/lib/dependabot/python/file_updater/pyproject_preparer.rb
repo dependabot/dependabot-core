@@ -52,7 +52,7 @@ module Dependabot
           poetry_object = pyproject_object["tool"]["poetry"]
           excluded_names = dependencies.map(&:name) + ["python"]
 
-          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |key|
             next unless poetry_object[key]
 
             source_types = %w(directory file url)

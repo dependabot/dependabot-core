@@ -2,9 +2,9 @@
 
 require "spec_helper"
 require "dependabot/dependency_file"
-require "dependabot/python/file_parser/poetry_files_parser"
+require "dependabot/python/file_parser/pyproject_files_parser"
 
-RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
+RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
   let(:parser) { described_class.new(dependency_files: files) }
 
   let(:files) { [pyproject] }
@@ -17,9 +17,10 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
   let(:pyproject_body) do
     fixture("pyproject_files", pyproject_fixture_name)
   end
-  let(:pyproject_fixture_name) { "pyproject.toml" }
 
-  describe "parse" do
+  describe "parse poetry files" do
+    let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
+
     subject(:dependencies) { parser.dependency_set.dependencies }
 
     context "without a lockfile" do
@@ -102,17 +103,17 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
     end
 
     context "with a lockfile" do
-      let(:files) { [pyproject, pyproject_lock] }
-      let(:pyproject_lock) do
+      let(:files) { [pyproject, poetry_lock] }
+      let(:poetry_lock) do
         Dependabot::DependencyFile.new(
-          name: "pyproject.lock",
+          name: "poetry.lock",
           content: pyproject_lock_body
         )
       end
       let(:pyproject_lock_body) do
         fixture("pyproject_locks", pyproject_lock_fixture_name)
       end
-      let(:pyproject_lock_fixture_name) { "pyproject.lock" }
+      let(:pyproject_lock_fixture_name) { "poetry.lock" }
 
       its(:length) { is_expected.to eq(36) }
 
@@ -120,11 +121,11 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
         expect(dependencies.map(&:name)).to_not include("python")
       end
 
-      context "that is called poetry.lock" do
-        let(:files) { [pyproject, poetry_lock] }
-        let(:poetry_lock) do
+      context "that is called pyproject.lock (legacy name)" do
+        let(:files) { [pyproject, pyproject_lock] }
+        let(:pyproject_lock) do
           Dependabot::DependencyFile.new(
-            name: "poetry.lock",
+            name: "pyproject.lock",
             content: pyproject_lock_body
           )
         end
@@ -226,6 +227,77 @@ RSpec.describe Dependabot::Python::FileParser::PoetryFilesParser do
           expect(dependency.requirements).to eq([])
         end
       end
+    end
+  end
+
+  describe "parse standard python files" do
+    let(:pyproject_fixture_name) { "standard_python.toml" }
+
+    subject(:dependencies) { parser.dependency_set.dependencies }
+
+    its(:length) { is_expected.to eq(1) }
+
+    context "with a string declaration" do
+      subject(:dependency) { dependencies.first }
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("ansys-templates")
+        expect(dependency.version).to eq("0.3.0")
+        expect(dependency.requirements).to eq(
+          [{
+            requirement: "==0.3.0",
+            file: "pyproject.toml",
+            groups: [nil],
+            source: nil
+          }]
+        )
+      end
+    end
+
+    context "without dependencies" do
+      let(:pyproject_fixture_name) { "no_dependencies.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with dependencies with empty requirements" do
+      let(:pyproject_fixture_name) { "no_requirements.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with a PDM project" do
+      let(:pyproject_fixture_name) { "pdm_example.toml" }
+      let(:pdm_lock) do
+        Dependabot::DependencyFile.new(
+          name: "pdm.lock",
+          content: pdm_lock_body
+        )
+      end
+      let(:pdm_lock_body) do
+        fixture("pyproject_locks", pyproject_lock_fixture_name)
+      end
+      let(:pyproject_lock_fixture_name) { "pdm_example.lock" }
+      let(:files) { [pyproject, pdm_lock] }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to eq(0) }
+    end
+
+    context "with optional dependencies" do
+      let(:pyproject_fixture_name) { "optional_dependencies.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      # fixture has 1 runtime dependency, plus 4 optional dependencies, but one
+      # is ignored because it has markers
+      its(:length) { is_expected.to eq(4) }
     end
   end
 end
