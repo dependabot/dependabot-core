@@ -24,7 +24,7 @@ PATH
       faraday (= 2.6.0)
       gitlab (= 4.19.0)
       nokogiri (~> 1.8)
-      octokit (>= 4.6, < 6.0)
+      octokit (>= 4.6, < 7.0)
       parser (>= 2.5, < 4.0)
       toml-rb (>= 1.1.2, < 3.0)
 
@@ -187,7 +187,7 @@ GEM
       reline (>= 0.3.0)
     jmespath (1.6.1)
     json (2.6.2)
-    licensed (3.7.4)
+    licensed (3.7.5)
       bundler (>= 1.10)
       json (>= 2.6.2)
       licensee (>= 9.15.2, < 10.0.0)
