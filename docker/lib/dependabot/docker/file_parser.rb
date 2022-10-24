@@ -16,15 +16,16 @@ module Dependabot
       # Details of Docker regular expressions is at
       # https://github.com/docker/distribution/blob/master/reference/regexp.go
       DOMAIN_COMPONENT =
-        /(?:[[:alnum:]]|[[:alnum:]][[[:alnum:]]-]*[[:alnum:]])/.freeze
+        /[[:alnum:]]|[[:alnum:]][[:alnum:]-]*[[:alnum:]]/.freeze
       DOMAIN = /(?:#{DOMAIN_COMPONENT}(?:\.#{DOMAIN_COMPONENT})+)/.freeze
       REGISTRY = /(?<registry>#{DOMAIN}(?::\d+)?)/.freeze
 
-      NAME_COMPONENT = /(?:[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*)/.freeze
+      NAME_COMPONENT = /[a-z\d]+(?:(?:[._]|__|[-]*)[a-z\d]+)*/.freeze
       IMAGE = %r{(?<image>#{NAME_COMPONENT}(?:/#{NAME_COMPONENT})*)}.freeze
 
+      ARG = /ARG/i.freeze
       FROM = /FROM/i.freeze
-      PLATFORM = /--platform\=(?<platform>\S+)/.freeze
+      PLATFORM = /--platform=(?<platform>\S+)/.freeze
       TAG = /:(?<tag>[\w][\w.-]{0,127})/.freeze
       DIGEST = /@(?<digest>[^\s]+)/.freeze
       NAME = /\s+AS\s+(?<name>[\w-]+)/.freeze
@@ -41,9 +42,20 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dockerfiles.each do |dockerfile|
+          args = {}
+          found_from = false
           dockerfile.content.each_line do |line|
+            if !found_from && ARG.match(line)
+              key_value = line.delete_prefix("ARG ").split("=")
+              next if key_value.count != 2 # The ARG has no default value that we can set
+
+              args[key_value[0]] = key_value[1].delete_suffix("\n")
+              next
+            end
+            line = replace_args(line, args)
             next unless FROM_LINE.match?(line)
 
+            found_from = true
             parsed_from_line = FROM_LINE.match(line).named_captures
             parsed_from_line["registry"] = nil if parsed_from_line["registry"] == "docker.io"
 
@@ -72,6 +84,13 @@ module Dependabot
       end
 
       private
+
+      def replace_args(line, args)
+        line.gsub(/\${?\w+}?/) do |s|
+          escaped = s.delete_prefix("$").delete_prefix("{").delete_suffix("}")
+          args[escaped]
+        end
+      end
 
       def dockerfiles
         # The Docker file fetcher fetches Dockerfiles and yaml files. Reject yaml files.

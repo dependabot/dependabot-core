@@ -1,0 +1,2 @@
+ARG HUB=docker.io
+FROM ${HUB}/docker:20.10.7-dind
