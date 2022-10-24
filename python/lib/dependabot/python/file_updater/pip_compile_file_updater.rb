@@ -81,12 +81,6 @@ module Dependabot
                 "#{SharedHelpers.escape_command(version_part)}",
                 allow_unsafe_shell_command: true
               )
-              # Run pip-compile a second time, without an update argument, to
-              # ensure it resets the right comments.
-              run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} " \
-                "#{filename}"
-              )
             end
 
             # Remove any .python-version file before parsing the reqs
