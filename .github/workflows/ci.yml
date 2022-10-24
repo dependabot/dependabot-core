@@ -165,7 +165,6 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --env "YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn" \
             --rm dependabot-core-ci bash -c \
             "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
 
