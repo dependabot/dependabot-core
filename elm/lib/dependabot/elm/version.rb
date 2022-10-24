@@ -9,7 +9,7 @@ require "rubygems_version_patch"
 module Dependabot
   module Elm
     class Version < Gem::Version
-      VERSION_PATTERN = "[0-9]+\.[0-9]+\.[0-9]+"
+      VERSION_PATTERN = "[0-9]+\\.[0-9]+\\.[0-9]+"
       VERSION_PATTERN_REGEX = /\A#{VERSION_PATTERN}\Z/
 
       def self.correct?(version)
