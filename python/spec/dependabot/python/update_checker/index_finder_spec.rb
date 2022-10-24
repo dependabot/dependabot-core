@@ -40,7 +40,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::IndexFinder do
       content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
-  let(:pyproject_fixture_name) { "exact_version.toml" }
+  let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
   let(:requirements_file) do
     Dependabot::DependencyFile.new(
       name: "requirements.txt",
