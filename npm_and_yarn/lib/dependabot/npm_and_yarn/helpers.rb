@@ -63,14 +63,6 @@ module Dependabot
 
         dependencies
       end
-
-      def self.using_yarn_zero_install
-        if File.exist?(".yarnrc.yml")
-          return File.exist?(YAML.load_file(".yarnrc.yml").fetch("cacheFolder", "./.yarn/cache"))
-        else
-          return File.exist?("./.yarn/cache")
-        end
-      end
     end
   end
 end
