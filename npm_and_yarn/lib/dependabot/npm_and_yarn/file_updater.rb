@@ -60,6 +60,7 @@ module Dependabot
           vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
           install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
             updated_files << file
+          updated_files << pnp_updater.updated_vendor_cache_files(base_directory: base_dir).find { |file| file.name==".pnp.cjs"}
           end
         end
 
@@ -100,6 +101,13 @@ module Dependabot
         Dependabot::FileUpdaters::VendorUpdater.new(
           repo_contents_path: repo_contents_path,
           vendor_dir: install_state_path
+        )
+      end
+
+      def pnp_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: "./"
         )
       end
 
