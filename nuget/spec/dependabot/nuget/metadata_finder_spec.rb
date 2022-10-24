@@ -59,15 +59,6 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
       )
     end
 
-    context "with a github link in the nuspec" do
-      it { is_expected.to eq("https://github.com/dotnet/core-setup") }
-
-      it "caches the call to nuget" do
-        2.times { source_url }
-        expect(WebMock).to have_requested(:get, nuget_url).once
-      end
-    end
-
     context "with a source" do
       let(:source) do
         {
@@ -94,7 +85,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
         expect(WebMock).to have_requested(:get, nuget_url).once
       end
 
-      context "that has a source_url" do
+      context "that has a source_url only" do
         let(:source) do
           {
             type: "nuget_repo",
@@ -117,13 +108,7 @@ RSpec.describe Dependabot::Nuget::MetadataFinder do
           }
         end
 
-        let(:nuget_url) do
-          "https://api.nuget.org/v3-flatcontainer/" \
-            "microsoft.extensions.dependencymodel/2.1.0/" \
-            "microsoft.extensions.dependencymodel.nuspec"
-        end
-
-        it { is_expected.to eq("https://github.com/dotnet/core-setup") }
+        it { is_expected.to eq(nil) }
       end
 
       context "with details in the credentials (but no token)" do

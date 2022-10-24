@@ -80,9 +80,17 @@ module Dependabot
                   run_pip_compile_command(
                     "pyenv exec pip-compile -v #{pip_compile_options(filename)} -P #{dependency.name} #{filename}"
                   )
-                  # Run pip-compile a second time, without an update argument,
-                  # to ensure it handles markers correctly
-                  write_original_manifest_files unless dependency.top_level?
+
+                  next if dependency.top_level?
+
+                  # Run pip-compile a second time for transient dependencies
+                  # to make sure we do not update dependencies that are
+                  # superfluous. pip-compile does not detect these when
+                  # updating a specific dependency with the -P option.
+                  # Running pip-compile a second time will automatically remove
+                  # superfluous dependencies. Dependabot then marks those with
+                  # update_not_possible.
+                  write_original_manifest_files
                   run_pip_compile_command(
                     "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                   )

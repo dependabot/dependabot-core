@@ -49,8 +49,14 @@ module Dependabot
       return true if branch
       return true if dependency.version&.start_with?(ref)
 
-      # Check the specified `ref` isn't actually a branch
-      !local_upload_pack.match?(%r{ refs/heads/#{ref}$})
+      # If the specified `ref` is actually a tag, we're pinned
+      return true if local_upload_pack.match?(%r{ refs/tags/#{ref}$})
+
+      # If the specified `ref` is actually a branch, we're NOT pinned
+      return false if local_upload_pack.match?(%r{ refs/heads/#{ref}$})
+
+      # Otherwise, assume we're pinned
+      true
     end
 
     def pinned_ref_looks_like_version?

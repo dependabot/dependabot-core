@@ -29,7 +29,7 @@ module Dependabot
 
             content = remove_gemfile_git_source(dependency, content) if remove_git_source?(dependency)
 
-            content = update_gemfile_git_pin(dependency, gemfile, content) if update_git_pin?(dependency)
+            content = update_gemfile_git_pin(dependency, gemfile, content) if update_git_pin?(dependency, gemfile)
           end
 
           content
@@ -81,10 +81,10 @@ module Dependabot
           new_gemfile_req[:source].nil?
         end
 
-        def update_git_pin?(dependency)
+        def update_git_pin?(dependency, file)
           new_gemfile_req =
             dependency.requirements.
-            find { |f| GEMFILE_FILENAMES.include?(f[:file]) }
+            find { |f| f[:file] == file.name }
           return false unless new_gemfile_req&.dig(:source, :type) == "git"
 
           # If the new requirement is a git dependency with a ref then there's

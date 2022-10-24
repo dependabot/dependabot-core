@@ -98,23 +98,13 @@ module Dependabot
           latest_tags = git_commit_checker.local_tags_for_latest_version_commit_sha
 
           # Find the latest version with the same precision as the pinned version.
-          # Falls back to a version with the closest precision if no exact match.
-          current_dots = dependency.version.split(".").length
-          latest_tags.max do |a, b|
-            next a[:version] <=> b[:version] unless shortened_semver_version_eq?(a[:version], b[:version])
-
-            a_dots = a[:version].to_s.split(".").length
-            b_dots = b[:version].to_s.split(".").length
-            a_diff = (a_dots - current_dots).abs
-            b_diff = (b_dots - current_dots).abs
-            next -(a_diff <=> b_diff) unless a_diff == b_diff
-
-            # preference to a less specific version if we have a tie
-            next 1 if a_dots < current_dots
-
-            -1
-          end
+          current_precision = precision(dependency.version)
+          latest_tags.select { |tag| precision(tag[:version].to_s) == current_precision }.max_by { |tag| tag[:version] }
         end
+      end
+
+      def precision(version)
+        version.split(".").length
       end
 
       def updated_source
@@ -191,13 +181,6 @@ module Dependabot
         return false unless base_split.length <= other_split.length
 
         other_split[0..base_split.length - 1] == base_split
-      end
-
-      def shortened_semver_version_eq?(base_version, other_version)
-        base = base_version.to_s
-        other = other_version.to_s
-
-        shortened_semver_eq?(base, other) || shortened_semver_eq?(other, base)
       end
 
       def find_container_branch(sha)

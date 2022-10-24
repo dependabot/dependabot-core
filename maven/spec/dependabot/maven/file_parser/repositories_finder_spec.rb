@@ -65,6 +65,45 @@ RSpec.describe Dependabot::Maven::FileParser::RepositoriesFinder do
         )
       end
 
+      it "remembers what it's seen" do
+        custom_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "custom_repositories_pom.xml")
+        )
+        expect(finder.repository_urls(pom: custom_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://repo.maven.apache.org/maven2
+          )
+        )
+        base_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "basic_pom.xml")
+        )
+        expect(finder.repository_urls(pom: base_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://repo.maven.apache.org/maven2
+          )
+        )
+        overwrite_central_pom = Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "overwrite_central_pom.xml")
+        )
+        expect(finder.repository_urls(pom: overwrite_central_pom)).to eq(
+          %w(
+            http://scala-tools.org/repo-releases
+            http://repository.jboss.org/maven2
+            http://plugin-repository.jboss.org/maven2
+            https://example.com
+          )
+        )
+      end
+
       context "that overwrites central" do
         let(:base_pom_fixture_name) { "overwrite_central_pom.xml" }
 
