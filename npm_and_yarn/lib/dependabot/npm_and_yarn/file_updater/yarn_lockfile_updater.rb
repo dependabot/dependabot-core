@@ -56,7 +56,7 @@ module Dependabot
         def updated_yarn_lock(yarn_lock)
           base_dir = dependency_files.first.directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            write_temporary_dependency_files
+            write_temporary_dependency_files(yarn_lock)
             lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
             path = Pathname.new(yarn_lock.name).dirname.to_s
             updated_files = run_current_yarn_update(
@@ -316,7 +316,7 @@ module Dependabot
             begin
               base_dir = dependency_files.first.directory
               SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-                write_temporary_dependency_files(update_package_json: false)
+                write_temporary_dependency_files(yarn_lock, update_package_json: false)
                 path = Pathname.new(yarn_lock.name).dirname.to_s
                 run_previous_yarn_update(path: path, yarn_lock: yarn_lock)
               end
@@ -336,7 +336,7 @@ module Dependabot
           end
         end
 
-        def write_temporary_dependency_files(update_package_json: true)
+        def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
           if yarn_berry?(yarn_lock)
