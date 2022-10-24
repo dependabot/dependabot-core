@@ -56,12 +56,12 @@ module Dependabot
         end
 
         if Experiments.enabled?(:yarn_berry)
-          base_dir = updated_files.first.directory
+          base_dir = yarn_locks.first.directory
           vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
           install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
             updated_files << file
-          updated_files << pnp_updater.updated_vendor_cache_files(base_directory: base_dir).find { |file| file.name==".pnp.cjs"}
           end
+          updated_files << pnp_updater.updated_vendor_cache_files(base_directory: base_dir).find { |file| file.name==".pnp.cjs"}
         end
 
         updated_files
