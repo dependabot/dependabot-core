@@ -169,6 +169,93 @@ module Dependabot
                                 end
       end
 
+      def cloned_commit
+        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
+
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          Dir.chdir(repo_contents_path) do
+            return SharedHelpers.run_shell_command("git rev-parse HEAD")&.strip
+          end
+        end
+      end
+
+      def default_branch_for_repo
+        @default_branch_for_repo ||= client_for_provider.
+                                     fetch_default_branch(repo)
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::RepoNotFound, source
+      end
+
+      def update_linked_paths(repo, path, commit, github_response)
+        case github_response.type
+        when "submodule"
+          sub_source = Source.from_url(github_response.submodule_git_url)
+          return unless sub_source
+
+          @linked_paths[path] = {
+            repo: sub_source.repo,
+            provider: sub_source.provider,
+            commit: github_response.sha,
+            path: "/"
+          }
+        when "symlink"
+          updated_path = File.join(File.dirname(path), github_response.target)
+          @linked_paths[path] = {
+            repo: repo,
+            provider: "github",
+            commit: commit,
+            path: Pathname.new(updated_path).cleanpath.to_path
+          }
+        end
+      end
+
+      def client_for_provider
+        case source.provider
+        when "github" then github_client
+        when "gitlab" then gitlab_client
+        when "azure" then azure_client
+        when "bitbucket" then bitbucket_client
+        when "codecommit" then codecommit_client
+        else raise "Unsupported provider '#{source.provider}'."
+        end
+      end
+
+      def github_client
+        @github_client ||=
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def gitlab_client
+        @gitlab_client ||=
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def azure_client
+        @azure_client ||=
+          Dependabot::Clients::Azure.
+          for_source(source: source, credentials: credentials)
+      end
+
+      def bitbucket_client
+        # TODO: When self-hosted Bitbucket is supported this should use
+        # `Bitbucket.for_source`
+        @bitbucket_client ||=
+          Dependabot::Clients::BitbucketWithRetries.
+          for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def codecommit_client
+        @codecommit_client ||=
+          Dependabot::Clients::CodeCommit.
+          for_source(source: source, credentials: credentials)
+      end
+
       #################################################
       # INTERNAL METHODS (not for use by sub-classes) #
       #################################################
@@ -252,29 +339,6 @@ module Dependabot
             type: type,
             size: 0 # NOTE: added for parity with github contents API
           )
-        end
-      end
-
-      def update_linked_paths(repo, path, commit, github_response)
-        case github_response.type
-        when "submodule"
-          sub_source = Source.from_url(github_response.submodule_git_url)
-          return unless sub_source
-
-          @linked_paths[path] = {
-            repo: sub_source.repo,
-            provider: sub_source.provider,
-            commit: github_response.sha,
-            path: "/"
-          }
-        when "symlink"
-          updated_path = File.join(File.dirname(path), github_response.target)
-          @linked_paths[path] = {
-            repo: repo,
-            provider: "github",
-            commit: commit,
-            path: Pathname.new(updated_path).cleanpath.to_path
-          }
         end
       end
 
@@ -474,23 +538,6 @@ module Dependabot
       end
       # rubocop:enable Metrics/AbcSize
 
-      def cloned_commit
-        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
-
-        SharedHelpers.with_git_configured(credentials: credentials) do
-          Dir.chdir(repo_contents_path) do
-            return SharedHelpers.run_shell_command("git rev-parse HEAD")&.strip
-          end
-        end
-      end
-
-      def default_branch_for_repo
-        @default_branch_for_repo ||= client_for_provider.
-                                     fetch_default_branch(repo)
-      rescue *CLIENT_NOT_FOUND_ERRORS
-        raise Dependabot::RepoNotFound, source
-      end
-
       # Update the @linked_paths hash by exploiting a side-effect of
       # recursively calling `repo_contents` for each directory up the tree
       # until a submodule or symlink is found
@@ -541,53 +588,6 @@ module Dependabot
           end
           path
         end
-      end
-
-      def client_for_provider
-        case source.provider
-        when "github" then github_client
-        when "gitlab" then gitlab_client
-        when "azure" then azure_client
-        when "bitbucket" then bitbucket_client
-        when "codecommit" then codecommit_client
-        else raise "Unsupported provider '#{source.provider}'."
-        end
-      end
-
-      def github_client
-        @github_client ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def gitlab_client
-        @gitlab_client ||=
-          Dependabot::Clients::GitlabWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def azure_client
-        @azure_client ||=
-          Dependabot::Clients::Azure.
-          for_source(source: source, credentials: credentials)
-      end
-
-      def bitbucket_client
-        # TODO: When self-hosted Bitbucket is supported this should use
-        # `Bitbucket.for_source`
-        @bitbucket_client ||=
-          Dependabot::Clients::BitbucketWithRetries.
-          for_bitbucket_dot_org(credentials: credentials)
-      end
-
-      def codecommit_client
-        @codecommit_client ||=
-          Dependabot::Clients::CodeCommit.
-          for_source(source: source, credentials: credentials)
       end
     end
   end
