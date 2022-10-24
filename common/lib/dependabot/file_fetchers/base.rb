@@ -475,7 +475,7 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
 
       def cloned_commit
-        return if repo_contents_path.nil?
+        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
 
         SharedHelpers.with_git_configured(credentials: credentials) do
           Dir.chdir(repo_contents_path) do
