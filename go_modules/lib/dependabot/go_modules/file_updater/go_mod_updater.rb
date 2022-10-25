@@ -13,7 +13,7 @@ module Dependabot
       class GoModUpdater
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
-          /verifying .*: checksum mismatch/.freeze,
+          /verifying .*: checksum mismatch/,
           /go(?: get)?: .*: go.mod has post-v\d+ module path/
         ].freeze
 
@@ -21,19 +21,19 @@ module Dependabot
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
           # (Private) module could not be fetched
-          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m.freeze,
+          /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
           # (Private) module could not be found
-          /cannot find module providing package/.freeze,
+          /cannot find module providing package/,
           # Package in module was likely renamed or removed
-          /module .* found \(.*\), but does not contain package/m.freeze,
+          /module .* found \(.*\), but does not contain package/m,
           # Package pseudo-version does not match the version-control metadata
           # https://golang.google.cn/doc/go1.13#version-validation
-          /go(?: get)?: .*: invalid pseudo-version/m.freeze,
+          /go(?: get)?: .*: invalid pseudo-version/m,
           # Package does not exist, has been pulled or cannot be reached due to
           # auth problems with either git or the go proxy
-          /go(?: get)?: .*: unknown revision/m.freeze,
+          /go(?: get)?: .*: unknown revision/m,
           # Package pointing to a proxy that 404s
-          /go(?: get)?: .*: unrecognized import path/m.freeze
+          /go(?: get)?: .*: unrecognized import path/m
         ].freeze
 
         MODULE_PATH_MISMATCH_REGEXES = [
@@ -43,11 +43,11 @@ module Dependabot
         ].freeze
 
         OUT_OF_DISK_REGEXES = [
-          %r{input/output error}.freeze,
-          /no space left on device/.freeze
+          %r{input/output error},
+          /no space left on device/
         ].freeze
 
-        GO_MOD_VERSION = /^go 1\.[\d]+$/.freeze
+        GO_MOD_VERSION = /^go 1\.[\d]+$/
 
         def initialize(dependencies:, credentials:, repo_contents_path:,
                        directory:, options:)

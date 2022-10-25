@@ -19,18 +19,18 @@ module Dependabot
             <Dependency [^>]*?[^/]>.*?</Dependency>|
             <DevelopmentDependency [^>]*?/>|
             <DevelopmentDependency [^>]*?[^/]>.*?</DevelopmentDependency>
-          }mx.freeze
+          }mx
         SDK_IMPORT_REGEX =
           / <Import [^>]*?Sdk="[^"]*?"[^>]*?Version="[^"]*?"[^>]*?>
           | <Import [^>]*?Version="[^"]*?"[^>]*?Sdk="[^"]*?"[^>]*?>
-          /mx.freeze
+          /mx
         SDK_PROJECT_REGEX =
           / <Project [^>]*?Sdk="[^"]*?"[^>]*?>
-          /mx.freeze
+          /mx
         SDK_SDK_REGEX =
           / <Sdk [^>]*?Name="[^"]*?"[^>]*?Version="[^"]*?"[^>]*?>
           | <Sdk [^>]*?Version="[^"]*?"[^>]*?Name="[^"]*?"[^>]*?>
-          /mx.freeze
+          /mx
 
         attr_reader :dependency_name, :declaring_requirement,
                     :dependency_files

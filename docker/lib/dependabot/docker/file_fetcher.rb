@@ -7,9 +7,9 @@ require "dependabot/file_fetchers/base"
 module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
-      YAML_REGEXP = /^[^\.]+\.ya?ml$/i.freeze
-      DOCKER_REGEXP = /dockerfile/i.freeze
-      HELM_REGEXP = /values[\-a-zA-Z_0-9]*\.yaml/i.freeze
+      YAML_REGEXP = /^[^\.]+\.ya?ml$/i
+      DOCKER_REGEXP = /dockerfile/i
+      HELM_REGEXP = /values[\-a-zA-Z_0-9]*\.yaml/i
 
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or

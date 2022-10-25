@@ -5,7 +5,7 @@ require "dependabot/pull_request_creator"
 module Dependabot
   class PullRequestCreator
     class Labeler
-      DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i.freeze
+      DEPENDENCIES_LABEL_REGEX = %r{^[^/]*dependenc[^/]+$}i
       DEFAULT_DEPENDENCIES_LABEL = "dependencies"
       DEFAULT_SECURITY_LABEL = "security"
 

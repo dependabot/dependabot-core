@@ -19,9 +19,8 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS =
-        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
-      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
+      PATH_DEPENDENCY_STARTS = %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
+      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")

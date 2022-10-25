@@ -24,16 +24,14 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
+        ERROR_REGEX = /(?<=ERROR\:\W).*$/
 
         attr_reader :dependency, :dependency_files, :credentials
 

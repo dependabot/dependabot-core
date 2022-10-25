@@ -18,7 +18,7 @@ module Dependabot
             [a-z0-9\-\_\.\!\~\*\'\(\)]+               # URL-safe characters
           )
           \z                                          # end of string
-      }xi.freeze                                      # multi-line/case-insensitive
+      }xi                                             # multi-line/case-insensitive
 
       TYPES_PACKAGE_NAME_REGEX = %r{
           \A                                          # beginning of string
@@ -26,7 +26,7 @@ module Dependabot
           ((?<scope>.+)__)?                           # capture scope
           (?<name>.+)                                 # capture name
           \z                                          # end of string
-      }xi.freeze                                      # multi-line/case-insensitive
+      }xi                                             # multi-line/case-insensitive
 
       class InvalidPackageName < StandardError; end
 

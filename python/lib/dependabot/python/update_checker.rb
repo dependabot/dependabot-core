@@ -26,7 +26,7 @@ module Dependabot
         https://pypi.python.org/simple/
         https://pypi.org/simple/
       ).freeze
-      VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
+      VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
       def latest_version
         @latest_version ||= fetch_latest_version

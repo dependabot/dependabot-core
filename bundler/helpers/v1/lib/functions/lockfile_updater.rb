@@ -10,7 +10,7 @@ module Functions
         locked\sto\s(?<name>[^\s]+)\s\(|
         not\sfind\s(?<name>[^\s]+)-\d|
         has\s(?<name>[^\s]+)\slocked\sat
-      /x.freeze
+      /x
 
     def initialize(gemfile_name:, lockfile_name:, dependencies:)
       @gemfile_name = gemfile_name

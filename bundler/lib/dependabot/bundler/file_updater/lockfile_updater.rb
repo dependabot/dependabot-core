@@ -18,10 +18,9 @@ module Dependabot
         require_relative "gemspec_dependency_name_finder"
         require_relative "ruby_requirement_setter"
 
-        LOCKFILE_ENDING =
-          /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
-        GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m.freeze
-        GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m.freeze
+        LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
+        GIT_DEPENDENCIES_SECTION = /GIT\n.*?\n\n(?!GIT)/m
+        GIT_DEPENDENCY_DETAILS = /GIT\n.*?\n\n/m
 
         # Can't be a constant because some of these don't exist in bundler
         # 1.15, which Heroku uses, which causes an exception on boot.

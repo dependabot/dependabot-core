@@ -21,7 +21,7 @@ module Dependabot
         (?<repo>[\w.-]+)
         (?<path>/[^\@]+)?
         @(?<ref>.+)
-      }x.freeze
+      }x
 
       def parse
         dependency_set = DependencySet.new
