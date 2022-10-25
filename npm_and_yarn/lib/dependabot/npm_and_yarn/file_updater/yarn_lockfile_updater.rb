@@ -340,7 +340,7 @@ module Dependabot
           write_lockfiles
 
           if yarn_berry?(yarn_lock)
-            File.write(".yarnrc.yml", yarnrc_yml_content)
+            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
             File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_lock)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
@@ -555,10 +555,6 @@ module Dependabot
           ).yarnrc_content
         end
 
-        def yarnrc_yml_content
-          yarnrc_yml_file.content
-        end
-
         def sanitized_package_json_content(content)
           updated_content =
             content.
@@ -595,6 +591,10 @@ module Dependabot
 
         def yarnrc_yml_file
           dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+        end
+
+        def yarnrc_yml_content
+          yarnrc_yml_file.content
         end
       end
     end

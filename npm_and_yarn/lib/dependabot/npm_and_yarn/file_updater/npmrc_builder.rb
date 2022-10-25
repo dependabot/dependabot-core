@@ -46,7 +46,7 @@ module Dependabot
               build_yarnrc_content_from_lockfile
             end
 
-          return initial_content || ""
+          initial_content || ""
         end
 
         private
@@ -59,7 +59,7 @@ module Dependabot
 
           registry = global_registry["registry"]
           registry = "https://#{registry}" unless registry.start_with?("http")
-          "registry = https://#{global_registry['registry']}\n" \
+          "registry = #{registry}\n" \
             "#{npmrc_global_registry_auth_line}" \
             "always-auth = true"
         end

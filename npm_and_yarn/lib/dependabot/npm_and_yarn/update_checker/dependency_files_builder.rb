@@ -17,7 +17,7 @@ module Dependabot
           write_lock_files
 
           if yarn_berry?(yarn_locks.first)
-            File.write(".yarnrc.yml", yarnrc_yml_content)
+            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
             File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_locks.first)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
@@ -115,7 +115,6 @@ module Dependabot
         def yarnrc_file
           dependency_files.find { |f| f.name == ".yarnrc" }
         end
-
 
         def yarnrc_content
           NpmAndYarn::FileUpdater::NpmrcBuilder.new(
