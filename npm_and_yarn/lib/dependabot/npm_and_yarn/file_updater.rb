@@ -55,12 +55,13 @@ module Dependabot
           )
         end
 
-        if Experiments.enabled?(:yarn_berry)
-          base_dir = updated_files.first.directory
-          vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
-          install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-            updated_files << file
-          end
+        base_dir = updated_files.first.directory
+        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
+        end
+        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
         end
 
         updated_files
@@ -100,6 +101,13 @@ module Dependabot
         Dependabot::FileUpdaters::VendorUpdater.new(
           repo_contents_path: repo_contents_path,
           vendor_dir: install_state_path
+        )
+      end
+
+      def pnp_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: "./"
         )
       end
 
