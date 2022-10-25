@@ -12,7 +12,7 @@ require "dependabot/file_parsers/base"
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
-      GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/.freeze
+      GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/
 
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new

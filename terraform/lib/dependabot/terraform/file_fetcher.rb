@@ -10,7 +10,7 @@ module Dependabot
       include FileSelector
 
       # https://www.terraform.io/docs/language/modules/sources.html#local-paths
-      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}.freeze
+      LOCAL_PATH_SOURCE = %r{source\s*=\s*['"](?<path>..?\/[^'"]+)}
 
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.end_with?(".tf", ".hcl") }

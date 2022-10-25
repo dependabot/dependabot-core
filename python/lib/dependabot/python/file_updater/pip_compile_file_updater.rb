@@ -22,10 +22,9 @@ module Dependabot
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
-        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m.freeze
-        WARNINGS = /\s*# WARNING:.*\Z/m.freeze
-        UNSAFE_NOTE =
-          /\s*# The following packages are considered to be unsafe.*\Z/m.freeze
+        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
 
         attr_reader :dependencies, :dependency_files, :credentials
 
@@ -80,12 +79,6 @@ module Dependabot
                 "#{SharedHelpers.escape_command(name_part)}==" \
                 "#{SharedHelpers.escape_command(version_part)}",
                 allow_unsafe_shell_command: true
-              )
-              # Run pip-compile a second time, without an update argument, to
-              # ensure it resets the right comments.
-              run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} " \
-                "#{filename}"
               )
             end
 

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "toml-rb"
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -15,11 +14,9 @@ module Dependabot
   module Python
     class FileParser < Dependabot::FileParsers::Base
       require_relative "file_parser/pipfile_files_parser"
-      require_relative "file_parser/poetry_files_parser"
+      require_relative "file_parser/pyproject_files_parser"
       require_relative "file_parser/setup_file_parser"
 
-      POETRY_DEPENDENCY_TYPES =
-        %w(tool.poetry.dependencies tool.poetry.dev-dependencies).freeze
       DEPENDENCY_GROUP_KEYS = [
         {
           pipfile: "packages",
@@ -42,7 +39,7 @@ module Dependabot
         dependency_set = DependencySet.new
 
         dependency_set += pipenv_dependencies if pipfile
-        dependency_set += poetry_dependencies if using_poetry?
+        dependency_set += pyproject_file_dependencies if pyproject
         dependency_set += requirement_dependencies if requirement_files.any?
         dependency_set += setup_file_dependencies if setup_file || setup_cfg_file
 
@@ -62,9 +59,9 @@ module Dependabot
           dependency_set
       end
 
-      def poetry_dependencies
-        @poetry_dependencies ||=
-          PoetryFilesParser.
+      def pyproject_file_dependencies
+        @pyproject_file_dependencies ||=
+          PyprojectFilesParser.
           new(dependency_files: dependency_files).
           dependency_set
       end
@@ -103,18 +100,6 @@ module Dependabot
         else
           ["dependencies"]
         end
-      end
-
-      def included_in_pipenv_deps?(dep_name)
-        return false unless pipfile
-
-        pipenv_dependencies.dependencies.map(&:name).include?(dep_name)
-      end
-
-      def included_in_poetry_deps?(dep_name)
-        return false unless using_poetry?
-
-        poetry_dependencies.dependencies.map(&:name).include?(dep_name)
       end
 
       def blocking_marker?(dep)
@@ -213,15 +198,6 @@ module Dependabot
 
       def pipfile_lock
         @pipfile_lock ||= get_original_file("Pipfile.lock")
-      end
-
-      def using_poetry?
-        return false unless pyproject
-        return true if poetry_lock || pyproject_lock
-
-        !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
-      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
-        raise Dependabot::DependencyFileNotParseable, pyproject.path
       end
 
       def output_file_regex(filename)

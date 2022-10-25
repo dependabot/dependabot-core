@@ -306,6 +306,20 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
         end
 
         it { is_expected.to eq(expected_string) }
+
+        context "but updating an evaled gemfile including a different git sourced dependency" do
+          let(:gemfile_body) do
+            %(gem "dependabot-test-other", git: "https://github.com/dependabot-fixtures/dependabot-other")
+          end
+
+          let(:gemfile) do
+            Dependabot::DependencyFile.new(content: gemfile_body, name: "Gemfile.included")
+          end
+
+          it "leaves the evaled gemfile untouched" do
+            is_expected.to eq(gemfile_body)
+          end
+        end
       end
 
       context "that should be removed" do

@@ -11,15 +11,12 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class VersionResolver
-        UNABLE_TO_UPDATE =
-          /Unable to update (?<url>.*?)$/.freeze
-        BRANCH_NOT_FOUND_REGEX =
-          /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m.freeze
-        REVSPEC_PATTERN = /revspec '.*' not found/.freeze
-        OBJECT_PATTERN = /object not found - no match for id \(.*\)/.freeze
-        REF_NOT_FOUND_REGEX =
-          /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m.freeze
-        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m.freeze
+        UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
+        BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
+        REVSPEC_PATTERN = /revspec '.*' not found/
+        OBJECT_PATTERN = /object not found - no match for id \(.*\)/
+        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
+        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
@@ -188,6 +185,7 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repo") ||
+             # TODO: stop catching this 200 error: https://github.com/dependabot/dependabot-core/pull/5332#discussion_r936888624
              error.message.include?("HTTP 200 response: got 401") ||
              error.message.include?("fatal: Authentication failed for")
             # Check all dependencies for reachability (so that we raise a

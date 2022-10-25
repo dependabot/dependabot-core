@@ -16,7 +16,7 @@ module Dependabot
         require_relative "repositories_finder"
         require_relative "pom_fetcher"
 
-        DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
+        DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
         def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files

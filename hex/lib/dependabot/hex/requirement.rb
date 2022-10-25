@@ -6,8 +6,8 @@ require "dependabot/hex/version"
 module Dependabot
   module Hex
     class Requirement < Gem::Requirement
-      AND_SEPARATOR = /\s+and\s+/.freeze
-      OR_SEPARATOR = /\s+or\s+/.freeze
+      AND_SEPARATOR = /\s+and\s+/
+      OR_SEPARATOR = /\s+or\s+/
 
       # Add the double-equality matcher to the list of allowed operations
       OPS = OPS.merge("==" => ->(v, r) { v == r })
@@ -15,7 +15,7 @@ module Dependabot
       # Override the version pattern to allow local versions
       quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Hex::Version::VERSION_PATTERN})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.

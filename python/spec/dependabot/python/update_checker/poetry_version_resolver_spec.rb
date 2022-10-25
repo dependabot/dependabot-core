@@ -29,7 +29,7 @@ RSpec.describe namespace::PoetryVersionResolver do
       content: fixture("pyproject_files", pyproject_fixture_name)
     )
   end
-  let(:pyproject_fixture_name) { "exact_version.toml" }
+  let(:pyproject_fixture_name) { "poetry_exact_requirement.toml" }
   let(:lockfile) do
     Dependabot::DependencyFile.new(
       name: "pyproject.lock",

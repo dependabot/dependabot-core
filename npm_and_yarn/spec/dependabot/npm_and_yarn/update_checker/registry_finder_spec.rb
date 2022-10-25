@@ -46,6 +46,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
 
     it { is_expected.to eq("https://registry.npmjs.org") }
 
+    context "with no rc and with credentials" do
+      let(:credentials) do
+        [{
+          "type" => "npm_registry",
+          "registry" => "http://example.com",
+          "replaces-base" => true
+        }]
+      end
+
+      it { is_expected.to eq("http://example.com") }
+    end
+
     context "with a global npm registry" do
       let(:npmrc_file) { Dependabot::DependencyFile.new(name: ".npmrc", content: "registry=http://example.com") }
 
@@ -122,7 +134,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
           "password" => "token"
         }, {
           "type" => "npm_registry",
-          "registry" => "npm.fury.io/dependabot",
+          "registry" => "https://npm.fury.io/dependabot",
           "token" => "secret_token"
         }]
       end
@@ -145,7 +157,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
             to_return(status: 200, body: body)
         end
 
-        it { is_expected.to eq("npm.fury.io/dependabot") }
+        it { is_expected.to eq("https://npm.fury.io/dependabot") }
 
         context "but returns HTML" do
           before do

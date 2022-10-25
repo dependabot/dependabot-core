@@ -11,9 +11,9 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include FileSelector
 
-      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
-      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
-      GIT_HTTPS_PREFIX = %r{^git::https://}.freeze
+      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
+      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
+      GIT_HTTPS_PREFIX = %r{^git::https://}
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]

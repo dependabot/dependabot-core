@@ -1212,18 +1212,18 @@ RSpec.describe Dependabot::Python::FileParser do
       end
     end
 
-    context "with a pyproject.toml and pyproject.lock" do
+    context "with a pyproject.toml in poetry format and pyproject.lock legacy poetry lock file" do
       let(:files) { [pyproject, pyproject_lock] }
       let(:pyproject) do
         Dependabot::DependencyFile.new(
           name: "pyproject.toml",
-          content: fixture("pyproject_files", "pyproject.toml")
+          content: fixture("pyproject_files", "basic_poetry_dependencies.toml")
         )
       end
       let(:pyproject_lock) do
         Dependabot::DependencyFile.new(
           name: "pyproject.lock",
-          content: fixture("pyproject_locks", "pyproject.lock")
+          content: fixture("pyproject_locks", "poetry.lock")
         )
       end
 

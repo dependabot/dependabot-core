@@ -6,7 +6,7 @@ require "dependabot/errors"
 
 module Dependabot
   class GitMetadataFetcher
-    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i.freeze
+    KNOWN_HOSTS = /github\.com|bitbucket\.org|gitlab.com/i
 
     def initialize(url:, credentials:)
       @url = url

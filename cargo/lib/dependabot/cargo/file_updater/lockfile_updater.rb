@@ -14,9 +14,9 @@ module Dependabot
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
           (?:(?!^\[(\[package|metadata)).)+
-        /mx.freeze
+        /mx
 
-        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/.freeze
+        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
