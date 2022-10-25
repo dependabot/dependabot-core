@@ -185,8 +185,6 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repo") ||
-             # TODO: stop catching this 200 error: https://github.com/dependabot/dependabot-core/pull/5332#discussion_r936888624
-             error.message.include?("HTTP 200 response: got 401") ||
              error.message.include?("fatal: Authentication failed for")
             # Check all dependencies for reachability (so that we raise a
             # consistent error)
