@@ -679,6 +679,11 @@ dependencies.each do |dep|
     next
   end
 
+  if checker.up_to_date?
+    puts "    (no update needed as it's already up-to-date)"
+    next
+  end
+
   if checker.vulnerable?
     if checker.lowest_security_fix_version
       puts " => earliest available non-vulnerable version is " \
@@ -694,11 +699,6 @@ dependencies.each do |dep|
                              checker.latest_resolvable_version
                            end
   puts " => latest allowed version is #{latest_allowed_version || dep.version}"
-
-  if checker.up_to_date?
-    puts "    (no update needed as it's already up-to-date)"
-    next
-  end
 
   requirements_to_unlock =
     if $options[:lockfile_only] || !checker.requirements_unlocked_or_can_be?

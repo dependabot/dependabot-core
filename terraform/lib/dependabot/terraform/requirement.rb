@@ -12,7 +12,7 @@ module Dependabot
       # https://www.terraform.io/docs/registry/modules/publish.html#requirements
       OPERATORS = OPS.keys.map { |key| Regexp.quote(key) }.join("|").freeze
       PATTERN_RAW = "\\s*(#{OPERATORS})?\\s*v?(#{Gem::Version::VERSION_PATTERN})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
         return ["=", Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

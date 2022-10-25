@@ -25,7 +25,7 @@ end
 
 # Duplicated in lib/dependabot/bundler/file_updater/lockfile_updater.rb
 # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
-LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m.freeze
+LOCKFILE_ENDING = /(?<ending>\s*(?:RUBY VERSION|BUNDLED WITH).*)/m
 
 def project_dependency_files(project)
   project_path = File.expand_path(File.join("../../spec/fixtures/projects/bundler1", project))

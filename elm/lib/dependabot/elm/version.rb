@@ -10,7 +10,7 @@ module Dependabot
   module Elm
     class Version < Gem::Version
       VERSION_PATTERN = "[0-9]+\.[0-9]+\.[0-9]+"
-      VERSION_PATTERN_REGEX = /\A#{VERSION_PATTERN}\Z/.freeze
+      VERSION_PATTERN_REGEX = /\A#{VERSION_PATTERN}\Z/
 
       def self.correct?(version)
         version.to_s.match?(VERSION_PATTERN_REGEX)

@@ -121,21 +121,7 @@ module Dependabot
         source = dependency.requirements.
                  find { |r| r&.fetch(:source) }&.fetch(:source)
 
-        if source&.key?(:nuspec_url)
-          source.fetch(:nuspec_url) ||
-            "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
-        elsif source&.key?(:nuspec_url)
-          source.fetch("nuspec_url") ||
-            "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
-        else
-          "https://api.nuget.org/v3-flatcontainer/" \
-            "#{dependency.name.downcase}/#{dependency.version}/" \
-            "#{dependency.name.downcase}.nuspec"
-        end
+        return source.fetch(:nuspec_url) if source&.key?(:nuspec_url)
       end
 
       def dependency_source_url

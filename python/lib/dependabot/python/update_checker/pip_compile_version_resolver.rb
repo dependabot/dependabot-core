@@ -24,16 +24,14 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
+        ERROR_REGEX = /(?<=ERROR\:\W).*$/
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -80,9 +78,17 @@ module Dependabot
                   run_pip_compile_command(
                     "pyenv exec pip-compile -v #{pip_compile_options(filename)} -P #{dependency.name} #{filename}"
                   )
-                  # Run pip-compile a second time, without an update argument,
-                  # to ensure it handles markers correctly
-                  write_original_manifest_files unless dependency.top_level?
+
+                  next if dependency.top_level?
+
+                  # Run pip-compile a second time for transient dependencies
+                  # to make sure we do not update dependencies that are
+                  # superfluous. pip-compile does not detect these when
+                  # updating a specific dependency with the -P option.
+                  # Running pip-compile a second time will automatically remove
+                  # superfluous dependencies. Dependabot then marks those with
+                  # update_not_possible.
+                  write_original_manifest_files
                   run_pip_compile_command(
                     "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
                   )

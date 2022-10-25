@@ -30,21 +30,18 @@ module Dependabot
       # still better than nothing, though.
       class PipenvVersionResolver
         # rubocop:disable Layout/LineLength
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone -q (?<url>[^\s]+).* /.freeze
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
-          freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone -q (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
         PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/.
-          freeze
+          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/.freeze
-        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/
+        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
         # rubocop:enable Layout/LineLength
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze

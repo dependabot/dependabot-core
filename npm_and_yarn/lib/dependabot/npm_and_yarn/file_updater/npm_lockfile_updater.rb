@@ -34,21 +34,21 @@ module Dependabot
 
         attr_reader :lockfile, :dependencies, :dependency_files, :credentials
 
-        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
-        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/.freeze
-        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
+        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
+        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}
         FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
-          -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
-        MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
-        INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
+          -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
+        MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
+        INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
         # NOTE: error message returned from arborist/npm 8 when trying to
         # fetching a invalid/non-existent git ref
-        NPM8_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
-        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
+        NPM8_MISSING_GIT_REF = /already exists and is not an empty directory/
+        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/
 
         def updated_lockfile_content
           return lockfile.content if npmrc_disables_lockfile?

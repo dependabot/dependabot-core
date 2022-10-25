@@ -12,7 +12,7 @@ require "dependabot/python/name_normaliser"
 module Dependabot
   module Python
     class FileParser
-      class PoetryFilesParser
+      class PyprojectFilesParser
         POETRY_DEPENDENCY_TYPES = %w(dependencies dev-dependencies).freeze
 
         # https://python-poetry.org/docs/dependency-specification/
@@ -25,7 +25,7 @@ module Dependabot
         def dependency_set
           dependency_set = Dependabot::FileParsers::Base::DependencySet.new
 
-          dependency_set += pyproject_dependencies
+          dependency_set += pyproject_dependencies if using_poetry? || using_pep621?
           dependency_set += lockfile_dependencies if lockfile
 
           dependency_set
@@ -36,6 +36,14 @@ module Dependabot
         attr_reader :dependency_files
 
         def pyproject_dependencies
+          if using_poetry?
+            poetry_dependencies
+          else
+            pep621_dependencies
+          end
+        end
+
+        def poetry_dependencies
           dependencies = Dependabot::FileParsers::Base::DependencySet.new
 
           POETRY_DEPENDENCY_TYPES.each do |type|
@@ -59,6 +67,44 @@ module Dependabot
           dependencies
         end
 
+        def pep621_dependencies
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          # PDM is not yet supported, so we want to ignore it for now because in
+          # the current state of things, going on would result in updating
+          # pyproject.toml but leaving pdm.lock out of sync, which is
+          # undesirable. Leave PDM alone until properly supported
+          return dependencies if using_pdm?
+
+          parsed_pep621_dependencies.each do |dep|
+            # If a requirement has a `<` or `<=` marker then updating it is
+            # probably blocked. Ignore it.
+            next if dep["markers"].include?("<")
+
+            # If no requirement, don't add it
+            next if dep["requirement"].empty?
+
+            dependencies <<
+              Dependency.new(
+                name: normalised_name(dep["name"], dep["extras"]),
+                version: dep["version"]&.include?("*") ? nil : dep["version"],
+                requirements: [{
+                  requirement: dep["requirement"],
+                  file: Pathname.new(dep["file"]).cleanpath.to_path,
+                  source: nil,
+                  groups: [dep["requirement_type"]]
+                }],
+                package_manager: "pip"
+              )
+          end
+
+          dependencies
+        end
+
+        def normalised_name(name, extras)
+          NameNormaliser.normalise_including_extras(name, extras)
+        end
+
         # @param req can be an Array, Hash or String that represents the constraints for a dependency
         def parse_requirements_from(req, type)
           [req].flatten.compact.filter_map do |requirement|
@@ -73,6 +119,18 @@ module Dependabot
               groups: [type]
             }
           end
+        end
+
+        def using_poetry?
+          !parsed_pyproject.dig("tool", "poetry").nil?
+        end
+
+        def using_pep621?
+          !parsed_pyproject.dig("project", "dependencies").nil?
+        end
+
+        def using_pdm?
+          using_pep621? && pdm_lock
         end
 
         # Create a DependencySet where each element has no requirement. Any
@@ -146,6 +204,24 @@ module Dependabot
           poetry_lock || pyproject_lock
         end
 
+        def parsed_pep621_dependencies
+          SharedHelpers.in_a_temporary_directory do
+            write_temporary_pyproject
+
+            SharedHelpers.run_helper_subprocess(
+              command: "pyenv exec python #{NativeHelpers.python_helper_path}",
+              function: "parse_pep621_dependencies",
+              args: [pyproject.name]
+            )
+          end
+        end
+
+        def write_temporary_pyproject
+          path = pyproject.name
+          FileUtils.mkdir_p(Pathname.new(path).dirname)
+          File.write(path, pyproject.content)
+        end
+
         def parsed_lockfile
           return parsed_poetry_lock if poetry_lock
           return parsed_pyproject_lock if pyproject_lock
@@ -159,6 +235,11 @@ module Dependabot
         def poetry_lock
           @poetry_lock ||=
             dependency_files.find { |f| f.name == "poetry.lock" }
+        end
+
+        def pdm_lock
+          @pdm_lock ||=
+            dependency_files.find { |f| f.name == "pdm.lock" }
         end
       end
     end

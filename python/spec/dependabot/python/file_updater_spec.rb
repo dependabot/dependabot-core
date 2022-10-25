@@ -217,6 +217,45 @@ RSpec.describe Dependabot::Python::FileUpdater do
       end
     end
 
+    context "with a pyproject.toml with pep621 dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content:
+            fixture("pyproject_files", "standard_python.toml")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ansys-templates",
+          version: "0.5.0",
+          previous_version: "0.3.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==0.5.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==0.3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "delegates to RequirementFileUpdater" do
+        expect(described_class::RequirementFileUpdater).
+          to receive(:new).and_call_original
+        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
     context "with a pyproject.toml and pyproject.lock" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:pyproject) do

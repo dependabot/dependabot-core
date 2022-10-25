@@ -11,17 +11,15 @@ module Dependabot
           @mixfile_content = mixfile_content
         end
 
-        FILE_READ      = /File.read\(.*?\)/.freeze
-        FILE_READ_BANG = /File.read!\(.*?\)/.freeze
+        FILE_READ      = /File.read\(.*?\)/
+        FILE_READ_BANG = /File.read!\(.*?\)/
         PIPE           = Regexp.escape("|>").freeze
-        VERSION_FILE   = /"VERSION"/i.freeze
+        VERSION_FILE   = /"VERSION"/i
 
-        NESTED_VERSION_FILE_READ = /String\.trim\(#{FILE_READ}\)/.freeze
-        NESTED_VERSION_FILE_READ_BANG = /String\.trim\(#{FILE_READ_BANG}\)/.freeze
-        PIPED_VERSION_FILE_READ =
-          /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ}/.freeze
-        PIPED_VERSION_FILE_READ_BANG =
-          /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ_BANG}/.freeze
+        NESTED_VERSION_FILE_READ = /String\.trim\(#{FILE_READ}\)/
+        NESTED_VERSION_FILE_READ_BANG = /String\.trim\(#{FILE_READ_BANG}\)/
+        PIPED_VERSION_FILE_READ = /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ}/
+        PIPED_VERSION_FILE_READ_BANG = /#{VERSION_FILE}[[:space:]]+#{PIPE}[[:space:]]+#{FILE_READ_BANG}/
 
         # rubocop:disable Performance/MethodObjectAsBlock
         def sanitized_content

@@ -35,7 +35,7 @@ module Dependabot
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
-        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /x # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
           (?:'\['git',
           \s+'clone',
@@ -47,7 +47,7 @@ module Dependabot
           \s+Failed\sto\sclone
           \s+(?<url>.+?),
           \s+check\syour\sgit\sconfiguration)
-        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /mx # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -293,7 +293,7 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name

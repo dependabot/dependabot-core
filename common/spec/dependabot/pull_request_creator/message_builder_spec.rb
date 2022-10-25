@@ -217,8 +217,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependencies) { [dependency, dependency] }
-          it { is_expected.to eq("Bump business and business") }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+
+          it { is_expected.to eq("Bump business and business2") }
 
           context "for a Maven property update" do
             let(:dependency) do
@@ -297,9 +308,45 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
+        context "with two dependencies with the same name" do
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+          it { is_expected.to eq("Bump business") }
+        end
+
         context "with three dependencies" do
-          let(:dependencies) { [dependency, dependency, dependency] }
-          it { is_expected.to eq("Bump business, business and business") }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependency3) do
+            Dependabot::Dependency.new(
+              name: "business3",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2, dependency3] }
+
+          it { is_expected.to eq("Bump business, business2 and business3") }
         end
 
         context "with a directory specified" do
@@ -643,20 +690,65 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependencies) { [dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
 
           it "includes both dependencies" do
             expect(pr_name).
-              to eq("Update requirements for business and business")
+              to eq("Update requirements for business and business2")
           end
         end
 
+        context "with two dependencies with the same name" do
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+          it { is_expected.to eq("Update requirements for business") }
+        end
+
         context "with three dependencies" do
-          let(:dependencies) { [dependency, dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependency3) do
+            Dependabot::Dependency.new(
+              name: "business3",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2, dependency3] }
 
           it "includes all three dependencies" do
             expect(pr_name).
-              to eq("Update requirements for business, business and business")
+              to eq("Update requirements for business, business2 and business3")
           end
         end
 

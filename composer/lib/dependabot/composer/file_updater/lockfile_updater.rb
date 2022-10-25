@@ -30,13 +30,13 @@ module Dependabot
           %r{
             (?<=PHP\sextension\s)ext\-[^\s/]+\s.*?\s(?=is|but)|
             (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=but)
-          }x.freeze
+          }x
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
             (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
-          }x.freeze
-        MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/.freeze
+          }x
+        MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies

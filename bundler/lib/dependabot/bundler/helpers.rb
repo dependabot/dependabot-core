@@ -13,7 +13,7 @@ module Dependabot
       # it was created with an old version that didn't add this information
       FAILOVER = V1
 
-      BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m.freeze
+      BUNDLER_MAJOR_VERSION_REGEX = /BUNDLED WITH\s+(?<version>\d+)\./m
 
       def self.bundler_version(lockfile)
         return DEFAULT unless lockfile

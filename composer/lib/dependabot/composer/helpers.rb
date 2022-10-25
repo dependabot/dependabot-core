@@ -6,12 +6,12 @@ module Dependabot
   module Composer
     module Helpers
       # From composers json-schema: https://getcomposer.org/schema.json
-      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*$}.freeze
+      COMPOSER_V2_NAME_REGEX = %r{^[a-z0-9]([_.-]?[a-z0-9]+)*/[a-z0-9](([_.]?|-{0,2})[a-z0-9]+)*$}
       # From https://github.com/composer/composer/blob/b7d770659b4e3ef21423bd67ade935572913a4c1/src/Composer/Repository/PlatformRepository.php#L33
       PLATFORM_PACKAGE_REGEX = /
         ^(?:php(?:-64bit|-ipv6|-zts|-debug)?|hhvm|(?:ext|lib)-[a-z0-9](?:[_.-]?[a-z0-9]+)*
         |composer-(?:plugin|runtime)-api)$
-      /x.freeze
+      /x
 
       def self.composer_version(composer_json, parsed_lockfile = nil)
         if parsed_lockfile && parsed_lockfile["plugin-api-version"]
