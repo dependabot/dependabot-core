@@ -20,8 +20,6 @@ gemspec path: "../pub"
 gemspec path: "../python"
 gemspec path: "../terraform"
 
-gem "rubocop", group: :development
-
 # Visual Studio Code integration
 gem "reek", group: :development
 gem "ruby-debug-ide", group: :development
