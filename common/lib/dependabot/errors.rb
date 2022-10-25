@@ -18,7 +18,7 @@ module Dependabot
       return message unless message.is_a?(String)
 
       path_regex =
-        Regexp.escape(Utils::BUMP_TMP_DIR_PATH) + "\/" +
+        Regexp.escape(Utils::BUMP_TMP_DIR_PATH) + "\\/" +
         Regexp.escape(Utils::BUMP_TMP_FILE_PREFIX) + "[a-zA-Z0-9-]*"
 
       message = message.gsub(/#{path_regex}/, "dependabot_tmp_dir").strip
