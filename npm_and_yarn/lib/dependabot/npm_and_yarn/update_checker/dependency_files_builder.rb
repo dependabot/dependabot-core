@@ -87,7 +87,7 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
+          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.none? do |r|
             r.include?(URI(yarnrc_global_registry).host)
           end
         end
