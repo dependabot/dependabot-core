@@ -62,7 +62,7 @@ module Dependabot
             updated_files << file
           end
           pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-            updated_files << file if file.name == ".pnp.cjs"
+            updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
           end
         end
 
