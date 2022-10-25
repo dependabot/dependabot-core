@@ -96,6 +96,47 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       end
       it { is_expected.to be_falsey }
     end
+
+    context "given a dependency in a poetry-based Python library, that's also in an additional requirements file" do
+      let(:dependency_files) { [pyproject, requirements_file] }
+      let(:pyproject_fixture_name) { "tilde_version.toml" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "requests",
+          version: "1.2.3",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "^1.0.0",
+            groups: [],
+            source: nil
+          }, {
+            file: "requirements.txt",
+            requirement: "==1.2.8",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      let(:pypi_url) { "https://pypi.org/simple/requests/" }
+      let(:pypi_response) do
+        fixture("pypi", "pypi_simple_response_requests.html")
+      end
+
+      before do
+        stub_request(:get, "https://pypi.org/pypi/pendulum/json/").
+          to_return(
+            status: 200,
+            body: fixture("pypi", "pypi_response_pendulum.json")
+          )
+      end
+
+      it "does not attempt an update, because updating requirements.txt file does not yet support widening ranges" do
+        expect(subject).to be_falsey
+      end
+    end
   end
 
   describe "#latest_version" do
