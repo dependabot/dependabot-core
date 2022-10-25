@@ -33,6 +33,7 @@ COPY --chown=dependabot:dependabot common ${DEPENDABOT_HOME}/common
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 RUN bundle config set --local path 'vendor' && \
+bundle config set --local frozen 'true' && \
 bundle config set --local without 'development' && \
 bundle install
 
