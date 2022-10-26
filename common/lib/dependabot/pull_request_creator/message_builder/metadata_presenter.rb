@@ -153,7 +153,7 @@ module Dependabot
             msg += body
             msg + "</details>\n"
           else
-            "\n\##{summary}\n\n#{body}"
+            "\n##{summary}\n\n#{body}"
           end
         end
 

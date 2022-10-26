@@ -300,7 +300,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       it do
         is_expected.to eq(
           "<p>{Issue 111}[https://github-redirect.com/dependabot/" \
-          "dependabot-core/issues/111\]</p>\n"
+          "dependabot-core/issues/111]</p>\n"
         )
       end
     end

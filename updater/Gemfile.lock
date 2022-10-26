@@ -1,19 +1,19 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-bundler (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-cargo (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.211.0)
+    dependabot-common (0.212.0)
       activesupport (>= 6.0.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
@@ -31,88 +31,88 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-composer (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-docker (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-elm (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-git_submodules (0.212.0)
+      dependabot-common (= 0.212.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-github_actions (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-go_modules (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.211.0)
-      dependabot-common (= 0.211.0)
-      dependabot-maven (= 0.211.0)
+    dependabot-gradle (0.212.0)
+      dependabot-common (= 0.212.0)
+      dependabot-maven (= 0.212.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-hex (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-maven (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-npm_and_yarn (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-nuget (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-pub (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-python (0.212.0)
+      dependabot-common (= 0.212.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.211.0)
-      dependabot-common (= 0.211.0)
+    dependabot-terraform (0.212.0)
+      dependabot-common (= 0.212.0)
 
 GEM
   remote: https://rubygems.org/
@@ -127,11 +127,11 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
     aws-eventstream (1.2.0)
-    aws-partitions (1.624.0)
+    aws-partitions (1.650.0)
     aws-sdk-codecommit (1.51.0)
       aws-sdk-core (~> 3, >= 3.127.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.137.0)
+    aws-sdk-core (3.164.0)
       aws-eventstream (~> 1, >= 1.0.2)
       aws-partitions (~> 1, >= 1.525.0)
       aws-sigv4 (~> 1.1)
@@ -139,7 +139,7 @@ GEM
     aws-sdk-ecr (1.56.0)
       aws-sdk-core (~> 3, >= 3.127.0)
       aws-sigv4 (~> 1.1)
-    aws-sigv4 (1.5.1)
+    aws-sigv4 (1.5.2)
       aws-eventstream (~> 1, >= 1.0.2)
     citrus (3.0.2)
     commonmarker (0.23.6)
@@ -155,7 +155,7 @@ GEM
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
     dotenv (2.8.1)
-    excon (0.92.4)
+    excon (0.93.1)
     faraday (2.6.0)
       faraday-net_http (>= 2.0, < 3.1)
       ruby2_keywords (>= 0.0.4)
@@ -330,4 +330,4 @@ DEPENDENCIES
   webmock (~> 3.18)
 
 BUNDLED WITH
-   2.2.20
+   2.3.22

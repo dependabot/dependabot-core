@@ -213,7 +213,8 @@ module Dependabot
         end
 
         def install_required_python
-          return if run_command("pyenv versions").include?("\ #{python_version}")
+          # The leading space is important
+          return if run_command("pyenv versions").include?(" #{python_version}")
 
           run_command("pyenv install -s #{python_version}")
           run_command("pyenv exec pip install --upgrade pip")

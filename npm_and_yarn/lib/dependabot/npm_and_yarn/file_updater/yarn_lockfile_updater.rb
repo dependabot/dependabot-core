@@ -157,13 +157,14 @@ module Dependabot
           # package.json file(s), and we can just run yarn install to get the
           # lockfile in the right state. Otherwise we'll need to manually update
           # the lockfile.
+
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install --mode=update-lockfile"
+                      "yarn install"
                     else
                       updates = top_level_dependency_updates.collect do |dep|
                         dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
                       end
-                      "yarn up #{updates.join(' ')} --mode=update-lockfile"
+                      "yarn up #{updates.join(' ')}"
                     end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -179,9 +180,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           Helpers.run_yarn_commands(
-            "yarn add #{update} --mode=update-lockfile",
-            "yarn dedupe #{dep.name} --mode=update-lockfile",
-            "yarn remove #{dep.name} --mode=update-lockfile"
+            "yarn add #{update}",
+            "yarn dedupe #{dep.name}",
+            "yarn remove #{dep.name}"
           )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
