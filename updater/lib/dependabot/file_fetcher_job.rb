@@ -57,6 +57,10 @@ module Dependabot
       return unless job.clone?
 
       file_fetcher.clone_repo_contents
+    rescue Dependabot::RepoNotFound, Dependabot::BranchNotFound
+      # base_commit_sha can't be reached, don't attempt to fetch it in the rescue
+      @base_commit_sha = "unknown"
+      raise
     end
 
     def base64_dependency_files
