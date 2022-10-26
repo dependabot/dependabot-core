@@ -173,6 +173,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
+        context "but the internet goes down" do
+          before do
+            stub_request(:any, /.*/).to_raise(SocketError)
+          end
+
+          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+        end
+
         context "but does have prefixed commits" do
           let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
@@ -884,6 +892,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
             "<br />\n"
           )
+      end
+
+      context "when there's a network error" do
+        before do
+          stub_request(:any, /.*/).to_raise(SocketError)
+        end
+
+        it "has a blank message" do
+          expect(pr_message).
+            to eq("")
+        end
       end
 
       context "without a github link proxy" do
