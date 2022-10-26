@@ -115,6 +115,17 @@ module Dependabot
         raise NotImplementedError
       end
 
+      def preferred_version_resolvable_with_unlock?
+        # Our requirements file updater doesn't currently support widening
+        # ranges, so avoid updating this dependency if widening ranges has been
+        # required and the dependency is present on a requirements file.
+        # Otherwise, we will crash later on. TODO: Consider what the correct
+        # behavior is in these cases.
+        return false if requirements_update_strategy == :widen_ranges && updating_requirements_file?
+
+        super
+      end
+
       def fetch_lowest_resolvable_security_fix_version
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
@@ -297,6 +308,10 @@ module Dependabot
 
       def updating_in_file?
         requirement_files.any? { |f| f.end_with?(".in") }
+      end
+
+      def updating_requirements_file?
+        requirement_files.any? { |f| f =~ /\.txt$|\.in$/ }
       end
 
       def requirement_files
