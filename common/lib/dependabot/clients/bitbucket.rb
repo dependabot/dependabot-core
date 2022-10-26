@@ -143,7 +143,7 @@ module Dependabot
         post(base_url + pr_path, content.to_json)
       end
       # rubocop:enable Metrics/ParameterLists
-      
+
       def current_user
         base_url = "https://api.bitbucket.org/2.0/user?fields=uuid"
         response = get(base_url)
