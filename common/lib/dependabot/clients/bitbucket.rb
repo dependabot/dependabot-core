@@ -144,7 +144,14 @@ module Dependabot
       end
       # rubocop:enable Metrics/ParameterLists
 
+      def current_user
+        base_url = "https://api.bitbucket.org/2.0/user?fields=uuid"
+        response = get(base_url)
+        JSON.parse(response.body).fetch("uuid")
+      end
+
       def default_reviewers(repo)
+        current_uuid = current_user
         path = "#{repo}/default-reviewers?pagelen=100&fields=values.uuid,next"
         reviewers_url = base_url + path
 
@@ -153,7 +160,7 @@ module Dependabot
         reviewer_data = []
 
         default_reviewers.each do |reviewer|
-          reviewer_data.append({ uuid: reviewer.fetch("uuid") })
+          reviewer_data.append({ uuid: reviewer.fetch("uuid") }) unless current_uuid == reviewer.fetch("uuid")
         end
 
         reviewer_data
