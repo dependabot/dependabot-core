@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "stringio"
 require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
@@ -207,6 +208,10 @@ module Dependabot
             path: Pathname.new(updated_path).cleanpath.to_path
           }
         end
+      end
+
+      def recurse_submodules_when_cloning?
+        false
       end
 
       def client_for_provider
@@ -562,6 +567,10 @@ module Dependabot
           max_by(&:length)
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/BlockLength
       def _clone_repo_contents(target_directory:)
         SharedHelpers.with_git_configured(credentials: credentials) do
           path = target_directory || File.join("tmp", source.repo)
@@ -570,25 +579,54 @@ module Dependabot
           return path if Dir.exist?(File.join(path, ".git"))
 
           FileUtils.mkdir_p(path)
-          br_opt = " --branch #{source.branch} --single-branch" if source.branch
+
+          clone_options = StringIO.new
+          clone_options << "--no-tags --depth 1"
+          clone_options << if recurse_submodules_when_cloning?
+                             " --recurse-submodules --shallow-submodules"
+                           else
+                             " --no-recurse-submodules"
+                           end
+          clone_options << " --branch #{source.branch} --single-branch" if source.branch
           SharedHelpers.run_shell_command(
             <<~CMD
-              git clone --no-tags --no-recurse-submodules --depth 1#{br_opt} #{source.url} #{path}
+              git clone #{clone_options.string} #{source.url} #{path}
             CMD
           )
+
           if source.commit
             # This code will only be called for testing. Production will never pass a commit
             # since Dependabot always wants to use the latest commit on a branch.
             Dir.chdir(path) do
+              fetch_options = StringIO.new
+              fetch_options << "--depth 1"
+              fetch_options << if recurse_submodules_when_cloning?
+                                 " --recurse-submodules=on-demand"
+                               else
+                                 " --no-recurse-submodules"
+                               end
               # Need to fetch the commit due to the --depth 1 above.
-              SharedHelpers.run_shell_command("git fetch --depth 1 origin #{source.commit}")
+              SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
+
+              reset_options = StringIO.new
+              reset_options << "--hard"
+              reset_options << if recurse_submodules_when_cloning?
+                                 " --recurse-submodules"
+                               else
+                                 " --no-recurse-submodules"
+                               end
               # Set HEAD to this commit so later calls so git reset HEAD will work.
-              SharedHelpers.run_shell_command("git reset --hard #{source.commit}")
+              SharedHelpers.run_shell_command("git reset #{reset_options.string} #{source.commit}")
             end
           end
+
           path
         end
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/BlockLength
     end
   end
 end

@@ -7,6 +7,7 @@ require "spec_helper"
 require "dependabot/source"
 require "dependabot/file_fetchers/base"
 require "dependabot/clients/codecommit"
+require "dependabot/shared_helpers"
 
 RSpec.describe Dependabot::FileFetchers::Base do
   let(:source) do
@@ -1551,6 +1552,99 @@ RSpec.describe Dependabot::FileFetchers::Base do
 
         it "raises a not found error" do
           expect { subject }.to raise_error(Dependabot::RepoNotFound)
+        end
+      end
+    end
+  end
+
+  context "with submodules" do
+    let(:repo) { "dependabot-fixtures/go-modules-app-with-git-submodules" }
+    let(:repo_contents_path) { Dir.mktmpdir }
+    let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
+
+    before do
+      allow(Dependabot::SharedHelpers).
+        to receive(:run_shell_command).and_call_original
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    describe "#clone_repo_contents" do
+      it "does not clone submodules by default" do
+        file_fetcher_instance.clone_repo_contents
+
+        expect(Dependabot::SharedHelpers).
+          to have_received(:run_shell_command).with(
+            /\Agit clone .* --no-recurse-submodules/
+          )
+        expect(`ls -1 #{submodule_contents_path}`.split).to_not include("go.mod")
+      end
+
+      context "with a source commit" do
+        let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
+
+        it "does not fetch/reset submodules by default" do
+          file_fetcher_instance.clone_repo_contents
+
+          expect(Dependabot::SharedHelpers).
+            to have_received(:run_shell_command).with(
+              /\Agit fetch .* --no-recurse-submodules/
+            )
+          expect(Dependabot::SharedHelpers).
+            to have_received(:run_shell_command).with(
+              /\Agit reset .* --no-recurse-submodules/
+            )
+        end
+      end
+
+      context "when #recurse_submodules_when_cloning? returns true" do
+        let(:child_class) do
+          Class.new(described_class) do
+            def self.required_files_in?(filenames)
+              filenames.include?("go.mod")
+            end
+
+            def self.required_files_message
+              "Repo must contain a go.mod."
+            end
+
+            private
+
+            def fetch_files
+              [fetch_file_from_host("go.mod")]
+            end
+
+            def recurse_submodules_when_cloning?
+              true
+            end
+          end
+        end
+
+        it "clones submodules" do
+          file_fetcher_instance.clone_repo_contents
+
+          expect(Dependabot::SharedHelpers).
+            to have_received(:run_shell_command).with(
+              /\Agit clone .* --recurse-submodules --shallow-submodules/
+            )
+          expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+        end
+
+        context "with a source commit" do
+          let(:source_commit) { "5c7e92a4860382fd31336872f0fe79a848669c4d" }
+
+          it "fetches/resets submodules if necessary" do
+            file_fetcher_instance.clone_repo_contents
+
+            expect(Dependabot::SharedHelpers).
+              to have_received(:run_shell_command).with(
+                /\Agit fetch .* --recurse-submodules=on-demand/
+              )
+            expect(Dependabot::SharedHelpers).
+              to have_received(:run_shell_command).with(
+                /\Agit reset .* --recurse-submodules/
+              )
+          end
         end
       end
     end
