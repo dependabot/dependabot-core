@@ -21,7 +21,7 @@ module Dependabot
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
                    content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
-      @name = name
+      @name = sanitize_name(name)
       @content = content
       @directory = clean_directory(directory)
       @symlink_target = symlink_target
@@ -113,6 +113,12 @@ module Dependabot
     def clean_directory(directory)
       # Directory should always start with a `/`
       directory.sub(%r{^/*}, "/")
+    end
+
+    def sanitize_name(name)
+      # Ensure name is a relative path without relative path traversal
+      path = Pathname.new(name).cleanpath
+      File.join(path.split.reject { |c| c.root? || c.to_s == "." || c.to_s == ".." })
     end
   end
 end
