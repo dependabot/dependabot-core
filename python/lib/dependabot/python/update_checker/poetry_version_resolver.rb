@@ -93,14 +93,7 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
                 add_auth_env_vars
 
-                if python_version && !pre_installed_python?(python_version)
-                  run_poetry_command("pyenv install -s #{python_version}")
-                  run_poetry_command("pyenv exec pip install --upgrade pip")
-                  run_poetry_command(
-                    "pyenv exec pip install -r " \
-                    "#{NativeHelpers.python_requirements_path}"
-                  )
-                end
+                Helpers.install_required_python(python_version)
 
                 # use system git instead of the pure Python dulwich
                 unless python_version&.start_with?("3.6")
@@ -346,7 +339,7 @@ module Dependabot
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Pipenv
+          # Raise an error with the output from the shell session if poetry
           # returns a non-zero status
           return if process.success?
 
