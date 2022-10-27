@@ -178,7 +178,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             stub_request(:any, /.*/).to_raise(SocketError)
           end
 
-          it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
+          it { is_expected.to eq("bump business from 1.4.0 to 1.5.0") }
         end
 
         context "but does have prefixed commits" do
