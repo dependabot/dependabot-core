@@ -4,6 +4,7 @@ require "toml-rb"
 require "open3"
 require "dependabot/dependency"
 require "dependabot/shared_helpers"
+require "dependabot/python/helpers"
 require "dependabot/python/version"
 require "dependabot/python/requirement"
 require "dependabot/python/python_versions"
@@ -170,12 +171,7 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
               add_auth_env_vars
 
-              if python_version && !pre_installed_python?(python_version)
-                run_poetry_command("pyenv install -s #{python_version}")
-                run_poetry_command("pyenv exec pip install --upgrade pip")
-                run_poetry_command("pyenv exec pip install -r" \
-                                   "#{NativeHelpers.python_requirements_path}")
-              end
+              Helpers.install_required_python(python_version)
 
               # use system git instead of the pure Python dulwich
               unless python_version&.start_with?("3.6")

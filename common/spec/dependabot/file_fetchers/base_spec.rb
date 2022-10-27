@@ -1554,6 +1554,16 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect { subject }.to raise_error(Dependabot::RepoNotFound)
         end
       end
+
+      context "when the branch can't be found" do
+        let(:branch) do
+          "notfound"
+        end
+
+        it "raises a not found error" do
+          expect { subject }.to raise_error(Dependabot::BranchNotFound)
+        end
+      end
     end
   end
 
