@@ -85,7 +85,11 @@ module Dependabot
       def clone_repo_contents
         @clone_repo_contents ||=
           _clone_repo_contents(target_directory: repo_contents_path)
-      rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        if e.message.include?("fatal: Remote branch #{target_branch} not found in upstream origin")
+          raise Dependabot::BranchNotFound, target_branch
+        end
+
         raise Dependabot::RepoNotFound, source
       end
 
