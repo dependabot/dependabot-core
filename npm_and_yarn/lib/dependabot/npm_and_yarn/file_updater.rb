@@ -73,21 +73,13 @@ module Dependabot
       def vendor_cache_dir
         return @vendor_cache_dir if defined?(@vendor_cache_dir)
 
-        @vendor_cache_dir = if File.exist?(".yarnrc.yml")
-                              YAML.load_file(".yarnrc.yml").fetch("cacheFolder", "./.yarn/cache")
-                            else
-                              "./.yarn/cache"
-                            end
+        @vendor_cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
       end
 
       def install_state_path
         return @install_state_path if defined?(@install_state_path)
 
-        @install_state_path = if File.exist?(".yarnrc.yml")
-                                YAML.load_file(".yarnrc.yml").fetch("installStatePath", "./.yarn/install-state.gz")
-                              else
-                                "./.yarn/install-state.gz"
-                              end
+        @install_state_path = Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz")
       end
 
       def vendor_updater
