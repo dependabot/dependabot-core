@@ -35,7 +35,7 @@ body:
   - type: input
     attributes:
       label: Language version
-      description: If applicable, specify the language version you're using (e.g., Node.js `14.1`, Ruby `3.1`, etc.)
+      description: If applicable, specify the language version you're using (e.g., Node.js `16.18`, Ruby `3.1`, etc.)
     validations:
       required: false
 
