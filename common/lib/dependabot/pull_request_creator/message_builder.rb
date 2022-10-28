@@ -3,6 +3,7 @@
 require "pathname"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
+require "dependabot/logger"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/message"
@@ -38,7 +39,12 @@ module Dependabot
       end
 
       def pr_name
-        pr_name = pr_name_prefixer.pr_name_prefix
+        begin
+          pr_name = pr_name_prefixer.pr_name_prefix
+        rescue StandardError => e
+          Dependabot.logger.error("Error while generating PR name: #{e.message}")
+          pr_name = ""
+        end
         pr_name += library? ? library_pr_name : application_pr_name
         return pr_name if files.first.directory == "/"
 
@@ -48,12 +54,20 @@ module Dependabot
       def pr_message
         suffixed_pr_message_header + commit_message_intro + \
           metadata_cascades + prefixed_pr_message_footer
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating PR message: #{e.message}")
+        suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
       def commit_message
         message = commit_subject + "\n\n"
         message += commit_message_intro
         message += metadata_links
+        message += "\n\n" + message_trailers if message_trailers
+        message
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating commit message: #{e.message}")
+        message = commit_subject
         message += "\n\n" + message_trailers if message_trailers
         message
       end
