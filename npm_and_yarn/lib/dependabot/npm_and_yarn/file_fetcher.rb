@@ -38,11 +38,7 @@ module Dependabot
         begin
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              cache_dir = if File.exist?(".yarnrc.yml")
-                            YAML.load_file(".yarnrc.yml").fetch("cacheFolder", "./.yarn/cache")
-                          else
-                            "./.yarn/cache"
-                          end
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
               SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
             end
             path
