@@ -107,6 +107,9 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
   # This is the version of CPython that gets installed
   && pyenv install 3.10.7 \
   && pyenv global 3.10.7 \
+  && pyenv install 3.9.14 \
+  && pyenv install 3.8.14 \
+  && pyenv install 3.7.14 \
   && rm -Rf /tmp/python-build*
 USER root
 
@@ -299,6 +302,10 @@ RUN corepack prepare yarn@3.2.3 --activate
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 RUN bash /opt/python/helpers/build
+
+RUN cd /usr/local/.pyenv \
+  && tar czf versions.tar.gz versions \
+  && rm -Rf /usr/local/.pyenv/versions
 
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
