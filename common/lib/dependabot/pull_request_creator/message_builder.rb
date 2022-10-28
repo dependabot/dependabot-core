@@ -67,7 +67,9 @@ module Dependabot
         message
       rescue StandardError => e
         Dependabot.logger.error("Error while generating commit message: #{e.message}")
-        commit_subject + ("\n\n" + message_trailers if message_trailers)
+        message = commit_subject
+        message += "\n\n" + message_trailers if message_trailers
+        message
       end
 
       def message
