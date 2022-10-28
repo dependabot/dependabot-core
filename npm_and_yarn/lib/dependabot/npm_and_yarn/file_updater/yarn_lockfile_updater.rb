@@ -154,6 +154,7 @@ module Dependabot
         end
 
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
+          write_temporary_dependency_files(yarn_lock)
           # If the requirements have changed, it means we've updated the
           # package.json file(s), and we can just run yarn install to get the
           # lockfile in the right state. Otherwise we'll need to manually update
