@@ -375,7 +375,7 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         end
         it "updates version comment" do
           new_sha = dependency.requirements.first.dig(:source, :ref)
-          expect(subject.content).not_to match(/@#{new_sha}\s+#.*#{dependency.previous_version}/)
+          expect(subject.content).not_to match(/@#{new_sha}\s+#.*#{dependency.previous_version}\s*$/)
 
           expect(subject.content).to include "# v#{dependency.version}"
           expect(subject.content).to include "# #{dependency.version}"
@@ -386,6 +386,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
         it "doesn't update version comments when @ref is not a SHA" do
           old_version = dependency.previous_requirements[1].dig(:source, :ref)
           expect(subject.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
+        end
+        it "doesn't update version comments in the middle of sentences" do
+          expect(subject.content).to include "Versions older than v#{dependency.previous_version} have a security vulnerability"
+          expect(subject.content).not_to include "Versions older than v#{dependency.version} have a security vulnerability"
         end
       end
     end

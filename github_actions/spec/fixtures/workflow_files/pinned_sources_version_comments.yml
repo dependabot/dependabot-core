@@ -11,7 +11,20 @@ jobs:
     - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # tag=v2.1.0
     - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81  #   v2.1.0
     - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0
+    # The comment on the next line has a trailing tab. The version should still be updated.
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 #v2.1.0 
     - uses: actions/checkout@01aecc # v2.1.0
   integration:
     - uses: actions/checkout@v2.1.0 # comments that include the version (v2.1.0) shouldn't be updated for non-SHA refs
     - uses: actions/checkout@01aecc#v2.1.0 # this shouldn't be updated, because the version is part of the ref, not a comment.
+
+    # The version in the comment for the next action shouldn't be updated
+    # because it refers to past behavior.
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # Versions older than v2.1.0 have a security vulnerability
+
+    # The versions in the comment for the next action won't be updated.
+    # The first version could be updated, but it's difficult to create
+    # a heuristic that recognizes the first version as a version alias
+    # for the SHA commit, and the second version as a concrete version
+    # that shouldn't change. For simplicity, we don't update either.
+    - uses: actions/checkout@01aecccf739ca6ff86c0539fbc67a7a5007bbc81 # v2.1.0 - Versions older than v2.1.0 have a security vulnerability
