@@ -103,7 +103,7 @@ module Dependabot
           return nil unless response.status == 204
 
           source_url = response.headers.fetch("X-Terraform-Get")
-          source_url = URI.join(download_url, source_url) if
+          source_url = URI.join(download_url, source_url).to_s if
             source_url.start_with?("/", "./", "../")
           source_url = RegistryClient.get_proxied_source(source_url) if source_url
         when "provider", "providers"
