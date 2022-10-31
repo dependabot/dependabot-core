@@ -87,8 +87,6 @@ module Dependabot
       # OOM errors are special cased so that we stop the update run early
       error = { "error-type": RUN_HALTING_ERRORS.fetch(e.class) }
       record_error(error)
-    ensure
-      clear_repo_contents_path
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
@@ -779,17 +777,6 @@ module Dependabot
       logger_info("Telling backend to close pull request for " \
                   "#{job.dependencies.join(', ')} - #{reason_string}")
       service.close_pull_request(job_id, job.dependencies, reason)
-    end
-
-    def clear_repo_contents_path
-      # Remove the contents of the repo_contents_path, as these files are owned
-      # by the root user and will cause a permission error if left in place when
-      # we try to remove the directory.
-      # The `secure` flag ensures that we do not remove any symlinks, which
-      # could be exploited.
-      return unless repo_contents_path && Dir.exist?(repo_contents_path)
-
-      FileUtils.rm_rf("#{repo_contents_path}/.", secure: true)
     end
 
     # rubocop:disable Metrics/MethodLength
