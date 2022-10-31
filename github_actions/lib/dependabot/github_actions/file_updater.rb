@@ -90,6 +90,7 @@ module Dependabot
 
       def updated_version_comment(comment, new_req)
         raise "No comment!" unless comment
+
         comment = comment.rstrip
         return unless dependency.previous_version && dependency.version
         return unless comment.end_with? dependency.previous_version

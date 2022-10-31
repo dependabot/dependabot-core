@@ -388,8 +388,10 @@ RSpec.describe Dependabot::GithubActions::FileUpdater do
           expect(subject.content).not_to match(/@#{old_version}\s+#.*#{dependency.version}/)
         end
         it "doesn't update version comments in the middle of sentences" do
+          # rubocop:disable Layout/LineLength
           expect(subject.content).to include "Versions older than v#{dependency.previous_version} have a security vulnerability"
           expect(subject.content).not_to include "Versions older than v#{dependency.version} have a security vulnerability"
+          # rubocop:enable Layout/LineLength
         end
       end
     end
