@@ -3,22 +3,29 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     gnupg2
-# Install Erlang and Elixir
-ENV PATH="$PATH:/usr/local/elixir/bin"
+
+# Install Erlang
+# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
+# switching to a more up to date PPA. See also:
+#  * https://github.com/esl/packages/issues/15
+#  * https://github.com/dependabot/dependabot-core/pull/7865
+#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
+#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
+ARG ERLANG_MAJOR_VERSION=24
+ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    erlang=${ERLANG_VERSION}
+
+# Install Elixir
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.14.4
 ARG ELIXIR_CHECKSUM=b5705275d62ce3dae172d25d7ea567fffdabb45458abeb29c0189923b907367c
-ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1-1
-RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
-  && dpkg -i erlang-solutions_2.0_all.deb \
-  && apt-get update \
-  && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
-  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
-  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip erlang-solutions_2.0_all.deb \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip
+ENV PATH="$PATH:/usr/local/elixir/bin"
 
 USER dependabot
 
