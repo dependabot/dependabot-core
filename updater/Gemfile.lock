@@ -1,19 +1,19 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-bundler (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-cargo (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.212.0)
+    dependabot-common (0.213.0)
       activesupport (>= 6.0.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
@@ -31,88 +31,88 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-composer (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-docker (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-elm (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-git_submodules (0.213.0)
+      dependabot-common (= 0.213.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-github_actions (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-go_modules (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.212.0)
-      dependabot-common (= 0.212.0)
-      dependabot-maven (= 0.212.0)
+    dependabot-gradle (0.213.0)
+      dependabot-common (= 0.213.0)
+      dependabot-maven (= 0.213.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-hex (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-maven (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-npm_and_yarn (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-nuget (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-pub (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-python (0.213.0)
+      dependabot-common (= 0.213.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.212.0)
-      dependabot-common (= 0.212.0)
+    dependabot-terraform (0.213.0)
+      dependabot-common (= 0.213.0)
 
 GEM
   remote: https://rubygems.org/
@@ -127,17 +127,17 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
     aws-eventstream (1.2.0)
-    aws-partitions (1.650.0)
-    aws-sdk-codecommit (1.51.0)
-      aws-sdk-core (~> 3, >= 3.127.0)
+    aws-partitions (1.653.0)
+    aws-sdk-codecommit (1.52.0)
+      aws-sdk-core (~> 3, >= 3.165.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.164.0)
+    aws-sdk-core (3.166.0)
       aws-eventstream (~> 1, >= 1.0.2)
-      aws-partitions (~> 1, >= 1.525.0)
-      aws-sigv4 (~> 1.1)
+      aws-partitions (~> 1, >= 1.651.0)
+      aws-sigv4 (~> 1.5)
       jmespath (~> 1, >= 1.6.1)
-    aws-sdk-ecr (1.56.0)
-      aws-sdk-core (~> 3, >= 3.127.0)
+    aws-sdk-ecr (1.57.0)
+      aws-sdk-core (~> 3, >= 3.165.0)
       aws-sigv4 (~> 1.1)
     aws-sigv4 (1.5.2)
       aws-eventstream (~> 1, >= 1.0.2)
