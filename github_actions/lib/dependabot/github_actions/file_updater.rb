@@ -66,8 +66,11 @@ module Dependabot
 
           # Replace the old declaration that's preceded by a non-word character
           # and followed by a whitespace character (comments) or EOL.
-          # If the declaration is followed by a comment, attempt to update
-          # any version comments associated with SHA source refs.
+          # If the declaration is followed by a comment that lists the version associated
+          # with the SHA source ref, then update the comment to the human-readable new version.
+          # However, if the comment includes additional text beyond the version, for safety
+          # we skip updating the comment in case it's a custom note, todo, warning etc of some kind.
+          # See the related unit tests for examples.
           updated_content =
             updated_content.
             gsub(
