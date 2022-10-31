@@ -36,5 +36,5 @@ group :test do
 end
 
 group :development do
-  gem "licensed", "~> 3.7", require: false
+  gem "licensed", "~> 3.8", require: false
 end

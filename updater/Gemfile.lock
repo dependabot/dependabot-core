@@ -187,7 +187,7 @@ GEM
       reline (>= 0.3.0)
     jmespath (1.6.1)
     json (2.6.2)
-    licensed (3.7.5)
+    licensed (3.8.0)
       bundler (>= 1.10)
       json (>= 2.6.2)
       licensee (>= 9.15.2, < 10.0.0)
@@ -319,7 +319,7 @@ DEPENDENCIES
   dependabot-python!
   dependabot-terraform!
   http (~> 5.1)
-  licensed (~> 3.7)
+  licensed (~> 3.8)
   octokit (= 4.25.1)
   rspec (~> 3.11)
   rubocop (~> 1.37.1)
