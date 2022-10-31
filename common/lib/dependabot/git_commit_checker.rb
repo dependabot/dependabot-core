@@ -67,6 +67,10 @@ module Dependabot
 
     def pinned_ref_looks_like_commit_sha?
       ref = dependency_source_details.fetch(:ref)
+      ref_looks_like_commit_sha?(ref)
+    end
+
+    def ref_looks_like_commit_sha?(ref)
       return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
 
       return false unless pinned?
