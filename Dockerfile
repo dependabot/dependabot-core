@@ -315,3 +315,6 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+
+# Pin to an earlier version of Hex. This must be run as dependabot
+RUN mix hex.install 1.0.1
