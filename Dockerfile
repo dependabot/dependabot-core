@@ -96,23 +96,6 @@ RUN mkdir -p /tmp/ruby-install \
  && rm -rf /var/lib/gems/*/cache/* \
  && rm -rf /tmp/ruby-install
 
-### PYTHON
-
-# Install Python with pyenv.
-ENV PYENV_ROOT=/usr/local/.pyenv \
-  PATH="/usr/local/.pyenv/bin:$PATH"
-RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
-USER dependabot
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.5 --single-branch --depth=1 /usr/local/.pyenv \
-  # This is the version of CPython that gets installed
-  && pyenv install 3.10.7 \
-  && pyenv global 3.10.7 \
-  && pyenv install 3.9.14 \
-  && pyenv install 3.8.14 \
-  && pyenv install 3.7.14 \
-  && rm -Rf /tmp/python-build*
-USER root
-
 
 ### JAVASCRIPT
 
@@ -301,9 +284,24 @@ RUN bash /opt/npm_and_yarn/helpers/build
 RUN corepack prepare yarn@3.2.3 --activate
 
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-RUN bash /opt/python/helpers/build
+### PYTHON
 
-RUN cd /usr/local/.pyenv \
+# Install Python with pyenv.
+USER root
+ENV PYENV_ROOT=/usr/local/.pyenv \
+  PATH="/usr/local/.pyenv/bin:$PATH"
+RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
+USER dependabot
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.5 --single-branch --depth=1 /usr/local/.pyenv \
+  # This is the version of CPython that gets installed
+  && pyenv install 3.10.7 \
+  && pyenv global 3.10.7 \
+  && pyenv install 3.9.14 \
+  && pyenv install 3.8.14 \
+  && pyenv install 3.7.14 \
+  && rm -Rf /tmp/python-build* \
+  && bash /opt/python/helpers/build \
+  && cd /usr/local/.pyenv \
   && tar czf versions.tar.gz versions \
   && rm -Rf /usr/local/.pyenv/versions
 
