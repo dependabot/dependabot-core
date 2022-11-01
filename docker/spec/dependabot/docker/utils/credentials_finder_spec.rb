@@ -152,4 +152,56 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
       end
     end
   end
+
+  describe "#replaces_base" do
+    subject(:replaces_base) { finder.replaces_base?() }
+
+    context "with private registry and replaces-base true" do
+      let(:credentials) do
+        [{
+          "type" => "docker_registry",
+          "registry" => "registry-host.io:5000",
+          "username" => "grey",
+          "password" => "pa55word",
+          "replaces-base" => true
+        }]
+      end
+
+      it { is_expected.to eq(true) }
+    end
+
+    context "with private registry and replaces-base false" do
+      let(:credentials) do
+        [{
+          "type" => "docker_registry",
+          "registry" => "registry-host.io:5000",
+          "username" => "grey",
+          "password" => "pa55word",
+          "replaces-base" => false
+        }]
+      end
+      it { is_expected.to eq(false) }
+    end
+
+    context "with multiple private registries and mixed value of replaces-base" do
+      let(:credentials) do
+        [{
+          "type" => "docker_registry",
+          "registry" => "registry-host.io:5000",
+          "username" => "grey",
+          "password" => "pa55word",
+          "replaces-base" => false
+        },
+        {
+          "type" => "docker_registry",
+          "registry" => "registry-host-new.io:5000",
+          "username" => "ankit",
+          "password" => "pa55word",
+          "replaces-base" => true
+        }]
+      end
+
+      it { is_expected.to eq(true) }
+      end
+    end
 end

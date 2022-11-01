@@ -30,7 +30,7 @@ module Dependabot
         # Return true if replaces-base is enabled else return false
         def replaces_base?
           if @registry_details
-            return registry_details["replaces-base"] == true if @registry_details.key?("replaces-base")
+            return @registry_details["replaces-base"] == true if @registry_details.key?("replaces-base")
           end
           return false
         end
@@ -42,11 +42,9 @@ module Dependabot
         private
 
         def fetch_registry_info()
-          registry_details =
-            credentials.
-            select { |cred| cred["type"] == "docker_registry" }.
-            find { |cred| cred.fetch("type") == "docker_registry" }
-          return unless registry_details
+          credentials.
+          select { |cred| cred["type"] && cred["replaces-base"] == true }.
+          find { |cred| cred.fetch("type") == "docker_registry" }
         end
 
         attr_reader :credentials
