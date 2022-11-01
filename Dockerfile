@@ -16,6 +16,7 @@ RUN apt-get update \
     build-essential \
     dirmngr \
     git \
+    git-lfs \
     bzr \
     mercurial \
     gnupg2 \
@@ -316,6 +317,9 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Pin to an earlier version of Hex. This must be run as dependabot
 RUN mix hex.install 1.0.1
