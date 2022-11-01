@@ -16,6 +16,7 @@ RUN apt-get update \
     build-essential \
     dirmngr \
     git \
+    git-lfs \
     bzr \
     mercurial \
     gnupg2 \
@@ -70,8 +71,8 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.3
-
-ARG RUBYGEMS_SYSTEM_VERSION=3.3.22
+# Generally simplest to pin RUBYGEMS_SYSTEM_VERSION to the version that default ships with RUBY_VERSION.
+ARG RUBYGEMS_SYSTEM_VERSION=3.3.7
 
 ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
@@ -316,6 +317,9 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Pin to an earlier version of Hex. This must be run as dependabot
 RUN mix hex.install 1.0.1
