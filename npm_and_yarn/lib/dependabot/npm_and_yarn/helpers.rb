@@ -21,8 +21,6 @@ module Dependabot
       # to ensure that postinstall scripts are never executed, as they could
       # contain malicious code.
       def self.run_yarn_commands(*commands)
-        # We never want to execute postinstall scripts
-        SharedHelpers.run_shell_command("yarn config set enableScripts false")
         if (http_proxy = ENV.fetch("HTTP_PROXY", false))
           SharedHelpers.run_shell_command("yarn config set httpProxy #{http_proxy}")
         end

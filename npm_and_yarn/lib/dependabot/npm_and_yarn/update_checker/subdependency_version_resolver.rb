@@ -124,7 +124,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_yarn_commands(
-                "yarn up -R #{dependency.name}"
+                "yarn up -R #{dependency.name} --mode=skip-build"
               )
               { lockfile_name => File.read(lockfile_name) }
             end

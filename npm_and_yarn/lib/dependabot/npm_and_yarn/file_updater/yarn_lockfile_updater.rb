@@ -159,12 +159,12 @@ module Dependabot
           # the lockfile.
 
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install"
+                      "yarn install --mode=skip-build"
                     else
                       updates = top_level_dependency_updates.collect do |dep|
                         dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
                       end
-                      "yarn up #{updates.join(' ')}"
+                      "yarn up #{updates.join(' ')} --mode=skip-build"
                     end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -180,9 +180,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           Helpers.run_yarn_commands(
-            "yarn add #{update}",
-            "yarn dedupe #{dep.name}",
-            "yarn remove #{dep.name}"
+            "yarn add #{update} --mode=skip-build",
+            "yarn dedupe #{dep.name} --mode=skip-build",
+            "yarn remove #{dep.name} --mode=skip-build"
           )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
