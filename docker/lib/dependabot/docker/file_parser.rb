@@ -135,6 +135,7 @@ module Dependabot
           )
         elsif credentials_finder.replaces_base?
           registry = credentials_finder.get_base_registry
+          credentials = registry_credentials(registry)
           DockerRegistry2::Registry.new(
             "https://#{registry}",
             user: credentials&.fetch("username", nil),
