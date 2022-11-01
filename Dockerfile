@@ -70,8 +70,8 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.3
-
-ARG RUBYGEMS_SYSTEM_VERSION=3.3.22
+# Generally simplest to pin RUBYGEMS_SYSTEM_VERSION to the version that default ships with RUBY_VERSION.
+ARG RUBYGEMS_SYSTEM_VERSION=3.3.7
 
 ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
