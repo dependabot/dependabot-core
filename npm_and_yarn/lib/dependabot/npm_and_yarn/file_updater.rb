@@ -55,6 +55,12 @@ module Dependabot
           )
         end
 
+        vendor_updated_files(updated_files)
+      end
+
+      private
+
+      def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
         if Helpers.yarn_zero_install?
           vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
@@ -68,8 +74,6 @@ module Dependabot
 
         updated_files
       end
-
-      private
 
       # Dynamically fetch the vendor cache folder from yarn
       def vendor_cache_dir

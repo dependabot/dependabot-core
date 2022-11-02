@@ -332,10 +332,10 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if yarn_berry?(yarn_lock)
+          if Helpers.yarn_berry?(yarn_lock)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
-            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_lock)
+            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_lock)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
