@@ -16,10 +16,10 @@ module Dependabot
         def write_temporary_dependency_files
           write_lock_files
 
-          if yarn_berry?(yarn_locks.first)
+          if Helpers.yarn_berry?(yarn_locks.first)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
-            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_locks.first)
+            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_locks.first)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
@@ -121,15 +121,6 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content
-        end
-
-        def yarn_berry?(yarn_lock)
-          return false unless Experiments.enabled?(:yarn_berry)
-
-          yaml = YAML.safe_load(yarn_lock.content)
-          yaml.key?("__metadata")
-        rescue StandardError
-          false
         end
 
         def yarnrc_yml_file

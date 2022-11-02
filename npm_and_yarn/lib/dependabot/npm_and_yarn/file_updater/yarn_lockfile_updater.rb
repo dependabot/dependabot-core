@@ -107,7 +107,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
-                if yarn_berry?(yarn_lock)
+                if Helpers.yarn_berry?(yarn_lock)
                   run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
                                                    yarn_lock: yarn_lock)
                 else
@@ -116,7 +116,7 @@ module Dependabot
                     top_level_dependency_updates: top_level_dependency_updates
                   )
                 end
-              elsif yarn_berry?(yarn_lock)
+              elsif Helpers.yarn_berry?(yarn_lock)
                 run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
@@ -143,15 +143,6 @@ module Dependabot
 
         # rubocop:enable Metrics/PerceivedComplexity
 
-        def yarn_berry?(yarn_lock)
-          return false unless Experiments.enabled?(:yarn_berry)
-
-          yaml = YAML.safe_load(yarn_lock.content)
-          yaml.key?("__metadata")
-        rescue StandardError
-          false
-        end
-
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
           write_temporary_dependency_files(yarn_lock)
           # If the requirements have changed, it means we've updated the
@@ -160,12 +151,13 @@ module Dependabot
           # the lockfile.
 
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install"
+                      "yarn install#{Helpers.yarn_berry_args}"
                     else
                       updates = top_level_dependency_updates.collect do |dep|
                         dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
                       end
-                      "yarn up #{updates.join(' ')}"
+
+                      "yarn up #{updates.join(' ')}#{Helpers.yarn_berry_args}"
                     end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -181,9 +173,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           Helpers.run_yarn_commands(
-            "yarn add #{update}",
-            "yarn dedupe #{dep.name}",
-            "yarn remove #{dep.name}"
+            "yarn add #{update}#{Helpers.yarn_berry_args}",
+            "yarn dedupe #{dep.name}#{Helpers.yarn_berry_args}",
+            "yarn remove #{dep.name}#{Helpers.yarn_berry_args}"
           )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
@@ -340,10 +332,10 @@ module Dependabot
         def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          if yarn_berry?(yarn_lock)
+          if Helpers.yarn_berry?(yarn_lock)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
-            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_lock)
+            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_lock)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
