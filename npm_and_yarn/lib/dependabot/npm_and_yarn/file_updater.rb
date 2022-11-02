@@ -73,7 +73,6 @@ module Dependabot
           updated_files << file
         end
 
-
         updated_files
       end
 
