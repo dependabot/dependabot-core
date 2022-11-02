@@ -111,10 +111,13 @@ module Dependabot
           false
         end
       rescue DockerRegistry2::RegistryAuthenticationException,
-             RestClient::Forbidden
-        raise if standard_registry?(registry)
+        RestClient::Forbidden
+        raise PrivateSourceAuthenticationFailure, client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,'')
+      rescue RestClient::Exceptions::OpenTimeout,
+        RestClient::Exceptions::ReadTimeout
+        raise if standard_registry?(client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,''))
 
-        raise PrivateSourceAuthenticationFailure, registry
+        raise PrivateSourceTimedOut, client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,'')
       end
 
       def docker_repo_name(image, registry)
@@ -124,23 +127,23 @@ module Dependabot
         "library/#{image}"
       end
 
+      def get_docker_registry_client_instance(registry, credentials)
+        DockerRegistry2::Registry.new(
+          "https://#{registry}",
+          user: credentials&.fetch("username", nil),
+          password: credentials&.fetch("password", nil),
+          read_timeout: 10
+        )
+      end
+
       def docker_registry_client(registry)
         if registry
           credentials = registry_credentials(registry)
-
-          DockerRegistry2::Registry.new(
-            "https://#{registry}",
-            user: credentials&.fetch("username", nil),
-            password: credentials&.fetch("password", nil)
-          )
+          get_docker_registry_client_instance(registry, credentials)
         elsif credentials_finder.replaces_base?
           registry = credentials_finder.get_base_registry
           credentials = registry_credentials(registry)
-          DockerRegistry2::Registry.new(
-            "https://#{registry}",
-            user: credentials&.fetch("username", nil),
-            password: credentials&.fetch("password", nil)
-          )
+          get_docker_registry_client_instance(registry, credentials)
         else
           DockerRegistry2::Registry.new("https://registry.hub.docker.com")
         end
