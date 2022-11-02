@@ -51,7 +51,7 @@ PATH
   specs:
     dependabot-git_submodules (0.213.0)
       dependabot-common (= 0.213.0)
-      parseconfig (~> 1.0, < 1.1.0)
+      parseconfig (~> 1.0, < 1.2.0)
 
 PATH
   remote: ../github_actions
