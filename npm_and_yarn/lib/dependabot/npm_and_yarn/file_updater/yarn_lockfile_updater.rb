@@ -107,7 +107,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
-                if yarn_berry?(yarn_lock)
+                if Helpers.yarn_berry?
                   run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
                                                    yarn_lock: yarn_lock)
                 else
@@ -116,7 +116,7 @@ module Dependabot
                     top_level_dependency_updates: top_level_dependency_updates
                   )
                 end
-              elsif yarn_berry?(yarn_lock)
+              elsif Helpers.yarn_berry?
                 run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
@@ -143,28 +143,21 @@ module Dependabot
 
         # rubocop:enable Metrics/PerceivedComplexity
 
-        def yarn_berry?(yarn_lock)
-          return false unless Experiments.enabled?(:yarn_berry)
-
-          yaml = YAML.safe_load(yarn_lock.content)
-          yaml.key?("__metadata")
-        rescue StandardError
-          false
-        end
-
         def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
           # If the requirements have changed, it means we've updated the
           # package.json file(s), and we can just run yarn install to get the
           # lockfile in the right state. Otherwise we'll need to manually update
           # the lockfile.
 
+
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install --mode=skip-build"
+                      "yarn install#{Helpers.yarn_berry_args}"
                     else
                       updates = top_level_dependency_updates.collect do |dep|
                         dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
                       end
-                      "yarn up #{updates.join(' ')} --mode=skip-build"
+
+                      "yarn up #{updates.join(' ')}#{Helpers.yarn_berry_args}"
                     end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -180,9 +173,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           Helpers.run_yarn_commands(
-            "yarn add #{update} --mode=skip-build",
-            "yarn dedupe #{dep.name} --mode=skip-build",
-            "yarn remove #{dep.name} --mode=skip-build"
+            "yarn add #{update}#{Helpers.yarn_berry_args}",
+            "yarn dedupe #{dep.name}#{Helpers.yarn_berry_args}",
+            "yarn remove #{dep.name}#{Helpers.yarn_berry_args}"
           )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
