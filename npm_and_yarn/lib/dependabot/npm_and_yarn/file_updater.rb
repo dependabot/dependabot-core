@@ -62,15 +62,17 @@ module Dependabot
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
-        if Helpers.yarn_zero_install?
+        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        end
+        # updated .pnp.cjs means zero install, include cache
+        if updated_files.find { |f| f.name == ".pnp.cjs" }
           vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
         end
         install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
-        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
-        end
+
 
         updated_files
       end
