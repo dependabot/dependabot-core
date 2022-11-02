@@ -687,6 +687,83 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the dependency has a replaces-base true" do
+      let(:dependency_name) { "ubuntu" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: {tag: "17.10"}
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+      context "with authentication credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => true
+          }]
+        end
+
+        before do
+          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(status: 200, body: registry_tags)
+        end
+
+        it { is_expected.to eq("17.10") }
+
+        context "that don't have a username or password" do
+          before do
+            tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
+            stub_request(:get, tags_url).
+              and_return(
+                status: 401,
+                body: "",
+                headers: { "www_authenticate" => "basic 123" }
+              )
+            end
+
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000",
+              "replaces-base" => true
+            }]
+          end
+
+          it "raises a to PrivateSourceAuthenticationFailure error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { checker.latest_version }.
+              to raise_error(error_class) do |error|
+                expect(error.source).to eq("registry-host.io:5000")
+              end
+          end
+
+        end
+      end
+    end
+
     context "when the docker registery only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
