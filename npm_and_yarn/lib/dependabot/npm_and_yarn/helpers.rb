@@ -24,8 +24,11 @@ module Dependabot
         end
       end
 
-      def self.yarn_berry?
-        yarn_major_version >= 2
+      def self.yarn_berry?(yarn_lock)
+        yaml = YAML.safe_load(yarn_lock.content)
+        yaml.key?("__metadata")
+      rescue StandardError
+        false
       end
 
       def self.yarn_major_version
@@ -54,7 +57,7 @@ module Dependabot
       def self.run_yarn_commands(*commands)
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
-        # We never want to execute postinstall scripts either set this config, or mode=skip-build must be set
+        # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
         if yarn_major_version == 2 || !yarn_zero_install?
           SharedHelpers.run_shell_command("yarn config set enableScripts false")
         end

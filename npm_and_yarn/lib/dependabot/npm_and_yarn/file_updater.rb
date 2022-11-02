@@ -56,7 +56,9 @@ module Dependabot
         end
 
         base_dir = updated_files.first.directory
-        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        if Helpers.yarn_zero_install?
+          vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        end
         install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
           updated_files << file
         end

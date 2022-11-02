@@ -107,7 +107,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
-                if Helpers.yarn_berry?
+                if Helpers.yarn_berry?(yarn_lock)
                   run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
                                                    yarn_lock: yarn_lock)
                 else
@@ -116,7 +116,7 @@ module Dependabot
                     top_level_dependency_updates: top_level_dependency_updates
                   )
                 end
-              elsif Helpers.yarn_berry?
+              elsif Helpers.yarn_berry?(yarn_lock)
                 run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
