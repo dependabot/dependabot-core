@@ -687,7 +687,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when the dependency has a replaces-base true" do
+    context "when the dependency has a replaces-base" do
       let(:dependency_name) { "ubuntu" }
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -704,7 +704,32 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
       let(:tags_fixture_name) { "ubuntu_no_latest.json" }
 
-      context "with authentication credentials" do
+      context "with replaces-base set to false" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => false
+          }]
+        end
+
+        before do
+          tags_url = "https:/registry.hub.docker.com/v2/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(status: 200, body: registry_tags)
+        end
+
+        it { is_expected.to eq("17.10") }
+      end
+
+      context "with replaces-base set to true and with authentication credentials" do
         let(:credentials) do
           [{
             "type" => "git_source",
@@ -728,7 +753,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         it { is_expected.to eq("17.10") }
 
-        context "that don't have a username or password" do
+        context "with replaces-base set to true and no username or password" do
           before do
             tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
             stub_request(:get, tags_url).
