@@ -16,7 +16,12 @@ module Dependabot
         def write_temporary_dependency_files
           write_lock_files
 
-          File.write(".npmrc", npmrc_content)
+          if yarn_berry?(yarn_locks.first)
+            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
+          else
+            File.write(".npmrc", npmrc_content) unless yarn_berry?(yarn_locks.first)
+            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          end
 
           package_files.each do |file|
             path = file.name
@@ -69,6 +74,24 @@ module Dependabot
           end
         end
 
+        def yarnrc_specifies_private_reg?
+          return false unless yarnrc_file
+
+          regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
+          yarnrc_global_registry =
+            yarnrc_file.content.
+            lines.find { |line| line.match?(regex) }&.
+            match(regex)&.
+            named_captures&.
+            fetch("registry")
+
+          return false unless yarnrc_global_registry
+
+          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.none? do |r|
+            r.include?(URI(yarnrc_global_registry).host)
+          end
+        end
+
         # Duplicated in NpmLockfileUpdater
         # Remove the dependency we want to update from the lockfile and let
         # yarn find the latest resolvable version and fix the lockfile
@@ -87,6 +110,34 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).npmrc_content
+        end
+
+        def yarnrc_file
+          dependency_files.find { |f| f.name == ".yarnrc" }
+        end
+
+        def yarnrc_content
+          NpmAndYarn::FileUpdater::NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).yarnrc_content
+        end
+
+        def yarn_berry?(yarn_lock)
+          return false unless Experiments.enabled?(:yarn_berry)
+
+          yaml = YAML.safe_load(yarn_lock.content)
+          yaml.key?("__metadata")
+        rescue StandardError
+          false
+        end
+
+        def yarnrc_yml_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+        end
+
+        def yarnrc_yml_content
+          yarnrc_yml_file.content
         end
       end
     end
