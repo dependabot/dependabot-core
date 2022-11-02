@@ -79,6 +79,7 @@ module Dependabot
           return if original_package_update_available?
 
           return latest_allowable_version unless relevant_unmet_peer_dependencies.any?
+
           satisfying_versions.first
         end
 

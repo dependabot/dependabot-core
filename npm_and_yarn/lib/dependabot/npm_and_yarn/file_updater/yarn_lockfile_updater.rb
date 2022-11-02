@@ -149,7 +149,6 @@ module Dependabot
           # lockfile in the right state. Otherwise we'll need to manually update
           # the lockfile.
 
-
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
                       "yarn install#{Helpers.yarn_berry_args}"
                     else
