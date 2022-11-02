@@ -105,7 +105,7 @@ module Dependabot
         # TODO: Handle aliased packages:
         # https://github.com/dependabot/dependabot-core/pull/1115
         #
-        # Ignore dependencies with an alias in the name (only supported by Yarn)
+        # Ignore dependencies with an alias in the name
         # Example: "my-fetch-factory@npm:fetch-factory"
         return if aliased_package_name?(name)
 

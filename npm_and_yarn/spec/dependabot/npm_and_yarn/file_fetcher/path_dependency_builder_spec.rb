@@ -81,13 +81,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher::PathDependencyBuilder do
       context "that can't be parsed" do
         let(:project_name) { "yarn/unparseable" }
 
-        it "raises a PathDependenciesNotReachable error with details" do
-          expect { dependency_file }.
-            to raise_error(
-              Dependabot::PathDependenciesNotReachable,
-              "The following path based dependencies could not be retrieved: " \
-              "etag"
-            )
+        it "raises DependencyFileNotParseable" do
+          expect { dependency_file }.to raise_error(Dependabot::DependencyFileNotParseable)
         end
       end
 
