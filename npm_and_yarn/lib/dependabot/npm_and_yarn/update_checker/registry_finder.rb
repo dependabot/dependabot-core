@@ -14,16 +14,11 @@ module Dependabot
           https://registry.yarnpkg.com
           http://registry.yarnpkg.com
         ).freeze
-        NPM_AUTH_TOKEN_REGEX =
-          %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}.freeze
-        NPM_GLOBAL_REGISTRY_REGEX =
-          /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
-        YARN_GLOBAL_REGISTRY_REGEX =
-          /^(?:--)?registry\s+((['"](?<registry>.*)['"])|(?<registry>.*))/.freeze
-        NPM_SCOPED_REGISTRY_REGEX =
-          /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/.freeze
-        YARN_SCOPED_REGISTRY_REGEX =
-          /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/.freeze
+        NPM_AUTH_TOKEN_REGEX = %r{//(?<registry>.*)/:_authToken=(?<token>.*)$}
+        NPM_GLOBAL_REGISTRY_REGEX = /^registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
+        YARN_GLOBAL_REGISTRY_REGEX = /^(?:--)?registry\s+((['"](?<registry>.*)['"])|(?<registry>.*))/
+        NPM_SCOPED_REGISTRY_REGEX = /^(?<scope>@[^:]+)\s*:registry\s*=\s*['"]?(?<registry>.*?)['"]?$/
+        YARN_SCOPED_REGISTRY_REGEX = /['"](?<scope>@[^:]+):registry['"]\s((['"](?<registry>.*)['"])|(?<registry>.*))/
 
         def initialize(dependency:, credentials:, npmrc_file: nil,
                        yarnrc_file: nil, yarnrc_yml_file: nil)

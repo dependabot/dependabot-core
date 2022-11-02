@@ -3,6 +3,7 @@
 require "pathname"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
+require "dependabot/logger"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/message"
@@ -38,7 +39,12 @@ module Dependabot
       end
 
       def pr_name
-        pr_name = pr_name_prefixer.pr_name_prefix
+        begin
+          pr_name = pr_name_prefixer.pr_name_prefix
+        rescue StandardError => e
+          Dependabot.logger.error("Error while generating PR name: #{e.message}")
+          pr_name = ""
+        end
         pr_name += library? ? library_pr_name : application_pr_name
         return pr_name if files.first.directory == "/"
 
@@ -48,12 +54,20 @@ module Dependabot
       def pr_message
         suffixed_pr_message_header + commit_message_intro + \
           metadata_cascades + prefixed_pr_message_footer
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating PR message: #{e.message}")
+        suffixed_pr_message_header + prefixed_pr_message_footer
       end
 
       def commit_message
         message = commit_subject + "\n\n"
         message += commit_message_intro
         message += metadata_links
+        message += "\n\n" + message_trailers if message_trailers
+        message
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating commit message: #{e.message}")
+        message = commit_subject
         message += "\n\n" + message_trailers if message_trailers
         message
       end
@@ -78,11 +92,16 @@ module Dependabot
               "#{from_version_msg(old_library_requirement(dependencies.first))}" \
               "to #{new_library_requirement(dependencies.first)}"
           else
-            names = dependencies.map(&:name)
-            "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+            names = dependencies.map(&:name).uniq
+            if names.count == 1
+              "requirements for #{names.first}"
+            else
+              "requirements for #{names[0..-2].join(', ')} and #{names[-1]}"
+            end
           end
       end
 
+      # rubocop:disable Metrics/AbcSize
       def application_pr_name
         pr_name = "bump "
         pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
@@ -104,10 +123,15 @@ module Dependabot
               "#{from_version_msg(previous_version(dependency))}" \
               "to #{new_version(dependency)}"
           else
-            names = dependencies.map(&:name)
-            "#{names[0..-2].join(', ')} and #{names[-1]}"
+            names = dependencies.map(&:name).uniq
+            if names.count == 1
+              names.first
+            else
+              "#{names[0..-2].join(', ')} and #{names[-1]}"
+            end
           end
       end
+      # rubocop:enable Metrics/AbcSize
 
       def pr_name_prefix
         pr_name_prefixer.pr_name_prefix

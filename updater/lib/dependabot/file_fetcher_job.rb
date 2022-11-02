@@ -8,12 +8,15 @@ require "octokit"
 module Dependabot
   class FileFetcherJob < BaseJob
     def perform_job
+      @base_commit_sha = nil
+
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
-        base_commit_sha
-        dependency_files
         clone_repo_contents
+        @base_commit_sha = file_fetcher.commit || "unknown"
+        dependency_files
       rescue StandardError => e
+        @base_commit_sha ||= "unknown"
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
           remaining = rate_limit_error_remaining(e)
           logger_error("Repository is rate limited, attempting to retry in " \
@@ -22,14 +25,14 @@ module Dependabot
           logger_error("Error during file fetching; aborting")
         end
         handle_file_fetcher_error(e)
-        service.mark_job_as_processed(job_id, base_commit_sha)
+        service.mark_job_as_processed(job_id, @base_commit_sha)
         clear_repo_contents_path
         return
       end
 
       File.write(Environment.output_path, JSON.dump(
                                             base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                            base_commit_sha: base_commit_sha
+                                            base_commit_sha: @base_commit_sha
                                           ))
 
       save_job_details
@@ -40,7 +43,7 @@ module Dependabot
 
       File.write(Environment.job_path, JSON.dump(
                                          base64_dependency_files: base64_dependency_files.map(&:to_h),
-                                         base_commit_sha: base_commit_sha,
+                                         base_commit_sha: @base_commit_sha,
                                          job: job_definition["job"]
                                        ))
     end
@@ -84,22 +87,15 @@ module Dependabot
       @job ||= Job.new(attrs)
     end
 
-    def base_commit_sha
-      @base_commit_sha ||= file_fetcher.commit || "unknown"
-    rescue StandardError
-      # If an error occurs, set the commit SHA instance variable (so that we
-      # don't raise when recording the error later) and re-raise
-      @base_commit_sha = "unknown"
-      raise
-    end
-
     def file_fetcher
+      return @file_fetcher if defined? @file_fetcher
+
       args = {
         source: job.source,
         credentials: job_definition.fetch("credentials", []),
         options: job.experiments
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone?
+      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || job.already_cloned?
       @file_fetcher ||=
         Dependabot::FileFetchers.for_package_manager(job.package_manager).
         new(**args)

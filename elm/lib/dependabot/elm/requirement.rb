@@ -9,8 +9,8 @@ module Dependabot
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
         "(#{Elm::Version::VERSION_PATTERN})"
-      ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/.freeze
-      ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/.freeze
+      ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/
+      ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.

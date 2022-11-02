@@ -16,6 +16,7 @@ RUN apt-get update \
     build-essential \
     dirmngr \
     git \
+    git-lfs \
     bzr \
     mercurial \
     gnupg2 \
@@ -70,10 +71,11 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 
 ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.3
-
-ARG RUBYGEMS_SYSTEM_VERSION=3.3.22
+# Generally simplest to pin RUBYGEMS_SYSTEM_VERSION to the version that default ships with RUBY_VERSION.
+ARG RUBYGEMS_SYSTEM_VERSION=3.3.7
 
 ARG BUNDLER_V1_VERSION=1.17.3
+# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
 ARG BUNDLER_V2_VERSION=2.3.22
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
@@ -210,17 +212,18 @@ RUN cd /tmp \
 # Install Erlang, Elixir and Hex
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.13.4
-ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
-ARG ERLANG_VERSION=1:24.2.1-1
+ARG ELIXIR_VERSION=v1.14.1
+ARG ELIXIR_CHECKSUM=610b23ab7f8ffd247a62b187c148cd2aa599b5a595137fe0531664903b921306
+ARG ERLANG_MAJOR_VERSION=24
+ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
-  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
-  && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
-  && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
+  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+  && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
+  && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip erlang-solutions_2.0_all.deb \
   && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
@@ -239,9 +242,9 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --pr
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.3.2
-ARG TERRAFORM_AMD64_CHECKSUM=6372e02a7f04bef9dac4a7a12f4580a0ad96a37b5997e80738e070be330cb11c
-ARG TERRAFORM_ARM64_CHECKSUM=ce1a8770aaf27736a3352c5c31e95fb10d0944729b9d81013bf6848f8657da5f
+ARG TERRAFORM_VERSION=1.3.3
+ARG TERRAFORM_AMD64_CHECKSUM=fa5cbf4274c67f2937cabf1a6544529d35d0b8b729ce814b40d0611fd26193c1
+ARG TERRAFORM_ARM64_CHECKSUM=b940a080c698564df5e6a2f1c4e1b51b2c70a5115358d2361e3697d3985ecbfe
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
@@ -314,3 +317,9 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1
+
+# Pin to an earlier version of Hex. This must be run as dependabot
+RUN mix hex.install 1.0.1

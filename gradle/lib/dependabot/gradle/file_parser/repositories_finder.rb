@@ -15,16 +15,13 @@ module Dependabot
         GOOGLE_MAVEN_REPO = "https://maven.google.com"
         GRADLE_PLUGINS_REPO = "https://plugins.gradle.org/m2"
 
-        REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/.freeze
+        REPOSITORIES_BLOCK_START = /(?:^|\s)repositories\s*\{/
 
-        GROOVY_MAVEN_REPO_REGEX =
-          /maven\s*\{[^\}]*\surl[\s\(]=?[^'"]*['"](?<url>[^'"]+)['"]/.freeze
+        GROOVY_MAVEN_REPO_REGEX = /maven\s*\{[^\}]*\surl[\s\(]=?[^'"]*['"](?<url>[^'"]+)['"]/
 
-        KOTLIN_MAVEN_REPO_REGEX =
-          /maven\((url\s?\=\s?)?["](?<url>[^"]+)["]\)/.freeze
+        KOTLIN_MAVEN_REPO_REGEX = /maven\((url\s?\=\s?)?["](?<url>[^"]+)["]\)/
 
-        MAVEN_REPO_REGEX =
-          /(#{KOTLIN_MAVEN_REPO_REGEX}|#{GROOVY_MAVEN_REPO_REGEX})/.freeze
+        MAVEN_REPO_REGEX = /(#{KOTLIN_MAVEN_REPO_REGEX}|#{GROOVY_MAVEN_REPO_REGEX})/
 
         def initialize(dependency_files:, target_dependency_file:)
           @dependency_files = dependency_files

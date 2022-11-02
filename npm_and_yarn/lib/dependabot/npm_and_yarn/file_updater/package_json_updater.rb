@@ -183,8 +183,8 @@ module Dependabot
           end
 
           original_line.gsub(
-            %(\##{old_req.dig(:source, :ref)}"),
-            %(\##{new_req.dig(:source, :ref)}")
+            %(##{old_req.dig(:source, :ref)}"),
+            %(##{new_req.dig(:source, :ref)}")
           )
         end
 

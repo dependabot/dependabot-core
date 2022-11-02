@@ -10,7 +10,7 @@ module Dependabot
   module Nuget
     class FileParser
       class PropertyValueFinder
-        PROPERTY_REGEX = /\$\((?<property>.*?)\)/.freeze
+        PROPERTY_REGEX = /\$\((?<property>.*?)\)/
 
         def initialize(dependency_files:)
           @dependency_files = dependency_files

@@ -19,9 +19,8 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS =
-        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
-      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
+      PATH_DEPENDENCY_STARTS = %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
+      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
@@ -29,6 +28,24 @@ module Dependabot
 
       def self.required_files_message
         "Repo must contain a package.json."
+      end
+
+      # Overridden to pull any yarn data or plugins which may be stored with Git LFS.
+      def clone_repo_contents
+        return @git_lfs_cloned_repo_contents_path if defined?(@git_lfs_cloned_repo_contents_path)
+
+        @git_lfs_cloned_repo_contents_path = super
+        begin
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(@git_lfs_cloned_repo_contents_path) do
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
+            end
+            @git_lfs_cloned_repo_contents_path
+          end
+        rescue StandardError
+          @git_lfs_cloned_repo_contents_path
+        end
       end
 
       private

@@ -35,7 +35,7 @@ module Dependabot
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
-        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /x # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
           (?:'\['git',
           \s+'clone',
@@ -47,7 +47,7 @@ module Dependabot
           \s+Failed\sto\sclone
           \s+(?<url>.+?),
           \s+check\syour\sgit\sconfiguration)
-        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /mx # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -82,7 +82,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
@@ -93,14 +92,7 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
                 add_auth_env_vars
 
-                if python_version && !pre_installed_python?(python_version)
-                  run_poetry_command("pyenv install -s #{python_version}")
-                  run_poetry_command("pyenv exec pip install --upgrade pip")
-                  run_poetry_command(
-                    "pyenv exec pip install -r " \
-                    "#{NativeHelpers.python_requirements_path}"
-                  )
-                end
+                Helpers.install_required_python(python_version)
 
                 # use system git instead of the pure Python dulwich
                 unless python_version&.start_with?("3.6")
@@ -123,7 +115,6 @@ module Dependabot
               end
             end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
@@ -293,7 +284,7 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name
@@ -346,7 +337,7 @@ module Dependabot
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Pipenv
+          # Raise an error with the output from the shell session if poetry
           # returns a non-zero status
           return if process.success?
 

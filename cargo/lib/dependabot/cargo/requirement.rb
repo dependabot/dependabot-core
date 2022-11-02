@@ -16,7 +16,7 @@ module Dependabot
       version_pattern = Cargo::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Cargo::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.

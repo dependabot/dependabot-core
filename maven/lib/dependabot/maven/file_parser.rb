@@ -28,7 +28,7 @@ module Dependabot
       EXTENSION_SELECTOR  = "extensions > extension"
 
       # Regex to get the property name from a declaration that uses a property
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
       def parse
         dependency_set = DependencySet.new

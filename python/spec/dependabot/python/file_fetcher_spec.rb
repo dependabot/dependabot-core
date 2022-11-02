@@ -372,6 +372,36 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with a pyproject.toml and pdm.lock files" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_and_pdm_lock.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pdm.lock?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pdm_lock.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the pyproject.toml and pdm.lock files" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pyproject.toml pdm.lock))
+      end
+    end
+
     context "with no setup.py, requirements.txt or Pipfile" do
       let(:repo_contents) { "[]" }
 

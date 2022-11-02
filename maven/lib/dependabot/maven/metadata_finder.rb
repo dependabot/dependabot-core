@@ -12,7 +12,7 @@ require "dependabot/registry_client"
 module Dependabot
   module Maven
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
+      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
       private
 
