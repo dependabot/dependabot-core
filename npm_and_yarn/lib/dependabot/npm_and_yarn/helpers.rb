@@ -46,6 +46,7 @@ module Dependabot
           " --mode=update-lockfile"
         end
       end
+
       # Run any number of yarn commands while ensuring that `enableScripts` is
       # set to false. Yarn commands should _not_ be ran outside of this helper
       # to ensure that postinstall scripts are never executed, as they could
