@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RequirementsUpdater do
         end
         let(:csproj_req_string) { "3.0.0-beta4.20207.4+07df2f07" }
         its([:requirement]) do
-          is_expected.to eq("3.0.0-beta4.20210.2+38fe3493")
+          is_expected.to eq("3.0.0-beta4.20210.2")
         end
       end
 
