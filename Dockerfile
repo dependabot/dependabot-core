@@ -210,7 +210,7 @@ RUN cd /tmp \
 
 ### ELIXIR
 
-# Install Erlang, Elixir and Hex
+# Install Erlang and Elixir
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.14.1
@@ -225,7 +225,6 @@ RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.d
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip erlang-solutions_2.0_all.deb \
-  && mix local.hex --force \
   && rm -rf /var/lib/apt/lists/*
 
 
@@ -289,6 +288,8 @@ RUN bash /opt/go_modules/helpers/build
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
+# https://github.com/hexpm/hex/releases
+ENV HEX_VERSION="1.0.1"
 RUN bash /opt/hex/helpers/build
 
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
@@ -321,6 +322,3 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
-
-# Pin to an earlier version of Hex. This must be run as dependabot
-RUN mix hex.install 1.0.1
