@@ -489,13 +489,13 @@ RSpec.describe Dependabot::Docker::FileParser do
                   }]
                 end
 
-                  it "has the right details" do
-                    expect(dependency).to be_a(Dependabot::Dependency)
-                    expect(dependency.name).to eq("docker-php")
-                    expect(dependency.version).to eq("12.04.5")
-                    expect(dependency.requirements).to eq(expected_requirements)
-                  end
+                it "has the right details" do
+                  expect(dependency).to be_a(Dependabot::Dependency)
+                  expect(dependency.name).to eq("docker-php")
+                  expect(dependency.version).to eq("12.04.5")
+                  expect(dependency.requirements).to eq(expected_requirements)
                 end
+              end
             end
           end
 
