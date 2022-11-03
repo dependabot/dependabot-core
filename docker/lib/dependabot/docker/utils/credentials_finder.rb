@@ -35,13 +35,13 @@ module Dependabot
           return false
         end
 
-        def get_base_registry
+        def fetch_base_registry
           return @registry_details["registry"] if @registry_details
         end
 
         private
 
-        def fetch_registry_info()
+        def fetch_registry_info
           credentials.
           select { |cred| cred["type"] && cred["replaces-base"] == true }.
           find { |cred| cred.fetch("type") == "docker_registry" }

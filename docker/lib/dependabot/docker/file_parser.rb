@@ -112,12 +112,12 @@ module Dependabot
         end
       rescue DockerRegistry2::RegistryAuthenticationException,
         RestClient::Forbidden
-        raise PrivateSourceAuthenticationFailure, client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,'')
+        raise PrivateSourceAuthenticationFailure, client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, "")
       rescue RestClient::Exceptions::OpenTimeout,
         RestClient::Exceptions::ReadTimeout
-        raise if standard_registry?(client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,''))
+        raise if standard_registry?(client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, ""))
 
-        raise PrivateSourceTimedOut, client.instance_variable_get("@base_uri").sub(/^https?\:\/\/(www.)?/,'')
+        raise PrivateSourceTimedOut, client.instance_variable_get(@base_uri).sub(/^https?\:\/\/(www.)?/, "")
       end
 
       def docker_repo_name(image, registry)
@@ -141,7 +141,7 @@ module Dependabot
           credentials = registry_credentials(registry)
           get_docker_registry_client_instance(registry, credentials)
         elsif credentials_finder.replaces_base?
-          registry = credentials_finder.get_base_registry
+          registry = credentials_finder.fetch_base_registry
           credentials = registry_credentials(registry)
           get_docker_registry_client_instance(registry, credentials)
         else
