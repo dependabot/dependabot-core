@@ -156,8 +156,6 @@ module Dependabot
       experiments.each do |name, value|
         Dependabot::Experiments.register(name, value)
       end
-
-      Dependabot::Utils.register_always_clone("npm_and_yarn") if Dependabot::Experiments.enabled?(:yarn_berry)
     end
 
     def name_match?(name1, name2)

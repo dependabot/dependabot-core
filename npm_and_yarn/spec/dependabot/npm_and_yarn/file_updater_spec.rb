@@ -61,7 +61,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
   before do
     FileUtils.mkdir_p(tmp_path)
-    Dependabot::Experiments.register(:yarn_berry, true)
   end
 
   describe "#updated_dependency_files" do

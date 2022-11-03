@@ -3,7 +3,6 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/experiments"
 require "dependabot/npm_and_yarn/update_checker"
 require "dependabot/npm_and_yarn/metadata_finder"
 require_common_spec "update_checkers/shared_examples_for_update_checkers"
@@ -60,10 +59,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     )
   end
   let(:dependency_version) { "1.0.0" }
-
-  before do
-    Dependabot::Experiments.register(:yarn_berry, true)
-  end
 
   describe "#vulnerable?" do
     context "when the dependency has multiple versions" do

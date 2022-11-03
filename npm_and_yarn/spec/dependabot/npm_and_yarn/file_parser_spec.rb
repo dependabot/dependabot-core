@@ -32,10 +32,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     }]
   end
 
-  before do
-    Dependabot::Experiments.register(:yarn_berry, true)
-  end
-
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
