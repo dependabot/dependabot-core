@@ -307,7 +307,8 @@ module Dependabot
           # TODO: Add all of the error handling that the FileUpdater does
           # here (since problematic repos will be resolved here before they're
           # seen by the FileUpdater)
-          SharedHelpers.in_a_temporary_directory do
+          base_dir = dependency_files.first.directory
+          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
             filtered_package_files.flat_map do |file|
@@ -468,11 +469,25 @@ module Dependabot
         def run_checker(path:, version:)
           # If there are both yarn lockfiles and npm lockfiles only run the
           # yarn updater
-          if lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path).any?
-            return run_yarn_checker(path: path, version: version)
+          lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
+          if lockfiles.any?
+            if Helpers.yarn_berry?(lockfiles.first)
+              return run_yarn_berry_checker(path: path, version: version)
+            else
+              return run_yarn_checker(path: path, version: version)
+            end
           end
 
           run_npm_checker(path: path, version: version)
+        end
+
+        def run_yarn_berry_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              output = Helpers.run_yarn_commands("yarn install#{Helpers.yarn_berry_args}")
+              output
+            end
+          end
         end
 
         def run_yarn_checker(path:, version:)
