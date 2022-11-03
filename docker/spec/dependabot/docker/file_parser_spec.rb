@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect { parser.parse }.
                   to raise_error(error_class) do |error|
                     expect(error.source).
-                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com:443")
                   end
               end
             end
@@ -401,6 +401,261 @@ RSpec.describe Dependabot::Docker::FileParser do
             end
           end
         end
+
+        context "with replaces-base" do
+          let(:dockerfile_fixture_name) { "digest" }
+          let(:repo_url) { "https://registry-host.io:5000/v2/library/ubuntu/" }
+
+          context "when replaces-base is false" do
+            let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
+            let(:credentials) do
+              [{
+                "type" => "docker_registry",
+                "registry" => "registry-host.io:5000",
+                "replaces-base" => false
+              }]
+            end
+            let(:parser) do
+              described_class.new(
+                dependency_files: files,
+                credentials: credentials,
+                source: source
+              )
+            end
+
+            before do
+              stub_request(:head, repo_url + "manifests/10.04").
+                and_return(status: 404)
+
+              stub_request(:head, repo_url + "manifests/12.04.5").
+                and_return(status: 200, body: "", headers: digest_headers)
+            end
+
+            its(:length) { is_expected.to eq(1) }
+
+            describe "the first dependency" do
+              subject(:dependency) { dependencies.first }
+              let(:expected_requirements) do
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: "Dockerfile",
+                  source: {
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                            "fc38288cf73aa07485005"
+                  }
+                }]
+              end
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("ubuntu")
+                expect(dependency.version).to eq("12.04.5")
+                expect(dependency.requirements).to eq(expected_requirements)
+              end
+            end
+
+            context "when replaces-base is false that uses Amazon ECR" do
+              let(:dockerfile_fixture_name) { "private_ecr_digest" }
+              let(:repo_url) do
+                "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
+                  "docker-php/"
+              end
+
+              before do
+                stub_request(
+                  :post,
+                  "https://api.ecr.eu-west-2.amazonaws.com/"
+                ).and_return(
+                  status: 200,
+                  body: fixture("docker", "ecr_responses", "auth_data")
+                )
+              end
+
+                its(:length) { is_expected.to eq(1) }
+
+                describe "the first dependency" do
+                  subject(:dependency) { dependencies.first }
+                  let(:expected_requirements) do
+                    [{
+                      requirement: nil,
+                      groups: [],
+                      file: "Dockerfile",
+                      source: {
+                        registry: "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
+                                "e4c8dfc38288cf73aa07485005"
+                      }
+                    }]
+                  end
+
+                  it "has the right details" do
+                    expect(dependency).to be_a(Dependabot::Dependency)
+                    expect(dependency.name).to eq("docker-php")
+                    expect(dependency.version).to eq("12.04.5")
+                    expect(dependency.requirements).to eq(expected_requirements)
+                  end
+                end
+            end
+          end
+
+          context "when replaces-base set to true and with good authentication credentials" do
+            let(:parser) do
+              described_class.new(
+                dependency_files: files,
+                credentials: credentials,
+                source: source
+              )
+            end
+            let(:credentials) do
+              [{
+                "type" => "docker_registry",
+                "registry" => "registry-host.io:5000",
+                "username" => "grey",
+                "password" => "pa55word",
+                "replaces-base" => true
+              }]
+            end
+
+            its(:length) { is_expected.to eq(1) }
+
+            describe "the first dependency" do
+              subject(:dependency) { dependencies.first }
+              let(:expected_requirements) do
+                [{
+                  requirement: nil,
+                  groups: [],
+                  file: "Dockerfile",
+                  source: {
+                    digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
+                            "e4c8dfc38288cf73aa07485005"
+                  }
+                }]
+              end
+
+              it "has the right details" do
+                expect(dependency).to be_a(Dependabot::Dependency)
+                expect(dependency.name).to eq("ubuntu")
+                expect(dependency.version).to eq("12.04.5")
+                expect(dependency.requirements).to eq(expected_requirements)
+              end
+            end
+
+            context "that don't include a username and password" do
+              before do
+                tags_url = repo_url + "tags/list"
+                stub_request(:get, tags_url).
+                  and_return(
+                    status: 401,
+                    body: "",
+                    headers: { "www_authenticate" => "basic 123" }
+                  )
+              end
+
+              let(:credentials) do
+                [{
+                  "type" => "docker_registry",
+                  "registry" => "registry-host.io:5000",
+                  "replaces-base" => true
+                }]
+              end
+
+              it "raises a PrivateSourceAuthenticationFailure error" do
+                error_class = Dependabot::PrivateSourceAuthenticationFailure
+                expect { parser.parse }.
+                  to raise_error(error_class) do |error|
+                    expect(error.source).to eq("registry-host.io:5000")
+                  end
+              end
+            end
+          end
+
+          context "when replaces-base set to true that uses Amazon ECR" do
+            let(:dockerfile_fixture_name) { "ecr_digest" }
+            let(:repo_url) do
+              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/library/" \
+                "docker-php/"
+            end
+
+            context "with credentials" do
+              let(:parser) do
+                described_class.new(
+                  dependency_files: files,
+                  credentials: credentials,
+                  source: source
+                )
+              end
+
+              let(:credentials) do
+                [{
+                  "type" => "docker_registry",
+                  "registry" => "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+                  "username" => "grey",
+                  "password" => "pa55word",
+                  "replaces-base" => true
+                }]
+              end
+
+              context "that are invalid" do
+                before do
+                  stub_request(
+                    :post,
+                    "https://api.ecr.eu-west-2.amazonaws.com/"
+                  ).and_return(
+                    status: 403,
+                    body: fixture("docker", "ecr_responses", "invalid_token")
+                  )
+                end
+
+                it "raises a PrivateSourceAuthenticationFailure error" do
+                  error_class = Dependabot::PrivateSourceAuthenticationFailure
+                  expect { parser.parse }.
+                    to raise_error(error_class) do |error|
+                      expect(error.source).
+                        to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+                    end
+                end
+              end
+
+              context "that are valid" do
+                before do
+                  stub_request(
+                    :post,
+                    "https://api.ecr.eu-west-2.amazonaws.com/"
+                  ).and_return(
+                    status: 200,
+                    body: fixture("docker", "ecr_responses", "auth_data")
+                  )
+                end
+
+                its(:length) { is_expected.to eq(1) }
+
+                describe "the first dependency" do
+                  subject(:dependency) { dependencies.first }
+                  let(:expected_requirements) do
+                    [{
+                      requirement: nil,
+                      groups: [],
+                      file: "Dockerfile",
+                      source: {
+                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
+                                "e4c8dfc38288cf73aa07485005"
+                      }
+                    }]
+                  end
+
+                  it "has the right details" do
+                    expect(dependency).to be_a(Dependabot::Dependency)
+                    expect(dependency.name).to eq("docker-php")
+                    expect(dependency.version).to eq("12.04.5")
+                    expect(dependency.requirements).to eq(expected_requirements)
+                  end
+                end
+              end
+            end
+          end
+        end
+
       end
     end
 
@@ -947,7 +1202,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect { yaml_parser.parse }.
                   to raise_error(error_class) do |error|
                     expect(error.source).
-                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
+                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com:443")
                   end
               end
             end
