@@ -101,6 +101,54 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
     end
 
+    context "with a namespace with digest" do
+      let(:dockerfile_fixture_name) { "namespace_digest" }
+      let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu_namespace.json") }
+      let(:repo_url) { "https://registry.hub.docker.com/v2/my-fork/ubuntu/" }
+      let(:digest_headers) do
+        JSON.parse(
+          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+        )
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/10.04").
+          and_return(status: 404)
+
+        stub_request(:head, repo_url + "manifests/12.04.5").
+          and_return(status: 200, body: "", headers: digest_headers)
+      end
+
+      before do
+        auth_url = "https://auth.docker.io/token?service=registry.docker.io"
+        stub_request(:get, auth_url).
+          and_return(status: 200, body: { token: "token" }.to_json)
+
+        tags_url = repo_url + "tags/list"
+        stub_request(:get, tags_url).
+          and_return(status: 200, body: registry_tags)
+      end
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005" }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("my-fork/ubuntu")
+          expect(dependency.version).to eq("12.04.5")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a FROM line written by a nutcase" do
       let(:dockerfile_fixture_name) { "case" }
 
@@ -404,7 +452,13 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         context "with replaces-base" do
           let(:dockerfile_fixture_name) { "digest" }
-          let(:repo_url) { "https://registry-host.io:5000/v2/library/ubuntu/" }
+          let(:repo_url) { "https://registry-host.io:5000/v2/ubuntu/" }
+
+          before do
+            tags_url = repo_url + "tags/list"
+            stub_request(:get, tags_url).
+              and_return(status: 200, body: registry_tags)
+          end
 
           context "when replaces-base is false" do
             let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
@@ -573,7 +627,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           context "when replaces-base set to true that uses Amazon ECR" do
             let(:dockerfile_fixture_name) { "ecr_digest" }
             let(:repo_url) do
-              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/library/" \
+              "https://695729449481.dkr.ecr.eu-west-2.amazonaws.com/v2/" \
                 "docker-php/"
             end
 
