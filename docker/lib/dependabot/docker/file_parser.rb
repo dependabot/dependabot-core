@@ -35,6 +35,8 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x
 
+      DEFAULT_DOCKER_HUB_REGISTRY="registry.hub.docker.com"
+
       def parse
         dependency_set = DependencySet.new
 
@@ -101,8 +103,8 @@ module Dependabot
       def version_from_digest(registry:, image:, digest:)
         return unless digest
 
-        repo = docker_repo_name(image, registry)
         registry_hostname, registry_credentials = fetch_registry_details(registry)
+        repo = docker_repo_name(image, registry_hostname)
         client = docker_registry_client(registry_hostname, registry_credentials)
         client.tags(repo, auto_paginate: true).fetch("tags").find do |tag|
           digest == client.digest(repo, tag)
@@ -116,29 +118,27 @@ module Dependabot
         raise PrivateSourceAuthenticationFailure, registry_hostname
       rescue RestClient::Exceptions::OpenTimeout,
              RestClient::Exceptions::ReadTimeout
-        raise if standard_registry?(registry_hostname)
+        raise if using_dockerhub?(registry_hostname)
 
         raise PrivateSourceTimedOut, registry_hostname
       end
 
       def docker_repo_name(image, registry)
-        return image unless standard_registry?(registry)
-        return image unless image.split("/").count < 2
+        return image if image.include? "/"
+        return "library/#{image}" if using_dockerhub?(registry)
 
-        "library/#{image}"
+        image
       end
 
       def docker_registry_client(registry_hostname, registry_credentials)
-        if registry_hostname
-          DockerRegistry2::Registry.new(
-            "https://#{registry_hostname}",
-            user: registry_credentials&.fetch("username", nil),
-            password: registry_credentials&.fetch("password", nil),
-            read_timeout: 10
-          )
-        else
-          DockerRegistry2::Registry.new("https://registry.hub.docker.com")
-        end
+        return DockerRegistry2::Registry.new("https://#{registry_hostname}") unless using_dockerhub?(registry_hostname)
+
+        DockerRegistry2::Registry.new(
+          "https://#{registry_hostname}",
+          user: registry_credentials&.fetch("username", nil),
+          password: registry_credentials&.fetch("password", nil),
+          read_timeout: 10
+        )
       end
 
       def fetch_registry_details(registry)
@@ -152,8 +152,8 @@ module Dependabot
           credentials = registry_credentials(registry)
           return registry, credentials
         else
-          # This is default case to set the registry url to https://registry.hub.docker.com
-          return nil, nil
+          # This is default case to set the registry url to registry.hub.docker.com
+          return DEFAULT_DOCKER_HUB_REGISTRY, nil
         end
       end
 
@@ -165,10 +165,8 @@ module Dependabot
         @credentials_finder ||= Utils::CredentialsFinder.new(credentials)
       end
 
-      def standard_registry?(registry)
-        return true if registry.nil?
-
-        registry == "registry.hub.docker.com"
+      def using_dockerhub?(registry)
+        registry == DEFAULT_DOCKER_HUB_REGISTRY
       end
 
       def check_required_files
