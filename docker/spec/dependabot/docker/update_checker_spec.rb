@@ -784,7 +784,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                 expect(error.source).to eq("registry-host.io:5000")
               end
           end
-
         end
       end
     end
