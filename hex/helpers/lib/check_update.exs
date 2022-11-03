@@ -74,7 +74,7 @@ case UpdateChecker.run(dependency_name, credentials) do
     version = :erlang.term_to_binary({:ok, version})
     IO.write(:stdio, version)
 
-  {:error, %Hex.Version.InvalidRequirementError{} = error}  ->
+  {:error, %Version.InvalidRequirementError{} = error}  ->
     result = :erlang.term_to_binary({:error, "Invalid requirement: #{error.requirement}"})
     IO.write(:stdio, result)
 
