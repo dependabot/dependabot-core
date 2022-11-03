@@ -56,7 +56,7 @@ RSpec.describe Dependabot::Nuget::Version do
 
     context "with build information" do
       let(:version_string) { "1.0.0+gc.1" }
-      it { is_expected.to eq "1.0.0+gc.1" }
+      it { is_expected.to eq "1.0.0" }
     end
 
     context "with a blank version" do
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::Nuget::Version do
 
     context "with pre-release details" do
       let(:version_string) { "1.0.0-beta+abc.1" }
-      it { is_expected.to eq("1.0.0-beta+abc.1") }
+      it { is_expected.to eq("1.0.0-beta") }
     end
   end
 
@@ -102,7 +102,7 @@ RSpec.describe Dependabot::Nuget::Version do
         expect(described_class.new(v)).to eq v
       end
       it "should ignore the build identifier #{v}+build" do
-        expect(described_class.new(v)).to eq "#{v}+build"
+        expect(described_class.new(v)).to eq described_class.new("#{v}+build")
       end
     end
 
