@@ -94,8 +94,11 @@ module Dependabot
 
                 Helpers.install_required_python(python_version)
 
-                # use system git instead of the pure Python dulwich
-                if is_poetry_version_gte_1_2_0?()
+                if poetry_version_gte_1_2_0?()
+                  # Poetry 1.2.0 and above uses dulwich, a pure Python implementation of git.
+                  # In order to use the system Git, we need to explicitly configure poetry to do so,
+                  # but we must do that only for versions above 1.2.0 if we try doing that for earlier versions,
+                  # poetry fails to recognize the command setting the git backend.
                   run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
                 end
 
@@ -353,14 +356,10 @@ module Dependabot
           )
         end
 
-        def is_poetry_version_gte_1_2_0?()
-          # Poetry 1.2.0 and above uses dulwich, a pure Python implementation of git. In order to use the system
-          # Git, we need to explicitly configure poetry to do so, but we must do that only for these versions above 1.2.0
-          # if we try doing that for earlier versions, poetry fails to recognize the command setting the git backend.
-
+        def poetry_version_gte_1_2_0?
           # The stdout of the command below should be in the following format: Poetry version x.x.x
-          poetry_version = run_poetry_command("poetry --version").split(' ')[-1]
-          return Gem::Version.new(poetry_version.split(' ')[-1]) >= Gem::Version.new('1.2.0')
+          poetry_version = run_poetry_command("poetry --version").split[-1]
+          Gem::Version.new(poetry_version) >= Gem::Version.new('1.2.0')
         end
 
         def normalise(name)
