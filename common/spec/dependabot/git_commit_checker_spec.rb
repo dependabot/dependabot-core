@@ -510,31 +510,32 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "v1.0.0"
         }
       end
-      it { is_expected.to eq(dependency.version) }
 
-      context "without a version" do
-        let(:version) { nil }
+      let(:git_header) do
+        { "content-type" => "application/x-git-upload-pack-advertisement" }
+      end
+      let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
 
-        let(:git_header) do
-          { "content-type" => "application/x-git-upload-pack-advertisement" }
+      let(:git_url) do
+        "https://github.com/gocardless/business.git" \
+          "/info/refs?service=git-upload-pack"
+      end
+
+      context "that can be reached just fine" do
+        before do
+          stub_request(:get, git_url).
+            with(headers: { "Authorization" => auth_header }).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "business"),
+              headers: git_header
+            )
         end
-        let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
 
-        let(:git_url) do
-          "https://github.com/gocardless/business.git" \
-            "/info/refs?service=git-upload-pack"
-        end
+        it { is_expected.to eq(dependency.version) }
 
-        context "that can be reached just fine" do
-          before do
-            stub_request(:get, git_url).
-              with(headers: { "Authorization" => auth_header }).
-              to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "business"),
-                headers: git_header
-              )
-          end
+        context "without a version" do
+          let(:version) { nil }
 
           it { is_expected.to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2") }
 

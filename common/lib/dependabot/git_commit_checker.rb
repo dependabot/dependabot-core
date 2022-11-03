@@ -85,13 +85,8 @@ module Dependabot
     def head_commit_for_current_branch
       ref = ref_or_branch || "HEAD"
 
-      if pinned?
-        return dependency.version ||
-               local_repo_git_metadata_fetcher.head_commit_for_ref(ref)
-      end
-
-      sha = local_repo_git_metadata_fetcher.head_commit_for_ref(ref)
-      return sha if sha
+      sha = head_commit_for_local_branch(ref)
+      return sha if pinned? || sha
 
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
