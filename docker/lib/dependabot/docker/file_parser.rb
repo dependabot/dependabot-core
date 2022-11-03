@@ -35,7 +35,7 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x
 
-      DEFAULT_DOCKER_HUB_REGISTRY="registry.hub.docker.com"
+      DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
 
       def parse
         dependency_set = DependencySet.new
@@ -103,9 +103,9 @@ module Dependabot
       def version_from_digest(registry:, image:, digest:)
         return unless digest
 
-        registry_hostname, registry_credentials = fetch_registry_details(registry)
-        repo = docker_repo_name(image, registry_hostname)
-        client = docker_registry_client(registry_hostname, registry_credentials)
+        registry_details = fetch_registry_details(registry)
+        repo = docker_repo_name(image, registry_details["registry"])
+        client = docker_registry_client(registry_details["registry"], registry_details["credentials"])
         client.tags(repo, auto_paginate: true).fetch("tags").find do |tag|
           digest == client.digest(repo, tag)
         rescue DockerRegistry2::NotFound
@@ -115,12 +115,12 @@ module Dependabot
         end
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
-        raise PrivateSourceAuthenticationFailure, registry_hostname
+        raise PrivateSourceAuthenticationFailure, registry_details["registry"]
       rescue RestClient::Exceptions::OpenTimeout,
              RestClient::Exceptions::ReadTimeout
-        raise if using_dockerhub?(registry_hostname)
+        raise if using_dockerhub?(registry_details["registry"])
 
-        raise PrivateSourceTimedOut, registry_hostname
+        raise PrivateSourceTimedOut, registry_details["registry"]
       end
 
       def docker_repo_name(image, registry)
@@ -142,18 +142,19 @@ module Dependabot
       end
 
       def fetch_registry_details(registry)
-        # When registry info is provided
+        # When registry url is present in Dockerfile's FROM statement
         if registry
           credentials = registry_credentials(registry)
-          return registry, credentials
-        # When registry url is nil but registy url is provided with replaces-base
+          return { "registry" => registry , "credentials" => credentials }
+        # When registry url is nil but is provided with replaces-base
         elsif credentials_finder.replaces_base?
           registry = credentials_finder.fetch_base_registry
           credentials = registry_credentials(registry)
-          return registry, credentials
+          return { "registry" => registry , "credentials" => credentials }
         else
-          # This is default case to set the registry url to registry.hub.docker.com
-          return DEFAULT_DOCKER_HUB_REGISTRY, nil
+          # When registry url is nil, replaces-base is false or not present
+          # Set the registry url to default case (registry.hub.docker.com)
+          return { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
         end
       end
 
