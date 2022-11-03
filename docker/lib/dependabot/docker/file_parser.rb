@@ -102,14 +102,8 @@ module Dependabot
         return unless digest
 
         repo = docker_repo_name(image, registry)
-        client = docker_registry_client(registry)
-        # Here, the client's registry_hostname is collected for use in passing to
-        # the RestClient::Exceptions exception for display. When the FROM statement in
-        # the Dockerfile does not contain any registry information but replaces-bases is set
-        # to true and contains the registry information, this is required because in such cases
-        # the registry extracted from the Dockerfile will be nil which is getting passed
-        # to docker_registry_client method as well as to the RestClient::Exceptions exception
-        registry_hostname = client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, "")
+        registry_hostname, registry_credentials = fetch_registry_details(registry)
+        client = docker_registry_client(registry_hostname, registry_credentials)
         client.tags(repo, auto_paginate: true).fetch("tags").find do |tag|
           digest == client.digest(repo, tag)
         rescue DockerRegistry2::NotFound
@@ -134,25 +128,32 @@ module Dependabot
         "library/#{image}"
       end
 
-      def get_docker_registry_client_instance(registry, credentials)
-        DockerRegistry2::Registry.new(
-          "https://#{registry}",
-          user: credentials&.fetch("username", nil),
-          password: credentials&.fetch("password", nil),
-          read_timeout: 10
-        )
+      def docker_registry_client(registry_hostname, registry_credentials)
+        if registry_hostname
+          DockerRegistry2::Registry.new(
+            "https://#{registry_hostname}",
+            user: registry_credentials&.fetch("username", nil),
+            password: registry_credentials&.fetch("password", nil),
+            read_timeout: 10
+          )
+        else
+          DockerRegistry2::Registry.new("https://registry.hub.docker.com")
+        end
       end
 
-      def docker_registry_client(registry)
+      def fetch_registry_details(registry)
+        # When registry info is provided
         if registry
           credentials = registry_credentials(registry)
-          get_docker_registry_client_instance(registry, credentials)
+          return registry, credentials
+        # When registry url is nil but registy url is provided with replaces-base
         elsif credentials_finder.replaces_base?
           registry = credentials_finder.fetch_base_registry
           credentials = registry_credentials(registry)
-          get_docker_registry_client_instance(registry, credentials)
+          return registry, credentials
         else
-          DockerRegistry2::Registry.new("https://registry.hub.docker.com")
+          # This is default case to set the registry url to https://registry.hub.docker.com
+          return nil, nil
         end
       end
 

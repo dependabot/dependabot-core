@@ -317,7 +317,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect { parser.parse }.
                   to raise_error(error_class) do |error|
                     expect(error.source).
-                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com:443")
+                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
                   end
               end
             end
@@ -1201,7 +1201,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 expect { yaml_parser.parse }.
                   to raise_error(error_class) do |error|
                     expect(error.source).
-                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com:443")
+                      to eq("695729449481.dkr.ecr.eu-west-2.amazonaws.com")
                   end
               end
             end
