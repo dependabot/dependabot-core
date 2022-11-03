@@ -299,5 +299,13 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
       # is ignored because it has markers
       its(:length) { is_expected.to eq(4) }
     end
+
+    context "with optional dependencies only" do
+      let(:pyproject_fixture_name) { "optional_dependencies_only.toml" }
+
+      subject(:dependencies) { parser.dependency_set.dependencies }
+
+      its(:length) { is_expected.to be > 0 }
+    end
   end
 end
