@@ -350,7 +350,8 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: latest_version
+            latest_allowable_version: latest_version,
+            repo_contents_path: repo_contents_path
           )
       end
 
