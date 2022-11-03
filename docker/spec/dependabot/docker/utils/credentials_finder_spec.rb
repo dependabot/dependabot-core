@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
   end
 
   describe "#replaces_base" do
-    subject(:replaces_base) { finder.replaces_base?() }
+    subject(:replaces_base) { finder.replaces_base? }
 
     context "with private registry and replaces-base true" do
       let(:credentials) do
@@ -180,6 +180,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
           "replaces-base" => false
         }]
       end
+
       it { is_expected.to eq(false) }
     end
 

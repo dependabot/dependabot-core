@@ -472,22 +472,22 @@ RSpec.describe Dependabot::Docker::FileParser do
                 )
               end
 
-                its(:length) { is_expected.to eq(1) }
+              its(:length) { is_expected.to eq(1) }
 
-                describe "the first dependency" do
-                  subject(:dependency) { dependencies.first }
-                  let(:expected_requirements) do
-                    [{
-                      requirement: nil,
-                      groups: [],
-                      file: "Dockerfile",
-                      source: {
-                        registry: "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
-                        digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
-                                "e4c8dfc38288cf73aa07485005"
-                      }
-                    }]
-                  end
+              describe "the first dependency" do
+                subject(:dependency) { dependencies.first }
+                let(:expected_requirements) do
+                  [{
+                    requirement: nil,
+                    groups: [],
+                    file: "Dockerfile",
+                    source: {
+                      registry: "695729449481.dkr.ecr.eu-west-2.amazonaws.com",
+                      digest: "sha256:18305429afa14ea462f810146ba44d4363ae76" \
+                              "e4c8dfc38288cf73aa07485005"
+                    }
+                  }]
+                end
 
                   it "has the right details" do
                     expect(dependency).to be_a(Dependabot::Dependency)
@@ -655,7 +655,6 @@ RSpec.describe Dependabot::Docker::FileParser do
             end
           end
         end
-
       end
     end
 
