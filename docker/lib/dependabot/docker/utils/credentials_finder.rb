@@ -29,9 +29,7 @@ module Dependabot
 
         # Return true if replaces-base is enabled else return false
         def replaces_base?
-          if @registry_details
-            return @registry_details["replaces-base"] == true if @registry_details.key?("replaces-base")
-          end
+          return @registry_details["replaces-base"] == true if @registry_details&.key?("replaces-base")
           return false
         end
 
