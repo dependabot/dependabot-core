@@ -94,7 +94,7 @@ module Dependabot
 
                 Helpers.install_required_python(python_version)
 
-                if poetry_version_gte_1_2_0?()
+                if poetry_version_gte_1_2_0?
                   # Poetry 1.2.0 and above uses dulwich, a pure Python implementation of git.
                   # In order to use the system Git, we need to explicitly configure poetry to do so,
                   # but we must do that only for versions above 1.2.0 if we try doing that for earlier versions,
@@ -342,9 +342,7 @@ module Dependabot
 
           # Raise an error with the output from the shell session if poetry
           # returns a non-zero status
-          if process.success?
-            return stdout
-          end
+         return stdout if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
@@ -359,7 +357,7 @@ module Dependabot
         def poetry_version_gte_1_2_0?
           # The stdout of the command below should be in the following format: Poetry version x.x.x
           poetry_version = run_poetry_command("poetry --version").split[-1]
-          Gem::Version.new(poetry_version) >= Gem::Version.new('1.2.0')
+          Gem::Version.new(poetry_version) >= Gem::Version.new("1.2.0")
         end
 
         def normalise(name)
