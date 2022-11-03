@@ -145,16 +145,16 @@ module Dependabot
         # When registry url is present in Dockerfile's FROM statement
         if registry
           credentials = registry_credentials(registry)
-          return { "registry" => registry , "credentials" => credentials }
+          { "registry" => registry, "credentials" => credentials }
         # When registry url is nil but is provided with replaces-base
         elsif credentials_finder.replaces_base?
           registry = credentials_finder.fetch_base_registry
           credentials = registry_credentials(registry)
-          return { "registry" => registry , "credentials" => credentials }
+          { "registry" => registry, "credentials" => credentials }
         else
           # When registry url is nil, replaces-base is false or not present
           # Set the registry url to default case (registry.hub.docker.com)
-          return { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
+          { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
         end
       end
 
