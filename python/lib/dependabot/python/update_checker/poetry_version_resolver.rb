@@ -342,7 +342,7 @@ module Dependabot
 
           # Raise an error with the output from the shell session if poetry
           # returns a non-zero status
-         return stdout if process.success?
+          return stdout if process.success?
 
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
