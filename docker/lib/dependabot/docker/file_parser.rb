@@ -111,10 +111,11 @@ module Dependabot
           false
         end
       rescue DockerRegistry2::RegistryAuthenticationException,
-        RestClient::Forbidden
-        raise PrivateSourceAuthenticationFailure, client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, "")
+             RestClient::Forbidden
+        raise PrivateSourceAuthenticationFailure,
+              client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, "")
       rescue RestClient::Exceptions::OpenTimeout,
-        RestClient::Exceptions::ReadTimeout
+             RestClient::Exceptions::ReadTimeout
         raise if standard_registry?(client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, ""))
 
         raise PrivateSourceTimedOut, client.instance_variable_get(@base_uri).sub(/^https?\:\/\/(www.)?/, "")
