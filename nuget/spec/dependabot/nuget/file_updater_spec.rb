@@ -461,5 +461,63 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
       end
     end
+
+    context "with a lockfile" do
+      describe "the updated lockfile" do
+        subject(:updated_lock_file) do
+          updated_files.find { |f| f.name == "packages.lock.json" }
+        end
+
+        let(:dependency_files) { [csproj_file, lock_file] }
+        let(:csproj_file) do
+          Dependabot::DependencyFile.new(
+            content: fixture("csproj", "lockfile_test.csproj"),
+            name: "lockfile_test.csproj"
+          )
+        end
+        let(:lock_file) do
+          Dependabot::DependencyFile.new(
+            content: fixture("lockfiles", "lockfile_test_packages.lock.json"),
+            name: "packages.lock.json"
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "Microsoft.Extensions.DependencyModel",
+            version: "1.1.2",
+            previous_version: "1.0.1",
+            requirements: [{
+              file: "lockfile_test.csproj",
+              requirement: "1.1.2",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "lockfile_test.csproj",
+              requirement: "1.0.1",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            package_manager: "nuget"
+          )
+        end
+
+        it "updates the dependency version in the lockfile" do
+          dependency_name = "Microsoft.Extensions.DependencyModel"
+          prev_dependency = JSON.parse(lock_file.content)["dependencies"]["net6.0"][dependency_name]
+          new_dependency = JSON.parse(updated_lock_file.content)["dependencies"]["net6.0"][dependency_name]
+
+          expect(prev_dependency["resolved"]).to eql("1.0.3")
+          expect(prev_dependency["contentHash"]).to eql(
+            "Z3o19EnheuegmvgpCzwoSlnCWxYA6qIUhvKJ7ifKHHvU7U+oYR/gliLiL3LVYOOeGMEEzkpJ5W67sOcXizGtlw=="
+          )
+
+          expect(new_dependency["resolved"]).to eql("1.1.2")
+          expect(new_dependency["contentHash"]).to eql(
+            "v/Y38U1tsdr8s5SLpTzbiwsugSFV+JNtm2lGb0agKDt/IwmWFbAqOR/rLr/ER1u4X5cHRv/J2dU6acUzYA0MFQ=="
+          )
+        end
+      end
+    end
   end
 end
