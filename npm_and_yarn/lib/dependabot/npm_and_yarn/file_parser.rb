@@ -3,7 +3,6 @@
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
 require "dependabot/dependency"
-require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
@@ -250,11 +249,9 @@ module Dependabot
         )
         resolved_url = lockfile_details&.fetch("resolved", nil)
 
-        if Experiments.enabled?(:yarn_berry) && resolved_url.nil?
-          resolution = lockfile_details&.fetch("resolution", nil)
-          package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
-          resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
-        end
+        resolution = lockfile_details&.fetch("resolution", nil)
+        package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
+        resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
@@ -337,7 +334,7 @@ module Dependabot
               dependency_files.
               select { |f| f.name.end_with?("package.json") }.
               reject { |f| f.name == "package.json" }.
-              reject { |f| f.name.include?("node_modules/") if Experiments.enabled?(:yarn_berry) }.
+              reject { |f| f.name.include?("node_modules/") }.
               reject(&:support_file?)
 
             [

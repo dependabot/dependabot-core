@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
