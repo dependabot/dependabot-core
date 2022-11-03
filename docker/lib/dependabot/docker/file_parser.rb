@@ -105,9 +105,9 @@ module Dependabot
         client = docker_registry_client(registry)
         # Here, the client's registry_hostname is collected for use in passing to
         # the RestClient::Exceptions exception for display. When the FROM statement in
-        # the Dockerfile does not any contain registry information but replaces-bases is set
+        # the Dockerfile does not contain any registry information but replaces-bases is set
         # to true and contains the registry information, this is required because in such cases
-        # the registry extarcted from the Dockerfile will be nil which is getting passed
+        # the registry extracted from the Dockerfile will be nil which is getting passed
         # to docker_registry_client method as well as to the RestClient::Exceptions exception
         registry_hostname = client.instance_variable_get(:@base_uri).sub(/^https?\:\/\/(www.)?/, "")
         client.tags(repo, auto_paginate: true).fetch("tags").find do |tag|
