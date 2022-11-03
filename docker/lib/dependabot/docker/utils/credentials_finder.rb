@@ -43,8 +43,8 @@ module Dependabot
 
         def fetch_registry_info
           credentials.
-          select { |cred| cred["type"] && cred["replaces-base"] == true }.
-          find { |cred| cred.fetch("type") == "docker_registry" }
+            select { |cred| cred["type"] && cred["replaces-base"] == true }.
+            find { |cred| cred.fetch("type") == "docker_registry" }
         end
 
         attr_reader :credentials

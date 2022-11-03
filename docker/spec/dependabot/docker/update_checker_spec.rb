@@ -697,7 +697,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             requirement: nil,
             groups: [],
             file: "Dockerfile",
-            source: {tag: "17.10"}
+            source: { tag: "17.10" }
           }],
           package_manager: "docker"
         )
@@ -762,7 +762,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
                 body: "",
                 headers: { "www_authenticate" => "basic 123" }
               )
-            end
+          end
 
           let(:credentials) do
             [{
