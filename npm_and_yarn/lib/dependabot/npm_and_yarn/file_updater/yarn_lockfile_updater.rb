@@ -9,7 +9,6 @@ require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/experiments"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot

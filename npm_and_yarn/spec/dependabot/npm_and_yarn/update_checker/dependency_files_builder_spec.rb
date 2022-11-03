@@ -25,10 +25,6 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
   let!(:dependency_files) { project_dependency_files(project_name) }
   let(:project_name) { "npm6_and_yarn/simple" }
 
-  before do
-    Dependabot::Experiments.register(:yarn_berry, true)
-  end
-
   def project_dependency_file(file_name)
     dependency_files.find { |f| f.name == file_name }
   end
