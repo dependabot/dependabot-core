@@ -62,7 +62,6 @@ module Dependabot
           path = Pathname.new(lockfile.name).dirname.to_s
 
           updated_files = if lockfile.name.end_with?("yarn.lock") && Helpers.yarn_berry?(lockfile)
-                            debugger
                             run_yarn_berry_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
@@ -118,7 +117,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_yarn_commands(
-                "yarn up #{dependency.name}#{Helpers.yarn_berry_args}"
+                "yarn up -R #{dependency.name}#{Helpers.yarn_berry_args}"
               )
               { lockfile_name => File.read(lockfile_name) }
             end
