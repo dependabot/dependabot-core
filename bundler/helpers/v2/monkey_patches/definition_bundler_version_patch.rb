@@ -6,9 +6,7 @@ require "bundler/definition"
 # version available to us is the one we're using).
 module BundlerDefinitionBundlerVersionPatch
   def expanded_dependencies
-    @expanded_dependencies ||=
-      expand_dependencies(dependencies + metadata_dependencies, @remote).
-      reject { |d| d.name == "bundler" }
+    @expanded_dependencies ||= (dependencies + metadata_dependencies).reject { |d| d.name == "bundler" }
   end
 end
 
