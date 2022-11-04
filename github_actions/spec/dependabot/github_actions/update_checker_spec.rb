@@ -392,6 +392,50 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
+    context "given a dependency with a different default branch from the source repository", :vcr do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: dependency_version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/main.yml",
+            source: dependency_source
+          }],
+          package_manager: "github_actions"
+        )
+      end
+      let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
+      let(:dependency_version) { nil }
+      let(:dependency_source) do
+        {
+          type: "git",
+          url: "https://github.com/dependabot-fixtures/github-action-push-to-another-repository",
+          ref: reference,
+          branch: nil
+        }
+      end
+
+      let(:latest_commit) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
+
+      context "when up to date" do
+        let(:reference) { latest_commit }
+
+        it "returns the expected value" do
+          expect(subject).to eq(latest_commit)
+        end
+      end
+
+      context "when out of to date" do
+        let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
+
+        it "returns the expected value" do
+          expect(subject).to eq(latest_commit)
+        end
+      end
+    end
+
     context "that is a git commit SHA not pointing to the tip of a branch" do
       let(:reference) { "1c24df3" }
       let(:exit_status) { double(success?: true) }
@@ -401,7 +445,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(false)
         allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return(reference)
 
-        allow(Open3).to receive(:capture2e).with(anything, "git fetch #{reference}").and_return(["", exit_status])
+        allow(Dependabot::SharedHelpers).to receive(:configure_git_to_use_https_with_credentials)
+
+        allow(Open3).to receive(:capture2e).
+          with(anything, %r{git clone --no-tags --depth 1 --no-recurse-submodules https://github\.com/actions/setup-node}).
+          and_return(["", exit_status])
+
+        allow(Open3).to receive(:capture2e).
+          with(anything, "git fetch --depth 1 --no-recurse-submodules origin #{reference}").
+          and_return(["", exit_status])
       end
 
       context "and it's in the current (default) branch" do

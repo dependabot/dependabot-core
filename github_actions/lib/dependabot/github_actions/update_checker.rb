@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/file_fetchers/base"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
@@ -83,12 +84,21 @@ module Dependabot
       end
 
       def latest_commit_for_pinned_ref
-        @latest_commit_for_pinned_ref ||=
-          SharedHelpers.in_a_temporary_repo_directory("/", repo_contents_path) do
-            ref_branch = find_container_branch(current_commit)
+        @latest_commit_for_pinned_ref ||= begin
+          source = Source.from_url(dependency_source_details[:url])
 
-            git_commit_checker.head_commit_for_local_branch(ref_branch)
+          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+            fetcher = FileFetchers::Base.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
+            fetcher.clone_repo_contents
+
+            Dir.chdir(repo_contents_path) do
+              ref_branch = find_container_branch(current_commit)
+
+              git_commit_checker.head_commit_for_local_branch(ref_branch)
+            end
           end
+        end
       end
 
       def latest_version_tag
@@ -184,7 +194,7 @@ module Dependabot
       end
 
       def find_container_branch(sha)
-        SharedHelpers.run_shell_command("git fetch #{current_commit}")
+        SharedHelpers.run_shell_command("git fetch --depth 1 --no-recurse-submodules origin #{sha}")
 
         branches_including_ref = SharedHelpers.run_shell_command("git branch --contains #{sha}").split("\n")
 
@@ -194,7 +204,7 @@ module Dependabot
           current_branch.delete_prefix("* ")
         elsif branches_including_ref.size > 1
           # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
-          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{current_commit}!"
+          raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
         else
           branches_including_ref.first
         end
