@@ -77,7 +77,7 @@ ARG RUBYGEMS_SYSTEM_VERSION=3.3.7
 
 ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-ARG BUNDLER_V2_VERSION=2.3.22
+ARG BUNDLER_V2_VERSION=2.3.25
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle" \
