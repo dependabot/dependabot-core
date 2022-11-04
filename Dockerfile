@@ -323,4 +323,4 @@ RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo
 ENV GIT_LFS_SKIP_SMUDGE=1
 
 # Pin to an earlier version of Hex. This must be run as dependabot
-RUN mix hex.install 1.0.1
+RUN mix hex.install 2.0.0
