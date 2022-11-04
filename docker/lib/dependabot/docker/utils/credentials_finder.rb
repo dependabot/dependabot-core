@@ -13,7 +13,6 @@ module Dependabot
 
         def initialize(credentials)
           @credentials = credentials
-          @registry_details = fetch_registry_info
         end
 
         def credentials_for_registry(registry_hostname)
@@ -27,23 +26,14 @@ module Dependabot
           build_aws_credentials(registry_details)
         end
 
-        # Return true if replaces-base is enabled else return false
-        def replaces_base?
-          return @registry_details["replaces-base"] == true if @registry_details&.key?("replaces-base")
-
-          false
-        end
-
-        def fetch_base_registry
-          return @registry_details["registry"] if @registry_details
+        def base_registry
+          @base_registry ||= credentials.find do |cred|
+            cred["type"] == "docker_registry" && cred["replaces-base"] == true
+          end
+          @base_registry ||= { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
         end
 
         private
-
-        def fetch_registry_info
-          credentials.
-            find { |cred| cred["type"] == "docker_registry" && cred["replaces-base"] == true }
-        end
 
         attr_reader :credentials
 
