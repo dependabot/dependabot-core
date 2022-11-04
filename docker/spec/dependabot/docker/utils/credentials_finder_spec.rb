@@ -153,8 +153,8 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
     end
   end
 
-  describe "#replaces_base" do
-    subject(:replaces_base) { finder.replaces_base? }
+  describe "#base_registry" do
+    subject(:base_registry) { finder.base_registry }
 
     context "with private registry and replaces-base true" do
       let(:credentials) do
@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to eq("registry-host.io:5000") }
     end
 
     context "with private registry and replaces-base false" do
@@ -181,7 +181,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         }]
       end
 
-      it { is_expected.to eq(false) }
+      it { is_expected.to eq("registry.hub.docker.com") }
     end
 
     context "with multiple private registries and mixed value of replaces-base" do
@@ -201,7 +201,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
         }]
       end
 
-      it { is_expected.to eq(true) }
+      it { is_expected.to eq("registry-host-new.io:5000") }
     end
   end
 end

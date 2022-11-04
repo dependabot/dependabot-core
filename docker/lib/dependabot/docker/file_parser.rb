@@ -35,8 +35,6 @@ module Dependabot
 
       IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x
 
-      DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
-
       def parse
         dependency_set = DependencySet.new
 
@@ -118,20 +116,22 @@ module Dependabot
         raise PrivateSourceAuthenticationFailure, registry_details["registry"]
       rescue RestClient::Exceptions::OpenTimeout,
              RestClient::Exceptions::ReadTimeout
-        raise if using_dockerhub?(registry_details["registry"])
+        raise if credentials_finder.using_dockerhub?(registry_details["registry"])
 
         raise PrivateSourceTimedOut, registry_details["registry"]
       end
 
       def docker_repo_name(image, registry)
         return image if image.include? "/"
-        return "library/#{image}" if using_dockerhub?(registry)
+        return "library/#{image}" if credentials_finder.using_dockerhub?(registry)
 
         image
       end
 
       def docker_registry_client(registry_hostname, registry_credentials)
-        return DockerRegistry2::Registry.new("https://#{registry_hostname}") unless using_dockerhub?(registry_hostname)
+        unless credentials_finder.using_dockerhub?(registry_hostname)
+          return DockerRegistry2::Registry.new("https://#{registry_hostname}")
+        end
 
         DockerRegistry2::Registry.new(
           "https://#{registry_hostname}",
@@ -149,10 +149,6 @@ module Dependabot
 
       def credentials_finder
         @credentials_finder ||= Utils::CredentialsFinder.new(credentials)
-      end
-
-      def using_dockerhub?(registry)
-        registry == DEFAULT_DOCKER_HUB_REGISTRY
       end
 
       def check_required_files
