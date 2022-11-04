@@ -318,9 +318,8 @@ module Dependabot
 
       def registry_hostname
         return dependency.requirements.first[:source][:registry] if dependency.requirements.first[:source][:registry]
-        return credentials_finder.base_registry if credentials_finder.base_registry
 
-        "registry.hub.docker.com"
+        credentials_finder.base_registry
       end
 
       def using_dockerhub?
