@@ -84,18 +84,23 @@ module Dependabot
 
       def latest_commit_for_pinned_ref
         @latest_commit_for_pinned_ref ||= begin
-          url = dependency_source_details[:url]
-          source = Source.from_url(url)
+          head_commit_for_ref_sha = git_commit_checker.head_commit_for_pinned_ref
+          if head_commit_for_ref_sha
+            head_commit_for_ref_sha
+          else
+            url = dependency_source_details[:url]
+            source = Source.from_url(url)
 
-          SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
-            repo_contents_path = File.join(temp_dir, File.basename(source.repo))
+            SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
+              repo_contents_path = File.join(temp_dir, File.basename(source.repo))
 
-            SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
+              SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
-            Dir.chdir(repo_contents_path) do
-              ref_branch = find_container_branch(dependency_source_details[:ref])
+              Dir.chdir(repo_contents_path) do
+                ref_branch = find_container_branch(dependency_source_details[:ref])
 
-              git_commit_checker.head_commit_for_local_branch(ref_branch)
+                git_commit_checker.head_commit_for_local_branch(ref_branch)
+              end
             end
           end
         end

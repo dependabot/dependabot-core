@@ -70,6 +70,11 @@ module Dependabot
       ref_looks_like_commit_sha?(ref)
     end
 
+    def head_commit_for_pinned_ref
+      ref = dependency_source_details.fetch(:ref)
+      local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
+    end
+
     def ref_looks_like_commit_sha?(ref)
       return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
 
