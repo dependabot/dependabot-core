@@ -45,8 +45,7 @@ module Dependabot
 
             version_from_updated_lockfiles(updated_lockfiles)
           end
-        rescue SharedHelpers::HelperSubprocessFailed => e
-          debugger
+        rescue SharedHelpers::HelperSubprocessFailed
           # TODO: Move error handling logic from the FileUpdater to this class
 
           # Return nil (no update possible) if an unknown error occurred
@@ -119,9 +118,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_yarn_commands(
-                "yarn up -R #{dependency.name}#{Helpers.yarn_berry_args}"
+                "yarn up #{dependency.name}#{Helpers.yarn_berry_args}"
               )
-              debugger
               { lockfile_name => File.read(lockfile_name) }
             end
           end
