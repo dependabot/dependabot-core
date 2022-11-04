@@ -392,7 +392,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with a different default branch from the source repository", :vcr do
+    context "given a realworld repository", :vcr do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -417,21 +417,38 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         }
       end
 
-      let(:latest_commit) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
+      let(:latest_commit_in_main) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
+      let(:latest_commit_in_devel) { "c7563454dd4fbe0ea69095188860a62a19658a04" }
 
-      context "when up to date" do
-        let(:reference) { latest_commit }
+      context "when pinned to an up to date commit in the default branch" do
+        let(:reference) { latest_commit_in_main }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit)
+          expect(subject).to eq(latest_commit_in_main)
         end
       end
 
-      context "when out of to date" do
+      context "when pinned to an out of date commit in the default branch" do
         let(:reference) { "f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465" }
 
         it "returns the expected value" do
-          expect(subject).to eq(latest_commit)
+          expect(subject).to eq(latest_commit_in_main)
+        end
+      end
+
+      context "when pinned to an up to date commit in a non default branch" do
+        let(:reference) { latest_commit_in_devel }
+
+        it "returns the expected value" do
+          expect(subject).to eq(latest_commit_in_devel)
+        end
+      end
+
+      context "when pinned to an out of date commit in a non default branch" do
+        let(:reference) { "96e7dec17bbeed08477b9edab6c3a573614b829d" }
+
+        it "returns the expected value" do
+          expect(subject).to eq(latest_commit_in_devel)
         end
       end
     end
@@ -445,22 +462,18 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(false)
         allow(git_commit_checker).to receive(:head_commit_for_current_branch).and_return(reference)
 
-        allow(Dependabot::SharedHelpers).to receive(:configure_git_to_use_https_with_credentials)
+        allow(Dir).to receive(:chdir).and_yield
 
         allow(Open3).to receive(:capture2e).
-          with(anything, %r{git clone --no-tags --depth 1 --no-recurse-submodules https://github\.com/actions/setup-node}).
-          and_return(["", exit_status])
-
-        allow(Open3).to receive(:capture2e).
-          with(anything, "git fetch --depth 1 --no-recurse-submodules origin #{reference}").
+          with(anything, %r{git clone --no-recurse-submodules https://github\.com/actions/setup-node}).
           and_return(["", exit_status])
       end
 
       context "and it's in the current (default) branch" do
         before do
           allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --contains #{reference}").
-            and_return(["* master\n", exit_status])
+            with(anything, "git branch --remotes --contains #{reference}").
+            and_return(["  origin/HEAD -> origin/master\n  origin/master", exit_status])
         end
 
         it "can update to the latest version" do
@@ -473,8 +486,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         before do
           allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --contains #{reference}").
-            and_return(["releases/v1\n", exit_status])
+            with(anything, "git branch --remotes --contains #{reference}").
+            and_return(["  origin/releases/v1\n", exit_status])
         end
 
         it "can update to the latest version" do
@@ -485,8 +498,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "and multiple branches include it, the current (default) branch among them" do
         before do
           allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --contains #{reference}").
-            and_return(["* master\nv1.1\n", exit_status])
+            with(anything, "git branch --remotes --contains #{reference}").
+            and_return(["  origin/HEAD -> origin/master\n  origin/master\n  origin/v1.1\n", exit_status])
         end
 
         it "can update to the latest version" do
@@ -497,8 +510,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       context "and multiple branches include it, the current (default) branch NOT among them" do
         before do
           allow(Open3).to receive(:capture2e).
-            with(anything, "git branch --contains #{reference}").
-            and_return(["3.3-stable\nproduction\n", exit_status])
+            with(anything, "git branch --remotes --contains #{reference}").
+            and_return(["  origin/3.3-stable\n  origin/production\n", exit_status])
         end
 
         it "raises an error" do

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/file_fetchers/base"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
@@ -85,15 +84,16 @@ module Dependabot
 
       def latest_commit_for_pinned_ref
         @latest_commit_for_pinned_ref ||= begin
-          source = Source.from_url(dependency_source_details[:url])
+          url = dependency_source_details[:url]
+          source = Source.from_url(url)
 
           SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
             repo_contents_path = File.join(temp_dir, File.basename(source.repo))
-            fetcher = FileFetchers::Base.new(source: source, credentials: [], repo_contents_path: repo_contents_path)
-            fetcher.clone_repo_contents
+
+            SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
             Dir.chdir(repo_contents_path) do
-              ref_branch = find_container_branch(current_commit)
+              ref_branch = find_container_branch(dependency_source_details[:ref])
 
               git_commit_checker.head_commit_for_local_branch(ref_branch)
             end
@@ -194,14 +194,14 @@ module Dependabot
       end
 
       def find_container_branch(sha)
-        SharedHelpers.run_shell_command("git fetch --depth 1 --no-recurse-submodules origin #{sha}")
+        branches_including_ref = SharedHelpers.run_shell_command(
+          "git branch --remotes --contains #{sha}"
+        ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
 
-        branches_including_ref = SharedHelpers.run_shell_command("git branch --contains #{sha}").split("\n")
-
-        current_branch = branches_including_ref.find { |line| line.start_with?("* ") }
+        current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }
 
         if current_branch
-          current_branch.delete_prefix("* ")
+          current_branch.delete_prefix("HEAD -> ")
         elsif branches_including_ref.size > 1
           # If there are multiple non default branches including the pinned SHA, then it's unclear how we should proceed
           raise "Multiple ambiguous branches (#{branches_including_ref.join(', ')}) include #{sha}!"
