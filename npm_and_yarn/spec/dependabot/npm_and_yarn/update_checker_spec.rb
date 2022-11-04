@@ -629,7 +629,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.7.0")
+            latest_allowable_version: Gem::Version.new("1.7.0"),
+            repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver).
           to receive(:latest_resolvable_version).
@@ -695,7 +696,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
               credentials: credentials,
               dependency_files: dependency_files,
               ignored_versions: ignored_versions,
-              latest_allowable_version: Gem::Version.new("1.7.0")
+              latest_allowable_version: Gem::Version.new("1.7.0"),
+              repo_contents_path: nil
             ).and_return(dummy_version_resolver)
           expect(dummy_version_resolver).
             to receive(:latest_resolvable_version).
@@ -768,7 +770,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: Gem::Version.new("1.7.0")
+            latest_allowable_version: Gem::Version.new("1.7.0"),
+            repo_contents_path: nil
           ).and_return(dummy_version_resolver)
         expect(dummy_version_resolver).
           to receive(:latest_resolvable_version).
@@ -2077,6 +2080,37 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
     it "returns 0 dependencies to update" do
       updated_deps = checker.updated_dependencies(requirements_to_unlock: :all)
       expect(updated_deps.length).to eq(0)
+    end
+  end
+  context "if yarn berry subdependency" do
+    let(:project_name) { "yarn_berry/subdependency" }
+    let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+    let(:registry_listing_url) { "https://registry.npmjs.org/is-stream" }
+    let(:registry_response) do
+      fixture("npm_responses", "is-stream.json")
+    end
+    before do
+      stub_request(:get, registry_listing_url).
+        to_return(status: 200, body: registry_response)
+      stub_request(:get, registry_listing_url + "/latest").
+        to_return(status: 200, body: "{}")
+      stub_request(:get, registry_listing_url + "/3.0.0").
+        to_return(status: 200)
+    end
+    let(:dependency_files) { project_dependency_files("yarn_berry/subdependency") }
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "is-stream",
+        version: "1.0.1",
+        requirements: [],
+        package_manager: "npm_and_yarn"
+      )
+    end
+    it "returns 1 dependencies to update to the correct version" do
+      updated_deps = checker.updated_dependencies(requirements_to_unlock: :own)
+      expect(updated_deps.length).to eq(1)
+      expect(updated_deps[0].version).to eq("1.1.0")
+      expect(updated_deps[0].name).to eq("is-stream")
     end
   end
 end

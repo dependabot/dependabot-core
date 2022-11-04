@@ -19,19 +19,21 @@ module Dependabot
     class UpdateChecker
       class SubdependencyVersionResolver
         def initialize(dependency:, credentials:, dependency_files:,
-                       ignored_versions:, latest_allowable_version:)
+                       ignored_versions:, latest_allowable_version:, repo_contents_path:)
           @dependency = dependency
           @credentials = credentials
           @dependency_files = dependency_files
           @ignored_versions = ignored_versions
           @latest_allowable_version = latest_allowable_version
+          @repo_contents_path = repo_contents_path
         end
 
         def latest_resolvable_version
           raise "Not a subdependency!" if dependency.requirements.any?
           return if bundled_dependency?
 
-          SharedHelpers.in_a_temporary_directory do
+          base_dir = dependency_files.first.directory
+          SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
             updated_lockfiles = filtered_lockfiles.map do |lockfile|
@@ -53,7 +55,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :ignored_versions, :latest_allowable_version
+                    :ignored_versions, :latest_allowable_version, :repo_contents_path
 
         def update_subdependency_in_lockfile(lockfile)
           lockfile_name = Pathname.new(lockfile.name).basename.to_s
