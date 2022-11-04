@@ -148,7 +148,7 @@ module Dependabot
         def run_go_vendor
           return unless vendor?
 
-          command = "go mod vendor"
+          command = "go mod vendor -e"
           _, stderr, status = Open3.capture3(environment, command)
           handle_subprocess_error(stderr) unless status.success?
         end
