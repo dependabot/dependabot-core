@@ -284,20 +284,6 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     context "when image is not found" do
-      let(:dependency_name) { "ubuntu" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { tag: "17.10" }
-          }],
-          package_manager: "docker"
-        )
-      end
       let(:tags_fixture_name) { "ubuntu_no_latest.json" }
 
       context "with replaces-base set to true" do
