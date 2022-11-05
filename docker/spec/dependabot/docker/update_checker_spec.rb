@@ -283,6 +283,58 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
+    context "when tag is not found" do
+      let(:dependency_name) { "ubuntu" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.10" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+      context "with replaces-base set to true" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => true
+          }]
+        end
+
+        before do
+          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(
+              status: 404,
+              body: ""
+            )
+        end
+
+        it "raises a to DockerRegistry2::NotFound error" do
+          error_class = DockerRegistry2::NotFound
+          expect { checker.latest_version }.
+            to raise_error(error_class) do |error|
+              expect(error.message).to eq("404 Not Found. Image https://registry-host.io:5000/ubuntu not found")
+            end
+        end
+      end
+    end
+
     context "when the dependency's version has a prefix" do
       let(:version) { "artful-20170826" }
       it { is_expected.to eq("artful-20170916") }

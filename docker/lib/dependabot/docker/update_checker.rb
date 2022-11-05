@@ -224,8 +224,8 @@ module Dependabot
         @tags_from_registry ||=
           begin
             client = docker_registry_client
-
-            client.tags(docker_repo_name, auto_paginate: true).fetch("tags")
+            repo = docker_repo_name
+            client.tags(repo, auto_paginate: true).fetch("tags")
           rescue *transient_docker_errors
             attempt ||= 1
             attempt += 1
@@ -233,6 +233,8 @@ module Dependabot
 
             retry
           end
+      rescue DockerRegistry2::NotFound
+        raise DockerRegistry2::NotFound, "404 Not Found. Image https://#{registry_hostname}/#{repo} not found"
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
