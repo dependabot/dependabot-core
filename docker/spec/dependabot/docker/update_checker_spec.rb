@@ -283,7 +283,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("17.04") }
     end
 
-    context "when tag is not found" do
+    context "when image is not found" do
       let(:dependency_name) { "ubuntu" }
       let(:dependency) do
         Dependabot::Dependency.new(
