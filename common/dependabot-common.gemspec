@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
-  spec.add_development_dependency "parallel_tests", "~> 3.13.0"
+  spec.add_development_dependency "parallel_tests", "~> 4.0.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"
