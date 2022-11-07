@@ -315,7 +315,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           error_class = DockerRegistry2::NotFound
           expect { checker.latest_version }.
             to raise_error(error_class) do |error|
-              expect(error.message).to eq("404 Not Found. Image https://registry-host.io:5000/ubuntu not found")
+              expect(error.message).to eq("Image not found: https://registry-host.io:5000/ubuntu")
             end
         end
       end
