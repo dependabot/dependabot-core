@@ -11,7 +11,7 @@ module Dependabot
 
       def self.updated_files_regex
         [
-          /dockerfile/i,
+          /(docker|container)file/i,
           /^[^\.]+\.ya?ml/i
         ]
       end
@@ -51,7 +51,7 @@ module Dependabot
         # Just check if there are any files at all.
         return if dependency_files.any?
 
-        raise "No Dockerfile!"
+        raise "No Dockerfile or Containerfile!"
       end
 
       def updated_dockerfile_content(file)

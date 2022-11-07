@@ -72,6 +72,34 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
   end
 
+  context "with a Containerfile" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_docker_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "Dockerfile?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: dockerfile_fixture,
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    let(:dockerfile_fixture) { fixture("github", "contents_containerfile.json") }
+
+    it "fetches the Containerfile" do
+      expect(file_fetcher_instance.files.count).to eq(1)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Containerfile))
+    end
+  end
+
   context "with multiple Dockerfiles" do
     before do
       stub_request(:get, url + "?ref=sha").
