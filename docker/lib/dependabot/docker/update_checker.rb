@@ -225,7 +225,7 @@ module Dependabot
           begin
             client = docker_registry_client
             repo = docker_repo_name
-            client.tags(repo, auto_paginate: true).fetch("tags")
+            client.tags(docker_repo_name, auto_paginate: true).fetch("tags")
           rescue *transient_docker_errors
             attempt ||= 1
             attempt += 1
