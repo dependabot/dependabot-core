@@ -234,7 +234,7 @@ module Dependabot
             retry
           end
       rescue DockerRegistry2::NotFound
-        raise DockerRegistry2::NotFound, "404 Not Found. Image https://#{registry_hostname}/#{repo} not found"
+        raise DockerRegistry2::NotFound, "Image not found: https://#{registry_hostname}/#{docker_repo_name}"
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
