@@ -38,6 +38,13 @@ module Dependabot
             "(?<required_dep>[^"]+)"
           /x
 
+        # Error message from yarn add:
+        # YN0060: │ eve-roster@workspace:. provides jest (p8d618) \
+        # with version 29.3.0, which doesn't satisfy \
+        # what ts-jest requests\n
+        YARN_BERRY_PEER_DEP_ERROR_REGEX =
+        /YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests/x
+
         # Error message from npm install:
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
@@ -62,7 +69,7 @@ module Dependabot
           /x
 
         def initialize(dependency:, credentials:, dependency_files:,
-                       latest_allowable_version:, latest_version_finder:)
+                       latest_allowable_version:, latest_version_finder:, repo_contents_path:)
           @dependency               = dependency
           @credentials              = credentials
           @dependency_files         = dependency_files
@@ -70,6 +77,7 @@ module Dependabot
 
           @latest_version_finder = {}
           @latest_version_finder[dependency] = latest_version_finder
+          @repo_contents_path = repo_contents_path
         end
 
         def latest_resolvable_version
@@ -135,7 +143,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version
+                    :latest_allowable_version, :repo_contents_path
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -328,9 +336,14 @@ module Dependabot
                 e.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
                   errors << Regexp.last_match.named_captures
                 end
+              elsif e.message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
+                e.message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
+                  errors << Regexp.last_match.named_captures
+                end
               else
                 raise
               end
+              debugger
               errors
             end.compact
           end
@@ -484,8 +497,14 @@ module Dependabot
         def run_yarn_berry_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              output = Helpers.run_yarn_commands("yarn install#{Helpers.yarn_berry_args}")
-              output
+              output = Helpers.run_yarn_command("yarn add #{dependency.name}@#{version}#{Helpers.yarn_berry_args}")
+              if output.include?("YN0060")
+                raise SharedHelpers::HelperSubprocessFailed.new(
+                  message: output,
+                  error_class: "JSON::ParserError",
+                  error_context: {}
+                )
+              end
             end
           end
         end

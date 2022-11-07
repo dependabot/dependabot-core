@@ -50,11 +50,7 @@ module Dependabot
         end
       end
 
-      # Run any number of yarn commands while ensuring that `enableScripts` is
-      # set to false. Yarn commands should _not_ be ran outside of this helper
-      # to ensure that postinstall scripts are never executed, as they could
-      # contain malicious code.
-      def self.run_yarn_commands(*commands)
+      def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
@@ -74,7 +70,19 @@ module Dependabot
             SharedHelpers.run_shell_command("yarn config set caFilePath #{ca_file_path}")
           end
         end
+      end
+      # Run any number of yarn commands while ensuring that `enableScripts` is
+      # set to false. Yarn commands should _not_ be ran outside of this helper
+      # to ensure that postinstall scripts are never executed, as they could
+      # contain malicious code.
+      def self.run_yarn_commands(*commands)
+        setup_yarn_berry
         commands.each { |cmd| SharedHelpers.run_shell_command(cmd) }
+      end
+
+      def self.run_yarn_command(command)
+        setup_yarn_berry
+        SharedHelpers.run_shell_command(command)
       end
 
       def self.dependencies_with_all_versions_metadata(dependency_set)
