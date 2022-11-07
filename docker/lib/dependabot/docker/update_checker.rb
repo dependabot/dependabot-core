@@ -224,7 +224,6 @@ module Dependabot
         @tags_from_registry ||=
           begin
             client = docker_registry_client
-            repo = docker_repo_name
             client.tags(docker_repo_name, auto_paginate: true).fetch("tags")
           rescue *transient_docker_errors
             attempt ||= 1
