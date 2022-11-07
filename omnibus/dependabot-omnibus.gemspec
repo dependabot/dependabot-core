@@ -40,6 +40,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
-    spec.add_development_dependency dep.name, dep.requirement.to_s
+    spec.add_development_dependency dep.name, *dep.requirement.as_list
   end
 end
