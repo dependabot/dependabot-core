@@ -121,7 +121,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
 
       context "with a replaces-base credential" do
         before do
-          stub_request(:get, "https://gems.greysteil.com/api/v1/gems/business.json").
+          stub_request(:get, "https://gems.example.com/api/v1/gems/business.json").
             to_return(
               status: 200,
               body: fixture("ruby", "rubygems_response.json")
@@ -129,7 +129,7 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         end
 
         let(:source) do
-          { type: "default" }
+          { type: "rubygems", url: "https://gems.example.com/" }
         end
         let(:credentials) do
           [
@@ -141,15 +141,35 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
           ]
         end
 
-        it "uses that domain instead" do
+        it "prefers the source URL still" do
           expect(finder.source_url).
             to eq("https://github.com/gocardless/business")
           expect(WebMock).
             to have_requested(
               :get,
-              "https://gems.greysteil.com/api/v1/gems/business.json"
+              "https://gems.example.com/api/v1/gems/business.json"
             )
           expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+        end
+
+        context "but with no source" do
+          let(:source) { nil }
+
+          before do
+            stub_request(:get, "https://gems.greysteil.com/api/v1/gems/business.json").
+              to_return(
+                status: 200,
+                body: fixture("ruby", "rubygems_response.json")
+              )
+          end
+
+          it "uses the replaces-base URL" do
+            expect(finder.source_url).
+              to eq("https://github.com/gocardless/business")
+            expect(WebMock).
+              to have_requested(:get, "https://gems.greysteil.com/api/v1/gems/business.json")
+            expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+          end
         end
       end
 
