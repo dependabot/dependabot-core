@@ -119,6 +119,40 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
         it { is_expected.to eq("https://github.com/gocardless/business") }
       end
 
+      context "with a replaces-base credential" do
+        before do
+          stub_request(:get, "https://gems.greysteil.com/api/v1/gems/business.json").
+            to_return(
+              status: 200,
+              body: fixture("ruby", "rubygems_response.json")
+            )
+        end
+
+        let(:source) do
+          { type: "default" }
+        end
+        let(:credentials) do
+          [
+            {
+              "type" => "rubygems_server",
+              "host" => "gems.greysteil.com",
+              "replaces-base" => true
+            }
+          ]
+        end
+
+        it "uses that domain instead" do
+          expect(finder.source_url).
+            to eq("https://github.com/gocardless/business")
+          expect(WebMock).
+            to have_requested(
+              :get,
+              "https://gems.greysteil.com/api/v1/gems/business.json"
+            )
+          expect(WebMock).to_not have_requested(:get, rubygems_gemspec_url)
+        end
+      end
+
       context "without a source" do
         let(:rubygems_response) do
           fixture("ruby", "rubygems_response_no_source.json")
