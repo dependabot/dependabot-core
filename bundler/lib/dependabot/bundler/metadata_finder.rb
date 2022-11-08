@@ -196,10 +196,20 @@ module Dependabot
       end
 
       def registry_url
-        return "https://rubygems.org/" if new_source_type == "default"
+        return base_url if new_source_type == "default"
 
         info = dependency.requirements.filter_map { |r| r[:source] }.first
         info[:url] || info.fetch("url")
+      end
+
+      def base_url
+        return @base_url if defined?(@base_url)
+
+        credential = credentials.find do |cred|
+          cred["type"] == "rubygems_server" && cred["replaces-base"] == true
+        end
+        host = credential ? credential["host"] : "rubygems.org"
+        @base_url = "https://#{host}" + ("/" unless host.end_with?("/"))
       end
 
       def registry_auth_headers
