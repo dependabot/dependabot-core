@@ -325,27 +325,7 @@ module Dependabot
               path = Pathname.new(file.name).dirname
               run_checker(path: path, version: version)
             rescue SharedHelpers::HelperSubprocessFailed => e
-              errors = []
-              if e.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
-                e.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
-                  errors << Regexp.last_match.named_captures
-                end
-              elsif e.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
-                e.message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
-                  errors << Regexp.last_match.named_captures
-                end
-              elsif e.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-                e.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
-                  errors << Regexp.last_match.named_captures
-                end
-              elsif e.message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
-                e.message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
-                  errors << Regexp.last_match.named_captures
-                end
-              else
-                raise
-              end
-              errors
+              handle_peer_dependency_errors(e)
             end.compact
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -353,6 +333,30 @@ module Dependabot
           # occurred should be properly handled by the FileUpdater. We
           # can slowly migrate error handling to this class over time.
           []
+        end
+
+        def handle_peer_dependency_errors(error)
+          errors = []
+          if error.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
+            error.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
+              errors << Regexp.last_match.named_captures
+            end
+          elsif error.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+            error.message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
+              errors << Regexp.last_match.named_captures
+            end
+          elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
+            error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+              errors << Regexp.last_match.named_captures
+            end
+          elsif error.message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
+            error.message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
+              errors << Regexp.last_match.named_captures
+            end
+          else
+            raise
+          end
+          errors
         end
 
         def unmet_peer_dependencies
