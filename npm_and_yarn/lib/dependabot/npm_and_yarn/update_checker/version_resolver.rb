@@ -43,7 +43,9 @@ module Dependabot
         # with version 29.3.0, which doesn't satisfy \
         # what ts-jest requests\n
         YARN_BERRY_PEER_DEP_ERROR_REGEX =
-        /YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests/x
+          /
+            YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
+          /x
 
         # Error message from npm install:
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
@@ -483,11 +485,9 @@ module Dependabot
           # yarn updater
           lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
           if lockfiles.any?
-            if Helpers.yarn_berry?(lockfiles.first)
-              return run_yarn_berry_checker(path: path, version: version)
-            else
-              return run_yarn_checker(path: path, version: version)
-            end
+            return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfiles.first)
+
+            return run_yarn_checker(path: path, version: version)
           end
 
           run_npm_checker(path: path, version: version)
@@ -496,7 +496,9 @@ module Dependabot
         def run_yarn_berry_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
-              output = Helpers.run_yarn_command("yarn add #{dependency.name}@#{version}#{Helpers.yarn_berry_args}")
+              output = Helpers.run_yarn_command(
+                "yarn add #{dependency.name}@#{version} #{Helpers.yarn_berry_args}".strip
+              )
               if output.include?("YN0060")
                 raise SharedHelpers::HelperSubprocessFailed.new(
                   message: output,
