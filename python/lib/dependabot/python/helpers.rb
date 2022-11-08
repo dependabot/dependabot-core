@@ -14,6 +14,7 @@ module Dependabot
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor(python_version)}.")
 
         Dependabot.logger.info("Installing required Python #{python_version}.")
+        start = Time.now
         SharedHelpers.run_shell_command("pyenv install -s #{python_version}")
         SharedHelpers.run_shell_command("pyenv exec pip install --upgrade pip")
         SharedHelpers.run_shell_command("pyenv exec pip install -r" \
