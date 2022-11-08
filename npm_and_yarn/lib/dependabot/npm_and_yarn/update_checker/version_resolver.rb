@@ -343,7 +343,6 @@ module Dependabot
               else
                 raise
               end
-              debugger
               errors
             end.compact
           end
