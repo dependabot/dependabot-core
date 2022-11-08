@@ -628,7 +628,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).
             to eq("org.apache.maven.plugins:maven-javadoc-plugin")
-          expect(dependency.version).to eq("3.0.0-M1")
+          expect(dependency.version).to eq("2.10.4")
           expect(dependency.requirements).to eq(
             [{
               requirement: "3.0.0-M1",
