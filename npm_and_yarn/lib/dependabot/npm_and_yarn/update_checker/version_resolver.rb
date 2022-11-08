@@ -498,6 +498,11 @@ module Dependabot
         end
 
         def run_yarn_berry_checker(path:, version:)
+          # This method mimics calling a native helper in order to comply with the caller's expectations
+          # Specifically we add the dependency at the specified updated version
+          # then check the output of the add command for Peer Dependency errors (Denoted by YN0060)
+          # If we find peer dependency issues, we raise HelperSubprocessFailed as
+          # the native helpers do.
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               output = Helpers.run_yarn_command(
