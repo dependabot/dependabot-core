@@ -49,10 +49,17 @@ def parse_pep621_dependencies(pyproject_path):
 
         return requirement_packages
 
-    dependencies = parse_toml_section_pep621_dependencies(
-        pyproject_path,
-        project_toml['dependencies']
-    )
+    dependencies = []
+
+    if 'dependencies' in project_toml:
+        dependencies_toml = project_toml['dependencies']
+
+        runtime_dependencies = parse_toml_section_pep621_dependencies(
+            pyproject_path,
+            dependencies_toml
+        )
+
+        dependencies.extend(runtime_dependencies)
 
     if 'optional-dependencies' in project_toml:
         optional_dependencies_toml = project_toml['optional-dependencies']

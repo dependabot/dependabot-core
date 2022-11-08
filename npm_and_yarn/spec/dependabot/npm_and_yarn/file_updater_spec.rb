@@ -51,16 +51,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       file: "package.json",
       requirement: "^0.0.1",
       groups: ["dependencies"],
-      source: nil
+      source: source
     }]
   end
+  let(:source) { nil }
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
 
   before do
     FileUtils.mkdir_p(tmp_path)
-    Dependabot::Experiments.register(:yarn_berry, true)
   end
 
   describe "#updated_dependency_files" do
@@ -3006,6 +3006,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      describe "without zero-install the updated yarn_lock" do
+        let(:project_name) { "yarn_berry/simple_nopnp" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "does not update zero-install files" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              "package.json",
+              "yarn.lock",
+              ".yarn/install-state.gz"
+            ]
+          )
+        end
+      end
+
       context "when updating only the lockfile" do
         let(:files) { project_dependency_files("yarn_berry/lockfile_only_change") }
 
@@ -3277,6 +3301,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       context "when the npm registry was explicitly specified" do
         let(:files) { project_dependency_files("yarn/npm_global_registry") }
+        let(:credentials) do
+          [{
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "secret_token"
+          }]
+        end
+        let(:source) do
+          { type: "registry", url: "https://registry.npmjs.org" }
+        end
 
         it "keeps the preference for the npm registry" do
           expect(updated_yarn_lock.content).

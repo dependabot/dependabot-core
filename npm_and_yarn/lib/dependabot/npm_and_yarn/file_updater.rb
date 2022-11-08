@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/experiments"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
@@ -55,39 +54,38 @@ module Dependabot
           )
         end
 
+        vendor_updated_files(updated_files)
+      end
+
+      private
+
+      def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
-        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
-        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file
-        end
         pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
           updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        end
+        # updated .pnp.cjs means zero install, include cache
+        if updated_files.find { |f| f.name == ".pnp.cjs" }
+          vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        end
+        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
         end
 
         updated_files
       end
 
-      private
-
       # Dynamically fetch the vendor cache folder from yarn
       def vendor_cache_dir
         return @vendor_cache_dir if defined?(@vendor_cache_dir)
 
-        @vendor_cache_dir = if File.exist?(".yarnrc.yml")
-                              YAML.load_file(".yarnrc.yml").fetch("cacheFolder", "./.yarn/cache")
-                            else
-                              "./.yarn/cache"
-                            end
+        @vendor_cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
       end
 
       def install_state_path
         return @install_state_path if defined?(@install_state_path)
 
-        @install_state_path = if File.exist?(".yarnrc.yml")
-                                YAML.load_file(".yarnrc.yml").fetch("installStatePath", "./.yarn/install-state.gz")
-                              else
-                                "./.yarn/install-state.gz"
-                              end
+        @install_state_path = Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz")
       end
 
       def vendor_updater

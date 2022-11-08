@@ -10,6 +10,7 @@ module Dependabot
     module Utils
       class CredentialsFinder
         AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
+        DEFAULT_DOCKER_HUB_REGISTRY = "registry.hub.docker.com"
 
         def initialize(credentials)
           @credentials = credentials
@@ -24,6 +25,18 @@ module Dependabot
           return registry_details unless registry_hostname.match?(AWS_ECR_URL)
 
           build_aws_credentials(registry_details)
+        end
+
+        def base_registry
+          @base_registry ||= credentials.find do |cred|
+            cred["type"] == "docker_registry" && cred["replaces-base"] == true
+          end
+          @base_registry ||= { "registry" => DEFAULT_DOCKER_HUB_REGISTRY, "credentials" => nil }
+          @base_registry["registry"]
+        end
+
+        def using_dockerhub?(registry)
+          registry == DEFAULT_DOCKER_HUB_REGISTRY
         end
 
         private

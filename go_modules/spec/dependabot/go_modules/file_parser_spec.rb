@@ -307,6 +307,16 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    context "that is not resolvable, but is locally replaced" do
+      let(:go_mod_content) do
+        fixture("projects", "unknown_vcs_local_replacement", "go.mod")
+      end
+
+      it "does not raise an error" do
+        expect { parser.parse }.not_to raise_error
+      end
+    end
+
     context "a monorepo" do
       let(:project_name) { "monorepo" }
       let(:repo_contents_path) { build_tmp_repo(project_name) }

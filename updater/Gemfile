@@ -27,8 +27,8 @@ gem "sentry-raven", "~> 3.1"
 gem "terminal-table", "~> 3.0.2"
 
 group :test do
-  gem "debug", "~> 1.6.2"
-  gem "rspec", "~> 3.11"
+  gem "debug", "~> 1.6.3"
+  gem "rspec", "~> 3.12"
   gem "rubocop", "~> 1.37.1"
   gem "rubocop-performance", "~> 1.15.0"
   gem "vcr", "~> 6.1"
@@ -36,5 +36,5 @@ group :test do
 end
 
 group :development do
-  gem "licensed", "~> 3.7", require: false
+  gem "licensed", "~> 3.8", require: false
 end

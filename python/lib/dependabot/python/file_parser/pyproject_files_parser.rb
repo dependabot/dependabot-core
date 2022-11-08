@@ -126,7 +126,8 @@ module Dependabot
         end
 
         def using_pep621?
-          !parsed_pyproject.dig("project", "dependencies").nil?
+          !parsed_pyproject.dig("project", "dependencies").nil? ||
+            !parsed_pyproject.dig("project", "optional-dependencies").nil?
         end
 
         def using_pdm?

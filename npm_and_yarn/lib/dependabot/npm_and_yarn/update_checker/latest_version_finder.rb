@@ -292,7 +292,6 @@ module Dependabot
             url: dependency_url,
             headers: registry_auth_headers
           )
-
           return response unless response.status == 500
           return response unless registry_auth_headers["Authorization"]
 

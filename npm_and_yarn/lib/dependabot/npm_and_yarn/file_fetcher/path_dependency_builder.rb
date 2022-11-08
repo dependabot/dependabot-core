@@ -4,7 +4,6 @@ require "json"
 require "dependabot/dependency_file"
 require "dependabot/errors"
 require "dependabot/npm_and_yarn/file_fetcher"
-require "dependabot/npm_and_yarn/file_parser/yarn_lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -122,7 +121,17 @@ module Dependabot
           return {} unless yarn_lock
 
           @parsed_yarn_lock ||=
-            FileParser::YarnLockfileParser.new(lockfile: yarn_lock).parse
+            SharedHelpers.in_a_temporary_directory do
+              File.write("yarn.lock", yarn_lock.content)
+
+              SharedHelpers.run_helper_subprocess(
+                command: NativeHelpers.helper_path,
+                function: "yarn:parseLockfile",
+                args: [Dir.pwd]
+              )
+            rescue SharedHelpers::HelperSubprocessFailed
+              raise Dependabot::DependencyFileNotParseable, yarn_lock.path
+            end
         end
 
         # The path back to the root lockfile

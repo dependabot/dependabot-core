@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.files        = []
 
   spec.required_ruby_version = ">= 3.1.0"
-  spec.required_rubygems_version = ">= 3.3.22"
+  spec.required_rubygems_version = ">= 3.3.7"
 
   spec.add_dependency "activesupport", ">= 6.0.0"
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
@@ -37,7 +37,7 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "debug", ">= 1.0.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
-  spec.add_development_dependency "parallel_tests", "~> 3.13.0"
+  spec.add_development_dependency "parallel_tests", "~> 4.0.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.8"
   spec.add_development_dependency "rspec-its", "~> 1.2"

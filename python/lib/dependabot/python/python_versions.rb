@@ -4,12 +4,13 @@ module Dependabot
   module Python
     module PythonVersions
       PRE_INSTALLED_PYTHON_VERSIONS = %w(
-        3.10.7
+        3.11.0
       ).freeze
 
       # Due to an OpenSSL issue we can only install the following versions in
       # the Dependabot container.
       SUPPORTED_VERSIONS = %w(
+        3.11.0
         3.10.7 3.10.6 3.10.5 3.10.4 3.10.3 3.10.2 3.10.1 3.10.0
         3.9.14 3.9.13 3.9.12 3.9.11 3.9.10 3.9.9 3.9.8 3.9.7 3.9.6 3.9.5 3.9.4 3.9.2 3.9.1 3.9.0
         3.8.14 3.8.13 3.8.12 3.8.11 3.8.10 3.8.9 3.8.8 3.8.7 3.8.6 3.8.5 3.8.4 3.8.3 3.8.2 3.8.1 3.8.0

@@ -59,4 +59,15 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
         to raise_error(Dependabot::DependencyFileNotFound)
     end
   end
+
+  context "when dependencies are git submodules" do
+    let(:repo) { "dependabot-fixtures/go-modules-app-with-git-submodules" }
+    let(:branch) { "main" }
+    let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
+
+    it "clones them" do
+      expect { file_fetcher_instance.files }.to_not raise_error
+      expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+    end
+  end
 end
