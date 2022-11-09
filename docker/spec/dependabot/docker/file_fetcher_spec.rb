@@ -271,10 +271,14 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     context "with a Helm values file" do
       matching_filenames = [
+        "other-values.yml",
         "other-values.yaml",
+        "values.yml",
         "values.yaml",
-        "values2.yaml",
-        "values_other.yaml"
+        "values_other.yml",
+        "values_other.yaml",
+        "values2.yml",
+        "values2.yaml"
       ]
 
       before do
@@ -301,7 +305,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       let(:options) { { kubernetes_updates: true } }
 
       it "fetches the values.yaml" do
-        expect(file_fetcher_instance.files.count).to eq(4)
+        expect(file_fetcher_instance.files.count).to eq(matching_filenames.length)
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(matching_filenames)
       end
