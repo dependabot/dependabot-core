@@ -511,7 +511,6 @@ module Dependabot
               if output.include?("YN0060")
                 raise SharedHelpers::HelperSubprocessFailed.new(
                   message: output,
-                  error_class: "JSON::ParserError",
                   error_context: {}
                 )
               end
