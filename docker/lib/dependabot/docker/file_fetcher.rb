@@ -8,7 +8,7 @@ module Dependabot
   module Docker
     class FileFetcher < Dependabot::FileFetchers::Base
       YAML_REGEXP = /^[^\.]+\.ya?ml$/i
-      DOCKER_REGEXP = /dockerfile/i
+      DOCKER_REGEXP = /(docker|container)file/i
       HELM_REGEXP = /values[\-a-zA-Z_0-9]*\.yaml/i
 
       def self.required_files_in?(filenames)
@@ -17,7 +17,7 @@ module Dependabot
       end
 
       def self.required_files_message
-        "Repo must contain a Dockerfile or Kubernetes YAML files."
+        "Repo must contain a Dockerfile, Containerfile, or Kubernetes YAML files."
       end
 
       private
@@ -41,7 +41,7 @@ module Dependabot
         elsif incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
           raise(
             Dependabot::DependabotError,
-            "Found neither Kubernetes YAML nor Dockerfiles in #{directory}"
+            "Found neither Kubernetes YAML nor Dockerfiles nor Containerfiles in #{directory}"
           )
         elsif incorrectly_encoded_dockerfiles.none?
           raise(

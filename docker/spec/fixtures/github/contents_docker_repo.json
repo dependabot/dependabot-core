@@ -112,6 +112,22 @@
     }
   },
   {
+    "name": "Containerfile",
+    "path": "Containerfile",
+    "sha": "311f9743315183cc6751313cb251cfeb3de45c1a",
+    "size": 4927,
+    "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/Containerfile?ref=master",
+    "html_url": "https://github.com/dependabot/dependabot-core/blob/main/Containerfile",
+    "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+    "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/Containerfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/Containerfile?ref=master",
+      "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
+      "html": "https://github.com/dependabot/dependabot-core/blob/main/Containerfile"
+    }
+  },
+  {
     "name": "Gemfile",
     "path": "Gemfile",
     "sha": "be173b205f70152dd1e0a0319f131e51c49eb9cd",
