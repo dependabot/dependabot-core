@@ -42,10 +42,9 @@ end
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX =
-        /v?(?<version>[0-9]+(?:(?:\.[_a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i
-      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i
-      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i
+      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[_a-z0-9]+|-(?:kb)?[0-9]+)*)/i
+      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
+      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
