@@ -270,6 +270,13 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     context "with a Helm values file" do
+      matching_filenames = [
+        "other-values.yaml",
+        "values.yaml",
+        "values2.yaml",
+        "values_other.yaml"
+      ]
+
       before do
         stub_request(:get, url + "?ref=sha").
           with(headers: { "Authorization" => "token token" }).
@@ -279,37 +286,15 @@ RSpec.describe Dependabot::Docker::FileFetcher do
             headers: { "content-type" => "application/json" }
           )
 
-        stub_request(:get, File.join(url, "values.yaml?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: values_fixture,
-            headers: { "content-type" => "application/json" }
-          )
-
-        stub_request(:get, File.join(url, "other-values.yaml?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: values_fixture,
-            headers: { "content-type" => "application/json" }
-          )
-
-        stub_request(:get, File.join(url, "values_other.yaml?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: values_fixture,
-            headers: { "content-type" => "application/json" }
-          )
-
-        stub_request(:get, File.join(url, "values2.yaml?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: values_fixture,
-            headers: { "content-type" => "application/json" }
-          )
+        matching_filenames.each do |fname|
+          stub_request(:get, File.join(url, "#{fname}?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: values_fixture,
+              headers: { "content-type" => "application/json" }
+            )
+        end
       end
 
       let(:values_fixture) { fixture("github", "contents_values_yaml.json") }
@@ -318,7 +303,7 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       it "fetches the values.yaml" do
         expect(file_fetcher_instance.files.count).to eq(4)
         expect(file_fetcher_instance.files.map(&:name)).
-          to match_array(["other-values.yaml", "values.yaml", "values2.yaml", "values_other.yaml"])
+          to match_array(matching_filenames)
       end
     end
   end
