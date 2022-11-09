@@ -273,8 +273,12 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       matching_filenames = [
         "other-values.yml",
         "other-values.yaml",
+        "other_values.yml",
+        "other_values.yaml",
         "values.yml",
         "values.yaml",
+        "values-other.yml",
+        "values-other.yaml",
         "values_other.yml",
         "values_other.yaml",
         "values2.yml",
