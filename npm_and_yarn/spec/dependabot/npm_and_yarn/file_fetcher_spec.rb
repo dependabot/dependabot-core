@@ -1208,8 +1208,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body:
-                fixture("github", "package_json_with_relative_workspaces.json"),
+              body: fixture("github", "package_json_with_relative_workspaces.json"),
               headers: json_header
             )
         end
@@ -1232,8 +1231,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body:
-                fixture("github", "package_json_with_nested_glob_workspaces.json"),
+              body: fixture("github", "package_json_with_nested_glob_workspaces.json"),
               headers: json_header
             )
           stub_request(
@@ -1391,8 +1389,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body:
-                fixture("github", "package_json_with_wildcard_workspace.json"),
+              body: fixture("github", "package_json_with_wildcard_workspace.json"),
               headers: json_header
             )
 
@@ -1590,6 +1587,46 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             to include("other_package/package.json")
         end
       end
+    end
+  end
+
+  context "with no .npmrc but package-lock.json contains a custom registry" do
+    def fixture_to_response(dir, file)
+      JSON.dump({
+        "content" => Base64.encode64(fixture(dir, file)),
+      })
+    end
+
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm6/all_private", "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm6/all_private", "package-lock.json"),
+          headers: json_header
+        )
+
+      Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
+        events << ActiveSupport::Notifications::Event.new(*args)
+      end
+    end
+
+    it "infers an npmrc file" do
+      expect(file_fetcher_instance.files.count).to eq(3)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(%w[package.json package-lock.json .npmrc])
+      expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content).
+        to eq("registry=https://npm.fury.io")
     end
   end
 end

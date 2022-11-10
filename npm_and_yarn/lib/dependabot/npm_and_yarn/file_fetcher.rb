@@ -80,9 +80,15 @@ module Dependabot
         known_registries = []
         JSON.parse(package_lock.content).fetch("dependencies", {}).each do |_name, details|
           resolved = details.fetch("resolved", "https://registry.npmjs.org")
-          URI.parse(resolved).tap do |uri|
-            known_registries << "#{uri.scheme}://#{uri.host}"
+          begin
+            uri = URI.parse(resolved)
+          rescue URI::InvalidURIError
+            # Ignoring non-URIs since they're not registries.
+            # This can happen if resolved is false, for instance.
+            next
           end
+          # Check for scheme since path dependencies will not have one
+          known_registries << "#{uri.scheme}://#{uri.host}" if uri.scheme && uri.host
         end
 
         if known_registries.uniq.length == 1 && known_registries.first != "https://registry.npmjs.org"
