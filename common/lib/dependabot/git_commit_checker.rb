@@ -109,12 +109,7 @@ module Dependabot
       tags.
         select { |t| t.commit_sha == max_tag.commit_sha }.
         map do |t|
-          {
-            tag: t.name,
-            version: version_from_tag(t),
-            commit_sha: t.commit_sha,
-            tag_sha: t.tag_sha
-          }
+          to_local_tag(t)
         end
     end
 
@@ -123,12 +118,7 @@ module Dependabot
 
       return unless tag
 
-      {
-        tag: tag.name,
-        version: version_from_tag(tag),
-        commit_sha: tag.commit_sha,
-        tag_sha: tag.tag_sha
-      }
+      to_local_tag(tag)
     end
 
     def max_version_tag(tags)
@@ -333,6 +323,16 @@ module Dependabot
 
       ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
         tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+    end
+
+    def to_local_tag(tag)
+      version = version_from_tag(tag)
+      {
+        tag: tag.name,
+        version: version,
+        commit_sha: tag.commit_sha,
+        tag_sha: tag.tag_sha
+      }
     end
 
     def listing_source_url
