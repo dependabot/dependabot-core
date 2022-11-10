@@ -306,8 +306,14 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
   && rm -Rf /tmp/python-build* \
   && bash /opt/python/helpers/build \
   && cd /usr/local/.pyenv \
-  && tar czf versions.tar.gz versions \
-  && rm -Rf /usr/local/.pyenv/versions
+  && tar czf 3.10.tar.gz versions/3.10.7 \
+  && tar czf 3.9.tar.gz versions/3.9.14 \
+  && tar czf 3.8.tar.gz versions/3.8.14 \
+  && tar czf 3.7.tar.gz versions/3.7.14 \
+  && rm -Rf versions/3.10.7 \
+  && rm -Rf versions/3.9.14 \
+  && rm -Rf versions/3.8.14 \
+  && rm -Rf versions/3.7.14
 
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build

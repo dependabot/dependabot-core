@@ -72,7 +72,7 @@ module Dependabot
           pipfile_object["requires"] ||= {}
           pipfile_object["requires"].delete("python_full_version")
           pipfile_object["requires"].delete("python_version")
-          pipfile_object["requires"]["python_full_version"] = requirement
+          pipfile_object["requires"]["python_version"] = requirement
 
           TomlRB.dump(pipfile_object)
         end
