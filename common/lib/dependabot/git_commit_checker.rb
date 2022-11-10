@@ -100,17 +100,12 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref(name)
     end
 
-    def local_tags_for_latest_version_commit_sha
-      tags = allowed_version_tags
-      max_tag = max_version_tag(tags)
+    def local_tag_for_latest_version_matching_existing_precision
+      max_tag = max_version_tag_for_current_precision(allowed_version_tags)
 
-      return [] unless max_tag
+      return unless max_tag
 
-      tags.
-        select { |t| t.commit_sha == max_tag.commit_sha }.
-        map do |t|
-          to_local_tag(t)
-        end
+      to_local_tag(max_tag)
     end
 
     def local_tag_for_latest_version
@@ -126,6 +121,13 @@ module Dependabot
         max_by do |t|
         version_from_tag(t)
       end
+    end
+
+    def max_version_tag_for_current_precision(tags)
+      current_precision = precision(dependency.version)
+
+      # Find the latest version with the same precision as the pinned version.
+      max_version_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
     end
 
     def allowed_version_tags
@@ -181,6 +183,10 @@ module Dependabot
     private
 
     attr_reader :dependency, :credentials, :ignored_versions
+
+    def precision(version)
+      version.split(".").length
+    end
 
     def pinned_ref_in_release?(version)
       raise "Not a git dependency!" unless git_dependency?
@@ -416,8 +422,11 @@ module Dependabot
     end
 
     def version_from_ref(name)
-      version = name.match(VERSION_REGEX).named_captures.fetch("version")
-      version_class.new(version)
+      version_class.new(scan_version(name))
+    end
+
+    def scan_version(name)
+      name.match(VERSION_REGEX).named_captures.fetch("version")
     end
 
     def version_class
