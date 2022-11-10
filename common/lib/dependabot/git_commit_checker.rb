@@ -114,11 +114,11 @@ module Dependabot
     end
 
     def local_tag_for_latest_version
-      tag = max_version_tag(allowed_version_tags)
+      max_tag = max_version_tag(allowed_version_tags)
 
-      return unless tag
+      return unless max_tag
 
-      to_local_tag(tag)
+      to_local_tag(max_tag)
     end
 
     def max_version_tag(tags)
