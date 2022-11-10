@@ -1593,7 +1593,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   context "with no .npmrc but package-lock.json contains a custom registry" do
     def fixture_to_response(dir, file)
       JSON.dump({
-        "content" => Base64.encode64(fixture(dir, file)),
+        "content" => Base64.encode64(fixture(dir, file))
       })
     end
 
@@ -1624,7 +1624,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     it "infers an npmrc file" do
       expect(file_fetcher_instance.files.count).to eq(3)
       expect(file_fetcher_instance.files.map(&:name)).
-        to eq(%w[package.json package-lock.json .npmrc])
+        to eq(%w(package.json package-lock.json .npmrc))
       expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content).
         to eq("registry=https://npm.fury.io")
     end

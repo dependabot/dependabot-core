@@ -10,6 +10,7 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
+    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -490,6 +491,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 
