@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/npm_and_yarn/helpers"
@@ -65,7 +66,34 @@ module Dependabot
         fetched_files += path_dependencies(fetched_files)
         instrument_package_manager_version
 
+        fetched_files << inferred_npmrc if inferred_npmrc
+
         fetched_files.uniq
+      end
+
+      # If every entry in the lockfile uses the same registry, we can infer
+      # that there is a global .npmrc file, so add it here as if it were in the repo.
+      def inferred_npmrc
+        return @inferred_npmrc if defined?(@inferred_npmrc)
+        return @inferred_npmrc = nil unless npmrc.nil? && package_lock
+
+        known_registries = []
+        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |_name, details|
+          resolved = details.fetch("resolved", "https://registry.npmjs.org")
+          URI.parse(resolved).tap do |uri|
+            known_registries << "#{uri.scheme}://#{uri.host}"
+          end
+        end
+
+        if known_registries.uniq.length == 1 && known_registries.first != "https://registry.npmjs.org"
+          Dependabot.logger.info("Inferred global NPM registry is: #{known_registries.first}")
+          return @inferred_npmrc = Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "registry=#{known_registries.first}"
+          )
+        end
+
+        @inferred_npmrc = nil
       end
 
       def instrument_package_manager_version
