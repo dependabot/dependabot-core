@@ -70,9 +70,9 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
 
           pipfile_object["requires"] ||= {}
-          if pipfile_object["requires"].dig("python_full_version") && pipfile_object["requires"].dig("python_version")
+          if pipfile_object.dig("requires", "python_full_version") && pipfile_object.dig("requires", "python_version")
             pipfile_object["requires"].delete("python_full_version")
-          elsif pipfile_object["requires"].dig("python_full_version")
+          elsif pipfile_object.dig("requires", "python_full_version")
             pipfile_object["requires"].delete("python_full_version")
             pipfile_object["requires"]["python_version"] = requirement
           end

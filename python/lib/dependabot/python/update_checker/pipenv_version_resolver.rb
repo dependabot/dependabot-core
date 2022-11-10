@@ -341,7 +341,7 @@ module Dependabot
           content = freeze_other_dependencies(content)
           content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
-          content = set_python_requirement(content)
+          content = update_python_requirement(content)
           content
         end
 
@@ -351,7 +351,7 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
-        def set_python_requirement(pipfile_content)
+        def update_python_requirement(pipfile_content)
           Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content).
             update_python_requirement(Helpers.python_major_minor(python_version))
