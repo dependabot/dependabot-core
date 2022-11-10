@@ -109,10 +109,9 @@ module Dependabot
       tags.
         select { |t| t.commit_sha == max_tag.commit_sha }.
         map do |t|
-          version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
           {
             tag: t.name,
-            version: version_class.new(version),
+            version: version_from_tag(t),
             commit_sha: t.commit_sha,
             tag_sha: t.tag_sha
           }
@@ -124,10 +123,9 @@ module Dependabot
 
       return unless tag
 
-      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
       {
         tag: tag.name,
-        version: version_class.new(version),
+        version: version_from_tag(tag),
         commit_sha: tag.commit_sha,
         tag_sha: tag.tag_sha
       }
@@ -136,9 +134,7 @@ module Dependabot
     def max_version_tag(tags)
       tags.
         max_by do |t|
-        version = t.name.match(VERSION_REGEX).named_captures.
-                  fetch("version")
-        version_class.new(version)
+        version_from_tag(t)
       end
     end
 
@@ -159,16 +155,14 @@ module Dependabot
     def current_version
       return unless dependency.version && version_tag?(dependency.version)
 
-      version = dependency.version.match(VERSION_REGEX).named_captures.fetch("version")
-      version_class.new(version)
+      version_from_ref(dependency.version)
     end
 
     def filter_lower_versions(tags)
       return tags unless current_version
 
       versions = tags.map do |t|
-        version = t.name.match(VERSION_REGEX).named_captures.fetch("version")
-        version_class.new(version)
+        version_from_tag(t)
       end
 
       versions.select do |version|
@@ -404,19 +398,26 @@ module Dependabot
       return false unless dependency_source_details&.fetch(:ref, nil)
       return false unless pinned_ref_looks_like_version?
 
-      version = dependency_source_details.fetch(:ref).match(VERSION_REGEX).
-                named_captures.fetch("version")
-      version_class.new(version).prerelease?
+      version = version_from_ref(dependency_source_details.fetch(:ref))
+      version.prerelease?
     end
 
     def tag_included_in_ignore_requirements?(tag)
-      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
-      ignore_requirements.any? { |r| r.satisfied_by?(version_class.new(version)) }
+      version = version_from_tag(tag)
+      ignore_requirements.any? { |r| r.satisfied_by?(version) }
     end
 
     def tag_is_prerelease?(tag)
-      version = tag.name.match(VERSION_REGEX).named_captures.fetch("version")
-      version_class.new(version).prerelease?
+      version_from_tag(tag).prerelease?
+    end
+
+    def version_from_tag(tag)
+      version_from_ref(tag.name)
+    end
+
+    def version_from_ref(name)
+      version = name.match(VERSION_REGEX).named_captures.fetch("version")
+      version_class.new(version)
     end
 
     def version_class
