@@ -70,6 +70,11 @@ module Dependabot
       ref_looks_like_commit_sha?(ref)
     end
 
+    def head_commit_for_pinned_ref
+      ref = dependency_source_details.fetch(:ref)
+      local_repo_git_metadata_fetcher.head_commit_for_ref_sha(ref)
+    end
+
     def ref_looks_like_commit_sha?(ref)
       return false unless ref&.match?(/^[0-9a-f]{6,40}$/)
 
@@ -85,13 +90,8 @@ module Dependabot
     def head_commit_for_current_branch
       ref = ref_or_branch || "HEAD"
 
-      if pinned?
-        return dependency.version ||
-               local_repo_git_metadata_fetcher.head_commit_for_ref(ref)
-      end
-
-      sha = local_repo_git_metadata_fetcher.head_commit_for_ref(ref)
-      return sha if sha
+      sha = head_commit_for_local_branch(ref)
+      return sha if pinned? || sha
 
       raise Dependabot::GitDependencyReferenceNotFound, dependency.name
     end
