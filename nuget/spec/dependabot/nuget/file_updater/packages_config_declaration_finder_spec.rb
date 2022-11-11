@@ -72,6 +72,18 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
           expect(declaration_strings.count).to eq(0)
         end
       end
+
+      context "and the node is empty" do
+        let(:dependency_name) { "NUnit" }
+
+        it "finds the declaration" do
+          expect(declaration_strings.count).to eq(1)
+
+          expect(declaration_strings.first).
+            to eq('<package id="NUnit" version="3.13.0" '\
+                  'targetFramework="net46"></package>')
+        end
+      end
     end
   end
 end
