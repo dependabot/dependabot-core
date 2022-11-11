@@ -74,13 +74,13 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
       end
 
       context "and the node is empty" do
-        let(:dependency_name) { "NUnit" }
+        let(:dependency_name) { "WebActivatorEx" }
 
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
 
           expect(declaration_strings.first).
-            to eq('<package id="NUnit" version="3.13.0" ' \
+            to eq('<package id="WebActivatorEx" version="2.1.0" ' \
                   'targetFramework="net46"></package>')
         end
       end
