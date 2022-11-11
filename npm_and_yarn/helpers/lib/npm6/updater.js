@@ -14,12 +14,12 @@
  * Update the dependency to the version specified and rewrite the package.json
  * and package-lock.json files.
  */
-const fs = require("fs");
-const path = require("path");
-const npm = require("npm");
-const installer = require("npm/lib/install");
-const detectIndent = require("detect-indent");
-const { muteStderr, runAsync } = require("./helpers.js");
+import fs from "node:fs";
+import path from "node:path";
+import npm from "npm";
+import installer from "npm/lib/install";
+import detectIndent from "detect-indent";
+import { muteStderr, runAsync } from "./helpers.js";
 
 async function updateDependencyFiles(directory, lockfileName, dependencies) {
   const readFile = (fileName) =>

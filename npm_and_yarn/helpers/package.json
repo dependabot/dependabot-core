@@ -1,12 +1,16 @@
 {
   "name": "@dependabot/helper",
   "private": true,
+  "type": "module",
   "bin": {
     "helper": "run.js"
   },
   "scripts": {
     "lint": "eslint .",
     "test": "jest"
+  },
+  "engines": {
+    "node": ">=14.16"
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.22.19",
