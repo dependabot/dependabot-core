@@ -30,7 +30,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: dependency_source,
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { declaration_string: "#{dependency_name}@master" }
       }],
       package_manager: "github_actions"
     )
@@ -44,14 +44,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:dependency_source) do
     {
       type: "git",
-      url: "https://github.com/actions/setup-node",
+      url: "https://github.com/#{dependency_name}",
       ref: reference,
       branch: nil
     }
   end
   let(:reference) { "master" }
   let(:service_pack_url) do
-    "https://github.com/actions/setup-node.git/info/refs" \
+    "https://github.com/#{dependency_name}.git/info/refs" \
       "?service=git-upload-pack"
   end
   let(:git_commit_checker) do
@@ -370,29 +370,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
 
     context "given a realworld repository", :vcr do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: dependency_version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: ".github/workflows/main.yml",
-            source: dependency_source
-          }],
-          package_manager: "github_actions"
-        )
-      end
+      let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
       let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
       let(:dependency_version) { nil }
-      let(:dependency_source) do
-        {
-          type: "git",
-          url: "https://github.com/dependabot-fixtures/github-action-push-to-another-repository",
-          ref: reference,
-          branch: nil
-        }
-      end
 
       let(:latest_commit_in_main) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
       let(:latest_commit_in_devel) { "c7563454dd4fbe0ea69095188860a62a19658a04" }
