@@ -12,8 +12,7 @@ module Dependabot
 
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
-        clone_repo_contents
-        @base_commit_sha = file_fetcher.commit || "unknown"
+        @base_commit_sha = find_base_commit_sha
         dependency_files
       rescue StandardError => e
         @base_commit_sha ||= "unknown"
@@ -54,6 +53,25 @@ module Dependabot
       @file_fetcher_retries ||= 0
       @file_fetcher_retries += 1
       @file_fetcher_retries <= 2 ? retry : raise
+    end
+
+    def find_base_commit_sha
+      clone_output = clone_repo_contents
+
+      begin
+        file_fetcher.commit || "unknown"
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        # Fallback to fetching files from API
+        file_fetcher.repo_contents_path = nil
+
+        # Log the error for investigation
+        separator = ("*" * 80) + "\n"
+        logger_info("Couldn't find base commit of cloned repo due to:\n#{separator}#{e.message}\n#{separator}")
+        logger_info("The output of git clone was:\n#{separator}#{clone_output}#{separator}")
+
+        # Return a default_value
+        "unknown"
+      end
     end
 
     def clone_repo_contents

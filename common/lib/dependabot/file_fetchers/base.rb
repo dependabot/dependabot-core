@@ -16,7 +16,8 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :repo_contents_path, :options
+      attr_reader :source, :credentials, :options
+      attr_accessor :repo_contents_path
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
