@@ -16,7 +16,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :repo_contents_path, :options
+      attr_reader :source, :credentials, :repo_contents_path, :options, :clone_output
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -51,6 +51,7 @@ module Dependabot
         @repo_contents_path = repo_contents_path
         @linked_paths = {}
         @options = options
+        @clone_output = +""
       end
 
       def repo
@@ -592,7 +593,7 @@ module Dependabot
                              " --no-recurse-submodules"
                            end
           clone_options << " --branch #{source.branch} --single-branch" if source.branch
-          SharedHelpers.run_shell_command(
+          @clone_output << SharedHelpers.run_shell_command(
             <<~CMD
               git clone #{clone_options.string} #{source.url} #{path}
             CMD

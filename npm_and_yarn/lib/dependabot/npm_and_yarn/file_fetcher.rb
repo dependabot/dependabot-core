@@ -39,7 +39,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(@git_lfs_cloned_repo_contents_path) do
               cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
-              SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
+              @clone_output << SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
             end
             @git_lfs_cloned_repo_contents_path
           end
