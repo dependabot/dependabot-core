@@ -1,6 +1,6 @@
 ---
 name: nokogiri
-version: 1.13.8
+version: 1.13.9
 type: bundler
 summary: Nokogiri (鋸) makes it easy and painless to work with XML and HTML from Ruby.
 homepage: https://nokogiri.org

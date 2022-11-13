@@ -1,6 +1,6 @@
 ---
 name: aws-sdk-ecr
-version: 1.56.0
+version: 1.57.0
 type: bundler
 summary: AWS SDK for Ruby - Amazon ECR
 homepage: https://github.com/aws/aws-sdk-ruby
