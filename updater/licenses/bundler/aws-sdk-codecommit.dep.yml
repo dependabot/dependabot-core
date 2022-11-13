@@ -1,6 +1,6 @@
 ---
 name: aws-sdk-codecommit
-version: 1.51.0
+version: 1.52.0
 type: bundler
 summary: AWS SDK for Ruby - CodeCommit
 homepage: https://github.com/aws/aws-sdk-ruby
