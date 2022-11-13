@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to be_falsey }
 
       context "and a digest" do
-        let(:source) { { digest: "old_digest" } }
+        let(:source) { { digest: "sha256:old_digest" } }
         let(:headers_response) do
           fixture("docker", "registry_manifest_headers", "generic.json")
         end
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         context "that is out-of-date" do
-          let(:source) { { digest: "old_digest" } }
+          let(:source) { { digest: "sha256:old_digest" } }
           it { is_expected.to be_truthy }
 
           context "but the response doesn't include a new digest" do
@@ -140,6 +140,35 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
           it { is_expected.to be_falsey }
         end
+      end
+    end
+
+    context "given a digest only" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+
+      let(:version) { digest }
+      let(:source) { { digest: digest } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/latest").
+          and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      context "that is out-to-date" do
+        let(:digest) { "sha256:c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
+
+        it { is_expected.to be_truthy }
+      end
+
+      context "that is up-to-date" do
+        let(:latest_digest) { "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+        let(:digest) { latest_digest }
+
+        it { is_expected.to be_falsy }
       end
     end
 

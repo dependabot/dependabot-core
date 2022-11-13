@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/docker/file_parser"
+
 module Dependabot
   module Docker
     class Tag
@@ -22,6 +24,10 @@ module Dependabot
 
       def to_s
         name
+      end
+
+      def digest?
+        name.match?(FileParser::DIGEST)
       end
 
       def comparable?

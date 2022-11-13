@@ -6,7 +6,6 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
-require "dependabot/docker/utils/credentials_finder"
 
 module Dependabot
   module Docker
@@ -77,13 +76,7 @@ module Dependabot
       end
 
       def version_from(parsed_from_line)
-        return parsed_from_line.fetch("tag") if parsed_from_line.fetch("tag")
-
-        version_from_digest(
-          registry: parsed_from_line.fetch("registry"),
-          image: parsed_from_line.fetch("image"),
-          digest: parsed_from_line.fetch("digest")
-        )
+        parsed_from_line.fetch("tag") || parsed_from_line.fetch("digest")
       end
 
       def source_from(parsed_from_line)
@@ -96,59 +89,6 @@ module Dependabot
         source[:digest] = parsed_from_line.fetch("digest") if parsed_from_line.fetch("digest")
 
         source
-      end
-
-      def version_from_digest(registry:, image:, digest:)
-        return unless digest
-
-        registry_details = fetch_registry_details(registry)
-        repo = docker_repo_name(image, registry_details["registry"])
-        client = docker_registry_client(registry_details["registry"], registry_details["credentials"])
-        client.tags(repo, auto_paginate: true).fetch("tags").find do |tag|
-          digest == client.digest(repo, tag)
-        rescue DockerRegistry2::NotFound
-          # Shouldn't happen, but it does. Example of existing tag with
-          # no manifest is "library/python", "2-windowsservercore".
-          false
-        end
-      rescue DockerRegistry2::RegistryAuthenticationException,
-             RestClient::Forbidden
-        raise PrivateSourceAuthenticationFailure, registry_details["registry"]
-      rescue RestClient::Exceptions::OpenTimeout,
-             RestClient::Exceptions::ReadTimeout
-        raise if credentials_finder.using_dockerhub?(registry_details["registry"])
-
-        raise PrivateSourceTimedOut, registry_details["registry"]
-      end
-
-      def docker_repo_name(image, registry)
-        return image if image.include? "/"
-        return "library/#{image}" if credentials_finder.using_dockerhub?(registry)
-
-        image
-      end
-
-      def docker_registry_client(registry_hostname, registry_credentials)
-        unless credentials_finder.using_dockerhub?(registry_hostname)
-          return DockerRegistry2::Registry.new("https://#{registry_hostname}")
-        end
-
-        DockerRegistry2::Registry.new(
-          "https://#{registry_hostname}",
-          user: registry_credentials&.fetch("username", nil),
-          password: registry_credentials&.fetch("password", nil),
-          read_timeout: 10
-        )
-      end
-
-      def fetch_registry_details(registry)
-        registry ||= credentials_finder.base_registry
-        credentials = credentials_finder.credentials_for_registry(registry)
-        { "registry" => registry, "credentials" => credentials }
-      end
-
-      def credentials_finder
-        @credentials_finder ||= Utils::CredentialsFinder.new(credentials)
       end
 
       def check_required_files
