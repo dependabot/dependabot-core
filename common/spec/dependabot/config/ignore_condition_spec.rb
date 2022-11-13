@@ -16,7 +16,7 @@ RSpec.describe Dependabot::Config::IgnoreCondition do
       Dependabot::Dependency.new(
         name: dependency_name,
         requirements: [],
-        package_manager: "npm_and_yarn",
+        package_manager: "dummy",
         version: dependency_version
       )
     end
