@@ -14,9 +14,17 @@ module Dependabot
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 
-        @release_part = Gem::Version.new(release_part.tr("-", "."))
+        @release_part = Dependabot::Version.new(release_part.tr("-", "."))
 
-        @update_part = Gem::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
+        @update_part = Dependabot::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
+      end
+
+      def self.correct?(version)
+        super(new(version).to_semver)
+      end
+
+      def to_semver
+        @release_part.to_semver
       end
 
       attr_reader :release_part
