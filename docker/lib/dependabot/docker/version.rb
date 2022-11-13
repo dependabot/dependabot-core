@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
 
 module Dependabot
@@ -9,7 +10,7 @@ module Dependabot
     # See https://www.oracle.com/java/technologies/javase/versioning-naming.html
     # for a description of Java versions.
     #
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 

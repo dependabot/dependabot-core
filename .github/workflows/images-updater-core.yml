@@ -29,6 +29,6 @@ jobs:
       - name: Push tagged image
         if: contains(github.ref, 'refs/tags')
         run: |
-          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
           docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
           docker push "$UPDATER_CORE_IMAGE:$VERSION"

@@ -20,7 +20,7 @@ on:
     paths-ignore:
       - '*/spec/fixtures/**'
       - 'CHANGELOG.md'
-      - 'common/lib/dependabot/version.rb'
+      - 'common/lib/dependabot.rb'
   schedule:
     - cron: '41 4 * * 3'
 

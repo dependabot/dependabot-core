@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 
 module Dependabot
-  VERSION = "0.215.0"
+  class Version < Gem::Version
+    # Opt-in to Rubygems 4 behavior
+    def self.correct?(version)
+      return false if version.nil?
+
+      version.to_s.match?(ANCHORED_VERSION_PATTERN)
+    end
+  end
 end

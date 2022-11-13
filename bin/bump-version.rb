@@ -53,8 +53,7 @@ def proposed_changes(version, _new_version)
 end
 
 # Update version file
-version_path = File.join(__dir__, "..", "common", "lib", "dependabot",
-                         "version.rb")
+version_path = File.join(__dir__, "..", "common", "lib", "dependabot.rb")
 version_contents = File.read(version_path)
 
 version = version_contents.scan(/\d+.\d+.\d+/).first
@@ -74,7 +73,7 @@ if dry_run
   puts new_version_contents
 else
   File.write(version_path, new_version_contents)
-  puts "☑️  common/lib/dependabot/version.rb updated"
+  puts "☑️  common/lib/dependabot.rb updated"
 
 end
 
@@ -101,7 +100,7 @@ unless dry_run
   puts "commit, tag, and push the release:"
   puts
   puts "git checkout -b v#{new_version}-release-notes"
-  puts "git add CHANGELOG.md common/lib/dependabot/version.rb"
+  puts "git add CHANGELOG.md common/lib/dependabot.rb"
   puts "git commit -m 'v#{new_version}'"
   puts "git push origin HEAD:v#{new_version}-release-notes"
   puts "# ... create PR, verify, merge, for example:"
