@@ -8,8 +8,8 @@ module Dependabot
     class FileUpdater
       class PackagesConfigDeclarationFinder
         DECLARATION_REGEX =
-          %r{<package [^>]*?/>|
-             <package [^>]*?[^/]>.*?</package>}mx
+          %r{<package\s[^>]*?/>|
+             <package\s[^>]*?[^/]>.*?</package>}mx
 
         attr_reader :dependency_name, :declaring_requirement,
                     :packages_config
