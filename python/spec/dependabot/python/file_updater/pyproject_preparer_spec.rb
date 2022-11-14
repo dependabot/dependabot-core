@@ -136,6 +136,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       it { is_expected.to include("geopy = \"^1.13\"\n") }
     end
 
+    context "with a multiple constraint dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "multiple_constraint_dependency.lock" }
+      let(:pyproject_fixture_name) { "multiple_constraint_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+
+      it "does not touch multiple constraint deps" do
+        expect(freeze_top_level_dependencies_except).not_to include("numpy = \"1.21.6\"")
+      end
+    end
+
     context "with directory dependency" do
       let(:dependencies) { [] }
 

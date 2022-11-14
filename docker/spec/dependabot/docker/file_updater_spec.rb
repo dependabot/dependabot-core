@@ -608,7 +608,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         file: "multiple.yaml",
         source: { tag: "17.04" }
       }],
-      package_manager: "kubernetes"
+      package_manager: "docker"
     )
   end
 
@@ -656,7 +656,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "hyphen.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -697,7 +697,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "multiple_identical.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -737,7 +737,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "namespace.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "17.04"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -834,7 +834,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "17.04"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -884,7 +884,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                       "dfc38288cf73aa07485005"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -933,7 +933,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                           "dfc38288cf73aa07485005"
                 }
               }],
-              package_manager: "kubernetes"
+              package_manager: "docker"
             )
           end
 
@@ -982,7 +982,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                         "dfc38288cf73aa07485005"
               }
             }],
-            package_manager: "kubernetes"
+            package_manager: "docker"
           )
         end
 
@@ -1061,7 +1061,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "12.04.5"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -1106,7 +1106,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                         "dfc38288cf73aa07485005"
               }
             }],
-            package_manager: "kubernetes"
+            package_manager: "docker"
           )
         end
 
@@ -1160,7 +1160,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         file: "values.yaml",
         source: { tag: "1.14.2" }
       }],
-      package_manager: "kubernetes"
+      package_manager: "docker"
     )
   end
 
@@ -1206,7 +1206,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "values.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -1247,7 +1247,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "values.yaml",
             source: { tag: "v1.2.3" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
