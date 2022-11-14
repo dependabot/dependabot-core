@@ -24,6 +24,17 @@ module Dependabot
         end
       end
 
+      class ResolvedChangedError < StandardError
+        def initialize(message:, error_context:)
+          super(message)
+          @error_context = error_context
+        end
+
+        def raven_context
+          { extra: @error_context }
+        end
+      end
+
       def self.updated_files_regex
         [
           /^package\.json$/,
@@ -54,10 +65,38 @@ module Dependabot
           )
         end
 
+        reject_update_if_resolved_changes(updated_files)
         vendor_updated_files(updated_files)
       end
 
       private
+
+      def reject_update_if_resolved_changes(updated_files)
+        new_lock = updated_files.find { |file| file.name == "package-lock.json" }
+        return unless new_lock
+
+        old_lock = dependency_files.find { |file| file.name == "package-lock.json" }
+        new_deps = JSON.parse(new_lock.content)["dependencies"]
+        old_deps = JSON.parse(old_lock.content)["dependencies"]
+        return if old_deps.nil? || new_deps.nil?
+
+        dependencies.each do |dep|
+          new_dep = new_deps[dep.name]["resolved"]
+          old_dep = old_deps[dep.name]["resolved"]
+          next if old_dep.nil?
+
+          begin
+            if URI.parse(new_dep).hostname != URI.parse(old_dep).hostname
+              raise ResolvedChangedError.new(
+                message: "Resolved URL should not change",
+                error_context: error_context(updated_files: updated_files)
+              )
+            end
+          rescue URI::InvalidURIError
+            # ignore, resolved can be boolean for example
+          end
+        end
+      end
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
