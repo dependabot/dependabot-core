@@ -75,6 +75,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
 
       context "and the node is empty" do
         let(:dependency_name) { "WebActivatorEx" }
+        let(:declaring_requirement_string) { "2.1.0" }
 
         it "finds the declaration" do
           expect(declaration_strings.count).to eq(1)
