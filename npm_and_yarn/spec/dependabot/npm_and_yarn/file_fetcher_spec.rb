@@ -1615,10 +1615,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           body: fixture_to_response("projects/npm6/all_private", "package-lock.json"),
           headers: json_header
         )
-
-      Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-        events << ActiveSupport::Notifications::Event.new(*args)
-      end
     end
 
     it "infers an npmrc file" do
