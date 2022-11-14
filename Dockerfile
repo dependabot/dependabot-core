@@ -258,7 +258,9 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
-ARG DART_VERSION=2.17.0
+# https://dart.dev/get-dart/archive
+ARG DART_VERSION=2.18.4
+# TODO Dart now publishes SHA256 checksums for their releases, we should validate against those.
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
   && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
