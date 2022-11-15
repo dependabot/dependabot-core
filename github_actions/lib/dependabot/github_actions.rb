@@ -22,6 +22,3 @@ Dependabot::PullRequestCreator::Labeler.
 require "dependabot/dependency"
 Dependabot::Dependency.
   register_production_check("github_actions", ->(_) { true })
-
-require "dependabot/utils"
-Dependabot::Utils.register_always_clone("github_actions")
