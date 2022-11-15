@@ -507,7 +507,7 @@ module Dependabot
 
     def log_checking_for_update(dependency)
       logger_info(
-        "Checking if #{dependency.name} #{dependency.version} needs updating"
+        "Checking if #{dependency.display_full_name} needs updating"
       )
       log_ignore_conditions(dependency)
     end

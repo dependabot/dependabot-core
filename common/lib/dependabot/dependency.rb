@@ -6,6 +6,7 @@ module Dependabot
   class Dependency
     @production_checks = {}
     @display_name_builders = {}
+    @display_full_name_builders = {}
     @name_normalisers = {}
 
     def self.production_check_for_package_manager(package_manager)
@@ -25,6 +26,14 @@ module Dependabot
 
     def self.register_display_name_builder(package_manager, name_builder)
       @display_name_builders[package_manager] = name_builder
+    end
+
+    def self.display_full_name_builder_for_package_manager(package_manager)
+      @display_name_builders[package_manager]
+    end
+
+    def self.register_display_full_name_builder(package_manager, full_name_builder)
+      @display_name_builders[package_manager] = full_name_builder
     end
 
     def self.name_normaliser_for_package_manager(package_manager)
@@ -104,6 +113,14 @@ module Dependabot
       return name unless display_name_builder
 
       display_name_builder.call(name)
+    end
+
+    def display_full_name
+      display_full_name_builder =
+        self.class.display_full_name_builder_for_package_manager(package_manager)
+      return "#{name} #{version}" unless display_full_name_builder
+
+      display_full_name_builder.call(self)
     end
 
     # Returns all detected versions of the dependency. Only ecosystems that

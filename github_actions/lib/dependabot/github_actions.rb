@@ -22,3 +22,6 @@ Dependabot::PullRequestCreator::Labeler.
 require "dependabot/dependency"
 Dependabot::Dependency.
   register_production_check("github_actions", ->(_) { true })
+
+Dependabot::Dependency.
+  register_display_full_name_builder("github_actions", ->(dep) { "#{dep.name}@#{dep.version}" })
