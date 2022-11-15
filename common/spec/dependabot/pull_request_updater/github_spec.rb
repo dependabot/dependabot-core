@@ -503,7 +503,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             "- [Commits](https://github.com/gocardless/business/compare/" \
             "v3.0.0...v1.5.0)"
         end
-        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
+        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
           updater.update
