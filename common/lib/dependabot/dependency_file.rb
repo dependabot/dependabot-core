@@ -28,6 +28,7 @@ module Dependabot
       @support_file = support_file
       @content_encoding = content_encoding
       @operation = operation
+      @mode = mode
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
@@ -44,6 +45,13 @@ module Dependabot
 
       raise "Symlinks must specify a target!" unless symlink_target
       raise "Only symlinked files must specify a target!" if symlink_target
+
+      begin
+        mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
+      rescue
+        mode = nil
+      end
+      @mode = mode
     end
 
     def to_h
@@ -55,7 +63,8 @@ module Dependabot
         "support_file" => support_file,
         "content_encoding" => content_encoding,
         "deleted" => deleted,
-        "operation" => operation
+        "operation" => operation,
+        "mode" => mode
       }
 
       details["symlink_target"] = symlink_target if symlink_target
