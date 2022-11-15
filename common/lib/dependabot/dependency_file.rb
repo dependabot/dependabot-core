@@ -5,7 +5,7 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target, :content_encoding, :operation
+                  :symlink_target, :content_encoding, :operation, :mode
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -40,17 +40,19 @@ module Dependabot
       # support_file flag instead)
       @type = type
 
-      return unless (type == "symlink") ^ symlink_target
-
-      raise "Symlinks must specify a target!" unless symlink_target
-      raise "Only symlinked files must specify a target!" if symlink_target
-
       begin
         mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
       rescue
         mode = nil
       end
       @mode = mode
+
+      return unless (type == "symlink") ^ symlink_target
+
+      raise "Symlinks must specify a target!" unless symlink_target
+      raise "Only symlinked files must specify a target!" if symlink_target
+
+
     end
 
     def to_h
