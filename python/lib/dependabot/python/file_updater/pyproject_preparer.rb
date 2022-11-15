@@ -72,6 +72,10 @@ module Dependabot
                 }
               elsif poetry_object[key][dep_name].is_a?(Hash)
                 poetry_object[key][dep_name]["version"] = locked_version
+              elsif poetry_object[key][dep_name].is_a?(Array)
+                # if it has multiple-constraints, locking to a single version is
+                # going to result in a bad lockfile, ignore
+                next
               else
                 poetry_object[key][dep_name] = locked_version
               end

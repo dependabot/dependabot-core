@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "PythonProjects"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Various small python projects."
+
+[tool.poetry.dependencies]
+python = "^3.7"
+numpy = [
+  { version = ">=1.15,<1.22", python = ">=3.7,<3.8" },
+  { version = ">=1.22", python = ">=3.8,<3.11" }
+]
+pytest = "*"
