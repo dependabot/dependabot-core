@@ -1066,8 +1066,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#local_tags_for_latest_version_commit_sha" do
-    subject { checker.local_tags_for_latest_version_commit_sha }
+  describe "#local_tag_for_latest_version_matching_existing_precision" do
+    subject { checker.local_tag_for_latest_version_matching_existing_precision }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
     let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
     before do
@@ -1083,7 +1083,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     let(:upload_pack_fixture) { "no_tags" }
 
     context "with no tags on GitHub" do
-      it { is_expected.to eq([]) }
+      it { is_expected.to be_nil }
     end
 
     context "but GitHub returns a 404" do
@@ -1098,7 +1098,7 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       it "raises a helpful error" do
-        expect { checker.local_tags_for_latest_version_commit_sha }.
+        expect { checker.local_tag_for_latest_version_matching_existing_precision }.
           to raise_error(Dependabot::GitDependenciesNotReachable)
       end
     end
@@ -1106,27 +1106,41 @@ RSpec.describe Dependabot::GitCommitChecker do
     context "with tags on GitHub" do
       context "but no version tags" do
         let(:upload_pack_fixture) { "no_versions" }
-        it { is_expected.to eq([]) }
+        it { is_expected.to be_nil }
       end
 
       context "with version tags" do
         let(:upload_pack_fixture) { "actions-checkout" }
-        let(:tags) do
-          [{
-            commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
-            tag: "v2",
-            tag_sha: anything,
-            version: anything
-          },
-           {
-             commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
-             tag: "v2.3.4",
-             tag_sha: anything,
-             version: anything
-           }]
+
+        context "and current precision of major" do
+          let(:version) { "1" }
+
+          let(:latest_major) do
+            {
+              commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+              tag: "v2",
+              tag_sha: anything,
+              version: anything
+            }
+          end
+
+          it { is_expected.to match(latest_major) }
         end
 
-        it { is_expected.to match_array(tags) }
+        context "current precision of patch" do
+          let(:version) { "2.1.1" }
+
+          let(:latest_patch) do
+            {
+              commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+              tag: "v2.3.4",
+              tag_sha: anything,
+              version: anything
+            }
+          end
+
+          it { is_expected.to match(latest_patch) }
+        end
       end
     end
   end
