@@ -78,7 +78,7 @@ module Dependabot
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
-      start = Time.now
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       stdin_data = JSON.dump(function: function, args: args)
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
 
@@ -93,7 +93,7 @@ module Dependabot
 
       env_cmd = [env, cmd].compact
       stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
-      time_taken = Time.now - start
+      time_taken = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
 
       if ENV["DEBUG_HELPERS"] == "true"
         puts env_cmd
