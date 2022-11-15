@@ -871,6 +871,34 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with a private module with directory suffix" do
+      let(:files) { project_dependency_files("private_module_with_dir_suffix") }
+      its(:length) { is_expected.to eq(1) }
+
+      describe "default registry with version" do
+        subject(:dependency) { dependencies.find { |d| d.name == "org/name/provider" } }
+        let(:expected_requirements) do
+          [{
+            requirement: "1.2.3",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "registry",
+              registry_hostname: "registry.example.com",
+              module_identifier: "org/name/provider"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("org/name/provider")
+          expect(dependency.version).to eq("1.2.3")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a private module proxy that can't be reached", vcr: true do
       let(:files) { project_dependency_files("private_module_proxy") }
 
