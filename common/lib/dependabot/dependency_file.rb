@@ -42,7 +42,7 @@ module Dependabot
 
       begin
         mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
-      rescue
+      rescue StandardError
         mode = nil
       end
       @mode = mode
@@ -51,8 +51,6 @@ module Dependabot
 
       raise "Symlinks must specify a target!" unless symlink_target
       raise "Only symlinked files must specify a target!" if symlink_target
-
-
     end
 
     def to_h
