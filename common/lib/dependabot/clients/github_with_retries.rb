@@ -84,7 +84,16 @@ module Dependabot
         access_tokens << nil if access_tokens.empty?
         access_tokens.uniq!
 
-        @max_retries = max_retries || 3
+        Octokit.middleware = Faraday::RackBuilder.new do |builder|
+          builder.use Faraday::Retry::Middleware, exceptions: RETRYABLE_ERRORS, max: max_retries || 3
+
+          Octokit::Default::MIDDLEWARE.handlers.each do |handler|
+            next if handler.klass == Faraday::Retry::Middleware
+
+            builder.use handler.klass
+          end
+        end
+
         @clients = access_tokens.map do |token|
           Octokit::Client.new(args.merge(access_token: token))
         end
@@ -95,13 +104,11 @@ module Dependabot
         client = untried_clients.pop
 
         begin
-          retry_connection_failures do
-            if client.respond_to?(method_name)
-              mutatable_args = args.map(&:dup)
-              client.public_send(method_name, *mutatable_args, &block)
-            else
-              super
-            end
+          if client.respond_to?(method_name)
+            mutatable_args = args.map(&:dup)
+            client.public_send(method_name, *mutatable_args, &block)
+          else
+            super
           end
         rescue Octokit::NotFound, Octokit::Unauthorized, Octokit::Forbidden
           raise unless (client = untried_clients.pop)
@@ -112,17 +119,6 @@ module Dependabot
 
       def respond_to_missing?(method_name, include_private = false)
         @clients.first.respond_to?(method_name) || super
-      end
-
-      def retry_connection_failures
-        retry_attempt = 0
-
-        begin
-          yield
-        rescue *RETRYABLE_ERRORS
-          retry_attempt += 1
-          retry_attempt <= @max_retries ? retry : raise
-        end
       end
     end
   end

@@ -284,54 +284,22 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with a tag reference when an update with the same precision is not available" do
-      let(:latest_versions) { [] }
+    context "given a repo when the latest major does not point to the latest patch" do
+      let(:upload_pack_fixture) { "cache" }
 
-      before do
-        version_tags = latest_versions.map do |v|
-          {
-            tag: "v#{v}",
-            version: Dependabot::GithubActions::Version.new(v)
-          }
-        end
+      context "and pinned to patch" do
+        let(:reference) { "v2.1.3" }
 
-        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-        allow(git_commit_checker).to receive(:local_tags_for_latest_version_commit_sha).and_return(version_tags)
-      end
-
-      context "using the major version" do
-        let(:reference) { "v1" }
-        let(:latest_versions) { ["2.1", "2.1.0"] }
-
-        it "does not choose a version with different precision" do
-          expect(subject).to be_nil
+        it "updates to the latest patch" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("3.0.11"))
         end
       end
 
-      context "using the major minor version" do
-        let(:reference) { "v1.0" }
-        let(:latest_versions) { ["2", "2.1.0"] }
+      context "and pinned to major" do
+        let(:reference) { "v2" }
 
-        it "does not choose a version with different precision" do
-          expect(subject).to be_nil
-        end
-      end
-
-      context "using the full version" do
-        let(:reference) { "v1.0.0" }
-        let(:latest_versions) { ["2", "2.1"] }
-
-        it "does not choose a version with different precision" do
-          expect(subject).to be_nil
-        end
-      end
-
-      context "using the full version" do
-        let(:reference) { "v1.0.0" }
-        let(:latest_versions) { ["1.0.5", "2", "2.1"] }
-
-        it "chooses a higher version with the same precision" do
-          expect(subject).to eq(Dependabot::GithubActions::Version.new("1.0.5"))
+        it "updates to the latest major" do
+          expect(subject).to eq(Dependabot::GithubActions::Version.new("3"))
         end
       end
     end

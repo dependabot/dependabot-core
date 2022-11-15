@@ -26,7 +26,6 @@ module Dependabot
         end
         handle_file_fetcher_error(e)
         service.mark_job_as_processed(job_id, @base_commit_sha)
-        clear_repo_contents_path
         return
       end
 
@@ -99,17 +98,6 @@ module Dependabot
       @file_fetcher ||=
         Dependabot::FileFetchers.for_package_manager(job.package_manager).
         new(**args)
-    end
-
-    def clear_repo_contents_path
-      # Remove the contents of the repo_contents_path, as these files are owned
-      # by the root user and will cause a permission error if left in place when
-      # we try to remove the directory.
-      # The `secure` flag ensures that we do not remove any symlinks, which
-      # could be exploited.
-      return unless job.clone?
-
-      FileUtils.rm_rf("#{Environment.repo_contents_path}/.", secure: true)
     end
 
     # rubocop:disable Metrics/MethodLength

@@ -303,28 +303,6 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when the repo_contents_path is set and the job clones into it" do
-      let(:repo_contents_path) { Dir.mktmpdir("test_repo_dir") }
-
-      before do
-        File.write(File.join(repo_contents_path, "Gemfile"), <<~GEMFILE)
-          source "https://rubygems.org"
-          gem "dummy-pkg-a"
-        GEMFILE
-      end
-
-      after do
-        FileUtils.rm_rf(repo_contents_path)
-      end
-
-      it "cleans up any files left behind" do
-        updater.run
-
-        expect(Dir.exist?(repo_contents_path)).to be_truthy
-        expect(Dir.empty?(repo_contents_path)).to be_truthy
-      end
-    end
-
     context "for security only updates" do
       let(:security_updates_only) { true }
       let(:security_advisories) do

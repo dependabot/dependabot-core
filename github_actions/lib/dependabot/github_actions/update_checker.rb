@@ -110,16 +110,8 @@ module Dependabot
         @latest_version_tag ||= begin
           return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
-          latest_tags = git_commit_checker.local_tags_for_latest_version_commit_sha
-
-          # Find the latest version with the same precision as the pinned version.
-          current_precision = precision(dependency.version)
-          latest_tags.select { |tag| precision(tag[:version].to_s) == current_precision }.max_by { |tag| tag[:version] }
+          git_commit_checker.local_tag_for_latest_version_matching_existing_precision
         end
-      end
-
-      def precision(version)
-        version.split(".").length
       end
 
       def updated_source
