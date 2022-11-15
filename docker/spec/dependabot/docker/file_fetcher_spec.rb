@@ -35,6 +35,23 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
+  context "with no Dockerfile or Kubernetes YAML file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_no_docker_repo.json"),
+          headers: { "content-type" => "application/json" }
+        )
+    end
+
+    it "raises the expected error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
   context "with a Dockerfile" do
     before do
       stub_request(:get, url + "?ref=sha").
