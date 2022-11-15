@@ -592,11 +592,12 @@ module Dependabot
                              " --no-recurse-submodules"
                            end
           clone_options << " --branch #{source.branch} --single-branch" if source.branch
-          SharedHelpers.run_shell_command(
+          stdout = SharedHelpers.run_shell_command(
             <<~CMD
               git clone #{clone_options.string} #{source.url} #{path}
             CMD
           )
+          raise Dependabot::RepoNotFound, source if stdout.include?("You appear to have cloned an empty repository.")
 
           if source.commit
             # This code will only be called for testing. Production will never pass a commit
