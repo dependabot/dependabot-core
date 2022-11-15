@@ -101,33 +101,11 @@ module Dependabot
     end
 
     def local_tag_for_latest_version_matching_existing_precision
-      max_tag = max_version_tag_for_current_precision(allowed_version_tags)
-
-      return unless max_tag
-
-      to_local_tag(max_tag)
+      max_local_tag_for_current_precision(allowed_version_tags)
     end
 
     def local_tag_for_latest_version
-      max_tag = max_version_tag(allowed_version_tags)
-
-      return unless max_tag
-
-      to_local_tag(max_tag)
-    end
-
-    def max_version_tag(tags)
-      tags.
-        max_by do |t|
-        version_from_tag(t)
-      end
-    end
-
-    def max_version_tag_for_current_precision(tags)
-      current_precision = precision(dependency.version)
-
-      # Find the latest version with the same precision as the pinned version.
-      max_version_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
+      max_local_tag(allowed_version_tags)
     end
 
     def allowed_version_tags
@@ -183,6 +161,19 @@ module Dependabot
     private
 
     attr_reader :dependency, :credentials, :ignored_versions
+
+    def max_local_tag_for_current_precision(tags)
+      current_precision = precision(dependency.version)
+
+      # Find the latest version with the same precision as the pinned version.
+      max_local_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
+    end
+
+    def max_local_tag(tags)
+      max_version_tag = tags.max_by { |t| version_from_tag(t) }
+
+      to_local_tag(max_version_tag)
+    end
 
     def precision(version)
       version.split(".").length
@@ -332,6 +323,8 @@ module Dependabot
     end
 
     def to_local_tag(tag)
+      return unless tag
+
       version = version_from_tag(tag)
       {
         tag: tag.name,
