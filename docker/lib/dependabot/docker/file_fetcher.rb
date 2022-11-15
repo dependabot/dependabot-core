@@ -22,27 +22,18 @@ module Dependabot
 
       private
 
-      def kubernetes_enabled?
-        Experiments.enabled?(:kubernetes_updates)
-      end
-
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
-        fetched_files += correctly_encoded_yamlfiles if kubernetes_enabled?
+        fetched_files += correctly_encoded_yamlfiles
 
         return fetched_files if fetched_files.any?
 
-        if !kubernetes_enabled? && incorrectly_encoded_dockerfiles.none?
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "Dockerfile")
-          )
-        elsif incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
+        if incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
           raise(
             Dependabot::DependencyFileNotFound,
             File.join(directory, "Dockerfile"),
-            "Found neither Dockerfiles nor Kubernetes YAML in #{directory}"
+            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )
         elsif incorrectly_encoded_dockerfiles.none?
           raise(
