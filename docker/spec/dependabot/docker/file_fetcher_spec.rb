@@ -182,9 +182,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
     end
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
-    before do
-      Dependabot::Experiments.register(:kubernetes_updates, true)
-    end
 
     it "fetches the pod.yaml" do
       expect(file_fetcher_instance.files.count).to eq(1)
@@ -203,17 +200,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     context "that has an non-kubernetes YAML" do
       let(:kubernetes_fixture) { fixture("github", "contents_other_yaml.json") }
-
-      it "raises a helpful error" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::DependabotError)
-      end
-    end
-
-    context "with kubernetes not enabled" do
-      before do
-        Dependabot::Experiments.register(:kubernetes_updates, false)
-      end
 
       it "raises a helpful error" do
         expect { file_fetcher_instance.files }.
@@ -249,9 +235,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
 
     let(:kubernetes_fixture) { fixture("github", "contents_kubernetes.json") }
     let(:kubernetes_2_fixture) { fixture("github", "contents_kubernetes.json") }
-    before do
-      Dependabot::Experiments.register(:kubernetes_updates, true)
-    end
 
     it "fetches both YAMLs" do
       expect(file_fetcher_instance.files.count).to eq(2)
@@ -306,7 +289,6 @@ RSpec.describe Dependabot::Docker::FileFetcher do
       end
 
       let(:values_fixture) { fixture("github", "contents_values_yaml.json") }
-      let(:options) { { kubernetes_updates: true } }
 
       it "fetches the values.yaml" do
         expect(file_fetcher_instance.files.count).to eq(matching_filenames.length)
