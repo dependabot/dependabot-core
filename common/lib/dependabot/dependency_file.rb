@@ -28,7 +28,6 @@ module Dependabot
       @support_file = support_file
       @content_encoding = content_encoding
       @operation = operation
-      @mode = mode
 
       # Make deleted override the operation. Deleted is kept when operation
       # was introduced to keep compatibility with downstream dependants.
