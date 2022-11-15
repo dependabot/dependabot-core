@@ -40,8 +40,9 @@ module Dependabot
           )
         elsif incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
           raise(
-            Dependabot::DependabotError,
-            "Found neither Kubernetes YAML nor Dockerfiles in #{directory}"
+            Dependabot::DependencyFileNotFound,
+            File.join(directory, "Dockerfile"),
+            "Found neither Dockerfiles nor Kubernetes YAML in #{directory}"
           )
         elsif incorrectly_encoded_dockerfiles.none?
           raise(
