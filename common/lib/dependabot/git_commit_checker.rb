@@ -23,13 +23,15 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   requirement_class: nil, version_class: nil)
+                   requirement_class: nil, version_class: nil,
+                   consider_version_branches_pinned: false)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @requirement_class = requirement_class
       @version_class = version_class
+      @consider_version_branches_pinned = consider_version_branches_pinned
     end
 
     def git_dependency?
@@ -55,8 +57,8 @@ module Dependabot
       # Assume we're pinned unless the specified `ref` is actually a branch
       return true unless local_upload_pack.match?(%r{ refs/heads/#{ref}$})
 
-      # If the specified `ref` is actually a branch, we're pinned if the branch looks like a version
-      version_tag?(ref)
+      # TODO: Research whether considering branches that look like versions pinned makes sense for all ecosystems
+      @consider_version_branches_pinned && version_tag?(ref)
     end
 
     def pinned_ref_looks_like_version?
