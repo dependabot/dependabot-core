@@ -153,7 +153,7 @@ module Dependabot
                       "yarn install#{Helpers.yarn_berry_args}"
                     else
                       updates = top_level_dependency_updates.collect do |dep|
-                        dep[:requirements].map { |req| "#{dep[:name]}" }.join(" ")
+                        dep[:name]
                       end
 
                       "yarn up -R #{updates.join(' ')}"
