@@ -7,7 +7,7 @@ function output(obj) {
 }
 
 function printErrorAndExit(error) {
-  output({ error: error.message })
+  output({ error: error.message, trace: error.stack })
   process.exitCode = 1
 }
 
