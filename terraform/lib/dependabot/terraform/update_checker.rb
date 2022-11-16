@@ -45,14 +45,6 @@ module Dependabot
         !proxy_requirement?
       end
 
-      def requirement_class
-        Requirement
-      end
-
-      def version_class
-        Version
-      end
-
       private
 
       def latest_version_resolvable_with_full_unlock?
@@ -194,9 +186,7 @@ module Dependabot
             dependency: dependency,
             credentials: credentials,
             ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored,
-            requirement_class: Requirement,
-            version_class: Version
+            raise_on_ignored: raise_on_ignored
           )
       end
 

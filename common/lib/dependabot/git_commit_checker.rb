@@ -23,14 +23,11 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   requirement_class: nil, version_class: nil,
                    consider_version_branches_pinned: false)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
-      @requirement_class = requirement_class
-      @version_class = version_class
       @consider_version_branches_pinned = consider_version_branches_pinned
     end
 
@@ -443,15 +440,11 @@ module Dependabot
     end
 
     def version_class
-      return @version_class if @version_class
-
-      Utils.version_class_for_package_manager(dependency.package_manager)
+      @version_class ||= Utils.version_class_for_package_manager(dependency.package_manager)
     end
 
     def requirement_class
-      return @requirement_class if @requirement_class
-
-      Utils.requirement_class_for_package_manager(dependency.package_manager)
+      @requirement_class ||= Utils.requirement_class_for_package_manager(dependency.package_manager)
     end
 
     def local_repo_git_metadata_fetcher
