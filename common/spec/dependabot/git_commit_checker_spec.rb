@@ -1230,8 +1230,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#local_tag_for_pinned_version" do
-    subject { checker.local_tag_for_pinned_version }
+  describe "#local_tag_for_pinned_sha" do
+    subject { checker.local_tag_for_pinned_sha }
 
     context "with a git commit pin" do
       let(:source) do
@@ -1286,6 +1286,45 @@ RSpec.describe Dependabot::GitCommitChecker do
 
         it { is_expected.to eq("v2.3.4") }
       end
+    end
+  end
+
+  describe "#most_specific_tag_equivalent_to_pinned_ref" do
+    subject { checker.most_specific_tag_equivalent_to_pinned_ref }
+
+    let(:source) do
+      {
+        type: "git",
+        url: "https://github.com/actions/checkout",
+        branch: "main",
+        ref: source_ref
+      }
+    end
+
+    let(:repo_url) { "https://github.com/actions/checkout.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+    let(:upload_pack_fixture) { "actions-checkout-moving-v2" }
+
+    context "for a moving major tag" do
+      let(:source_ref) { "v2" }
+
+      it { is_expected.to eq("v2.3.4") }
+    end
+
+    context "for a fixed patch tag" do
+      let(:source_ref) { "v2.3.4" }
+
+      it { is_expected.to eq("v2.3.4") }
     end
   end
 

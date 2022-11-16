@@ -137,7 +137,7 @@ module Dependabot
         # Can't (currently) detect whether git dependencies are vulnerable
         return false if existing_version_is_sha?
 
-        security_advisories.any? { |a| a.vulnerable?(current_version) }
+        active_advisories.any?
       end
 
       def ignore_requirements
@@ -145,6 +145,10 @@ module Dependabot
       end
 
       private
+
+      def active_advisories
+        security_advisories.select { |a| a.vulnerable?(current_version) }
+      end
 
       def latest_version_resolvable_with_full_unlock?
         raise NotImplementedError

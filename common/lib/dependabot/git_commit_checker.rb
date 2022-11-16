@@ -111,6 +111,14 @@ module Dependabot
       max_local_tag(allowed_version_tags)
     end
 
+    def local_tags_for_allowed_versions_matching_existing_precision
+      select_matching_existing_precision(allowed_version_tags).map { |t| to_local_tag(t) }
+    end
+
+    def local_tags_for_allowed_versions
+      allowed_version_tags.map { |t| to_local_tag(t) }
+    end
+
     def allowed_version_tags
       allowed_versions(local_tags)
     end
@@ -137,13 +145,14 @@ module Dependabot
       end
     end
 
-    def local_tag_for_pinned_version
-      ref = dependency_source_details.fetch(:ref)
-      tags = local_tags.select { |t| t.commit_sha == ref && version_class.correct?(t.name) }.
-             sort_by { |t| version_class.new(t.name) }
-      return if tags.empty?
+    def most_specific_tag_equivalent_to_pinned_ref
+      commit_sha = head_commit_for_local_branch(dependency_source_details.fetch(:ref))
+      most_specific_version_tag_for_sha(commit_sha)
+    end
 
-      tags[-1].name
+    def local_tag_for_pinned_sha
+      commit_sha = dependency_source_details.fetch(:ref)
+      most_specific_version_tag_for_sha(commit_sha)
     end
 
     def git_repo_reachable?
@@ -158,10 +167,7 @@ module Dependabot
     attr_reader :dependency, :credentials, :ignored_versions
 
     def max_local_tag_for_current_precision(tags)
-      current_precision = precision(dependency.version)
-
-      # Find the latest version with the same precision as the pinned version.
-      max_local_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
+      max_local_tag(select_matching_existing_precision(tags))
     end
 
     def max_local_tag(tags)
@@ -170,8 +176,23 @@ module Dependabot
       to_local_tag(max_version_tag)
     end
 
+    # Find the latest version with the same precision as the pinned version.
+    def select_matching_existing_precision(tags)
+      current_precision = precision(dependency.version)
+
+      tags.select { |tag| precision(scan_version(tag.name)) == current_precision }
+    end
+
     def precision(version)
       version.split(".").length
+    end
+
+    def most_specific_version_tag_for_sha(commit_sha)
+      tags = local_tags.select { |t| t.commit_sha == commit_sha && version_class.correct?(t.name) }.
+             sort_by { |t| version_class.new(t.name) }
+      return if tags.empty?
+
+      tags[-1].name
     end
 
     def allowed_versions(local_tags)
