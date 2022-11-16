@@ -672,7 +672,7 @@ RSpec.describe Dependabot::PullRequestCreator::Github do
             "\n" \
             "Commit msg"
         end
-        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
+        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
           creator.create

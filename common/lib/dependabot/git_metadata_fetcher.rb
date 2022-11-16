@@ -44,6 +44,12 @@ module Dependabot
         commit_sha
     end
 
+    def head_commit_for_ref_sha(ref)
+      refs_for_upload_pack.
+        find { |r| r.ref_sha == ref }&.
+        commit_sha
+    end
+
     private
 
     attr_reader :url, :credentials

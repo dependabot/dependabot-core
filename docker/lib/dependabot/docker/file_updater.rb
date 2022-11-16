@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/docker/utils/helpers"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/errors"
@@ -152,7 +153,7 @@ module Dependabot
       end
 
       def updated_yaml_content(file)
-        updated_content = file.name == "values.yaml" ? update_helm(file) : update_image(file)
+        updated_content = Utils.likely_helm_chart?(file) ? update_helm(file) : update_image(file)
 
         raise "Expected content to change!" if updated_content == file.content
 

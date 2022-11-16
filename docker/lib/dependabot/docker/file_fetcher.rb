@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/docker/utils/helpers"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -9,7 +10,6 @@ module Dependabot
     class FileFetcher < Dependabot::FileFetchers::Base
       YAML_REGEXP = /^[^\.]+\.ya?ml$/i
       DOCKER_REGEXP = /dockerfile/i
-      HELM_REGEXP = /values[\-a-zA-Z_0-9]*\.ya?ml$/i
 
       def self.required_files_in?(filenames)
         filenames.any? { |f| f.match?(DOCKER_REGEXP) } or
@@ -22,26 +22,18 @@ module Dependabot
 
       private
 
-      def kubernetes_enabled?
-        Experiments.enabled?(:kubernetes_updates)
-      end
-
       def fetch_files
         fetched_files = []
         fetched_files += correctly_encoded_dockerfiles
-        fetched_files += correctly_encoded_yamlfiles if kubernetes_enabled?
+        fetched_files += correctly_encoded_yamlfiles
 
         return fetched_files if fetched_files.any?
 
-        if !kubernetes_enabled? && incorrectly_encoded_dockerfiles.none?
+        if incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
           raise(
             Dependabot::DependencyFileNotFound,
-            File.join(directory, "Dockerfile")
-          )
-        elsif incorrectly_encoded_dockerfiles.none? && incorrectly_encoded_yamlfiles.none?
-          raise(
-            Dependabot::DependabotError,
-            "Found neither Kubernetes YAML nor Dockerfiles in #{directory}"
+            File.join(directory, "Dockerfile"),
+            "No Dockerfiles nor Kubernetes YAML found in #{directory}"
           )
         elsif incorrectly_encoded_dockerfiles.none?
           raise(
@@ -86,7 +78,7 @@ module Dependabot
       def correctly_encoded_yamlfiles
         candidate_files = yamlfiles.select { |f| f.content.valid_encoding? }
         candidate_files.select do |f|
-          if f.type == "file" && f.name.match?(HELM_REGEXP)
+          if f.type == "file" && Utils.likely_helm_chart?(f)
             true
           else
             # This doesn't handle multi-resource files, but it shouldn't matter, since the first resource

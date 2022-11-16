@@ -229,6 +229,40 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       end
     end
 
+    context "with a space in registry url" do
+      context "in .npmrc file" do
+        let(:npmrc_file) do
+          project_dependency_files(project_name).find { |f| f.name == ".npmrc" }
+        end
+        let(:project_name) { "npm6/npmrc_auth_token_with_space" }
+
+        before do
+          body = fixture("gemfury_responses", "gemfury_response_etag.json")
+          stub_request(:get, "https://npm.fury.io/dependabot%20with%20space/etag").
+            with(headers: { "Authorization" => "Bearer secret_token" }).
+            to_return(status: 200, body: body)
+        end
+
+        it { is_expected.to eq("npm.fury.io/dependabot%20with%20space") }
+      end
+
+      context "in .yarnrc file" do
+        let(:yarnrc_file) do
+          project_dependency_files(project_name).find { |f| f.name == ".yarnrc" }
+        end
+        let(:project_name) { "yarn/yarnrc_global_registry_with_space" }
+
+        before do
+          url = "https://npm-proxy.fury.io/password/dependabot%20with%20space/etag"
+          body = fixture("gemfury_responses", "gemfury_response_etag.json")
+
+          stub_request(:get, url).to_return(status: 200, body: body)
+        end
+
+        it { is_expected.to eq("npm-proxy.fury.io/password/dependabot%20with%20space") }
+      end
+    end
+
     context "with a .yarnrc file" do
       let(:yarnrc_file) do
         project_dependency_files(project_name).find { |f| f.name == ".yarnrc" }

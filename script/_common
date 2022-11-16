@@ -16,8 +16,6 @@ function docker_build() {
 
 function docker_exec() {
   docker_build
-
-  appdir=$(cd $(dirname "$0")/../updater && pwd)
   docker run --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" \
   --rm \
   -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
@@ -32,7 +30,6 @@ function docker_bundle_exec() {
     VCR_ARGS="--env \"VCR=$VCR\""
   fi
 
-  appdir=$(cd $(dirname "$0")/../updater && pwd)
   docker run --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" \
   $VCR_ARGS \
   --rm \

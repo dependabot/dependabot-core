@@ -246,7 +246,7 @@ module Dependabot
         def run_command(command, env: {})
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(env, command)
+          stdout, _, process = Open3.capture3(env, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Pipenv

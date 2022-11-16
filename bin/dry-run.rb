@@ -37,7 +37,7 @@
 # rubocop:disable Style/GlobalVars
 
 require "etc"
-unless Etc.getpwuid(Process.uid).name == "dependabot"
+unless Etc.getpwuid(Process.uid).name == "dependabot" || ENV["ALLOW_DRY_RUN_STANDALONE"] == "true"
   puts <<~INFO
     bin/dry-run.rb is only supported in a development container.
 
