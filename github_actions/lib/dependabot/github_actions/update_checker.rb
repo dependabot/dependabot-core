@@ -65,7 +65,7 @@ module Dependabot
         # we want to update that tag.
         if git_commit_checker.pinned_ref_looks_like_version? && latest_version_tag
           latest_version = latest_version_tag.fetch(:version)
-          return version_class.new(dependency.version) if shortened_semver_eq?(dependency.version, latest_version.to_s)
+          return current_version if shortened_semver_eq?(dependency.version, latest_version.to_s)
 
           return latest_version
         end

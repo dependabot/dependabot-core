@@ -90,7 +90,7 @@ module Dependabot
         return versions_array unless dependency.version && version_class.correct?(dependency.version)
 
         versions_array.
-          select { |version| version > version_class.new(dependency.version) }
+          select { |version| version > current_version }
       end
 
       def all_versions
