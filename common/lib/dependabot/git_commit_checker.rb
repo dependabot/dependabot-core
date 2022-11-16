@@ -138,8 +138,6 @@ module Dependabot
     end
 
     def local_tag_for_pinned_version
-      return unless pinned?
-
       ref = dependency_source_details.fetch(:ref)
       tags = local_tags.select { |t| t.commit_sha == ref && version_class.correct?(t.name) }.
              sort_by { |t| version_class.new(t.name) }
