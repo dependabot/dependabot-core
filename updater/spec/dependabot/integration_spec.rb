@@ -309,7 +309,7 @@ RSpec.describe Dependabot::EndToEndJob do
                 groups: [:default],
                 source: {
                   type: "git",
-                  branch: "master",
+                  branch: nil,
                   ref: "v1.1.0",
                   url: "git@github.com:dependabot-fixtures/ruby-dummy-git-" \
                        "dependency.git"
@@ -321,7 +321,7 @@ RSpec.describe Dependabot::EndToEndJob do
                 groups: [:default],
                 source: {
                   type: "git",
-                  branch: "master",
+                  branch: nil,
                   ref: "v1.0.0",
                   url: "git@github.com:dependabot-fixtures/ruby-dummy-git-" \
                        "dependency.git"
