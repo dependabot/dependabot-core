@@ -8,9 +8,12 @@ module Dependabot
       end
 
       def self.organization_credentials(credentials)
+        defaults = { "organization" => "", "token" => "" }
+        keys = %w(type organization token)
+
         credentials.
           select { |cred| cred["type"] == "hex_organization" }.
-          flat_map { |cred| cred.slice("type", "organization", "token").values }
+          flat_map { |cred| defaults.merge(cred).slice(*keys).values }
       end
 
       def self.repo_credentials(credentials)
