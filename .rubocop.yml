@@ -8,6 +8,7 @@ AllCops:
     - "*/bin/**/*"
     - "**/tmp/**/*"
     - "*/spec/fixtures/**/*"
+    - "dry-run/**/*"
   NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
