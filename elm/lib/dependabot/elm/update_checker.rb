@@ -87,7 +87,7 @@ module Dependabot
       end
 
       def filter_lower_versions(versions_array)
-        return versions_array unless dependency.version && version_class.correct?(dependency.version)
+        return versions_array unless current_version
 
         versions_array.
           select { |version| version > current_version }

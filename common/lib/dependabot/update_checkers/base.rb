@@ -275,7 +275,7 @@ module Dependabot
       end
 
       def current_version
-        @current_version ||= version_class.new(dependency.version)
+        @current_version ||= dependency.numeric_version
       end
 
       def can_compare_requirements?

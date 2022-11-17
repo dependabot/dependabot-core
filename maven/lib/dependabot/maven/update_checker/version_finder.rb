@@ -113,25 +113,23 @@ module Dependabot
         end
 
         def filter_lower_versions(possible_versions)
-          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
+          return possible_versions unless dependency.numeric_version
 
           possible_versions.select do |v|
-            v.fetch(:version) > version_class.new(dependency.version)
+            v.fetch(:version) > dependency.numeric_version
           end
         end
 
         def wants_prerelease?
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
+          return false unless dependency.numeric_version
 
-          version_class.new(dependency.version).prerelease?
+          dependency.numeric_version.prerelease?
         end
 
         def wants_date_based_version?
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
+          return false unless dependency.numeric_version
 
-          version_class.new(dependency.version) >= version_class.new(100)
+          dependency.numeric_version >= version_class.new(100)
         end
 
         def released?(version)

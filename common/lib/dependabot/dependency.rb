@@ -67,6 +67,10 @@ module Dependabot
       @removed
     end
 
+    def numeric_version
+      @numeric_version ||= version_class.new(version) if version && version_class.correct?(version)
+    end
+
     def to_h
       {
         "name" => name,
@@ -135,6 +139,10 @@ module Dependabot
     end
 
     private
+
+    def version_class
+      Utils.version_class_for_package_manager(package_manager)
+    end
 
     def check_values
       raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
