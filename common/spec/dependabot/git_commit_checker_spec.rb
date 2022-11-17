@@ -1145,6 +1145,91 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#local_ref_for_latest_version_matching_existing_precision" do
+    subject { checker.local_ref_for_latest_version_matching_existing_precision }
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "with no tags, nor version branches" do
+      let(:upload_pack_fixture) { "no_tags" }
+      it { is_expected.to be_nil }
+    end
+
+    context "with no version tags nor version branches" do
+      let(:upload_pack_fixture) { "no_versions" }
+      it { is_expected.to be_nil }
+    end
+
+    context "with version tags, and some version branches not matching pinned schema" do
+      let(:upload_pack_fixture) { "actions-checkout" }
+      let(:version) { "1.1.1" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v#{version}"
+        }
+      end
+
+      let(:latest_patch) do
+        {
+          commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+          tag: "v2.3.4",
+          tag_sha: anything,
+          version: anything
+        }
+      end
+
+      it { is_expected.to match(latest_patch) }
+    end
+
+    context "with tags for minor versions and branches for major versions" do
+      let(:upload_pack_fixture) { "run-vcpkg" }
+
+      context "when pinned to a major" do
+        let(:version) { "7" }
+
+        let(:latest_major_branch) do
+          {
+            commit_sha: "831e6cd560cc8688a4967c5766e4215afbd196d9",
+            tag: "v10",
+            tag_sha: anything,
+            version: anything
+          }
+        end
+
+        it { is_expected.to match(latest_major_branch) }
+      end
+
+      context "when pinned to a minor" do
+        let(:version) { "7.0" }
+
+        let(:latest_minor_tag) do
+          {
+            commit_sha: "831e6cd560cc8688a4967c5766e4215afbd196d9",
+            tag: "v10.6",
+            tag_sha: anything,
+            version: anything
+          }
+        end
+
+        it { is_expected.to match(latest_minor_tag) }
+      end
+    end
+  end
+
   describe "#local_tag_for_pinned_version" do
     subject { checker.local_tag_for_pinned_version }
 
