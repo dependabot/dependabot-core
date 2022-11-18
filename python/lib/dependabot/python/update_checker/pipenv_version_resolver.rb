@@ -290,7 +290,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version)
+          File.write(".python-version", Helpers.python_major_minor(python_version))
 
           setup_files.each do |file|
             path = file.name
@@ -341,6 +341,7 @@ module Dependabot
           content = freeze_other_dependencies(content)
           content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
+          content = update_python_requirement(content)
           content
         end
 
@@ -348,6 +349,12 @@ module Dependabot
           Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content, lockfile: lockfile).
             freeze_top_level_dependencies_except([dependency])
+        end
+
+        def update_python_requirement(pipfile_content)
+          Python::FileUpdater::PipfilePreparer.
+            new(pipfile_content: pipfile_content).
+            update_python_requirement(Helpers.python_major_minor(python_version))
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -461,7 +468,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{python_version}")
+          run_command("pyenv local #{Helpers.python_major_minor(python_version)}")
           run_command(command, env: env)
         end
 

@@ -19,3 +19,7 @@ cp -r \
 
 cd "$install_dir"
 PYENV_VERSION=3.11.0 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+PYENV_VERSION=3.10.8 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+PYENV_VERSION=3.9.15 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+PYENV_VERSION=3.8.15 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
+PYENV_VERSION=3.7.15 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"
