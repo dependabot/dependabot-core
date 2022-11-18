@@ -12,6 +12,8 @@ module Dependabot
 
       class Forbidden < StandardError; end
 
+      class TimedOut < StandardError; end
+
       #######################
       # Constructor methods #
       #######################
@@ -149,6 +151,23 @@ module Dependabot
       end
       # rubocop:enable Metrics/ParameterLists
 
+      def decline_pull_request(repo, pr_id, comment = nil)
+        # https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pullrequests/
+        decline_path = "#{repo}/pullrequests/#{pr_id}/decline"
+        post(base_url + decline_path, "")
+
+        comment = "Dependabot declined pull request" if comment.nil?
+
+        content = {
+          content: {
+            raw: comment
+          }
+        }
+
+        comment_path = "#{repo}/pullrequests/#{pr_id}/comments"
+        post(base_url + comment_path, content.to_json)
+      end
+
       def current_user
         base_url = "https://api.bitbucket.org/2.0/user?fields=uuid"
         response = get(base_url)
@@ -210,6 +229,14 @@ module Dependabot
       end
 
       def post(url, body, content_type = "application/json")
+        headers = auth_header
+
+        headers = if body.empty?
+                    headers.merge({ "Accept" => "application/json" })
+                  else
+                    headers.merge({ "Content-Type" => content_type })
+                  end
+
         response = Excon.post(
           url,
           body: body,
@@ -217,16 +244,13 @@ module Dependabot
           password: credentials&.fetch("password", nil),
           idempotent: false,
           **SharedHelpers.excon_defaults(
-            headers: auth_header.merge(
-              {
-                "Content-Type" => content_type
-              }
-            )
+            headers: headers
           )
         )
         raise Unauthorized if response.status == 401
         raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
+        raise TimedOut if response.status == 555
 
         response
       end

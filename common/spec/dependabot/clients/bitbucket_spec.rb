@@ -237,4 +237,67 @@ RSpec.describe Dependabot::Clients::Bitbucket do
       }
     end
   end
+
+  describe "#decline pull request" do
+    let(:default_decline_url) { api_base_url + repo + "/pullrequests/15/decline" }
+    let(:default_comment_url) { api_base_url + repo + "/pullrequests/15/comments" }
+
+    context "with provided comment" do
+      before do
+        stub_request(:post, default_decline_url).
+          with(
+            headers: {
+              "Authorization" => "Bearer #{access_token}",
+              "Accept" => "application/json"
+            }
+          ).
+          to_return(status: 200)
+
+        stub_request(:post, default_comment_url).
+          with(
+            body: "{\"content\":{\"raw\":\"Superseded by newer version\"}}",
+            headers: {
+              "Authorization" => "Bearer #{access_token}",
+              "Content-type" => "application/json"
+            }
+          ).
+          to_return(status: 201)
+      end
+
+      subject do
+        client.decline_pull_request(repo, 15, "Superseded by newer version")
+      end
+
+      specify { expect { subject }.to_not raise_error }
+    end
+
+    context "without provided comment" do
+      before do
+        stub_request(:post, default_decline_url).
+          with(
+            headers: {
+              "Authorization" => "Bearer #{access_token}",
+              "Accept" => "application/json"
+            }
+          ).
+          to_return(status: 200)
+
+        stub_request(:post, default_comment_url).
+          with(
+            body: "{\"content\":{\"raw\":\"Dependabot declined pull request\"}}",
+            headers: {
+              "Authorization" => "Bearer #{access_token}",
+              "Content-type" => "application/json"
+            }
+          ).
+          to_return(status: 201)
+      end
+
+      subject do
+        client.decline_pull_request(repo, 15)
+      end
+
+      specify { expect { subject }.to_not raise_error }
+    end
+  end
 end
