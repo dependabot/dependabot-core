@@ -110,7 +110,7 @@ module Dependabot
         @latest_version_tag ||= begin
           return git_commit_checker.local_tag_for_latest_version if dependency.version.nil?
 
-          git_commit_checker.local_tag_for_latest_version_matching_existing_precision
+          git_commit_checker.local_ref_for_latest_version_matching_existing_precision
         end
       end
 
@@ -176,7 +176,8 @@ module Dependabot
           dependency: dependency,
           credentials: credentials,
           ignored_versions: ignored_versions,
-          raise_on_ignored: raise_on_ignored
+          raise_on_ignored: raise_on_ignored,
+          consider_version_branches_pinned: true
         )
       end
 

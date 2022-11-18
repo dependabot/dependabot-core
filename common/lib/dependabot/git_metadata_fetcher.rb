@@ -22,7 +22,21 @@ module Dependabot
     def tags
       return [] unless upload_pack
 
-      @tags ||= tags_for_upload_pack
+      @tags ||= tags_for_upload_pack.map do |ref|
+        OpenStruct.new(
+          name: ref.name,
+          tag_sha: ref.ref_sha,
+          commit_sha: ref.commit_sha
+        )
+      end
+    end
+
+    def tags_for_upload_pack
+      @tags_for_upload_pack ||= refs_for_upload_pack.select { |ref| ref.ref_type == :tag }
+    end
+
+    def refs_for_upload_pack
+      @refs_for_upload_pack ||= parse_refs_for_upload_pack
     end
 
     def ref_names
@@ -106,22 +120,6 @@ module Dependabot
       else
         OpenStruct.new(body: stderr, status: 500)
       end
-    end
-
-    def tags_for_upload_pack
-      refs_for_upload_pack.
-        select { |ref| ref.ref_type == :tag }.
-        map do |ref|
-          OpenStruct.new(
-            name: ref.name,
-            tag_sha: ref.ref_sha,
-            commit_sha: ref.commit_sha
-          )
-        end
-    end
-
-    def refs_for_upload_pack
-      @refs_for_upload_pack ||= parse_refs_for_upload_pack
     end
 
     def parse_refs_for_upload_pack

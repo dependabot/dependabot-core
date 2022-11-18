@@ -12,7 +12,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       dependency_files: dependency_files,
       credentials: credentials,
       latest_allowable_version: latest_allowable_version,
-      latest_version_finder: latest_version_finder
+      latest_version_finder: latest_version_finder,
+      repo_contents_path: nil
     )
   end
   let(:latest_version_finder) do
