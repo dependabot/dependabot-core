@@ -38,6 +38,7 @@ jobs:
           - pub
           - submodules
           - terraform
+          - yarn-berry
     steps:
     - uses: actions/checkout@v3
     - uses: dorny/paths-filter@v2
@@ -166,6 +167,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'terraform/**'
+          'yarn-berry':
+            - Dockerfile
+            - Dockerfile.updater
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
 
     - name: Download CLI and test
       if: steps.changes.outputs[matrix.suite] == 'true'

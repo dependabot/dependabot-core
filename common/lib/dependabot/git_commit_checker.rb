@@ -23,13 +23,15 @@ module Dependabot
 
     def initialize(dependency:, credentials:,
                    ignored_versions: [], raise_on_ignored: false,
-                   requirement_class: nil, version_class: nil)
+                   requirement_class: nil, version_class: nil,
+                   consider_version_branches_pinned: false)
       @dependency = dependency
       @credentials = credentials
       @ignored_versions = ignored_versions
       @raise_on_ignored = raise_on_ignored
       @requirement_class = requirement_class
       @version_class = version_class
+      @consider_version_branches_pinned = consider_version_branches_pinned
     end
 
     def git_dependency?
@@ -52,17 +54,17 @@ module Dependabot
       # If the specified `ref` is actually a tag, we're pinned
       return true if local_upload_pack.match?(%r{ refs/tags/#{ref}$})
 
-      # If the specified `ref` is actually a branch, we're NOT pinned
-      return false if local_upload_pack.match?(%r{ refs/heads/#{ref}$})
+      # Assume we're pinned unless the specified `ref` is actually a branch
+      return true unless local_upload_pack.match?(%r{ refs/heads/#{ref}$})
 
-      # Otherwise, assume we're pinned
-      true
+      # TODO: Research whether considering branches that look like versions pinned makes sense for all ecosystems
+      @consider_version_branches_pinned && version_tag?(ref)
     end
 
     def pinned_ref_looks_like_version?
       return false unless pinned?
 
-      dependency_source_details.fetch(:ref).match?(VERSION_REGEX)
+      version_tag?(dependency_source_details.fetch(:ref))
     end
 
     def pinned_ref_looks_like_commit_sha?
@@ -101,47 +103,23 @@ module Dependabot
     end
 
     def local_tag_for_latest_version_matching_existing_precision
-      max_tag = max_version_tag_for_current_precision(allowed_version_tags)
+      max_local_tag_for_current_precision(allowed_version_tags)
+    end
 
-      return unless max_tag
-
-      to_local_tag(max_tag)
+    def local_ref_for_latest_version_matching_existing_precision
+      max_local_tag_for_current_precision(allowed_version_refs)
     end
 
     def local_tag_for_latest_version
-      max_tag = max_version_tag(allowed_version_tags)
-
-      return unless max_tag
-
-      to_local_tag(max_tag)
-    end
-
-    def max_version_tag(tags)
-      tags.
-        max_by do |t|
-        version_from_tag(t)
-      end
-    end
-
-    def max_version_tag_for_current_precision(tags)
-      current_precision = precision(dependency.version)
-
-      # Find the latest version with the same precision as the pinned version.
-      max_version_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
+      max_local_tag(allowed_version_tags)
     end
 
     def allowed_version_tags
-      tags =
-        local_tags.
-        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
-      filtered = tags.
-                 reject { |t| tag_included_in_ignore_requirements?(t) }
-      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
-        raise Dependabot::AllVersionsIgnored
-      end
+      allowed_versions(local_tags)
+    end
 
-      filtered.
-        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
+    def allowed_version_refs
+      allowed_versions(local_refs)
     end
 
     def current_version
@@ -184,8 +162,35 @@ module Dependabot
 
     attr_reader :dependency, :credentials, :ignored_versions
 
+    def max_local_tag_for_current_precision(tags)
+      current_precision = precision(dependency.version)
+
+      # Find the latest version with the same precision as the pinned version.
+      max_local_tag(tags.select { |tag| precision(scan_version(tag.name)) == current_precision })
+    end
+
+    def max_local_tag(tags)
+      max_version_tag = tags.max_by { |t| version_from_tag(t) }
+
+      to_local_tag(max_version_tag)
+    end
+
     def precision(version)
       version.split(".").length
+    end
+
+    def allowed_versions(local_tags)
+      tags =
+        local_tags.
+        select { |t| version_tag?(t.name) && matches_existing_prefix?(t.name) }
+      filtered = tags.
+                 reject { |t| tag_included_in_ignore_requirements?(t) }
+      if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(tags).any?
+        raise Dependabot::AllVersionsIgnored
+      end
+
+      filtered.
+        reject { |t| tag_is_prerelease?(t) && !wants_prerelease? }
     end
 
     def pinned_ref_in_release?(version)
@@ -226,9 +231,15 @@ module Dependabot
       local_repo_git_metadata_fetcher.upload_pack
     end
 
-    def local_tags
-      tags = local_repo_git_metadata_fetcher.tags
+    def local_refs
+      handle_tag_prefix(local_repo_git_metadata_fetcher.refs_for_upload_pack)
+    end
 
+    def local_tags
+      handle_tag_prefix(local_repo_git_metadata_fetcher.tags_for_upload_pack)
+    end
+
+    def handle_tag_prefix(tags)
       if dependency_source_details&.fetch(:ref, nil)&.start_with?("tags/")
         tags = tags.map do |tag|
           tag.dup.tap { |t| t.name = "tags/#{tag.name}" }
@@ -332,12 +343,14 @@ module Dependabot
     end
 
     def to_local_tag(tag)
+      return unless tag
+
       version = version_from_tag(tag)
       {
         tag: tag.name,
         version: version,
         commit_sha: tag.commit_sha,
-        tag_sha: tag.tag_sha
+        tag_sha: tag.ref_sha
       }
     end
 

@@ -1,19 +1,19 @@
-name: Push fork images
+name: Push latest images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
   UPDATER_IMAGE: "dependabot/updater"
   UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
 on:
-  workflow_dispatch:
-    inputs:
-      pr:
-        required: true
-        type: string
-        description: PR number
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
 
 jobs:
-  push-fork-image:
+  push-updater-image:
     name: Deploy
     runs-on: ubuntu-latest
     permissions:
@@ -24,28 +24,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Check if pull request is approved
-        # The PR must be approved. This is mostly to ensure you've typed the correct PR.
-        # Note: forks will have a blank review decision without approval. Not NEEDS_REVIEW.
-        run: |
-          DECISION=$(gh pr view ${{ github.event.inputs.pr }} --json reviewDecision -t {{.reviewDecision}})
-          echo "Review decision is: $DECISION"
-          [[ $DECISION == "APPROVED" ]] || exit 1
-
-      - name: Checkout the fork
-        # This checks out the fork and cherry-picks the changes onto main, creating a new merge SHA tag.
-        run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          gh pr checkout ${{ github.event.inputs.pr }} --branch docker-branch-release-workflow
-          git reset main
-          git add .
-          git commit -m squashed
-          PICK=$(git rev-parse HEAD)
-          git checkout main
-          git cherry-pick $PICK
-          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Build dependabot-core image
         env:
@@ -74,14 +52,21 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Push fork image
+      - name: Push branch image
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
           docker push "$UPDATER_IMAGE_MIRROR:$TAG"
 
+      - name: Push latest on main
+        run: |
+          # The v2 tag is the Updater image tag, not related to the core version.
+          DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$DATE_BASED_VERSION"
+          docker push --all-tags "$UPDATER_IMAGE_MIRROR"
+
       - name: Set summary
         run: |
-          echo "generated for PR ${{ github.event.inputs.pr }}" > $GITHUB_STEP_SUMMARY
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
