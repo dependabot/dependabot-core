@@ -150,13 +150,13 @@ module Dependabot
           # the lockfile.
 
           command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install#{Helpers.yarn_berry_args}"
+                      "yarn install #{Helpers.yarn_berry_args}".strip
                     else
                       updates = top_level_dependency_updates.collect do |dep|
                         dep[:requirements].map { |req| "#{dep[:name]}@#{req[:requirement]}" }.join(" ")
                       end
 
-                      "yarn up #{updates.join(' ')}#{Helpers.yarn_berry_args}"
+                      "yarn up #{updates.join(' ')} #{Helpers.yarn_berry_args}".strip
                     end
           Helpers.run_yarn_commands(command)
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -172,9 +172,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           Helpers.run_yarn_commands(
-            "yarn add #{update}#{Helpers.yarn_berry_args}",
-            "yarn dedupe #{dep.name}#{Helpers.yarn_berry_args}",
-            "yarn remove #{dep.name}#{Helpers.yarn_berry_args}"
+            "yarn add #{update} #{Helpers.yarn_berry_args}".strip,
+            "yarn dedupe #{dep.name} #{Helpers.yarn_berry_args}".strip,
+            "yarn remove #{dep.name} #{Helpers.yarn_berry_args}".strip
           )
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
