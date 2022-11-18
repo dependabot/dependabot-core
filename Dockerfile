@@ -112,21 +112,21 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
   # This is the version of CPython that gets installed
   && pyenv install 3.11.0 \
   && pyenv global 3.11.0 \
-  && pyenv install 3.10.7 \
-  && pyenv install 3.9.14 \
-  && pyenv install 3.8.14 \
-  && pyenv install 3.7.14 \
+  && pyenv install 3.10.8 \
+  && pyenv install 3.9.15 \
+  && pyenv install 3.8.15 \
+  && pyenv install 3.7.15 \
   && rm -Rf /tmp/python-build* \
   && bash /opt/python/helpers/build \
   && cd /usr/local/.pyenv \
-  && tar czf 3.10.tar.gz versions/3.10.7 \
-  && tar czf 3.9.tar.gz versions/3.9.14 \
-  && tar czf 3.8.tar.gz versions/3.8.14 \
-  && tar czf 3.7.tar.gz versions/3.7.14 \
-  && rm -Rf versions/3.10.7 \
-  && rm -Rf versions/3.9.14 \
-  && rm -Rf versions/3.8.14 \
-  && rm -Rf versions/3.7.14
+  && tar czf 3.10.tar.gz versions/3.10.8 \
+  && tar czf 3.9.tar.gz versions/3.9.15 \
+  && tar czf 3.8.tar.gz versions/3.8.15 \
+  && tar czf 3.7.tar.gz versions/3.7.15 \
+  && rm -Rf versions/3.10.8 \
+  && rm -Rf versions/3.9.15 \
+  && rm -Rf versions/3.8.15 \
+  && rm -Rf versions/3.7.15
 
 USER root
 ### JAVASCRIPT
