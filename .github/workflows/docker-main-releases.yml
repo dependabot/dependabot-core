@@ -1,4 +1,4 @@
-name: Push docker branch images
+name: Push latest images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
@@ -14,7 +14,7 @@ on:
 
 jobs:
   push-updater-image:
-    name: Release latest tag
+    name: Deploy
     runs-on: ubuntu-latest
     permissions:
       contents: read
