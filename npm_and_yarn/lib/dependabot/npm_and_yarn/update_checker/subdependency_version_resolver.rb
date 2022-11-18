@@ -130,6 +130,14 @@ module Dependabot
               npm_version = Dependabot::NpmAndYarn::Helpers.npm_version(lockfile_content)
 
               if npm_version == "npm8"
+                # NOTE: this won't remove the dependencies from the lockfile,
+                # but the lockfile information for the previous requirements will get overwritten
+                # once the npm8_subdependency_update_command runs
+                SharedHelpers.run_helper_subprocess(
+                  command: self.helper_path,
+                  function: "npm:removeDependenciesFromManifest",
+                  args: [Dir.pwd, package_json, [dependency.to_h]]
+                )
                 SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command([dependency.name]))
                 { lockfile_name => File.read(lockfile_name) }
               else
@@ -194,6 +202,10 @@ module Dependabot
           dependency.subdependency_metadata&.
             any? { |h| h.fetch(:npm_bundled, false) } ||
             false
+        end
+
+        def package_json
+          dependency_files.select { |f| f.name.end_with?("package.json") }
         end
       end
     end

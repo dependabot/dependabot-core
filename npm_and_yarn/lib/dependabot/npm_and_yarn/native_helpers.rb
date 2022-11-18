@@ -15,6 +15,19 @@ module Dependabot
       end
 
       def self.npm8_subdependency_update_command(dependency_names)
+        # eventually this should be set based on the SharedHelper result
+        dependency_type = "production"
+        def dependency_type_to_flag(dependency_type)
+          case dependency_type
+          when "production"
+            "--save"
+          when "dev"
+            "--save-dev"
+          when "optional"
+            "--save-optional"
+          end
+        end
+
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
@@ -29,7 +42,8 @@ module Dependabot
           "--dry-run",
           "false",
           "--ignore-scripts",
-          "--package-lock-only"
+          "--package-lock-only",
+          dependency_type_to_flag(dependency_type)
         ].join(" ")
       end
     end

@@ -222,6 +222,14 @@ module Dependabot
         end
 
         def run_npm8_subdependency_updater(sub_dependencies:)
+          # NOTE: this won't remove the dependencies from the lockfile,
+          # but the lockfile information for the previous requirements will get overwritten
+          # once the npm8_subdependency_update_command runs
+          SharedHelpers.run_helper_subprocess(
+            command: self.helper_path,
+            function: "npm:removeDependenciesFromManifest",
+            args: [Dir.pwd, package_json, sub_dependencies]
+          )
           dependency_names = sub_dependencies.map(&:name)
           SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command(dependency_names))
           { lockfile_basename => File.read(lockfile_basename) }
