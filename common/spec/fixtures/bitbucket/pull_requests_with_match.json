@@ -1,0 +1,47 @@
+{
+  "values": [
+    {
+      "id": 7,
+      "title": "Pull request title",
+      "description": "Pull request description",
+      "state": "OPEN",
+      "author": {
+        "display_name": "Pull request Author"
+      },
+      "created_on": "2021-05-17T14:52:37.237653+00:00",
+      "updated_on": "2021-05-17T14:52:37.237653+00:00",
+      "destination": {
+        "branch": {
+          "name": "target_branch"
+        }
+      },
+      "source": {
+        "branch": {
+          "name": "branch_1"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "title": "Second pull request",
+      "description": "Second pull request",
+      "state": "OPEN",
+      "author": {
+        "display_name": "Author"
+      },
+      "destination": {
+        "branch": {
+          "name": "target_branch"
+        }
+      },
+      "source": {
+        "branch": {
+          "name": "source_branch"
+        }
+      }
+    }
+  ],
+  "pagelen": 10,
+  "size": 2,
+  "page": 1
+}

@@ -79,19 +79,24 @@ module Dependabot
         JSON.parse(response.body)
       end
 
-      def pull_requests(repo, source_branch, target_branch)
-        pr_path = "#{repo}/pullrequests"
-        # Get pull requests with any status
-        pr_path += "?status=OPEN&status=MERGED&status=DECLINED&status=SUPERSEDED"
+      def pull_requests(repo, source_branch, target_branch, status = %w(OPEN MERGED DECLINED SUPERSEDED))
+        pr_path = "#{repo}/pullrequests?"
+        # Get pull requests with given status
+        status.each { |n| pr_path += "status=#{n}&" }
         next_page_url = base_url + pr_path
         pull_requests = paginate({ "next" => next_page_url })
 
         pull_requests unless source_branch && target_branch
 
         pull_requests.select do |pr|
-          pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+          if source_branch.nil?
+            source_branch_matches = true
+          else
+            pr_source_branch = pr.fetch("source").fetch("branch").fetch("name")
+            source_branch_matches = pr_source_branch == source_branch
+          end
           pr_target_branch = pr.fetch("destination").fetch("branch").fetch("name")
-          pr_source_branch == source_branch && pr_target_branch == target_branch
+          source_branch_matches && pr_target_branch == target_branch
         end
       end
 
