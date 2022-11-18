@@ -254,7 +254,7 @@ module Dependabot
         end
 
         def run_pip_compile_command(command)
-          run_command("pyenv local #{python_version}")
+          run_command("pyenv local #{Helpers.python_major_minor(python_version)}")
           run_command(command)
         end
 

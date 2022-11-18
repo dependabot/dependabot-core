@@ -98,21 +98,37 @@ RUN mkdir -p /tmp/ruby-install \
  && rm -rf /var/lib/gems/*/cache/* \
  && rm -rf /tmp/ruby-install
 
-### PYTHON
 
+### PYTHON
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 # Install Python with pyenv.
+USER root
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.6 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
   && pyenv install 3.11.0 \
   && pyenv global 3.11.0 \
-  && rm -Rf /tmp/python-build*
+  && pyenv install 3.10.8 \
+  && pyenv install 3.9.15 \
+  && pyenv install 3.8.15 \
+  && pyenv install 3.7.15 \
+  && rm -Rf /tmp/python-build* \
+  && bash /opt/python/helpers/build \
+  && cd /usr/local/.pyenv \
+  && tar czf 3.10.tar.gz versions/3.10.8 \
+  && tar czf 3.9.tar.gz versions/3.9.15 \
+  && tar czf 3.8.tar.gz versions/3.8.15 \
+  && tar czf 3.7.tar.gz versions/3.7.15 \
+  && rm -Rf versions/3.10.8 \
+  && rm -Rf versions/3.9.15 \
+  && rm -Rf versions/3.8.15 \
+  && rm -Rf versions/3.7.15
+
 USER root
-
-
 ### JAVASCRIPT
 
 # Install Node and npm
@@ -302,9 +318,6 @@ RUN bash /opt/npm_and_yarn/helpers/build
 # Our native helpers pull in yarn 1, so we need to reset the version globally to
 # 3.2.3.
 RUN corepack prepare yarn@3.2.3 --activate
-
-COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-RUN bash /opt/python/helpers/build
 
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build

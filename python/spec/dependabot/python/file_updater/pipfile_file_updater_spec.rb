@@ -133,7 +133,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfileFileUpdater do
         )
       end
 
-      it "updates both files correctly", :slow do
+      it "updates both files correctly" do
         expect(updated_files.map(&:name)).to eq(%w(Pipfile Pipfile.lock))
 
         updated_lockfile = updated_files.find { |f| f.name == "Pipfile.lock" }
