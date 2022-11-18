@@ -52,6 +52,10 @@ module Dependabot
           nil
         end
 
+        def latest_version_resolvable_with_full_unlock?
+          !bundled_dependency?
+        end
+
         private
 
         attr_reader :dependency, :credentials, :dependency_files,

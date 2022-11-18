@@ -158,6 +158,7 @@ module Dependabot
         return version_resolver.latest_version_resolvable_with_full_unlock? if dependency.top_level?
 
         return false unless security_advisories.any?
+        return false unless subdependency_version_resolver.latest_version_resolvable_with_full_unlock?
 
         vulnerability_audit["fix_available"]
       end
