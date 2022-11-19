@@ -13,7 +13,7 @@ module Dependabot
       def initialize(version)
         release_part, update_part = version.split("_", 2)
 
-        @release_part = Gem::Version.new(release_part)
+        @release_part = Gem::Version.new(release_part.tr("-", "."))
 
         @update_part = Gem::Version.new(update_part&.start_with?(/[0-9]/) ? update_part : 0)
       end

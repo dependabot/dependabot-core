@@ -301,7 +301,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "for an older version of the prefix" do
         let(:version) { "7.1-0.1" }
-        it { is_expected.to eq("7.1-0.3.1") }
+        it { is_expected.to eq("7.2-0.3.1") }
       end
     end
 
