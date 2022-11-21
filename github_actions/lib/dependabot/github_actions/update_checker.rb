@@ -2,6 +2,7 @@
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/errors"
 require "dependabot/github_actions/version"
 require "dependabot/github_actions/requirement"
@@ -23,6 +24,15 @@ module Dependabot
         dependency.version
       end
 
+      def lowest_security_fix_version
+        @lowest_security_fix_version ||= fetch_lowest_security_fix_version
+      end
+
+      def lowest_resolvable_security_fix_version
+        # Resolvability isn't an issue for GitHub Actions.
+        lowest_security_fix_version
+      end
+
       def updated_requirements # rubocop:disable Metrics/PerceivedComplexity
         previous = dependency_source_details
         updated = updated_source
@@ -41,6 +51,12 @@ module Dependabot
       end
 
       private
+
+      def active_advisories
+        security_advisories.select do |advisory|
+          advisory.vulnerable?(version_class.new(git_commit_checker.most_specific_tag_equivalent_to_pinned_ref))
+        end
+      end
 
       def latest_version_resolvable_with_full_unlock?
         # Full unlock checks aren't relevant for GitHub Actions
@@ -82,6 +98,37 @@ module Dependabot
         nil
       end
 
+      def fetch_lowest_security_fix_version
+        # TODO: Support Docker sources
+        return unless git_dependency?
+
+        fetch_lowest_security_fix_version_for_git_dependency
+      end
+
+      def fetch_lowest_security_fix_version_for_git_dependency
+        lowest_security_fix_version_tag.fetch(:version)
+      end
+
+      def lowest_security_fix_version_tag
+        @lowest_security_fix_version_tag ||= begin
+          tags_matching_precision = git_commit_checker.local_tags_for_allowed_versions_matching_existing_precision
+          lowest_fixed_version = find_lowest_secure_version(tags_matching_precision)
+          if lowest_fixed_version
+            lowest_fixed_version
+          else
+            tags = git_commit_checker.local_tags_for_allowed_versions
+            find_lowest_secure_version(tags)
+          end
+        end
+      end
+
+      def find_lowest_secure_version(tags)
+        relevant_tags = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(tags, security_advisories)
+        relevant_tags = filter_lower_tags(relevant_tags)
+
+        relevant_tags.min_by { |tag| tag.fetch(:version) }
+      end
+
       def latest_commit_for_pinned_ref
         @latest_commit_for_pinned_ref ||= begin
           head_commit_for_ref_sha = git_commit_checker.head_commit_for_pinned_ref
@@ -114,9 +161,21 @@ module Dependabot
         end
       end
 
+      def filter_lower_tags(tags_array)
+        return tags_array unless current_version
+
+        tags_array.
+          select { |tag| tag.fetch(:version) > current_version }
+      end
+
       def updated_source
         # TODO: Support Docker sources
         return dependency_source_details unless git_dependency?
+
+        if vulnerable? &&
+           (new_tag = lowest_security_fix_version_tag)
+          return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+        end
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&

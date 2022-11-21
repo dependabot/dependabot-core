@@ -14,10 +14,12 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       dependency: dependency,
       dependency_files: [],
       credentials: github_credentials,
+      security_advisories: security_advisories,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored
     )
   end
+  let(:security_advisories) { [] }
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
 
@@ -30,7 +32,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         groups: [],
         file: ".github/workflows/workflow.yml",
         source: dependency_source,
-        metadata: { declaration_string: "actions/setup-node@master" }
+        metadata: { declaration_string: "#{dependency_name}@master" }
       }],
       package_manager: "github_actions"
     )
@@ -44,14 +46,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:dependency_source) do
     {
       type: "git",
-      url: "https://github.com/actions/setup-node",
+      url: "https://github.com/#{dependency_name}",
       ref: reference,
       branch: nil
     }
   end
   let(:reference) { "master" }
   let(:service_pack_url) do
-    "https://github.com/actions/setup-node.git/info/refs" \
+    "https://github.com/#{dependency_name}.git/info/refs" \
       "?service=git-upload-pack"
   end
   let(:git_commit_checker) do
@@ -370,29 +372,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     end
 
     context "given a realworld repository", :vcr do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: dependency_name,
-          version: dependency_version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: ".github/workflows/main.yml",
-            source: dependency_source
-          }],
-          package_manager: "github_actions"
-        )
-      end
+      let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
       let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
       let(:dependency_version) { nil }
-      let(:dependency_source) do
-        {
-          type: "git",
-          url: "https://github.com/dependabot-fixtures/github-action-push-to-another-repository",
-          ref: reference,
-          branch: nil
-        }
-      end
 
       let(:latest_commit_in_main) { "9e487f29582587eeb4837c0552c886bb0644b6b9" }
       let(:latest_commit_in_devel) { "c7563454dd4fbe0ea69095188860a62a19658a04" }
@@ -503,6 +485,65 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
     subject { checker.latest_resolvable_version }
 
     before { allow(checker).to receive(:latest_version).and_return("delegate") }
+    it { is_expected.to eq("delegate") }
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+
+    let(:upload_pack_fixture) { "ghas-to-csv" }
+
+    let(:dependency_version) { "0.4.0" }
+    let(:dependency_name) { "some-natalie/ghas-to-csv" }
+
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "github_actions",
+          vulnerable_versions: ["< 1.0"]
+        )
+      ]
+    end
+
+    context "when a supported newer version is available" do
+      it "updates to the least new supported version" do
+        is_expected.to eq(Dependabot::GithubActions::Version.new("1.0.0"))
+      end
+    end
+
+    context "with ignored versions" do
+      let(:ignored_versions) { ["= 1.0.0"] }
+
+      it "doesn't return ignored versions" do
+        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+      end
+    end
+
+    context "when there are non vulnerable versions lower that the current version" do
+      let(:upload_pack_fixture) { "ghas-to-csv" }
+      let(:dependency_version) { "1.0" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "github_actions",
+            vulnerable_versions: ["< 0.4", "> 1.1, < 2.0"]
+          )
+        ]
+      end
+
+      it "stil proposes an upgrade" do
+        is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
+      end
+    end
+  end
+
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+
+    before { allow(checker).to receive(:lowest_security_fix_version).and_return("delegate") }
     it { is_expected.to eq("delegate") }
   end
 
@@ -654,6 +695,93 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
 
         it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "given a dependency with a vulnerable tag reference" do
+      let(:upload_pack_fixture) { "ghas-to-csv" }
+      let(:dependency_name) { "some-natalie/ghas-to-csv" }
+      let(:reference) { "v0.4.0" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "github_actions",
+            vulnerable_versions: ["< 1.0"]
+          )
+        ]
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/#{dependency_name}",
+            ref: "v1",
+            branch: nil
+          },
+          metadata: { declaration_string: "#{dependency_name}@master" }
+        }]
+      end
+
+      it { is_expected.to eq(expected_requirements) }
+    end
+
+    context "given a vulnerable dependency with a major tag reference" do
+      let(:dependency_name) { "kartverket/github-workflows" }
+      let(:reference) { "v2" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "github_actions",
+            vulnerable_versions: ["< 2.7.5"]
+          )
+        ]
+      end
+
+      context "vulnerable because the major tag has not been moved" do
+        context "when impossible to keep precision" do
+          let(:upload_pack_fixture) { "github-workflows" }
+
+          it "changes precision to avoid the vulnerability" do
+            expect(subject.first[:source][:ref]).to eq("v2.7.5")
+          end
+        end
+
+        context "when possible to keep precision" do
+          let(:upload_pack_fixture) { "github-workflows-with-v3" }
+
+          it "bumps to the lowest fixed version that keeps precision" do
+            expect(subject.first[:source][:ref]).to eq("v3")
+          end
+        end
+      end
+    end
+
+    context "given a non vulnerable dependency with a major tag reference" do
+      let(:dependency_name) { "hashicorp/vault-action" }
+      let(:reference) { "v2" }
+
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "github_actions",
+            vulnerable_versions: ["< 2.2.0"]
+          )
+        ]
+      end
+
+      let(:upload_pack_fixture) { "vault-action" }
+
+      it "stays on the current major" do
+        expect(subject.first[:source][:ref]).to eq("v2")
       end
     end
 

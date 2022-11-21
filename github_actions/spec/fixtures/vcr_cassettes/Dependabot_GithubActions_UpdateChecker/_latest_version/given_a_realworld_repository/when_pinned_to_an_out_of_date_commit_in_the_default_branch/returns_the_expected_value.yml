@@ -2,110 +2,6 @@
 http_interactions:
 - request:
     method: get
-    uri: https://github.com/dependabot-fixtures/github-action-push-to-another-repository.git/info/refs?service=git-upload-pack
-    body:
-      encoding: US-ASCII
-      string: ''
-    headers:
-      user-agent:
-      - dependabot-core/0.213.0 excon/0.94.0 ruby/3.1.2 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
-  response:
-    status:
-      code: 200
-      message: OK
-    headers:
-      server:
-      - GitHub Babel 2.0
-      content-type:
-      - application/x-git-upload-pack-advertisement
-      content-security-policy:
-      - default-src 'none'; sandbox
-      expires:
-      - Fri, 01 Jan 1980 00:00:00 GMT
-      pragma:
-      - no-cache
-      cache-control:
-      - no-cache, max-age=0, must-revalidate
-      vary:
-      - Accept-Encoding
-      x-frame-options:
-      - DENY
-      x-github-request-id:
-      - 0A89:13BCF:18488DF:18DEC9B:636E3B69
-    body:
-      encoding: ASCII-8BIT
-      string: "001e# service=git-upload-pack\n000001549e487f29582587eeb4837c0552c886bb0644b6b9
-        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
-        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
-        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1
-        agent=git/github-gfe630fe0f311\n00480d608f8ef76d25976130a63cbe7f8db3945189e2
-        refs/heads/composite-1.5.1\n00418aa8ad206e57bae695f9fcdc82c71fa0c01a148e refs/heads/debug-78\n003ec7563454dd4fbe0ea69095188860a62a19658a04
-        refs/heads/devel\n004e12e7eb93014f59be062fc72c51708ac1e079a3ac refs/heads/improve-documentation\n003d9e487f29582587eeb4837c0552c886bb0644b6b9
-        refs/heads/main\n003f940a2857e598a6392bd336330b07416c1ae8ea1f refs/heads/master\n0045e4d57da60ecdc216eff9885b0330de99b2485dbf
-        refs/heads/new-template\n0047b5ac509f7b2dc62ec43608515039593fae596689 refs/heads/ssh-deploy-key\n004fc26a144ee1d285425915bd6151f7d883999cd9e2
-        refs/heads/stricter-shell-options\n0078c26a144ee1d285425915bd6151f7d883999cd9e2
-        refs/heads/stricter_shell_option-commit_message-documentation_improvements\n0046e89946750758f3bca4d80d6a1b2b536ce33d4260
-        refs/heads/update-readme\n003aea532627535451757c1793514eed939e4683d45a refs/tags/v1\n003c1cfade9aa388629e9cf79a8b8c35ae100efd1f5d
-        refs/tags/v1.1\n003f637125d2256c6612875516875c0e715afb799614 refs/tags/v1.1^{}\n003c976916018a4108195b74a5663a045141c6708c79
-        refs/tags/v1.2\n003c8e9bfb00e6687c3f5cbc272c09b9dd2c27c7720c refs/tags/v1.3\n003c164a872083db0b1bb8cac1628f43e512716dceee
-        refs/tags/v1.4\n003e483689a71cf9d3a0bbdd79d23e00646ef4124391 refs/tags/v1.4.1\n003eac0bb2c8f9246ed4df2994ad799cef891fc07c62
-        refs/tags/v1.4.2\n003cf8f86f8d8fa988b561a263ad18bec22173325f13 refs/tags/v1.5\n003e74596b72fae72d9b7b79e1b2992863c0f595c801
-        refs/tags/v1.5.1\n0000"
-  recorded_at: Fri, 11 Nov 2022 12:09:13 GMT
-- request:
-    method: get
-    uri: https://github.com/dependabot-fixtures/github-action-push-to-another-repository.git/info/refs?service=git-upload-pack
-    body:
-      encoding: US-ASCII
-      string: ''
-    headers:
-      user-agent:
-      - dependabot-core/0.213.0 excon/0.94.0 ruby/3.1.2 (aarch64-linux) (+https://github.com/dependabot/dependabot-core)
-  response:
-    status:
-      code: 200
-      message: OK
-    headers:
-      server:
-      - GitHub Babel 2.0
-      content-type:
-      - application/x-git-upload-pack-advertisement
-      content-security-policy:
-      - default-src 'none'; sandbox
-      expires:
-      - Fri, 01 Jan 1980 00:00:00 GMT
-      pragma:
-      - no-cache
-      cache-control:
-      - no-cache, max-age=0, must-revalidate
-      vary:
-      - Accept-Encoding
-      x-frame-options:
-      - DENY
-      x-github-request-id:
-      - 0A8A:C431:18D38E2:1969198:636E3B69
-    body:
-      encoding: ASCII-8BIT
-      string: "001e# service=git-upload-pack\n000001549e487f29582587eeb4837c0552c886bb0644b6b9
-        HEAD\0multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since
-        deepen-not deepen-relative no-progress include-tag multi_ack_detailed allow-tip-sha1-in-want
-        allow-reachable-sha1-in-want no-done symref=HEAD:refs/heads/main filter object-format=sha1
-        agent=git/github-gfe630fe0f311\n00480d608f8ef76d25976130a63cbe7f8db3945189e2
-        refs/heads/composite-1.5.1\n00418aa8ad206e57bae695f9fcdc82c71fa0c01a148e refs/heads/debug-78\n003ec7563454dd4fbe0ea69095188860a62a19658a04
-        refs/heads/devel\n004e12e7eb93014f59be062fc72c51708ac1e079a3ac refs/heads/improve-documentation\n003d9e487f29582587eeb4837c0552c886bb0644b6b9
-        refs/heads/main\n003f940a2857e598a6392bd336330b07416c1ae8ea1f refs/heads/master\n0045e4d57da60ecdc216eff9885b0330de99b2485dbf
-        refs/heads/new-template\n0047b5ac509f7b2dc62ec43608515039593fae596689 refs/heads/ssh-deploy-key\n004fc26a144ee1d285425915bd6151f7d883999cd9e2
-        refs/heads/stricter-shell-options\n0078c26a144ee1d285425915bd6151f7d883999cd9e2
-        refs/heads/stricter_shell_option-commit_message-documentation_improvements\n0046e89946750758f3bca4d80d6a1b2b536ce33d4260
-        refs/heads/update-readme\n003aea532627535451757c1793514eed939e4683d45a refs/tags/v1\n003c1cfade9aa388629e9cf79a8b8c35ae100efd1f5d
-        refs/tags/v1.1\n003f637125d2256c6612875516875c0e715afb799614 refs/tags/v1.1^{}\n003c976916018a4108195b74a5663a045141c6708c79
-        refs/tags/v1.2\n003c8e9bfb00e6687c3f5cbc272c09b9dd2c27c7720c refs/tags/v1.3\n003c164a872083db0b1bb8cac1628f43e512716dceee
-        refs/tags/v1.4\n003e483689a71cf9d3a0bbdd79d23e00646ef4124391 refs/tags/v1.4.1\n003eac0bb2c8f9246ed4df2994ad799cef891fc07c62
-        refs/tags/v1.4.2\n003cf8f86f8d8fa988b561a263ad18bec22173325f13 refs/tags/v1.5\n003e74596b72fae72d9b7b79e1b2992863c0f595c801
-        refs/tags/v1.5.1\n0000"
-  recorded_at: Fri, 11 Nov 2022 12:09:13 GMT
-- request:
-    method: get
     uri: https://api.github.com/repos/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465
     body:
       encoding: US-ASCII
@@ -127,7 +23,7 @@ http_interactions:
       server:
       - GitHub.com
       date:
-      - Fri, 11 Nov 2022 12:09:13 GMT
+      - Fri, 11 Nov 2022 15:24:19 GMT
       content-type:
       - application/json; charset=utf-8
       transfer-encoding:
@@ -152,11 +48,11 @@ http_interactions:
       x-ratelimit-limit:
       - '5000'
       x-ratelimit-remaining:
-      - '4977'
+      - '4971'
       x-ratelimit-reset:
-      - '1668171026'
+      - '1668183118'
       x-ratelimit-used:
-      - '23'
+      - '29'
       x-ratelimit-resource:
       - core
       access-control-expose-headers:
@@ -179,7 +75,7 @@ http_interactions:
       content-security-policy:
       - default-src 'none'
       x-github-request-id:
-      - 0A8B:CB3D:151B2FF:156927E:636E3B69
+      - 0BFF:8F6B:1D3E841:1DB5545:636E6923
     body:
       encoding: ASCII-8BIT
       string: '{"url":"https://api.github.com/repos/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465","html_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465","permalink_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/dependabot-fixtures:74596b7...dependabot-fixtures:f4b9c90","diff_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465.diff","patch_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465.patch","base_commit":{"sha":"74596b72fae72d9b7b79e1b2992863c0f595c801","node_id":"C_kwDOIalVntoAKDc0NTk2YjcyZmFlNzJkOWI3Yjc5ZTFiMjk5Mjg2M2MwZjU5NWM4MDE","commit":{"author":{"name":"Carles
@@ -210,7 +106,7 @@ http_interactions:
         } || {\n \techo \"::error::Could not clone the destination repository. Command:\"\n
         \techo \"::error::git clone --single-branch --branch $TARGET_BRANCH $GIT_CMD_REPOSITORY
         $CLONE_DIR\""}]}'
-  recorded_at: Fri, 11 Nov 2022 12:09:14 GMT
+  recorded_at: Fri, 11 Nov 2022 15:24:19 GMT
 - request:
     method: get
     uri: https://api.github.com/repos/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465
@@ -234,7 +130,7 @@ http_interactions:
       server:
       - GitHub.com
       date:
-      - Fri, 11 Nov 2022 12:09:14 GMT
+      - Fri, 11 Nov 2022 15:24:20 GMT
       content-type:
       - application/json; charset=utf-8
       transfer-encoding:
@@ -259,11 +155,11 @@ http_interactions:
       x-ratelimit-limit:
       - '5000'
       x-ratelimit-remaining:
-      - '4976'
+      - '4970'
       x-ratelimit-reset:
-      - '1668171026'
+      - '1668183118'
       x-ratelimit-used:
-      - '24'
+      - '30'
       x-ratelimit-resource:
       - core
       access-control-expose-headers:
@@ -286,7 +182,7 @@ http_interactions:
       content-security-policy:
       - default-src 'none'
       x-github-request-id:
-      - 0A8C:8A0B:15651A5:15B290B:636E3B6A
+      - '0800:C728:22596A4:22D2809:636E6923'
     body:
       encoding: ASCII-8BIT
       string: '{"url":"https://api.github.com/repos/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465","html_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465","permalink_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/dependabot-fixtures:74596b7...dependabot-fixtures:f4b9c90","diff_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465.diff","patch_url":"https://github.com/dependabot-fixtures/github-action-push-to-another-repository/compare/v1.5.1...f4b9c90516ad3bdcfdc6f4fcf8ba937d0bd40465.patch","base_commit":{"sha":"74596b72fae72d9b7b79e1b2992863c0f595c801","node_id":"C_kwDOIalVntoAKDc0NTk2YjcyZmFlNzJkOWI3Yjc5ZTFiMjk5Mjg2M2MwZjU5NWM4MDE","commit":{"author":{"name":"Carles
@@ -317,5 +213,5 @@ http_interactions:
         } || {\n \techo \"::error::Could not clone the destination repository. Command:\"\n
         \techo \"::error::git clone --single-branch --branch $TARGET_BRANCH $GIT_CMD_REPOSITORY
         $CLONE_DIR\""}]}'
-  recorded_at: Fri, 11 Nov 2022 12:09:14 GMT
+  recorded_at: Fri, 11 Nov 2022 15:24:20 GMT
 recorded_with: VCR 6.1.0
