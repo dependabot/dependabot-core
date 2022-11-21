@@ -20,7 +20,8 @@ module Dependabot
 
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
+                   content_encoding: ContentEncoding::UTF_8, deleted: false,
+                   operation: Operation::UPDATE, mode: nil)
       @name = name
       @content = content
       @directory = clean_directory(directory)
@@ -41,11 +42,10 @@ module Dependabot
       @type = type
 
       begin
-        mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
+        @mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
       rescue StandardError
-        mode = nil
+        @mode = mode
       end
-      @mode = mode
 
       return unless (type == "symlink") ^ symlink_target
 
