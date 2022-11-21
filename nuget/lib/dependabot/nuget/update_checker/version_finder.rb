@@ -88,10 +88,10 @@ module Dependabot
         end
 
         def filter_lower_versions(possible_versions)
-          return possible_versions unless dependency.version && version_class.correct?(dependency.version)
+          return possible_versions unless dependency.numeric_version
 
           possible_versions.select do |v|
-            v.fetch(:version) > version_class.new(dependency.version)
+            v.fetch(:version) > dependency.numeric_version
           end
         end
 
@@ -162,11 +162,9 @@ module Dependabot
 
         # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
-          current_version = dependency.version
-          if current_version &&
-             version_class.correct?(current_version) &&
-             version_class.new(current_version).prerelease? &&
-             version_class.new(current_version).release == version.release
+          current_version = dependency.numeric_version
+          if current_version&.prerelease? &&
+             current_version&.release == version.release
             return true
           end
 

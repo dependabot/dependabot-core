@@ -68,10 +68,10 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
-          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+          return versions_array unless dependency.numeric_version
 
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version| version > dependency.numeric_version }
         end
 
         def available_versions
@@ -89,10 +89,7 @@ module Dependabot
         end
 
         def wants_prerelease?
-          if dependency.version &&
-             version_class.new(dependency.version).prerelease?
-            return true
-          end
+          return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)

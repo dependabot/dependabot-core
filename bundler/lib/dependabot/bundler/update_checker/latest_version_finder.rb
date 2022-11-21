@@ -81,18 +81,17 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
-          return versions_array unless dependency.version && Gem::Version.correct?(dependency.version)
+          return versions_array unless dependency.numeric_version
 
           versions_array.
-            select { |version| version > Gem::Version.new(dependency.version) }
+            select { |version| version > dependency.numeric_version }
         end
 
         def wants_prerelease?
           @wants_prerelease ||=
             begin
-              current_version = dependency.version
-              if current_version && Gem::Version.correct?(current_version) &&
-                 Gem::Version.new(current_version).prerelease?
+              current_version = dependency.numeric_version
+              if current_version&.prerelease?
                 true
               else
                 dependency.requirements.any? do |req|

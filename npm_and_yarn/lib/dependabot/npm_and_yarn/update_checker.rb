@@ -22,7 +22,7 @@ module Dependabot
                         dependency.version &&
                         version_class.correct?(dependency.version) &&
                         vulnerable_versions.any? &&
-                        !vulnerable_versions.include?(version_class.new(dependency.version))
+                        !vulnerable_versions.include?(current_version)
 
         super
       end

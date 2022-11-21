@@ -73,15 +73,15 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
-          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+          return versions_array unless dependency.numeric_version
 
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version| version > dependency.numeric_version }
         end
 
         def wants_prerelease?
-          current_version = dependency.version
-          return true if current_version && version_class.new(current_version).prerelease?
+          current_version = dependency.numeric_version
+          return true if current_version&.prerelease?
 
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)
