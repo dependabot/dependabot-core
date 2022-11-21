@@ -16,6 +16,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
       require "dependabot/bundler/file_parser/file_preparer"
       require "dependabot/bundler/file_parser/gemfile_declaration_finder"
+      require "dependabot/bundler/file_parser/gemspec_declaration_finder"
 
       def parse
         dependency_set = DependencySet.new
@@ -87,7 +88,11 @@ module Dependabot
         dependencies = DependencySet.new
 
         gemspecs.each do |gemspec|
+          gemspec_declaration_finder = GemspecDeclarationFinder.new(gemspec: gemspec)
+
           parsed_gemspec(gemspec).each do |dependency|
+            next unless gemspec_declaration_finder.gemspec_includes_dependency?(dependency)
+
             dependencies <<
               Dependency.new(
                 name: dependency.fetch("name"),

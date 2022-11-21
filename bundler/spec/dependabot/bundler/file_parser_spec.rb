@@ -714,6 +714,20 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
+    context "with a gemspec that loads dependencies from another gemspec dynamically" do
+      let(:dependency_files) { bundler_project_dependency_files("gemspec_loads_another") }
+
+      describe "a development dependency loaded from an external gemspec" do
+        subject { dependencies.find { |d| d.name == "rake" } }
+
+        it "is only loaded with its own gemspec as requirement" do
+          expect(subject.name).to eq("rake")
+          expect(subject.requirements.size).to eq(1)
+          expect(subject.requirements.first[:file]).to eq("another.gemspec")
+        end
+      end
+    end
+
     context "with a gemspec and Gemfile (no lockfile)" do
       let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_lockfile") }
       its(:length) { is_expected.to eq(13) }
