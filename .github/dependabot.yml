@@ -1,81 +1,13 @@
 version: 2
 updates:
   - package-ecosystem: "bundler"
-    directory: "/common"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
     directory: "/updater"
     schedule:
       interval: "weekly"
 
-  # Watch the per-ecosystem gemspecs
-  - package-ecosystem: "bundler"
-    directory: "/bundler"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/cargo"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/composer"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/docker"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/elm"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/git_submodules"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/github_actions"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/go_modules"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/gradle"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/hex"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/maven"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/npm_and_yarn"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/nuget"
-    schedule:
-      interval: "weekly"
+  # No ecosystem folders are watched because they roll up to the omnibus watcher
   - package-ecosystem: "bundler"
     directory: "/omnibus"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/pub"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/python"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/terraform"
     schedule:
       interval: "weekly"
 
