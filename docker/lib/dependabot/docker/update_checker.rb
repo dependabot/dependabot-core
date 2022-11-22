@@ -44,7 +44,7 @@ module Dependabot
     class UpdateChecker < Dependabot::UpdateCheckers::Base
       VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[0-9]+)*(?:_[0-9]+|\.[a-z0-9]+|-(?:kb)?[0-9]+)*)/i
       VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
-      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
+      VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
       VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
@@ -166,11 +166,14 @@ module Dependabot
         original_suffix = suffix_of(version)
         original_format = format_of(version)
 
-        tags_from_registry.
+        candidate_tags =
+          tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
           select { |tag| prefix_of(tag) == original_prefix }.
-          select { |tag| suffix_of(tag) == original_suffix || commit_sha_suffix?(tag) }.
           select { |tag| format_of(tag) == original_format }
+        return candidate_tags if original_format == :sha_suffixed
+
+        candidate_tags.select { |tag| suffix_of(tag) == original_suffix }
       end
 
       def remove_version_downgrades(candidate_tags, version)
@@ -178,16 +181,6 @@ module Dependabot
           version_class.new(numeric_version_from(tag)) >=
             version_class.new(numeric_version_from(version))
         end
-      end
-
-      def commit_sha_suffix?(tag)
-        # Some people suffix their versions with commit SHAs. Dependabot
-        # can't order on those but will try to, so instead we should exclude
-        # them (unless there's a `latest` version pushed to the registry, in
-        # which case we'll use that to find the latest version)
-        return false unless tag.match?(/(^|\-g?)[0-9a-f]{7,}$/)
-
-        !tag.match?(/(^|\-)\d+$/)
       end
 
       def version_of_latest_tag
@@ -292,6 +285,7 @@ module Dependabot
 
         return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+        return :sha_suffixed if tag.match?(/(^|\-g?)[0-9a-f]{7,}$/)
         return :build_num if version.match?(/^\d+$/)
 
         :normal
