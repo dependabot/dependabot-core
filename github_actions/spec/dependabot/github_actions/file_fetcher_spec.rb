@@ -80,6 +80,15 @@ RSpec.describe Dependabot::GithubActions::FileFetcher do
         )
     end
 
+    context "and an explicit directory given" do
+      let(:directory) { "/.github/workflows" }
+
+      it "fetches the workflow files relatively to the directory" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(sherlock-workflow.yaml integration-workflow.yml))
+      end
+    end
+
     context "that has an invalid encoding" do
       let(:workflow_file_fixture) { fixture("github", "contents_image.json") }
 
