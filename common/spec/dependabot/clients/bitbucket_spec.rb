@@ -284,7 +284,7 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
         stub_request(:post, default_comment_url).
           with(
-            body: "{\"content\":{\"raw\":\"Dependabot declined pull request\"}}",
+            body: "{\"content\":{\"raw\":\"Dependabot declined the pull request.\"}}",
             headers: {
               "Authorization" => "Bearer #{access_token}",
               "Content-type" => "application/json"
