@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "find"
 require "./lib/dependabot/version"
 
 Gem::Specification.new do |spec|
@@ -52,15 +51,5 @@ Gem::Specification.new do |spec|
 
   next unless File.exist?("../.gitignore")
 
-  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
-
-  next unless File.directory?("lib")
-
-  Find.find("lib", "bin") do |path|
-    if ignores.any? { |i| File.fnmatch(i, "/" + path, File::FNM_DOTMATCH) }
-      Find.prune
-    else
-      spec.files << path unless File.directory?(path)
-    end
-  end
+  spec.files += `git -C #{__dir__} ls-files lib bin -z`.split("\x0")
 end
