@@ -26,9 +26,16 @@ module Dependabot
         return fetched_files if fetched_files.any?
 
         if incorrectly_encoded_workflow_files.none?
+          expected_paths =
+            if directory == "/"
+              File.join(directory, "action.yml") + " or /.github/workflows/<anything>.yml"
+            else
+              File.join(directory, "<anything>.yml")
+            end
+
           raise(
             Dependabot::DependencyFileNotFound,
-            File.join(directory, "action.yml") + " or /.github/workflows/<anything>.yml"
+            expected_paths
           )
         else
           raise(
