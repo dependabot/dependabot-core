@@ -156,7 +156,7 @@ module Dependabot
         decline_path = "#{repo}/pullrequests/#{pr_id}/decline"
         post(base_url + decline_path, "")
 
-        comment = "Dependabot declined pull request" if comment.nil?
+        comment = "Dependabot declined the pull request." if comment.nil?
 
         content = {
           content: {
