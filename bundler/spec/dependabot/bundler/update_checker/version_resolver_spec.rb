@@ -167,7 +167,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
         end
       end
 
-      context "with a dependency that requiers bundler v2", :bundler_v2_only do
+      context "with a dependency that requires bundler v2", :bundler_v2_only do
         let(:dependency_name) { "guard-bundler" }
         let(:requirement_string) { "3.0.0" }
 
