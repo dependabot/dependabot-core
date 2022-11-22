@@ -534,7 +534,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         ]
       end
 
-      it "stil proposes an upgrade" do
+      it "still proposes an upgrade" do
         is_expected.to eq(Dependabot::GithubActions::Version.new("2.0.0"))
       end
     end
