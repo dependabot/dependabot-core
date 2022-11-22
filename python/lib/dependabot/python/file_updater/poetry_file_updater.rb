@@ -221,7 +221,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version) if python_version
+          File.write(".python-version", Helpers.python_major_minor(python_version)) if python_version
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)
