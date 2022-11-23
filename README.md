@@ -40,8 +40,8 @@ Highlights include:
 ## Other Dependabot resources
 
 In addition to this library, you may be interested in the [dependabot-script][dependabot-script] repo,
-which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab
-or Azure DevOps
+which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab,
+BitBucket or Azure DevOps.
 
 ## Cloning the repository
 Clone the repository with Git using:
