@@ -154,7 +154,7 @@ module Dependabot
           latest_tag =
             filter_ignored(candidate_tags).
             max_by do |tag|
-              [version_class.new(numeric_version_from(tag)), tag.length]
+              [comparable_version_from(tag), tag.length]
             end
 
           latest_tag || version
@@ -178,8 +178,8 @@ module Dependabot
 
       def remove_version_downgrades(candidate_tags, version)
         candidate_tags.select do |tag|
-          version_class.new(numeric_version_from(tag)) >=
-            version_class.new(numeric_version_from(version))
+          comparable_version_from(tag) >=
+            comparable_version_from(version)
         end
       end
 
@@ -189,13 +189,13 @@ module Dependabot
         candidate_tag =
           tags_from_registry.
           select { |tag| canonical_version?(tag) }.
-          sort_by { |t| version_class.new(numeric_version_from(t)) }.
+          sort_by { |t| comparable_version_from(t) }.
           reverse.
           find { |t| digest_of(t) == latest_digest }
 
         return unless candidate_tag
 
-        version_class.new(numeric_version_from(candidate_tag))
+        comparable_version_from(candidate_tag)
       end
 
       def canonical_version?(tag)
@@ -300,7 +300,11 @@ module Dependabot
         return false unless latest_digest
         return false unless version_of_latest_tag
 
-        version_class.new(numeric_version_from(tag)) > version_of_latest_tag
+        comparable_version_from(tag) > version_of_latest_tag
+      end
+
+      def comparable_version_from(tag)
+        version_class.new(numeric_version_from(tag))
       end
 
       def numeric_version_from(tag)
@@ -348,7 +352,7 @@ module Dependabot
         filtered =
           candidate_tags.
           reject do |tag|
-            version = version_class.new(numeric_version_from(tag))
+            version = comparable_version_from(tag)
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
         if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(candidate_tags).any?
@@ -359,9 +363,9 @@ module Dependabot
       end
 
       def filter_lower_versions(tags)
-        versions_array = tags.map { |tag| version_class.new(numeric_version_from(tag)) }
+        versions_array = tags.map { |tag| comparable_version_from(tag) }
         versions_array.
-          select { |version| version > version_class.new(numeric_version_from(dependency.version)) }
+          select { |version| version > comparable_version_from(dependency.version) }
       end
     end
   end
