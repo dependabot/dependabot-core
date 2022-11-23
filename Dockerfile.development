@@ -38,9 +38,11 @@ COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.ge
 WORKDIR ${CODE_DIR}
 
 RUN cd omnibus \
-  && bundle install
+  && bundle install \
+  && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
+  && rm .bundle/bin/bundle # let RubyGems manage Bundler
 
-ENV PATH="${CODE_DIR}/omnibus/$BUNDLE_BIN:$PATH"
+ENV PATH="${CODE_DIR}/omnibus/.bundle/bin:$PATH"
 
 RUN GREEN='\033[0;32m'; NC='\033[0m'; \
   for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
