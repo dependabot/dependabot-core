@@ -63,12 +63,14 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         flutter_releases_url: "http://localhost:#{@server[:Port]}/flutter_releases.json"
       },
       raise_on_ignored: raise_on_ignored,
+      security_advisories: security_advisories,
       requirements_update_strategy: requirements_update_strategy
     )
   end
 
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
+  let(:security_advisories) { [] }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -243,6 +245,7 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
       end
     end
   end
+
   context "given an outdated dependency, requiring unlock" do
     let(:dependency_name) { "retry" }
 
@@ -465,6 +468,81 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
     end
   end
 
+  describe "#lowest_resolvable_security_fix_version" do
+    subject(:lowest_resolvable_security_fix_version) { checker.lowest_resolvable_security_fix_version }
+    let(:dependency_name) { "retry" }
+    let(:security_advisories) do
+      [
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dependency_name,
+          package_manager: "pub",
+          vulnerable_versions: ["<3.0.0"]
+        )
+      ]
+    end
+
+    context "when a newer non-vulnerable version is available" do
+      # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
+      it "updates to the highest non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("3.1.0"))
+      end
+    end
+
+    # TODO: should it update indirect deps for security vulnerabilities? I assume Pub has these?
+    # examples of how to write tests in go_modules/update_checker_spec
+
+    context "when the current version is not newest but also not vulnerable" do
+      let(:dependency_version) { "3.0.0" } # 3.1.0 is latest
+      it "raises an error " do
+        expect { lowest_resolvable_security_fix_version.to }.to raise_error(RuntimeError) do |error|
+          expect(error.message).to eq("Dependency not vulnerable!")
+        end
+      end
+    end
+  end
+
+  describe "#lowest_security_fix_version" do
+    subject(:lowest_security_fix_version) { checker.lowest_security_fix_version }
+    let(:dependency_name) { "retry" }
+
+    # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
+    it "finds the highest available non-vulnerable version" do
+      is_expected.to eq(Gem::Version.new("3.1.0"))
+    end
+
+    context "with a security vulnerability on older versions" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pub",
+            vulnerable_versions: ["< 3.0.0"]
+          )
+        ]
+      end
+
+      # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then flip "highest" to "lowest"
+      it "finds the highest available non-vulnerable version" do
+        is_expected.to eq(Gem::Version.new("3.1.0"))
+      end
+
+      # it "returns nil for git versions" # tested elsewhere under `context "With a git dependency"`
+    end
+
+    context "with a security vulnerability on all newer versions" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pub",
+            vulnerable_versions: ["< 4.0.0"]
+          )
+        ]
+      end
+      it { is_expected.to be_nil }
+    end
+  end
+
   context "mono repo" do
     let(:project) { "mono_repo_main_at_root" }
     let(:dependency_name) { "dep" }
@@ -563,6 +641,22 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
           }],
           "version" => new_ref }
       ]
+    end
+
+    context "with a security vulnerability on older versions" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "pub",
+            vulnerable_versions: ["< 3.0.0"]
+          )
+        ]
+      end
+
+      it "returns no version" do
+        expect(checker.lowest_security_fix_version).to be_nil
+      end
     end
   end
 
