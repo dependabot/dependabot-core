@@ -54,7 +54,7 @@ module Dependabot
       /x
 
       def latest_version
-        fetch_latest_version(dependency.version)
+        latest_version_from(dependency.version)
       end
 
       def latest_resolvable_version
@@ -71,7 +71,7 @@ module Dependabot
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
           updated_source[:digest] = updated_digest if req[:source][:digest]
-          updated_source[:tag] = fetch_latest_version(req[:source][:tag]) if req[:source][:tag]
+          updated_source[:tag] = latest_version_from(req[:source][:tag]) if req[:source][:tag]
 
           req.merge(source: updated_source)
         end
@@ -131,34 +131,36 @@ module Dependabot
         end
       end
 
-      # NOTE: It's important that this *always* returns a version (even if
-      # it's the existing one) as it is what we later check the digest of.
-      def fetch_latest_version(version)
+      def latest_version_from(version)
         @versions ||= {}
         return @versions[version] if @versions.key?(version)
 
-        @versions[version] = begin
-          return version unless version.match?(NAME_WITH_VERSION)
+        @versions[version] = fetch_latest_version(version)
+      end
 
-          # Prune out any downgrade tags before checking for pre-releases
-          # (which requires a call to the registry for each tag, so can be slow)
-          candidate_tags = comparable_tags_from_registry(version)
-          candidate_tags = remove_version_downgrades(candidate_tags, version)
+      # NOTE: It's important that this *always* returns a version (even if
+      # it's the existing one) as it is what we later check the digest of.
+      def fetch_latest_version(version)
+        return version unless version.match?(NAME_WITH_VERSION)
 
-          unless prerelease?(version)
-            candidate_tags =
-              candidate_tags.
-              reject { |tag| prerelease?(tag) }
+        # Prune out any downgrade tags before checking for pre-releases
+        # (which requires a call to the registry for each tag, so can be slow)
+        candidate_tags = comparable_tags_from_registry(version)
+        candidate_tags = remove_version_downgrades(candidate_tags, version)
+
+        unless prerelease?(version)
+          candidate_tags =
+            candidate_tags.
+            reject { |tag| prerelease?(tag) }
+        end
+
+        latest_tag =
+          filter_ignored(candidate_tags).
+          max_by do |tag|
+            [comparable_version_from(tag), tag.length]
           end
 
-          latest_tag =
-            filter_ignored(candidate_tags).
-            max_by do |tag|
-              [comparable_version_from(tag), tag.length]
-            end
-
-          latest_tag || version
-        end
+        latest_tag || version
       end
 
       def comparable_tags_from_registry(version)
