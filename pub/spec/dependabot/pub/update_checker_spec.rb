@@ -526,7 +526,23 @@ RSpec.describe Dependabot::Pub::UpdateChecker do
         is_expected.to eq(Gem::Version.new("3.1.0"))
       end
 
+      # TODO: Implement https://github.com/dependabot/dependabot-core/issues/5391, then this should return the "lowest"
+      # that isn't ignored
+      context "when the latest version is being ignored" do
+        let(:ignored_versions) { ["> 3.0.0"] }
+        # TODO: should I even set raise_on_ignored here? or is it not supposed to be set?
+        let(:raise_on_ignored) { true } # TODO: this has no effect because version_unless_ignored doesn't raise
+        pending it "raises an error" do
+          expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+        end
+      end
+
       # it "returns nil for git versions" # tested elsewhere under `context "With a git dependency"`
+
+      # TODO: how are pre-releases supposed to be handled? pub readme says if on pre-release, bumped to next
+      # pre-release, else not... check with the pub guys re: how to test... I see requires_old_beta fixture, not sure
+      # how to use it though?
+      # see also example tests in go_modules latest_version_finder_spec if I figure out the right fixture to use
     end
 
     context "with a security vulnerability on all newer versions" do

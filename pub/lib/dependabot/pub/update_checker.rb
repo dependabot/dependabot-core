@@ -79,6 +79,7 @@ module Dependabot
       # * If current_version is non-nil and the parsed version is the same it
       #   will be returned.
       # * Otherwise returns nil
+      # TODO: pretty sure this should be raisig "AllVersionsIgnored" if version.nil? && @raise_on_ignored"??
       def version_unless_ignored(unparsed_version, current_version: nil)
         if git_revision?(unparsed_version)
           unparsed_version

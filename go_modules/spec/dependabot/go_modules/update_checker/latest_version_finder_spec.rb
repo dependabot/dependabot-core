@@ -353,6 +353,9 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
+    # Ask Nish: why don't all these pass in a security advisory?  Is the idea that below is testing
+    # using a security advisory? vs above is testing specific behavior of the function regardless
+    # of the security advisory?... Do we expect this method to be called even when no security advisory?
     context "with a go.mod vulnerable version" do
       let(:security_advisories) do
         [
@@ -367,6 +370,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       it "doesn't return to the vulnerable version" do
         expect(finder.lowest_security_fix_version).to eq(Dependabot::GoModules::Version.new("1.0.6"))
       end
+
+      # TODO: add test for what it returns when no non-vulnerable version available... or ignored?
     end
 
     context "when on a pre-release" do
