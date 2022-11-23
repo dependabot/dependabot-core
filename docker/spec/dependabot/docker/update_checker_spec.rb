@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "and a digest" do
         let(:source) { { digest: "old_digest" } }
         let(:headers_response) do
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         end
 
         before do
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               fixture(
                 "docker",
                 "registry_manifest_headers",
-                "ubuntu_17.10.json"
+                "generic.json"
               ).gsub(/^\s*"docker_content_digest.*?,/m, "")
             end
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "3.6" }
       let(:tags_fixture_name) { "python.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/python/" }
 
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when there is a latest tag" do
       let(:tags_fixture_name) { "ubuntu.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:version) { "12.10" }
 
@@ -378,7 +378,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         "https://registry.hub.docker.com/v2/adoptopenjdk/openjdk11/"
       end
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       before do
         stub_request(:get, repo_url + "tags/list").
@@ -420,7 +420,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         "https://registry.hub.docker.com/v2/library/eclipse-temurin/"
       end
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       before do
         stub_request(:get, repo_url + "tags/list").
@@ -462,7 +462,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         "https://registry.hub.docker.com/v2/nixos/nix/"
       end
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       before do
         stub_request(:get, repo_url + "tags/list").
@@ -537,7 +537,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:version) { "2.0-sdk" }
       let(:latest_versions) { %w(2-sdk 2.1-sdk 2.1.401-sdk) }
@@ -880,7 +880,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         new_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
@@ -906,7 +906,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         new_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
