@@ -147,18 +147,10 @@ module Dependabot
         # (which requires a call to the registry for each tag, so can be slow)
         candidate_tags = comparable_tags_from_registry(version)
         candidate_tags = remove_version_downgrades(candidate_tags, version)
+        candidate_tags = remove_prereleases(candidate_tags, version)
+        candidate_tags = filter_ignored(candidate_tags)
 
-        unless prerelease?(version)
-          candidate_tags =
-            candidate_tags.
-            reject { |tag| prerelease?(tag) }
-        end
-
-        latest_tag =
-          filter_ignored(candidate_tags).
-          max_by do |tag|
-            [comparable_version_from(tag), tag.length]
-          end
+        latest_tag = find_max_tag(candidate_tags)
 
         latest_tag || version
       end
@@ -183,6 +175,12 @@ module Dependabot
           comparable_version_from(tag) >=
             comparable_version_from(version)
         end
+      end
+
+      def remove_prereleases(candidate_tags, version)
+        return candidate_tags if prerelease?(version)
+
+        candidate_tags.reject { |tag| prerelease?(tag) }
       end
 
       def version_of_latest_tag
@@ -348,6 +346,12 @@ module Dependabot
             password: registry_credentials&.fetch("password", nil),
             read_timeout: 10
           )
+      end
+
+      def find_max_tag(candidate_tags)
+        candidate_tags.max_by do |tag|
+          [comparable_version_from(tag), tag.length]
+        end
       end
 
       def filter_ignored(candidate_tags)
