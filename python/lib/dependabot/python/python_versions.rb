@@ -9,6 +9,9 @@ module Dependabot
 
       # Due to an OpenSSL issue we can only install the following versions in
       # the Dependabot container.
+      # NOTE: When adding one version, always doublecheck for additional releases: https://www.python.org/downloads/
+      #
+      # WARNING: 3.9.3 is purposefully omitted as it was recalled: https://www.python.org/downloads/release/python-393/
       SUPPORTED_VERSIONS = %w(
         3.11.0
         3.10.8 3.10.7 3.10.6 3.10.5 3.10.4 3.10.3 3.10.2 3.10.1 3.10.0
