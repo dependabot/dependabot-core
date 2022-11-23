@@ -297,11 +297,20 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the dependency has SHA suffices that should be ignored" do
       let(:tags_fixture_name) { "sha_suffices.json" }
       let(:version) { "7.2-0.1" }
-      it { is_expected.to eq("7.2-0.3.1") }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_same_sha_for("7.2-0.3", "7.2-0.3.1")
+      end
+
+      it { is_expected.to eq("7.2-0.3") }
 
       context "for an older version of the prefix" do
         let(:version) { "7.1-0.1" }
-        it { is_expected.to eq("7.2-0.3.1") }
+        it { is_expected.to eq("7.2-0.3") }
       end
     end
 
@@ -450,8 +459,18 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       context "followed by numbers and with less components than other version but higher underscore part" do
+        before do
+          stub_request(:head, repo_url + "manifests/#{latest_version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+
+        let(:latest_version) { "11.0.16.1_1-jdk" }
         let(:version) { "11.0.16_8-jdk" }
-        it { is_expected.to eq("11.0.16.1_1-jdk") }
+        it { is_expected.to eq(latest_version) }
       end
     end
 
@@ -517,16 +536,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     context "when the latest version is a pre-release" do
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/python/" }
       let(:dependency_name) { "python" }
       let(:version) { "3.5" }
       let(:tags_fixture_name) { "python.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
+
+        stub_same_sha_for("3.6", "3.6.3")
       end
 
-      it { is_expected.to eq("3.6.3") }
+      it { is_expected.to eq("3.6") }
 
       context "and the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
@@ -561,11 +586,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      it { is_expected.to eq("2.1.401-sdk") }
+      it { is_expected.to eq("2.1-sdk") }
 
       context "and a suffix" do
         let(:version) { "2.0-runtime" }
-        it { is_expected.to eq("2.1.3-runtime") }
+
+        before do
+          stub_same_sha_for("2.1.3-runtime", "2.1-runtime")
+        end
+
+        it { is_expected.to eq("2.1-runtime") }
       end
 
       context "with a paginated response" do
@@ -597,7 +627,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
       end
 
       context "when the latest tag 404s" do
@@ -611,7 +641,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
 
         context "every time" do
           before do
@@ -958,6 +988,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
              }]
           )
       end
+    end
+  end
+
+  private
+
+  def stub_same_sha_for(*tags)
+    tags.each do |tag|
+      stub_request(:head, repo_url + "manifests/#{tag}").
+        and_return(
+          status: 200,
+          body: "",
+          headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{'a' * 40}\""))
+        )
     end
   end
 end

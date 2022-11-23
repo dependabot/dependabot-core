@@ -117,7 +117,7 @@ module Dependabot
         # Check the precision of the potentially higher tag is the same as the
         # one it would replace. In the event that it's not the same, check the
         # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
-        return false if old_v.split(".").count == latest_v.split(".").count
+        return false if precision_of(old_v) == precision_of(latest_v)
 
         digest_of(version) == digest_of(latest_version)
       end
@@ -149,10 +149,21 @@ module Dependabot
         candidate_tags = remove_version_downgrades(candidate_tags, version)
         candidate_tags = remove_prereleases(candidate_tags, version)
         candidate_tags = filter_ignored(candidate_tags)
+        candidate_tags = sort_tags(candidate_tags, version)
 
-        latest_tag = find_max_tag(candidate_tags)
+        latest_tag = candidate_tags.last
 
-        latest_tag || version
+        if latest_tag && same_precision?(latest_tag, version)
+          latest_tag
+        else
+          latest_same_precision_tag = remove_precision_changes(candidate_tags, version).last
+
+          if latest_same_precision_tag && digest_of(latest_same_precision_tag) == digest_of(latest_tag)
+            latest_same_precision_tag
+          else
+            latest_tag || version
+          end
+        end
       end
 
       def comparable_tags_from_registry(version)
@@ -181,6 +192,16 @@ module Dependabot
         return candidate_tags if prerelease?(version)
 
         candidate_tags.reject { |tag| prerelease?(tag) }
+      end
+
+      def remove_precision_changes(candidate_tags, version)
+        candidate_tags.select do |tag|
+          same_precision?(tag, version)
+        end
+      end
+
+      def same_precision?(tag, another_tag)
+        precision_of(numeric_version_from(tag)) == precision_of(numeric_version_from(another_tag))
       end
 
       def version_of_latest_tag
@@ -348,10 +369,24 @@ module Dependabot
           )
       end
 
-      def find_max_tag(candidate_tags)
-        candidate_tags.max_by do |tag|
-          [comparable_version_from(tag), tag.length]
+      def sort_tags(candidate_tags, version)
+        candidate_tags.sort do |tag_a, tag_b|
+          if comparable_version_from(tag_a) > comparable_version_from(tag_b)
+            1
+          elsif comparable_version_from(tag_a) < comparable_version_from(tag_b)
+            -1
+          elsif same_precision?(tag_a, version)
+            1
+          elsif same_precision?(tag_b, version)
+            -1
+          else
+            0
+          end
         end
+      end
+
+      def precision_of(version)
+        version.split(/[.-]/).length
       end
 
       def filter_ignored(candidate_tags)
