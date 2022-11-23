@@ -520,7 +520,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "when there are non vulnerable versions lower that the current version" do
+    context "when there are non vulnerable versions lower than the current version" do
       let(:upload_pack_fixture) { "ghas-to-csv" }
       let(:dependency_version) { "1.0" }
 
