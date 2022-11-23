@@ -36,6 +36,14 @@ module Dependabot
           end
         end
 
+        def update_python_requirement(requirement)
+          pyproject_object = TomlRB.parse(@pyproject_content)
+          if pyproject_object.dig("tool", "poetry", "dependencies", "python")
+            pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
+          end
+          TomlRB.dump(pyproject_object)
+        end
+
         def sanitize
           # {{ name }} syntax not allowed
           pyproject_content.

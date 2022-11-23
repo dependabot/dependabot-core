@@ -106,6 +106,7 @@ module Dependabot
               content = sanitize(content)
               content = freeze_other_dependencies(content)
               content = freeze_dependencies_being_updated(content)
+              content = update_python_requirement(content)
               content
             end
         end
@@ -129,6 +130,12 @@ module Dependabot
           end
 
           TomlRB.dump(pyproject_object)
+        end
+
+        def update_python_requirement(pyproject_content)
+          PyprojectPreparer.
+            new(pyproject_content: pyproject_content).
+            update_python_requirement(Helpers.python_major_minor(python_version))
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)

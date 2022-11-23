@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         to start_with("8cea4ecb5b2230fbd4a33a67a4da004f1ccabad48352aaf040")
     end
 
-    context "with a specified Python version", :slow do
+    context "with a specified Python version" do
       let(:pyproject_fixture_name) { "python_310.toml" }
       let(:lockfile_fixture_name) { "python_310.lock" }
 
@@ -111,6 +111,11 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         lockfile_obj = TomlRB.parse(updated_lockfile.content)
         requests = lockfile_obj["package"].find { |d| d["name"] == "requests" }
         expect(requests["version"]).to eq("2.19.1")
+      end
+      it "does not change python version" do
+        updated_pyproj = updated_files.find { |f| f.name == "pyproject.toml" }
+        pyproj_obj = TomlRB.parse(updated_pyproj.content)
+        pyproj_obj["tool"]["poetry"]["dependencies"]["python"] == "3.10.7"
       end
     end
 
