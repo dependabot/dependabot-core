@@ -1,0 +1,28 @@
+{
+    "provider": {
+        "aws": [
+            {
+                "region": "us-west-2"
+            }
+        ]
+    },
+    "resource": {
+        "aws_s3_bucket": {
+            "sample": [
+                {
+                    "acl": "public-read",
+                    "bucket": "${random_pet.petname.id}",
+                    "region": "us-west-2"
+                }
+            ]
+        },
+        "random_pet": {
+            "petname": [
+                {
+                    "length": 5,
+                    "separator": "-"
+                }
+            ]
+        }
+    }
+}

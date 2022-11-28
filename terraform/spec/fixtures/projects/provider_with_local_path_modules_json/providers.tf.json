@@ -1,0 +1,25 @@
+{
+    "provider": {
+        "azurerm": [
+            {
+                "features": [
+                    {}
+                ],
+                "skip_provider_registration": true
+            }
+        ]
+    },
+    "terraform": [
+        {
+            "required_providers": [
+                {
+                    "azurerm": {
+                        "source": "hashicorp/azurerm",
+                        "version": "\u003e= 2.48.0, \u003c 2.65.0"
+                    }
+                }
+            ],
+            "required_version": "~\u003e 1.0"
+        }
+    ]
+}

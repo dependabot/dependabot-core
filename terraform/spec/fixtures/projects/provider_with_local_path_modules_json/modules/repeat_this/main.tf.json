@@ -1,0 +1,15 @@
+{
+    "resource": {
+        "azurerm_resource_group": {
+            "this": [
+                {
+                    "location": "northeurope",
+                    "name": "this-is-a-resource-group",
+                    "tags": {
+                        "environment": "lab"
+                    }
+                }
+            ]
+        }
+    }
+}

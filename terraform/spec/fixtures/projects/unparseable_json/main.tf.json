@@ -1,0 +1,26 @@
+{
+    "module": {
+        "consul": [
+            {
+                "source": "hashicorp/consul/aws",
+                "version": "0.1.0"
+            }
+        "members-github": [
+            {
+                "source": "devops-workflow/members/github"
+            }
+        ],
+        "rds": [
+            {
+                "source": "terraform-aws-modules/rds/aws",
+                "version": "~\u003e 1.0.0"
+            }
+        ],
+        "vpc": [
+            {
+                "source": "app.terraform.io/example_corp/vpc/aws",
+                "version": "0.9.3"
+            }
+        ]
+    }
+}

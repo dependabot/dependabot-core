@@ -1,0 +1,20 @@
+{
+    "module": {
+        "github_ssh_without_protocol": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, [\"origin\"]))}"
+                ],
+                "availability_zone": "",
+                "delimiter": "${var.delimiter}",
+                "loadbalancer_certificate_arn": "",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "public_subnets": [],
+                "source": "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=0.4.1",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ]
+    }
+}

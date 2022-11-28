@@ -1,0 +1,9 @@
+{
+    "module": {
+        "loader": [
+            {
+                "source": "./loader"
+            }
+        ]
+    }
+}

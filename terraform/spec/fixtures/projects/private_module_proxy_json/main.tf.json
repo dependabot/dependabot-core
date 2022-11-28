@@ -1,0 +1,14 @@
+{
+    "module": {
+        "nsg_rules": [
+            {
+                "source": "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm/terraform-azurerm-nsg-rules.v1.1.0.tar.gz"
+            }
+        ]
+    },
+    "terraform": [
+        {
+            "required_version": "\u003e= 0.14"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "module": {
+        "consul": [
+            {
+                "source": "hashicorp/consul/aws",
+                "version": "0.1.0"
+            }
+        ],
+        "members-github": [
+            {
+                "source": "devops-workflow/members/github"
+            }
+        ],
+        "merged": [
+            {
+                "container_definitions": [
+                    "${var.web_container_definition}",
+                    "${module.xray.container_definitions}",
+                    "${module.reverse_proxy.container_definitions}",
+                    "${module.datadog.container_definitions}"
+                ],
+                "source": "mongodb/ecs-task-definition/aws//modules/merge"
+            }
+        ],
+        "rds": [
+            {
+                "source": "terraform-aws-modules/rds/aws",
+                "version": "~\u003e 1.0.0"
+            }
+        ],
+        "vpc": [
+            {
+                "source": "app.terraform.io/example_corp/vpc/aws",
+                "version": "0.9.3"
+            }
+        ]
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "module": {
+        "child": [
+            {
+                "delimiter": "${var.delimiter}",
+                "expiration_days": "${var.log_expiration_days}",
+                "glacier_transition_days": "${var.log_glacier_transition_days}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "prefix": "${var.log_prefix}",
+                "source": "github.com/cloudposse/terraform-aws-s3-log-storage.git?ref=tags/0.2.2",
+                "stage": "${var.stage}",
+                "standard_transition_days": "${var.log_standard_transition_days}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "distribution_label": [
+            {
+                "attributes": "${var.attributes}",
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "bitbucket.org/cloudposse/terraform-null-label.git",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "dns": [
+            {
+                "aliases": "${var.aliases}",
+                "enabled": "${var.dns_aliases_enabled}",
+                "parent_zone_id": "${var.parent_zone_id}",
+                "parent_zone_name": "${var.parent_zone_name}",
+                "source": "git::https://github.com/cloudposse/terraform-aws-route53-cluster-zone.git//some/dir?ref=tags/0.2.5",
+                "target_dns_name": "${aws_cloudfront_distribution.default.domain_name}",
+                "target_zone_id": "${aws_cloudfront_distribution.default.hosted_zone_id}"
+            }
+        ]
+    }
+}

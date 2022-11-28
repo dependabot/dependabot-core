@@ -1,0 +1,31 @@
+{
+    "module": {
+        "child": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, [\"origin\"]))}"
+                ],
+                "availability_zone": "",
+                "delimiter": "${var.delimiter}",
+                "loadbalancer_certificate_arn": "",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "public_subnets": [],
+                "source": "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=tags/0.4.0",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "distribution_label": [
+            {
+                "attributes": "${var.attributes}",
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "git::https://github.com/cloudposse/terraform-null-label.git",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ]
+    }
+}

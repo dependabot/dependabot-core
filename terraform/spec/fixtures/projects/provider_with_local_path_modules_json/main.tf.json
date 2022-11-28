@@ -1,0 +1,14 @@
+{
+    "module": {
+        "that": [
+            {
+                "source": "./modules/repeat_that"
+            }
+        ],
+        "this": [
+            {
+                "source": "./modules/repeat_this"
+            }
+        ]
+    }
+}

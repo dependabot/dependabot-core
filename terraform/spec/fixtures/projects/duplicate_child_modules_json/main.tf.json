@@ -1,0 +1,14 @@
+{
+    "module": {
+        "child_one": [
+            {
+                "source": "./child_module_one"
+            }
+        ],
+        "child_two": [
+            {
+                "source": "./child_module_one"
+            }
+        ]
+    }
+}

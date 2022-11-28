@@ -1,0 +1,18 @@
+{
+    "terraform": [
+        {
+            "required_providers": [
+                {
+                    "aws": {
+                        "source": "hashicorp/aws",
+                        "version": "\u003e= 3.37.0"
+                    },
+                    "random": {
+                        "source": "hashicorp/random",
+                        "version": "\u003e= 3.0.0"
+                    }
+                }
+            ]
+        }
+    ]
+}

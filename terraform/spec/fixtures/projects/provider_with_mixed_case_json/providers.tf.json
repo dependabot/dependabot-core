@@ -1,0 +1,15 @@
+{
+    "terraform": [
+        {
+            "required_providers": [
+                {
+                    "confluentcloud": {
+                        "source": "Mongey/confluentcloud",
+                        "version": "\u003e= 0.0.6, \u003c 0.0.12"
+                    }
+                }
+            ],
+            "required_version": "~\u003e0.14"
+        }
+    ]
+}

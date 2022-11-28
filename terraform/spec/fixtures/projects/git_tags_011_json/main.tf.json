@@ -1,0 +1,179 @@
+{
+    "module": {
+        "distribution_label": [
+            {
+                "attributes": "${var.attributes}",
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "bitbucket.org/cloudposse/terraform-null-label.git",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "dns": [
+            {
+                "aliases": "${var.aliases}",
+                "enabled": "${var.dns_aliases_enabled}",
+                "parent_zone_id": "${var.parent_zone_id}",
+                "parent_zone_name": "${var.parent_zone_name}",
+                "source": "git::https://github.com/cloudposse/terraform-aws-route53-al.git//some/dir?ref=tags/0.2.5",
+                "target_dns_name": "${aws_cloudfront_distribution.default.domain_name}",
+                "target_zone_id": "${aws_cloudfront_distribution.default.hosted_zone_id}"
+            }
+        ],
+        "duplicate_label": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, list(\"origin\")))}"
+                ],
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "github_ssh_without_protocol": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, list(\"origin\")))}"
+                ],
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "git@github.com:cloudposse/terraform-aws-jenkins.git?ref=tags/0.4.0//some/dir",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "logs": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, list(\"origin\", \"logs\")))}"
+                ],
+                "delimiter": "${var.delimiter}",
+                "expiration_days": "${var.log_expiration_days}",
+                "glacier_transition_days": "${var.log_glacier_transition_days}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "prefix": "${var.log_prefix}",
+                "source": "github.com/cloudposse/terraform-log-storage.git?ref=tags/0.2.2",
+                "stage": "${var.stage}",
+                "standard_transition_days": "${var.log_standard_transition_days}",
+                "tags": "${var.tags}"
+            }
+        ],
+        "origin_label": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, list(\"origin\")))}"
+                ],
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ]
+    },
+    "resource": {
+        "aws_cloudfront_distribution": {
+            "default": [
+                {
+                    "aliases": [
+                        "${var.aliases}"
+                    ],
+                    "cache_behavior": "${var.cache_behavior}",
+                    "comment": "${var.comment}",
+                    "custom_error_response": [
+                        "${var.custom_error_response}"
+                    ],
+                    "default_cache_behavior": [
+                        {
+                            "allowed_methods": "${var.allowed_methods}",
+                            "cached_methods": "${var.cached_methods}",
+                            "compress": "${var.compress}",
+                            "default_ttl": "${var.default_ttl}",
+                            "forwarded_values": [
+                                {
+                                    "cookies": [
+                                        {
+                                            "forward": "${var.forward_cookies}",
+                                            "whitelisted_names": [
+                                                "${var.forward_cookies_whitelisted_names}"
+                                            ]
+                                        }
+                                    ],
+                                    "headers": [
+                                        "${var.forward_headers}"
+                                    ],
+                                    "query_string": "${var.forward_query_string}"
+                                }
+                            ],
+                            "max_ttl": "${var.max_ttl}",
+                            "min_ttl": "${var.min_ttl}",
+                            "target_origin_id": "${module.distribution_label.id}",
+                            "viewer_protocol_policy": "${var.viewer_protocol_policy}"
+                        }
+                    ],
+                    "default_root_object": "${var.default_root_object}",
+                    "enabled": "${var.enabled}",
+                    "is_ipv6_enabled": "${var.is_ipv6_enabled}",
+                    "logging_config": {
+                        "bucket": "${module.logs.bucket_domain_name}",
+                        "include_cookies": "${var.log_include_cookies}",
+                        "prefix": "${var.log_prefix}"
+                    },
+                    "origin": [
+                        {
+                            "custom_origin_config": [
+                                {
+                                    "http_port": "${var.origin_http_port}",
+                                    "https_port": "${var.origin_https_port}",
+                                    "origin_keepalive_timeout": "${var.origin_keepalive_timeout}",
+                                    "origin_protocol_policy": "${var.origin_protocol_policy}",
+                                    "origin_read_timeout": "${var.origin_read_timeout}",
+                                    "origin_ssl_protocols": "${var.origin_ssl_protocols}"
+                                }
+                            ],
+                            "domain_name": "${var.origin_domain_name}",
+                            "origin_id": "${module.distribution_label.id}",
+                            "origin_path": "${var.origin_path}"
+                        }
+                    ],
+                    "price_class": "${var.price_class}",
+                    "restrictions": [
+                        {
+                            "geo_restriction": [
+                                {
+                                    "locations": "${var.geo_restriction_locations}",
+                                    "restriction_type": "${var.geo_restriction_type}"
+                                }
+                            ]
+                        }
+                    ],
+                    "tags": "${module.distribution_label.tags}",
+                    "viewer_certificate": [
+                        {
+                            "acm_certificate_arn": "${var.acm_certificate_arn}",
+                            "cloudfront_default_certificate": "${var.acm_certificate_arn == \"\" ? true : false}",
+                            "minimum_protocol_version": "${var.viewer_minimum_protocol_version}",
+                            "ssl_support_method": "sni-only"
+                        }
+                    ],
+                    "web_acl_id": "${var.web_acl_id}"
+                }
+            ]
+        },
+        "aws_cloudfront_origin_access_identity": {
+            "default": [
+                {
+                    "comment": "${module.distribution_label.id}"
+                }
+            ]
+        }
+    }
+}
