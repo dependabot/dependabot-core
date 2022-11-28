@@ -1564,6 +1564,17 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect { subject }.to raise_error(Dependabot::BranchNotFound)
         end
       end
+
+      context "when the submodule can't be reached" do
+        let(:repo) do
+          "dependabot-fixtures/go-modules-app-with-inaccessible-submodules"
+        end
+
+        it "does not raise an error" do
+          clone_repo_contents
+          expect(`ls #{repo_contents_path}`).to include("README")
+        end
+      end
     end
   end
 
