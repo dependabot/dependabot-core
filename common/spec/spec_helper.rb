@@ -148,6 +148,25 @@ def project_dependency_files(project, directory: "/")
   end
 end
 
+def project_dependency_files_updated_expected(project)
+  project_path = File.expand_path(File.join("spec/fixtures/projects_updated_expected", project))
+
+  raise "Fixture does not exist for project: '#{project}'" unless Dir.exist?(project_path)
+
+  Dir.chdir(project_path) do
+    # NOTE: Include dotfiles (e.g. .npmrc)
+    files = Dir.glob("**/*", File::FNM_DOTMATCH)
+    files = files.select { |f| File.file?(f) }
+    files.map do |filename|
+      content = File.read(filename)
+      Dependabot::DependencyFile.new(
+        name: filename,
+        content: content
+      )
+    end
+  end
+end
+
 def capture_stderr
   previous_stderr = $stderr
   $stderr = StringIO.new
