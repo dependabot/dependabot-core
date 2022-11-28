@@ -210,6 +210,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           to raise_error(Dependabot::PathDependenciesNotReachable)
       end
     end
+
+    context "that has a blank file: in the package-lock" do
+      before do
+        stub_request(:get, File.join(url, "package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package-lock.json"),
+            headers: json_header
+          )
+        stub_request(:get, File.join(url, "another/package.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture_to_response("projects/npm8/path_dependency_blank_file/another", "package.json"),
+            headers: json_header
+          )
+      end
+
+      it "raises PathDependenciesNotReachable" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::PathDependenciesNotReachable)
+      end
+    end
   end
 
   context "with a yarn.lock but no package-lock.json file" do
@@ -1591,12 +1622,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
   end
 
   context "with no .npmrc but package-lock.json contains a custom registry" do
-    def fixture_to_response(dir, file)
-      JSON.dump({
-        "content" => Base64.encode64(fixture(dir, file))
-      })
-    end
-
     before do
       allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -1625,4 +1650,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to eq("registry=https://npm.fury.io")
     end
   end
+end
+
+def fixture_to_response(dir, file)
+  JSON.dump({ "content" => Base64.encode64(fixture(dir, file)) })
 end

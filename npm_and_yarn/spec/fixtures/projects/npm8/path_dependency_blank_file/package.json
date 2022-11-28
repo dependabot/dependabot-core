@@ -1,0 +1,28 @@
+{
+  "name": "npm-eacces",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "workspaces": [
+    ".",
+    "./",
+    "another"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dsp-testing/npm-eacces.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dsp-testing/npm-eacces/issues"
+  },
+  "homepage": "https://github.com/dsp-testing/npm-eacces#readme",
+  "dependencies": {
+    "another": "^1.0.0",
+    "left-pad": "1.2"
+  }
+}
