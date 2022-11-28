@@ -113,8 +113,7 @@ module Dependabot
         }
 
         files.each do |file|
-          absolute_path = file.name.start_with?("/") ? file.name : "/" + file.name
-          parameters[absolute_path] = file.content
+          parameters[file.path] = file.content
         end
 
         body = encode_form_parameters(parameters)
