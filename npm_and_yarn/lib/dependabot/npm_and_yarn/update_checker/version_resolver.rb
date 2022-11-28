@@ -370,13 +370,14 @@ module Dependabot
         end
 
         def error_details_from_captures(captures)
+          required_dep_captures  = captures.fetch("required_dep")
+          requiring_dep_captures = captures.fetch("requiring_dep")
+          return {} unless required_dep_captures && requiring_dep_captures
+
           {
-            requirement_name:
-              captures.fetch("required_dep").sub(/@[^@]+$/, ""),
-            requirement_version:
-              captures.fetch("required_dep").split("@").last.delete('"'),
-            requiring_dep_name:
-              captures.fetch("requiring_dep").sub(/@[^@]+$/, "")
+            requirement_name: required_dep_captures.sub(/@[^@]+$/, ""),
+            requirement_version: required_dep_captures.split("@").last.delete('"'),
+            requiring_dep_name: requiring_dep_captures.sub(/@[^@]+$/, "")
           }
         end
 
