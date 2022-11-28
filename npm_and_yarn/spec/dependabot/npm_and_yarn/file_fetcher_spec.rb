@@ -97,6 +97,37 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     end
   end
 
+  context "that has a blank file: in the package-lock" do
+    before do
+      stub_request(:get, File.join(url, "package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package-lock.json"),
+          headers: json_header
+        )
+      stub_request(:get, File.join(url, "another/package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm8/path_dependency_blank_file/another", "package.json"),
+          headers: json_header
+        )
+    end
+
+    it "does not have a /package.json" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(%w(package.json package-lock.json another/package.json))
+    end
+  end
+
   context "with a .npmrc file" do
     before do
       stub_request(:get, url + "?ref=sha").
@@ -208,37 +239,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       it "raises PathDependenciesNotReachable" do
         expect { file_fetcher_instance.files }.
           to raise_error(Dependabot::PathDependenciesNotReachable)
-      end
-    end
-
-    context "that has a blank file: in the package-lock" do
-      before do
-        stub_request(:get, File.join(url, "package.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package.json"),
-            headers: json_header
-          )
-        stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture_to_response("projects/npm8/path_dependency_blank_file", "package-lock.json"),
-            headers: json_header
-          )
-        stub_request(:get, File.join(url, "another/package.json?ref=sha")).
-          with(headers: { "Authorization" => "token token" }).
-          to_return(
-            status: 200,
-            body: fixture_to_response("projects/npm8/path_dependency_blank_file/another", "package.json"),
-            headers: json_header
-          )
-      end
-
-      it "does not have a /package.json" do
-        expect(file_fetcher_instance.files.map(&:name)).
-          to eq(%w(package.json package-lock.json another/package.json))
       end
     end
   end
