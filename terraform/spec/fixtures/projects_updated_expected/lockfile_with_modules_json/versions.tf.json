@@ -1,0 +1,15 @@
+{
+    "terraform": [
+        {
+            "required_providers": [
+                {
+                    "github": {
+                        "source": "integrations/github",
+                        "version": "~\u003e 4.4, \u003c= 4.12.0"
+                    }
+                }
+            ],
+            "required_version": "\u003e= 0.14"
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+{
+    "duplicate_label": [
+        {
+            "attributes": [
+                "${compact(concat(var.attributes, list(\"origin\")))}"
+            ],
+            "delimiter": "${var.delimiter}",
+            "name": "${var.name}",
+            "namespace": "${var.namespace}",
+            "source": "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.3.7",
+            "stage": "${var.stage}",
+            "tags": "${var.tags}"
+        }
+    ]
+}

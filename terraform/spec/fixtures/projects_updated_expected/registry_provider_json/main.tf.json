@@ -1,0 +1,26 @@
+{
+    "provider": {
+        "aws": [
+            {
+                "region": "eu-west-1"
+            }
+        ]
+    },
+    "terraform": [
+        {
+            "required_providers": [
+                {
+                    "aws": {
+                        "source": "hashicorp/aws",
+                        "version": "3.40.0"
+                    },
+                    "http": {
+                        "source": "hashicorp/http",
+                        "version": "~\u003e 2.0"
+                    }
+                }
+            ],
+            "required_version": "\u003e= 0.12"
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+        "origin_label": [
+            {
+                "attributes": [
+                    "${compact(concat(var.attributes, [\"origin\"]))}"
+                ],
+                "delimiter": "${var.delimiter}",
+                "name": "${var.name}",
+                "namespace": "${var.namespace}",
+                "source": "git::https://github.com/cloudposse/terraform-null-label.git?ref=tags/0.4.1",
+                "stage": "${var.stage}",
+                "tags": "${var.tags}"
+            }
+        ]
