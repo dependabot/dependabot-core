@@ -26,6 +26,9 @@ module Dependabot
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
+      GIT_SUBMODULE_ERROR_REGEX =
+        /^fatal: unable to access '(?<url>.*)': The requested URL returned error: (?<code>\d+)$/
+
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
       end
@@ -592,11 +595,26 @@ module Dependabot
                              " --no-recurse-submodules"
                            end
           clone_options << " --branch #{source.branch} --single-branch" if source.branch
-          SharedHelpers.run_shell_command(
-            <<~CMD
-              git clone #{clone_options.string} #{source.url} #{path}
-            CMD
-          )
+
+          submodule_cloning_failed = false
+          begin
+            SharedHelpers.run_shell_command(
+              <<~CMD
+                git clone #{clone_options.string} #{source.url} #{path}
+              CMD
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.match?(GIT_SUBMODULE_ERROR_REGEX) && e.message.include?("submodule")
+
+            submodule_cloning_failed = true
+            match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
+            url = match.named_captures["url"]
+            code = match.named_captures["code"]
+
+            # Submodules might be in the repo but unrelated to dependencies,
+            # so ignoring this error to try the update anyway since the base repo exists.
+            Dependabot.logger.error("Cloning of submodule failed: #{url} error: #{code}")
+          end
 
           if source.commit
             # This code will only be called for testing. Production will never pass a commit
@@ -604,7 +622,7 @@ module Dependabot
             Dir.chdir(path) do
               fetch_options = StringIO.new
               fetch_options << "--depth 1"
-              fetch_options << if recurse_submodules_when_cloning?
+              fetch_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
                                  " --recurse-submodules=on-demand"
                                else
                                  " --no-recurse-submodules"
@@ -614,7 +632,7 @@ module Dependabot
 
               reset_options = StringIO.new
               reset_options << "--hard"
-              reset_options << if recurse_submodules_when_cloning?
+              reset_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
                                  " --recurse-submodules"
                                else
                                  " --no-recurse-submodules"
