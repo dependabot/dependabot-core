@@ -236,9 +236,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           )
       end
 
-      it "raises PathDependenciesNotReachable" do
-        expect { file_fetcher_instance.files }.
-          to raise_error(Dependabot::PathDependenciesNotReachable)
+      it "does not have a /package.json" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(%w(package.json package-lock.json another/package.json))
       end
     end
   end
