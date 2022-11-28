@@ -1569,6 +1569,9 @@ RSpec.describe Dependabot::FileFetchers::Base do
         let(:repo) do
           "dependabot-fixtures/go-modules-app-with-inaccessible-submodules"
         end
+        let(:branch) do
+          "with-git-urls"
+        end
 
         it "does not raise an error" do
           clone_repo_contents
