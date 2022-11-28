@@ -36,6 +36,15 @@ RSpec.describe Dependabot::Terraform::FileFetcher do
     end
   end
 
+  context "with Terraform JSON files" do
+    let(:project_name) { "versions_file_json" }
+
+    it "fetches the Terraform JSON files" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(main.tf.json versions.tf.json))
+    end
+  end
+
   context "with a HCL based terragrunt file" do
     let(:project_name) { "terragrunt_hcl" }
 

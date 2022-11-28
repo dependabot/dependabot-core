@@ -46,6 +46,14 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "with an unparseable source in json format" do
+      let(:files) { project_dependency_files("unparseable_json") }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(JSON::ParserError)
+      end
+    end
+
     context "with valid registry sources" do
       let(:files) { project_dependency_files("registry") }
 
@@ -119,6 +127,88 @@ RSpec.describe Dependabot::Terraform::FileParser do
           requirement: nil,
           groups: [],
           file: "main.tf",
+          source: {
+            type: "registry",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "mongodb/ecs-task-definition/aws"
+          }
+        }])
+      end
+    end
+
+    context "with valid registry sources in json format" do
+      let(:files) { project_dependency_files("registry_json") }
+
+      specify { expect(subject.length).to eq(5) }
+      specify { expect(subject).to all(be_a(Dependabot::Dependency)) }
+
+      it "has the right details for the dependency (default registry with version) in json format" do
+        expect(subject[2].name).to eq("hashicorp/consul/aws")
+        expect(subject[2].version).to eq("0.1.0")
+        expect(subject[2].requirements).to eq([{
+          requirement: "0.1.0",
+          groups: [],
+          file: "main.tf.json",
+          source: {
+            type: "registry",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "hashicorp/consul/aws"
+          }
+        }])
+      end
+
+      it "has the right details for the second dependency (private registry with version) in json format" do
+        expect(subject[1].name).to eq("example_corp/vpc/aws")
+        expect(subject[1].version).to eq("0.9.3")
+        expect(subject[1].requirements).to eq([{
+          requirement: "0.9.3",
+          groups: [],
+          file: "main.tf.json",
+          source: {
+            type: "registry",
+            registry_hostname: "app.terraform.io",
+            module_identifier: "example_corp/vpc/aws"
+          }
+        }])
+      end
+
+      it "has the right details for the dependency (default registry with version req).json" do
+        expect(subject[4].name).to eq("terraform-aws-modules/rds/aws")
+        expect(subject[4].version).to be_nil
+        expect(subject[4].requirements).to eq([{
+          requirement: "~> 1.0.0",
+          groups: [],
+          file: "main.tf.json",
+          source: {
+            type: "registry",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "terraform-aws-modules/rds/aws"
+          }
+        }])
+      end
+
+      it "has the right details for the dependency (default registry with no version) in json format" do
+        expect(subject[0].name).to eq("devops-workflow/members/github")
+        expect(subject[0].version).to be_nil
+        expect(subject[0].requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf.json",
+          source: {
+            type: "registry",
+            registry_hostname: "registry.terraform.io",
+            module_identifier: "devops-workflow/members/github"
+          }
+        }])
+      end
+
+      it "has the right details for the dependency (default registry with a sub-directory) in json format" do
+        expect(subject[3].name).to eq("mongodb/ecs-task-definition/aws")
+        expect(subject[3].version).to be_nil
+        expect(subject[3].requirements).to eq([{
+          requirement: nil,
+          groups: [],
+          file: "main.tf.json",
           source: {
             type: "registry",
             registry_hostname: "registry.terraform.io",
