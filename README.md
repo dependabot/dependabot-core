@@ -271,9 +271,7 @@ classes:
 
 The high-level flow looks like this:
 
-<p align="center">
-  <img src="https://s3.eu-west-2.amazonaws.com/dependabot-images/package-manager-architecture.svg" alt="Dependabot architecture">
-</p>
+![Dependabot high-level architecture diagram](architecture.svg)
 
 ### `dependabot-omnibus`
 
