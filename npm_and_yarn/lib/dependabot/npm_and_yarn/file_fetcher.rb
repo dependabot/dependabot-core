@@ -205,11 +205,16 @@ module Dependabot
         @lerna_packages ||= fetch_lerna_packages
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def path_dependencies(fetched_files)
         package_json_files = []
         unfetchable_deps = []
 
         path_dependency_details(fetched_files).each do |name, path|
+          # This happens with relative paths in the package-lock. Skipping it since it results
+          # in /package.json which is outside of the project directory.
+          next if path == "file:"
+
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
           raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
 
@@ -238,6 +243,7 @@ module Dependabot
 
         package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_details(fetched_files)
         package_json_path_deps = []
