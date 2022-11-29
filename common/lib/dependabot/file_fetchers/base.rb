@@ -26,11 +26,11 @@ module Dependabot
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
-      GIT_SUBMODULE_ERROR_REGEX1 =
+      GIT_SUBMODULE_INACCESSIBLE_ERROR =
         /^fatal: unable to access '(?<url>.*)': The requested URL returned error: (?<code>\d+)$/
-      GIT_SUBMODULE_ERROR_REGEX2 =
+      GIT_SUBMODULE_CLONE_ERROR =
         /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
-      GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_ERROR_REGEX1})|(#{GIT_SUBMODULE_ERROR_REGEX2})/
+      GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
