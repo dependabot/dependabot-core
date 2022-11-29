@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "toml-rb"
+
 require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
@@ -44,6 +46,9 @@ module Dependabot
         script_plugin_files.each do |plugin_file|
           dependency_set += buildfile_dependencies(plugin_file)
         end
+        version_catalog_file.each do |toml_file|
+          dependency_set += version_catalog_dependencies(toml_file)
+        end
         dependency_set.dependencies
       end
 
@@ -61,6 +66,31 @@ module Dependabot
       end
 
       private
+
+      def version_catalog_dependencies(toml_file)
+        dependency_set = DependencySet.new
+        libraries = parsed_toml_file(toml_file)["libraries"]
+        libraries.each do |_mod, declaration|
+          version = declaration["version"]
+          next if version.nil?
+
+          # Only support basic version and reference formats for now,
+          # refrain from updating anything else as it's likely to be a very deliberate choice.
+          next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
+
+          version_details = version["ref"].nil? ? version : "$" + version["ref"]
+          group, name = declaration["module"].split(":")
+          details = { group: group, name: name, version: version_details }
+          dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
+        end
+        dependency_set
+      end
+
+      def parsed_toml_file(file)
+        TomlRB.parse(file.content)
+      rescue TomlRB::ParseError, TomlRB::ValueOverwriteError
+        raise Dependabot::DependencyFileNotParseable, file.path
+      end
 
       def map_value_regex(key)
         /(?:^|\s|,|\()#{Regexp.quote(key)}(\s*=|:)\s*['"](?<value>[^'"]+)['"]/
@@ -311,6 +341,12 @@ module Dependabot
       def buildfiles
         @buildfiles ||= dependency_files.select do |f|
           f.name.end_with?(*SUPPORTED_BUILD_FILE_NAMES)
+        end
+      end
+
+      def version_catalog_file
+        @version_catalog_file ||= dependency_files.select do |f|
+          f.name.end_with?("libs.versions.toml")
         end
       end
 

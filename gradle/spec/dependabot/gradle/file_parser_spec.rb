@@ -803,5 +803,145 @@ RSpec.describe Dependabot::Gradle::FileParser do
         its(:length) { is_expected.to eq(20) }
       end
     end
+
+    describe "with a version catalog file" do
+      let(:files) { [buildfile, version_catalog] }
+      let(:version_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/libs.versions.toml",
+          content: fixture("version_catalog_file", "libs.versions.toml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(30) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("co.aikar:acf-paper")
+          expect(dependency.version).to eq("0.5.0-SNAPSHOT")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "0.5.0-SNAPSHOT",
+              file: "build.gradle",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+
+      describe "dependency with explicit module and referenced version" do
+        let(:dependency) do
+          dependencies.find { |dep| dep.name == "androidx.test.espresso:espresso-core" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.version).to eq("3.5.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "3.5.0",
+              file: "gradle/libs.versions.toml",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "espresso" }
+            }]
+          )
+        end
+      end
+
+      describe "non-referenced version dependency" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "androidx.activity:activity-compose" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("androidx.activity:activity-compose")
+          expect(dependency.version).to eq("1.3.1")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.3.1",
+              file: "gradle/libs.versions.toml",
+              groups: [],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+
+      describe "rich version dependency is ignored" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "androidx.compose.material:material" }
+        end
+        it "has the right details" do
+          expect(dependency).to be(nil)
+        end
+      end
+
+      context "with version catalog file containing dependency overlap with build file" do
+        let(:files) { [buildfile, version_catalog_overlap] }
+
+        let(:version_catalog_overlap) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.overlapping.toml")
+          )
+        end
+
+        its(:length) { is_expected.to eq(30) }
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          # This test is wrong,  req should also contain changes in the version catalog file
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("co.aikar:acf-paper")
+            expect(dependency.version).to eq("0.5.0-SNAPSHOT")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "0.5.0-SNAPSHOT",
+                file: "build.gradle",
+                groups: [],
+                source: nil,
+                metadata: nil
+              },
+               {
+                 requirement: "0.5.0-SNAPSHOT",
+                 file: "gradle/libs.versions.toml",
+                 groups: [],
+                 source: nil,
+                 metadata: { property_name: "coAikar" }
+               }]
+            )
+          end
+        end
+
+        describe "the last dependency" do
+          subject(:dependency) { dependencies.last }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("androidx.test.espresso:espresso-core")
+            expect(dependency.version).to eq("3.5.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "3.5.0",
+                file: "gradle/libs.versions.toml",
+                groups: [],
+                source: nil,
+                metadata: { property_name: "espresso" }
+              }]
+            )
+          end
+        end
+      end
+    end
   end
 end
