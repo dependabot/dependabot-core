@@ -26,8 +26,11 @@ module Dependabot
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
-      GIT_SUBMODULE_ERROR_REGEX =
+      GIT_SUBMODULE_INACCESSIBLE_ERROR =
         /^fatal: unable to access '(?<url>.*)': The requested URL returned error: (?<code>\d+)$/
+      GIT_SUBMODULE_CLONE_ERROR =
+        /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
+      GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
 
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
@@ -604,7 +607,7 @@ module Dependabot
               CMD
             )
           rescue SharedHelpers::HelperSubprocessFailed => e
-            raise unless e.message.match?(GIT_SUBMODULE_ERROR_REGEX) && e.message.include?("submodule")
+            raise unless GIT_SUBMODULE_ERROR_REGEX && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
             match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
@@ -613,7 +616,7 @@ module Dependabot
 
             # Submodules might be in the repo but unrelated to dependencies,
             # so ignoring this error to try the update anyway since the base repo exists.
-            Dependabot.logger.error("Cloning of submodule failed: #{url} error: #{code}")
+            Dependabot.logger.error("Cloning of submodule failed: #{url} error: #{code || 'unknown'}")
           end
 
           if source.commit
