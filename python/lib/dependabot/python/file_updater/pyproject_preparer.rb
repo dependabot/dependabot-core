@@ -38,8 +38,11 @@ module Dependabot
 
         def update_python_requirement(requirement)
           pyproject_object = TomlRB.parse(@pyproject_content)
-          if pyproject_object.dig("tool", "poetry", "dependencies", "python")
-            pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
+          if (python_specification = pyproject_object.dig("tool", "poetry", "dependencies", "python"))
+            python_req = Python::Requirement.new(python_specification)
+            unless python_req.satisfied_by?(requirement)
+              pyproject_object["tool"]["poetry"]["dependencies"]["python"] = "~#{requirement}"
+            end
           end
           TomlRB.dump(pyproject_object)
         end
