@@ -147,6 +147,8 @@ module Dependabot
     end
 
     def local_tag_for_pinned_sha
+      return unless pinned_ref_looks_like_commit_sha?
+
       commit_sha = dependency_source_details.fetch(:ref)
       most_specific_version_tag_for_sha(commit_sha)
     end
