@@ -40,12 +40,19 @@ module Dependabot
         File.exist?(".pnp.cjs")
       end
 
+      def self.yarn_offline_cache?
+        yarn_cache_dir = fetch_yarnrc_yml_value("cacheFolder", ".yarn/cache")
+        File.exist?(yarn_cache_dir) && (fetch_yarnrc_yml_value("nodeLinker", "") == "node-modules")
+      end
+
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
-        elsif yarn_major_version >= 3 && yarn_zero_install?
+        elsif yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
           "--mode=skip-build"
         else
+          # We only want this mode if the cache is not being updated/managed
+          # as this improperly leaves old versions in the cache
           "--mode=update-lockfile"
         end
       end
