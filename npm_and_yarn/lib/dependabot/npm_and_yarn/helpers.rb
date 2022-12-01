@@ -48,7 +48,7 @@ module Dependabot
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
-        elsif yarn_major_version >= 3 && ( yarn_zero_install? || yarn_offline_cache? )
+        elsif yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
           "--mode=skip-build"
         else
           # We only want this mode if the cache is not being updated/managed
