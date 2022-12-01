@@ -3003,7 +3003,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "yarn.lock"
             ]
           )
-          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs"}.mode).to eq("100755")
+          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
         end
       end
 
