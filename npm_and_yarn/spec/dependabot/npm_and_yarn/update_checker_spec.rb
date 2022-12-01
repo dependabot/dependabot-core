@@ -471,26 +471,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           end
         end
 
-        context "that is behind the latest release" do
-          let(:commit_compare_response) do
-            fixture("github", "commit_compare_behind.json")
-          end
-
-          it "updates to the latest release" do
-            expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
-          end
-
-          context "when the registry doesn't return a latest release" do
-            let(:registry_response) do
-              fixture("npm_responses", "no_latest.json")
-            end
-
-            it "updates to the latest release" do
-              expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
-            end
-          end
-        end
-
         context "for a dependency that doesn't have a release" do
           before do
             stub_request(:get, registry_listing_url).
@@ -522,16 +502,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
         it "returns the current version" do
           expect(checker.latest_version).to eq(current_version)
-        end
-
-        context "that is behind the latest release" do
-          let(:commit_compare_response) do
-            fixture("github", "commit_compare_behind.json")
-          end
-
-          it "updates to the latest release" do
-            expect(checker.latest_version).to eq(Gem::Version.new("4.0.0"))
-          end
         end
       end
 
@@ -1141,47 +1111,6 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
                   branch: nil,
                   ref: "master"
                 }
-              }]
-            )
-        end
-      end
-
-      context "that should switch to a registry source" do
-        let(:commit_compare_response) do
-          fixture("github", "commit_compare_behind.json")
-        end
-
-        let(:dependency_requirements) do
-          [{
-            requirement: nil,
-            file: "package.json",
-            groups: ["devDependencies"],
-            source: {
-              type: "git",
-              url: "https://github.com/jonschlinkert/is-number",
-              branch: nil,
-              ref: "master"
-            }
-          }]
-        end
-
-        it "delegates to the RequirementsUpdater" do
-          expect(described_class::RequirementsUpdater).
-            to receive(:new).
-            with(
-              requirements: dependency_requirements,
-              updated_source: nil,
-              latest_resolvable_version: "4.0.0",
-              update_strategy: :bump_versions
-            ).
-            and_call_original
-          expect(checker.updated_requirements).
-            to eq(
-              [{
-                file: "package.json",
-                requirement: "^4.0.0",
-                groups: ["devDependencies"],
-                source: nil
               }]
             )
         end

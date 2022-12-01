@@ -279,9 +279,7 @@ module Dependabot
 
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
-          if git_branch_or_ref_in_latest_release?
-            latest_released_version
-          elsif version_class.correct?(dependency.version)
+          if version_class.correct?(dependency.version)
             latest_git_version_details[:version] &&
               version_class.new(latest_git_version_details[:version])
           else
@@ -294,26 +292,9 @@ module Dependabot
           latest_version_finder.latest_version_from_registry
       end
 
-      def should_switch_source_from_git_to_registry?
-        return false unless git_dependency?
-        return false unless git_branch_or_ref_in_latest_release?
-        return false if latest_version_for_git_dependency.nil?
-
-        version_class.correct?(latest_version_for_git_dependency)
-      end
-
-      def git_branch_or_ref_in_latest_release?
-        return false unless latest_released_version
-
-        return @git_branch_or_ref_in_latest_release if defined?(@git_branch_or_ref_in_latest_release)
-
-        @git_branch_or_ref_in_latest_release ||=
-          git_commit_checker.branch_or_ref_in_release?(latest_released_version)
-      end
-
       def latest_version_details
         @latest_version_details ||=
-          if git_dependency? && !should_switch_source_from_git_to_registry?
+          if git_dependency?
             latest_git_version_details
           else
             { version: latest_released_version }
@@ -388,9 +369,6 @@ module Dependabot
       def updated_source
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
-
-        # Source becomes `nil` if switching to default rubygems
-        return nil if should_switch_source_from_git_to_registry?
 
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
