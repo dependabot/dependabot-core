@@ -100,7 +100,9 @@ module Dependabot
     end
 
     def local_ref_for_latest_version_matching_existing_precision
-      max_local_tag_for_current_precision(allowed_version_refs)
+      allowed_refs = local_tag_for_pinned_sha ? allowed_version_tags : allowed_version_refs
+
+      max_local_tag_for_current_precision(allowed_refs)
     end
 
     def local_tag_for_latest_version

@@ -1116,6 +1116,31 @@ RSpec.describe Dependabot::GitCommitChecker do
       it { is_expected.to match(latest_patch) }
     end
 
+    context "with a version branch higher than the latest version tag, and pinned to the commit sha of a version tag" do
+      let(:upload_pack_fixture) { "actions-checkout-2022-12-01" }
+      let(:version) { "1.1.0" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "0b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc"
+        }
+      end
+
+      let(:latest_patch) do
+        {
+          commit_sha: "93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8",
+          tag: "v3.1.0",
+          tag_sha: anything,
+          version: anything
+        }
+      end
+
+      it { is_expected.to match(latest_patch) }
+    end
+
     context "with tags for minor versions and branches for major versions" do
       let(:upload_pack_fixture) { "run-vcpkg" }
 
