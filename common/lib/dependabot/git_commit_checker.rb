@@ -99,10 +99,6 @@ module Dependabot
       local_repo_git_metadata_fetcher.head_commit_for_ref(name)
     end
 
-    def local_tag_for_latest_version_matching_existing_precision
-      max_local_tag_for_current_precision(allowed_version_tags)
-    end
-
     def local_ref_for_latest_version_matching_existing_precision
       max_local_tag_for_current_precision(allowed_version_refs)
     end
