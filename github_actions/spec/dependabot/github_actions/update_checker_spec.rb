@@ -138,38 +138,49 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to be_falsey }
       end
 
-      context "that is a git commit SHA pointing to the tip of a branch" do
+      context "that is a git commit SHA pointing to the tip of a branch not named like a version" do
         let(:upload_pack_fixture) { "setup-node" }
-        let(:reference) { "1c24df3" }
+        let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
+        let(:reference) { tip_of_master }
 
-        let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-        let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
-        before do
-          stub_request(:get, comparison_url).
-            to_return(
-              status: 200,
-              body: comparison_response,
-              headers: { "Content-Type" => "application/json" }
-            )
+        it { is_expected.to be_falsey }
+      end
 
-          checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-          allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
-        end
+      context "that is a git commit SHA pointing to the tip of a branch named like a version" do
+        let(:upload_pack_fixture) { "run-vcpkg" }
 
-        context "when the specified commit has diverged from the latest release" do
-          let(:comparison_response) do
-            fixture("github", "commit_compare_diverged.json")
-          end
-          it "can update to the latest version" do
-            expect(subject).to be_truthy
-          end
-        end
+        context "and there's a branch named like a higher version" do
+          let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
 
-        context "when the specified ref is included in the latest release" do
-          let(:comparison_response) do
-            fixture("github", "commit_compare_behind.json")
-          end
+          let(:reference) { tip_of_v6 }
+
           it { is_expected.to be_truthy }
+        end
+
+        context "and there's no branch named like a higher version" do
+          let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
+
+          let(:reference) { tip_of_v10 }
+
+          it { is_expected.to be_falsey }
+        end
+      end
+
+      context "that is a git commit SHA pointing to the tip of a version tag" do
+        let(:upload_pack_fixture) { "setup-node" }
+        let(:v1_0_0_tag_sha) { "0d7d2ca66539aca4af6c5102e29a33757e2c2d2c" }
+        let(:v1_1_0_tag_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+
+        context "and there's a higher version tag" do
+          let(:reference) { v1_0_0_tag_sha }
+
+          it { is_expected.to be_truthy }
+        end
+
+        context "and there's no higher version tag" do
+          let(:reference) { v1_1_0_tag_sha }
+
+          it { is_expected.to be_falsey }
         end
       end
 
@@ -322,44 +333,51 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(Dependabot::GithubActions::Version.new("3")) }
     end
 
-    context "given a git commit SHA pointing to the tip of a branch" do
-      let(:reference) { "1c24df3" }
+    context "given a git commit SHA pointing to the tip of a branch not named like a version" do
+      let(:upload_pack_fixture) { "setup-node" }
+      let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
+      let(:reference) { tip_of_master }
 
-      let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-      let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
-      before do
-        stub_request(:get, comparison_url).
-          to_return(
-            status: 200,
-            body: comparison_response,
-            headers: { "Content-Type" => "application/json" }
-          )
+      it "considers the commit itself as the latest version" do
+        expect(subject).to eq(tip_of_master)
+      end
+    end
 
-        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
+    context "given a git commit SHA pointing to the tip of a branch named like a version" do
+      let(:upload_pack_fixture) { "run-vcpkg" }
+
+      context "and there's a branch named like a higher version" do
+        let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
+
+        let(:reference) { tip_of_v6 }
+
+        it { is_expected.to eq(Gem::Version.new("10.5")) }
       end
 
-      context "when the specified commit has diverged from the latest release" do
-        let(:comparison_response) do
-          fixture("github", "commit_compare_diverged.json")
-        end
+      context "and there's no branch named like a higher version" do
+        let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
 
-        it "updates to the latest version" do
-          expect(subject).to eq(Gem::Version.new("1.1.0"))
-        end
+        let(:reference) { tip_of_v10 }
+
+        it { is_expected.to eq(Gem::Version.new("10.5")) }
       end
+    end
 
-      context "when the specified ref is included in the latest release" do
-        let(:comparison_response) do
-          fixture("github", "commit_compare_behind.json")
-        end
+    context "given a git commit SHA pointing to the tip of a version tag" do
+      let(:upload_pack_fixture) { "setup-node" }
+      let(:v1_0_0_tag_sha) { "0d7d2ca66539aca4af6c5102e29a33757e2c2d2c" }
+      let(:v1_1_0_tag_sha) { "5273d0df9c603edc4284ac8402cf650b4f1f6686" }
+
+      context "and there's a higher version tag" do
+        let(:reference) { v1_0_0_tag_sha }
+
         it { is_expected.to eq(Gem::Version.new("1.1.0")) }
+      end
 
-        context "and the latest version is being ignored" do
-          let(:ignored_versions) { [">= 1.1.0"] }
-          let(:comparison_url) { repo_url + "/compare/v1.0.4...1c24df3" }
-          it { is_expected.to eq(Gem::Version.new("1.0.4")) }
-        end
+      context "and there's no higher version tag" do
+        let(:reference) { v1_1_0_tag_sha }
+
+        it { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
     end
 
@@ -555,27 +573,11 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       it { is_expected.to eq(dependency.requirements) }
     end
 
-    context "given a git commit SHA pointing to the tip of a branch" do
-      let(:reference) { "1c24df3" }
-
-      let(:repo_url) { "https://api.github.com/repos/actions/setup-node" }
-      let(:comparison_url) { repo_url + "/compare/v1.1...1c24df3" }
-      before do
-        stub_request(:get, comparison_url).
-          to_return(
-            status: 200,
-            body: comparison_response,
-            headers: { "Content-Type" => "application/json" }
-          )
-
-        checker.instance_variable_set(:@git_commit_checker, git_commit_checker)
-        allow(git_commit_checker).to receive(:branch_or_ref_in_release?).and_return(true)
-      end
+    context "given a git commit SHA pointing to the tip of a branch not named like a version" do
+      let(:tip_of_master) { "d963e800e3592dd31d6c76252092562d0bc7a3ba" }
+      let(:reference) { tip_of_master }
 
       context "when the specified reference is not in the latest release" do
-        let(:comparison_response) do
-          fixture("github", "commit_compare_diverged.json")
-        end
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -584,7 +586,33 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
+              ref: tip_of_master,
+              branch: nil
+            },
+            metadata: { declaration_string: "actions/setup-node@master" }
+          }]
+        end
+        it { is_expected.to eq(expected_requirements) }
+      end
+    end
+
+    context "given a git commit SHA pointing to the tip of a branch named like a version" do
+      let(:upload_pack_fixture) { "run-vcpkg" }
+      let(:tip_of_v6) { "205a4bde2b6ddf941a102fb50320ea1aa9338233" }
+      let(:tip_of_v10) { "34684effe7451ea95f60397e56ba34c06daced68" }
+
+      context "but not the latest version" do
+        let(:reference) { tip_of_v6 }
+
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/setup-node",
+              ref: tip_of_v10,
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
@@ -593,10 +621,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(expected_requirements) }
       end
 
-      context "when the specified ref is included in the latest release" do
-        let(:comparison_response) do
-          fixture("github", "commit_compare_behind.json")
-        end
+      context "that's also the latest version" do
+        let(:reference) { tip_of_v6 }
+
         let(:expected_requirements) do
           [{
             requirement: nil,
@@ -605,7 +632,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
             source: {
               type: "git",
               url: "https://github.com/actions/setup-node",
-              ref: "5273d0df9c603edc4284ac8402cf650b4f1f6686",
+              ref: tip_of_v10,
               branch: nil
             },
             metadata: { declaration_string: "actions/setup-node@master" }
@@ -615,8 +642,8 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         it { is_expected.to eq(expected_requirements) }
 
         context "and the latest version is being ignored" do
-          let(:ignored_versions) { [">= 1.1.0"] }
-          let(:comparison_url) { repo_url + "/compare/v1.0.4...1c24df3" }
+          let(:ignored_versions) { [">= 10"] }
+          let(:tip_of_v7) { "caea17de9196f8bd343efb496b1820e7438d1f83" }
           let(:expected_requirements) do
             [{
               requirement: nil,
@@ -625,7 +652,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
               source: {
                 type: "git",
                 url: "https://github.com/actions/setup-node",
-                ref: "fc9ff49b90869a686df00e922af871c12215986a",
+                ref: tip_of_v7,
                 branch: nil
               },
               metadata: { declaration_string: "actions/setup-node@master" }
@@ -637,7 +664,6 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         context "and the previous version is a short SHA" do
           let(:reference) { "5273d0df" }
-          let(:comparison_url) { repo_url + "/compare/v1.1...5273d0df" }
           let(:expected_requirements) do
             [{
               requirement: nil,
