@@ -158,6 +158,16 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with a Docker url reference" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "docker_reference.yml" }
+
+      it "ignores the Docker url reference" do
+        expect(dependencies.count).to be(0)
+        expect(dependency).to be_nil
+      end
+    end
+
     context "with a semver tag pinned to a commit" do
       let(:workflow_file_fixture_name) { "pinned_source.yml" }
       let(:service_pack_url) do

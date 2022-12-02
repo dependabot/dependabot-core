@@ -17,7 +17,7 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       GITHUB_REPO_REFERENCE = %r{
-        (?<owner>[\w.-]+)/
+        ^(?<owner>[\w.-]+)/
         (?<repo>[\w.-]+)
         (?<path>/[^\@]+)?
         @(?<ref>.+)
