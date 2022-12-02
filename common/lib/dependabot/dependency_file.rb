@@ -5,7 +5,7 @@ require "pathname"
 module Dependabot
   class DependencyFile
     attr_accessor :name, :content, :directory, :type, :support_file,
-                  :symlink_target, :content_encoding, :operation
+                  :symlink_target, :content_encoding, :operation, :mode
 
     class ContentEncoding
       UTF_8 = "utf-8"
@@ -20,7 +20,8 @@ module Dependabot
 
     def initialize(name:, content:, directory: "/", type: "file",
                    support_file: false, symlink_target: nil,
-                   content_encoding: ContentEncoding::UTF_8, deleted: false, operation: Operation::UPDATE)
+                   content_encoding: ContentEncoding::UTF_8, deleted: false,
+                   operation: Operation::UPDATE, mode: nil)
       @name = name
       @content = content
       @directory = clean_directory(directory)
@@ -40,6 +41,12 @@ module Dependabot
       # support_file flag instead)
       @type = type
 
+      begin
+        @mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
+      rescue StandardError
+        @mode = mode
+      end
+
       return unless (type == "symlink") ^ symlink_target
 
       raise "Symlinks must specify a target!" unless symlink_target
@@ -55,7 +62,8 @@ module Dependabot
         "support_file" => support_file,
         "content_encoding" => content_encoding,
         "deleted" => deleted,
-        "operation" => operation
+        "operation" => operation,
+        "mode" => mode
       }
 
       details["symlink_target"] = symlink_target if symlink_target

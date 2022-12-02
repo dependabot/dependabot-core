@@ -1066,85 +1066,6 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
-  describe "#local_tag_for_latest_version_matching_existing_precision" do
-    subject { checker.local_tag_for_latest_version_matching_existing_precision }
-    let(:repo_url) { "https://github.com/gocardless/business.git" }
-    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
-    before do
-      stub_request(:get, service_pack_url).
-        to_return(
-          status: 200,
-          body: fixture("git", "upload_packs", upload_pack_fixture),
-          headers: {
-            "content-type" => "application/x-git-upload-pack-advertisement"
-          }
-        )
-    end
-    let(:upload_pack_fixture) { "no_tags" }
-
-    context "with no tags on GitHub" do
-      it { is_expected.to be_nil }
-    end
-
-    context "but GitHub returns a 404" do
-      let(:url) { "https://github.com/gocardless/business.git" }
-
-      before do
-        stub_request(:get, service_pack_url).to_return(status: 404)
-
-        exit_status = double(success?: false)
-        allow(Open3).to receive(:capture3).and_call_original
-        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
-      end
-
-      it "raises a helpful error" do
-        expect { checker.local_tag_for_latest_version_matching_existing_precision }.
-          to raise_error(Dependabot::GitDependenciesNotReachable)
-      end
-    end
-
-    context "with tags on GitHub" do
-      context "but no version tags" do
-        let(:upload_pack_fixture) { "no_versions" }
-        it { is_expected.to be_nil }
-      end
-
-      context "with version tags" do
-        let(:upload_pack_fixture) { "actions-checkout" }
-
-        context "and current precision of major" do
-          let(:version) { "1" }
-
-          let(:latest_major) do
-            {
-              commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
-              tag: "v2",
-              tag_sha: anything,
-              version: anything
-            }
-          end
-
-          it { is_expected.to match(latest_major) }
-        end
-
-        context "current precision of patch" do
-          let(:version) { "2.1.1" }
-
-          let(:latest_patch) do
-            {
-              commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
-              tag: "v2.3.4",
-              tag_sha: anything,
-              version: anything
-            }
-          end
-
-          it { is_expected.to match(latest_patch) }
-        end
-      end
-    end
-  end
-
   describe "#local_ref_for_latest_version_matching_existing_precision" do
     subject { checker.local_ref_for_latest_version_matching_existing_precision }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
@@ -1187,6 +1108,31 @@ RSpec.describe Dependabot::GitCommitChecker do
         {
           commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
           tag: "v2.3.4",
+          tag_sha: anything,
+          version: anything
+        }
+      end
+
+      it { is_expected.to match(latest_patch) }
+    end
+
+    context "with a version branch higher than the latest version tag, and pinned to the commit sha of a version tag" do
+      let(:upload_pack_fixture) { "actions-checkout-2022-12-01" }
+      let(:version) { "1.1.0" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "0b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc"
+        }
+      end
+
+      let(:latest_patch) do
+        {
+          commit_sha: "93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8",
+          tag: "v3.1.0",
           tag_sha: anything,
           version: anything
         }

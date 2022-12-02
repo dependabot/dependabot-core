@@ -1,26 +1,26 @@
 PATH
   remote: ../bundler
   specs:
-    dependabot-bundler (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-bundler (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../cargo
   specs:
-    dependabot-cargo (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-cargo (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../common
   specs:
-    dependabot-common (0.213.0)
+    dependabot-common (0.214.0)
       activesupport (>= 6.0.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
       commonmarker (>= 0.20.1, < 0.24.0)
       docker_registry2 (~> 1.11, >= 1.11.0)
-      excon (~> 0.75)
+      excon (~> 0.75, < 0.94)
       faraday (= 2.6.0)
       faraday-retry (= 2.0.0)
       gitlab (= 4.19.0)
@@ -32,88 +32,88 @@ PATH
 PATH
   remote: ../composer
   specs:
-    dependabot-composer (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-composer (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../docker
   specs:
-    dependabot-docker (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-docker (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../elm
   specs:
-    dependabot-elm (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-elm (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../git_submodules
   specs:
-    dependabot-git_submodules (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-git_submodules (0.214.0)
+      dependabot-common (= 0.214.0)
       parseconfig (~> 1.0, < 1.1.0)
 
 PATH
   remote: ../github_actions
   specs:
-    dependabot-github_actions (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-github_actions (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../go_modules
   specs:
-    dependabot-go_modules (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-go_modules (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../gradle
   specs:
-    dependabot-gradle (0.213.0)
-      dependabot-common (= 0.213.0)
-      dependabot-maven (= 0.213.0)
+    dependabot-gradle (0.214.0)
+      dependabot-common (= 0.214.0)
+      dependabot-maven (= 0.214.0)
 
 PATH
   remote: ../hex
   specs:
-    dependabot-hex (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-hex (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../maven
   specs:
-    dependabot-maven (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-maven (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../npm_and_yarn
   specs:
-    dependabot-npm_and_yarn (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-npm_and_yarn (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../nuget
   specs:
-    dependabot-nuget (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-nuget (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../pub
   specs:
-    dependabot-pub (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-pub (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../python
   specs:
-    dependabot-python (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-python (0.214.0)
+      dependabot-common (= 0.214.0)
 
 PATH
   remote: ../terraform
   specs:
-    dependabot-terraform (0.213.0)
-      dependabot-common (= 0.213.0)
+    dependabot-terraform (0.214.0)
+      dependabot-common (= 0.214.0)
 
 GEM
   remote: https://rubygems.org/
@@ -128,11 +128,11 @@ GEM
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
     aws-eventstream (1.2.0)
-    aws-partitions (1.653.0)
+    aws-partitions (1.669.0)
     aws-sdk-codecommit (1.52.0)
       aws-sdk-core (~> 3, >= 3.165.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.166.0)
+    aws-sdk-core (3.168.2)
       aws-eventstream (~> 1, >= 1.0.2)
       aws-partitions (~> 1, >= 1.651.0)
       aws-sigv4 (~> 1.5)
@@ -188,7 +188,7 @@ GEM
     io-console (0.5.11)
     irb (1.4.2)
       reline (>= 0.3.0)
-    jmespath (1.6.1)
+    jmespath (1.6.2)
     json (2.6.2)
     licensed (3.9.1)
       bundler (>= 1.10)

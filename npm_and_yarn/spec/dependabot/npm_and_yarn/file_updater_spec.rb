@@ -3003,6 +3003,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "yarn.lock"
             ]
           )
+          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
         end
       end
 
@@ -3025,6 +3026,31 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "package.json",
               "yarn.lock",
               ".yarn/install-state.gz"
+            ]
+          )
+        end
+      end
+
+      describe "with offline cache the updated yarn_lock" do
+        let(:project_name) { "yarn_berry/simple_node_modules" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "updates the cache but not the zero install file" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
+              ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
+              "package.json",
+              "yarn.lock"
             ]
           )
         end
