@@ -272,7 +272,9 @@ module Dependabot
 
       def pomfiles
         @pomfiles ||=
-          dependency_files.select { |f| f.name.end_with?("pom.xml", "pom_parent.xml") }
+          dependency_files.select do |f|
+            f.name.end_with?(".xml") && !f.name.end_with?("extensions.xml")
+          end
       end
 
       def extensionfiles

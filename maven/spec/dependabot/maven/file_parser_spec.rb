@@ -765,5 +765,227 @@ RSpec.describe Dependabot::Maven::FileParser do
         end
       end
     end
+
+    context "with a multimodule custom named child poms" do
+      let(:files) do
+        [
+          multimodule_custom_pom, submodule_one_pom, submodule_two_pom, submodule_three_pom
+        ]
+      end
+      let(:multimodule_custom_pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "multimodule_custom_modules.xml")
+        )
+      end
+      let(:submodule_one_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-one/pom.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_one_pom.xml")
+        )
+      end
+      let(:submodule_two_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-two/notpom.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_two_pom.xml")
+        )
+      end
+      let(:submodule_three_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-three/some-other-name.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_three_pom.xml")
+        )
+      end
+
+      it "gets the right dependencies" do
+        expect(dependencies.map(&:name)).
+          to match_array(
+            %w(
+              net.sf.ehcache:ehcache
+              org.apache.httpcomponents:httpclient
+              org.springframework:spring-aop
+              org.springframework:spring-core
+            )
+          )
+      end
+
+      describe "the standard pom dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.version).to eq("4.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.0",
+              file: "submodule-one/pom.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar"
+              }
+            }]
+          )
+        end
+      end
+
+      describe "the custom named pom dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.springframework:spring-core")
+          expect(dependency.version).to eq("4.3.11.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.3.11.RELEASE",
+              file: "submodule-three/some-other-name.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar"
+              }
+            }]
+          )
+        end
+      end
+    end
+
+    context "with an inheritance with custom parent name" do
+      let(:files) do
+        [
+          pom, parentpom
+        ]
+      end
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "inheritance_custom_named_pom.xml")
+        )
+      end
+      let(:parentpom) do
+        Dependabot::DependencyFile.new(
+          name: "parentpom.xml",
+          content: fixture("poms", "inheritance_custom_named_parent_pom.xml")
+        )
+      end
+
+      it "gets the right dependencies" do
+        expect(dependencies.map(&:name)).
+          to match_array(
+            %w(
+              org.apache.httpcomponents:httpclient
+              org.springframework:spring-aop
+            )
+          )
+      end
+
+      describe "the pom dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.version).to eq("4.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.0",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar"
+              }
+            }]
+          )
+        end
+      end
+
+      describe "the parent pom dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.springframework:spring-aop")
+          expect(dependency.version).to eq("4.0.5.RELEASE")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "4.0.5.RELEASE",
+              file: "parentpom.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "jar"
+              }
+            }]
+          )
+        end
+      end
+    end
+
+    context "with an inheritance and different types of parents" do
+      let(:files) do
+        [
+          pom_with_existing_parent, parent_pom, pom_without_existing_parent
+        ]
+      end
+      let(:pom_with_existing_parent) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "inheritance_custom_named_pom.xml")
+        )
+      end
+      let(:parent_pom) do
+        Dependabot::DependencyFile.new(
+          name: "parent_pom.xml",
+          content: fixture("poms", "inheritance_custom_named_parent_pom.xml")
+        )
+      end
+      let(:pom_without_existing_parent) do
+        Dependabot::DependencyFile.new(
+          name: "pom_without_existing_parent.xml",
+          content: fixture("poms", "inheritance_pom_no_parent_with_namespace_present.xml")
+        )
+      end
+
+      it "gets the right dependencies including absent parent" do
+        expect(dependencies.map(&:name)).
+          to match_array(
+            %w(
+              net.sf.ehcache:ehcache
+              org.apache.httpcomponents:httpclient
+              org.example:maven-test-no-parent-artifact
+              org.springframework:spring-aop
+            )
+          )
+      end
+
+      describe "the absent in repo parent dependency" do
+        subject(:dependency) { dependencies[2] }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).
+            to eq("org.example:maven-test-no-parent-artifact")
+          expect(dependency.version).to eq("1.0-SNAPSHOT")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0-SNAPSHOT",
+              file: "pom_without_existing_parent.xml",
+              groups: [],
+              source: nil,
+              metadata: {
+                packaging_type: "pom"
+              }
+            }]
+          )
+        end
+      end
+    end
   end
 end
