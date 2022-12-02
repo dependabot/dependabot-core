@@ -813,7 +813,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(31) }
+      its(:length) { is_expected.to eq(33) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -874,6 +874,32 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
+      describe "plugin with explicit module and referenced version" do
+        let(:dependency) do
+          dependencies.find { |dep| dep.name == "org.jlleitschuh.gradle.ktlint" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.version).to eq("9.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "10.0.0",
+              file: "gradle/libs.versions.toml",
+              groups: ["plugins"],
+              source: nil,
+              metadata: { property_name: "ktlint" }
+            }, {
+              requirement: "9.0.0",
+              file: "gradle/libs.versions.toml",
+              groups: ["plugins"],
+              source: nil,
+              metadata: nil
+            }]
+          )
+        end
+      end
+
       describe "non-referenced version dependency" do
         subject(:dependency) do
           dependencies.find { |d| d.name == "androidx.activity:activity-compose" }
@@ -914,7 +940,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
           )
         end
 
-        its(:length) { is_expected.to eq(30) }
+        its(:length) { is_expected.to eq(31) }
 
         describe "the first dependency" do
           subject(:dependency) { dependencies.first }
@@ -943,8 +969,8 @@ RSpec.describe Dependabot::Gradle::FileParser do
           end
         end
 
-        describe "the last dependency" do
-          subject(:dependency) { dependencies.last }
+        describe "the last library dependency" do
+          subject(:dependency) { dependencies[-2] }
 
           it "has the right details" do
             expect(dependency).to be_a(Dependabot::Dependency)
@@ -957,6 +983,25 @@ RSpec.describe Dependabot::Gradle::FileParser do
                 groups: [],
                 source: nil,
                 metadata: { property_name: "espresso" }
+              }]
+            )
+          end
+        end
+
+        describe "the version catalog plugin" do
+          subject(:dependency) { dependencies.last }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("org.jmailen.kotlinter")
+            expect(dependency.version).to eq("3.11.0")
+            expect(dependency.requirements).to eq(
+              [{
+                requirement: "3.11.0",
+                file: "gradle/libs.versions.toml",
+                groups: ["plugins"],
+                source: nil,
+                metadata: nil
               }]
             )
           end

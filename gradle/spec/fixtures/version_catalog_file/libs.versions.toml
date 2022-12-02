@@ -6,6 +6,7 @@ composeUi = "1.2.0"
 jUnitVersion = "4.13.2"
 androidxJunit = "1.1.3"
 espresso = "3.5.0"
+ktlint = "10.0.0"
 
 [libraries]
 corektx = { module = "androidx.core:core-ktx", version.ref = "corektx" }
@@ -29,4 +30,6 @@ test-espresso-Core = { module = "androidx.test.espresso:espresso-core", version.
 compose = ["compose-activity", "compose-ui", "compose-ui-tooling", "compose-material"]
 
 [plugins]
-kotlinter = { id = "org.jmailen.kotlinter", version = "3.11.0" }
+kotlinter = { id = "org.jmailen.kotlinter", version = "3.10.0" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+ktlintUpdated = { id = "org.jlleitschuh.gradle.ktlint", version = "9.0.0" }

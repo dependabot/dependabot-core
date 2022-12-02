@@ -69,8 +69,23 @@ module Dependabot
 
       def version_catalog_dependencies(toml_file)
         dependency_set = DependencySet.new
-        libraries = parsed_toml_file(toml_file)["libraries"]
-        libraries.each do |_mod, declaration|
+        parsed_toml_file = parsed_toml_file(toml_file)
+        dependency_set += version_catalog_library_dependencies(parsed_toml_file, toml_file)
+        dependency_set += version_catalog_plugin_dependencies(parsed_toml_file, toml_file)
+        dependency_set
+      end
+
+      def version_catalog_library_dependencies(parsed_toml_file, toml_file)
+        dependencies_for_declarations(parsed_toml_file["libraries"], toml_file, :details_for_library_dependency)
+      end
+
+      def version_catalog_plugin_dependencies(parsed_toml_file, toml_file)
+        dependencies_for_declarations(parsed_toml_file["plugins"], toml_file, :details_for_plugin_dependency)
+      end
+
+      def dependencies_for_declarations(declarations, toml_file, details_getter)
+        dependency_set = DependencySet.new
+        declarations.each do |_mod, declaration|
           version = declaration["version"]
           next if version.nil?
 
@@ -79,16 +94,24 @@ module Dependabot
           next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
 
           version_details = version["ref"].nil? ? version : "$" + version["ref"]
-          group, name = if declaration["module"]
-                          declaration["module"].split(":")
-                        else
-                          [declaration["group"], declaration["name"]]
-                        end
-
+          group, name = send(details_getter, declaration)
           details = { group: group, name: name, version: version_details }
+
           dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
         end
         dependency_set
+      end
+
+      def details_for_library_dependency(declaration)
+        if declaration["module"]
+          declaration["module"].split(":")
+        else
+          [declaration["group"], declaration["name"]]
+        end
+      end
+
+      def details_for_plugin_dependency(declaration)
+        ["plugins", declaration["id"]]
       end
 
       def parsed_toml_file(file)
