@@ -1652,13 +1652,6 @@ RSpec.describe Dependabot::Updater do
             )
           updater.run
         end
-
-        it "notifies Sentry with a breadcrumb to check the logs" do
-          expect(Raven).
-            to receive(:capture_exception).
-            with(instance_of(Dependabot::Updater::SubprocessFailed), anything)
-          updater.run
-        end
       end
 
       it "tells Sentry" do
