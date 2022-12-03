@@ -227,8 +227,8 @@ RUN cd /tmp \
 # Install Erlang and Elixir
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.14.1
-ARG ELIXIR_CHECKSUM=610b23ab7f8ffd247a62b187c148cd2aa599b5a595137fe0531664903b921306
+ARG ELIXIR_VERSION=v1.14.2
+ARG ELIXIR_CHECKSUM=2e4addb85de85218d32c16b3710e8087f5b18b3b1560742137ad4c41bbbea63a
 ARG ERLANG_MAJOR_VERSION=24
 ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
