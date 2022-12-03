@@ -1637,19 +1637,39 @@ RSpec.describe Dependabot::Updater do
       context "but it's a Dependabot::SharedHelpers::HelperSubprocessFailed" do
         let(:error) do
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
-            message: "Potentially sensitive log content goes here",
-            error_context: {}
+            message: error_message,
+            error_context: error_details,
+            error_class: "SomeFailedErrorClass",
+            trace: "this failed here"
           )
         end
 
-        it "tells the main backend there has been an unknown error" do
+        let(error_message) do
+          "Potentially sensitive log content goes here"
+        end
+
+        let(:error_details) do
+          {
+            message: error_message,
+            "error-class": "SomeFailedErrorClass",
+            "error-command": "",
+            "error-trace": "this failed here",
+          }
+        end
+
+        it "tells the main backend there has been a subprocess_failed error" do
           expect(service).
             to receive(:record_update_job_error).
             with(
               1,
-              error_type: "unknown_error",
+              error_type: "subprocess_failed",
               error_details: nil
             )
+          updater.run
+        end
+
+        it "does not tell Sentry" do
+          expect(Raven).to_not receive(:capture_exception)
           updater.run
         end
       end

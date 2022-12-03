@@ -53,7 +53,7 @@ module Dependabot
     end
 
     class HelperSubprocessFailed < Dependabot::DependabotError
-      attr_reader :error_class, :error_context, :trace
+      attr_reader :error_class, :error_context, :command, :trace
 
       def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)

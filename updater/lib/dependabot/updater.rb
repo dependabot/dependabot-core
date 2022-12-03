@@ -845,8 +845,21 @@ module Dependabot
           # If a helper subprocess has failed the error may include sensitive
           # info such as file contents or paths, which is already available in
           # the job logs.
+          subprocess_failed_details = {
+            "error-type": "subprocess_failed",
+            "error-detail": { 
+              message: error.message,
+              "error-class": error.error_class,
+              "error-command": error.command,
+              "error-trace": error.trace,
+              "time-taken": error.error_context[:time_taken].truncate(2) if error.error_context[:time_taken],
+              "error-function": error.error_context[:function] if error.error_context[:function]
+            }
+          }
+          record_error(subprocess_failed_details)
 
-          { "error-type": "unknown_error" }
+          # Avoid re-posting the error
+          nil
         when *Octokit::RATE_LIMITED_ERRORS
           # If we get a rate-limited error we let dependabot-api handle the
           # retry by re-enqueing the update job after the reset
@@ -861,7 +874,7 @@ module Dependabot
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details)
+      record_error(error_details) if error_details
 
       log_error(
         dependency: dependency,
