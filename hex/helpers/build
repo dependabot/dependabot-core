@@ -10,14 +10,11 @@ fi
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/hex"
 mkdir -p "$install_dir"
 
-# Initial Hex install - will always be the latest available version
-mix local.hex --force --if-missing
-# Annoyingly, a specific Hex version cannot be specified during the initial install.
-# The only way to pin is to re-install.
-if [ -n "$HEX_VERSION" ]; then
-  mix hex.install "$HEX_VERSION"
-fi
+mix local.hex "$HEX_VERSION" --force --if-missing
 
+# Install deps necessary for Elixir projects using Nerves extensions
+# The `hex` arg isn't re-installing hex, but rather telling
+# mix that nerves_bootstrap is a hex package.
 mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
