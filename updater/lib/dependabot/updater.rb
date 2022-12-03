@@ -843,14 +843,8 @@ module Dependabot
           }
         when Dependabot::SharedHelpers::HelperSubprocessFailed
           # If a helper subprocess has failed the error may include sensitive
-          # info such as file contents or paths. This information is already
-          # in the job logs, so we send a breadcrumb to Sentry to retrieve those
-          # instead.
-          msg = "Dependency update process failed, please check the job logs"
-          Raven.capture_exception(
-            SubprocessFailed.new(msg),
-            raven_context
-          )
+          # info such as file contents or paths, which is already available in
+          # the job logs.
 
           { "error-type": "unknown_error" }
         when *Octokit::RATE_LIMITED_ERRORS
