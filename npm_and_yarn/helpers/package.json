@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@dependabot/yarn-lib": "^1.22.19",
-    "@npmcli/arborist": "^6.1.3",
+    "@npmcli/arborist": "^6.1.4",
     "detect-indent": "^6.1.0",
     "nock": "^13.2.9",
     "npm": "6.14.17",
