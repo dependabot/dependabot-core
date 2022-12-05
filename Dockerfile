@@ -72,8 +72,6 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
 ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.5
-# Generally simplest to pin RUBYGEMS_SYSTEM_VERSION to the version that default ships with RUBY_VERSION.
-ARG RUBYGEMS_SYSTEM_VERSION=3.3.7
 
 ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
@@ -90,7 +88,6 @@ RUN mkdir -p /tmp/ruby-install \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
  && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
- && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
