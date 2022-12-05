@@ -17,7 +17,7 @@
     "semver": "^7.3.8"
   },
   "devDependencies": {
-    "eslint": "^8.28.0",
+    "eslint": "^8.29.0",
     "eslint-config-prettier": "^8.5.0",
     "jest": "^29.3.1",
     "prettier": "^2.8.0",
