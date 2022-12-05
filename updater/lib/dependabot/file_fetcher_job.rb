@@ -13,7 +13,9 @@ module Dependabot
       begin
         connectivity_check if ENV["ENABLE_CONNECTIVITY_CHECK"] == "1"
         clone_repo_contents
-        @base_commit_sha = file_fetcher.commit || "unknown"
+        @base_commit_sha = file_fetcher.commit
+        raise "base commit SHA not found" unless @base_commit_sha
+
         dependency_files
       rescue StandardError => e
         @base_commit_sha ||= "unknown"
