@@ -27,7 +27,7 @@ gem "sentry-raven", "~> 3.1"
 gem "terminal-table", "~> 3.0.2"
 
 group :test do
-  gem "debug", "~> 1.6.3"
+  gem "debug", "~> 1.7.0"
   gem "rspec", "~> 3.12"
   gem "rubocop", "~> 1.39.0"
   gem "rubocop-performance", "~> 1.15.1"
