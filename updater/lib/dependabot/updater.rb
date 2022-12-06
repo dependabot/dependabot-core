@@ -33,7 +33,15 @@ require "wildcard_matcher"
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class Updater
-    class SubprocessFailed < StandardError; end
+    class SubprocessFailed < StandardError
+      attr_reader :raven_context
+
+      def initialize(message, raven_context:)
+        super(message)
+
+        @raven_context = raven_context
+      end
+    end
 
     # These are errors that halt the update run and are handled in the main
     # backend. They do *not* raise a sentry.
@@ -848,7 +856,7 @@ module Dependabot
           # instead.
           msg = "Dependency update process failed, please check the job logs"
           Raven.capture_exception(
-            SubprocessFailed.new(msg),
+            SubprocessFailed.new(msg, raven_context: error.raven_context),
             raven_context
           )
 
