@@ -295,7 +295,7 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {})
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
       stdout, process = Open3.capture2e(env || {}, cmd)
@@ -307,6 +307,7 @@ module Dependabot
 
       error_context = {
         command: cmd,
+        fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s
       }

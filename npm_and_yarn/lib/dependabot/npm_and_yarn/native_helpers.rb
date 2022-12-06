@@ -14,14 +14,14 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      def self.npm8_subdependency_update_command(dependency_names)
+      def self.run_npm8_subdependency_update_command(dependency_names)
         # NOTE: npm options
         # - `--force` ignores checks for platform (os, cpu) and engines
         # - `--dry-run=false` the updater sets a global .npmrc with dry-run: true to
         #   work around an issue in npm 6, we don't want that here
         # - `--ignore-scripts` disables prepare and prepack scripts which are run
         #   when installing git dependencies
-        [
+        command = [
           "npm",
           "update",
           *dependency_names,
@@ -31,6 +31,19 @@ module Dependabot
           "--ignore-scripts",
           "--package-lock-only"
         ].join(" ")
+
+        fingerprint = [
+          "npm",
+          "update",
+          "<dependency_names>",
+          "--force",
+          "--dry-run",
+          "false",
+          "--ignore-scripts",
+          "--package-lock-only"
+        ].join(" ")
+
+        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
       end
     end
   end
