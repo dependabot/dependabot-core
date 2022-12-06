@@ -71,15 +71,25 @@ module Dependabot
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
+              options = pip_compile_options(filename)
+              options_fingerprint = pip_compile_options_fingerprint(options)
+
               name_part = "pyenv exec pip-compile " \
-                          "#{pip_compile_options(filename)} -P " \
+                          "#{options} -P " \
                           "#{dependency.name}"
+              fingerprint_name_part = "pyenv exec pip-compile " \
+                                      "#{options_fingerprint} -P " \
+                                      "<dependency_name>"
+
               version_part = "#{dependency.version} #{filename}"
+              fingerprint_version_part = "<dependency_version> <filename>"
+
               # Don't escape pyenv `dep-name==version` syntax
               run_pip_compile_command(
                 "#{SharedHelpers.escape_command(name_part)}==" \
                 "#{SharedHelpers.escape_command(version_part)}",
-                allow_unsafe_shell_command: true
+                allow_unsafe_shell_command: true,
+                fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
               )
             end
 
@@ -137,7 +147,7 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false)
+        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false, fingerprint:)
           start = Time.now
           command = if allow_unsafe_shell_command
                       cmd
@@ -149,10 +159,6 @@ module Dependabot
 
           return stdout if process.success?
 
-          handle_pip_errors(stdout, command, time_taken, process.to_s)
-        end
-
-        def handle_pip_errors(stdout, command, time_taken, exit_value)
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
@@ -161,17 +167,23 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
-              process_exit_value: exit_value
+              process_exit_value: process.to_s
             }
           )
         end
 
-        def run_pip_compile_command(command, allow_unsafe_shell_command: false)
-          run_command("pyenv local #{Helpers.python_major_minor(python_version)}")
+        def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
+          run_command(
+            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
           run_command(
             command,
-            allow_unsafe_shell_command: allow_unsafe_shell_command
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            fingerprint: fingerprint
           )
         end
 
@@ -389,6 +401,16 @@ module Dependabot
             named_captures.fetch("separator")
 
           current_separator || default_separator
+        end
+
+        def pip_compile_options_fingerprint(options)
+          options.sub(
+            /--output-file=\S+/, "--output-file=<output_file>"
+          ).sub(
+            /--index-url=\S+/, "--index-url=<index_url>"
+          ).sub(
+            /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          )
         end
 
         def pip_compile_options(filename)
