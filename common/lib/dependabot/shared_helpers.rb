@@ -59,12 +59,12 @@ module Dependabot
         super(message)
         @error_class = error_class || ""
         @error_context = error_context
-        @command = error_context[:command]
+        @fingerprint = error_context[:fingerprint] || error_context[:command]
         @trace = trace
       end
 
       def raven_context
-        { fingerprint: [@command], extra: @error_context.except(:stderr_output) }
+        { fingerprint: [@fingerprint], extra: @error_context.except(:stderr_output, :fingerprint) }
       end
     end
 

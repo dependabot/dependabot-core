@@ -185,7 +185,7 @@ module Dependabot
                 run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
               end
 
-              run_poetry_command(poetry_update_command)
+              run_poetry_update_command
 
               return File.read("poetry.lock") if File.exist?("poetry.lock")
 
@@ -196,11 +196,14 @@ module Dependabot
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
-        def poetry_update_command
-          "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
+        def run_poetry_update_command
+          run_poetry_command(
+            "pyenv exec poetry update #{dependency.name} --lock --no-interaction",
+            fingerprint: "pyenv exec poetry update <dependency_name> --lock --no-interaction"
+          )
         end
 
-        def run_poetry_command(command)
+        def run_poetry_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -214,6 +217,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
