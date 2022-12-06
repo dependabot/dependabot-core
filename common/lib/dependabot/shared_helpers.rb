@@ -64,7 +64,7 @@ module Dependabot
       end
 
       def raven_context
-        { fingerprint: [@command], extra: @error_context }
+        { fingerprint: [@command], extra: @error_context.except(:stderr_output) }
       end
     end
 
