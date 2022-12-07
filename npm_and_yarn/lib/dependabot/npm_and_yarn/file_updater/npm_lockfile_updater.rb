@@ -223,7 +223,7 @@ module Dependabot
 
         def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
-          SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command(dependency_names))
+          NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
