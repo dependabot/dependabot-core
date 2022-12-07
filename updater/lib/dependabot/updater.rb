@@ -854,11 +854,10 @@ module Dependabot
           # info such as file contents or paths. This information is already
           # in the job logs, so we send a breadcrumb to Sentry to retrieve those
           # instead.
-          msg = "Dependency update process failed, please check the job logs"
-          Raven.capture_exception(
-            SubprocessFailed.new(msg, raven_context: error.raven_context),
-            raven_context
-          )
+          msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
+          sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
+          sanitized_error.set_backtrace(error.backtrace)
+          Raven.capture_exception(sanitized_error, raven_context)
 
           { "error-type": "unknown_error" }
         when *Octokit::RATE_LIMITED_ERRORS
