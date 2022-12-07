@@ -68,4 +68,22 @@ RSpec.describe Dependabot::Clients::GithubWithRetries do
       end
     end
   end
+
+  describe ".read_timeout_in_seconds" do
+    context "when DEPENDABOT_READ_TIMEOUT_IN_SECONDS is set" do
+      it "returns the provided value" do
+        override_value = 10
+        stub_const("ENV", ENV.to_hash.merge("DEPENDABOT_READ_TIMEOUT_IN_SECONDS" => override_value))
+
+        expect(described_class.read_timeout_in_seconds).to eq(override_value)
+      end
+    end
+
+    context "when ENV does not provide an override" do
+      it "falls back to a default value" do
+        expect(described_class.read_timeout_in_seconds).
+          to eq(described_class::DEFAULT_READ_TIMEOUT_IN_SECONDS)
+      end
+    end
+  end
 end
