@@ -174,14 +174,25 @@ jobs:
             - 'updater/**'
             - 'npm_and_yarn/**'
 
-    - name: Download CLI and test
+    - name: Download CLI
+      uses: actions/checkout@v3
+      with:
+        repository: dependabot/cli
+        branch: deivid-rodriguez/allow-configuring-job-path-and-friends
+        path: cli
       if: steps.changes.outputs[matrix.suite] == 'true'
+    - name: Build CLI
       run: |
-        gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
-        tar xzvf *.tar.gz >/dev/null 2>&1
-        ./dependabot --version
+        go build -v ./...
+        go run cmd/dependabot/dependabot.go -v
+      working-directory: cli
+      if: steps.changes.outputs[matrix.suite] == 'true'
+    - name: Download tests
+      run: |
         URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite }}.yaml
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
+      if: steps.changes.outputs[matrix.suite] == 'true'
+      working-directory: cli
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
     - name: Download cache
@@ -221,20 +232,23 @@ jobs:
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         DEPENDABOT_JOB_PATH: /home/dependabot/dependabot-core/updater/job.json
-        DEPENDABOT_OUTPUT_PATH: /home/dependabot/dependabot-core/updater/output/output.json
+        DEPENDABOT_OUTPUT_PATH: /home/dependabot/dependabot-core/updater/output.json
         DEPENDABOT_REPO_CONTENTS_PATH: /home/dependabot/dependabot-core/updater/repo
       run: |
         set -o pipefail
-        ./dependabot test -f=smoke.yaml -o=result.yaml --cache=cache --timeout=20m --updater-image=dependabot/updater:latest 2>&1 | tee -a log.txt
+        go run cmd/dependabot/dependabot.go test -f=smoke.yaml -o=result.yaml --cache=cache --timeout=20m --updater-image=dependabot/updater:latest 2>&1 | tee -a log.txt
+      working-directory: cli
 
     - name: Diff
       if: always()
       continue-on-error: true
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
+      working-directory: cli
 
     - name: Create summary
       if: steps.changes.outputs[matrix.suite] == 'true'
       run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
+      working-directory: cli
 
     # No upload at the end:
     # - If a test is uncachable in some regard, the cache would grow unbound.
