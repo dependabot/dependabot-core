@@ -174,8 +174,7 @@ module Dependabot
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
 
             SharedHelpers.run_shell_command(
-              "terraform providers lock -platform=#{arch} #{provider_source} -no-color",
-              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color"
+              "terraform providers lock -platform=#{arch} #{provider_source} -no-color"
             )
 
             updated_lockfile = File.read(".terraform.lock.hcl")
@@ -232,8 +231,7 @@ module Dependabot
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
           SharedHelpers.run_shell_command(
-            "terraform providers lock #{platforms} #{provider_source}",
-            fingerprint: "terraform providers lock <platforms> <provider_source>"
+            "terraform providers lock #{platforms} #{provider_source}"
           )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
