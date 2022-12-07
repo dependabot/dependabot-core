@@ -252,7 +252,8 @@ module Dependabot
 
       def find_container_branch(sha)
         branches_including_ref = SharedHelpers.run_shell_command(
-          "git branch --remotes --contains #{sha}"
+          "git branch --remotes --contains #{sha}",
+          fingerprint: "git branch --remotes --contains <sha>"
         ).split("\n").map { |branch| branch.strip.gsub("origin/", "") }
 
         current_branch = branches_including_ref.find { |branch| branch.start_with?("HEAD -> ") }

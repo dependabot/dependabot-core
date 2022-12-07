@@ -190,7 +190,8 @@ module Dependabot
       run_shell_command(
         "git config --global credential.helper " \
         "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
-        allow_unsafe_shell_command: true
+        allow_unsafe_shell_command: true,
+        fingerprint: "git config --global credential.helper '<helper_command>'"
       )
 
       # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
