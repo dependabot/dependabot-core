@@ -100,7 +100,7 @@ module Dependabot
                 end
 
                 # Shell out to Poetry, which handles everything for us.
-                run_poetry_command(poetry_update_command)
+                run_poetry_update_command
 
                 updated_lockfile =
                   if File.exist?("poetry.lock") then File.read("poetry.lock")
@@ -163,8 +163,11 @@ module Dependabot
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
-        def poetry_update_command
-          "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
+        def run_poetry_update_command
+          run_poetry_command(
+            "pyenv exec poetry update #{dependency.name} --lock --no-interaction",
+            fingerprint: "pyenv exec poetry update <dependency_name> --lock --no-interaction"
+          )
         end
 
         def check_original_requirements_resolvable
@@ -174,7 +177,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(update_pyproject: false)
 
-              run_poetry_command(poetry_update_command)
+              run_poetry_update_command
 
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -331,7 +334,7 @@ module Dependabot
           poetry_lock || pyproject_lock
         end
 
-        def run_poetry_command(command)
+        def run_poetry_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -345,6 +348,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }

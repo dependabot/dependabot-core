@@ -149,16 +149,18 @@ module Dependabot
           # lockfile in the right state. Otherwise we'll need to manually update
           # the lockfile.
 
-          command = if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
-                      "yarn install #{Helpers.yarn_berry_args}".strip
-                    else
-                      updates = top_level_dependency_updates.collect do |dep|
-                        dep[:name]
-                      end
+          if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
+            Helpers.run_yarn_command("yarn install #{yarn_berry_args}".strip)
+          else
+            updates = top_level_dependency_updates.collect do |dep|
+              dep[:name]
+            end
 
-                      "yarn up -R #{updates.join(' ')} #{Helpers.yarn_berry_args}".strip
-                    end
-          Helpers.run_yarn_commands(command)
+            Helpers.run_yarn_command(
+              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
+              fingerprint: "yarn up -R <dependency_names> #{yarn_berry_args}".strip
+            )
+          end
           { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
@@ -171,12 +173,18 @@ module Dependabot
           dep = sub_dependencies.first
           update = "#{dep.name}@#{dep.version}"
 
-          Helpers.run_yarn_commands(
-            "yarn add #{update} #{Helpers.yarn_berry_args}".strip,
-            "yarn dedupe #{dep.name} #{Helpers.yarn_berry_args}".strip,
-            "yarn remove #{dep.name} #{Helpers.yarn_berry_args}".strip
-          )
+          commands = [
+            ["yarn add #{update} #{yarn_berry_args}".strip, "yarn add <update> #{yarn_berry_args}".strip],
+            ["yarn dedupe #{dep.name} #{yarn_berry_args}".strip, "yarn dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["yarn remove #{dep.name} #{yarn_berry_args}".strip, "yarn remove <dep_name> #{yarn_berry_args}".strip]
+          ]
+
+          Helpers.run_yarn_commands(*commands)
           { yarn_lock.name => File.read(yarn_lock.name) }
+        end
+
+        def yarn_berry_args
+          Helpers.yarn_berry_args
         end
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
