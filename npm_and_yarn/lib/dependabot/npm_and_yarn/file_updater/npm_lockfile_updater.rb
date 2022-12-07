@@ -205,7 +205,19 @@ module Dependabot
             "--ignore-scripts",
             "--package-lock-only"
           ].join(" ")
-          SharedHelpers.run_shell_command(command)
+
+          fingerprint = [
+            "npm",
+            "install",
+            "<install_args>",
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
