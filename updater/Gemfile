@@ -22,7 +22,7 @@ gem "dependabot-terraform", path: "../terraform"
 
 gem "activesupport", "~> 6.1.4"
 gem "http", "~> 5.1"
-gem "octokit", "4.25.1"
+gem "octokit", "6.0.1"
 gem "sentry-raven", "~> 3.1"
 gem "terminal-table", "~> 3.0.2"
 
