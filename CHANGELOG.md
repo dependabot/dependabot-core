@@ -1,3 +1,17 @@
+## v0.215.0, 7 December 2022
+
+- Improve SubprocessFailed Sentry errors [#6276](https://github.com/dependabot/dependabot-core/pull/6276)
+- More error aggregation [#6274](https://github.com/dependabot/dependabot-core/pull/6274)
+- Aggregate more subcommand failed errors [#6273](https://github.com/dependabot/dependabot-core/pull/6273)
+- Improve subprocess failed error aggregation [#6272](https://github.com/dependabot/dependabot-core/pull/6272)
+- Pass `raven_context` to Sentry on failed subprocess exceptions [#6268](https://github.com/dependabot/dependabot-core/pull/6268)
+- Rescue socket errors for poetry library detection [#6271](https://github.com/dependabot/dependabot-core/pull/6271)
+- No need to install RubyGems explicitly [#6267](https://github.com/dependabot/dependabot-core/pull/6267)
+- build(deps): bump terraform from 1.3.5 to 1.3.6 (@HorizonNet) [#6246](https://github.com/dependabot/dependabot-core/pull/6246)
+- Yarn Berry: Offline cache updates [#6242](https://github.com/dependabot/dependabot-core/pull/6242)
+- Don't use compare URLs for deciding GitHub Actions upgrades [#6240](https://github.com/dependabot/dependabot-core/pull/6240)
+- Fix some branches getting in the middle of upgrading actions pinned to SHAs [#6239](https://github.com/dependabot/dependabot-core/pull/6239)
+
 ## v0.214.0, 30 November 2022
 
 - Yarn Berry: Make a best effort to preserve file permissions (@pavera) [#6141](https://github.com/dependabot/dependabot-core/pull/6141)
