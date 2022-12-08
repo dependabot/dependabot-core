@@ -32,7 +32,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo update -p #{dependency_spec}")
+              run_shell_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")
@@ -135,7 +135,7 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
-        def run_shell_command(command)
+        def run_shell_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -149,6 +149,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }

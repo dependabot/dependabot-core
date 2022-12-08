@@ -157,7 +157,8 @@ module Dependabot
             end
 
             Helpers.run_yarn_command(
-              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip
+              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
+              fingerprint: "yarn up -R <dependency_names> #{yarn_berry_args}".strip
             )
           end
           { yarn_lock.name => File.read(yarn_lock.name) }
@@ -173,9 +174,9 @@ module Dependabot
           update = "#{dep.name}@#{dep.version}"
 
           commands = [
-            "yarn add #{update} #{yarn_berry_args}".strip,
-            "yarn dedupe #{dep.name} #{yarn_berry_args}".strip,
-            "yarn remove #{dep.name} #{yarn_berry_args}".strip
+            ["yarn add #{update} #{yarn_berry_args}".strip, "yarn add <update> #{yarn_berry_args}".strip],
+            ["yarn dedupe #{dep.name} #{yarn_berry_args}".strip, "yarn dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["yarn remove #{dep.name} #{yarn_berry_args}".strip, "yarn remove <dep_name> #{yarn_berry_args}".strip]
           ]
 
           Helpers.run_yarn_commands(*commands)

@@ -32,7 +32,18 @@ module Dependabot
           "--package-lock-only"
         ].join(" ")
 
-        SharedHelpers.run_shell_command(command)
+        fingerprint = [
+          "npm",
+          "update",
+          "<dependency_names>",
+          "--force",
+          "--dry-run",
+          "false",
+          "--ignore-scripts",
+          "--package-lock-only"
+        ].join(" ")
+
+        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
       end
     end
   end
