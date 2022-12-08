@@ -117,7 +117,8 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               Helpers.run_yarn_command(
-                "yarn up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip
+                "yarn up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
+                fingerprint: "yarn up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
               )
               { lockfile_name => File.read(lockfile_name) }
             end
