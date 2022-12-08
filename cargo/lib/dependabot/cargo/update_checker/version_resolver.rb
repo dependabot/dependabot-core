@@ -134,12 +134,11 @@ module Dependabot
         # so without doing an install (so it's fast).
         def run_cargo_update_command
           run_cargo_command(
-            "cargo update -p #{dependency_spec} --verbose",
-            fingerprint: "cargo update -p <dependency_spec> --verbose"
+            "cargo update -p #{dependency_spec} --verbose"
           )
         end
 
-        def run_cargo_command(command, fingerprint: nil)
+        def run_cargo_command(command)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -153,7 +152,6 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
-              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }

@@ -198,12 +198,11 @@ module Dependabot
         # Using `--no-interaction` avoids asking for passwords.
         def run_poetry_update_command
           run_poetry_command(
-            "pyenv exec poetry update #{dependency.name} --lock --no-interaction",
-            fingerprint: "pyenv exec poetry update <dependency_name> --lock --no-interaction"
+            "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
           )
         end
 
-        def run_poetry_command(command, fingerprint: nil)
+        def run_poetry_command(command)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -217,7 +216,6 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
-              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }

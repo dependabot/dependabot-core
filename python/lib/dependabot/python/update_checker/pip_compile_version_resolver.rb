@@ -77,11 +77,9 @@ module Dependabot
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
                   options = pip_compile_options(filename)
-                  options_fingerprint = pip_compile_options_fingerprint(options)
 
                   run_pip_compile_command(
-                    "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
-                    fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
+                    "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}"
                   )
 
                   next if dependency.top_level?
@@ -95,8 +93,7 @@ module Dependabot
                   # update_not_possible.
                   write_original_manifest_files
                   run_pip_compile_command(
-                    "pyenv exec pip-compile #{options} #{filename}",
-                    fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+                    "pyenv exec pip-compile #{options} #{filename}"
                   )
                 end
 
@@ -189,11 +186,9 @@ module Dependabot
 
               filenames_to_compile.each do |filename|
                 options = pip_compile_options(filename)
-                options_fingerprint = pip_compile_options_fingerprint(options)
 
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{options} #{filename}",
-                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
+                  "pyenv exec pip-compile #{options} #{filename}"
                 )
               end
 
@@ -213,7 +208,7 @@ module Dependabot
           end
         end
 
-        def run_command(command, env: python_env, fingerprint:)
+        def run_command(command, env: python_env)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
@@ -225,7 +220,6 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
-              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
@@ -234,16 +228,6 @@ module Dependabot
 
         def new_resolver_supported?
           python_version >= Python::Version.new("3.7")
-        end
-
-        def pip_compile_options_fingerprint(options)
-          options.sub(
-            /--output-file=\S+/, "--output-file=<output_file>"
-          ).sub(
-            /--index-url=\S+/, "--index-url=<index_url>"
-          ).sub(
-            /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
-          )
         end
 
         def pip_compile_options(filename)
@@ -273,13 +257,12 @@ module Dependabot
             end
         end
 
-        def run_pip_compile_command(command, fingerprint:)
+        def run_pip_compile_command(command)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(python_version)}",
-            fingerprint: "pyenv local <python_major_minor>"
+            "pyenv local #{Helpers.python_major_minor(python_version)}"
           )
 
-          run_command(command, fingerprint: fingerprint)
+          run_command(command)
         end
 
         def python_env
