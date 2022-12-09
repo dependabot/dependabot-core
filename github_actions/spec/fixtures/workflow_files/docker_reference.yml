@@ -1,0 +1,8 @@
+
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    steps:
+    - uses: docker://ghcr.io/actions/checkout@master
