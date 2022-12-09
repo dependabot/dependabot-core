@@ -59,6 +59,31 @@ RSpec.describe Dependabot::Clients::Bitbucket do
 
       it { is_expected.to eq([{ uuid: "{00000000-0000-0000-0000-000000000001}" }]) }
     end
+
+    context "when default reviewers are defined but access denied on current user" do
+      before do
+        stub_request(:get, default_reviewers_url).
+          with(headers: { "Authorization" => "Bearer #{access_token}" }).
+          to_return(status: 200, body: fixture("bitbucket", "default_reviewers_with_data.json"))
+      end
+
+      before do
+        stub_request(:get, current_user_url).
+          with(headers: { "Authorization" => "Bearer #{access_token}" }).
+          to_return(status: 401, body: fixture("bitbucket", "current_user_no_access.json"))
+      end
+
+      specify { expect { subject }.to_not raise_error }
+
+      it {
+        is_expected.to eq(
+          [
+            { uuid: "{00000000-0000-0000-0000-000000000001}" },
+            { uuid: "{11111111-6349-0000-aea6-111111111111}" }
+          ]
+        )
+      }
+    end
   end
 
   describe "#create_pull_request" do
