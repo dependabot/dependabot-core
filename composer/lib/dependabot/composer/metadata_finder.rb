@@ -48,7 +48,7 @@ module Dependabot
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "https://packagist.org/p/#{dependency.name.downcase}.json")
+        response = Dependabot::RegistryClient.get(url: "https://repo.packagist.org/p/#{dependency.name.downcase}.json")
 
         return nil unless response.status == 200
 

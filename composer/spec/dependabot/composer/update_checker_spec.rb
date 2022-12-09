@@ -43,14 +43,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   before do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-    url = "https://packagist.org/p/#{dependency_name.downcase}.json"
+    url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: fixture)
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
+    let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
     let(:packagist_response) { fixture("packagist_response.json") }
 
     before do
@@ -94,7 +94,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a path source" do
       before do
-        stub_request(:get, "https://packagist.org/p/path_dep/path_dep.json").
+        stub_request(:get, "https://repo.packagist.org/p/path_dep/path_dep.json").
           to_return(status: 404)
       end
 
@@ -159,7 +159,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#lowest_security_fix_version" do
     subject { checker.lowest_security_fix_version }
 
-    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
+    let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
     let(:packagist_response) { fixture("packagist_response.json") }
 
     before do
@@ -290,7 +290,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a path source" do
       let(:project_name) { "path_source" }
       before do
-        stub_request(:get, "https://packagist.org/p/path_dep/path_dep.json").
+        stub_request(:get, "https://repo.packagist.org/p/path_dep/path_dep.json").
           to_return(status: 404)
       end
 
