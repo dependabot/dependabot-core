@@ -40,14 +40,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   before do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-    url = "https://packagist.org/p/#{dependency_name.downcase}.json"
+    url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: fixture)
   end
 
   describe "#latest_version" do
     subject { finder.latest_version }
 
-    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
+    let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
     let(:packagist_response) { fixture("packagist_response.json") }
 
     before do
@@ -196,7 +196,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           package_manager: "composer"
         )
       end
-      let(:packagist_url) { "https://packagist.org/p/monolog/something.json" }
+      let(:packagist_url) { "https://repo.packagist.org/p/monolog/something.json" }
 
       it { is_expected.to be_nil }
     end
@@ -221,7 +221,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         expect(WebMock).
           to have_requested(
             :get,
-            "https://packagist.org/p/monolog/monolog.json"
+            "https://repo.packagist.org/p/monolog/monolog.json"
           )
       end
     end
