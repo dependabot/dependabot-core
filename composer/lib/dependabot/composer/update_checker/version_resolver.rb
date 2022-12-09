@@ -285,12 +285,12 @@ module Dependabot
             raise MissingExtensions, [missing_extension]
           elsif error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')
-            raise Dependabot::DependencyFileNotResolvable, error.message
+            raise Dependabot::DependencyFileNotResolvable, sanitized_message
           elsif error.message.include?("No driver found to handle VCS") &&
                 !error.message.include?("@") && !error.message.include?("://")
             msg = "Dependabot detected a VCS requirement with a local path, " \
                   "rather than a URL. Dependabot does not support this " \
-                  "setup.\n\nThe underlying error was:\n\n#{error.message}"
+                  "setup.\n\nThe underlying error was:\n\n#{sanitized_message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.include?("requirements could not be resolved")
             # If there's no lockfile, there's no difference between running
@@ -340,6 +340,7 @@ module Dependabot
                   "See https://getcomposer.org/doc/04-schema.md for details on the schema."
             raise Dependabot::DependencyFileNotParseable, msg
           else
+            error.message = sanitized_message
             raise error
           end
         end
