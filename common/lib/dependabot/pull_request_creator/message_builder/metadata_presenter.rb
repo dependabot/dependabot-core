@@ -247,7 +247,7 @@ module Dependabot
         def sanitize_links_and_mentions(text, unsafe: false)
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
-            sanitize_links_and_mentions(text: text, unsafe: unsafe)
+            sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
         end
 
         def sanitize_template_tags(text)
