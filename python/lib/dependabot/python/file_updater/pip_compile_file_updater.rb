@@ -519,7 +519,7 @@ module Dependabot
               remaining_filenames.
               select do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
-                (unupdated_reqs & filenames).empty?
+                !unupdated_reqs.intersect?(filenames)
               end
           end
 

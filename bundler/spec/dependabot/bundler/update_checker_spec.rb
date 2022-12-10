@@ -691,7 +691,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
 
         it "doesn't persist any temporary changes to Bundler's root" do
           expect { checker.latest_resolvable_version }.
-            to_not(change { ::Bundler.root })
+            to_not(change { Bundler.root })
         end
 
         context "that requires other files" do

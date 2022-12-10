@@ -344,7 +344,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
         it "raises exception" do
-          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+          expect { parser.parse }.to raise_error(Dependabot::UnexpectedExternalCode)
         end
       end
 
@@ -352,7 +352,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
 
         it "raises exception" do
-          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+          expect { parser.parse }.to raise_error(Dependabot::UnexpectedExternalCode)
         end
       end
     end
