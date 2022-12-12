@@ -162,35 +162,28 @@ module Dependabot
       service_pack_uri + "/info/refs?service=git-upload-pack"
     end
 
+    # Add in username and password if present in credentials.
+    # Credentials are never present for production Dependabot.
     def uri_with_auth(uri)
-      bare_uri =
-        if uri.include?("git@") then uri.split("git@").last.sub(%r{:/?}, "/")
-        else
-          uri.sub(%r{.*?://}, "")
-        end
+      # Handle SCP-style git URIs
+      if uri.start_with?("git@")
+        uri = "https://#{uri.split("git@").last.sub(%r{:/?}, "/")}"
+      end
+      uri = URI(uri)
       cred = credentials.select { |c| c["type"] == "git_source" }.
-             find { |c| bare_uri.start_with?(c["host"]) }
+             find { |c| uri.host == c["host"] }
 
-      scheme = scheme_for_uri(uri)
-
-      if bare_uri.match?(%r{[^/]+:[^/]+@})
+      if uri.userinfo
         # URI already has authentication details
-        "#{scheme}://#{bare_uri}"
+        uri.to_s
       elsif cred&.fetch("username", nil) && cred&.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
-        auth_string = "#{cred.fetch('username')}:#{cred.fetch('password')}"
-        "#{scheme}://#{auth_string}@#{bare_uri}"
+        uri.user = URI.encode_www_form_component(cred["username"])
+        uri.password = URI.encode_www_form_component(cred["password"])
+        uri.to_s
       else
         # No credentials, so just return the http(s) URI
-        "#{scheme}://#{bare_uri}"
-      end
-    end
-
-    def scheme_for_uri(uri)
-      if uri.match?(%r{^http://})
-        "http"
-      else
-        "https"
+        uri.to_s
       end
     end
 
