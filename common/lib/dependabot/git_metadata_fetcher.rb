@@ -171,6 +171,8 @@ module Dependabot
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| uri.host == c["host"] }
 
+      uri.scheme = "https" if uri.scheme != "http"
+
       if !uri.userinfo && cred&.fetch("username", nil) && cred&.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
         uri.user = URI.encode_www_form_component(cred["username"])
