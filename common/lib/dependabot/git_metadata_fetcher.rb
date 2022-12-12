@@ -173,7 +173,7 @@ module Dependabot
 
       uri.scheme = "https" if uri.scheme != "http"
 
-      if !uri.userinfo && cred&.fetch("username", nil) && cred&.fetch("password", nil)
+      if !uri.password && cred&.fetch("username", nil) && cred&.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
         uri.user = URI.encode_www_form_component(cred["username"])
         uri.password = URI.encode_www_form_component(cred["password"])
