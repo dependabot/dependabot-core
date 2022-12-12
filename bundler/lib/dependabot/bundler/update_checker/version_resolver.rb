@@ -140,11 +140,18 @@ module Dependabot
         end
 
         def ruby_lock_error?(error)
-          return false unless error.message.include?(" for the Ruby\0 version") || # Bundler 2
-                              error.message.include?(" for gem \"ruby\0\"") # Bundler 1
+          return false unless conflict_on_ruby?(error)
           return false if @gemspec_ruby_unlocked
 
           dependency_files.any? { |f| f.name.end_with?(".gemspec") }
+        end
+
+        def conflict_on_ruby?(error)
+          if bundler_version == "1"
+            error.message.include?(" for gem \"ruby\0\"")
+          else
+            error.message.include?(" depends on Ruby ") && error.message.include?(" current Ruby version is ")
+          end
         end
 
         def regenerate_dependency_files_without_ruby_lock
