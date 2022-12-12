@@ -166,25 +166,18 @@ module Dependabot
     # Credentials are never present for production Dependabot.
     def uri_with_auth(uri)
       # Handle SCP-style git URIs
-      if uri.start_with?("git@")
-        uri = "https://#{uri.split("git@").last.sub(%r{:/?}, "/")}"
-      end
+      uri = "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}" if uri.start_with?("git@")
       uri = URI(uri)
       cred = credentials.select { |c| c["type"] == "git_source" }.
              find { |c| uri.host == c["host"] }
 
-      if uri.userinfo
-        # URI already has authentication details
-        uri.to_s
-      elsif cred&.fetch("username", nil) && cred&.fetch("password", nil)
+      if !uri.userinfo && cred&.fetch("username", nil) && cred&.fetch("password", nil)
         # URI doesn't have authentication details, but we have credentials
         uri.user = URI.encode_www_form_component(cred["username"])
         uri.password = URI.encode_www_form_component(cred["password"])
-        uri.to_s
-      else
-        # No credentials, so just return the http(s) URI
-        uri.to_s
       end
+
+      uri.to_s
     end
 
     def sha_for_update_pack_line(line)
