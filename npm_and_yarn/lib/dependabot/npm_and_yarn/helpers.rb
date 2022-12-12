@@ -85,13 +85,13 @@ module Dependabot
       # contain malicious code.
       def self.run_yarn_commands(*commands)
         setup_yarn_berry
-        commands.each { |cmd| SharedHelpers.run_shell_command(cmd) }
+        commands.each { |cmd, fingerprint| SharedHelpers.run_shell_command(cmd, fingerprint: fingerprint) }
       end
 
       # Run a single yarn command returning stdout/stderr
-      def self.run_yarn_command(command)
+      def self.run_yarn_command(command, fingerprint: nil)
         setup_yarn_berry
-        SharedHelpers.run_shell_command(command)
+        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
       end
 
       def self.dependencies_with_all_versions_metadata(dependency_set)
