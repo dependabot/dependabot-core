@@ -119,7 +119,8 @@ module Dependabot
         end
 
         def fetch_registry_versions_from_url(url)
-          cred = registry_credentials.find { |c| url.include?(c["registry"]) }
+          url_host = URI(url).host
+          cred = registry_credentials.find { |c| url_host == c["registry"] || url_host == URI(c["registry"]).host }
 
           response = Dependabot::RegistryClient.get(
             url: url,
