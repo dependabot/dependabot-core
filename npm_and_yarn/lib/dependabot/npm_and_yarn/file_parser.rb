@@ -320,7 +320,7 @@ module Dependabot
           select { |cred| cred["type"] == "npm_registry" }.
           sort_by { |cred| cred["registry"].length }.
           find do |details|
-            return true if resolved_url_host == details["registry"]
+            next true if resolved_url_host == details["registry"]
 
             uri = if details["registry"]&.include?("://")
                     URI(details["registry"])
