@@ -321,11 +321,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             context "with credentials" do
               let(:credentials) do
                 [{
-                   "type" => "npm_registry",
-                   "registry" =>
+                  "type" => "npm_registry",
+                  "registry" =>
                      "artifactory01.mydomain.com.evil.com/artifactory/api/npm/my-repo",
-                   "token" => "secret_token"
-                 },{
+                  "token" => "secret_token"
+                }, {
                   "type" => "npm_registry",
                   "registry" =>
                     "artifactory01.mydomain.com/artifactory/api/npm/my-repo",
