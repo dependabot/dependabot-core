@@ -171,6 +171,8 @@ module Dependabot
         base_url = "https://api.bitbucket.org/2.0/user?fields=uuid"
         response = get(base_url)
         JSON.parse(response.body).fetch("uuid")
+      rescue Unauthorized
+        [nil]
       end
 
       def default_reviewers(repo)
