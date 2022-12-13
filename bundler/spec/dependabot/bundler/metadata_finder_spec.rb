@@ -102,6 +102,11 @@ RSpec.describe Dependabot::Bundler::MetadataFinder do
             },
             {
               "type" => "rubygems_server",
+              "host" => "gems.greysteil.com.evil.com",
+              "token" => "secret:token"
+            },
+            {
+              "type" => "rubygems_server",
               "host" => "gems.greysteil.com",
               "token" => "secret:token"
             }

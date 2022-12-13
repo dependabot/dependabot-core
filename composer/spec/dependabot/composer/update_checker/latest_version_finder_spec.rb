@@ -293,6 +293,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             "password" => "token"
           }, {
             "type" => "composer_repository",
+            "registry" => "php.fury.io.evil.com",
+            "username" => "user",
+            "password" => "pass"
+          }, {
+            "type" => "composer_repository",
             "registry" => "php.fury.io",
             "username" => "user",
             "password" => "pass"

@@ -313,11 +313,22 @@ module Dependabot
       end
 
       def url_for_relevant_cred(resolved_url)
+        resolved_url_host = URI(resolved_url).host
+
         credential_matching_url =
           credentials.
           select { |cred| cred["type"] == "npm_registry" }.
           sort_by { |cred| cred["registry"].length }.
-          find { |details| resolved_url.include?(details["registry"]) }
+          find do |details|
+            next true if resolved_url_host == details["registry"]
+
+            uri = if details["registry"]&.include?("://")
+                    URI(details["registry"])
+                  else
+                    URI("https://#{details['registry']}")
+                  end
+            resolved_url_host == uri.host
+          end
 
         return unless credential_matching_url
 

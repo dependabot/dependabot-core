@@ -215,10 +215,12 @@ module Dependabot
       def registry_auth_headers
         return {} unless new_source_type == "rubygems"
 
+        registry_host = URI(registry_url).host
+
         token =
           credentials.
           select { |cred| cred["type"] == "rubygems_server" }.
-          find { |cred| registry_url.include?(cred["host"]) }&.
+          find { |cred| registry_host == cred["host"] }&.
           fetch("token", nil)
 
         return {} unless token
