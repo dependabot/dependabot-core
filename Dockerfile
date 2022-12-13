@@ -64,7 +64,7 @@ ARG USER_GID=$USER_UID
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
      else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt
+  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
 
 ### RUBY
