@@ -90,7 +90,11 @@ module Dependabot
               # Turn off the module proxy for private dependencies
               env = { "GOPRIVATE" => @goprivate }
 
-              versions_json = SharedHelpers.run_shell_command("go list -m -versions -json #{dependency.name}", env: env)
+              versions_json = SharedHelpers.run_shell_command(
+                "go list -m -versions -json #{dependency.name}",
+                fingerprint: "go list -m -versions -json <dependency_name>",
+                env: env
+              )
               version_strings = JSON.parse(versions_json)["Versions"]
 
               return [version_class.new(dependency.version)] if version_strings.nil?
