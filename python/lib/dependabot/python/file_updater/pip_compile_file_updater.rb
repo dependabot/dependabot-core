@@ -176,7 +176,7 @@ module Dependabot
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            "pyenv local #{Helpers.python_major_minor(dependency_files)}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -210,7 +210,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version))
+          File.write(".python-version", Helpers.python_major_minor(dependency_files))
 
           setup_files.each do |file|
             path = file.name
@@ -585,10 +585,6 @@ module Dependabot
             FileParser::PythonRequirementParser.new(
               dependency_files: dependency_files
             )
-        end
-
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
         end
 
         def setup_files
