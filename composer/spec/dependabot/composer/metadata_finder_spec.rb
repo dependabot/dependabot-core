@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is a bitbucket link in the packagist response" do
       let(:packagist_response) do
-        fixture("packagist_response_bitbucket.json")
+        fixture("packagist_response.json").gsub!("github.com", "bitbucket.org")
       end
 
       it { is_expected.to eq("https://bitbucket.org/Seldaek/monolog") }
@@ -96,7 +96,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
 
     context "when there is not a source link in the packagist response" do
       let(:packagist_response) do
-        fixture("packagist_response_no_source.json")
+        fixture("packagist_response.json").gsub!("github.com", "example.com")
       end
 
       it { is_expected.to be_nil }
