@@ -36,14 +36,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
-  let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
 
   before do
-    url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
+    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
 
@@ -126,7 +126,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "when using a pre-release" do
       let(:dependency_name) { "doctrine/dbal" }
-      let(:packagist_url) { "https://repo.packagist.org/p/doctrine/dbal.json" }
+      let(:packagist_url) { "https://repo.packagist.org/p2/doctrine/dbal.json" }
       let(:ignored_versions) { [">= 2.3.0"] } # Ensure a pre-release version is the newest available
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
           package_manager: "composer"
         )
       end
-      it { is_expected.to eq(Gem::Version.new("2.3.x.pre.dev")) }
+      it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
     end
 
     context "without a lockfile" do
@@ -150,7 +150,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
       context "when using a pre-release" do
         let(:dependency_name) { "doctrine/dbal" }
-        let(:packagist_url) { "https://repo.packagist.org/p/doctrine/dbal.json" }
+        let(:packagist_url) { "https://repo.packagist.org/p2/doctrine/dbal.json" }
         let(:ignored_versions) { [">= 2.3.0"] } # Ensure a pre-release version is the newest available
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -165,7 +165,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             package_manager: "composer"
           )
         end
-        it { is_expected.to eq(Gem::Version.new("2.3.x.pre.dev")) }
+        it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
       end
     end
 
@@ -211,7 +211,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
         expect(WebMock).
           to have_requested(
             :get,
-            "https://repo.packagist.org/p/monolog/monolog.json"
+            "https://repo.packagist.org/p2/monolog/monolog.json"
           )
       end
     end

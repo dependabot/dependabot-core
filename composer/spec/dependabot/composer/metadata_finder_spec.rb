@@ -32,14 +32,14 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     }]
   end
   let(:dependency_name) { "monolog/monolog" }
-  let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
 
   before do
-    packagist_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
+    packagist_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, packagist_url).to_return(status: 200, body: packagist_response)
 
     stub_request(:get, "https://example.com/status").to_return(
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
           expect(WebMock).
             to have_requested(
               :get,
-              "https://repo.packagist.org/p/monolog/monolog.json"
+              "https://repo.packagist.org/p2/monolog/monolog.json"
             )
         end
       end
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Composer::MetadataFinder do
     end
 
     context "when the packagist link resolves to a redirect" do
-      let(:redirect_url) { "https://repo.packagist.org/p/monolog/Monolog.json" }
+      let(:redirect_url) { "https://repo.packagist.org/p2/monolog/Monolog.json" }
 
       before do
         stub_request(:get, packagist_url).
