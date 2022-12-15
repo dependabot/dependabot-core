@@ -108,7 +108,7 @@ module Dependabot
                  map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
           unless repositories.any? { |rep| rep["packagist.org"] == false }
-            urls << "https://repo.packagist.org/p/#{dependency.name.downcase}.json"
+            urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"
           end
 
           @registry_version_details = []
@@ -143,7 +143,23 @@ module Dependabot
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
-          listing.dig("packages", dependency.name.downcase).keys
+          # Packagist's Metadata API format:
+          # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
+          # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
+          version_listings = listing.dig("packages", dependency.name.downcase)
+
+          if version_listings.is_a?(Hash) # some private registries are still using the v1 format
+            # Regardless of API version, composer always reads the version from the metadata hash. So for the v1 API,
+            # ignore the keys as repositories other than packagist.org could be using different keys. Instead, coerce
+            # to an array of metadata hashes to match v2 format.
+            version_listings = version_listings.values
+          end
+
+          if version_listings.is_a?(Array)
+            version_listings.map { |i| i.fetch("version") }
+          else
+            []
+          end
         rescue JSON::ParserError
           msg = "'#{url}' does not contain valid JSON"
           raise DependencyFileNotResolvable, msg

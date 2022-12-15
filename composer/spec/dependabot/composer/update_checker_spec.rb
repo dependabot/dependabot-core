@@ -39,14 +39,14 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
-  let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
   let(:packagist_response) do
     sanitized_name = dependency_name.downcase.gsub("/", "--")
     fixture("packagist_responses", "#{sanitized_name}.json")
   end
 
   before do
-    url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
+    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
     stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
 
@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
 
     context "with a path source" do
       before do
-        stub_request(:get, "https://repo.packagist.org/p/path_dep/path_dep.json").
+        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json").
           to_return(status: 404)
       end
 
@@ -282,7 +282,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     context "with a path source" do
       let(:project_name) { "path_source" }
       before do
-        stub_request(:get, "https://repo.packagist.org/p/path_dep/path_dep.json").
+        stub_request(:get, "https://repo.packagist.org/p2/path_dep/path_dep.json").
           to_return(status: 404)
       end
 
@@ -437,11 +437,15 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       # This unit test is testing that a dependency located on https://pear.horde.org is still correctly
       # handled by composer. So ignore the fact that this package actually exists on packagist, and
       # pretend it just 404's.
-      let(:packagist_response) { '{"error":{"code":404,"message":"Not Found"}}' }
+      let(:packagist_response) { "404 not found, no packages here" }
       before do
+        v2_metadata_url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
+        stub_request(:get, v2_metadata_url).to_return(status: 404, body: packagist_response)
+
+        # Also stub the v1 URL because the underlying `composer` `v1` doesn't know how to talk to the v2 metadata URL.
         v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
         # v1 url doesn't always return 404 for missing packages
-        stub_request(:get, v1_metadata_url).to_return(status: 200, body: packagist_response)
+        stub_request(:get, v1_metadata_url).to_return(status: 200, body: '{"error":{"code":404,"message":"Not Found"}}')
       end
 
       it "is between 2.0.0 and 3.0.0" do
