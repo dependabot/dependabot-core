@@ -30,7 +30,7 @@ module Dependabot
 
       def self.python_major_minor(dependency_files)
         @python ||= Python::Version.new(python_version(dependency_files))
-        "#{python.segments[0]}.#{python.segments[1]}"
+        "#{@python.segments[0]}.#{@python.segments[1]}"
       end
 
       def self.python_version(dependency_files)

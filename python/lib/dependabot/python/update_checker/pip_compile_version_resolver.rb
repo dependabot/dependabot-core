@@ -322,7 +322,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version))
+          File.write(".python-version", Helpers.python_major_minor(dependency_files))
 
           setup_files.each do |file|
             path = file.name
