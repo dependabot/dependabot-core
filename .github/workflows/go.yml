@@ -1,0 +1,75 @@
+name: CI
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            go_modules:
+              - Dockerfile.go_modules
+              - 'common/**'
+              - 'go_modules/**'
+
+      - name: Build ecosystem image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            -f Dockerfile.go_modules \
+            .
+
+      - name: Build dependabot-core-ci image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -f Dockerfile.ci \
+            -t "dependabot-core-ci:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            .
+
+      - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        run: |
+          docker run \
+            --env "CI=true" \
+            --env "RAISE_ON_WARNINGS=true" \
+            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            --env "SUITE_NAME=${{ matrix.suite.name }}" \
+            --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
+            --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
+            --rm dependabot-core-ci bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./bin/lint
