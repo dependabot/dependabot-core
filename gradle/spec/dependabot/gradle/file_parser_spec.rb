@@ -1008,5 +1008,29 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
     end
+
+    describe "parse only version catalog file that contains only libraries" do
+      let(:files) { [version_catalog] }
+      let(:version_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/libs.versions.toml",
+          content: fixture("version_catalog_file", "libs.versions.only.libraries.toml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(11) }
+    end
+
+    describe "parse only version catalog file that contains only plugins" do
+      let(:files) { [version_catalog] }
+      let(:version_catalog) do
+        Dependabot::DependencyFile.new(
+          name: "gradle/libs.versions.toml",
+          content: fixture("version_catalog_file", "libs.versions.only.plugins.toml")
+        )
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end

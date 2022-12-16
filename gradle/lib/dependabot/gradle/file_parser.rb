@@ -85,6 +85,8 @@ module Dependabot
 
       def dependencies_for_declarations(declarations, toml_file, details_getter)
         dependency_set = DependencySet.new
+        return dependency_set unless declarations
+
         declarations.each do |_mod, declaration|
           version = declaration["version"]
           next if version.nil?
