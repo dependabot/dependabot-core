@@ -1,4 +1,4 @@
-name: Push branch images
+name: Eco branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
