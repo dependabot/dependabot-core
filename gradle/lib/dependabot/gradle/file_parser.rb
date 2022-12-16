@@ -79,7 +79,12 @@ module Dependabot
           next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
 
           version_details = version["ref"].nil? ? version : "$" + version["ref"]
-          group, name = declaration["module"].split(":")
+          group, name = if declaration["module"]
+                          declaration["module"].split(":")
+                        else
+                          [declaration["group"], declaration["name"]]
+                        end
+
           details = { group: group, name: name, version: version_details }
           dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
         end

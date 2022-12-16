@@ -813,7 +813,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(30) }
+      its(:length) { is_expected.to eq(31) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -849,6 +849,26 @@ RSpec.describe Dependabot::Gradle::FileParser do
               groups: [],
               source: nil,
               metadata: { property_name: "espresso" }
+            }]
+          )
+        end
+      end
+
+      describe "dependency with group + name and referenced version" do
+        let(:dependency) do
+          dependencies.find { |dep| dep.name == "org.jetbrains.kotlin:kotlin-gradle-plugin" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.version).to eq("1.7.20")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.7.20",
+              file: "gradle/libs.versions.toml",
+              groups: [],
+              source: nil,
+              metadata: { property_name: "kotlin" }
             }]
           )
         end
