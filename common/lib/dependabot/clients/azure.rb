@@ -217,6 +217,18 @@ module Dependabot
       end
       # rubocop:enable Metrics/ParameterLists
 
+      def compare(previous_tag, new_tag, type)
+        response = get(source.api_endpoint +
+                         source.organization + "/" + source.project +
+                         "/_apis/git/repositories/" + source.unscoped_repo +
+                         "/commits?searchCriteria.itemVersion.versionType=#{type}" \
+                         "&searchCriteria.itemVersion.version=#{previous_tag}" \
+                         "&searchCriteria.compareVersion.versionType=#{type}" \
+                         "&searchCriteria.compareVersion.version=#{new_tag}")
+
+        JSON.parse(response.body).fetch("value")
+      end
+
       def get(url)
         response = nil
 
