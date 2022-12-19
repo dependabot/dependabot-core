@@ -39,32 +39,30 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
+  let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
+  end
 
   before do
-    sanitized_name = dependency_name.downcase.gsub("/", "--")
-    fixture = fixture("packagist_responses", "#{sanitized_name}.json")
     url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
-    stub_request(:get, url).to_return(status: 200, body: fixture)
+    stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
 
   describe "#latest_version" do
     subject { checker.latest_version }
 
-    let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
-    let(:packagist_response) { fixture("packagist_response.json") }
-
     before do
-      stub_request(:get, packagist_url).
-        to_return(status: 200, body: packagist_response)
       allow(checker).to receive(:latest_resolvable_version).
         and_return(Gem::Version.new("1.17.0"))
     end
 
-    it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+    it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
     context "when the user is ignoring the latest version" do
-      let(:ignored_versions) { [">= 1.22.0.a, < 1.23"] }
-      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+      let(:ignored_versions) { [">= 3.2.0.a, < 3.3"] }
+      it { is_expected.to eq(Gem::Version.new("3.1.0")) }
     end
 
     context "when the user is ignoring all versions" do
@@ -82,9 +80,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "when packagist returns an empty array" do
+      let(:packagist_response) { '{"packages":[]}' }
       before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: '{"packages":[]}')
         allow(checker).to receive(:latest_resolvable_version).
           and_return(Gem::Version.new("1.17.0"))
       end
@@ -99,7 +96,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
       end
 
       context "that is not the dependency we're checking" do
-        it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+        it { is_expected.to eq(Gem::Version.new("3.2.0")) }
       end
 
       context "that is the dependency we're checking" do
@@ -159,12 +156,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#lowest_security_fix_version" do
     subject { checker.lowest_security_fix_version }
 
-    let(:packagist_url) { "https://repo.packagist.org/p/monolog/monolog.json" }
-    let(:packagist_response) { fixture("packagist_response.json") }
-
     before do
-      stub_request(:get, packagist_url).
-        to_return(status: 200, body: packagist_response)
       allow(checker).to receive(:latest_resolvable_version).
         and_return(Gem::Version.new("1.17.0"))
     end
