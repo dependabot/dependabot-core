@@ -167,6 +167,7 @@ module Dependabot
               when "github" then fetch_github_file(file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
+              when "azure" then fetch_azure_file(file)
               when "codecommit" then nil # TODO: git file from codecommit
               else raise "Unsupported provider '#{provider}'"
               end
@@ -196,6 +197,11 @@ module Dependabot
             force_encoding("UTF-8").encode
         end
 
+        def fetch_azure_file(file)
+          azure_client.get(file.download_url).body.
+            force_encoding("UTF-8").encode
+        end
+
         def upgrade_guide
           return unless source
 
@@ -220,7 +226,7 @@ module Dependabot
           when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
-          when "azure" then [] # TODO: Fetch files from Azure
+          when "azure" then fetch_azure_file_list
           when "codecommit" then [] # TODO: Fetch Files from Codecommit
           else raise "Unexpected repo provider '#{source.provider}'"
           end
@@ -292,6 +298,29 @@ module Dependabot
           []
         end
 
+        def fetch_azure_file_list
+          azure_client.fetch_repo_contents.map do |entry|
+            type = case entry.fetch("gitObjectType")
+                   when "blob" then "file"
+                   when "tree" then "dir"
+                   else entry.fetch("gitObjectType")
+                   end
+
+            OpenStruct.new(
+              name: File.basename(entry.fetch("relativePath")),
+              type: type,
+              size: entry.fetch("size"),
+              path: entry.fetch("relativePath"),
+              html_url: "#{source.url}?path=/#{entry.fetch('relativePath')}",
+              download_url: entry.fetch("url")
+            )
+          end
+        rescue Dependabot::Clients::Azure::NotFound,
+               Dependabot::Clients::Azure::Unauthorized,
+               Dependabot::Clients::Azure::Forbidden
+          []
+        end
+
         def new_version
           return @new_version if defined?(@new_version)
 
@@ -347,6 +376,11 @@ module Dependabot
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
                              for_github_dot_com(credentials: credentials)
+        end
+
+        def azure_client
+          @azure_client ||= Dependabot::Clients::Azure.
+                            for_source(source: source, credentials: credentials)
         end
 
         def bitbucket_client
