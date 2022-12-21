@@ -434,6 +434,16 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
         }]
       end
 
+      # This unit test is testing that a dependency located on https://pear.horde.org is still correctly
+      # handled by composer. So ignore the fact that this package actually exists on packagist, and
+      # pretend it just 404's.
+      let(:packagist_response) { '{"error":{"code":404,"message":"Not Found"}}' }
+      before do
+        v1_metadata_url = "https://repo.packagist.org/p/#{dependency_name.downcase}.json"
+        # v1 url doesn't always return 404 for missing packages
+        stub_request(:get, v1_metadata_url).to_return(status: 200, body: packagist_response)
+      end
+
       it "is between 2.0.0 and 3.0.0" do
         expect(latest_resolvable_version).to be < Gem::Version.new("3.0.0")
         expect(latest_resolvable_version).to be > Gem::Version.new("2.0.0")
