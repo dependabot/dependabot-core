@@ -82,11 +82,12 @@ module Dependabot
           return unless suggested_changelog_url
 
           # TODO: Support other providers
-          source = Source.from_url(suggested_changelog_url)
-          return unless source&.provider == "github"
+          suggested_source = Source.from_url(suggested_changelog_url)
+          return unless suggested_source&.provider == "github"
 
-          opts = { path: source.directory, ref: source.branch }.compact
-          tmp_files = github_client.contents(source.repo, opts)
+          opts = { path: suggested_source.directory, ref: suggested_source.branch }.compact
+          suggested_source_client = github_client_for_source(suggested_source)
+          tmp_files = suggested_source_client.contents(suggested_source.repo, opts)
 
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
@@ -161,10 +162,10 @@ module Dependabot
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
-            provider = Source.from_url(file.html_url).provider
+            file_source = Source.from_url(file.html_url)
             @file_text[file.download_url] =
-              case provider
-              when "github" then fetch_github_file(file)
+              case file_source.provider
+              when "github" then fetch_github_file(file_source, file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
               when "azure" then fetch_azure_file(file)
@@ -178,9 +179,9 @@ module Dependabot
           @file_text[file.download_url].sub(/\n*\z/, "")
         end
 
-        def fetch_github_file(file)
+        def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = github_client.get(file.url).content
+          raw_content = github_client_for_source(file_source).get(file.url).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -381,6 +382,13 @@ module Dependabot
         def azure_client
           @azure_client ||= Dependabot::Clients::Azure.
                             for_source(source: source, credentials: credentials)
+        end
+
+        def github_client_for_source(client_source)
+          return github_client if client_source == source
+
+          Dependabot::Clients::GithubWithRetries.
+            for_source(source: client_source, credentials: credentials)
         end
 
         def bitbucket_client
