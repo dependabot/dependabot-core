@@ -700,6 +700,116 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
       end
     end
 
+    context "with a azure repo" do
+      let(:service_pack_url) do
+        "https://dev.azure.com/contoso/MyProject/_git/business.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "azure",
+          repo: "contoso/MyProject/_git/#{dependency_name}"
+        )
+      end
+
+      context "with credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "git_source",
+            "host" => "dev.azure.com",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
+        end
+
+        it "uses the credentials" do
+          builder.commits_url
+          expect(WebMock).
+            to have_requested(:get, service_pack_url).
+            with(basic_auth: %w(greysteil secret_token))
+        end
+      end
+
+      context "with old and new tags" do
+        let(:dependency_previous_version) { "1.3.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                            "branchCompare?baseVersion=GTv1.3.0&targetVersion=GTv1.4.0")
+        end
+      end
+
+      context "with only a new tag" do
+        let(:dependency_previous_version) { "0.3.0" }
+
+        it "gets the right URL" do
+          is_expected.
+            to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits?itemVersion=GTv1.4.0")
+        end
+      end
+
+      context "with a dependency that has a git source" do
+        let(:dependency_previous_requirements) do
+          [{
+            file: "Gemfile",
+            requirement: ">= 0",
+            groups: [],
+            source: {
+              type: "git",
+              url: "https://dev.azure.com/contoso/MyProject/_git/#{dependency_name}"
+            }
+          }]
+        end
+        let(:dependency_requirements) { dependency_previous_requirements }
+
+        context "with old and new sha" do
+          let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+          let(:dependency_previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
+
+          it "gets the right URL" do
+            is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/" \
+                              "branchCompare?baseVersion=GC7638417db6d59f3c431d3e1f261cc637155684cd" \
+                              "&targetVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
+          end
+        end
+
+        context "with only a new sha" do
+          let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+          let(:dependency_previous_version) { nil }
+
+          it "gets the right URL" do
+            is_expected.
+              to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits" \
+                    "?itemVersion=GCcd8274d15fa3ae2ab983129fb037999f264ba9a7")
+          end
+        end
+      end
+
+      context "no tags" do
+        let(:dependency_previous_version) { "0.3.0" }
+        let(:dependency_version) { "0.5.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+        end
+      end
+
+      context "no previous version" do
+        let(:dependency_previous_version) { nil }
+        let(:dependency_version) { "0.5.0" }
+
+        it "gets the right URL" do
+          is_expected.to eq("https://dev.azure.com/contoso/MyProject/_git/business/commits")
+        end
+      end
+    end
+
     context "without a recognised source" do
       let(:source) { nil }
       it { is_expected.to be_nil }
@@ -944,6 +1054,112 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
               }
             ]
           )
+        end
+      end
+
+      context "with a azure repo" do
+        let(:azure_compare_url) do
+          "https://dev.azure.com/contoso/MyProject/_apis/git/repositories/business/commits" \
+            "?searchCriteria.itemVersion.versionType=tag" \
+            "&searchCriteria.itemVersion.version=v1.3.0" \
+            "&searchCriteria.compareVersion.versionType=tag" \
+            "&searchCriteria.compareVersion.version=v1.4.0"
+        end
+
+        let(:azure_compare) do
+          fixture("azure", "business_compare_commits.json")
+        end
+
+        let(:source) do
+          Dependabot::Source.new(
+            provider: "azure",
+            repo: "contoso/MyProject/_git/#{dependency_name}"
+          )
+        end
+        let(:service_pack_url) do
+          "https://dev.azure.com/contoso/MyProject/_git/business.git/info/refs" \
+            "?service=git-upload-pack"
+        end
+
+        before do
+          stub_request(:get, azure_compare_url).
+            to_return(status: 200,
+                      body: azure_compare,
+                      headers: { "Content-Type" => "application/json" })
+        end
+
+        it "returns an array of commits" do
+          is_expected.to match_array(
+            [
+              {
+                message: "Merged PR 2: Deleted README.md",
+                sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                          "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+              },
+              {
+                message: "Added README.md file",
+                sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+                html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                          "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+              }
+            ]
+          )
+        end
+
+        context "with a dependency that has a git source" do
+          let(:dependency_previous_requirements) do
+            [{
+              file: "Gemfile",
+              requirement: ">= 0",
+              groups: [],
+              source: {
+                type: "git",
+                url: "https://dev.azure.com/contoso/MyProject/_git/#{dependency_name}"
+              }
+            }]
+          end
+          let(:dependency_requirements) { dependency_previous_requirements }
+          let(:dependency_version) { "cd8274d15fa3ae2ab983129fb037999f264ba9a7" }
+          let(:dependency_previous_version) { "7638417db6d59f3c431d3e1f261cc637155684cd" }
+          let(:azure_compare_url) do
+            "https://dev.azure.com/contoso/MyProject/_apis/git/repositories/business/commits" \
+              "?searchCriteria.itemVersion.versionType=commit" \
+              "&searchCriteria.itemVersion.version=7638417db6d59f3c431d3e1f261cc637155684cd" \
+              "&searchCriteria.compareVersion.versionType=commit" \
+              "&searchCriteria.compareVersion.version=cd8274d15fa3ae2ab983129fb037999f264ba9a7"
+          end
+
+          it "returns an array of commits" do
+            is_expected.to match_array(
+              [
+                {
+                  message: "Merged PR 2: Deleted README.md",
+                  sha: "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7",
+                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                            "9991b4f66def4c0a9ad8f9f27043ece7eddcf1c7"
+                },
+                {
+                  message: "Added README.md file",
+                  sha: "4fa42e1a7b0215cc70cd4e927cb70c422123af84",
+                  html_url: "https://dev.azure.com/fabrikam/SomeGitProject/_git/SampleRepository/commit/" \
+                            "4fa42e1a7b0215cc70cd4e927cb70c422123af84"
+                }
+              ]
+            )
+          end
+
+          context "that 404s" do
+            before do
+              response = { message: "404 Project Not Found" }.to_json
+              stub_request(:get, azure_compare_url).
+                to_return(status: 404,
+                          body: response,
+                          headers: { "Content-Type" => "application/json" })
+            end
+
+            it { is_expected.to eq([]) }
+          end
         end
       end
 
