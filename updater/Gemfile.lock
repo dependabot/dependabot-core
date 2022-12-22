@@ -147,7 +147,7 @@ GEM
     concurrent-ruby (1.1.10)
     crack (0.4.5)
       rexml
-    debug (1.7.0)
+    debug (1.7.1)
       irb (>= 1.5.0)
       reline (>= 0.3.1)
     diff-lcs (1.5.0)
@@ -185,8 +185,8 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (1.12.0)
       concurrent-ruby (~> 1.0)
-    io-console (0.5.11)
-    irb (1.5.1)
+    io-console (0.6.0)
+    irb (1.6.2)
       reline (>= 0.3.0)
     jmespath (1.6.2)
     json (2.6.2)
@@ -232,7 +232,7 @@ GEM
     rainbow (3.1.1)
     rake (13.0.6)
     regexp_parser (2.6.1)
-    reline (0.3.1)
+    reline (0.3.2)
       io-console (~> 0.5)
     rest-client (2.1.0)
       http-accept (>= 1.7.0, < 2.0)
@@ -303,7 +303,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport (~> 6.1.4)
-  debug (~> 1.7.0)
+  debug (~> 1.7.1)
   dependabot-bundler!
   dependabot-cargo!
   dependabot-common!
