@@ -241,7 +241,7 @@ option_parse = OptionParser.new do |opts|
   end
 
   opts.on("--pull-request",
-          "Output pull request information: title, description") do
+          "Output pull request information metadata: title, description") do
     $options[:pull_request] = true
   end
 end
