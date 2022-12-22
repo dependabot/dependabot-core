@@ -22,7 +22,7 @@ module Dependabot
         # End of string
         EOS_REGEX = /\z/
         COMMONMARKER_OPTIONS = %i(
-          GITHUB_PRE_LANG FULL_INFO_STRING
+          GITHUB_PRE_LANG FULL_INFO_STRING HARDBREAKS
         ).freeze
         COMMONMARKER_EXTENSIONS = %i(
           table tasklist strikethrough autolink tagfilter
