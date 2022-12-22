@@ -11,11 +11,39 @@ module Dependabot
 
       PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES = %w(npm_and_yarn pub).freeze
 
-      attr_reader :dependency, :credentials
+      attr_reader :dependency, :credentials, :changelog_url, :changelog_text, :upgrade_guide_url, :upgrade_guide_text,
+                  :releases_url, :releases_text, :commits_url, :commits
 
       def initialize(dependency:, credentials:)
         @dependency = dependency
         @credentials = credentials
+
+        # Purposefully not memoizing these class instances, as they're heavy to keep in memory for large responses.
+        changelog_finder = ChangelogFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials,
+          suggested_changelog_url: suggested_changelog_url
+        )
+        release_finder = ReleaseFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials
+        )
+        commits_finder = CommitsFinder.new(
+          dependency: dependency,
+          source: source,
+          credentials: credentials
+        )
+
+        @changelog_url = changelog_finder.changelog_url
+        @changelog_text = changelog_finder.changelog_text
+        @upgrade_guide_url = changelog_finder.upgrade_guide_url
+        @upgrade_guide_text = changelog_finder.upgrade_guide_text
+        @releases_url = release_finder.releases_url
+        @releases_text = release_finder.releases_text
+        @commits_url = commits_finder.commits_url
+        @commits = commits_finder.commits
       end
 
       def source_url
@@ -28,82 +56,6 @@ module Dependabot
 
       def homepage_url
         source_url
-      end
-
-      def changelog_url
-        @changelog_finder ||= ChangelogFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials,
-          suggested_changelog_url: suggested_changelog_url
-        )
-        @changelog_finder.changelog_url
-      end
-
-      def changelog_text
-        @changelog_finder ||= ChangelogFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials,
-          suggested_changelog_url: suggested_changelog_url
-        )
-        @changelog_finder.changelog_text
-      end
-
-      def upgrade_guide_url
-        @changelog_finder ||= ChangelogFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials,
-          suggested_changelog_url: suggested_changelog_url
-        )
-        @changelog_finder.upgrade_guide_url
-      end
-
-      def upgrade_guide_text
-        @changelog_finder ||= ChangelogFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials,
-          suggested_changelog_url: suggested_changelog_url
-        )
-        @changelog_finder.upgrade_guide_text
-      end
-
-      def releases_url
-        @release_finder ||= ReleaseFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials
-        )
-        @release_finder.releases_url
-      end
-
-      def releases_text
-        @release_finder ||= ReleaseFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials
-        )
-        @release_finder.releases_text
-      end
-
-      def commits_url
-        @commits_finder ||= CommitsFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials
-        )
-        @commits_finder.commits_url
-      end
-
-      def commits
-        @commits_finder ||= CommitsFinder.new(
-          dependency: dependency,
-          source: source,
-          credentials: credentials
-        )
-        @commits_finder.commits
       end
 
       def maintainer_changes
