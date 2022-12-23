@@ -47,7 +47,11 @@ module Dependabot
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "https://repo.packagist.org/p2/#{dependency.name.downcase}.json")
+        # The `~dev` suffix denotes branch releases rather than tagged releases. The branch releases list is typically
+        # _much_ shorter than the tagged releases, so querying it saves bytes. This wouldn't work for querying available
+        # versions, but it's fine here since only used for finding the metadata source URL.
+        branch_releases_url = "https://repo.packagist.org/p2/#{dependency.name.downcase}~dev.json"
+        response = Dependabot::RegistryClient.get(url: branch_releases_url)
 
         return nil unless response.status == 200
 
