@@ -155,12 +155,10 @@ module Dependabot
       end
 
       def skip_dependency?(dep)
-        begin
-          path_uri = URI.parse("https://#{dep['Path']}")
-          !path_uri.host.include?(".")
-        rescue URI::InvalidURIError
-          false
-        end
+        path_uri = URI.parse("https://#{dep['Path']}")
+        !path_uri.host.include?(".")
+      rescue URI::InvalidURIError
+        false
       end
 
       def dependency_is_replaced(details)
