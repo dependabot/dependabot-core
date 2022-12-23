@@ -155,8 +155,6 @@ module Dependabot
       end
 
       def skip_dependency?(dep)
-        return true if dep["Indirect"]
-
         begin
           path_uri = URI.parse("https://#{dep['Path']}")
           !path_uri.host.include?(".")

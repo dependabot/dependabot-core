@@ -40,7 +40,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(3) }
+    its(:length) { is_expected.to eq(5) }
 
     describe "top level dependencies" do
       subject(:dependencies) do
@@ -126,6 +126,27 @@ RSpec.describe Dependabot::GoModules::FileParser do
               }]
             )
           end
+        end
+      end
+    end
+
+    describe "indirect dependencies" do
+      subject(:dependencies) do
+        parser.parse.reject(&:top_level?)
+      end
+
+      its(:length) { is_expected.to eq(3) }
+
+      describe "a dependency that uses go modules" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "github.com/mattn/go-isatty" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("github.com/mattn/go-isatty")
+          expect(dependency.version).to eq("0.0.4")
+          expect(dependency.requirements).to be_empty
         end
       end
     end

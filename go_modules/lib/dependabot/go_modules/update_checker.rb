@@ -13,17 +13,6 @@ module Dependabot
       require_relative "update_checker/latest_version_finder"
 
       def latest_resolvable_version
-        # We don't yet support updating indirect dependencies for go_modules
-        #
-        # To update indirect dependencies we'll need to promote the indirect
-        # dependency to the go.mod file forcing the resolver to pick this
-        # version (possibly as `// indirect`)
-        unless dependency.top_level?
-          return unless dependency.version
-
-          return current_version
-        end
-
         latest_version_finder.latest_version
       end
 
