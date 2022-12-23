@@ -1,1984 +1,60 @@
 {
+    "minified": "composer/2.0",
     "packages": {
-        "frosh/shopware-profiler": {
-            "1.1.5": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "24bef0c5cb51f26b1d03da45c8c7961b34089b02",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/24bef0c5cb51f26b1d03da45c8c7961b34089b02"
-                },
-                "extra": {
-                    "installer-name": "ShyimProfiler"
-                },
-                "homepage": "",
+        "symfony/polyfill-mbstring": [
+            {
+                "name": "symfony/polyfill-mbstring",
+                "description": "Symfony polyfill for the Mbstring extension",
                 "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "24bef0c5cb51f26b1d03da45c8c7961b34089b02",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2017-11-16T18:05:21+00:00",
-                "type": "shopware-plugin",
-                "uid": 1942879,
-                "version": "1.1.5",
-                "version_normalized": "1.1.5.0"
-            },
-            "1.1.6": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "ed5ddd7864c656a702dd678e206eee9daa0a7972",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/ed5ddd7864c656a702dd678e206eee9daa0a7972"
-                },
-                "extra": {
-                    "installer-name": "ShyimProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "ed5ddd7864c656a702dd678e206eee9daa0a7972",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2018-01-25T18:08:54+00:00",
-                "type": "shopware-plugin",
-                "uid": 1942880,
-                "version": "1.1.6",
-                "version_normalized": "1.1.6.0"
-            },
-            "1.2.0": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/2797e2310c0ac74478ecd18a8032e1f388f44892"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2018-02-26T18:57:18+00:00",
-                "type": "shopware-plugin",
-                "uid": 1942895,
-                "version": "1.2.0",
-                "version_normalized": "1.2.0.0"
-            },
-            "1.2.1": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "d6a1267950a4f6d9b766db0770c6a66ef4d0ad67",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/d6a1267950a4f6d9b766db0770c6a66ef4d0ad67"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "d6a1267950a4f6d9b766db0770c6a66ef4d0ad67",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2018-03-20T20:16:45+00:00",
-                "type": "shopware-plugin",
-                "uid": 2011187,
-                "version": "1.2.1",
-                "version_normalized": "1.2.1.0"
-            },
-            "1.3.0": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "a1a293d904a68f10d0161d51d233f2df588c4b85",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/a1a293d904a68f10d0161d51d233f2df588c4b85"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "roave/security-advisories": "dev-master",
-                    "shyim/var-dumper": "dev-master",
-                    "symfony/stopwatch": "^3.3"
-                },
-                "source": {
-                    "reference": "a1a293d904a68f10d0161d51d233f2df588c4b85",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2018-04-21T09:55:24+00:00",
-                "type": "shopware-plugin",
-                "uid": 2117921,
-                "version": "1.3.0",
-                "version_normalized": "1.3.0.0"
-            },
-            "dev-master": {
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "bc6f6e8553df83fc5580c6c9baa0839174b71c86",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/FriendsOfShopware/FroshProfiler/zipball/bc6f6e8553df83fc5580c6c9baa0839174b71c86"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "frosh/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "shyim/var-dumper": "^1.0",
-                    "symfony/stopwatch": "^3.3"
-                },
-                "source": {
-                    "reference": "bc6f6e8553df83fc5580c6c9baa0839174b71c86",
-                    "type": "git",
-                    "url": "https://github.com/FriendsOfShopware/FroshProfiler.git"
-                },
-                "time": "2018-05-15T20:55:18+00:00",
-                "type": "shopware-plugin",
-                "uid": 1942883,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            }
-        },
-        "narrowspark/narrowspark": {
-            "dev-master": {
-                "authors": [],
-                "autoload": {
-                    "exclude-from-classmap": [
-                        "tests/"
-                    ],
-                    "psr-4": {
-                        "App\\": "app/"
-                    }
-                },
-                "conflict": {
-                    "narrowspark/framework": "*"
-                },
-                "description": "Narrowspark framework for creative people.",
-                "dist": {
-                    "reference": "82d10e98750cbc8be7906d98083352060ca91166",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/narrowspark/narrowspark/zipball/82d10e98750cbc8be7906d98083352060ca91166"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "narrowspark/narrowspark",
-                "replace": {
-                    "symfony/polyfill-mbstring": "*",
-                    "symfony/polyfill-php56": "*",
-                    "symfony/polyfill-php70": "*",
-                    "symfony/polyfill-php71": "*",
-                    "symfony/polyfill-php72": "*"
-                },
-                "require": {
-                    "ext-mbstring": "*",
-                    "narrowspark/configurators": "^0.1",
-                    "narrowspark/discovery": "dev-master",
-                    "php": "^7.2",
-                    "roave/security-advisories": "dev-master",
-                    "viserio/foundation": "dev-master"
-                },
-                "require-dev": {
-                    "phpunit/phpunit": "^7.0"
-                },
-                "source": {
-                    "reference": "82d10e98750cbc8be7906d98083352060ca91166",
-                    "type": "git",
-                    "url": "https://github.com/narrowspark/narrowspark.git"
-                },
-                "time": "2018-05-04T06:16:18+00:00",
-                "type": "project",
-                "uid": 2163139,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            }
-        },
-        "notadd/wechat": {
-            "dev-master": {
-                "authors": [
-                    {
-                        "email": "notadd@ibenchu.com",
-                        "name": "Notadd"
-                    }
-                ],
-                "autoload": {
-                    "psr-4": {
-                        "Notadd\\Wechat\\": "src/"
-                    }
-                },
-                "description": "Notadd's Wechat Module.",
-                "dist": {
-                    "reference": "e3f684cd225f3fadf21953c0289cb8426baad0e5",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/notadd/wechat/zipball/e3f684cd225f3fadf21953c0289cb8426baad0e5"
-                },
-                "homepage": "https://notadd.com",
-                "keywords": [
-                    "framework",
-                    "cms",
-                    "member",
-                    "notadd"
-                ],
-                "license": [
-                    "Apache-2.0"
-                ],
-                "name": "notadd/wechat",
-                "replace": {
-                    "guzzlehttp/guzzle": "*",
-                    "guzzlehttp/promises": "*",
-                    "guzzlehttp/psr7": "*",
-                    "monolog/monolog": "*",
-                    "psr/container": "*",
-                    "psr/http-message": "*",
-                    "psr/log": "*",
-                    "symfony/http-foundation": "*",
-                    "symfony/polyfill-mbstring": "*",
-                    "symfony/psr-http-message-bridge": "*"
-                },
-                "require": {
-                    "overtrue/wechat": "~3.1",
-                    "php": ">=7.0"
-                },
-                "require-dev": {
-                    "notadd/installers": "0.14.*",
-                    "notadd/testing": "0.4.*",
-                    "phpunit/phpunit": "~6.0"
-                },
-                "source": {
-                    "reference": "e3f684cd225f3fadf21953c0289cb8426baad0e5",
-                    "type": "git",
-                    "url": "https://github.com/notadd/wechat.git"
-                },
-                "time": "2017-11-13T04:23:05+00:00",
-                "type": "notadd-module",
-                "uid": 1108963,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            }
-        },
-        "nulldevelopmenthr/nemesis": {
-            "dev-master": {
-                "authors": [],
-                "autoload": {
-                    "psr-4": {
-                        "": "src/",
-                        "MyVendor\\": "lib/src/MyVendor/",
-                        "Tests\\": "tests/",
-                        "Tests\\MyVendor\\": "lib/tests/MyVendor/",
-                        "spec\\": "spec/",
-                        "spec\\MyVendor\\": "lib/spec/MyVendor/",
-                        "tests\\": "tests/"
-                    }
-                },
-                "bin": [
-                    "bin/Nemesis"
-                ],
-                "description": "Nemesis",
-                "dist": {
-                    "reference": "30b4f9963d60005934989772df5a734c8827f2a4",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/nulldevelopmenthr/nemesis/zipball/30b4f9963d60005934989772df5a734c8827f2a4"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "proprietary"
-                ],
-                "name": "nulldevelopmenthr/nemesis",
-                "replace": {
-                    "symfony/polyfill-mbstring": "*",
-                    "symfony/polyfill-php70": "*",
-                    "symfony/polyfill-php72": "*"
-                },
-                "require": {
-                    "friendsofphp/php-cs-fixer": "dev-long-line-fixers",
-                    "hanneskod/classtools": "^1.1",
-                    "league/tactician": "^1.0",
-                    "myclabs/php-enum": "^1.5",
-                    "nette/php-generator": "^3",
-                    "nikic/php-parser": "^3.0",
-                    "php": ">=7.1.0",
-                    "roave/better-reflection": "^2.0",
-                    "symfony/config": "^3.3",
-                    "symfony/dependency-injection": "^3.3",
-                    "symfony/finder": "~3",
-                    "symfony/yaml": "^3.3",
-                    "webmozart/assert": "^1.2"
-                },
-                "require-dev": {
-                    "behat/behat": "^3.3",
-                    "broadway/broadway": "^2.0",
-                    "broadway/read-model-elasticsearch": "^0.3.0",
-                    "ciaranmcnulty/phpspec-typehintedmethods": "^3.0",
-                    "codeclimate/php-test-reporter": "^0.4.4",
-                    "doctrine/orm": "^2.6",
-                    "infection/infection": "^0.7.0",
-                    "leanphp/phpspec-code-coverage": "^4.0",
-                    "mockery/mockery": "~1@dev",
-                    "phing/phing": "^2.16",
-                    "phpmd/phpmd": "~2.1",
-                    "phpspec/phpspec": "^4.2",
-                    "phpstan/phpstan": "^0.9.1",
-                    "phpunit/phpunit": "^6.5",
-                    "ramsey/uuid": "^3.1",
-                    "satooshi/php-coveralls": "^1",
-                    "slevomat/coding-standard": "^4.0",
-                    "squizlabs/php_codesniffer": "^3.0"
-                },
-                "source": {
-                    "reference": "30b4f9963d60005934989772df5a734c8827f2a4",
-                    "type": "git",
-                    "url": "https://github.com/nulldevelopmenthr/nemesis.git"
-                },
-                "time": "2018-01-12T12:15:50+00:00",
-                "type": "project",
-                "uid": 1501411,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            },
-            "dev-quality_check": {
-                "authors": [],
-                "autoload": {
-                    "psr-4": {
-                        "": "src/",
-                        "MyVendor\\": "lib/src/MyVendor/",
-                        "Tests\\": "tests/",
-                        "Tests\\MyVendor\\": "lib/tests/MyVendor/",
-                        "spec\\": "spec/",
-                        "spec\\MyVendor\\": "lib/spec/MyVendor/",
-                        "tests\\": "tests/"
-                    }
-                },
-                "bin": [
-                    "bin/Nemesis"
-                ],
-                "description": "Nemesis",
-                "dist": {
-                    "reference": "0e0ad6000a73581bdb8aa855faf9173a1899448e",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/nulldevelopmenthr/nemesis/zipball/0e0ad6000a73581bdb8aa855faf9173a1899448e"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "proprietary"
-                ],
-                "name": "nulldevelopmenthr/nemesis",
-                "replace": {
-                    "symfony/polyfill-mbstring": "*",
-                    "symfony/polyfill-php70": "*",
-                    "symfony/polyfill-php72": "*"
-                },
-                "require": {
-                    "friendsofphp/php-cs-fixer": "dev-long-line-fixers",
-                    "hanneskod/classtools": "^1.1",
-                    "league/tactician": "^1.0",
-                    "myclabs/php-enum": "^1.5",
-                    "nette/php-generator": "^3",
-                    "nikic/php-parser": "^3.0",
-                    "php": ">=7.1.0",
-                    "roave/better-reflection": "^2.0",
-                    "symfony/config": "^3.3",
-                    "symfony/dependency-injection": "^3.3",
-                    "symfony/finder": "~3",
-                    "symfony/yaml": "^3.3",
-                    "webmozart/assert": "^1.2"
-                },
-                "require-dev": {
-                    "behat/behat": "^3.3",
-                    "broadway/broadway": "^2.0",
-                    "broadway/read-model-elasticsearch": "^0.3.0",
-                    "ciaranmcnulty/phpspec-typehintedmethods": "^3.0",
-                    "codeclimate/php-test-reporter": "^0.4.4",
-                    "doctrine/orm": "^2.6",
-                    "infection/infection": "^0.7.0",
-                    "leanphp/phpspec-code-coverage": "^4.0",
-                    "mockery/mockery": "~1@dev",
-                    "phing/phing": "^2.16",
-                    "phpmd/phpmd": "~2.1",
-                    "phpspec/phpspec": "^4.2",
-                    "phpstan/phpstan": "^0.9.1",
-                    "phpunit/phpunit": "^6.5",
-                    "ramsey/uuid": "^3.1",
-                    "satooshi/php-coveralls": "^1",
-                    "slevomat/coding-standard": "^4.0",
-                    "squizlabs/php_codesniffer": "^3.0"
-                },
-                "source": {
-                    "reference": "0e0ad6000a73581bdb8aa855faf9173a1899448e",
-                    "type": "git",
-                    "url": "https://github.com/nulldevelopmenthr/nemesis.git"
-                },
-                "time": "2018-01-12T12:16:56+00:00",
-                "type": "project",
-                "uid": 1828369,
-                "version": "dev-quality_check",
-                "version_normalized": "dev-quality_check"
-            }
-        },
-        "shyim/shopware-profiler": {
-            "1.1.5": {
-                "abandoned": "frosh/shopware-profiler",
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "24bef0c5cb51f26b1d03da45c8c7961b34089b02",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/shyim/shopware-profiler/zipball/24bef0c5cb51f26b1d03da45c8c7961b34089b02"
-                },
-                "extra": {
-                    "installer-name": "ShyimProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "shyim/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "24bef0c5cb51f26b1d03da45c8c7961b34089b02",
-                    "type": "git",
-                    "url": "https://github.com/shyim/shopware-profiler.git"
-                },
-                "time": "2017-11-16T18:05:21+00:00",
-                "type": "shopware-plugin",
-                "uid": 1731447,
-                "version": "1.1.5",
-                "version_normalized": "1.1.5.0"
-            },
-            "1.1.6": {
-                "abandoned": "frosh/shopware-profiler",
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "ed5ddd7864c656a702dd678e206eee9daa0a7972",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/shyim/shopware-profiler/zipball/ed5ddd7864c656a702dd678e206eee9daa0a7972"
-                },
-                "extra": {
-                    "installer-name": "ShyimProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "shyim/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "ed5ddd7864c656a702dd678e206eee9daa0a7972",
-                    "type": "git",
-                    "url": "https://github.com/shyim/shopware-profiler.git"
-                },
-                "time": "2018-01-25T18:08:54+00:00",
-                "type": "shopware-plugin",
-                "uid": 1868256,
-                "version": "1.1.6",
-                "version_normalized": "1.1.6.0"
-            },
-            "dev-feature/ajax": {
-                "abandoned": "frosh/shopware-profiler",
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "b54c238ad477032faa21f7a10d7ebed8590db64f",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/shyim/shopware-profiler/zipball/b54c238ad477032faa21f7a10d7ebed8590db64f"
-                },
-                "extra": {
-                    "installer-name": "ShyimProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "shyim/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "b54c238ad477032faa21f7a10d7ebed8590db64f",
-                    "type": "git",
-                    "url": "https://github.com/shyim/shopware-profiler.git"
-                },
-                "time": "2018-02-05T18:32:15+00:00",
-                "type": "shopware-plugin",
-                "uid": 1893298,
-                "version": "dev-feature/ajax",
-                "version_normalized": "dev-feature/ajax"
-            },
-            "dev-frosh": {
-                "abandoned": "frosh/shopware-profiler",
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/shyim/shopware-profiler/zipball/2797e2310c0ac74478ecd18a8032e1f388f44892"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "shyim/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "type": "git",
-                    "url": "https://github.com/shyim/shopware-profiler.git"
-                },
-                "time": "2018-02-26T18:57:18+00:00",
-                "type": "shopware-plugin",
-                "uid": 1942836,
-                "version": "dev-frosh",
-                "version_normalized": "dev-frosh"
-            },
-            "dev-master": {
-                "abandoned": "frosh/shopware-profiler",
-                "authors": [],
-                "description": "Profiling for Shopware",
-                "dist": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/shyim/shopware-profiler/zipball/2797e2310c0ac74478ecd18a8032e1f388f44892"
-                },
-                "extra": {
-                    "installer-name": "FroshProfiler"
-                },
-                "homepage": "",
-                "keywords": [
-                    "plugin",
-                    "profiling",
-                    "shopware"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "shyim/shopware-profiler",
-                "replace": {
-                    "symfony/polyfill-mbstring": "~1.0"
-                },
-                "require": {
-                    "composer/installers": "~1.0",
-                    "jdorn/sql-formatter": "^1.2.17",
-                    "php": "^7.0",
-                    "roave/security-advisories": "dev-master",
-                    "symfony/stopwatch": "^3.3",
-                    "symfony/var-dumper": "^3.2"
-                },
-                "source": {
-                    "reference": "2797e2310c0ac74478ecd18a8032e1f388f44892",
-                    "type": "git",
-                    "url": "https://github.com/shyim/shopware-profiler.git"
-                },
-                "time": "2018-02-26T18:57:18+00:00",
-                "type": "shopware-plugin",
-                "uid": 779517,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            }
-        },
-        "symfony/polyfill": {
-            "dev-master": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Ctype/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Php73/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "478d74d21e6e3fe5ecf268a584bda3a7b7655ef1",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/478d74d21e6e3fe5ecf268a584bda3a7b7655ef1"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.8-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
+                    "mbstring",
                     "compatibility",
-                    "compat",
+                    "portable",
                     "polyfill",
                     "shim"
                 ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-ctype": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-php73": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "478d74d21e6e3fe5ecf268a584bda3a7b7655ef1",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2018-05-17T19:25:54+00:00",
-                "type": "library",
-                "uid": 573980,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            },
-            "v1.0.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "fef21adc706d3bb8f31d37c503ded2160c76c64a",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/fef21adc706d3bb8f31d37c503ded2160c76c64a"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.0-dev"
-                    }
-                },
                 "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
+                "version": "v1.27.0",
+                "version_normalized": "1.27.0.0",
                 "license": [
                     "MIT"
                 ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "fef21adc706d3bb8f31d37c503ded2160c76c64a",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2015-11-04T20:29:00+00:00",
-                "type": "library",
-                "uid": 573979,
-                "version": "v1.0.0",
-                "version_normalized": "1.0.0.0"
-            },
-            "v1.0.1": {
                 "authors": [
                     {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
+                        "name": "Nicolas Grekas",
+                        "email": "p@tchwork.com"
                     },
                     {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
+                        "name": "Symfony Community",
+                        "homepage": "https://symfony.com/contributors"
                     }
                 ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534"
                 },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
                 "dist": {
-                    "reference": "dd9db1dc4013821a63f7afbd8340dd57939fe674",
-                    "shasum": "",
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/8ad114f6b39e2c98a8b0e3bd907732c207c2b534",
                     "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/dd9db1dc4013821a63f7afbd8340dd57939fe674"
+                    "shasum": "",
+                    "reference": "8ad114f6b39e2c98a8b0e3bd907732c207c2b534"
                 },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.0-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "dd9db1dc4013821a63f7afbd8340dd57939fe674",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2015-12-18T15:10:25+00:00",
                 "type": "library",
-                "uid": 635243,
-                "version": "v1.0.1",
-                "version_normalized": "1.0.1.0"
-            },
-            "v1.1.0": {
-                "authors": [
+                "funding": [
                     {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
+                        "url": "https://symfony.com/sponsor",
+                        "type": "custom"
                     },
                     {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Apcu/Resources/stubs",
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "ceffa85c57f023a816f5c511ad35081e7c67d7cd",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/ceffa85c57f023a816f5c511ad35081e7c67d7cd"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.1-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "ceffa85c57f023a816f5c511ad35081e7c67d7cd",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2016-01-25T08:44:42+00:00",
-                "type": "library",
-                "uid": 670768,
-                "version": "v1.1.0",
-                "version_normalized": "1.1.0.0"
-            },
-            "v1.1.1": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
+                        "url": "https://github.com/fabpot",
+                        "type": "github"
                     },
                     {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
+                        "url": "https://tidelift.com/funding/github/packagist/symfony/symfony",
+                        "type": "tidelift"
                     }
                 ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "3dc21aeff3e1f8cb708421ed02cf1a8901d7b535",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/3dc21aeff3e1f8cb708421ed02cf1a8901d7b535"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.1-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "3dc21aeff3e1f8cb708421ed02cf1a8901d7b535",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2016-03-03T16:58:13+00:00",
-                "type": "library",
-                "uid": 730456,
-                "version": "v1.1.1",
-                "version_normalized": "1.1.1.0"
-            },
-            "v1.2.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "ee2c9c2576fdd4a42b024260a1906a9888770c34",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/ee2c9c2576fdd4a42b024260a1906a9888770c34"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.2-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "ee2c9c2576fdd4a42b024260a1906a9888770c34",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2016-05-18T14:27:53+00:00",
-                "type": "library",
-                "uid": 826272,
-                "version": "v1.2.0",
-                "version_normalized": "1.2.0.0"
-            },
-            "v1.3.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "385d033a8e1d8778446d699ecbd886480716eba7",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/385d033a8e1d8778446d699ecbd886480716eba7"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.3-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0"
-                },
-                "source": {
-                    "reference": "385d033a8e1d8778446d699ecbd886480716eba7",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2016-11-14T01:15:23+00:00",
-                "type": "library",
-                "uid": 1079312,
-                "version": "v1.3.0",
-                "version_normalized": "1.3.0.0"
-            },
-            "v1.3.1": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php",
-                        "src/Xml/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "59052c86fa8c36097b640fc6e5c7461f46ac71d3",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/59052c86fa8c36097b640fc6e5c7461f46ac71d3"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.3-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "59052c86fa8c36097b640fc6e5c7461f46ac71d3",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2017-06-09T14:08:27+00:00",
-                "type": "library",
-                "uid": 1436913,
-                "version": "v1.3.1",
-                "version_normalized": "1.3.1.0"
-            },
-            "v1.4.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "a80c6de45ebd2a041415ba17879ff7309ead51f6",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/a80c6de45ebd2a041415ba17879ff7309ead51f6"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.4-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "a80c6de45ebd2a041415ba17879ff7309ead51f6",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2017-06-09T14:32:47+00:00",
-                "type": "library",
-                "uid": 1437002,
-                "version": "v1.4.0",
-                "version_normalized": "1.4.0.0"
-            },
-            "v1.5.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "157dfe598da2181908ff2345cad1807b2c23f5f9",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/157dfe598da2181908ff2345cad1807b2c23f5f9"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.5-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "157dfe598da2181908ff2345cad1807b2c23f5f9",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2017-08-16T07:33:06+00:00",
-                "type": "library",
-                "uid": 1557063,
-                "version": "v1.5.0",
-                "version_normalized": "1.5.0.0"
-            },
-            "v1.6.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "5b34ccc9f409387e81ab3e38f37b12e42772a0cf",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/5b34ccc9f409387e81ab3e38f37b12e42772a0cf"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.6-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "5b34ccc9f409387e81ab3e38f37b12e42772a0cf",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2017-10-11T12:05:26+00:00",
-                "type": "library",
-                "uid": 1669330,
-                "version": "v1.6.0",
-                "version_normalized": "1.6.0.0"
-            },
-            "v1.7.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "86e27771f290e6af6d95c1c256f6d6d15ac9e22e",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/86e27771f290e6af6d95c1c256f6d6d15ac9e22e"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.7-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "86e27771f290e6af6d95c1c256f6d6d15ac9e22e",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2018-01-31T19:39:15+00:00",
-                "type": "library",
-                "uid": 1882783,
-                "version": "v1.7.0",
-                "version_normalized": "1.7.0.0"
-            },
-            "v1.8.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "classmap": [
-                        "src/Intl/Normalizer/Resources/stubs",
-                        "src/Php70/Resources/stubs",
-                        "src/Php54/Resources/stubs"
-                    ],
-                    "files": [
-                        "src/Apcu/bootstrap.php",
-                        "src/Ctype/bootstrap.php",
-                        "src/Php54/bootstrap.php",
-                        "src/Php55/bootstrap.php",
-                        "src/Php56/bootstrap.php",
-                        "src/Php70/bootstrap.php",
-                        "src/Php71/bootstrap.php",
-                        "src/Php72/bootstrap.php",
-                        "src/Php73/bootstrap.php",
-                        "src/Iconv/bootstrap.php",
-                        "src/Intl/Grapheme/bootstrap.php",
-                        "src/Intl/Icu/bootstrap.php",
-                        "src/Intl/Normalizer/bootstrap.php",
-                        "src/Mbstring/bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\": "src/"
-                    }
-                },
-                "description": "Symfony polyfills backporting features to lower PHP versions",
-                "dist": {
-                    "reference": "6f13be2ff1681db53292eee1719dcee57e983207",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill/zipball/6f13be2ff1681db53292eee1719dcee57e983207"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.8-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "compatibility",
-                    "compat",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill",
-                "replace": {
-                    "symfony/polyfill-apcu": "self.version",
-                    "symfony/polyfill-ctype": "self.version",
-                    "symfony/polyfill-iconv": "self.version",
-                    "symfony/polyfill-intl-grapheme": "self.version",
-                    "symfony/polyfill-intl-icu": "self.version",
-                    "symfony/polyfill-intl-normalizer": "self.version",
-                    "symfony/polyfill-mbstring": "self.version",
-                    "symfony/polyfill-php54": "self.version",
-                    "symfony/polyfill-php55": "self.version",
-                    "symfony/polyfill-php56": "self.version",
-                    "symfony/polyfill-php70": "self.version",
-                    "symfony/polyfill-php71": "self.version",
-                    "symfony/polyfill-php72": "self.version",
-                    "symfony/polyfill-php73": "self.version",
-                    "symfony/polyfill-util": "self.version",
-                    "symfony/polyfill-xml": "self.version"
-                },
-                "require": {
-                    "ircmaxell/password-compat": "~1.0",
-                    "paragonie/random_compat": "~1.0|~2.0",
-                    "php": ">=5.3.3",
-                    "symfony/intl": "~2.3|~3.0|~4.0"
-                },
-                "require-dev": {
-                    "symfony/phpunit-bridge": "~3.2"
-                },
-                "source": {
-                    "reference": "6f13be2ff1681db53292eee1719dcee57e983207",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill.git"
-                },
-                "time": "2018-05-01T05:47:21+00:00",
-                "type": "library",
-                "uid": 2152743,
-                "version": "v1.8.0",
-                "version_normalized": "1.8.0.0"
-            }
-        },
-        "symfony/polyfill-mbstring": {
-            "dev-master": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
+                "time": "2022-11-03T14:55:06+00:00",
                 "autoload": {
                     "files": [
                         "bootstrap.php"
@@ -1987,764 +63,761 @@
                         "Symfony\\Polyfill\\Mbstring\\": ""
                     }
                 },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "3296adf6a6454a050679cde90f95350ad604b171",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/3296adf6a6454a050679cde90f95350ad604b171"
-                },
                 "extra": {
                     "branch-alias": {
-                        "dev-master": "1.8-dev"
+                        "dev-main": "1.27-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
                     }
                 },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
                 "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "3296adf6a6454a050679cde90f95350ad604b171",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
+                    "php": ">=7.1"
                 },
                 "suggest": {
                     "ext-mbstring": "For best performance"
+                },
+                "provide": {
+                    "ext-mbstring": "*"
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.27.0"
+                }
+            },
+            {
+                "version": "v1.26.0",
+                "version_normalized": "1.26.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9344f9cb97f3b19424af1a21a3b0e75b0a7d8d7e"
+                },
+                "time": "2022-05-24T11:49:31+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.26-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.26.0"
+                }
+            },
+            {
+                "version": "v1.25.0",
+                "version_normalized": "1.25.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0abb51d2f102e00a4eefcf46ba7fec406d245825",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0abb51d2f102e00a4eefcf46ba7fec406d245825"
+                },
+                "time": "2021-11-30T18:21:41+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.23-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.25.0"
+                }
+            },
+            {
+                "version": "v1.24.0",
+                "version_normalized": "1.24.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.24.0"
+                }
+            },
+            {
+                "version": "v1.23.1",
+                "version_normalized": "1.23.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/9174a3d80210dca8daa7f31fec659150bbeabfc6",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9174a3d80210dca8daa7f31fec659150bbeabfc6"
+                },
+                "time": "2021-05-27T12:26:48+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.1"
+                },
+                "provide": "__unset"
+            },
+            {
+                "version": "v1.23.0",
+                "version_normalized": "1.23.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2df51500adbaebdc4c38dea4c89a2e131c45c8a1",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2df51500adbaebdc4c38dea4c89a2e131c45c8a1"
+                },
+                "time": "2021-05-27T09:27:20+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.23.0"
+                }
+            },
+            {
+                "version": "v1.22.1",
+                "version_normalized": "1.22.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "5232de97ee3b75b0360528dae24e73db49566ab1"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/5232de97ee3b75b0360528dae24e73db49566ab1",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "5232de97ee3b75b0360528dae24e73db49566ab1"
+                },
+                "time": "2021-01-22T09:19:47+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.22-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.22.1"
+                }
+            },
+            {
+                "version": "v1.22.0",
+                "version_normalized": "1.22.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "f377a3dd1fde44d37b9831d68dc8dea3ffd28e13"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/f377a3dd1fde44d37b9831d68dc8dea3ffd28e13",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f377a3dd1fde44d37b9831d68dc8dea3ffd28e13"
+                },
+                "time": "2021-01-07T16:49:33+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.22.0"
+                }
+            },
+            {
+                "version": "v1.20.0",
+                "version_normalized": "1.20.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "39d483bdf39be819deabf04ec872eb0b2410b531"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/39d483bdf39be819deabf04ec872eb0b2410b531",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "39d483bdf39be819deabf04ec872eb0b2410b531"
+                },
+                "time": "2020-10-23T14:02:19+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.20-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.20.0"
+                }
+            },
+            {
+                "version": "v1.19.0",
+                "version_normalized": "1.19.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "b5f7b932ee6fa802fc792eabd77c4c88084517ce"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/b5f7b932ee6fa802fc792eabd77c4c88084517ce",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b5f7b932ee6fa802fc792eabd77c4c88084517ce"
+                },
+                "time": "2020-10-23T09:01:57+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-main": "1.19-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "require": {
+                    "php": ">=5.3.3"
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.19.0"
+                }
+            },
+            {
+                "version": "v1.18.1",
+                "version_normalized": "1.18.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "a6977d63bf9a0ad4c65cd352709e230876f9904a"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/a6977d63bf9a0ad4c65cd352709e230876f9904a",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "a6977d63bf9a0ad4c65cd352709e230876f9904a"
+                },
+                "time": "2020-07-14T12:35:20+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.18-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.18.1"
+                }
+            },
+            {
+                "version": "v1.18.0",
+                "version_normalized": "1.18.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.17.1",
+                "version_normalized": "1.17.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7110338d81ce1cbc3e273136e4574663627037a7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7110338d81ce1cbc3e273136e4574663627037a7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7110338d81ce1cbc3e273136e4574663627037a7"
+                },
+                "time": "2020-06-06T08:46:27+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.17-dev"
+                    },
+                    "thanks": {
+                        "name": "symfony/polyfill",
+                        "url": "https://github.com/symfony/polyfill"
+                    }
+                }
+            },
+            {
+                "version": "v1.17.0",
+                "version_normalized": "1.17.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "fa79b11539418b02fc5e1897267673ba2c19419c"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fa79b11539418b02fc5e1897267673ba2c19419c",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fa79b11539418b02fc5e1897267673ba2c19419c"
+                },
+                "time": "2020-05-12T16:47:27+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.17-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.17.0"
+                }
+            },
+            {
+                "version": "v1.16.0",
+                "version_normalized": "1.16.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "a54881ec0ab3b2005c406aed0023c062879031e7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/a54881ec0ab3b2005c406aed0023c062879031e7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "a54881ec0ab3b2005c406aed0023c062879031e7"
+                },
+                "time": "2020-05-08T16:50:20+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.16-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.15.0",
+                "version_normalized": "1.15.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "81ffd3a9c6d707be22e3012b827de1c9775fc5ac"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/81ffd3a9c6d707be22e3012b827de1c9775fc5ac",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "81ffd3a9c6d707be22e3012b827de1c9775fc5ac"
+                },
+                "time": "2020-03-09T19:04:49+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.15-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.15.0"
+                }
+            },
+            {
+                "version": "v1.14.0",
+                "version_normalized": "1.14.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "34094cfa9abe1f0f14f48f490772db7a775559f2"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/34094cfa9abe1f0f14f48f490772db7a775559f2",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "34094cfa9abe1f0f14f48f490772db7a775559f2"
+                },
+                "time": "2020-01-13T11:15:53+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.14-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                },
+                "funding": "__unset"
+            },
+            {
+                "version": "v1.13.2",
+                "version_normalized": "1.13.2.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "ed92f9e64b32efc1d218410146737c5ca796f267"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/ed92f9e64b32efc1d218410146737c5ca796f267",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "ed92f9e64b32efc1d218410146737c5ca796f267"
+                },
+                "time": "2020-01-13T11:02:47+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.13-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.13.2"
+                }
+            },
+            {
+                "version": "v1.13.1",
+                "version_normalized": "1.13.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7b4aab9743c30be783b73de055d24a39cf4b954f"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7b4aab9743c30be783b73de055d24a39cf4b954f",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7b4aab9743c30be783b73de055d24a39cf4b954f"
+                },
+                "time": "2019-11-27T14:18:11+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.13.0",
+                "version_normalized": "1.13.0.0",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.13.0"
+                }
+            },
+            {
+                "version": "v1.12.0",
+                "version_normalized": "1.12.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "b42a2f66e8f1b15ccf25652c3424265923eb4f17"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/b42a2f66e8f1b15ccf25652c3424265923eb4f17",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "b42a2f66e8f1b15ccf25652c3424265923eb4f17"
+                },
+                "time": "2019-08-06T08:03:45+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.12-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.12.0"
+                }
+            },
+            {
+                "version": "v1.11.0",
+                "version_normalized": "1.11.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "fe5e94c604826c35a32fa832f35bd036b6799609"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fe5e94c604826c35a32fa832f35bd036b6799609",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "fe5e94c604826c35a32fa832f35bd036b6799609"
+                },
+                "time": "2019-02-06T07:57:58+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.11-dev"
+                    }
+                },
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
+            },
+            {
+                "version": "v1.10.0",
+                "version_normalized": "1.10.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "c79c051f5b3a46be09205c73b80b346e4153e494"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/c79c051f5b3a46be09205c73b80b346e4153e494",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "c79c051f5b3a46be09205c73b80b346e4153e494"
+                },
+                "time": "2018-09-21T13:07:52+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.9-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.9.0",
+                "version_normalized": "1.9.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "d0cd638f4634c16d8df4508e847f14e9e43168b8"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/d0cd638f4634c16d8df4508e847f14e9e43168b8",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "d0cd638f4634c16d8df4508e847f14e9e43168b8"
+                },
+                "time": "2018-08-06T14:22:27+00:00",
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.9.0"
+                }
+            },
+            {
+                "version": "v1.8.0",
+                "version_normalized": "1.8.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "3296adf6a6454a050679cde90f95350ad604b171"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/3296adf6a6454a050679cde90f95350ad604b171",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "3296adf6a6454a050679cde90f95350ad604b171"
                 },
                 "time": "2018-04-26T10:06:28+00:00",
-                "type": "library",
-                "uid": 562035,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
-            },
-            "v1.0.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0b6a8940385311a24e060ec1fe35680e17c74497"
-                },
                 "extra": {
                     "branch-alias": {
-                        "dev-master": "1.0-dev"
+                        "dev-master": "1.8-dev"
                     }
                 },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "time": "2015-11-04T20:28:58+00:00",
-                "type": "library",
-                "uid": 573973,
-                "version": "v1.0.0",
-                "version_normalized": "1.0.0.0"
+                "support": {
+                    "source": "https://github.com/symfony/polyfill-mbstring/tree/master"
+                }
             },
-            "v1.0.1": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/49ff736bd5d41f45240cec77b44967d76e0c3d25"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.0-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
+            {
+                "version": "v1.7.0",
+                "version_normalized": "1.7.0.0",
                 "source": {
-                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25",
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
                     "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
+                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b"
                 },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2015-11-20T09:19:13+00:00",
-                "type": "library",
-                "uid": 635252,
-                "version": "v1.0.1",
-                "version_normalized": "1.0.1.0"
-            },
-            "v1.1.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
                 "dist": {
-                    "reference": "1289d16209491b584839022f29257ad859b8532d",
-                    "shasum": "",
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/78be803ce01e55d3491c1397cf1c64beb9c1b63b",
                     "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/1289d16209491b584839022f29257ad859b8532d"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.1-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "1289d16209491b584839022f29257ad859b8532d",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2016-01-20T09:13:37+00:00",
-                "type": "library",
-                "uid": 670779,
-                "version": "v1.1.0",
-                "version_normalized": "1.1.0.0"
-            },
-            "v1.1.1": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "1289d16209491b584839022f29257ad859b8532d",
                     "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/1289d16209491b584839022f29257ad859b8532d"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.1-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "1289d16209491b584839022f29257ad859b8532d",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2016-01-20T09:13:37+00:00",
-                "type": "library",
-                "uid": 730515,
-                "version": "v1.1.1",
-                "version_normalized": "1.1.1.0"
-            },
-            "v1.2.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "dff51f72b0706335131b00a7f49606168c582594",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dff51f72b0706335131b00a7f49606168c582594"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.2-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "dff51f72b0706335131b00a7f49606168c582594",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2016-05-18T14:26:46+00:00",
-                "type": "library",
-                "uid": 826286,
-                "version": "v1.2.0",
-                "version_normalized": "1.2.0.0"
-            },
-            "v1.3.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/e79d363049d1c2128f133a2667e4f4190904f7f4"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.3-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2016-11-14T01:06:16+00:00",
-                "type": "library",
-                "uid": 1079316,
-                "version": "v1.3.0",
-                "version_normalized": "1.3.0.0"
-            },
-            "v1.3.1": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dee1c8b1e040d7dec299e4133c8105538cb2e5c7"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.3-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2017-05-29T17:37:41+00:00",
-                "type": "library",
-                "uid": 1436918,
-                "version": "v1.3.1",
-                "version_normalized": "1.3.1.0"
-            },
-            "v1.4.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/f29dca382a6485c3cbe6379f0c61230167681937"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.4-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2017-06-09T14:24:12+00:00",
-                "type": "library",
-                "uid": 1437011,
-                "version": "v1.4.0",
-                "version_normalized": "1.4.0.0"
-            },
-            "v1.5.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7c8fae0ac1d216eb54349e6a8baa57d515fe8803"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.5-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2017-06-14T15:44:48+00:00",
-                "type": "library",
-                "uid": 1557074,
-                "version": "v1.5.0",
-                "version_normalized": "1.5.0.0"
-            },
-            "v1.6.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.6-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
-                },
-                "time": "2017-10-11T12:05:26+00:00",
-                "type": "library",
-                "uid": 1669338,
-                "version": "v1.6.0",
-                "version_normalized": "1.6.0.0"
-            },
-            "v1.7.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/78be803ce01e55d3491c1397cf1c64beb9c1b63b"
-                },
-                "extra": {
-                    "branch-alias": {
-                        "dev-master": "1.7-dev"
-                    }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
-                "source": {
-                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b",
-                    "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
-                },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
+                    "reference": "78be803ce01e55d3491c1397cf1c64beb9c1b63b"
                 },
                 "time": "2018-01-30T19:27:44+00:00",
-                "type": "library",
-                "uid": 1882800,
-                "version": "v1.7.0",
-                "version_normalized": "1.7.0.0"
-            },
-            "v1.8.0": {
-                "authors": [
-                    {
-                        "email": "p@tchwork.com",
-                        "name": "Nicolas Grekas"
-                    },
-                    {
-                        "homepage": "https://symfony.com/contributors",
-                        "name": "Symfony Community"
-                    }
-                ],
-                "autoload": {
-                    "files": [
-                        "bootstrap.php"
-                    ],
-                    "psr-4": {
-                        "Symfony\\Polyfill\\Mbstring\\": ""
-                    }
-                },
-                "description": "Symfony polyfill for the Mbstring extension",
-                "dist": {
-                    "reference": "3296adf6a6454a050679cde90f95350ad604b171",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/3296adf6a6454a050679cde90f95350ad604b171"
-                },
                 "extra": {
                     "branch-alias": {
-                        "dev-master": "1.8-dev"
+                        "dev-master": "1.7-dev"
                     }
-                },
-                "homepage": "https://symfony.com",
-                "keywords": [
-                    "mbstring",
-                    "compatibility",
-                    "portable",
-                    "polyfill",
-                    "shim"
-                ],
-                "license": [
-                    "MIT"
-                ],
-                "name": "symfony/polyfill-mbstring",
-                "require": {
-                    "php": ">=5.3.3"
-                },
+                }
+            },
+            {
+                "version": "v1.6.0",
+                "version_normalized": "1.6.0.0",
                 "source": {
-                    "reference": "3296adf6a6454a050679cde90f95350ad604b171",
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
                     "type": "git",
-                    "url": "https://github.com/symfony/polyfill-mbstring.git"
+                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"
                 },
-                "suggest": {
-                    "ext-mbstring": "For best performance"
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2ec8b39c38cb16674bbf3fea2b6ce5bf117e1296"
                 },
-                "time": "2018-04-26T10:06:28+00:00",
-                "type": "library",
-                "uid": 2152762,
-                "version": "v1.8.0",
-                "version_normalized": "1.8.0.0"
+                "time": "2017-10-11T12:05:26+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.6-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.5.0",
+                "version_normalized": "1.5.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/7c8fae0ac1d216eb54349e6a8baa57d515fe8803",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "7c8fae0ac1d216eb54349e6a8baa57d515fe8803"
+                },
+                "time": "2017-06-14T15:44:48+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.5-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.4.0",
+                "version_normalized": "1.4.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/f29dca382a6485c3cbe6379f0c61230167681937",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "f29dca382a6485c3cbe6379f0c61230167681937"
+                },
+                "time": "2017-06-09T14:24:12+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.4-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.3.1",
+                "version_normalized": "1.3.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dee1c8b1e040d7dec299e4133c8105538cb2e5c7",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "dee1c8b1e040d7dec299e4133c8105538cb2e5c7"
+                },
+                "time": "2017-05-29T17:37:41+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.3-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.3.0",
+                "version_normalized": "1.3.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/e79d363049d1c2128f133a2667e4f4190904f7f4",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "e79d363049d1c2128f133a2667e4f4190904f7f4"
+                },
+                "time": "2016-11-14T01:06:16+00:00"
+            },
+            {
+                "version": "v1.2.0",
+                "version_normalized": "1.2.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "dff51f72b0706335131b00a7f49606168c582594"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/dff51f72b0706335131b00a7f49606168c582594",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "dff51f72b0706335131b00a7f49606168c582594"
+                },
+                "time": "2016-05-18T14:26:46+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.2-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.1.1",
+                "version_normalized": "1.1.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "1289d16209491b584839022f29257ad859b8532d"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/1289d16209491b584839022f29257ad859b8532d",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "1289d16209491b584839022f29257ad859b8532d"
+                },
+                "time": "2016-01-20T09:13:37+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.1-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.1.0",
+                "version_normalized": "1.1.0.0"
+            },
+            {
+                "version": "v1.0.1",
+                "version_normalized": "1.0.1.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/49ff736bd5d41f45240cec77b44967d76e0c3d25",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "49ff736bd5d41f45240cec77b44967d76e0c3d25"
+                },
+                "time": "2015-11-20T09:19:13+00:00",
+                "extra": {
+                    "branch-alias": {
+                        "dev-master": "1.0-dev"
+                    }
+                }
+            },
+            {
+                "version": "v1.0.0",
+                "version_normalized": "1.0.0.0",
+                "source": {
+                    "url": "https://github.com/symfony/polyfill-mbstring.git",
+                    "type": "git",
+                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/0b6a8940385311a24e060ec1fe35680e17c74497",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "0b6a8940385311a24e060ec1fe35680e17c74497"
+                },
+                "time": "2015-11-04T20:28:58+00:00",
+                "suggest": "__unset"
             }
-        }
-    }
+        ]
+    },
+    "security-advisories": []
 }

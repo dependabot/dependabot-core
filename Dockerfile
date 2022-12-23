@@ -16,6 +16,7 @@ RUN apt-get update \
     build-essential \
     dirmngr \
     git \
+    git-lfs \
     bzr \
     mercurial \
     gnupg2 \
@@ -63,23 +64,21 @@ ARG USER_GID=$USER_UID
 RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
      else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt
+  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
 
 ### RUBY
 
-ARG RUBY_VERSION=2.7.6
-ARG RUBY_INSTALL_VERSION=0.8.3
-
-ARG RUBYGEMS_SYSTEM_VERSION=3.2.20
+# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
+ARG RUBY_VERSION=3.1.2
+ARG RUBY_INSTALL_VERSION=0.8.5
 
 ARG BUNDLER_V1_VERSION=1.17.3
-ARG BUNDLER_V2_VERSION=2.3.14
+# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
+ARG BUNDLER_V2_VERSION=2.3.25
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
-ENV BUNDLE_PATH=".bundle" \
-    BUNDLE_BIN=".bundle/bin"
-ENV PATH="$BUNDLE_BIN:$PATH:$BUNDLE_PATH/bin"
+ENV BUNDLE_PATH=".bundle"
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \
@@ -89,27 +88,42 @@ RUN mkdir -p /tmp/ruby-install \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
  && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
- && gem update --system $RUBYGEMS_SYSTEM_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
  && rm -rf /tmp/ruby-install
 
-### PYTHON
 
+### PYTHON
+COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
 # Install Python with pyenv.
+USER root
 ENV PYENV_ROOT=/usr/local/.pyenv \
   PATH="/usr/local/.pyenv/bin:$PATH"
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.2 --single-branch --depth=1 /usr/local/.pyenv \
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.6 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.10.5 \
-  && pyenv global 3.10.5 \
-  && rm -Rf /tmp/python-build*
+  && pyenv install 3.11.0 \
+  && pyenv global 3.11.0 \
+  && pyenv install 3.10.8 \
+  && pyenv install 3.9.15 \
+  && pyenv install 3.8.15 \
+  && pyenv install 3.7.15 \
+  && rm -Rf /tmp/python-build* \
+  && bash /opt/python/helpers/build \
+  && cd /usr/local/.pyenv \
+  && tar czf 3.10.tar.gz versions/3.10.8 \
+  && tar czf 3.9.tar.gz versions/3.9.15 \
+  && tar czf 3.8.tar.gz versions/3.8.15 \
+  && tar czf 3.7.tar.gz versions/3.7.15 \
+  && rm -Rf versions/3.10.8 \
+  && rm -Rf versions/3.9.15 \
+  && rm -Rf versions/3.8.15 \
+  && rm -Rf versions/3.7.15
+
 USER root
-
-
 ### JAVASCRIPT
 
 # Install Node and npm
@@ -141,8 +155,6 @@ RUN [ "$TARGETARCH" != "amd64" ] \
 
 # Install PHP and Composer
 ENV COMPOSER_ALLOW_SUPERUSER=1
-COPY --from=composer:1.10.26 /usr/bin/composer /usr/local/bin/composer1
-COPY --from=composer:2.3.9 /usr/bin/composer /usr/local/bin/composer
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
@@ -174,6 +186,10 @@ RUN add-apt-repository ppa:ondrej/php \
     php7.4-zmq \
     php7.4-mcrypt \
   && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer1 --version=1.10.26
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=2.3.9
+
 USER dependabot
 # Perform a fake `composer update` to warm ~/dependabot/.cache/composer/repo
 # with historic data (we don't care about package files here)
@@ -205,21 +221,21 @@ RUN cd /tmp \
 
 ### ELIXIR
 
-# Install Erlang, Elixir and Hex
+# Install Erlang and Elixir
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
-ARG ELIXIR_VERSION=v1.13.4
-ARG ELIXIR_CHECKSUM=e64c714e80cd9657b8897d725f6d78f251d443082f6af5070caec863c18068c97af6bdda156c3b3390e0a2b84f77c2ad3378a42913f64bb583fb5251fa49e619
-ARG ERLANG_VERSION=1:24.2.1-1
+ARG ELIXIR_VERSION=v1.14.2
+ARG ELIXIR_CHECKSUM=2e4addb85de85218d32c16b3710e8087f5b18b3b1560742137ad4c41bbbea63a
+ARG ERLANG_MAJOR_VERSION=24
+ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1-1
 RUN curl -sSLfO https://packages.erlang-solutions.com/erlang-solutions_2.0_all.deb \
   && dpkg -i erlang-solutions_2.0_all.deb \
   && apt-get update \
   && apt-get install -y --no-install-recommends esl-erlang=${ERLANG_VERSION} \
-  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/Precompiled.zip \
-  && echo "$ELIXIR_CHECKSUM  Precompiled.zip" | sha512sum -c - \
-  && unzip -d /usr/local/elixir -x Precompiled.zip \
-  && rm -f Precompiled.zip erlang-solutions_2.0_all.deb \
-  && mix local.hex --force \
+  && curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+  && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
+  && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
+  && rm -f elixir-otp-${ERLANG_MAJOR_VERSION}.zip erlang-solutions_2.0_all.deb \
   && rm -rf /var/lib/apt/lists/*
 
 
@@ -231,15 +247,15 @@ ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.61.0 --profile minimal
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --profile minimal
 
 
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.3.0
-ARG TERRAFORM_AMD64_CHECKSUM=380ca822883176af928c80e5771d1c0ac9d69b13c6d746e6202482aedde7d457
-ARG TERRAFORM_ARM64_CHECKSUM=0a15de6f934cf2217e5055412e7600d342b4f7dcc133564690776fece6213a9a
+ARG TERRAFORM_VERSION=1.3.6
+ARG TERRAFORM_AMD64_CHECKSUM=bb44a4c2b0a832d49253b9034d8ccbd34f9feeb26eda71c665f6e7fa0861f49b
+ARG TERRAFORM_ARM64_CHECKSUM=f4b1af29094290f1b3935c29033c4e5291664ee2c015ca251a020dd425c847c3
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \
@@ -253,15 +269,22 @@ ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
   PATH="${PATH}:/opt/dart/dart-sdk/bin"
 
-ARG DART_VERSION=2.17.0
+# https://dart.dev/get-dart/archive
+ARG DART_VERSION=2.18.6
+
 RUN DART_ARCH=${TARGETARCH} \
   && if [ "$TARGETARCH" = "amd64" ]; then DART_ARCH=x64; fi \
-  && curl --connect-timeout 15 --retry 5 "https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/dartsdk-linux-${DART_ARCH}-release.zip" > "/tmp/dart-sdk.zip" \
+  && DART_EXE="dartsdk-linux-${DART_ARCH}-release.zip" \
+  && DOWNLOAD_URL="https://storage.googleapis.com/dart-archive/channels/stable/release/${DART_VERSION}/sdk/${DART_EXE}" \
+  && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}" > "/tmp/${DART_EXE}" \
+  && curl --connect-timeout 15 --retry 5 "${DOWNLOAD_URL}.sha256sum" > "/tmp/${DART_EXE}.sha256sum" \
+  && cd /tmp/ \
+  && echo "$(cat /tmp/${DART_EXE}.sha256sum)" | sha256sum -c \
   && mkdir -p "$PUB_CACHE" \
   && chown dependabot:dependabot "$PUB_CACHE" \
-  && unzip "/tmp/dart-sdk.zip" -d "/opt/dart" > /dev/null \
+  && unzip "/tmp/${DART_EXE}" -d "/opt/dart" > /dev/null \
   && chmod -R o+rx "/opt/dart/dart-sdk" \
-  && rm "/tmp/dart-sdk.zip" \
+  && rm "/tmp/${DART_EXE}" \
   && dart --version
 
 COPY --chown=dependabot:dependabot LICENSE /home/dependabot
@@ -283,6 +306,8 @@ RUN bash /opt/go_modules/helpers/build
 
 COPY --chown=dependabot:dependabot hex/helpers /opt/hex/helpers
 ENV MIX_HOME="/opt/hex/mix"
+# https://github.com/hexpm/hex/releases
+ENV HEX_VERSION="1.0.1"
 RUN bash /opt/hex/helpers/build
 
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
@@ -293,9 +318,6 @@ RUN bash /opt/npm_and_yarn/helpers/build
 # Our native helpers pull in yarn 1, so we need to reset the version globally to
 # 3.2.3.
 RUN corepack prepare yarn@3.2.3 --activate
-
-COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
-RUN bash /opt/python/helpers/build
 
 COPY --chown=dependabot:dependabot terraform/helpers /opt/terraform/helpers
 RUN bash /opt/terraform/helpers/build
@@ -312,3 +334,6 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 ENV PATH="$HOME/bin:$PATH"
 # Configure cargo to use git CLI so the above takes effect
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1

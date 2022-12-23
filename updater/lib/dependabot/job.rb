@@ -43,6 +43,13 @@ module Dependabot
         Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
     end
 
+    def already_cloned?
+      return unless Environment.repo_contents_path
+
+      # For testing, the source repo may already be mounted.
+      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
+    end
+
     def lockfile_only?
       @lockfile_only
     end
@@ -112,8 +119,9 @@ module Dependabot
         version_class_for_package_manager(dependency.package_manager)
       return false unless version_class.correct?(dependency.version)
 
-      version = version_class.new(dependency.version)
-      security_advisories.any? { |a| a.vulnerable?(version) }
+      all_versions = dependency.all_versions.
+                     filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+      security_advisories.any? { |a| all_versions.any? { |v| a.vulnerable?(v) } }
     end
 
     def security_fix?(dependency)
@@ -148,8 +156,6 @@ module Dependabot
       experiments.each do |name, value|
         Dependabot::Experiments.register(name, value)
       end
-
-      Dependabot::Utils.register_always_clone("npm_and_yarn") if Dependabot::Experiments.enabled?(:yarn_berry)
     end
 
     def name_match?(name1, name2)

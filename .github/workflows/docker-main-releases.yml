@@ -1,0 +1,73 @@
+name: Push latest images
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  BASE_IMAGE: "ubuntu:20.04"
+  UPDATER_IMAGE: "dependabot/updater"
+  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "common/lib/dependabot/version.rb"
+
+jobs:
+  push-updater-image:
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build dependabot-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-core:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-core \
+            .
+
+      - name: Build dependabot-updater image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "$UPDATER_IMAGE:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$UPDATER_IMAGE_MIRROR" \
+            --build-arg OMNIBUS_VERSION=$TAG \
+            -f Dockerfile.updater \
+            .
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push branch image
+        run: |
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
+          docker push "$UPDATER_IMAGE_MIRROR:$TAG"
+
+      - name: Push latest on main
+        run: |
+          # The v2 tag is the Updater image tag, not related to the core version.
+          DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
+          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$DATE_BASED_VERSION"
+          docker push --all-tags "$UPDATER_IMAGE_MIRROR"
+
+      - name: Set summary
+        run: |
+          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

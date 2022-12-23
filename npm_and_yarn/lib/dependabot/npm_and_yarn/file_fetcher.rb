@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/npm_and_yarn/helpers"
@@ -9,6 +10,7 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
+    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -19,9 +21,8 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS =
-        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
-      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
+      PATH_DEPENDENCY_STARTS = %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
+      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
@@ -29,6 +30,24 @@ module Dependabot
 
       def self.required_files_message
         "Repo must contain a package.json."
+      end
+
+      # Overridden to pull any yarn data or plugins which may be stored with Git LFS.
+      def clone_repo_contents
+        return @git_lfs_cloned_repo_contents_path if defined?(@git_lfs_cloned_repo_contents_path)
+
+        @git_lfs_cloned_repo_contents_path = super
+        begin
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(@git_lfs_cloned_repo_contents_path) do
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
+            end
+            @git_lfs_cloned_repo_contents_path
+          end
+        rescue StandardError
+          @git_lfs_cloned_repo_contents_path
+        end
       end
 
       private
@@ -48,7 +67,40 @@ module Dependabot
         fetched_files += path_dependencies(fetched_files)
         instrument_package_manager_version
 
+        fetched_files << inferred_npmrc if inferred_npmrc
+
         fetched_files.uniq
+      end
+
+      # If every entry in the lockfile uses the same registry, we can infer
+      # that there is a global .npmrc file, so add it here as if it were in the repo.
+      def inferred_npmrc
+        return @inferred_npmrc if defined?(@inferred_npmrc)
+        return @inferred_npmrc = nil unless npmrc.nil? && package_lock
+
+        known_registries = []
+        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |_name, details|
+          resolved = details.fetch("resolved", "https://registry.npmjs.org")
+          begin
+            uri = URI.parse(resolved)
+          rescue URI::InvalidURIError
+            # Ignoring non-URIs since they're not registries.
+            # This can happen if resolved is false, for instance.
+            next
+          end
+          # Check for scheme since path dependencies will not have one
+          known_registries << "#{uri.scheme}://#{uri.host}" if uri.scheme && uri.host
+        end
+
+        if known_registries.uniq.length == 1 && known_registries.first != "https://registry.npmjs.org"
+          Dependabot.logger.info("Inferred global NPM registry is: #{known_registries.first}")
+          return @inferred_npmrc = Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "registry=#{known_registries.first}"
+          )
+        end
+
+        @inferred_npmrc = nil
       end
 
       def instrument_package_manager_version
@@ -69,15 +121,15 @@ module Dependabot
         return @yarn_version if defined?(@yarn_version)
 
         package = JSON.parse(package_json.content)
-        if (pkgmanager = package.fetch("packageManager", nil))
-          get_yarn_version_from_path(pkgmanager)
+        if (package_manager = package.fetch("packageManager", nil))
+          get_yarn_version_from_package_json(package_manager)
         elsif yarn_lock
           1
         end
       end
 
-      def get_yarn_version_from_path(path)
-        version_match = path.match(/yarn@(?<version>\d+.\d+.\d+)/)
+      def get_yarn_version_from_package_json(package_manager)
+        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
         version_match&.named_captures&.fetch("version", nil)
       end
 
@@ -153,12 +205,19 @@ module Dependabot
         @lerna_packages ||= fetch_lerna_packages
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def path_dependencies(fetched_files)
         package_json_files = []
         unfetchable_deps = []
 
         path_dependency_details(fetched_files).each do |name, path|
+          # This happens with relative paths in the package-lock. Skipping it since it results
+          # in /package.json which is outside of the project directory.
+          next if path == "file:"
+
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
+          raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
+
           filename = path
           # NPM/Yarn support loading path dependencies from tarballs:
           # https://docs.npmjs.com/cli/pack.html
@@ -184,6 +243,7 @@ module Dependabot
 
         package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_details(fetched_files)
         package_json_path_deps = []
@@ -234,6 +294,8 @@ module Dependabot
           select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
           map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
+            raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
+
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
           end
@@ -435,6 +497,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
       end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
 

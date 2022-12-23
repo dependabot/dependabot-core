@@ -541,12 +541,88 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
     end
 
     context "with an azure source" do
-      let(:source) do
-        Dependabot::Source.
-          from_url("https://dev.azure.com/saigkill/_git/hoe-manns")
+      let(:azure_repo_url) do
+        "https://dev.azure.com/contoso/MyProject/_apis/git/repositories/business/items?path=/"
+      end
+      let(:azure_repo_contents_tree_url) do
+        "https://dev.azure.com/contoso/MyProject/_apis/git/repositories/business/items?path=/" \
+          "&versionDescriptor.version=sha&versionDescriptor.versionType=commit"
+      end
+      let(:azure_repo_contents_url) do
+        "https://dev.azure.com/contoso/MyProject/_apis/git/repositories/business/trees" \
+          "/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a?recursive=false"
+      end
+      let(:azure_raw_changelog_url) do
+        "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/" \
+          "3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/8b23cf04122670142ba2e64c7b3293f82409726a"
       end
 
-      it { is_expected.to be_nil }
+      let(:azure_status) { 200 }
+      let(:azure_response) { fixture("azure", "business_files.json") }
+      let(:source) do
+        Dependabot::Source.new(
+          provider: "azure",
+          repo: "contoso/MyProject/_git/#{dependency_name}"
+        )
+      end
+
+      before do
+        stub_request(:get, azure_repo_url).
+          to_return(status: azure_status,
+                    body: fixture("azure", "business_folder.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, azure_repo_contents_tree_url).
+          to_return(status: azure_status,
+                    body: fixture("azure", "business_folder.json"),
+                    headers: { "content-type" => "text/plain" })
+        stub_request(:get, azure_repo_contents_url).
+          to_return(status: azure_status,
+                    body: fixture("azure", "business_files.json"),
+                    headers: { "content-type" => "application/json" })
+        stub_request(:get, azure_raw_changelog_url).
+          to_return(status: azure_status,
+                    body: fixture("raw", "changelog.md"),
+                    headers: { "Content-Type" => "text/plain; charset=utf-8" })
+      end
+
+      context "with credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "git_source",
+            "host" => "dev.azure.com",
+            "username" => "greysteil",
+            "password" => "secret_token"
+          }]
+        end
+
+        it "uses the credentials" do
+          finder.changelog_url
+          expect(WebMock).
+            to have_requested(:get, azure_repo_url).
+            with(basic_auth: %w(greysteil secret_token))
+        end
+      end
+
+      it "gets the right URL" do
+        is_expected.to eq(
+          "https://dev.azure.com/contoso/MyProject/_git/business?path=/CHANGELOG.md"
+        )
+      end
+
+      context "that can't be found exists" do
+        let(:azure_status) { 404 }
+        it { is_expected.to be_nil }
+      end
+
+      context "that is private" do
+        let(:azure_status) { 403 }
+        it { is_expected.to be_nil }
+      end
     end
 
     context "with a bitbucket source" do

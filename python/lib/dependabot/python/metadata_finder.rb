@@ -131,6 +131,8 @@ module Dependabot
           return @pypi_listing
         rescue JSON::ParserError
           next
+        rescue Excon::Error::Timeout
+          next
         end
 
         @pypi_listing = {} # No listing found

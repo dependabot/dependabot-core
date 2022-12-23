@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "byebug"
 require "dependabot/logger"
 require "dependabot/python"
 require "dependabot/terraform"

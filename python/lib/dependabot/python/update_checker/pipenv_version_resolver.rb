@@ -30,21 +30,18 @@ module Dependabot
       # still better than nothing, though.
       class PipenvVersionResolver
         # rubocop:disable Layout/LineLength
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone -q (?<url>[^\s]+).* /.freeze
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m.
-          freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone -q (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
         PIPENV_INSTALLATION_ERROR = "pipenv.patched.notpip._internal.exceptions.InstallationError: Command errored out" \
                                     " with exit status 1: python setup.py egg_info"
         TRACEBACK = "Traceback (most recent call last):"
         PIPENV_INSTALLATION_ERROR_REGEX =
-          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/.
-          freeze
+          /#{Regexp.quote(TRACEBACK)}[\s\S]*^\s+import\s(?<name>.+)[\s\S]*^#{Regexp.quote(PIPENV_INSTALLATION_ERROR)}/
+
         UNSUPPORTED_DEPS = %w(pyobjc).freeze
         UNSUPPORTED_DEP_REGEX =
-          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/.freeze
-        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/.freeze
+          /Could not find a version that satisfies the requirement.*(?:#{UNSUPPORTED_DEPS.join("|")})/
+        PIPENV_RANGE_WARNING = /Warning:\sPython\s[<>].* was not found/
         # rubocop:enable Layout/LineLength
 
         DEPENDENCY_TYPES = %w(packages dev-packages).freeze
@@ -293,7 +290,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version)
+          File.write(".python-version", Helpers.python_major_minor(python_version))
 
           setup_files.each do |file|
             path = file.name
@@ -323,13 +320,7 @@ module Dependabot
             nil
           end
 
-          return if run_command("pyenv versions").include?("#{python_version}\n")
-
-          requirements_path = NativeHelpers.python_requirements_path
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r " \
-                      "#{requirements_path}")
+          Helpers.install_required_python(python_version)
         end
 
         def sanitized_setup_file_content(file)
@@ -350,6 +341,7 @@ module Dependabot
           content = freeze_other_dependencies(content)
           content = set_target_dependency_req(content, updated_requirement)
           content = add_private_sources(content)
+          content = update_python_requirement(content)
           content
         end
 
@@ -357,6 +349,12 @@ module Dependabot
           Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content, lockfile: lockfile).
             freeze_top_level_dependencies_except([dependency])
+        end
+
+        def update_python_requirement(pipfile_content)
+          Python::FileUpdater::PipfilePreparer.
+            new(pipfile_content: pipfile_content).
+            update_python_requirement(Helpers.python_major_minor(python_version))
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -470,7 +468,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{python_version}")
+          run_command("pyenv local #{Helpers.python_major_minor(python_version)}")
           run_command(command, env: env)
         end
 

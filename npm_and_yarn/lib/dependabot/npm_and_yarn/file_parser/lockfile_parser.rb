@@ -12,12 +12,17 @@ module Dependabot
           @dependency_files = dependency_files
         end
 
-        def parse
+        def parse_set
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
           dependency_set += yarn_lock_dependencies if yarn_locks.any?
           dependency_set += package_lock_dependencies if package_locks.any?
           dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
-          dependency_set.dependencies
+
+          dependency_set
+        end
+
+        def parse
+          Helpers.dependencies_with_all_versions_metadata(parse_set)
         end
 
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
@@ -77,7 +82,7 @@ module Dependabot
             details_candidates.first.last
           else
             details_candidates.find do |k, _|
-              k.split(/(?<=\w)\@/)[1..-1].join("@") == requirement
+              k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
             end&.last
           end
         end
@@ -96,8 +101,8 @@ module Dependabot
             parse_yarn_lock(yarn_lock).each do |req, details|
               next unless semver_version_for(details["version"])
               next if alias_package?(req)
-              next if Experiments.enabled?(:yarn_berry) && workspace_package?(req)
-              next if Experiments.enabled?(:yarn_berry) && req == "__metadata"
+              next if workspace_package?(req)
+              next if req == "__metadata"
 
               # NOTE: The DependencySet will de-dupe our dependencies, so they
               # end up unique by name. That's not a perfect representation of
@@ -190,11 +195,7 @@ module Dependabot
         end
 
         def alias_package?(requirement)
-          if Experiments.enabled?(:yarn_berry)
-            requirement.match?(/@npm:(.+@(?!npm))/)
-          else
-            requirement.include?("@npm:")
-          end
+          requirement.match?(/@npm:(.+@(?!npm))/)
         end
 
         def workspace_package?(requirement)

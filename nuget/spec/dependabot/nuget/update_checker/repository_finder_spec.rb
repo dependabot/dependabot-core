@@ -228,6 +228,84 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
         )
       end
 
+      context "include the default repository" do
+        let(:config_file_fixture_name) { "include_default_disable_ext_sources.config" }
+
+        it "with disable external source" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+              repository_type: "v3"
+            }, {
+              repository_url: "https://api.nuget.org/v3/index.json",
+              versions_url: "https://api.nuget.org/v3-flatcontainer/" \
+                            "microsoft.extensions.dependencymodel/index.json",
+              search_url: "https://azuresearch-usnc.nuget.org/query" \
+                          "?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
+      context "that overides the default package sources" do
+        let(:config_file_fixture_name) { "override_def_source_with_same_key.config" }
+
+        before do
+          repo_url = "https://www.myget.org/F/exceptionless/api/v3/index.json"
+          stub_request(:get, repo_url).
+            to_return(
+              status: 200,
+              body: fixture("nuget_responses", "myget_base.json")
+            )
+        end
+
+        it "when the default api key of defaut registry is provided without clear" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+
+        let(:config_file_fixture_name) { "override_def_source_with_same_key_default.config" }
+        it "when the default api key of defaut registry is provided with clear" do
+          expect(dependency_urls).to match_array(
+            [{
+              repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "index.json",
+              versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "flatcontainer/microsoft.extensions." \
+                            "dependencymodel/index.json",
+              search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                          "query?q=microsoft.extensions.dependencymodel" \
+                          "&prerelease=true&semVerLevel=2.0.0",
+              auth_header: {},
+              repository_type: "v3"
+            }]
+          )
+        end
+      end
+
       context "that doesn't include the default repository" do
         let(:config_file_fixture_name) { "excludes_default.config" }
 
@@ -282,6 +360,27 @@ RSpec.describe Dependabot::Nuget::UpdateChecker::RepositoryFinder do
           let(:config_file_fixture_name) { "disabled_sources.config" }
 
           it "only includes the enabled package sources" do
+            expect(dependency_urls).to match_array(
+              [{
+                repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                                "index.json",
+                versions_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                              "flatcontainer/microsoft.extensions." \
+                              "dependencymodel/index.json",
+                search_url: "https://www.myget.org/F/exceptionless/api/v3/" \
+                            "query?q=microsoft.extensions.dependencymodel" \
+                            "&prerelease=true&semVerLevel=2.0.0",
+                auth_header: { "Authorization" => "Basic bXk6cGFzc3cwcmQ=" },
+                repository_type: "v3"
+              }]
+            )
+          end
+        end
+
+        context "that has disabled default package sources" do
+          let(:config_file_fixture_name) { "disabled_default_sources.config" }
+
+          it "only includes the enable package sources" do
             expect(dependency_urls).to match_array(
               [{
                 repository_url: "https://www.myget.org/F/exceptionless/api/v3/" \

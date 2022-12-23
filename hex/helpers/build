@@ -10,7 +10,11 @@ fi
 install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/hex"
 mkdir -p "$install_dir"
 
-mix local.hex --force
+mix local.hex "$HEX_VERSION" --force --if-missing
+
+# Install deps necessary for Elixir projects using Nerves extensions
+# The `hex` arg isn't re-installing hex, but rather telling
+# mix that nerves_bootstrap is a hex package.
 mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"

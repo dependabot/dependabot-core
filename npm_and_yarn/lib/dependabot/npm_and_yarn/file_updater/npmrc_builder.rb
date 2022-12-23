@@ -7,13 +7,14 @@ module Dependabot
     class FileUpdater
       # Build a .npmrc file from the lockfile content, credentials, and any
       # committed .npmrc
+      # We should refactor this to use UpdateChecker::RegistryFinder
       class NpmrcBuilder
         CENTRAL_REGISTRIES = %w(
           registry.npmjs.org
           registry.yarnpkg.com
         ).freeze
 
-        SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/.freeze
+        SCOPED_REGISTRY = /^\s*@(?<scope>\S+):registry\s*=\s*(?<registry>\S+)/
 
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files
@@ -34,6 +35,20 @@ module Dependabot
           ([initial_content] + credential_lines_for_npmrc).compact.join("\n")
         end
 
+        # PROXY WORK
+        # Yarn allows registries to be defined either in an .npmrc or .yarnrc
+        # so we need to parse both files for registry keys
+        def yarnrc_content
+          initial_content =
+            if npmrc_file then complete_yarnrc_from_credentials
+            elsif yarnrc_file then build_yarnrc_from_yarnrc
+            else
+              build_yarnrc_content_from_lockfile
+            end
+
+          initial_content || ""
+        end
+
         private
 
         attr_reader :dependency_files, :credentials
@@ -42,9 +57,20 @@ module Dependabot
           return unless yarn_lock || package_lock
           return unless global_registry
 
-          "registry = https://#{global_registry['registry']}\n" \
-            "#{global_registry_auth_line}" \
+          registry = global_registry["registry"]
+          registry = "https://#{registry}" unless registry.start_with?("http")
+          "registry = #{registry}\n" \
+            "#{npmrc_global_registry_auth_line}" \
             "always-auth = true"
+        end
+
+        def build_yarnrc_content_from_lockfile
+          return unless yarn_lock || package_lock
+          return unless global_registry
+
+          "registry \"https://#{global_registry['registry']}\"\n" \
+            "#{yarnrc_global_registry_auth_line}" \
+            "npmAlwaysAuth: true"
         end
 
         def global_registry # rubocop:disable Metrics/PerceivedComplexity
@@ -60,6 +86,8 @@ module Dependabot
               # Check if this registry has already been defined in .npmrc as a scoped registry
               next false if npmrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
 
+              next false if yarnrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
+
               # If any unscoped URLs include this registry, assume it's global
               dependency_urls.
                 reject { |u| u.include?("@") || u.include?("%40") }.
@@ -67,7 +95,9 @@ module Dependabot
             end
         end
 
-        def global_registry_auth_line
+        def npmrc_global_registry_auth_line
+          # This token is passed in from the Dependabot Config
+          # We write it to the .npmrc file so that it can be used by the VulnerabilityAuditor
           token = global_registry.fetch("token", nil)
           return "" unless token
 
@@ -79,6 +109,21 @@ module Dependabot
             "_auth = #{token.delete("\n")}\n"
           else
             "_authToken = #{token}\n"
+          end
+        end
+
+        def yarnrc_global_registry_auth_line
+          token = global_registry.fetch("token", nil)
+          return "" unless token
+
+          if token.include?(":")
+            encoded_token = Base64.encode64(token).delete("\n")
+            "npmAuthIdent: \"#{encoded_token}\"\n"
+          elsif Base64.decode64(token).ascii_only? &&
+                Base64.decode64(token).include?(":")
+            "npmAuthIdent: \"#{token.delete("\n")}\"\n"
+          else
+            "npmAuthToken: \"#{token}\"\n"
           end
         end
 
@@ -113,22 +158,48 @@ module Dependabot
           return initial_content unless yarn_lock || package_lock
           return initial_content unless global_registry
 
+          registry = global_registry["registry"]
+          registry = "https://#{registry}" unless registry.start_with?("http")
           initial_content +
-            "registry = https://#{global_registry['registry']}\n" \
-            "#{global_registry_auth_line}" \
+            "registry = #{registry}\n" \
+            "#{npmrc_global_registry_auth_line}" \
             "always-auth = true\n"
+        end
+
+        def complete_yarnrc_from_credentials
+          initial_content = yarnrc_file.content.
+                            gsub(/^.*\$\{.*\}.*/, "").strip + "\n"
+          return initial_content unless yarn_lock || package_lock
+          return initial_content unless global_registry
+
+          initial_content +
+            "registry: \"https://#{global_registry['registry']}\"\n" \
+            "#{yarnrc_global_registry_auth_line}" \
+            "npmAlwaysAuth: true\n"
         end
 
         def build_npmrc_from_yarnrc
           yarnrc_global_registry =
             yarnrc_file.content.
             lines.find { |line| line.match?(/^\s*registry\s/) }&.
-            match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
+            match(NpmAndYarn::UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX)&.
             named_captures&.fetch("registry")
 
           return "registry = #{yarnrc_global_registry}\n" if yarnrc_global_registry
 
           build_npmrc_content_from_lockfile
+        end
+
+        def build_yarnrc_from_yarnrc
+          yarnrc_global_registry =
+            yarnrc_file.content.
+            lines.find { |line| line.match?(/^\s*registry\s/) }&.
+            match(/^\s*registry\s+"(?<registry>[^"]+)"/)&.
+            named_captures&.fetch("registry")
+
+          return "registry \"#{yarnrc_global_registry}\"\n" if yarnrc_global_registry
+
+          build_yarnrc_content_from_lockfile
         end
 
         def credential_lines_for_npmrc
@@ -166,6 +237,14 @@ module Dependabot
 
           @npmrc_scoped_registries ||=
             npmrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
+            filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
+        end
+
+        def yarnrc_scoped_registries
+          return [] unless yarnrc_file
+
+          @yarnrc_scoped_registries ||=
+            yarnrc_file.content.lines.select { |line| line.match?(SCOPED_REGISTRY) }.
             filter_map { |line| line.match(SCOPED_REGISTRY)&.named_captures&.fetch("registry") }
         end
 

@@ -59,12 +59,12 @@ module Dependabot
         super(message)
         @error_class = error_class || ""
         @error_context = error_context
-        @command = error_context[:command]
+        @fingerprint = error_context[:fingerprint] || error_context[:command]
         @trace = trace
       end
 
       def raven_context
-        { fingerprint: [@command], extra: @error_context }
+        { fingerprint: [@fingerprint], extra: @error_context.except(:stderr_output, :fingerprint) }
       end
     end
 
@@ -190,7 +190,8 @@ module Dependabot
       run_shell_command(
         "git config --global credential.helper " \
         "'!#{credential_helper_path} --file #{Dir.pwd}/git.store'",
-        allow_unsafe_shell_command: true
+        allow_unsafe_shell_command: true,
+        fingerprint: "git config --global credential.helper '<helper_command>'"
       )
 
       # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
@@ -295,7 +296,7 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {})
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
       stdout, process = Open3.capture2e(env || {}, cmd)
@@ -307,6 +308,7 @@ module Dependabot
 
       error_context = {
         command: cmd,
+        fingerprint: fingerprint,
         time_taken: time_taken,
         process_exit_value: process.to_s
       }

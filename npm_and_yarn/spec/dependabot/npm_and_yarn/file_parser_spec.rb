@@ -32,10 +32,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
     }]
   end
 
-  before do
-    Dependabot::Experiments.register(:yarn_berry, true)
-  end
-
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
@@ -325,6 +321,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             context "with credentials" do
               let(:credentials) do
                 [{
+                  "type" => "npm_registry",
+                  "registry" =>
+                     "artifactory01.mydomain.com.evil.com/artifactory/api/npm/my-repo",
+                  "token" => "secret_token"
+                }, {
                   "type" => "npm_registry",
                   "registry" =>
                     "artifactory01.mydomain.com/artifactory/api/npm/my-repo",
@@ -1397,6 +1398,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
             groups: ["devDependencies"],
             source: { type: "registry", url: "https://registry.yarnpkg.com" }
           }
+        ])
+      end
+    end
+
+    context "with multiple versions of a dependency" do
+      subject { parser.parse }
+      let(:files) { project_dependency_files("npm8/transitive_dependency_multiple_versions") }
+
+      it "stores all versions of the dependency in its metadata" do
+        name = "kind-of"
+        dependency = subject.find { |dep| dep.name == name }
+
+        expect(dependency.metadata[:all_versions]).to eq([
+          Dependabot::Dependency.new(
+            name: name,
+            version: "3.2.2",
+            requirements: [{
+              requirement: "^3.2.2",
+              file: "package.json",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          ),
+          Dependabot::Dependency.new(
+            name: name,
+            version: "6.0.2",
+            requirements: [],
+            package_manager: "npm_and_yarn"
+          )
         ])
       end
     end

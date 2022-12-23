@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "find"
-
 Gem::Specification.new do |spec|
   common_gemspec =
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
@@ -17,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage     = common_gemspec.homepage
   spec.license      = common_gemspec.license
 
-  spec.required_ruby_version = ">= 2.7.0"
+  spec.required_ruby_version = ">= 3.1.0"
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
@@ -40,6 +38,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-terraform", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
-    spec.add_development_dependency dep.name, dep.requirement.to_s
+    spec.add_development_dependency dep.name, *dep.requirement.as_list
   end
 end

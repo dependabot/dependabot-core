@@ -292,6 +292,8 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
     end
 
     context "with multiple commits on the branch" do
+      let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
+
       before do
         stub_request(:get, pull_request_url).
           to_return(status: 200,
@@ -338,7 +340,6 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
               headers: json_header
             )
         end
-        let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
 
         it "has the right commit message" do
           updater.update
@@ -357,6 +358,28 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
                   "b/master/CHANGELOG.md)\n" \
                   "- [Commits](https://github.com/gocardless/business/compa" \
                   "re/v3.0.0...v1.5.0)"
+              }
+            )
+        end
+      end
+
+      context "the original PR head commit cannot be found" do
+        let(:old_commit) { "oldcommitsha" }
+
+        it "generates a reasonable fallback commit message" do
+          updater.update
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            with(
+              body: {
+                parents: ["basecommitsha"],
+                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                message:
+                  "Bump business from 1.4.0 to 1.5.0" \
+                  "\n\n" \
+                  "Dependabot couldn't find the original pull request " \
+                  "head commit, oldcommitsha."
               }
             )
         end
@@ -480,7 +503,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
             "- [Commits](https://github.com/gocardless/business/compare/" \
             "v3.0.0...v1.5.0)"
         end
-        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
+        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
           updater.update

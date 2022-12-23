@@ -7,6 +7,7 @@ require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
+require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
@@ -22,10 +23,9 @@ module Dependabot
         require_relative "setup_file_sanitizer"
 
         UNSAFE_PACKAGES = %w(setuptools distribute pip).freeze
-        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m.freeze
-        WARNINGS = /\s*# WARNING:.*\Z/m.freeze
-        UNSAFE_NOTE =
-          /\s*# The following packages are considered to be unsafe.*\Z/m.freeze
+        INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
+        WARNINGS = /\s*# WARNING:.*\Z/m
+        UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
 
         attr_reader :dependencies, :dependency_files, :credentials
 
@@ -66,26 +66,30 @@ module Dependabot
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
-            install_required_python
+            Helpers.install_required_python(python_version)
 
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
               # This is slow, as pip-compile needs to do installs.
+              options = pip_compile_options(filename)
+              options_fingerprint = pip_compile_options_fingerprint(options)
+
               name_part = "pyenv exec pip-compile " \
-                          "#{pip_compile_options(filename)} -P " \
+                          "#{options} -P " \
                           "#{dependency.name}"
+              fingerprint_name_part = "pyenv exec pip-compile " \
+                                      "#{options_fingerprint} -P " \
+                                      "<dependency_name>"
+
               version_part = "#{dependency.version} #{filename}"
+              fingerprint_version_part = "<dependency_version> <filename>"
+
               # Don't escape pyenv `dep-name==version` syntax
               run_pip_compile_command(
                 "#{SharedHelpers.escape_command(name_part)}==" \
                 "#{SharedHelpers.escape_command(version_part)}",
-                allow_unsafe_shell_command: true
-              )
-              # Run pip-compile a second time, without an update argument, to
-              # ensure it resets the right comments.
-              run_pip_compile_command(
-                "pyenv exec pip-compile #{pip_compile_options(filename)} " \
-                "#{filename}"
+                allow_unsafe_shell_command: true,
+                fingerprint: "#{fingerprint_name_part}==#{fingerprint_version_part}"
               )
             end
 
@@ -143,7 +147,7 @@ module Dependabot
           ).updated_dependency_files
         end
 
-        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false)
+        def run_command(cmd, env: python_env, allow_unsafe_shell_command: false, fingerprint:)
           start = Time.now
           command = if allow_unsafe_shell_command
                       cmd
@@ -155,10 +159,6 @@ module Dependabot
 
           return stdout if process.success?
 
-          handle_pip_errors(stdout, command, time_taken, process.to_s)
-        end
-
-        def handle_pip_errors(stdout, command, time_taken, exit_value)
           if stdout.match?(INCOMPATIBLE_VERSIONS_REGEX)
             raise DependencyFileNotResolvable, stdout.match(INCOMPATIBLE_VERSIONS_REGEX)
           end
@@ -167,17 +167,23 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
-              process_exit_value: exit_value
+              process_exit_value: process.to_s
             }
           )
         end
 
-        def run_pip_compile_command(command, allow_unsafe_shell_command: false)
-          run_command("pyenv local #{python_version}")
+        def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
+          run_command(
+            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
           run_command(
             command,
-            allow_unsafe_shell_command: allow_unsafe_shell_command
+            allow_unsafe_shell_command: allow_unsafe_shell_command,
+            fingerprint: fingerprint
           )
         end
 
@@ -204,7 +210,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version)
+          File.write(".python-version", Helpers.python_major_minor(python_version))
 
           setup_files.each do |file|
             path = file.name
@@ -217,15 +223,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, "[metadata]\nname = sanitized-package\n")
           end
-        end
-
-        def install_required_python
-          return if run_command("pyenv versions").include?("#{python_version}\n")
-
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r " \
-                      "#{NativeHelpers.python_requirements_path}")
         end
 
         def sanitized_setup_file_content(file)
@@ -404,6 +401,16 @@ module Dependabot
             named_captures.fetch("separator")
 
           current_separator || default_separator
+        end
+
+        def pip_compile_options_fingerprint(options)
+          options.sub(
+            /--output-file=\S+/, "--output-file=<output_file>"
+          ).sub(
+            /--index-url=\S+/, "--index-url=<index_url>"
+          ).sub(
+            /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          )
         end
 
         def pip_compile_options(filename)

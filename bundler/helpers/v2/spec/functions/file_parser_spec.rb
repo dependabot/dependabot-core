@@ -51,7 +51,7 @@ RSpec.describe Functions::FileParser do
             name: "business",
             requirement: Gem::Requirement.new("~> 1.6.0"),
             source: {
-              branch: "master",
+              branch: nil,
               ref: "a1b78a9",
               type: "git",
               url: "git@github.com:dependabot-fixtures/business"
@@ -70,8 +70,8 @@ RSpec.describe Functions::FileParser do
             name: "prius",
             requirement: Gem::Requirement.new(">= 0"),
             source: {
-              branch: "master",
-              ref: "master",
+              branch: nil,
+              ref: nil,
               type: "git",
               url: "https://github.com/dependabot-fixtures/prius"
             },
@@ -82,7 +82,7 @@ RSpec.describe Functions::FileParser do
             name: "que",
             requirement: Gem::Requirement.new(">= 0"),
             source: {
-              branch: "master",
+              branch: nil,
               ref: "v0.11.6",
               type: "git",
               url: "git@github.com:dependabot-fixtures/que"
@@ -94,8 +94,8 @@ RSpec.describe Functions::FileParser do
             name: "uk_phone_numbers",
             requirement: Gem::Requirement.new(">= 0"),
             source: {
-              branch: "master",
-              ref: "master",
+              branch: nil,
+              ref: nil,
               type: "git",
               url: "http://github.com/dependabot-fixtures/uk_phone_numbers"
             },

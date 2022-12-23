@@ -144,7 +144,7 @@ module Dependabot
             next unless details.is_a?(Hash)
             next unless details["path"]
 
-            paths << File.join(details["path"], "Cargo.toml")
+            paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
           end
         end
 
@@ -155,7 +155,7 @@ module Dependabot
               next unless details.is_a?(Hash)
               next unless details["path"]
 
-              paths << File.join(details["path"], "Cargo.toml")
+              paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
             end
           end
         end

@@ -2,7 +2,7 @@
 
 module Functions
   class VersionResolver
-    GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
+    GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
     attr_reader :dependency_name, :dependency_requirements,
                 :gemfile_name, :lockfile_name
@@ -16,6 +16,11 @@ module Functions
     end
 
     def version_details
+      # If the dependency is Bundler itself then we can't trust the
+      # version that has been returned (it's the version Dependabot is
+      # running on, rather than the true latest resolvable version).
+      return nil if dependency_name == "bundler"
+
       dep = dependency_from_definition
 
       # If the dependency wasn't found in the definition, but *is*
@@ -27,11 +32,6 @@ module Functions
       # Otherwise, if the dependency wasn't found it's because it is a
       # subdependency that was removed when attempting to update it.
       return nil if dep.nil?
-
-      # If the dependency is Bundler itself then we can't trust the
-      # version that has been returned (it's the version Dependabot is
-      # running on, rather than the true latest resolvable version).
-      return nil if dep.name == "bundler"
 
       details = {
         version: dep.version,

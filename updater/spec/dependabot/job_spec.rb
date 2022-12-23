@@ -158,6 +158,53 @@ RSpec.describe Dependabot::Job do
 
         it { is_expected.to eq(true) }
       end
+
+      context "for a security fix that doesn't apply" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => ["> 1.8.0"],
+              "patched-versions" => [],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        it { is_expected.to eq(false) }
+      end
+
+      context "for a security fix that doesn't apply to some versions" do
+        let(:security_advisories) do
+          [
+            {
+              "dependency-name" => "business",
+              "affected-versions" => ["> 1.8.0"],
+              "patched-versions" => [],
+              "unaffected-versions" => []
+            }
+          ]
+        end
+
+        it "should be allowed" do
+          dependency.metadata[:all_versions] = [
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              package_manager: "bundler",
+              version: "1.8.0",
+              requirements: []
+            ),
+            Dependabot::Dependency.new(
+              name: dependency_name,
+              package_manager: "bundler",
+              version: "1.9.0",
+              requirements: []
+            )
+          ]
+
+          is_expected.to eq(true)
+        end
+      end
     end
 
     context "and a dependency whitelist that includes the dependency" do
@@ -290,33 +337,6 @@ RSpec.describe Dependabot::Job do
 
       it "preserves the values" do
         expect(job.experiments).to eq(timeout_per_operation_seconds: 600)
-      end
-    end
-
-    describe "yarn_berry experiment" do
-      let(:experiments) { { "yarn_berry" => true } }
-      let(:package_manager) { "npm_and_yarn" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "ansi-regex",
-          package_manager: "npm_and_yarn",
-          version: "6.0.0",
-          requirements: [
-            {
-              file: "package.json",
-              requirement: "^6.0.0",
-              groups: ["devDependencies"],
-              source: {
-                type: "registry",
-                url: "https://registry.npmjs.org"
-              }
-            }
-          ]
-        )
-      end
-
-      it "enables cloning when yarn_berry is enabled" do
-        expect(job.clone?).to be_truthy
       end
     end
   end

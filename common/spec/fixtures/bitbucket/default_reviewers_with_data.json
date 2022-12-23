@@ -1,5 +1,6 @@
 {
-  "values": [
-    {"uuid": "{00000000-0000-0000-0000-000000000001}", "is_project_reviewer": false}
-  ]
+	"values": [
+		{ "uuid": "{00000000-0000-0000-0000-000000000001}", "is_project_reviewer": false },
+		{ "uuid": "{11111111-6349-0000-aea6-111111111111}", "is_project_reviewer": false }
+	]
 }

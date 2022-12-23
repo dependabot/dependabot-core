@@ -2,6 +2,7 @@
 
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/pub/helpers"
 require "yaml"
 module Dependabot
@@ -32,6 +33,29 @@ module Dependabot
         return nil unless entry
 
         version_unless_ignored(entry["version"])
+      end
+
+      def lowest_resolvable_security_fix_version
+        raise "Dependency not vulnerable!" unless vulnerable?
+
+        lowest_security_fix_version
+      end
+
+      def lowest_security_fix_version
+        # TODO: Pub lacks a lowest-non-vulnerable version strategy, for now we simply bump to latest resolvable:
+        # https://github.com/dependabot/dependabot-core/issues/5391
+        relevant_version = latest_resolvable_version
+        return unless relevant_version
+
+        # NOTE: in other ecosystems, the native helpers return a list of possible versions, to which we apply
+        # post-filtering. Ideally we move toward a world where we hand the native helper a list of ignored versions
+        # and possibly a flag indicating "use min version rather than max". The pub team is interested in supporting
+        # that. But in the meantime for internal consistency with other dependabot ecosystem implementations I kept
+        # `relevant_versions` as an array.
+        relevant_versions = [relevant_version]
+        relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
+                                                                                                  security_advisories)
+        relevant_versions.min
       end
 
       def updated_requirements

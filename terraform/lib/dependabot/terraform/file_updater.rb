@@ -11,9 +11,9 @@ module Dependabot
     class FileUpdater < Dependabot::FileUpdaters::Base
       include FileSelector
 
-      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/.freeze
-      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m.freeze
-      GIT_HTTPS_PREFIX = %r{^git::https://}.freeze
+      PRIVATE_MODULE_ERROR = /Could not download module.*code from\n.*\"(?<repo>\S+)\":/
+      MODULE_NOT_INSTALLED_ERROR =  /Module not installed.*module\s*\"(?<mod>\S+)\"/m
+      GIT_HTTPS_PREFIX = %r{^git::https://}
 
       def self.updated_files_regex
         [/\.tf$/, /\.hcl$/]
@@ -173,7 +173,10 @@ module Dependabot
             # Terraform will update the lockfile in place so we use a fresh lockfile for each lookup
             File.write(".terraform.lock.hcl", lockfile_hash_removed)
 
-            SharedHelpers.run_shell_command("terraform providers lock -platform=#{arch} #{provider_source} -no-color")
+            SharedHelpers.run_shell_command(
+              "terraform providers lock -platform=#{arch} #{provider_source} -no-color",
+              fingerprint: "terraform providers lock -platform=<arch> <provider_source> -no-color"
+            )
 
             updated_lockfile = File.read(".terraform.lock.hcl")
             updated_hashes = extract_provider_h1_hashes(updated_lockfile, declaration_regex)
@@ -228,7 +231,10 @@ module Dependabot
 
           File.write(".terraform.lock.hcl", lockfile_dependency_removed)
 
-          SharedHelpers.run_shell_command("terraform providers lock #{platforms} #{provider_source}")
+          SharedHelpers.run_shell_command(
+            "terraform providers lock #{platforms} #{provider_source}",
+            fingerprint: "terraform providers lock <platforms> <provider_source>"
+          )
 
           updated_lockfile = File.read(".terraform.lock.hcl")
           updated_dependency = updated_lockfile.scan(declaration_regex).first

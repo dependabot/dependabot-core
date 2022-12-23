@@ -1,6 +1,6 @@
 ---
 name: commonmarker
-version: 0.23.5
+version: 0.23.6
 type: bundler
 summary: CommonMark parser and renderer. Written in C, wrapped in Ruby.
 homepage: https://github.com/gjtorikian/commonmarker

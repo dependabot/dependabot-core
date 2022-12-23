@@ -66,7 +66,7 @@ module Functions
     def git_source_details(source)
       {
         url: source.uri,
-        branch: source.branch || "master",
+        branch: source.branch,
         ref: source.ref
       }
     end

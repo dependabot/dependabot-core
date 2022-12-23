@@ -6,15 +6,15 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class IssueLinker
-        REPO_REGEX = %r{(?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)}.freeze
-        TAG_REGEX = /(?<tag>(?:\#|GH-)\d+)/i.freeze
+        REPO_REGEX = %r{(?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)}
+        TAG_REGEX = /(?<tag>(?:\#|GH-)\d+)/i
         ISSUE_LINK_REGEXS = [
           /
             (?:(?<=[^A-Za-z0-9\[\\]|^)\\*#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))|
             (?:(?<=\s|^)#{REPO_REGEX}#{TAG_REGEX}(?=[^A-Za-z0-9\-]|$))
-          /x.freeze,
-          /\[#{TAG_REGEX}\](?=[^A-Za-z0-9\-\(])/.freeze,
-          /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i.freeze
+          /x,
+          /\[#{TAG_REGEX}\](?=[^A-Za-z0-9\-\(])/,
+          /\[(?<tag>(?:\#|GH-)?\d+)\]\(\)/i
         ].freeze
 
         attr_reader :source_url

@@ -21,7 +21,7 @@ module Dependabot
         unless dependency.top_level?
           return unless dependency.version
 
-          return version_class.new(dependency.version)
+          return current_version
         end
 
         latest_version_finder.latest_version
@@ -40,7 +40,7 @@ module Dependabot
         unless dependency.top_level?
           return unless dependency.version
 
-          return version_class.new(dependency.version)
+          return current_version
         end
 
         lowest_security_fix_version

@@ -97,7 +97,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "and a digest" do
         let(:source) { { digest: "old_digest" } }
         let(:headers_response) do
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         end
 
         before do
@@ -114,7 +114,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               fixture(
                 "docker",
                 "registry_manifest_headers",
-                "ubuntu_17.10.json"
+                "generic.json"
               ).gsub(/^\s*"docker_content_digest.*?,/m, "")
             end
 
@@ -140,7 +140,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "3.6" }
       let(:tags_fixture_name) { "python.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/python/" }
 
@@ -257,7 +257,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when there is a latest tag" do
       let(:tags_fixture_name) { "ubuntu.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:version) { "12.10" }
 
@@ -297,11 +297,20 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the dependency has SHA suffices that should be ignored" do
       let(:tags_fixture_name) { "sha_suffices.json" }
       let(:version) { "7.2-0.1" }
-      it { is_expected.to eq("7.2-0.3.1") }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_same_sha_for("7.2-0.3", "7.2-0.3.1")
+      end
+
+      it { is_expected.to eq("7.2-0.3") }
 
       context "for an older version of the prefix" do
         let(:version) { "7.1-0.1" }
-        it { is_expected.to eq("7.1-0.3.1") }
+        it { is_expected.to eq("7.2-0.3") }
       end
     end
 
@@ -378,7 +387,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         "https://registry.hub.docker.com/v2/adoptopenjdk/openjdk11/"
       end
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       before do
         stub_request(:get, repo_url + "tags/list").
@@ -413,14 +422,14 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       it { is_expected.to eq("jdk-11.0.2.9-alpine-slim") }
     end
 
-    context "when the dependencies have a underscore" do
+    context "when the dependencies have an underscore" do
       let(:dependency_name) { "eclipse-temurin" }
       let(:tags_fixture_name) { "eclipse-temurin.json" }
       let(:repo_url) do
         "https://registry.hub.docker.com/v2/library/eclipse-temurin/"
       end
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       before do
         stub_request(:get, repo_url + "tags/list").
@@ -447,6 +456,49 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       context "followed by numbers" do
         let(:version) { "17.0.1_12-jre-alpine" }
         it { is_expected.to eq("17.0.2_8-jre-alpine") }
+      end
+
+      context "followed by numbers and with less components than other version but higher underscore part" do
+        before do
+          stub_request(:head, repo_url + "manifests/#{latest_version}").
+            and_return(
+              status: 200,
+              body: "",
+              headers: JSON.parse(headers_response.gsub("3ea1ca1", "4da71a2"))
+            )
+        end
+
+        let(:latest_version) { "11.0.16.1_1-jdk" }
+        let(:version) { "11.0.16_8-jdk" }
+        it { is_expected.to eq(latest_version) }
+      end
+    end
+
+    context "when the dependencies have an underscore followed by sha-like strings" do
+      let(:dependency_name) { "nixos/nix" }
+      let(:tags_fixture_name) { "nixos-nix.json" }
+      let(:repo_url) do
+        "https://registry.hub.docker.com/v2/nixos/nix/"
+      end
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+
+        stub_request(:head, repo_url + "manifests/#{version}").
+          and_return(
+            status: 200,
+            body: "",
+            headers: JSON.parse(headers_response)
+          )
+      end
+
+      let(:version) { "2.1.3" }
+
+      it "ignores the sha-like part" do
+        expect(subject).to eq("2.10.0")
       end
     end
 
@@ -484,16 +536,22 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     end
 
     context "when the latest version is a pre-release" do
+      let(:repo_url) { "https://registry.hub.docker.com/v2/library/python/" }
       let(:dependency_name) { "python" }
       let(:version) { "3.5" }
       let(:tags_fixture_name) { "python.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
           and_return(status: 200, body: registry_tags)
+
+        stub_same_sha_for("3.6", "3.6.3")
       end
 
-      it { is_expected.to eq("3.6.3") }
+      it { is_expected.to eq("3.6") }
 
       context "and the current version is a pre-release" do
         let(:version) { "3.7.0a1" }
@@ -504,7 +562,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
-        fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+        fixture("docker", "registry_manifest_headers", "generic.json")
       end
       let(:version) { "2.0-sdk" }
       let(:latest_versions) { %w(2-sdk 2.1-sdk 2.1.401-sdk) }
@@ -528,11 +586,16 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
       end
 
-      it { is_expected.to eq("2.1.401-sdk") }
+      it { is_expected.to eq("2.1-sdk") }
 
       context "and a suffix" do
         let(:version) { "2.0-runtime" }
-        it { is_expected.to eq("2.1.3-runtime") }
+
+        before do
+          stub_same_sha_for("2.1.3-runtime", "2.1-runtime")
+        end
+
+        it { is_expected.to eq("2.1-runtime") }
       end
 
       context "with a paginated response" do
@@ -564,7 +627,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
       end
 
       context "when the latest tag 404s" do
@@ -578,7 +641,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             )
         end
 
-        it { is_expected.to eq("2.1.401-sdk") }
+        it { is_expected.to eq("2.1-sdk") }
 
         context "every time" do
           before do
@@ -682,6 +745,107 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the dependency has a replaces-base" do
+      let(:dependency_name) { "ubuntu" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "Dockerfile",
+            source: { tag: "17.10" }
+          }],
+          package_manager: "docker"
+        )
+      end
+      let(:tags_fixture_name) { "ubuntu_no_latest.json" }
+
+      context "with replaces-base set to false" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => false
+          }]
+        end
+
+        before do
+          tags_url = "https:/registry.hub.docker.com/v2/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(status: 200, body: registry_tags)
+        end
+
+        it { is_expected.to eq("17.10") }
+      end
+
+      context "with replaces-base set to true and with authentication credentials" do
+        let(:credentials) do
+          [{
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          }, {
+            "type" => "docker_registry",
+            "registry" => "registry-host.io:5000",
+            "username" => "grey",
+            "password" => "pa55word",
+            "replaces-base" => true
+          }]
+        end
+
+        before do
+          tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
+          stub_request(:get, tags_url).
+            and_return(status: 200, body: registry_tags)
+        end
+
+        it { is_expected.to eq("17.10") }
+
+        context "with replaces-base set to true and no username or password" do
+          before do
+            tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
+            stub_request(:get, tags_url).
+              and_return(
+                status: 401,
+                body: "",
+                headers: { "www_authenticate" => "basic 123" }
+              )
+          end
+
+          let(:credentials) do
+            [{
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "token"
+            }, {
+              "type" => "docker_registry",
+              "registry" => "registry-host.io:5000",
+              "replaces-base" => true
+            }]
+          end
+
+          it "raises a to PrivateSourceAuthenticationFailure error" do
+            error_class = Dependabot::PrivateSourceAuthenticationFailure
+            expect { checker.latest_version }.
+              to raise_error(error_class) do |error|
+                expect(error.source).to eq("registry-host.io:5000")
+              end
+          end
+        end
+      end
+    end
+
     context "when the docker registery only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
@@ -746,7 +910,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         new_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
@@ -772,7 +936,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         new_headers =
-          fixture("docker", "registry_manifest_headers", "ubuntu_17.10.json")
+          fixture("docker", "registry_manifest_headers", "generic.json")
         stub_request(:head, repo_url + "manifests/17.10").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
@@ -824,6 +988,19 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
              }]
           )
       end
+    end
+  end
+
+  private
+
+  def stub_same_sha_for(*tags)
+    tags.each do |tag|
+      stub_request(:head, repo_url + "manifests/#{tag}").
+        and_return(
+          status: 200,
+          body: "",
+          headers: JSON.parse(headers_response.gsub(/"sha256:(.*)"/, "\"sha256:#{'a' * 40}\""))
+        )
     end
   end
 end

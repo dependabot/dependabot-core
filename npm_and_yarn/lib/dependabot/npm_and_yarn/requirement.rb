@@ -6,8 +6,8 @@ require "dependabot/npm_and_yarn/version"
 module Dependabot
   module NpmAndYarn
     class Requirement < Gem::Requirement
-      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/.freeze
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
+      AND_SEPARATOR = /(?<=[a-zA-Z0-9*])\s+(?:&+\s+)?(?!\s*[|-])/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
       LATEST_REQUIREMENT = "latest"
 
       # Override the version pattern to allow a 'v' prefix
@@ -15,7 +15,7 @@ module Dependabot
       version_pattern = "v?#{NpmAndYarn::Version::VERSION_PATTERN}"
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
         return ["=", nil] if obj.is_a?(String) && obj.strip == LATEST_REQUIREMENT

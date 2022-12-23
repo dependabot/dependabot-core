@@ -11,7 +11,7 @@ module Dependabot
   module Nuget
     class Version < Gem::Version
       VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       def self.correct?(version)
         return false if version.nil?
@@ -20,9 +20,8 @@ module Dependabot
       end
 
       def initialize(version)
-        @version_string = version.to_s
-
-        version = version.to_s.split("+").first if version.to_s.include?("+")
+        version = version.to_s.split("+").first || ""
+        @version_string = version
 
         super
       end
@@ -43,30 +42,24 @@ module Dependabot
       end
 
       def compare_release(other)
-        release_str = @version_string.split("-").first&.split("+")&.first || ""
-        other_release_str = other.to_s.split("-").first&.split("+")&.first || ""
+        release_str = @version_string.split("-").first || ""
+        other_release_str = other.to_s.split("-").first || ""
 
         Gem::Version.new(release_str).<=>(Gem::Version.new(other_release_str))
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
-      # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/AbcSize
       def compare_prerelease_part(other)
-        release_str = @version_string.split("-").first&.split("+")&.first || ""
+        release_str = @version_string.split("-").first || ""
         prerelease_string = @version_string.
                             sub(release_str, "").
-                            sub("-", "").
-                            split("+").
-                            first
+                            sub("-", "")
         prerelease_string = nil if prerelease_string == ""
 
-        other_release_str = other.to_s.split("-").first&.split("+")&.first || ""
+        other_release_str = other.to_s.split("-").first || ""
         other_prerelease_string = other.to_s.
                                   sub(other_release_str, "").
-                                  sub("-", "").
-                                  split("+").
-                                  first
+                                  sub("-", "")
         other_prerelease_string = nil if other_prerelease_string == ""
 
         return -1 if prerelease_string && !other_prerelease_string
@@ -86,10 +79,7 @@ module Dependabot
 
         0
       end
-
       # rubocop:enable Metrics/PerceivedComplexity
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/AbcSize
 
       def compare_dot_separated_part(lhs, rhs)
         return -1 if lhs.nil?

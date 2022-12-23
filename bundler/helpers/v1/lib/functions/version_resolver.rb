@@ -2,7 +2,7 @@
 
 module Functions
   class VersionResolver
-    GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/.freeze
+    GEM_NOT_FOUND_ERROR_REGEX = /locked to (?<name>[^\s]+) \(/
 
     attr_reader :dependency_name, :dependency_requirements,
                 :gemfile_name, :lockfile_name

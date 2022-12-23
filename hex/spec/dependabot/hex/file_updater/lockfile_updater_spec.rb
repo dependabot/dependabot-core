@@ -10,13 +10,17 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     described_class.new(
       dependency_files: files,
       dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [credentials]
     )
+  end
+
+  let(:credentials) do
+    {
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }
   end
 
   let(:files) { [mixfile, lockfile] }
@@ -338,6 +342,40 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).to include("phoenix.git")
         expect(updated_lockfile_content).
           to_not include("178ce1a2344515e9145599970313fcc190d4b881")
+      end
+    end
+
+    context "with a private repo dependency" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:lockfile_fixture_name) { "private_repo" }
+
+      let(:credentials) do
+        {
+          "type" => "hex_repository",
+          "repo" => "dependabot",
+          "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+          "url" => "https://dependabot-private.fly.dev"
+        }
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :jason, "1.1.0")
+        expect(updated_lockfile_content).not_to include(
+          "0f7cfa9bdb23fed721ec05419bcee2b2c21a77e926bce0deda029b5adc716fe2"
+        )
       end
     end
   end

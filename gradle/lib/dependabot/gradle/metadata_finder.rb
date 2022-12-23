@@ -11,8 +11,8 @@ require "dependabot/registry_client"
 module Dependabot
   module Gradle
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
+      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
       KOTLIN_PLUGIN_REPO_PREFIX = "org.jetbrains.kotlin"
 
       private

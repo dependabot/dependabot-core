@@ -51,16 +51,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
       file: "package.json",
       requirement: "^0.0.1",
       groups: ["dependencies"],
-      source: nil
+      source: source
     }]
   end
+  let(:source) { nil }
 
   let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
   let(:repo_contents_path) { nil }
 
   before do
     FileUtils.mkdir_p(tmp_path)
-    Dependabot::Experiments.register(:yarn_berry, true)
   end
 
   describe "#updated_dependency_files" do
@@ -2995,6 +2995,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         it "updates the .yarn/cache folder" do
           expect(updated_files.map(&:name)).to match_array(
             [
+              ".pnp.cjs",
               ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
               ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
               ".yarn/install-state.gz",
@@ -3002,6 +3003,82 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
               "yarn.lock"
             ]
           )
+          expect(updated_files.find { |updated_file| updated_file.name == ".pnp.cjs" }.mode).to eq("100755")
+        end
+      end
+
+      describe "without zero-install the updated yarn_lock" do
+        let(:project_name) { "yarn_berry/simple_nopnp" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "does not update zero-install files" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              "package.json",
+              "yarn.lock",
+              ".yarn/install-state.gz"
+            ]
+          )
+        end
+      end
+
+      describe "with offline cache the updated yarn_lock" do
+        let(:project_name) { "yarn_berry/simple_node_modules" }
+        let(:files) { project_dependency_files(project_name) }
+        let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+
+        it "does not downgrade the lockfile to the yarn 1 format" do
+          expect(updated_yarn_lock.content).to include("__metadata")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_yarn_lock.content).to include("fetch-factory@npm:^0.0.2")
+        end
+
+        it "updates the cache but not the zero install file" do
+          expect(updated_files.map(&:name)).to match_array(
+            [
+              ".yarn/cache/fetch-factory-npm-0.0.1-e67abc1f87-ff7fe6fdb8.zip",
+              ".yarn/cache/fetch-factory-npm-0.0.2-816f8766e1-200ddd8ae3.zip",
+              "package.json",
+              "yarn.lock"
+            ]
+          )
+        end
+      end
+
+      context "when updating only the lockfile" do
+        let(:files) { project_dependency_files("yarn_berry/lockfile_only_change") }
+
+        let(:dependency_name) { "babel-jest" }
+        let(:version) { "22.4.4" }
+        let(:previous_version) { "22.0.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^22.0.4",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "has details of the updated item, but doesn't update everything" do
+          parsed_lockfile = YAML.safe_load(updated_yarn_lock.content)
+          # Updates the desired dependency
+          expect(parsed_lockfile["babel-jest@npm:^22.0.4"]["version"]).to eq("22.4.4")
+
+          # Doesn't update unrelated dependencies
+          expect(parsed_lockfile["eslint@npm:^4.14.0"]["version"]).to eq("4.14.0")
         end
       end
 
@@ -3096,6 +3173,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             lockfile = updated_files.find { |f| f.name == "yarn.lock" }
             expect(lockfile.content).to include("chalk@npm:0.4.0")
             expect(lockfile.content).to_not include("workspace-aggregator")
+          end
+
+          it "does not add the dependency to the top-level workspace" do
+            lockfile = updated_files.find { |f| f.name == "yarn.lock" }
+            parsed_lockfile = YAML.safe_load(lockfile.content)
+            expect(parsed_lockfile.dig("bump-test@workspace:.", "dependencies").keys).not_to include("chalk")
           end
         end
       end
@@ -3244,6 +3327,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       context "when the npm registry was explicitly specified" do
         let(:files) { project_dependency_files("yarn/npm_global_registry") }
+        let(:credentials) do
+          [{
+            "type" => "npm_registry",
+            "registry" => "https://registry.npmjs.org",
+            "token" => "secret_token"
+          }]
+        end
+        let(:source) do
+          { type: "registry", url: "https://registry.npmjs.org" }
+        end
 
         it "keeps the preference for the npm registry" do
           expect(updated_yarn_lock.content).

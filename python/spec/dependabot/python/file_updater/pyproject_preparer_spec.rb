@@ -14,7 +14,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   end
   let(:lockfile) { nil }
   let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
-  let(:pyproject_fixture_name) { "pyproject.toml" }
+  let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
   describe "#add_auth_env_vars" do
     it "adds auth env vars when a token is present" do
@@ -48,7 +48,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
     it "doesn't break when there are no private sources" do
       preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
-        pyproject_content: fixture("pyproject_files", "pyproject.toml"),
+        pyproject_content: pyproject_content,
         lockfile: nil
       )
       expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
@@ -99,7 +99,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     let(:pyproject_lock_body) do
       fixture("pyproject_locks", pyproject_lock_fixture_name)
     end
-    let(:pyproject_lock_fixture_name) { "pyproject.lock" }
+    let(:pyproject_lock_fixture_name) { "poetry.lock" }
 
     context "with no dependencies to except" do
       let(:dependencies) { [] }
@@ -134,6 +134,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
 
       it { is_expected.to include("geopy = \"^1.13\"\n") }
+    end
+
+    context "with a multiple constraint dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "multiple_constraint_dependency.lock" }
+      let(:pyproject_fixture_name) { "multiple_constraint_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+
+      it "does not touch multiple constraint deps" do
+        expect(freeze_top_level_dependencies_except).not_to include("numpy = \"1.21.6\"")
+      end
     end
 
     context "with directory dependency" do

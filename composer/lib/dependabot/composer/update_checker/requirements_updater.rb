@@ -13,13 +13,11 @@ module Dependabot
   module Composer
     class UpdateChecker
       class RequirementsUpdater
-        ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/.freeze
-        VERSION_REGEX =
-          /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/.freeze
-        AND_SEPARATOR =
-          /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
-        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
-        SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/.freeze
+        ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/
+        VERSION_REGEX = /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
+        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
+        SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
         ALLOWED_UPDATE_STRATEGIES =
           %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 

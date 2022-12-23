@@ -12,13 +12,13 @@
 
   <repositories>
     <repository>
-      <id>central</id>
+      <id>wrong</id>
       <url>http://host:port/content/groups/public</url>
     </repository>
   </repositories>
   <pluginRepositories>
     <pluginRepository>
-      <id>central</id>
+      <id>wrong</id>
       <url>http://host:port/content/groups/public</url>
     </pluginRepository>
   </pluginRepositories>

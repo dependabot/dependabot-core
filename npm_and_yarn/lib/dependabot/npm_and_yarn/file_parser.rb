@@ -3,10 +3,10 @@
 # See https://docs.npmjs.com/files/package.json for package.json format docs.
 
 require "dependabot/dependency"
-require "dependabot/experiments"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/git_metadata_fetcher"
@@ -30,13 +30,14 @@ module Dependabot
           (?:\#(?=[\^~=<>*])(?<semver>.+))|
           (?:\#(?<ref>.+))
         )?$
-      }ix.freeze
+      }ix
 
       def parse
         dependency_set = DependencySet.new
         dependency_set += manifest_dependencies
         dependency_set += lockfile_dependencies
-        dependencies = dependency_set.dependencies
+
+        dependencies = Helpers.dependencies_with_all_versions_metadata(dependency_set)
 
         # TODO: Currently, Dependabot can't handle dependencies that have both
         # a git source *and* a non-git source. Fix that!
@@ -85,7 +86,7 @@ module Dependabot
       end
 
       def lockfile_dependencies
-        DependencySet.new(lockfile_parser.parse)
+        lockfile_parser.parse_set
       end
 
       def build_dependency(file:, type:, name:, requirement:)
@@ -103,7 +104,7 @@ module Dependabot
         # TODO: Handle aliased packages:
         # https://github.com/dependabot/dependabot-core/pull/1115
         #
-        # Ignore dependencies with an alias in the name (only supported by Yarn)
+        # Ignore dependencies with an alias in the name
         # Example: "my-fetch-factory@npm:fetch-factory"
         return if aliased_package_name?(name)
 
@@ -241,11 +242,16 @@ module Dependabot
       def source_for(name, requirement, manifest_name)
         return git_source_for(requirement) if git_url?(requirement)
 
-        resolved_url = lockfile_parser.lockfile_details(
+        lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
           requirement: requirement,
           manifest_name: manifest_name
-        )&.fetch("resolved", nil)
+        )
+        resolved_url = lockfile_details&.fetch("resolved", nil)
+
+        resolution = lockfile_details&.fetch("resolution", nil)
+        package_match = resolution&.match(/__archiveUrl=(?<package_url>.+)/)
+        resolved_url = CGI.unescape(package_match.named_captures.fetch("package_url", "")) if package_match
 
         return unless resolved_url
         return unless resolved_url.start_with?("http")
@@ -307,11 +313,22 @@ module Dependabot
       end
 
       def url_for_relevant_cred(resolved_url)
+        resolved_url_host = URI(resolved_url).host
+
         credential_matching_url =
           credentials.
           select { |cred| cred["type"] == "npm_registry" }.
           sort_by { |cred| cred["registry"].length }.
-          find { |details| resolved_url.include?(details["registry"]) }
+          find do |details|
+            next true if resolved_url_host == details["registry"]
+
+            uri = if details["registry"]&.include?("://")
+                    URI(details["registry"])
+                  else
+                    URI("https://#{details['registry']}")
+                  end
+            resolved_url_host == uri.host
+          end
 
         return unless credential_matching_url
 
@@ -328,7 +345,7 @@ module Dependabot
               dependency_files.
               select { |f| f.name.end_with?("package.json") }.
               reject { |f| f.name == "package.json" }.
-              reject { |f| f.name.include?("node_modules/") if Experiments.enabled?(:yarn_berry) }.
+              reject { |f| f.name.include?("node_modules/") }.
               reject(&:support_file?)
 
             [

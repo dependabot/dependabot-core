@@ -12,7 +12,7 @@ require "dependabot/file_parsers/base"
 module Dependabot
   module GoModules
     class FileParser < Dependabot::FileParsers::Base
-      GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/.freeze
+      GIT_VERSION_REGEX = /^v\d+\.\d+\.\d+-.*-(?<sha>[0-9a-f]{12})$/
 
       def parse
         dependency_set = Dependabot::FileParsers::Base::DependencySet.new
@@ -135,6 +135,9 @@ module Dependabot
         }
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         if e.message == "Cannot detect VCS"
+          # if the dependency is locally replaced, this is not a fatal error
+          return { type: "default", source: dep["Path"] } if dependency_has_local_replacement(dep)
+
           msg = e.message + " for #{dep['Path']}. Attempted to detect VCS " \
                             "because the version looks like a git revision: " \
                             "#{dep['Version']}"
@@ -176,6 +179,18 @@ module Dependabot
           end
 
           return true if dep_replace
+        end
+        false
+      end
+
+      def dependency_has_local_replacement(details)
+        if manifest["Replace"]
+          has_local_replacement = manifest["Replace"].find do |replace|
+            replace["New"]["Path"].start_with?("./", "../") &&
+              replace["Old"]["Path"] == details["Path"]
+          end
+
+          return true if has_local_replacement
         end
         false
       end

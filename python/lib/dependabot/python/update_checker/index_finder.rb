@@ -9,7 +9,7 @@ module Dependabot
     class UpdateChecker
       class IndexFinder
         PYPI_BASE_URL = "https://pypi.org/simple/"
-        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/.freeze
+        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files

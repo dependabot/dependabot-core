@@ -1,5 +1,5 @@
-name: dependabot-updater
-cache_path: 'licenses'
+name: updater
+cache_path: 'updater/licenses'
 sources:
   bundler: true
 allowed:

@@ -8,6 +8,7 @@ AllCops:
     - "*/bin/**/*"
     - "**/tmp/**/*"
     - "*/spec/fixtures/**/*"
+    - "dry-run/**/*"
   NewCops: enable
   SuggestExtensions: false
 Gemspec/DeprecatedAttributeAssignment:
@@ -256,6 +257,8 @@ Style/HashExcept:
   Enabled: true
 Style/HashLikeCase:
   Enabled: false
+Style/HashSyntax:
+  EnforcedShorthandSyntax: either
 Style/HashTransformKeys:
   Enabled: false
 Style/HashTransformValues:
@@ -319,4 +322,12 @@ Style/OpenStructUse:
 Style/SpecialGlobalVars:
   Enabled: false
 Style/SelectByRegexp:
+  Enabled: false
+
+# TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
+# in order to keep the upgrade diff small, they will be enabled/fixed in
+# a follow-on PR.
+Naming/BlockForwarding:
+  Enabled: false
+Style/MutableConstant:
   Enabled: false

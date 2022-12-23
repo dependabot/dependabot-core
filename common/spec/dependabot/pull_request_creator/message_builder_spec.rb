@@ -15,7 +15,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       credentials: credentials,
       pr_message_header: pr_message_header,
       pr_message_footer: pr_message_footer,
-      commit_message_options: { signoff_details: signoff_details, trailers: trailers },
+      commit_message_options: commit_message_options,
       vulnerabilities_fixed: vulnerabilities_fixed,
       github_redirection_service: github_redirection_service
     )
@@ -41,6 +41,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:credentials) { github_credentials }
   let(:pr_message_header) { nil }
   let(:pr_message_footer) { nil }
+  let(:commit_message_options) { { signoff_details: signoff_details, trailers: trailers } }
   let(:signoff_details) { nil }
   let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
@@ -172,6 +173,14 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
         it { is_expected.to eq("Bump business from 1.4.0 to 1.5.0") }
 
+        context "but the internet goes down" do
+          before do
+            stub_request(:any, /.*/).to_raise(SocketError)
+          end
+
+          it { is_expected.to eq("bump business from 1.4.0 to 1.5.0") }
+        end
+
         context "but does have prefixed commits" do
           let(:commits_response) { fixture("github", "commits_prefixed.json") }
 
@@ -216,8 +225,19 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependencies) { [dependency, dependency] }
-          it { is_expected.to eq("Bump business and business") }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+
+          it { is_expected.to eq("Bump business and business2") }
 
           context "for a Maven property update" do
             let(:dependency) do
@@ -296,9 +316,45 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           end
         end
 
+        context "with two dependencies with the same name" do
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+          it { is_expected.to eq("Bump business") }
+        end
+
         context "with three dependencies" do
-          let(:dependencies) { [dependency, dependency, dependency] }
-          it { is_expected.to eq("Bump business, business and business") }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependency3) do
+            Dependabot::Dependency.new(
+              name: "business3",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2, dependency3] }
+
+          it { is_expected.to eq("Bump business, business2 and business3") }
         end
 
         context "with a directory specified" do
@@ -443,6 +499,29 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
           it do
             is_expected.to eq("Chore(deps): Bump business from 1.4.0 to 1.5.0")
+          end
+        end
+
+        context "and capitalizes the message but not the prefix" do
+          before do
+            stub_request(:get, watched_repo_url + "/commits?per_page=100").
+              to_return(
+                status: 200,
+                body: fixture("github", "commits_angular_sentence_case.json"),
+                headers: json_header
+              )
+          end
+
+          it do
+            is_expected.to eq("chore(deps): Bump business from 1.4.0 to 1.5.0")
+          end
+
+          context "and with commit messages explicitly configured" do
+            let(:commit_message_options) { super().merge(prefix: "chore(dependencies)") }
+
+            it do
+              is_expected.to eq("chore(dependencies): Bump business from 1.4.0 to 1.5.0")
+            end
           end
         end
 
@@ -619,20 +698,65 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         end
 
         context "with two dependencies" do
-          let(:dependencies) { [dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
 
           it "includes both dependencies" do
             expect(pr_name).
-              to eq("Update requirements for business and business")
+              to eq("Update requirements for business and business2")
           end
         end
 
+        context "with two dependencies with the same name" do
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business",
+              version: "2.3.0",
+              previous_version: "2.1.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2] }
+          it { is_expected.to eq("Update requirements for business") }
+        end
+
         context "with three dependencies" do
-          let(:dependencies) { [dependency, dependency, dependency] }
+          let(:dependency2) do
+            Dependabot::Dependency.new(
+              name: "business2",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependency3) do
+            Dependabot::Dependency.new(
+              name: "business3",
+              version: "1.5.0",
+              previous_version: "1.4.0",
+              package_manager: "dummy",
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+          let(:dependencies) { [dependency, dependency2, dependency3] }
 
           it "includes all three dependencies" do
             expect(pr_name).
-              to eq("Update requirements for business, business and business")
+              to eq("Update requirements for business, business2 and business3")
           end
         end
 
@@ -768,6 +892,17 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             "#{commits_details(base: 'v1.4.0', head: 'v1.5.0')}" \
             "<br />\n"
           )
+      end
+
+      context "when there's a network error" do
+        before do
+          stub_request(:any, /.*/).to_raise(SocketError)
+        end
+
+        it "has a blank message" do
+          expect(pr_message).
+            to eq("")
+        end
       end
 
       context "without a github link proxy" do

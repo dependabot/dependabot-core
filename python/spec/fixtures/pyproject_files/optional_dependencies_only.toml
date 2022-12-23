@@ -1,0 +1,48 @@
+[build-system]
+requires = ["maturin>=0.13,<0.14"]
+build-backend = "maturin"
+
+[project]
+name = "ffmpegwithpy"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "maturin==0.13.6",
+    "pytest==7.1.3",
+    "black==22.10.0",
+    "isort==5.10.1",
+    "taskipy==1.10.3",
+]
+
+[tool.maturin]
+python-source = "python"
+
+[tool.black]
+line-length = 119
+exclude = '''
+(
+    migrations
+    | .mypy_cache
+    | .pytest_cache
+    | .venv
+    | target
+)
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 119
+
+[tool.taskipy.tasks]
+fmt_black = "black ."
+fmt_isort = "isort ."
+fmt_rust = "cargo fmt"
+fmt = "task fmt_black & task fmt_isort & task fmt_rust"
+
+dev = "maturin dev -E dev"

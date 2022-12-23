@@ -35,7 +35,7 @@ module Dependabot
           ...Failedtoclone
           (?<url>.+?).gitat'(?<tag>.+?)',
           verifyrefexistsonremote)
-        /x.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /x # TODO: remove the first clause and | when py3.6 support is EoL
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /
           (?:'\['git',
           \s+'clone',
@@ -47,7 +47,7 @@ module Dependabot
           \s+Failed\sto\sclone
           \s+(?<url>.+?),
           \s+check\syour\sgit\sconfiguration)
-        /mx.freeze # TODO: remove the first clause and | when py3.6 support is EoL
+        /mx # TODO: remove the first clause and | when py3.6 support is EoL
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -82,7 +82,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_latest_resolvable_version_string(requirement:)
           @latest_resolvable_version_string ||= {}
           return @latest_resolvable_version_string[requirement] if @latest_resolvable_version_string.key?(requirement)
@@ -93,14 +92,7 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
                 add_auth_env_vars
 
-                if python_version && !pre_installed_python?(python_version)
-                  run_poetry_command("pyenv install -s #{python_version}")
-                  run_poetry_command("pyenv exec pip install --upgrade pip")
-                  run_poetry_command(
-                    "pyenv exec pip install -r " \
-                    "#{NativeHelpers.python_requirements_path}"
-                  )
-                end
+                Helpers.install_required_python(python_version)
 
                 # use system git instead of the pure Python dulwich
                 unless python_version&.start_with?("3.6")
@@ -108,7 +100,7 @@ module Dependabot
                 end
 
                 # Shell out to Poetry, which handles everything for us.
-                run_poetry_command(poetry_update_command)
+                run_poetry_update_command
 
                 updated_lockfile =
                   if File.exist?("poetry.lock") then File.read("poetry.lock")
@@ -123,7 +115,6 @@ module Dependabot
               end
             end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def fetch_version_from_parsed_lockfile(updated_lockfile)
           version =
@@ -172,8 +163,11 @@ module Dependabot
 
         # Using `--lock` avoids doing an install.
         # Using `--no-interaction` avoids asking for passwords.
-        def poetry_update_command
-          "pyenv exec poetry update #{dependency.name} --lock --no-interaction"
+        def run_poetry_update_command
+          run_poetry_command(
+            "pyenv exec poetry update #{dependency.name} --lock --no-interaction",
+            fingerprint: "pyenv exec poetry update <dependency_name> --lock --no-interaction"
+          )
         end
 
         def check_original_requirements_resolvable
@@ -183,7 +177,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               write_temporary_dependency_files(update_pyproject: false)
 
-              run_poetry_command(poetry_update_command)
+              run_poetry_update_command
 
               @original_reqs_resolvable = true
             rescue SharedHelpers::HelperSubprocessFailed => e
@@ -211,7 +205,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version) if python_version
+          File.write(".python-version", Helpers.python_major_minor(python_version)) if python_version
 
           # Overwrite the pyproject with updated content
           if update_pyproject
@@ -293,7 +287,7 @@ module Dependabot
           pyproject_object = TomlRB.parse(pyproject_content)
           poetry_object = pyproject_object.dig("tool", "poetry")
 
-          Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
+          Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
             names = poetry_object[type]&.keys || []
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name
@@ -340,13 +334,13 @@ module Dependabot
           poetry_lock || pyproject_lock
         end
 
-        def run_poetry_command(command)
+        def run_poetry_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
           time_taken = Time.now - start
 
-          # Raise an error with the output from the shell session if Pipenv
+          # Raise an error with the output from the shell session if poetry
           # returns a non-zero status
           return if process.success?
 
@@ -354,6 +348,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }

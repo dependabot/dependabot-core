@@ -172,7 +172,8 @@ module Dependabot
 
       # rubocop:disable Metrics/ParameterLists
       def create_pull_request(pr_name, source_branch, target_branch,
-                              pr_description, labels, work_item = nil)
+                              pr_description, labels,
+                              reviewers = nil, assignees = nil, work_item = nil)
         pr_description = truncate_pr_description(pr_description)
 
         content = {
@@ -181,6 +182,7 @@ module Dependabot
           title: pr_name,
           description: pr_description,
           labels: labels.map { |label| { name: label } },
+          reviewers: pr_reviewers(reviewers, assignees),
           workItemRefs: [{ id: work_item }]
         }
 
@@ -214,6 +216,18 @@ module Dependabot
         JSON.parse(response.body).fetch("value").first
       end
       # rubocop:enable Metrics/ParameterLists
+
+      def compare(previous_tag, new_tag, type)
+        response = get(source.api_endpoint +
+                         source.organization + "/" + source.project +
+                         "/_apis/git/repositories/" + source.unscoped_repo +
+                         "/commits?searchCriteria.itemVersion.versionType=#{type}" \
+                         "&searchCriteria.itemVersion.version=#{previous_tag}" \
+                         "&searchCriteria.compareVersion.versionType=#{type}" \
+                         "&searchCriteria.compareVersion.version=#{new_tag}")
+
+        JSON.parse(response.body).fetch("value")
+      end
 
       def get(url)
         response = nil
@@ -322,6 +336,13 @@ module Dependabot
 
         message = JSON.parse(response.body).fetch("message", nil)
         message&.include?("TF401289")
+      end
+
+      def pr_reviewers(reviewers, assignees)
+        return [] unless reviewers || assignees
+
+        pr_reviewers = reviewers&.map { |r_id| { id: r_id, isRequired: true } } || []
+        pr_reviewers + (assignees&.map { |r_id| { id: r_id, isRequired: false } } || [])
       end
 
       attr_reader :auth_header

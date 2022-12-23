@@ -174,17 +174,25 @@ RSpec.describe Dependabot::FileFetcherJob do
         expect(root_dir_entries).to include("main.go")
       end
 
-      it "cleans up any files left after the job errors" do
-        allow(job).to receive(:clone_repo_contents).and_wrap_original do |method, *args|
-          method.call(*args)
-          raise "Something went wrong"
+      context "when the fetcher raises a BranchNotFound error while cloning" do
+        before do
+          allow_any_instance_of(Dependabot::GoModules::FileFetcher).
+            to receive(:clone_repo_contents).
+            and_raise(Dependabot::BranchNotFound, "my_branch")
         end
-        expect(api_client).to receive(:mark_job_as_processed)
 
-        expect { perform_job }.to output(/Something went wrong/).to_stdout_from_any_process
+        it "tells the backend about the error (and doesn't re-raise it)" do
+          expect(api_client).
+            to receive(:record_update_job_error).
+            with(
+              job_id,
+              error_details: { "branch-name": "my_branch" },
+              error_type: "branch_not_found"
+            )
+          expect(api_client).to receive(:mark_job_as_processed)
 
-        expect(Dir.exist?(Dependabot::Environment.repo_contents_path)).to be_truthy
-        expect(Dir.empty?(Dependabot::Environment.repo_contents_path)).to be_truthy
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
       end
     end
 

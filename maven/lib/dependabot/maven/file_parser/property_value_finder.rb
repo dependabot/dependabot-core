@@ -14,11 +14,14 @@ module Dependabot
     class FileParser
       class PropertyValueFinder
         require_relative "repositories_finder"
+        require_relative "pom_fetcher"
 
-        DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
+        DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
-        def initialize(dependency_files:)
+        def initialize(dependency_files:, credentials: [])
           @dependency_files = dependency_files
+          @credentials = credentials
+          @pom_fetcher = PomFetcher.new(dependency_files: dependency_files)
         end
 
         def property_details(property_name:, callsite_pom:)
@@ -60,29 +63,6 @@ module Dependabot
 
         attr_reader :dependency_files
 
-        def internal_dependency_poms
-          return @internal_dependency_poms if @internal_dependency_poms
-
-          @internal_dependency_poms = {}
-          dependency_files.each do |pom|
-            doc = Nokogiri::XML(pom.content)
-            group_id = doc.at_css("project > groupId") ||
-                       doc.at_css("project > parent > groupId")
-            artifact_id = doc.at_css("project > artifactId")
-
-            next unless group_id && artifact_id
-
-            dependency_name = [
-              group_id.content.strip,
-              artifact_id.content.strip
-            ].join(":")
-
-            @internal_dependency_poms[dependency_name] = pom
-          end
-
-          @internal_dependency_poms
-        end
-
         def sanitize_property_name(property_name)
           property_name.sub(/^pom\./, "").sub(/^project\./, "")
         end
@@ -100,11 +80,11 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          return internal_dependency_poms[name] if internal_dependency_poms[name]
+          return @pom_fetcher.internal_dependency_poms[name] if @pom_fetcher.internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 
-          fetch_remote_parent_pom(group_id, artifact_id, version, pom)
+          @pom_fetcher.fetch_remote_parent_pom(group_id, artifact_id, version, parent_repository_urls(pom))
         end
         # rubocop:enable Metrics/PerceivedComplexity
 
@@ -118,43 +98,11 @@ module Dependabot
         def repositories_finder
           @repositories_finder ||=
             RepositoriesFinder.new(
+              pom_fetcher: @pom_fetcher,
               dependency_files: dependency_files,
+              credentials: @credentials,
               evaluate_properties: false
             )
-        end
-
-        def fetch_remote_parent_pom(group_id, artifact_id, version, pom)
-          parent_repository_urls(pom).each do |base_url|
-            url = remote_pom_url(group_id, artifact_id, version, base_url)
-
-            @maven_responses ||= {}
-            @maven_responses[url] ||= Dependabot::RegistryClient.get(url: url)
-            next unless @maven_responses[url].status == 200
-            next unless pom?(@maven_responses[url].body)
-
-            dependency_file = DependencyFile.new(
-              name: "remote_pom.xml",
-              content: @maven_responses[url].body
-            )
-
-            return dependency_file
-          rescue Excon::Error::Socket, Excon::Error::Timeout,
-                 Excon::Error::TooManyRedirects, URI::InvalidURIError
-            nil
-          end
-
-          # If a parent POM couldn't be found, return `nil`
-          nil
-        end
-
-        def remote_pom_url(group_id, artifact_id, version, base_repo_url)
-          "#{base_repo_url}/" \
-            "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/" \
-            "#{artifact_id}-#{version}.pom"
-        end
-
-        def pom?(content)
-          !Nokogiri::XML(content).at_css("project > artifactId").nil?
         end
       end
     end

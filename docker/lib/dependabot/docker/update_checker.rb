@@ -42,22 +42,19 @@ end
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      VERSION_REGEX =
-        /v?(?<version>[0-9]+(?:(?:\.[_a-z0-9]+)|(?:-(?:kb)?[0-9]+))*)/i.freeze
-      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z0-9.\-]+)?$/i.freeze
-      VERSION_WITH_PFX = /^(?<prefix>[a-z0-9.\-]+-)?#{VERSION_REGEX}$/i.freeze
-      VERSION_WITH_PFX_AND_SFX =
-        /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i.
-        freeze
+      VERSION_REGEX = /v?(?<version>[0-9]+(?:\.[0-9]+)*(?:_[0-9]+|\.[a-z0-9]+|-(?:kb)?[0-9]+)*)/i
+      VERSION_WITH_SFX = /^#{VERSION_REGEX}(?<suffix>-[a-z][a-z0-9.\-]*)?$/i
+      VERSION_WITH_PFX = /^(?<prefix>[a-z][a-z0-9.\-]*-)?#{VERSION_REGEX}$/i
+      VERSION_WITH_PFX_AND_SFX = /^(?<prefix>[a-z\-]+-)?#{VERSION_REGEX}(?<suffix>-[a-z\-]+)?$/i
       NAME_WITH_VERSION =
         /
           #{VERSION_WITH_PFX}|
           #{VERSION_WITH_SFX}|
           #{VERSION_WITH_PFX_AND_SFX}
-      /x.freeze
+      /x
 
       def latest_version
-        fetch_latest_version(dependency.version)
+        latest_version_from(dependency.version)
       end
 
       def latest_resolvable_version
@@ -74,7 +71,7 @@ module Dependabot
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
           updated_source[:digest] = updated_digest if req[:source][:digest]
-          updated_source[:tag] = fetch_latest_version(req[:source][:tag]) if req[:source][:tag]
+          updated_source[:tag] = latest_version_from(req[:source][:tag]) if req[:source][:tag]
 
           req.merge(source: updated_source)
         end
@@ -120,7 +117,7 @@ module Dependabot
         # Check the precision of the potentially higher tag is the same as the
         # one it would replace. In the event that it's not the same, check the
         # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
-        return false if old_v.split(".").count == latest_v.split(".").count
+        return false if precision_of(old_v) == precision_of(latest_v)
 
         digest_of(version) == digest_of(latest_version)
       end
@@ -134,33 +131,38 @@ module Dependabot
         end
       end
 
-      # NOTE: It's important that this *always* returns a version (even if
-      # it's the existing one) as it is what we later check the digest of.
-      def fetch_latest_version(version)
+      def latest_version_from(version)
         @versions ||= {}
         return @versions[version] if @versions.key?(version)
 
-        @versions[version] = begin
-          return version unless version.match?(NAME_WITH_VERSION)
+        @versions[version] = fetch_latest_version(version)
+      end
 
-          # Prune out any downgrade tags before checking for pre-releases
-          # (which requires a call to the registry for each tag, so can be slow)
-          candidate_tags = comparable_tags_from_registry(version)
-          candidate_tags = remove_version_downgrades(candidate_tags, version)
+      # NOTE: It's important that this *always* returns a version (even if
+      # it's the existing one) as it is what we later check the digest of.
+      def fetch_latest_version(version)
+        return version unless version.match?(NAME_WITH_VERSION)
 
-          unless prerelease?(version)
-            candidate_tags =
-              candidate_tags.
-              reject { |tag| prerelease?(tag) }
+        # Prune out any downgrade tags before checking for pre-releases
+        # (which requires a call to the registry for each tag, so can be slow)
+        candidate_tags = comparable_tags_from_registry(version)
+        candidate_tags = remove_version_downgrades(candidate_tags, version)
+        candidate_tags = remove_prereleases(candidate_tags, version)
+        candidate_tags = filter_ignored(candidate_tags)
+        candidate_tags = sort_tags(candidate_tags, version)
+
+        latest_tag = candidate_tags.last
+
+        if latest_tag && same_precision?(latest_tag, version)
+          latest_tag
+        else
+          latest_same_precision_tag = remove_precision_changes(candidate_tags, version).last
+
+          if latest_same_precision_tag && digest_of(latest_same_precision_tag) == digest_of(latest_tag)
+            latest_same_precision_tag
+          else
+            latest_tag || version
           end
-
-          latest_tag =
-            filter_ignored(candidate_tags).
-            max_by do |tag|
-              [version_class.new(numeric_version_from(tag)), tag.length]
-            end
-
-          latest_tag || version
         end
       end
 
@@ -169,28 +171,37 @@ module Dependabot
         original_suffix = suffix_of(version)
         original_format = format_of(version)
 
-        tags_from_registry.
+        candidate_tags =
+          tags_from_registry.
           select { |tag| tag.match?(NAME_WITH_VERSION) }.
           select { |tag| prefix_of(tag) == original_prefix }.
-          select { |tag| suffix_of(tag) == original_suffix || commit_sha_suffix?(tag) }.
           select { |tag| format_of(tag) == original_format }
+        return candidate_tags if original_format == :sha_suffixed
+
+        candidate_tags.select { |tag| suffix_of(tag) == original_suffix }
       end
 
       def remove_version_downgrades(candidate_tags, version)
         candidate_tags.select do |tag|
-          version_class.new(numeric_version_from(tag)) >=
-            version_class.new(numeric_version_from(version))
+          comparable_version_from(tag) >=
+            comparable_version_from(version)
         end
       end
 
-      def commit_sha_suffix?(tag)
-        # Some people suffix their versions with commit SHAs. Dependabot
-        # can't order on those but will try to, so instead we should exclude
-        # them (unless there's a `latest` version pushed to the registry, in
-        # which case we'll use that to find the latest version)
-        return false unless tag.match?(/(^|\-g?)[0-9a-f]{7,}$/)
+      def remove_prereleases(candidate_tags, version)
+        return candidate_tags if prerelease?(version)
 
-        !tag.match?(/(^|\-)\d+$/)
+        candidate_tags.reject { |tag| prerelease?(tag) }
+      end
+
+      def remove_precision_changes(candidate_tags, version)
+        candidate_tags.select do |tag|
+          same_precision?(tag, version)
+        end
+      end
+
+      def same_precision?(tag, another_tag)
+        precision_of(numeric_version_from(tag)) == precision_of(numeric_version_from(another_tag))
       end
 
       def version_of_latest_tag
@@ -199,13 +210,13 @@ module Dependabot
         candidate_tag =
           tags_from_registry.
           select { |tag| canonical_version?(tag) }.
-          sort_by { |t| version_class.new(numeric_version_from(t)) }.
+          sort_by { |t| comparable_version_from(t) }.
           reverse.
           find { |t| digest_of(t) == latest_digest }
 
         return unless candidate_tag
 
-        version_class.new(numeric_version_from(candidate_tag))
+        comparable_version_from(candidate_tag)
       end
 
       def canonical_version?(tag)
@@ -295,6 +306,7 @@ module Dependabot
 
         return :year_month if version.match?(/^[12]\d{3}(?:[.\-]|$)/)
         return :year_month_day if version.match?(/^[12]\d{5}(?:[.\-]|$)/)
+        return :sha_suffixed if tag.match?(/(^|\-g?)[0-9a-f]{7,}$/)
         return :build_num if version.match?(/^\d+$/)
 
         :normal
@@ -309,7 +321,11 @@ module Dependabot
         return false unless latest_digest
         return false unless version_of_latest_tag
 
-        version_class.new(numeric_version_from(tag)) > version_of_latest_tag
+        comparable_version_from(tag) > version_of_latest_tag
+      end
+
+      def comparable_version_from(tag)
+        version_class.new(numeric_version_from(tag))
       end
 
       def numeric_version_from(tag)
@@ -319,8 +335,9 @@ module Dependabot
       end
 
       def registry_hostname
-        dependency.requirements.first[:source][:registry] ||
-          "registry.hub.docker.com"
+        return dependency.requirements.first[:source][:registry] if dependency.requirements.first[:source][:registry]
+
+        credentials_finder.base_registry
       end
 
       def using_dockerhub?
@@ -352,11 +369,31 @@ module Dependabot
           )
       end
 
+      def sort_tags(candidate_tags, version)
+        candidate_tags.sort do |tag_a, tag_b|
+          if comparable_version_from(tag_a) > comparable_version_from(tag_b)
+            1
+          elsif comparable_version_from(tag_a) < comparable_version_from(tag_b)
+            -1
+          elsif same_precision?(tag_a, version)
+            1
+          elsif same_precision?(tag_b, version)
+            -1
+          else
+            0
+          end
+        end
+      end
+
+      def precision_of(version)
+        version.split(/[.-]/).length
+      end
+
       def filter_ignored(candidate_tags)
         filtered =
           candidate_tags.
           reject do |tag|
-            version = version_class.new(numeric_version_from(tag))
+            version = comparable_version_from(tag)
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
         if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(candidate_tags).any?
@@ -367,9 +404,9 @@ module Dependabot
       end
 
       def filter_lower_versions(tags)
-        versions_array = tags.map { |tag| version_class.new(numeric_version_from(tag)) }
+        versions_array = tags.map { |tag| comparable_version_from(tag) }
         versions_array.
-          select { |version| version > version_class.new(numeric_version_from(dependency.version)) }
+          select { |version| version > comparable_version_from(dependency.version) }
       end
     end
   end

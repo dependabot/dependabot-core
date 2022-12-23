@@ -130,10 +130,10 @@ module Dependabot
         end
 
         def filter_lower_versions(versions_array)
-          return versions_array unless dependency.version && version_class.correct?(dependency.version)
+          return versions_array unless dependency.numeric_version
 
           versions_array.
-            select { |version, _| version > version_class.new(dependency.version) }
+            select { |version, _| version > dependency.numeric_version }
         end
 
         def version_from_dist_tags
@@ -159,13 +159,10 @@ module Dependabot
           wants_latest_dist_tag?(latest) ? latest : nil
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def related_to_current_pre?(version)
-          current_version = dependency.version
-          if current_version &&
-             version_class.correct?(current_version) &&
-             version_class.new(current_version).prerelease? &&
-             version_class.new(current_version).release == version.release
+          current_version = dependency.numeric_version
+          if current_version&.prerelease? &&
+             current_version&.release == version.release
             return true
           end
 
@@ -181,7 +178,6 @@ module Dependabot
             false
           end
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def specified_dist_tag_requirement?
           dependency.requirements.any? do |req|
@@ -204,10 +200,9 @@ module Dependabot
         end
 
         def current_version_greater_than?(version)
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
+          return false unless dependency.numeric_version
 
-          version_class.new(dependency.version) > version
+          dependency.numeric_version > version
         end
 
         def current_requirement_greater_than?(version)
@@ -292,7 +287,6 @@ module Dependabot
             url: dependency_url,
             headers: registry_auth_headers
           )
-
           return response unless response.status == 500
           return response unless registry_auth_headers["Authorization"]
 
@@ -371,7 +365,8 @@ module Dependabot
             dependency: dependency,
             credentials: credentials,
             npmrc_file: npmrc_file,
-            yarnrc_file: yarnrc_file
+            yarnrc_file: yarnrc_file,
+            yarnrc_yml_file: yarnrc_yml_file
           )
         end
 
@@ -393,6 +388,10 @@ module Dependabot
 
         def yarnrc_file
           dependency_files.find { |f| f.name.end_with?(".yarnrc") }
+        end
+
+        def yarnrc_yml_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
         end
 
         # TODO: Remove need for me

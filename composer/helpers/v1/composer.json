@@ -9,7 +9,7 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^2.9",
-        "phpstan/phpstan": "~1.8.5"
+        "phpstan/phpstan": "~1.9.1"
     },
     "autoload": {
         "psr-4": {

@@ -10,15 +10,18 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: credentials
     )
   end
 
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let!(:dependency_files) { project_dependency_files(project_name) }
   let(:project_name) { "npm6_and_yarn/simple" }
 
@@ -42,6 +45,73 @@ RSpec.describe(Dependabot::NpmAndYarn::UpdateChecker::DependencyFilesBuilder) do
 
         expect(Dir.glob("*")).to match_array(
           %w(package.json package-lock.json yarn.lock)
+        )
+      end
+    end
+  end
+
+  describe "yarn berry with a private registry" do
+    let(:project_name) { "yarn_berry/yarnrc_global_registry" }
+    it "writes the relevant files to disk" do
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        builder.write_temporary_dependency_files
+
+        expect(Dir.children(".")).to match_array(
+          %w(package.json yarn.lock .yarnrc.yml)
+        )
+      end
+    end
+  end
+
+  describe "has no lockfile or rc file" do
+    let(:project_name) { "npm8/library" }
+    it "writes the relevant files to disk" do
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        builder.write_temporary_dependency_files
+
+        expect(Dir.children(".")).to match_array(
+          %w(package.json .npmrc)
+        )
+        expect(File.empty?(".npmrc"))
+      end
+    end
+  end
+
+  describe "a private registry in a .yarnrc and no yarn.lock" do
+    let(:project_name) { "yarn/all_private_global_registry_no_lock" }
+    it "writes the relevant files to disk" do
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        builder.write_temporary_dependency_files
+
+        expect(Dir.children(".")).to match_array(
+          %w(package.json .npmrc .yarnrc)
+        )
+        expect(File.empty?(".npmrc"))
+      end
+    end
+  end
+
+  describe "a private registry in a .yarnrc with a configured Dependabot private registry and yarn.lock" do
+    let(:project_name) { "yarn/all_private_global_registry" }
+    let(:credentials) do
+      [{
+        "type" => "git_source",
+        "host" => "github.com",
+        "username" => "x-access-token",
+        "password" => "token"
+      }, {
+        "type" => "npm-registry",
+        "host" => "https://npm-proxy.fury.io/",
+        "username" => "dependabot",
+        "password" => "password"
+      }]
+    end
+    it "writes the relevant files to disk" do
+      Dependabot::SharedHelpers.in_a_temporary_directory do
+        builder.write_temporary_dependency_files
+
+        expect(Dir.children(".")).to match_array(
+          %w(package.json yarn.lock .npmrc .yarnrc)
         )
       end
     end

@@ -30,7 +30,7 @@ module Dependabot
         "[0-9a-zA-Z]+" \
         '(?>\.[0-9a-zA-Z]*)*' \
         '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       def self.correct?(version)
         return false if version.nil?
@@ -41,6 +41,10 @@ module Dependabot
       def initialize(version)
         @version_string = version.to_s
         super(version.to_s.tr("_", "-"))
+      end
+
+      def inspect
+        "#<#{self.class} #{@version_string}>"
       end
 
       def to_s

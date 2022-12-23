@@ -15,7 +15,7 @@ module Dependabot
       version_pattern = Pub::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use Pub::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.

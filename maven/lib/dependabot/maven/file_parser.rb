@@ -28,7 +28,7 @@ module Dependabot
       EXTENSION_SELECTOR  = "extensions > extension"
 
       # Regex to get the property name from a declaration that uses a property
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
       def parse
         dependency_set = DependencySet.new
@@ -267,7 +267,7 @@ module Dependabot
       # values from parent POMs)
       def property_value_finder
         @property_value_finder ||=
-          PropertyValueFinder.new(dependency_files: dependency_files)
+          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials)
       end
 
       def pomfiles

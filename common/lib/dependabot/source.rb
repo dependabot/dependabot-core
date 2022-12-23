@@ -7,7 +7,7 @@ module Dependabot
       (?:\.com)[/:]
       (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+    }x
 
     GITHUB_ENTERPRISE_SOURCE = %r{
       (?<protocol>(http://|https://|git://|ssh://))*
@@ -16,27 +16,27 @@ module Dependabot
       [/:]
       (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+    }x
 
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>(?!\.git|/tree|/blob)[\w./-]+?)(?:\.git)?
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?$
-    }x.freeze
+      (?<repo>[^/]+/(?:(?!\.git)[^/])+((?!/tree|/blob/|/-)/[^/]+)?)
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?
+    }x
 
     BITBUCKET_SOURCE = %r{
       (?<provider>bitbucket)
       (?:\.org)[/:]
       (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+    }x
 
     AZURE_SOURCE = %r{
       (?<provider>azure)
       (?:\.com)[/:]
       (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
-    }x.freeze
+    }x
 
     CODECOMMIT_SOURCE = %r{
       (?<protocol>(http://|https://|git://|ssh://))
@@ -48,7 +48,7 @@ module Dependabot
       (?:/)?(?<directory>[^?]*)?
       [?]?
       (?<ref>.*)?
-    }x.freeze
+    }x
 
     SOURCE_REGEX = /
       (?:#{GITHUB_SOURCE})|
@@ -56,7 +56,7 @@ module Dependabot
       (?:#{BITBUCKET_SOURCE})|
       (?:#{AZURE_SOURCE})|
       (?:#{CODECOMMIT_SOURCE})
-    /x.freeze
+    /x
 
     IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 

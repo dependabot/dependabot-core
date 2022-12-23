@@ -1,6 +1,6 @@
 ---
 name: aws-sdk-core
-version: 3.134.0
+version: 3.166.0
 type: bundler
 summary: AWS SDK for Ruby - Core
 homepage: https://github.com/aws/aws-sdk-ruby

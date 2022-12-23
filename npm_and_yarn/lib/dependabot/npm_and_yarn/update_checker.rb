@@ -4,6 +4,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/shared_helpers"
+require "set"
 
 module Dependabot
   module NpmAndYarn
@@ -15,6 +16,20 @@ module Dependabot
       require_relative "update_checker/subdependency_version_resolver"
       require_relative "update_checker/conflicting_dependency_resolver"
       require_relative "update_checker/vulnerability_auditor"
+
+      def up_to_date?
+        return false if security_update? &&
+                        dependency.version &&
+                        version_class.correct?(dependency.version) &&
+                        vulnerable_versions.any? &&
+                        !vulnerable_versions.include?(current_version)
+
+        super
+      end
+
+      def vulnerable?
+        super || vulnerable_versions.any?
+      end
 
       def latest_version
         @latest_version ||=
@@ -125,6 +140,18 @@ module Dependabot
           )
       end
 
+      def vulnerable_versions
+        @vulnerable_versions ||=
+          begin
+            all_versions = dependency.all_versions.
+                           filter_map { |v| version_class.new(v) if version_class.correct?(v) }
+
+            all_versions.select do |v|
+              security_advisories.any? { |advisory| advisory.vulnerable?(v) }
+            end
+          end
+      end
+
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
 
@@ -163,16 +190,18 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
 
-        # We don't need to update this but need to include it so it's described
-        # in the PR and we'll pass validation that this dependency is at a
-        # non-vulnerable version.
+        # We don't need to directly update the target dependency if it will
+        # be updated as a side effect of updating the parent. However, we need
+        # to include it so it's described in the PR and we'll pass validation
+        # that this dependency is at a non-vulnerable version.
         if updated_deps.none? { |dep| dep.name == dependency.name }
           target_version = vulnerability_audit["target_version"]
           updated_deps << build_updated_dependency(
             dependency: dependency,
             version: target_version,
             previous_version: dependency.version,
-            removed: target_version.nil?
+            removed: target_version.nil?,
+            metadata: { information_only: true } # Instruct updater to not directly update this dependency
           )
         end
 
@@ -196,20 +225,22 @@ module Dependabot
         removed = update_details.fetch(:removed, false)
         version = update_details.fetch(:version).to_s unless removed
         previous_version = update_details.fetch(:previous_version)&.to_s
+        metadata = update_details.fetch(:metadata, {})
 
         Dependency.new(
           name: original_dep.name,
           version: version,
           requirements: RequirementsUpdater.new(
             requirements: original_dep.requirements,
-            updated_source: original_dep == dependency ? updated_source : nil,
+            updated_source: original_dep == dependency ? updated_source : original_source(original_dep),
             latest_resolvable_version: version,
             update_strategy: requirements_update_strategy
           ).updated_requirements,
           previous_version: previous_version,
           previous_requirements: original_dep.requirements,
           package_manager: original_dep.package_manager,
-          removed: removed
+          removed: removed,
+          metadata: metadata
         )
       end
 
@@ -248,9 +279,7 @@ module Dependabot
 
       def latest_version_for_git_dependency
         @latest_version_for_git_dependency ||=
-          if git_branch_or_ref_in_latest_release?
-            latest_released_version
-          elsif version_class.correct?(dependency.version)
+          if version_class.correct?(dependency.version)
             latest_git_version_details[:version] &&
               version_class.new(latest_git_version_details[:version])
           else
@@ -263,26 +292,9 @@ module Dependabot
           latest_version_finder.latest_version_from_registry
       end
 
-      def should_switch_source_from_git_to_registry?
-        return false unless git_dependency?
-        return false unless git_branch_or_ref_in_latest_release?
-        return false if latest_version_for_git_dependency.nil?
-
-        version_class.correct?(latest_version_for_git_dependency)
-      end
-
-      def git_branch_or_ref_in_latest_release?
-        return false unless latest_released_version
-
-        return @git_branch_or_ref_in_latest_release if defined?(@git_branch_or_ref_in_latest_release)
-
-        @git_branch_or_ref_in_latest_release ||=
-          git_commit_checker.branch_or_ref_in_release?(latest_released_version)
-      end
-
       def latest_version_details
         @latest_version_details ||=
-          if git_dependency? && !should_switch_source_from_git_to_registry?
+          if git_dependency?
             latest_git_version_details
           else
             { version: latest_released_version }
@@ -308,7 +320,8 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files,
             latest_allowable_version: latest_version,
-            latest_version_finder: latest_version_finder
+            latest_version_finder: latest_version_finder,
+            repo_contents_path: repo_contents_path
           )
       end
 
@@ -319,7 +332,8 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files,
             ignored_versions: ignored_versions,
-            latest_allowable_version: latest_version
+            latest_allowable_version: latest_version,
+            repo_contents_path: repo_contents_path
           )
       end
 
@@ -356,9 +370,6 @@ module Dependabot
         # Never need to update source, unless a git_dependency
         return dependency_source_details unless git_dependency?
 
-        # Source becomes `nil` if switching to default rubygems
-        return nil if should_switch_source_from_git_to_registry?
-
         # Update the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            !git_commit_checker.local_tag_for_latest_version.nil?
@@ -375,12 +386,24 @@ module Dependabot
         return true if dependency_files.any? { |f| f.name == "lerna.json" }
 
         @library =
-          LibraryDetector.new(package_json_file: package_json).library?
+          LibraryDetector.new(
+            package_json_file: package_json,
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).library?
+      end
+
+      def security_update?
+        security_advisories.any?
       end
 
       def dependency_source_details
+        original_source(dependency)
+      end
+
+      def original_source(updated_dependency)
         sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
+          updated_dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact.
           sort_by { |source| RegistryFinder.central_registry?(source[:url]) ? 1 : 0 }
 
         sources.first

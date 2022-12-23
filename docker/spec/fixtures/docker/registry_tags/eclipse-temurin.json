@@ -6,6 +6,8 @@
         "17.0.1_12-jre-alpine",
         "17-jre-alpine",
         "11.0.14_9-jre-alpine",
-        "11-jre-alpine"
+        "11-jre-alpine",
+        "11.0.16_8-jdk",
+        "11.0.16.1_1-jdk"
     ]
 }

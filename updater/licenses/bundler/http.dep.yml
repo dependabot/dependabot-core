@@ -1,6 +1,6 @@
 ---
 name: http
-version: 4.4.1
+version: 5.1.0
 type: bundler
 summary: HTTP should be easy
 homepage: https://github.com/httprb/http
@@ -8,7 +8,7 @@ license: mit
 licenses:
 - sources: LICENSE.txt
   text: |
-    Copyright (c) 2011-2016 Tony Arcieri, Erik Michaels-Ober, Alexey V. Zapparov, Zachary Anker
+    Copyright (c) 2011-2022 Tony Arcieri, Erik Michaels-Ober, Alexey V. Zapparov, Zachary Anker
 
     Permission is hereby granted, free of charge, to any person obtaining
     a copy of this software and associated documentation files (the

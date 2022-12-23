@@ -1,4 +1,4 @@
-name: Push docker fork images
+name: Push fork images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
@@ -14,7 +14,7 @@ on:
 
 jobs:
   push-fork-image:
-    name: Build and push fork image
+    name: Deploy
     runs-on: ubuntu-latest
     permissions:
       contents: read

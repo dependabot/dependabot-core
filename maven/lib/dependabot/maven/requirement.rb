@@ -7,10 +7,9 @@ module Dependabot
   module Maven
     class Requirement < Gem::Requirement
       quoted = OPS.keys.map { |k| Regexp.quote k }.join("|")
-      OR_SYNTAX = /(?<=\]|\)),/.freeze
-      PATTERN_RAW =
-        "\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      OR_SYNTAX = /(?<=\]|\)),/
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Maven::Version::VERSION_PATTERN})\\s*"
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)
         return ["=", Maven::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)

@@ -1,162 +1,117 @@
 {
+    "minified": "composer/2.0",
     "packages": {
-        "dependabot/dummy-pkg-a": {
-            "dev-master": {
-                "authors": [],
+        "dependabot/dummy-pkg-a": [
+            {
+                "name": "dependabot/dummy-pkg-a",
                 "description": "A dummy package for testing Dependabot",
-                "dist": {
-                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/9c25d3578b388e6fed14f38bf0e24fe107f9e486"
-                },
-                "homepage": "",
                 "keywords": [],
+                "homepage": "",
+                "version": "v2.1.0-RC1",
+                "version_normalized": "2.1.0.0-RC1",
                 "license": [
                     "MIT"
                 ],
-                "name": "dependabot/dummy-pkg-a",
+                "authors": [],
                 "source": {
-                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486",
+                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
                     "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
+                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486"
                 },
+                "dist": {
+                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/9c25d3578b388e6fed14f38bf0e24fe107f9e486",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486"
+                },
+                "type": "library",
                 "time": "2017-06-08T12:52:54+00:00",
-                "type": "library",
-                "uid": 1434800,
-                "version": "dev-master",
-                "version_normalized": "9999999-dev"
+                "support": {
+                    "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues",
+                    "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v2.1.0-RC1"
+                }
             },
-            "v1.0.0": {
-                "authors": [],
-                "description": "A dummy package for testing Dependabot",
-                "dist": {
-                    "reference": "2d02479d73bdea5754b0e17c67945109816eb9b0",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/2d02479d73bdea5754b0e17c67945109816eb9b0"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "dependabot/dummy-pkg-a",
+            {
+                "version": "v2.0.0",
+                "version_normalized": "2.0.0.0",
                 "source": {
-                    "reference": "2d02479d73bdea5754b0e17c67945109816eb9b0",
+                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
                     "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
+                    "reference": "183c190aa576256c768a04ff2163c208e0dd81d1"
                 },
-                "time": "2017-06-08T12:49:30+00:00",
-                "type": "library",
-                "uid": 1434795,
-                "version": "v1.0.0",
-                "version_normalized": "1.0.0.0"
-            },
-            "v1.0.1": {
-                "authors": [],
-                "description": "A dummy package for testing Dependabot",
                 "dist": {
-                    "reference": "9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c",
-                    "shasum": "",
+                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/183c190aa576256c768a04ff2163c208e0dd81d1",
                     "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "dependabot/dummy-pkg-a",
-                "source": {
-                    "reference": "9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c",
-                    "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
-                },
-                "time": "2017-06-08T12:51:01+00:00",
-                "type": "library",
-                "uid": 1434796,
-                "version": "v1.0.1",
-                "version_normalized": "1.0.1.0"
-            },
-            "v1.1.0": {
-                "authors": [],
-                "description": "A dummy package for testing Dependabot",
-                "dist": {
-                    "reference": "249843f1d2636fa408d01bdd6aeb43ce2c453198",
                     "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/249843f1d2636fa408d01bdd6aeb43ce2c453198"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "dependabot/dummy-pkg-a",
-                "source": {
-                    "reference": "249843f1d2636fa408d01bdd6aeb43ce2c453198",
-                    "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
-                },
-                "time": "2017-06-08T12:52:04+00:00",
-                "type": "library",
-                "uid": 1434797,
-                "version": "v1.1.0",
-                "version_normalized": "1.1.0.0"
-            },
-            "v2.0.0": {
-                "authors": [],
-                "description": "A dummy package for testing Dependabot",
-                "dist": {
-                    "reference": "183c190aa576256c768a04ff2163c208e0dd81d1",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/183c190aa576256c768a04ff2163c208e0dd81d1"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "dependabot/dummy-pkg-a",
-                "source": {
-                    "reference": "183c190aa576256c768a04ff2163c208e0dd81d1",
-                    "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
+                    "reference": "183c190aa576256c768a04ff2163c208e0dd81d1"
                 },
                 "time": "2017-06-08T12:52:19+00:00",
-                "type": "library",
-                "uid": 1434798,
-                "version": "v2.0.0",
-                "version_normalized": "2.0.0.0"
+                "support": {
+                    "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues",
+                    "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v2.0.0"
+                }
             },
-            "v2.1.0-RC1": {
-                "authors": [],
-                "description": "A dummy package for testing Dependabot",
-                "dist": {
-                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486",
-                    "shasum": "",
-                    "type": "zip",
-                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/9c25d3578b388e6fed14f38bf0e24fe107f9e486"
-                },
-                "homepage": "",
-                "keywords": [],
-                "license": [
-                    "MIT"
-                ],
-                "name": "dependabot/dummy-pkg-a",
+            {
+                "version": "v1.1.0",
+                "version_normalized": "1.1.0.0",
                 "source": {
-                    "reference": "9c25d3578b388e6fed14f38bf0e24fe107f9e486",
+                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
                     "type": "git",
-                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git"
+                    "reference": "249843f1d2636fa408d01bdd6aeb43ce2c453198"
                 },
-                "time": "2017-06-08T12:52:54+00:00",
-                "type": "library",
-                "uid": 1434799,
-                "version": "v2.1.0-RC1",
-                "version_normalized": "2.1.0.0-RC1"
+                "dist": {
+                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/249843f1d2636fa408d01bdd6aeb43ce2c453198",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "249843f1d2636fa408d01bdd6aeb43ce2c453198"
+                },
+                "time": "2017-06-08T12:52:04+00:00",
+                "support": {
+                    "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues",
+                    "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v1.1.0"
+                }
+            },
+            {
+                "version": "v1.0.1",
+                "version_normalized": "1.0.1.0",
+                "source": {
+                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
+                    "type": "git",
+                    "reference": "9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "9dfbb7a7f5083a7cf3acb48ae15ce6a3d7c3ea9c"
+                },
+                "time": "2017-06-08T12:51:01+00:00",
+                "support": {
+                    "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues",
+                    "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v1.0.1"
+                }
+            },
+            {
+                "version": "v1.0.0",
+                "version_normalized": "1.0.0.0",
+                "source": {
+                    "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
+                    "type": "git",
+                    "reference": "2d02479d73bdea5754b0e17c67945109816eb9b0"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/2d02479d73bdea5754b0e17c67945109816eb9b0",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "2d02479d73bdea5754b0e17c67945109816eb9b0"
+                },
+                "time": "2017-06-08T12:49:30+00:00",
+                "support": {
+                    "issues": "https://github.com/dependabot/php-dummy-pkg-a/issues",
+                    "source": "https://github.com/dependabot/php-dummy-pkg-a/tree/v1.0.0"
+                }
             }
-        }
-    }
+        ]
+    },
+    "security-advisories": []
 }

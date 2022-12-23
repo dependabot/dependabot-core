@@ -11,6 +11,7 @@ require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/version"
 require "dependabot/shared_helpers"
+require "dependabot/python/helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
@@ -24,16 +25,14 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-        GIT_DEPENDENCY_UNREACHABLE_REGEX =
-          /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /.freeze
-        GIT_REFERENCE_NOT_FOUND_REGEX =
-          /Did not find branch or tag '(?<tag>[^\n"]+)'/m.freeze
+        GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
+        GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
           "pip._internal.exceptions.InstallationSubprocessError: Command errored out with exit status 1:"
         # See https://packaging.python.org/en/latest/tutorials/packaging-projects/#configuring-metadata
-        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/.freeze
+        PYTHON_PACKAGE_NAME_REGEX = /[A-Za-z0-9_\-]+/
         RESOLUTION_IMPOSSIBLE_ERROR = "ResolutionImpossible"
-        ERROR_REGEX = /(?<=ERROR\:\W).*$/.freeze
+        ERROR_REGEX = /(?<=ERROR\:\W).*$/
 
         attr_reader :dependency, :dependency_files, :credentials
 
@@ -72,19 +71,32 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
-                install_required_python
+                Helpers.install_required_python(python_version)
 
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
                   # This is slow, as pip-compile needs to do installs.
+                  options = pip_compile_options(filename)
+                  options_fingerprint = pip_compile_options_fingerprint(options)
+
                   run_pip_compile_command(
-                    "pyenv exec pip-compile -v #{pip_compile_options(filename)} -P #{dependency.name} #{filename}"
+                    "pyenv exec pip-compile -v #{options} -P #{dependency.name} #{filename}",
+                    fingerprint: "pyenv exec pip-compile -v #{options_fingerprint} -P <dependency_name> <filename>"
                   )
-                  # Run pip-compile a second time, without an update argument,
-                  # to ensure it handles markers correctly
-                  write_original_manifest_files unless dependency.top_level?
+
+                  next if dependency.top_level?
+
+                  # Run pip-compile a second time for transient dependencies
+                  # to make sure we do not update dependencies that are
+                  # superfluous. pip-compile does not detect these when
+                  # updating a specific dependency with the -P option.
+                  # Running pip-compile a second time will automatically remove
+                  # superfluous dependencies. Dependabot then marks those with
+                  # update_not_possible.
+                  write_original_manifest_files
                   run_pip_compile_command(
-                    "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
+                    "pyenv exec pip-compile #{options} #{filename}",
+                    fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
                   )
                 end
 
@@ -176,8 +188,12 @@ module Dependabot
               write_temporary_dependency_files(update_requirement: false)
 
               filenames_to_compile.each do |filename|
+                options = pip_compile_options(filename)
+                options_fingerprint = pip_compile_options_fingerprint(options)
+
                 run_pip_compile_command(
-                  "pyenv exec pip-compile #{pip_compile_options(filename)} #{filename}"
+                  "pyenv exec pip-compile #{options} #{filename}",
+                  fingerprint: "pyenv exec pip-compile #{options_fingerprint} <filename>"
                 )
               end
 
@@ -197,7 +213,7 @@ module Dependabot
           end
         end
 
-        def run_command(command, env: python_env)
+        def run_command(command, env: python_env, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(env, command)
@@ -209,6 +225,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
@@ -217,6 +234,16 @@ module Dependabot
 
         def new_resolver_supported?
           python_version >= Python::Version.new("3.7")
+        end
+
+        def pip_compile_options_fingerprint(options)
+          options.sub(
+            /--output-file=\S+/, "--output-file=<output_file>"
+          ).sub(
+            /--index-url=\S+/, "--index-url=<index_url>"
+          ).sub(
+            /--extra-index-url=\S+/, "--extra-index-url=<extra_index_url>"
+          )
         end
 
         def pip_compile_options(filename)
@@ -246,9 +273,13 @@ module Dependabot
             end
         end
 
-        def run_pip_compile_command(command)
-          run_command("pyenv local #{python_version}")
-          run_command(command)
+        def run_pip_compile_command(command, fingerprint:)
+          run_command(
+            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            fingerprint: "pyenv local <python_major_minor>"
+          )
+
+          run_command(command, fingerprint: fingerprint)
         end
 
         def python_env
@@ -291,7 +322,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_version)
+          File.write(".python-version", Helpers.python_major_minor(python_version))
 
           setup_files.each do |file|
             path = file.name
@@ -311,15 +342,6 @@ module Dependabot
             FileUtils.mkdir_p(Pathname.new(file.name).dirname)
             File.write(file.name, file.content)
           end
-        end
-
-        def install_required_python
-          return if run_command("pyenv versions").include?("#{python_version}\n")
-
-          run_command("pyenv install -s #{python_version}")
-          run_command("pyenv exec pip install --upgrade pip")
-          run_command("pyenv exec pip install -r" \
-                      "#{NativeHelpers.python_requirements_path}")
         end
 
         def sanitized_setup_file_content(file)

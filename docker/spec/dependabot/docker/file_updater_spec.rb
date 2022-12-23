@@ -608,7 +608,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
         file: "multiple.yaml",
         source: { tag: "17.04" }
       }],
-      package_manager: "kubernetes"
+      package_manager: "docker"
     )
   end
 
@@ -656,7 +656,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "hyphen.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -697,7 +697,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "multiple_identical.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -737,7 +737,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             file: "namespace.yaml",
             source: { tag: "1.14.2" }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -784,7 +784,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "17.04"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -834,7 +834,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "17.04"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -884,7 +884,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                       "dfc38288cf73aa07485005"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -933,7 +933,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                           "dfc38288cf73aa07485005"
                 }
               }],
-              package_manager: "kubernetes"
+              package_manager: "docker"
             )
           end
 
@@ -982,7 +982,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                         "dfc38288cf73aa07485005"
               }
             }],
-            package_manager: "kubernetes"
+            package_manager: "docker"
           )
         end
 
@@ -1061,7 +1061,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               tag: "12.04.5"
             }
           }],
-          package_manager: "kubernetes"
+          package_manager: "docker"
         )
       end
 
@@ -1106,7 +1106,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
                         "dfc38288cf73aa07485005"
               }
             }],
-            package_manager: "kubernetes"
+            package_manager: "docker"
           )
         end
 
@@ -1117,6 +1117,228 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             is_expected.to include "image: ubuntu:17.10@sha256:3ea1ca1aa"
           end
         end
+      end
+    end
+  end
+  let(:helm_updater) do
+    described_class.new(
+      dependency_files: helm_files,
+      dependencies: [helm_dependency],
+      credentials: credentials
+    )
+  end
+  let(:helm_files) { [helmfile] }
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
+  let(:helmfile) do
+    Dependabot::DependencyFile.new(
+      content: helmfile_body,
+      name: "values.yaml"
+    )
+  end
+  let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
+  let(:helm_dependency) do
+    Dependabot::Dependency.new(
+      name: "nginx",
+      version: "1.14.3",
+      previous_version: "1.14.2",
+      requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "values.yaml",
+        source: { tag: "1.14.3" }
+      }],
+      previous_requirements: [{
+        requirement: nil,
+        groups: [],
+        file: "values.yaml",
+        source: { tag: "1.14.2" }
+      }],
+      package_manager: "docker"
+    )
+  end
+
+  describe "#updated_dependency_files" do
+    subject(:updated_files) { helm_updater.updated_dependency_files }
+
+    it "returns DependencyFile objects" do
+      updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+    end
+
+    its(:length) { is_expected.to eq(1) }
+
+    describe "the updated podfile" do
+      subject(:updated_helmfile) do
+        updated_files.find { |f| f.name == "values.yaml" }
+      end
+
+      its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: 1.14.3\n" }
+    end
+
+    context "when there are multiple images" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "multi-image.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "  image:\n    repository: 'nginx'\n    tag: 1.14.3\n" }
+        its(:content) { is_expected.to include "  image:\n    repository: 'canonical/ubuntu'\n    tag: 18.04" }
+      end
+    end
+
+    context "when version has double quotes" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "double-quotes.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image:\n  repository: \"nginx\"\n  tag: \"1.14.3\"\n" }
+      end
+    end
+
+    context "when version has single quotes" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "single-quotes.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "nginx",
+          version: "1.14.3",
+          previous_version: "1.14.2",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.3" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "1.14.2" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image:\n  repository: 'nginx'\n  tag: '1.14.3'\n" }
+      end
+    end
+
+    context "when alternate version format" do
+      let(:helmfile) do
+        Dependabot::DependencyFile.new(
+          content: helmfile_body,
+          name: "values.yaml"
+        )
+      end
+      let(:helmfile_body) { fixture("helm", "yaml", "no-registry.yaml") }
+      let(:helm_dependency) do
+        Dependabot::Dependency.new(
+          name: "sql/sql",
+          version: "v1.2.4",
+          previous_version: "v1.2.3",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "v1.2.4" }
+          }],
+          previous_requirements: [{
+            requirement: nil,
+            groups: [],
+            file: "values.yaml",
+            source: { tag: "v1.2.3" }
+          }],
+          package_manager: "docker"
+        )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the updated helmfile" do
+        subject(:updated_helmfile) do
+          updated_files.find { |f| f.name == "values.yaml" }
+        end
+
+        its(:content) { is_expected.to include "image:\n  repository: 'mcr.microsoft.com/sql/sql'\n  version: v1.2.4" }
       end
     end
   end

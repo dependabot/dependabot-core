@@ -9,7 +9,6 @@ require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/npm_and_yarn/native_helpers"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
-require "dependabot/experiments"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -40,10 +39,9 @@ module Dependabot
 
         attr_reader :dependencies, :dependency_files, :repo_contents_path, :credentials
 
-        UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/.freeze
-        TIMEOUT_FETCHING_PACKAGE =
-          %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}.freeze
-        INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/.freeze
+        UNREACHABLE_GIT = /ls-remote --tags --heads (?<url>.*)/
+        TIMEOUT_FETCHING_PACKAGE = %r{(?<url>.+)/(?<package>[^/]+): ETIMEDOUT}
+        INVALID_PACKAGE = /Can't add "(?<package_req>.*)": invalid/
 
         def top_level_dependencies
           dependencies.select(&:top_level?)
@@ -56,7 +54,7 @@ module Dependabot
         def updated_yarn_lock(yarn_lock)
           base_dir = dependency_files.first.directory
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-            write_temporary_dependency_files
+            write_temporary_dependency_files(yarn_lock)
             lockfile_name = Pathname.new(yarn_lock.name).basename.to_s
             path = Pathname.new(yarn_lock.name).dirname.to_s
             updated_files = run_current_yarn_update(
@@ -108,7 +106,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               if top_level_dependency_updates.any?
-                if yarn_berry?(yarn_lock)
+                if Helpers.yarn_berry?(yarn_lock)
                   run_yarn_berry_top_level_updater(top_level_dependency_updates: top_level_dependency_updates,
                                                    yarn_lock: yarn_lock)
                 else
@@ -117,7 +115,7 @@ module Dependabot
                     top_level_dependency_updates: top_level_dependency_updates
                   )
                 end
-              elsif yarn_berry?(yarn_lock)
+              elsif Helpers.yarn_berry?(yarn_lock)
                 run_yarn_berry_subdependency_updater(yarn_lock: yarn_lock)
               else
                 run_yarn_subdependency_updater(yarn_lock: yarn_lock)
@@ -144,38 +142,49 @@ module Dependabot
 
         # rubocop:enable Metrics/PerceivedComplexity
 
-        def yarn_berry?(yarn_lock)
-          return false unless Experiments.enabled?(:yarn_berry)
+        def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
+          write_temporary_dependency_files(yarn_lock)
+          # If the requirements have changed, it means we've updated the
+          # package.json file(s), and we can just run yarn install to get the
+          # lockfile in the right state. Otherwise we'll need to manually update
+          # the lockfile.
 
-          yaml = YAML.safe_load(yarn_lock.content)
-          yaml.key?("__metadata")
-        rescue StandardError
-          false
+          if top_level_dependency_updates.all? { |dep| requirements_changed?(dep[:name]) }
+            Helpers.run_yarn_command("yarn install #{yarn_berry_args}".strip)
+          else
+            updates = top_level_dependency_updates.collect do |dep|
+              dep[:name]
+            end
+
+            Helpers.run_yarn_command(
+              "yarn up -R #{updates.join(' ')} #{yarn_berry_args}".strip,
+              fingerprint: "yarn up -R <dependency_names> #{yarn_berry_args}".strip
+            )
+          end
+          { yarn_lock.name => File.read(yarn_lock.name) }
         end
 
-        def run_yarn_berry_top_level_updater(top_level_dependency_updates:, yarn_lock:)
-          updates = top_level_dependency_updates.collect do |dep|
-            # when there are multiple requirements, we're dealing with a
-            # workspace-like setup, where there are multiple package.json files
-            # that pull in the same dependency. It appears that these are always
-            # updated to a single new version, so we just pick the first one.
-            "#{dep[:name]}@#{dep[:requirements].first[:requirement]}"
-          end
-          command = "yarn add #{updates.join(' ')}"
-          Helpers.run_yarn_commands(command)
-          { yarn_lock.name => File.read(yarn_lock.name) }
+        def requirements_changed?(dependency_name)
+          dep = top_level_dependencies.first { |d| d.name == dependency_name }
+          dep.requirements != dep.previous_requirements
         end
 
         def run_yarn_berry_subdependency_updater(yarn_lock:)
           dep = sub_dependencies.first
           update = "#{dep.name}@#{dep.version}"
 
-          Helpers.run_yarn_commands(
-            "yarn add #{update}",
-            "yarn dedupe #{dep.name}",
-            "yarn remove #{dep.name}"
-          )
+          commands = [
+            ["yarn add #{update} #{yarn_berry_args}".strip, "yarn add <update> #{yarn_berry_args}".strip],
+            ["yarn dedupe #{dep.name} #{yarn_berry_args}".strip, "yarn dedupe <dep_name> #{yarn_berry_args}".strip],
+            ["yarn remove #{dep.name} #{yarn_berry_args}".strip, "yarn remove <dep_name> #{yarn_berry_args}".strip]
+          ]
+
+          Helpers.run_yarn_commands(*commands)
           { yarn_lock.name => File.read(yarn_lock.name) }
+        end
+
+        def yarn_berry_args
+          Helpers.yarn_berry_args
         end
 
         def run_yarn_top_level_updater(top_level_dependency_updates:)
@@ -307,7 +316,7 @@ module Dependabot
             begin
               base_dir = dependency_files.first.directory
               SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
-                write_temporary_dependency_files(update_package_json: false)
+                write_temporary_dependency_files(yarn_lock, update_package_json: false)
                 path = Pathname.new(yarn_lock.name).dirname.to_s
                 run_previous_yarn_update(path: path, yarn_lock: yarn_lock)
               end
@@ -327,11 +336,15 @@ module Dependabot
           end
         end
 
-        def write_temporary_dependency_files(update_package_json: true)
+        def write_temporary_dependency_files(yarn_lock, update_package_json: true)
           write_lockfiles
 
-          File.write(".npmrc", npmrc_content)
-          File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_npm_reg?
+          if Helpers.yarn_berry?(yarn_lock)
+            File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
+          else
+            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_lock)
+            File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
+          end
 
           package_files.each do |file|
             path = file.name
@@ -465,7 +478,8 @@ module Dependabot
             dependency: missing_dep,
             credentials: credentials,
             npmrc_file: npmrc_file,
-            yarnrc_file: yarnrc_file
+            yarnrc_file: yarnrc_file,
+            yarnrc_yml_file: yarnrc_yml_file
           ).registry
 
           return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")
@@ -516,7 +530,7 @@ module Dependabot
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
 
-        def yarnrc_specifies_npm_reg?
+        def yarnrc_specifies_private_reg?
           return false unless yarnrc_file
 
           regex = UpdateChecker::RegistryFinder::YARN_GLOBAL_REGISTRY_REGEX
@@ -529,11 +543,16 @@ module Dependabot
 
           return false unless yarnrc_global_registry
 
-          URI(yarnrc_global_registry).host == "registry.npmjs.org"
+          UpdateChecker::RegistryFinder::CENTRAL_REGISTRIES.any? do |r|
+            r.include?(URI(yarnrc_global_registry).host)
+          end
         end
 
         def yarnrc_content
-          'registry "https://registry.npmjs.org"'
+          NpmrcBuilder.new(
+            credentials: credentials,
+            dependency_files: dependency_files
+          ).yarnrc_content
         end
 
         def sanitized_package_json_content(content)
@@ -568,6 +587,14 @@ module Dependabot
 
         def npmrc_file
           dependency_files.find { |f| f.name == ".npmrc" }
+        end
+
+        def yarnrc_yml_file
+          dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
+        end
+
+        def yarnrc_yml_content
+          yarnrc_yml_file.content
         end
       end
     end

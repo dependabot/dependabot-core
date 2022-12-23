@@ -34,21 +34,21 @@ module Dependabot
 
         attr_reader :lockfile, :dependencies, :dependency_files, :credentials
 
-        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/.freeze
-        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/.freeze
-        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}.freeze
+        UNREACHABLE_GIT = /fatal: repository '(?<url>.*)' not found/
+        FORBIDDEN_GIT = /fatal: Authentication failed for '(?<url>.*)'/
+        FORBIDDEN_PACKAGE = %r{(?<package_req>[^/]+) - (Forbidden|Unauthorized)}
         FORBIDDEN_PACKAGE_403 = %r{^403\sForbidden\s
-          -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x.freeze
-        MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}.freeze
-        INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/.freeze
+          -\sGET\shttps?://(?<source>[^/]+)/(?<package_req>[^/\s]+)}x
+        MISSING_PACKAGE = %r{(?<package_req>[^/]+) - Not found}
+        INVALID_PACKAGE = /Can't install (?<package_req>.*): Missing/
 
         # TODO: look into fixing this in npm, seems like a bug in the git
         # downloader introduced in npm 7
         #
         # NOTE: error message returned from arborist/npm 8 when trying to
         # fetching a invalid/non-existent git ref
-        NPM8_MISSING_GIT_REF = /already exists and is not an empty directory/.freeze
-        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/.freeze
+        NPM8_MISSING_GIT_REF = /already exists and is not an empty directory/
+        NPM6_MISSING_GIT_REF = /did not match any file\(s\) known to git/
 
         def updated_lockfile_content
           return lockfile.content if npmrc_disables_lockfile?
@@ -112,7 +112,7 @@ module Dependabot
         end
 
         def run_current_npm_update
-          run_npm_updater(top_level_dependencies: top_level_dependencies)
+          run_npm_updater(top_level_dependencies: top_level_dependencies, sub_dependencies: sub_dependencies)
         end
 
         def run_previous_npm_update
@@ -127,16 +127,31 @@ module Dependabot
             )
           end
 
-          run_npm_updater(top_level_dependencies: previous_top_level_dependencies)
+          previous_sub_dependencies = sub_dependencies.map do |d|
+            Dependabot::Dependency.new(
+              name: d.name,
+              package_manager: d.package_manager,
+              version: d.previous_version,
+              previous_version: d.previous_version,
+              requirements: [],
+              previous_requirements: []
+            )
+          end
+
+          run_npm_updater(top_level_dependencies: previous_top_level_dependencies,
+                          sub_dependencies: previous_sub_dependencies)
         end
 
-        def run_npm_updater(top_level_dependencies:)
+        def run_npm_updater(top_level_dependencies:, sub_dependencies:)
           SharedHelpers.with_git_configured(credentials: credentials) do
+            updated_files = {}
             if top_level_dependencies.any?
-              run_npm_top_level_updater(top_level_dependencies: top_level_dependencies)
-            else
-              run_npm_subdependency_updater
+              updated_files.merge!(run_npm_top_level_updater(top_level_dependencies: top_level_dependencies))
             end
+            if sub_dependencies.any?
+              updated_files.merge!(run_npm_subdependency_updater(sub_dependencies: sub_dependencies))
+            end
+            updated_files
           end
         end
 
@@ -190,13 +205,25 @@ module Dependabot
             "--ignore-scripts",
             "--package-lock-only"
           ].join(" ")
-          SharedHelpers.run_shell_command(command)
+
+          fingerprint = [
+            "npm",
+            "install",
+            "<install_args>",
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
-        def run_npm_subdependency_updater
+        def run_npm_subdependency_updater(sub_dependencies:)
           if npm8?
-            run_npm8_subdependency_updater
+            run_npm8_subdependency_updater(sub_dependencies: sub_dependencies)
           else
             SharedHelpers.run_helper_subprocess(
               command: NativeHelpers.helper_path,
@@ -206,9 +233,9 @@ module Dependabot
           end
         end
 
-        def run_npm8_subdependency_updater
+        def run_npm8_subdependency_updater(sub_dependencies:)
           dependency_names = sub_dependencies.map(&:name)
-          SharedHelpers.run_shell_command(NativeHelpers.npm8_subdependency_update_command(dependency_names))
+          NativeHelpers.run_npm8_subdependency_update_command(dependency_names)
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
@@ -414,10 +441,9 @@ module Dependabot
           reg = NpmAndYarn::UpdateChecker::RegistryFinder.new(
             dependency: missing_dep,
             credentials: credentials,
-            npmrc_file: dependency_files.
-                        find { |f| f.name.end_with?(".npmrc") },
-            yarnrc_file: dependency_files.
-                         find { |f| f.name.end_with?(".yarnrc") }
+            npmrc_file: dependency_files. find { |f| f.name.end_with?(".npmrc") },
+            yarnrc_file: dependency_files. find { |f| f.name.end_with?(".yarnrc") },
+            yarnrc_yml_file: dependency_files.find { |f| f.name.end_with?(".yarnrc.yml") }
           ).registry
 
           return if UpdateChecker::RegistryFinder.central_registry?(reg) && !package_name.start_with?("@")

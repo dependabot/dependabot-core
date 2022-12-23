@@ -193,7 +193,7 @@ module Dependabot
             {
               path: (file.symlink_target ||
                      file.path).sub(%r{^/}, ""),
-              mode: "100644",
+              mode: (file.mode || "100644"),
               type: "blob"
             }.merge(content)
           end

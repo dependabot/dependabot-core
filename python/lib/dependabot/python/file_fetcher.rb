@@ -5,15 +5,15 @@ require "toml-rb"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
-require "dependabot/python/file_parser/poetry_files_parser"
+require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/errors"
 
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/.freeze
-      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/.freeze
-      DEPENDENCY_TYPES = %w(packages dev-packages).freeze
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      DEPENDENCY_TYPES = %w(packages dev-packages)
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -24,7 +24,7 @@ module Dependabot
         # If this repo is using a Pipfile return true
         return true if filenames.include?("Pipfile")
 
-        # If this repo is using Poetry return true
+        # If this repo is using pyproject.toml return true
         return true if filenames.include?("pyproject.toml")
 
         return true if filenames.include?("setup.py")
@@ -69,7 +69,7 @@ module Dependabot
       end
 
       def pyproject_files
-        [pyproject, pyproject_lock, poetry_lock].compact
+        [pyproject, pyproject_lock, poetry_lock, pdm_lock].compact
       end
 
       def requirement_files
@@ -139,6 +139,10 @@ module Dependabot
 
       def poetry_lock
         @poetry_lock ||= fetch_file_if_present("poetry.lock")
+      end
+
+      def pdm_lock
+        @pdm_lock ||= fetch_file_if_present("pdm.lock")
       end
 
       def requirements_txt_files
@@ -296,8 +300,8 @@ module Dependabot
               fetch_submodules: true
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
-            # For Poetry projects attempt to fetch a pyproject.toml at the
-            # given path instead of a setup.py. We do not require a
+            # For projects with pyproject.toml attempt to fetch a pyproject.toml
+            # at the given path instead of a setup.py. We do not require a
             # setup.py to be present, so if none can be found, simply return
             return [] unless allow_pyproject
 
@@ -395,7 +399,7 @@ module Dependabot
         return [] unless pyproject
 
         paths = []
-        Dependabot::Python::FileParser::PoetryFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
+        Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pyproject.dig("tool", "poetry", dep_type)
 
           parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|

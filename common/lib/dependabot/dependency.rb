@@ -37,11 +37,11 @@ module Dependabot
 
     attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements,
-                :subdependency_metadata
+                :subdependency_metadata, :metadata
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: [], removed: false)
+                   subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -54,6 +54,7 @@ module Dependabot
                                   map { |h| symbolize_keys(h) }
       end
       @removed = removed
+      @metadata = symbolize_keys(metadata || {})
 
       check_values
     end
@@ -64,6 +65,10 @@ module Dependabot
 
     def removed?
       @removed
+    end
+
+    def numeric_version
+      @numeric_version ||= version_class.new(version) if version && version_class.correct?(version)
     end
 
     def to_h
@@ -105,6 +110,22 @@ module Dependabot
       display_name_builder.call(name)
     end
 
+    # Returns all detected versions of the dependency. Only ecosystems that
+    # support this feature will return more than the current version.
+    def all_versions
+      all_versions = metadata[:all_versions]
+      return [version].compact unless all_versions
+
+      all_versions.filter_map(&:version)
+    end
+
+    # This dependency is being indirectly updated by an update to another
+    # dependency. We don't need to try and update it ourselves but want to
+    # surface it to the user in the PR.
+    def informational_only?
+      metadata[:information_only]
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end
@@ -118,6 +139,10 @@ module Dependabot
     end
 
     private
+
+    def version_class
+      Utils.version_class_for_package_manager(package_manager)
+    end
 
     def check_values
       raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")

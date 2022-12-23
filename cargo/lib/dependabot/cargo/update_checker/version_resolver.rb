@@ -11,15 +11,12 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class VersionResolver
-        UNABLE_TO_UPDATE =
-          /Unable to update (?<url>.*?)$/.freeze
-        BRANCH_NOT_FOUND_REGEX =
-          /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m.freeze
-        REVSPEC_PATTERN = /revspec '.*' not found/.freeze
-        OBJECT_PATTERN = /object not found - no match for id \(.*\)/.freeze
-        REF_NOT_FOUND_REGEX =
-          /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m.freeze
-        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m.freeze
+        UNABLE_TO_UPDATE = /Unable to update (?<url>.*?)$/
+        BRANCH_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*to find branch `(?<branch>[^`]+)`/m
+        REVSPEC_PATTERN = /revspec '.*' not found/
+        OBJECT_PATTERN = /object not found - no match for id \(.*\)/
+        REF_NOT_FOUND_REGEX = /#{UNABLE_TO_UPDATE}.*(#{REVSPEC_PATTERN}|#{OBJECT_PATTERN})/m
+        GIT_REF_NOT_FOUND_REGEX = /Updating git repository `(?<url>[^`]*)`.*fatal: couldn't find remote ref/m
 
         def initialize(dependency:, credentials:,
                        original_dependency_files:, prepared_dependency_files:)
@@ -46,9 +43,7 @@ module Dependabot
             write_temporary_dependency_files
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              # Shell out to Cargo, which handles everything for us, and does
-              # so without doing an install (so it's fast).
-              run_cargo_command("cargo update -p #{dependency_spec} --verbose")
+              run_cargo_update_command
             end
 
             updated_version = fetch_version_from_new_lockfile
@@ -135,7 +130,16 @@ module Dependabot
           spec
         end
 
-        def run_cargo_command(command)
+        # Shell out to Cargo, which handles everything for us, and does
+        # so without doing an install (so it's fast).
+        def run_cargo_update_command
+          run_cargo_command(
+            "cargo update -p #{dependency_spec} --verbose",
+            fingerprint: "cargo update -p <dependency_spec> --verbose"
+          )
+        end
+
+        def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -149,6 +153,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
@@ -188,7 +193,6 @@ module Dependabot
           end
 
           if error.message.include?("authenticate when downloading repo") ||
-             error.message.include?("HTTP 200 response: got 401") ||
              error.message.include?("fatal: Authentication failed for")
             # Check all dependencies for reachability (so that we raise a
             # consistent error)
@@ -295,7 +299,7 @@ module Dependabot
             write_temporary_dependency_files(prepared: false)
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_cargo_command("cargo update -p #{dependency_spec} --verbose")
+              run_cargo_update_command
             end
           end
 

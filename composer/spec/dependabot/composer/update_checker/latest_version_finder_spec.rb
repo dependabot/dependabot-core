@@ -36,26 +36,21 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
   let(:credentials) { github_credentials }
   let(:files) { project_dependency_files(project_name) }
   let(:project_name) { "exact_version" }
+  let(:packagist_url) { "https://repo.packagist.org/p2/monolog/monolog.json" }
+  let(:packagist_response) do
+    sanitized_name = dependency_name.downcase.gsub("/", "--")
+    fixture("packagist_responses", "#{sanitized_name}.json")
+  end
 
   before do
-    sanitized_name = dependency_name.downcase.gsub("/", "--")
-    fixture = fixture("packagist_responses", "#{sanitized_name}.json")
-    url = "https://packagist.org/p/#{dependency_name.downcase}.json"
-    stub_request(:get, url).to_return(status: 200, body: fixture)
+    url = "https://repo.packagist.org/p2/#{dependency_name.downcase}.json"
+    stub_request(:get, url).to_return(status: 200, body: packagist_response)
   end
 
   describe "#latest_version" do
     subject { finder.latest_version }
 
-    let(:packagist_url) { "https://packagist.org/p/monolog/monolog.json" }
-    let(:packagist_response) { fixture("packagist_response.json") }
-
-    before do
-      stub_request(:get, packagist_url).
-        to_return(status: 200, body: packagist_response)
-    end
-
-    it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+    it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
     context "raise_on_ignored when later versions are allowed" do
       let(:raise_on_ignored) { true }
@@ -65,8 +60,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "when the user is on the latest version" do
-      let(:dependency_version) { "1.22.1" }
-      it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+      let(:dependency_version) { "3.2.0" }
+      it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
       context "raise_on_ignored" do
         let(:raise_on_ignored) { true }
@@ -89,8 +84,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "when the user is ignoring the latest version" do
-      let(:ignored_versions) { [">= 1.22.0.a, < 1.23"] }
-      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
+      let(:ignored_versions) { [">= 3.2.0.a, < 3.3"] }
+      it { is_expected.to eq(Gem::Version.new("3.1.0")) }
     end
 
     context "when the dependency version isn't known" do
@@ -130,41 +125,47 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "when using a pre-release" do
+      let(:dependency_name) { "doctrine/dbal" }
+      let(:packagist_url) { "https://repo.packagist.org/p2/doctrine/dbal.json" }
+      let(:ignored_versions) { [">= 2.3.0"] } # Ensure a pre-release version is the newest available
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "monolog/monolog",
-          version: "1.0.0-RC1",
+          name: "doctrine/dbal",
+          version: "2.2.0-RC1",
           requirements: [{
             file: "composer.json",
-            requirement: "1.0.0-RC1",
+            requirement: "2.2.0-RC1",
             groups: [],
             source: nil
           }],
           package_manager: "composer"
         )
       end
-      it { is_expected.to eq(Gem::Version.new("1.23.0-rc1")) }
+      it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
     end
 
     context "without a lockfile" do
       let(:project_name) { "exact_version_without_lockfile" }
-      it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+      it { is_expected.to eq(Gem::Version.new("3.2.0")) }
 
       context "when using a pre-release" do
+        let(:dependency_name) { "doctrine/dbal" }
+        let(:packagist_url) { "https://repo.packagist.org/p2/doctrine/dbal.json" }
+        let(:ignored_versions) { [">= 2.3.0"] } # Ensure a pre-release version is the newest available
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "monolog/monolog",
+            name: "doctrine/dbal",
             version: nil,
             requirements: [{
               file: "composer.json",
-              requirement: "1.0.0-RC1",
+              requirement: "2.2.0-RC1",
               groups: [],
               source: nil
             }],
             package_manager: "composer"
           )
         end
-        it { is_expected.to eq(Gem::Version.new("1.23.0-rc1")) }
+        it { is_expected.to eq(Gem::Version.new("2.3.0-RC4")) }
       end
     end
 
@@ -174,29 +175,18 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
     end
 
     context "when packagist returns an empty array" do
-      before do
-        stub_request(:get, packagist_url).
-          to_return(status: 200, body: '{"packages":[]}')
-      end
+      let(:packagist_response) { '{"packages":[]}' }
 
       it { is_expected.to be_nil }
     end
 
     context "when packagist returns details of a different dependency" do
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "monolog/something",
-          version: "1.0.1",
-          requirements: [{
-            file: "composer.json",
-            requirement: "1.0.*",
-            groups: [],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
+      before do
+        sanitized_name = "dependabot/dummy-pkg-a".downcase.gsub("/", "--")
+        fixture = fixture("packagist_responses", "#{sanitized_name}.json")
+        stub_request(:get, packagist_url).
+          to_return(status: 200, body: fixture)
       end
-      let(:packagist_url) { "https://packagist.org/p/monolog/something.json" }
 
       it { is_expected.to be_nil }
     end
@@ -217,11 +207,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
       end
 
       it "downcases the dependency name" do
-        expect(finder.latest_version).to eq(Gem::Version.new("1.22.1"))
+        expect(finder.latest_version).to eq(Gem::Version.new("3.2.0"))
         expect(WebMock).
           to have_requested(
             :get,
-            "https://packagist.org/p/monolog/monolog.json"
+            "https://repo.packagist.org/p2/monolog/monolog.json"
           )
       end
     end
@@ -293,6 +283,11 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
             "password" => "token"
           }, {
             "type" => "composer_repository",
+            "registry" => "php.fury.io.evil.com",
+            "username" => "user",
+            "password" => "pass"
+          }, {
+            "type" => "composer_repository",
             "registry" => "php.fury.io",
             "username" => "user",
             "password" => "pass"
@@ -360,7 +355,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::LatestVersionFinder do
 
     context "with an unreachable source (speccing we don't try to reach it)" do
       let(:project_name) { "git_source_unreachable_git_url" }
-      it { is_expected.to eq(Gem::Version.new("1.22.1")) }
+      it { is_expected.to eq(Gem::Version.new("3.2.0")) }
     end
   end
 

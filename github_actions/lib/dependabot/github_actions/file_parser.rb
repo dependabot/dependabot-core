@@ -17,11 +17,11 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       GITHUB_REPO_REFERENCE = %r{
-        (?<owner>[\w.-]+)/
+        ^(?<owner>[\w.-]+)/
         (?<repo>[\w.-]+)
         (?<path>/[^\@]+)?
         @(?<ref>.+)
-      }x.freeze
+      }x
 
       def parse
         dependency_set = DependencySet.new
@@ -92,9 +92,7 @@ module Dependabot
           next unless dep.version.nil?
 
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          next unless git_checker.pinned_ref_looks_like_commit_sha?
-
-          resolved = git_checker.local_tag_for_pinned_version
+          resolved = git_checker.local_tag_for_pinned_sha
           next if resolved.nil? || !version_class.correct?(resolved)
 
           # Build a Dependency with the resolved version, and rely on DependencySet's merge

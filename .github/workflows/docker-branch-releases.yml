@@ -1,28 +1,22 @@
-name: Push docker branch images
+name: Push branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
   UPDATER_IMAGE: "dependabot/updater"
   UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater"
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "CHANGELOG.md"
-      - "common/lib/dependabot/version.rb"
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - "CHANGELOG.md"
-      - "common/lib/dependabot/version.rb"
+    types:
+      - synchronize
   pull_request_review:
-    types: [submitted]
+    types:
+      - submitted
 
 jobs:
   push-updater-image:
-    name: Export dependabot-updater image to build artifacts
+    name: Deploy
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,16 +27,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-        # sets DECISION=APPROVED for convenience of if statements below on main branch
-      - name: Check if on main
-        if: github.ref == 'refs/heads/main'
-        run: echo "DECISION=APPROVED" >> $GITHUB_ENV
-
-        # when not on main, sets DECISION to the PR's review decision, handling the push-after-approval case
+        # sets DECISION to the PR's review decision, handling the push-after-approval case
       - name: Check if pull request is approved
-        if: github.ref != 'refs/heads/main'
         run: |
-          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision -t {{.reviewDecision}})
+          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
           echo "Review decision is: $DECISION"
           echo "DECISION=$DECISION" >> $GITHUB_ENV
 
@@ -52,7 +40,7 @@ jobs:
         run: echo "DECISION=FORK" >> $GITHUB_ENV
 
       - name: Build dependabot-core image
-        if: env.DECISION == 'APPROVED'
+        if: env.DECISION == 'APPROVED:OPEN'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -63,7 +51,7 @@ jobs:
             .
 
       - name: Build dependabot-updater image
-        if: env.DECISION == 'APPROVED'
+        if: env.DECISION == 'APPROVED:OPEN'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -77,27 +65,18 @@ jobs:
             .
 
       - name: Log in to GHCR
-        if: env.DECISION == 'APPROVED'
+        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push branch image
-        if: env.DECISION == 'APPROVED'
+        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$TAG"
           docker push "$UPDATER_IMAGE_MIRROR:$TAG"
 
-      - name: Push latest on main
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # The v2 tag is the Updater image tag, not related to the core version.
-          DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
-          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:latest"
-          docker tag "$UPDATER_IMAGE:$TAG" "$UPDATER_IMAGE_MIRROR:$DATE_BASED_VERSION"
-          docker push --all-tags "$UPDATER_IMAGE_MIRROR"
-
       - name: Set summary
-        if: env.DECISION == 'APPROVED'
+        if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
