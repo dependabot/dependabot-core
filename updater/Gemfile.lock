@@ -171,7 +171,7 @@ GEM
       httparty (~> 0.20)
       terminal-table (>= 1.5.1)
     hashdiff (1.0.1)
-    http (5.1.0)
+    http (5.1.1)
       addressable (~> 2.8)
       http-cookie (~> 1.0)
       http-form_data (~> 2.2)
