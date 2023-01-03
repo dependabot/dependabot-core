@@ -3,7 +3,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BASE_IMAGE: "ubuntu:20.04"
   UPDATER_IMAGE: "dependabot/updater"
-  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-go-modules"
+  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-gomod"
   DOCKERFILE: "Dockerfile.go_modules"
 on:
   pull_request:
