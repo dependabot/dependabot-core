@@ -13,7 +13,7 @@ Welcome to the public home of Dependabot. This repository serves 2 purposes:
 
 ## Got feedback?
 
-https://github.com/github/feedback/discussions/categories/dependabot-feedback
+https://github.com/orgs/community/discussions/categories/code-security
 
 ## Contributing to Dependabot
 
