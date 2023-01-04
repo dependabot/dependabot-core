@@ -1622,20 +1622,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       let(:dependency_version) { "1.0.0" }
       let(:target_version) { Dependabot::NpmAndYarn::Version.new("1.0.1") }
 
-      it "delegates to the ConflictingDependencyResolver and VulnerabilityAuditor and explains the conflict", :vcr do
+      it "delegates to the ConflictingDependencyResolver and explains the conflict", :vcr do
         expect(described_class::ConflictingDependencyResolver).
           to receive(:new).
           with(
             dependency_files: dependency_files,
             credentials: credentials
-          ).and_call_original
-
-        expect(described_class::VulnerabilityAuditor).
-          to receive(:new).
-          with(
-            dependency_files: dependency_files,
-            credentials: credentials,
-            allow_removal: false
           ).and_call_original
 
         conflicting_dependencies_result = checker.send(:conflicting_dependencies)
@@ -1683,6 +1675,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             allow_removal: false
           ).and_call_original
 
+        checker.send(:vulnerability_audit)
         conflicting_dependencies_result = checker.send(:conflicting_dependencies)
 
         expect(conflicting_dependencies_result.count).to eq(2)
@@ -1738,6 +1731,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
             allow_removal: false
           ).and_call_original
 
+        checker.send(:vulnerability_audit)
         conflicting_dependencies_result = checker.send(:conflicting_dependencies)
 
         expect(conflicting_dependencies_result.count).to eq(2)
