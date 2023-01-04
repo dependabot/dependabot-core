@@ -75,6 +75,10 @@ module Dependabot
         end
 
         def available_versions
+          @available_versions ||= fetch_available_versions
+        end
+
+        def fetch_available_versions
           SharedHelpers.in_a_temporary_directory do
             SharedHelpers.with_git_configured(credentials: credentials) do
               manifest = parse_manifest
