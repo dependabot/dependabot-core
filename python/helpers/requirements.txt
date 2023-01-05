@@ -1,5 +1,6 @@
 pip>=21.3.1,<22.4.0  # Range maintains py36 support TODO: Review python 3.6 support in April 2023 (eol ubuntu 18.04)
 pip-tools>=6.4.0,<6.11.1  # Range maintains py36 support TODO: Review python 3.6 support in April 2023 (eol ubuntu 18.04)
+# TODO: fake commit to stop Dependabot rebasing this PR... it requires python >= 3.8.1, and 3.7 isn't EOL for another six months.
 flake8==6.0.0
 hashin==0.17.0
 pipenv==2022.4.8
