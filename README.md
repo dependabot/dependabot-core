@@ -213,8 +213,8 @@ For some languages there are additional steps required, please refer to the READ
 ## Debugging with Visual Studio Code and Docker
 
 There's built-in support for leveraging Visual Studio Code's [ability for
-debugging][vsc-remote-containers] inside a Docker container.
-After installing the recommended [`Dev Containers` extension][vsc-remote-containers-ext],
+debugging][vsc-dev-containers] inside a Docker container.
+After installing the recommended [`Dev Containers` extension][vsc-dev-containers-ext],
 simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Dev Containers: Reopen in Container`.
 You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
 If the development Docker image isn't present on your machine, it will be built automatically.
@@ -335,5 +335,5 @@ recurring payments from Europe, check them out.
 [gocardless]: https://gocardless.com
 [ghcr-core-dev]: https://github.com/dependabot/dependabot-core/pkgs/container/dependabot-core-development
 [support]: https://support.github.com/
-[vsc-remote-containers]: https://code.visualstudio.com/docs/devcontainers/containers
-[vsc-remote-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
+[vsc-dev-containers]: https://code.visualstudio.com/docs/devcontainers/containers
+[vsc-dev-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
