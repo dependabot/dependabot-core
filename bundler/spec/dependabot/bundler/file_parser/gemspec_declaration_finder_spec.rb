@@ -11,8 +11,8 @@ RSpec.describe Dependabot::Bundler::FileParser::GemspecDeclarationFinder do
   end
 
   let(:dependency) do
-    dep = ::Bundler::Dependency.new(dependency_name,
-                                    dependency_requirement_sting)
+    dep = Bundler::Dependency.new(dependency_name,
+                                  dependency_requirement_sting)
     {
       "name" => dep.name,
       "requirement" => dep.requirement.to_s
