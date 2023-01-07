@@ -76,7 +76,7 @@ RSpec.describe Dependabot::FileFetcherJob do
     context "when the fetcher raises a RepoNotFound error" do
       let(:provider) { job.job_definition.dig("job", "source", "provider") }
       let(:repo) { job.job_definition.dig("job", "source", "repo") }
-      let(:source) { ::Dependabot::Source.new(provider: provider, repo: repo) }
+      let(:source) { Dependabot::Source.new(provider: provider, repo: repo) }
 
       before do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher).
