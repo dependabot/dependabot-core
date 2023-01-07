@@ -517,9 +517,9 @@ module Dependabot
           while (remaining_filenames = filenames - ordered_filenames).any?
             ordered_filenames +=
               remaining_filenames.
-              select do |fn|
+              reject do |fn|
                 unupdated_reqs = requirement_map[fn] - ordered_filenames
-                (unupdated_reqs & filenames).empty?
+                unupdated_reqs.intersect?(filenames)
               end
           end
 
