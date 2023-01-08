@@ -215,7 +215,8 @@ RSpec.describe namespace::PipCompileVersionResolver do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to include("Could not find a version that satisfies the requirement jupyter-server<=18.1.0,>=17.3.0")
+              to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                         "conflicting dependencies.")
           end
       end
     end
