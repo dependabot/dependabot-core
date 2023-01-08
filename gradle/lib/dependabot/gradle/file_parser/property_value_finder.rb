@@ -86,7 +86,7 @@ module Dependabot
           all_files = [callsite_buildfile, top_level_buildfile].concat(
             FileParser.find_includes(callsite_buildfile, dependency_files),
             FileParser.find_includes(top_level_buildfile, dependency_files)
-          )
+          ).compact
           all_files.each do |file|
             details = properties(file).fetch(property_name, nil)
             return details if details

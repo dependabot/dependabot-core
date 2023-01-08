@@ -199,6 +199,16 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
           it { is_expected.to be_nil }
         end
       end
+
+      context "without buildfile in root folder" do
+        let(:dependency_files) { [callsite_buildfile] }
+        let(:callsite_fixture_name) { "single_property_build.gradle" }
+
+        context "and the property cannot be found" do
+          let(:property_name) { "project.NotFoundProperty" }
+          it { is_expected.to be_nil }
+        end
+      end
     end
 
     context "with kotlin" do
@@ -381,6 +391,16 @@ RSpec.describe Dependabot::Gradle::FileParser::PropertyValueFinder do
             let(:property_name) { "rootProject.kotlinVersion" }
             # We wouldn't normally expect this to be `nil` - it's more likely
             # to be another version specified in the root project file.
+            it { is_expected.to be_nil }
+          end
+        end
+
+        context "without buildfile in root folder" do
+          let(:dependency_files) { [callsite_buildfile] }
+          let(:callsite_fixture_name) { "build.gradle.kts" }
+
+          context "and the property cannot be found" do
+            let(:property_name) { "project.NotFoundProperty" }
             it { is_expected.to be_nil }
           end
         end
