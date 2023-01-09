@@ -291,6 +291,8 @@ Style/RedundantArgument:
   Enabled: true
 Style/RedundantAssignment:
   Enabled: false
+Style/RedundantConstantBase:
+  Enabled: false
 Style/RedundantFetchBlock:
   Enabled: false
 Style/RedundantFileExtensionInRequire:
