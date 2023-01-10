@@ -178,7 +178,7 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
   && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
 COPY --from=builder /opt /opt
-COPY --from=builder /usr/local /usr/local
+COPY --from=builder --chown=dependabot:dependabot /usr/local /usr/local
 COPY --from=builder --chown=dependabot:dependabot /home/dependabot /home/dependabot
 
 ENV DEPENDABOT_HOME /home/dependabot
