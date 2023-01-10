@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as builder
 
 ARG TARGETARCH=amd64
 
@@ -58,22 +58,12 @@ RUN apt-get update \
   && locale-gen en_US.UTF-8 \
   && rm -rf /var/lib/apt/lists/*
 
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
-
-
 ### RUBY
 
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
 ARG RUBY_VERSION=3.1.2
 ARG RUBY_INSTALL_VERSION=0.8.5
 
-ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
 ARG BUNDLER_V2_VERSION=2.3.25
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
@@ -88,7 +78,6 @@ RUN mkdir -p /tmp/ruby-install \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
  && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
- && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
  && rm -rf /tmp/ruby-install
@@ -106,25 +95,17 @@ RUN cd /tmp \
   && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
   && rm go-${TARGETARCH}.tar.gz
 
-COPY --chown=dependabot:dependabot LICENSE /home/dependabot
-
-USER dependabot
-
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
-COPY --chown=dependabot:dependabot go_modules/helpers /opt/go_modules/helpers
+COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
-ENV PATH="$PATH:/opt/go_modules/bin"
-
 ENV HOME="/home/dependabot"
-
 WORKDIR ${HOME}
 
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
-ENV PATH="$HOME/bin:$PATH"
 
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
@@ -170,26 +151,46 @@ bundle config set --local frozen 'true' && \
 bundle config set --local without 'development' && \
 bundle install
 
+FROM ubuntu:20.04
 
-# START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # VCS section
+    git \
+    git-lfs \
+    bzr \
+    mercurial \
+    # Installs certs in dependabot-action and CLI
+    ca-certificates \
+    # used to check if a file is binary in the VendorUpdater
+    file \
+    # used by Ruby to parse YAML
+    libyaml-dev \
+  && rm -rf /var/lib/apt/lists/*
 
-# TODO: Remove these hacks once we've deprecated npm 6 support as it no longer
-# spawns a child process to npm install git dependencies.
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
-# Create the config file manually intead of using yarn/npm config set as this
-# executes the package manager outputs to every job log
-COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc $DEPENDABOT_HOME/
+RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
-# For Yarn Berry we can set this via an environment variable
-ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /opt /opt
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder --chown=dependabot:dependabot /home/dependabot /home/dependabot
 
-# END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
+ENV DEPENDABOT_HOME /home/dependabot
 
 # Add project
-COPY --chown=dependabot:dependabot updater /home/dependabot/dependabot-updater
+COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
-# Fix for git vulnerability since we run as root
-# see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-RUN git config --global --add safe.directory /home/dependabot/dependabot-updater/repo
+ENV PATH="$HOME/bin:/opt/go/bin:/opt/go_modules/bin:$PATH"
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+USER dependabot
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]
