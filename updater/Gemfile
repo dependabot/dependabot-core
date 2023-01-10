@@ -20,7 +20,7 @@ gem "dependabot-pub", path: "../pub"
 gem "dependabot-python", path: "../python"
 gem "dependabot-terraform", path: "../terraform"
 
-gem "activesupport", "~> 6.1.4"
+gem "activesupport", "~> 6.1.7"
 gem "http", "~> 5.1"
 gem "octokit", "6.0.1"
 gem "sentry-raven", "~> 3.1"
