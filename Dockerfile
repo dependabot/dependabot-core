@@ -249,7 +249,7 @@ ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --profile minimal
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.66.0 --profile minimal
 
 
 ### Terraform
