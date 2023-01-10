@@ -5,6 +5,7 @@ hashin==0.17.0
 pipenv==2022.4.8
 pipfile==0.0.2
 poetry>=1.1.15,<1.4.0
+# TODO fake commit to prevent Dependabot pointlessly rebasing since wheel requires >= 3.7 but we haven't yet dropped support for python 3.6...
 wheel==0.38.4
 
 # Some dependencies will only install if Cython is present
