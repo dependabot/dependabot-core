@@ -105,25 +105,25 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.6 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.11.0 \
-  && pyenv global 3.11.0 \
-  && pyenv install 3.10.8 \
-  && pyenv install 3.9.15 \
-  && pyenv install 3.8.15 \
-  && pyenv install 3.7.15 \
+  && pyenv install 3.11.1 \
+  && pyenv global 3.11.1 \
+  && pyenv install 3.10.9 \
+  && pyenv install 3.9.16 \
+  && pyenv install 3.8.16 \
+  && pyenv install 3.7.16 \
   && rm -Rf /tmp/python-build* \
   && bash /opt/python/helpers/build \
   && cd /usr/local/.pyenv \
-  && tar czf 3.10.tar.gz versions/3.10.8 \
-  && tar czf 3.9.tar.gz versions/3.9.15 \
-  && tar czf 3.8.tar.gz versions/3.8.15 \
-  && tar czf 3.7.tar.gz versions/3.7.15 \
-  && rm -Rf versions/3.10.8 \
-  && rm -Rf versions/3.9.15 \
-  && rm -Rf versions/3.8.15 \
-  && rm -Rf versions/3.7.15
+  && tar czf 3.10.tar.gz versions/3.10.9 \
+  && tar czf 3.9.tar.gz versions/3.9.16 \
+  && tar czf 3.8.tar.gz versions/3.8.16 \
+  && tar czf 3.7.tar.gz versions/3.7.16 \
+  && rm -Rf versions/3.10.9 \
+  && rm -Rf versions/3.9.16 \
+  && rm -Rf versions/3.8.16 \
+  && rm -Rf versions/3.7.16
 
 USER root
 ### JAVASCRIPT
