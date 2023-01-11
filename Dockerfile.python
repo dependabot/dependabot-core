@@ -1,42 +1,22 @@
-FROM ubuntu:20.04
-
-ARG TARGETARCH=amd64
-
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-### SYSTEM DEPENDENCIES
-
-ENV DEBIAN_FRONTEND="noninteractive" \
-  LC_ALL="en_US.UTF-8" \
-  LANG="en_US.UTF-8"
+FROM dependabot/dependabot-updater-slim
+USER root
 
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    build-essential \
     dirmngr \
-    git \
-    git-lfs \
-    bzr \
-    mercurial \
     gnupg2 \
-    ca-certificates \
-    curl \
-    file \
     zlib1g-dev \
     liblzma-dev \
-    libyaml-dev \
     libgdbm-dev \
     bison \
     tzdata \
     zip \
     unzip \
-    locales \
     openssh-client \
     software-properties-common \
-    # Everything from here onwards is only installed to ensure
-    # Python support works with all packages (which may require
-    # specific libraries at install time).
+    curl \
+    build-essential \
     make \
     libpq-dev \
     libssl-dev \
@@ -54,45 +34,7 @@ RUN apt-get update \
     libxml2-dev \
     libxmlsec1-dev \
     libgeos-dev \
-    python3-enchant \
-  && locale-gen en_US.UTF-8 \
-  && rm -rf /var/lib/apt/lists/*
-
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
-     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
-  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
-  && mkdir -p /opt && chown dependabot:dependabot /opt
-
-
-### RUBY
-
-# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-ARG RUBY_VERSION=3.1.2
-ARG RUBY_INSTALL_VERSION=0.8.5
-
-ARG BUNDLER_V1_VERSION=1.17.3
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-ARG BUNDLER_V2_VERSION=2.3.25
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
-# Allow gem installs as the dependabot user
-ENV BUNDLE_PATH=".bundle"
-
-# Install Ruby, update RubyGems, and install Bundler
-RUN mkdir -p /tmp/ruby-install \
- && cd /tmp/ruby-install \
- && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
- && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
- && cd ruby-install-$RUBY_INSTALL_VERSION/ \
- && make \
- && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
- && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
- && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
- && rm -rf /var/lib/gems/*/cache/* \
- && rm -rf /tmp/ruby-install
-
+    python3-enchant
 
 ### PYTHON
 COPY --chown=dependabot:dependabot python/helpers /opt/python/helpers
@@ -103,43 +45,22 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.6 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.11.0 \
-  && pyenv global 3.11.0 \
-  && pyenv install 3.10.8 \
-  && pyenv install 3.9.15 \
-  && pyenv install 3.8.15 \
-  && pyenv install 3.7.15 \
+  && pyenv install 3.11.1 \
+  && pyenv global 3.11.1 \
+  && pyenv install 3.10.9 \
+  && pyenv install 3.9.16 \
+  && pyenv install 3.8.16 \
+  && pyenv install 3.7.16 \
   && rm -Rf /tmp/python-build* \
   && bash /opt/python/helpers/build \
   && cd /usr/local/.pyenv \
-  && tar czf 3.10.tar.gz versions/3.10.8 \
-  && tar czf 3.9.tar.gz versions/3.9.15 \
-  && tar czf 3.8.tar.gz versions/3.8.15 \
-  && tar czf 3.7.tar.gz versions/3.7.15 \
-  && rm -Rf versions/3.10.8 \
-  && rm -Rf versions/3.9.15 \
-  && rm -Rf versions/3.8.15 \
-  && rm -Rf versions/3.7.15
-
-
-COPY --chown=dependabot:dependabot LICENSE /home/dependabot
-
-USER dependabot
-
-ENV PATH="$PATH:/opt/python/bin"
-
-ENV HOME="/home/dependabot"
-
-WORKDIR ${HOME}
-
-# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
-RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
-ENV PATH="$HOME/bin:$PATH"
-# Configure cargo to use git CLI so the above takes effect
-RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
-# Disable automatic pulling of files stored with Git LFS
-# This avoids downloading large files not necessary for the dependabot scripts
-ENV GIT_LFS_SKIP_SMUDGE=1
+  && tar czf 3.10.tar.gz versions/3.10.9 \
+  && tar czf 3.9.tar.gz versions/3.9.16 \
+  && tar czf 3.8.tar.gz versions/3.8.16 \
+  && tar czf 3.7.tar.gz versions/3.7.16 \
+  && rm -Rf versions/3.10.9 \
+  && rm -Rf versions/3.9.16 \
+  && rm -Rf versions/3.8.16 \
+  && rm -Rf versions/3.7.16

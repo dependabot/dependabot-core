@@ -1,0 +1,184 @@
+FROM ubuntu:20.04 as builder
+
+ARG TARGETARCH=amd64
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+### SYSTEM DEPENDENCIES
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+  LC_ALL="en_US.UTF-8" \
+  LANG="en_US.UTF-8"
+
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    dirmngr \
+    git \
+    git-lfs \
+    bzr \
+    mercurial \
+    gnupg2 \
+    ca-certificates \
+    curl \
+    file \
+    zlib1g-dev \
+    liblzma-dev \
+    libyaml-dev \
+    libgdbm-dev \
+    bison \
+    tzdata \
+    zip \
+    unzip \
+    locales \
+    openssh-client \
+    software-properties-common \
+    # Everything from here onwards is only installed to ensure
+    # Python support works with all packages (which may require
+    # specific libraries at install time).
+    make \
+    libpq-dev \
+    libssl-dev \
+    libbz2-dev \
+    libffi-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    libcurl4-openssl-dev \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    libmysqlclient-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libgeos-dev \
+    python3-enchant \
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
+
+### RUBY
+
+# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
+ARG RUBY_VERSION=3.1.2
+ARG RUBY_INSTALL_VERSION=0.8.5
+
+# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
+ARG BUNDLER_V2_VERSION=2.3.25
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# Allow gem installs as the dependabot user
+ENV BUNDLE_PATH=".bundle"
+
+# Install Ruby, update RubyGems, and install Bundler
+RUN mkdir -p /tmp/ruby-install \
+ && cd /tmp/ruby-install \
+ && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
+ && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
+ && cd ruby-install-$RUBY_INSTALL_VERSION/ \
+ && make \
+ && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-install
+
+ENV HOME="/home/dependabot"
+WORKDIR ${HOME}
+
+# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
+
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1
+
+###############################################################################################
+# BEGIN UPDATER PASTE
+###############################################################################################
+
+ENV DEPENDABOT_HOME /home/dependabot
+
+RUN mkdir $DEPENDABOT_HOME/dependabot-updater
+
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock $DEPENDABOT_HOME/dependabot-updater/
+
+COPY --chown=dependabot:dependabot .ruby-version ${DEPENDABOT_HOME}/.ruby-version
+COPY --chown=dependabot:dependabot .rubocop.yml ${DEPENDABOT_HOME}/.rubocop.yml
+
+WORKDIR ${DEPENDABOT_HOME}
+COPY --chown=dependabot:dependabot omnibus ${DEPENDABOT_HOME}/omnibus
+COPY --chown=dependabot:dependabot git_submodules ${DEPENDABOT_HOME}/git_submodules
+COPY --chown=dependabot:dependabot terraform ${DEPENDABOT_HOME}/terraform
+COPY --chown=dependabot:dependabot github_actions ${DEPENDABOT_HOME}/github_actions
+COPY --chown=dependabot:dependabot hex ${DEPENDABOT_HOME}/hex
+COPY --chown=dependabot:dependabot elm ${DEPENDABOT_HOME}/elm
+COPY --chown=dependabot:dependabot docker ${DEPENDABOT_HOME}/docker
+COPY --chown=dependabot:dependabot nuget ${DEPENDABOT_HOME}/nuget
+COPY --chown=dependabot:dependabot maven ${DEPENDABOT_HOME}/maven
+COPY --chown=dependabot:dependabot gradle ${DEPENDABOT_HOME}/gradle
+COPY --chown=dependabot:dependabot cargo ${DEPENDABOT_HOME}/cargo
+COPY --chown=dependabot:dependabot composer ${DEPENDABOT_HOME}/composer
+COPY --chown=dependabot:dependabot go_modules ${DEPENDABOT_HOME}/go_modules
+COPY --chown=dependabot:dependabot python ${DEPENDABOT_HOME}/python
+COPY --chown=dependabot:dependabot pub ${DEPENDABOT_HOME}/pub
+COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn
+COPY --chown=dependabot:dependabot bundler ${DEPENDABOT_HOME}/bundler
+COPY --chown=dependabot:dependabot common ${DEPENDABOT_HOME}/common
+
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+RUN bundle config set --local path 'vendor' && \
+bundle config set --local frozen 'true' && \
+bundle config set --local without 'development' && \
+bundle install
+
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+  LC_ALL="en_US.UTF-8" \
+  LANG="en_US.UTF-8"
+
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # VCS section
+    git \
+    git-lfs \
+    bzr \
+    mercurial \
+    # Installs certs in dependabot-action and CLI
+    ca-certificates \
+    # used to check if a file is binary in the VendorUpdater
+    file \
+    # used by Ruby to parse YAML
+    libyaml-dev \
+    locales \
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
+
+COPY --from=builder /opt /opt
+COPY --from=builder --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=builder --chown=dependabot:dependabot /home/dependabot /home/dependabot
+
+ENV DEPENDABOT_HOME /home/dependabot
+
+# Add project
+COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+ENV PATH="$HOME/bin:/opt/go/bin:/opt/go_modules/bin:$PATH"
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+USER dependabot
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]
