@@ -36,21 +36,10 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "dependabot/dependabot-core:latest" \
+            -t "dependabot/dependabot-updater-gomod:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             -f Dockerfile.go_modules \
-            .
-
-      - name: Build dependabot-core-ci image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -f Dockerfile.ci \
-            -t "dependabot-core-ci:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
 
       - name: Run ${{ matrix.suite.name }} tests
@@ -63,8 +52,8 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot-core-ci bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+            --rm dependabot-updater-gomod bash -c \
+            "cd /home/dependabot/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   lint:
     name: Lint
