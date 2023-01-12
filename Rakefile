@@ -5,7 +5,6 @@ require "English"
 require "net/http"
 require "uri"
 require "json"
-require "shellwords"
 require "rubygems/package"
 require "bundler"
 require "./common/lib/dependabot/version"
@@ -126,48 +125,5 @@ def rubygems_release_exists?(name, version)
   body = JSON.parse(response.body)
   existing_versions = body.map { |b| b["number"] }
   existing_versions.include?(version)
-end
-
-def changed_packages
-  all_packages = GEMSPECS.
-                 select { |gs| gs.include?("/") }.
-                 map { |gs| "./" + gs.split("/").first }
-
-  compare_url = ENV.fetch("CIRCLE_COMPARE_URL", nil)
-  if compare_url.nil?
-    warn "CIRCLE_COMPARE_URL not set, so changed packages can't be calculated"
-    return all_packages
-  end
-  puts "CIRCLE_COMPARE_URL: #{compare_url}"
-
-  range = compare_url.split("/").last
-  puts "Detected commit range '#{range}' from CIRCLE_COMPARE_URL"
-  unless range&.include?("..")
-    warn "Invalid commit range, so changed packages can't be calculated"
-    return all_packages
-  end
-
-  core_paths = %w(Dockerfile Dockerfile.ci common/lib common/bin
-                  common/dependabot-common.gemspec)
-  core_changed = commit_range_changes_paths?(range, core_paths)
-
-  packages = all_packages.select do |package|
-    next true if core_changed
-
-    if commit_range_changes_paths?(range, [package])
-      puts "Commit range changes #{package}"
-      true
-    else
-      puts "Commit range doesn't change #{package}"
-      false
-    end
-  end
-
-  packages
-end
-
-def commit_range_changes_paths?(range, paths)
-  cmd = %w(git diff --quiet) + [range, "--"] + paths
-  !system(Shellwords.join(cmd))
 end
 # rubocop:enable Metrics/BlockLength
