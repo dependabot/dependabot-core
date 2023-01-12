@@ -71,7 +71,9 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     end
 
     context "when there is no recognised source link in the response" do
-      let(:crates_fixture_name) { "bitflags_no_source.json" }
+      let(:crates_response) do
+        fixture("crates_io_responses", crates_fixture_name).gsub!("github.com", "example.com")
+      end
 
       it { is_expected.to be_nil }
 

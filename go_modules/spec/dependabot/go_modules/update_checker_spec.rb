@@ -63,12 +63,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    context "doesn't update indirect dependencies (not supported)" do
+    context "updates indirect dependencies" do
       let(:requirements) { [] }
-      it do
-        is_expected.to eq(
-          Dependabot::GoModules::Version.new(dependency.version)
-        )
+
+      it "updates to the newer version" do
+        is_expected.to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
     end
 
@@ -123,12 +122,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       end
     end
 
-    context "doesn't update indirect dependencies (not supported)" do
+    context "updates indirect dependencies" do
       let(:requirements) { [] }
-      it do
-        is_expected.to eq(
-          Dependabot::GoModules::Version.new(dependency.version)
-        )
+
+      it "updates to the least new supported version" do
+        is_expected.to eq(Dependabot::GoModules::Version.new("1.0.5"))
       end
     end
 
