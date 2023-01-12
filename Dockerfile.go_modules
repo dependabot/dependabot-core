@@ -156,8 +156,10 @@ FROM ubuntu:20.04
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    # CI needs this for tests \
+    # CI needs this as it installs development dependencies \
     build-essential \
+    zlib1g-dev \
+    libgmp-dev \
     # VCS section
     git \
     git-lfs \
@@ -194,5 +196,9 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 USER dependabot
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+# For CI
+RUN git config --global user.name dependabot-ci \
+  && git config --global user.email no-reply@github.com
 
 CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]
