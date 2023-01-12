@@ -38,7 +38,7 @@ jobs:
           docker build \
             -t "dependabot/dependabot-updater-gomod:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-core \
+            --cache-from ghcr.io/dependabot/dependabot-updater-gomod \
             -f Dockerfile.go_modules \
             .
 
@@ -52,7 +52,7 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot-updater-gomod bash -c \
+            --rm dependabot/dependabot-updater-gomod bash -c \
             "cd /home/dependabot/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   lint:
