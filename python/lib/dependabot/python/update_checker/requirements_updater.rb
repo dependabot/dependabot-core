@@ -184,6 +184,8 @@ module Dependabot
             update_requirement(req)
           when :bump_versions_if_necessary
             update_requirement_if_needed(req)
+          else
+            raise "Unexpected update strategy: #{update_strategy}"
           end
         end
 
