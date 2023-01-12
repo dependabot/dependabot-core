@@ -1,4 +1,4 @@
-FROM dependabot/dependabot-updater-slim as builder
+FROM dependabot/dependabot-updater-slim
 ARG TARGETARCH=amd64
 
 USER root
