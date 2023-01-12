@@ -144,12 +144,13 @@ jobs:
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
 
-      - name: Build dependabot-core-ci image
+      - name: Build dependabot-updater image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
+            --build-arg OMNIBUS_VERSION=latest \
             -f Dockerfile.updater \
             -t "dependabot-updater:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
