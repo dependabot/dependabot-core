@@ -53,7 +53,7 @@ jobs:
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm dependabot/dependabot-updater-gomod bash -c \
-            "cd /home/dependabot/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   lint:
     name: Lint
