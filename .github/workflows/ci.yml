@@ -150,8 +150,8 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -f Dockerfile.updater \
-            -t "dependabot-updater:latest" \
+            -f Dockerfile.ci \
+            -t "dependabot-core-ci:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
 
@@ -165,8 +165,8 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot-updater bash -c \
-            "cd /home/dependabot/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+            --rm dependabot-core-ci bash -c \
+            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
     name: Updater
