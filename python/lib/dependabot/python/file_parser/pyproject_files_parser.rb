@@ -48,22 +48,13 @@ module Dependabot
 
           POETRY_DEPENDENCY_TYPES.each do |type|
             deps_hash = parsed_pyproject.dig("tool", "poetry", type) || {}
-
-            deps_hash.each do |name, req|
-              next if normalise(name) == "python"
-
-              requirements = parse_requirements_from(req, type)
-              next if requirements.empty?
-
-              dependencies << Dependency.new(
-                name: normalise(name),
-                version: version_from_lockfile(name),
-                requirements: requirements,
-                package_manager: "pip"
-              )
-            end
+            dependencies += parse_poetry_dependencies(type, deps_hash)
           end
 
+          groups = parsed_pyproject.dig("tool", "poetry", "group") || {}
+          groups.each do |group, group_spec|
+            dependencies += parse_poetry_dependencies(group, group_spec["dependencies"])
+          end
           dependencies
         end
 
@@ -98,6 +89,25 @@ module Dependabot
               )
           end
 
+          dependencies
+        end
+
+        def parse_poetry_dependencies(type, deps_hash)
+          dependencies = Dependabot::FileParsers::Base::DependencySet.new
+
+          deps_hash.each do |name, req|
+            next if normalise(name) == "python"
+
+            requirements = parse_requirements_from(req, type)
+            next if requirements.empty?
+
+            dependencies << Dependency.new(
+              name: normalise(name),
+              version: version_from_lockfile(name),
+              requirements: requirements,
+              package_manager: "pip"
+            )
+          end
           dependencies
         end
 
