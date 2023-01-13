@@ -102,12 +102,6 @@ COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock $DEPENDA
 COPY --chown=dependabot:dependabot .ruby-version ${DEPENDABOT_HOME}/.ruby-version
 COPY --chown=dependabot:dependabot .rubocop.yml ${DEPENDABOT_HOME}/.rubocop.yml
 
-RUN mkdir -p git_submodules/lib/dependabot && \
-    touch git_submodules/lib/dependabot/git_submodules.rb && \
-    cd git_submodules && \
-    bundle init && \
-    touch dependabot-git_submodules.gemspec
-
 WORKDIR ${DEPENDABOT_HOME}
 COPY omnibus omnibus
 COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
