@@ -240,8 +240,6 @@ module Dependabot
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
         def handle_composer_errors(error)
-          sanitized_message = remove_url_credentials(error.message)
-
           # Special case for Laravel Nova, which will fall back to attempting
           # to close a private repo if given invalid (or no) credentials
           if error.message.include?("github.com/laravel/nova.git")
@@ -255,7 +253,7 @@ module Dependabot
             dependency_url = error.message.match(FAILED_GIT_CLONE).named_captures.fetch("url")
             raise Dependabot::GitDependenciesNotReachable, clean_dependency_url(dependency_url)
           elsif unresolvable_error?(error)
-            raise Dependabot::DependencyFileNotResolvable, sanitized_message
+            raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.match?(MISSING_EXPLICIT_PLATFORM_REQ_REGEX)
             # These errors occur when platform requirements declared explicitly
             # in the composer.json aren't met.
@@ -285,12 +283,12 @@ module Dependabot
             raise MissingExtensions, [missing_extension]
           elsif error.message.include?("cannot require itself") ||
                 error.message.include?('packages.json" file could not be down')
-            raise Dependabot::DependencyFileNotResolvable, sanitized_message
+            raise Dependabot::DependencyFileNotResolvable, error.message
           elsif error.message.include?("No driver found to handle VCS") &&
                 !error.message.include?("@") && !error.message.include?("://")
             msg = "Dependabot detected a VCS requirement with a local path, " \
                   "rather than a URL. Dependabot does not support this " \
-                  "setup.\n\nThe underlying error was:\n\n#{sanitized_message}"
+                  "setup.\n\nThe underlying error was:\n\n#{error.message}"
             raise Dependabot::DependencyFileNotResolvable, msg
           elsif error.message.include?("requirements could not be resolved")
             # If there's no lockfile, there's no difference between running
@@ -340,7 +338,6 @@ module Dependabot
                   "See https://getcomposer.org/doc/04-schema.md for details on the schema."
             raise Dependabot::DependencyFileNotParseable, msg
           else
-            error.message = sanitized_message
             raise error
           end
         end
@@ -520,10 +517,6 @@ module Dependabot
           credentials.
             select { |cred| cred["type"] == "composer_repository" }.
             select { |cred| cred["password"] }
-        end
-
-        def remove_url_credentials(message)
-          message.gsub(%r{(?<=://)[^\s]*:[^\s]*(?=@)}, "****")
         end
       end
     end
