@@ -1,0 +1,75 @@
+name: CI-Eco
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: python, name: python, ci_node_total: 2, index: 0 }
+          - { path: python, name: python-slow, ci_node_total: 2, index: 1 }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            python:
+              - Dockerfile.python
+              - 'common/**'
+              - 'python/**'
+
+      - name: Build updater core image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-updater-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            -f Dockerfile.updater-core \
+            .
+
+      - name: Build ecosystem image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-updater-pip:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-pip \
+            -f Dockerfile.python \
+            .
+
+      - name: Run ${{ matrix.suite.name }} tests
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        run: |
+          docker run \
+            --env "CI=true" \
+            --env "RAISE_ON_WARNINGS=true" \
+            --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
+            --env "SUITE_NAME=${{ matrix.suite.name }}" \
+            --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
+            --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
+            --rm dependabot/dependabot-updater-pip bash -c \
+            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./bin/lint

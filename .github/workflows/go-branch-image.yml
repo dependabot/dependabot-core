@@ -1,0 +1,83 @@
+name: Eco branch images
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  UPDATER_IMAGE: "dependabot/updater-core"
+  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-gomod"
+  DOCKERFILE: "Dockerfile.go_modules"
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
+
+jobs:
+  push-updater-image:
+    name: Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+        # sets DECISION to the PR's review decision, handling the push-after-approval case
+      - name: Check if pull request is approved
+        run: |
+          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          echo "Review decision is: $DECISION"
+          echo "DECISION=$DECISION" >> $GITHUB_ENV
+
+      # overwrite the previous result if this is a fork since forks can't publish to GHCR
+      - name: Skip forks
+        if: github.event.pull_request.head.repo.fork
+        run: echo "DECISION=FORK" >> $GITHUB_ENV
+
+      - name: Build updater core image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-updater-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            -f Dockerfile.updater-core \
+            .
+
+      - name: Build ecosystem image
+        if: env.DECISION == 'APPROVED:OPEN'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "$UPDATER_IMAGE_MIRROR:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$UPDATER_IMAGE" \
+            --cache-from "$UPDATER_IMAGE_MIRROR" \
+            -f "$DOCKERFILE" \
+            .
+
+      - name: Log in to GHCR
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push branch image
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          docker push "$UPDATER_IMAGE_MIRROR:$TAG"
+
+      - name: Set summary
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
