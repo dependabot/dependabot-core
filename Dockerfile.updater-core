@@ -143,6 +143,7 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     # dev dependencies for CI
+    build-essential \
     zlib1g-dev \
     libgmp-dev \
     # VCS section
