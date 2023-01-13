@@ -8,6 +8,7 @@ AllCops:
     - "../*/bin/**/*"
     - "../**/tmp/**/*"
     - "../*/spec/fixtures/**/*"
+    - "../vendor/**/*"
     - "../dry-run/**/*"
   NewCops: enable
   SuggestExtensions: false
