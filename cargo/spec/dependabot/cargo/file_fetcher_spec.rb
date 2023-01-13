@@ -532,7 +532,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         )
     end
 
-    it "raises a DependencyFileNotFound error" do
+    it "raises a DependencyFileNotParseable error" do
       expect { file_fetcher_instance.files }.
         to raise_error(Dependabot::DependencyFileNotParseable)
     end
