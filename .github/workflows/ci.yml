@@ -204,10 +204,6 @@ jobs:
             .
       - name: Build
         run: script/build
-      - name: Lint
-        run: script/lint
-        env:
-          SKIP_BUILD: true
       - name: Run updater tests
         run: ./script/ci-test-updater
         env:
@@ -219,4 +215,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
       - run: ./bin/lint

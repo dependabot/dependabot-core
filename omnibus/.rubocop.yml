@@ -277,6 +277,9 @@ Style/NegatedIfElseCondition:
   Enabled: true
 Style/NilLambda:
   Enabled: true
+Style/NumericPredicate:
+  Exclude:
+    - "../*/spec/**/*"
 Style/OptionalBooleanParameter:
   Enabled: false
 Style/PercentLiteralDelimiters:

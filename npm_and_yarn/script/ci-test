@@ -3,7 +3,6 @@
 set -e
 
 bundle install
-bundle exec rubocop .
 export YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn
 bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec
 
