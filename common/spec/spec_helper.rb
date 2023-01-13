@@ -34,6 +34,9 @@ if ENV["COVERAGE"]
   end
 end
 
+Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
+Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
+
 RSpec.configure do |config|
   config.color = true
   config.order = :rand
@@ -117,8 +120,6 @@ def build_tmp_repo(project, path: "projects")
   FileUtils.cp_r("#{project_path}/.", tmp_repo_path)
 
   Dir.chdir(tmp_repo_path) do
-    Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
-    Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
     Dependabot::SharedHelpers.run_shell_command("git init")
     Dependabot::SharedHelpers.run_shell_command("git add --all")
     Dependabot::SharedHelpers.run_shell_command("git commit -m init")
