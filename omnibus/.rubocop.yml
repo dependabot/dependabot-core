@@ -1,1 +1,335 @@
-inherit_from: ../.rubocop.yml
+---
+require: rubocop-performance
+
+AllCops:
+  DisplayCopNames: true
+  Exclude:
+    - "../*/vendor/**/*"
+    - "../*/bin/**/*"
+    - "../**/tmp/**/*"
+    - "../*/spec/fixtures/**/*"
+    - "../dry-run/**/*"
+  NewCops: enable
+  SuggestExtensions: false
+Gemspec/DeprecatedAttributeAssignment:
+  Enabled: true
+Gemspec/RequireMFA:
+  Enabled: false
+Layout/DotPosition:
+  EnforcedStyle: trailing
+Layout/EmptyLinesAroundAttributeAccessor:
+  Enabled: false
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
+Layout/LineLength:
+  Max: 120
+Layout/RescueEnsureAlignment:
+  Enabled: false
+Layout/SpaceAroundMethodCallOperator:
+  Enabled: false
+Layout/SpaceBeforeBrackets:
+  Enabled: true
+Layout/LineContinuationLeadingSpace:
+  Enabled: false
+Lint/AmbiguousAssignment:
+  Enabled: true
+Lint/BinaryOperatorWithIdenticalOperands:
+  Enabled: true
+Lint/DeprecatedConstants:
+  Enabled: true
+Lint/DeprecatedOpenSSLConstant:
+  Enabled: false
+Lint/DuplicateBranch:
+  Enabled: false
+Lint/DuplicateElsifCondition:
+  Enabled: false
+Lint/DuplicateRegexpCharacterClassElement:
+  Enabled: true
+Lint/DuplicateRequire:
+  Enabled: true
+Lint/DuplicateRescueException:
+  Enabled: true
+Lint/EmptyBlock:
+  Enabled: true
+Lint/EmptyClass:
+  Enabled: true
+Lint/EmptyConditionalBody:
+  Enabled: true
+Lint/EmptyFile:
+  Enabled: true
+Lint/EmptyInPattern:
+  Enabled: true
+Lint/FloatComparison:
+  Enabled: true
+Lint/LambdaWithoutLiteralBlock:
+  Enabled: true
+Lint/MissingSuper:
+  Enabled: false
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+Lint/NoReturnInBeginEndBlocks:
+  Enabled: false
+Lint/NumberedParameterAssignment:
+  Enabled: true
+Lint/OrAssignmentToConstant:
+  Enabled: true
+Lint/OutOfRangeRegexpRef:
+  Enabled: true
+Lint/RaiseException:
+  Enabled: false
+Lint/RedundantDirGlobSort:
+  Enabled: true
+Lint/SelfAssignment:
+  Enabled: true
+Lint/StructNewOverride:
+  Enabled: false
+Lint/SymbolConversion:
+  Enabled: true
+Lint/ToEnumArguments:
+  Enabled: true
+Lint/TopLevelReturnWithArgument:
+  Enabled: true
+Lint/TrailingCommaInAttributeDeclaration:
+  Enabled: true
+Lint/TripleQuotes:
+  Enabled: true
+Lint/UnexpectedBlockArity:
+  Enabled: true
+Lint/UnmodifiedReduceAccumulator:
+  Enabled: true
+Lint/UnreachableLoop:
+  Enabled: true
+Lint/UselessMethodDefinition:
+  Enabled: true
+Metrics/AbcSize:
+  Max: 35
+Metrics/BlockLength:
+  Exclude:
+    - "../*/Rakefile"
+    - "../**/spec/**/*"
+    - "../*/dependabot-*.gemspec"
+  Max: 35
+Metrics/ClassLength:
+  Max: 350
+Metrics/CyclomaticComplexity:
+  Max: 15
+Metrics/MethodLength:
+  Max: 35
+Metrics/ModuleLength:
+  Max: 350
+Metrics/ParameterLists:
+  CountKeywordArgs: false
+Metrics/PerceivedComplexity:
+  Max: 10
+Naming/FileName:
+  Enabled: false
+Performance/AncestorsInclude:
+  Enabled: true
+Performance/BigDecimalWithNumericArgument:
+  Enabled: true
+Performance/BindCall:
+  Enabled: true
+Performance/BlockGivenWithExplicitBlock:
+  Enabled: true
+Performance/Caller:
+  Enabled: true
+Performance/CaseWhenSplat:
+  Enabled: true
+Performance/Casecmp:
+  Enabled: true
+Performance/ChainArrayAllocation:
+  Enabled: false
+Performance/CollectionLiteralInLoop:
+  Enabled: true
+Performance/CompareWithBlock:
+  Enabled: true
+Performance/ConcurrentMonotonicTime:
+  Enabled: true
+Performance/ConstantRegexp:
+  Enabled: true
+Performance/Count:
+  Enabled: true
+Performance/DeletePrefix:
+  Enabled: true
+Performance/DeleteSuffix:
+  Enabled: true
+Performance/Detect:
+  Enabled: true
+Performance/DoubleStartEndWith:
+  Enabled: true
+Performance/EndWith:
+  Enabled: true
+Performance/FixedSize:
+  Enabled: true
+Performance/FlatMap:
+  Enabled: true
+Performance/InefficientHashSearch:
+  Enabled: true
+Performance/IoReadlines:
+  Enabled: true
+Performance/MapCompact:
+  Enabled: true
+Performance/MethodObjectAsBlock:
+  Enabled: true
+Performance/OpenStruct:
+  Enabled: false
+Performance/RangeInclude:
+  Enabled: true
+Performance/RedundantBlockCall:
+  Enabled: true
+Performance/RedundantEqualityComparisonBlock:
+  Enabled: true
+Performance/RedundantMatch:
+  Enabled: true
+Performance/RedundantMerge:
+  Enabled: true
+Performance/RedundantSortBlock:
+  Enabled: true
+Performance/RedundantSplitRegexpArgument:
+  Enabled: true
+Performance/RedundantStringChars:
+  Enabled: true
+Performance/RegexpMatch:
+  Enabled: true
+Performance/ReverseEach:
+  Enabled: true
+Performance/ReverseFirst:
+  Enabled: true
+Performance/SelectMap:
+  Enabled: false
+Performance/Size:
+  Enabled: true
+Performance/SortReverse:
+  Enabled: true
+Performance/Squeeze:
+  Enabled: true
+Performance/StartWith:
+  Enabled: true
+Performance/StringIdentifierArgument:
+  Enabled: true
+Performance/StringInclude:
+  Enabled: true
+Performance/StringReplacement:
+  Enabled: true
+Performance/Sum:
+  Enabled: true
+Performance/TimesMap:
+  Enabled: true
+Performance/UnfreezeString:
+  Enabled: true
+Performance/UriDefaultParser:
+  Enabled: true
+Style/AccessorGrouping:
+  Enabled: false
+Style/ArgumentsForwarding:
+  Enabled: true
+Style/ArrayCoercion:
+  Enabled: false
+Style/BisectedAttrAccessor:
+  Enabled: false
+Style/CaseLikeIf:
+  Enabled: false
+Style/CollectionCompact:
+  Enabled: true
+Style/CombinableLoops:
+  Enabled: true
+Style/DocumentDynamicEvalDefinition:
+  Enabled: true
+Style/Documentation:
+  Enabled: false
+Style/EndlessMethod:
+  Enabled: true
+Style/ExplicitBlockArgument:
+  Enabled: true
+Style/ExponentialNotation:
+  Enabled: false
+Style/GlobalStdStream:
+  Enabled: true
+Style/HashAsLastArrayItem:
+  Enabled: false
+Style/HashConversion:
+  Enabled: true
+Style/HashEachMethods:
+  Enabled: false
+Style/HashExcept:
+  Enabled: true
+Style/HashLikeCase:
+  Enabled: false
+Style/HashSyntax:
+  EnforcedShorthandSyntax: either
+Style/HashTransformKeys:
+  Enabled: false
+Style/HashTransformValues:
+  Enabled: false
+Style/IfWithBooleanLiteralBranches:
+  Enabled: true
+Style/InPatternThen:
+  Enabled: true
+Style/KeywordParametersOrder:
+  Enabled: false
+Style/MultilineInPatternThen:
+  Enabled: true
+Style/MultipleComparison:
+  Enabled: false
+Style/NegatedIfElseCondition:
+  Enabled: true
+Style/NilLambda:
+  Enabled: true
+Style/OptionalBooleanParameter:
+  Enabled: false
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    "%I": "()"
+    "%W": "()"
+    "%i": "()"
+    "%w": "()"
+Style/QuotedSymbols:
+  Enabled: true
+Style/RedundantArgument:
+  Enabled: true
+Style/RedundantAssignment:
+  Enabled: false
+Style/RedundantConstantBase:
+  Enabled: false
+Style/RedundantFetchBlock:
+  Enabled: false
+Style/RedundantFileExtensionInRequire:
+  Enabled: false
+Style/RedundantRegexpCharacterClass:
+  Enabled: false
+Style/RedundantRegexpEscape:
+  Enabled: false
+Style/RedundantSelfAssignment:
+  Enabled: true
+Style/SignalException:
+  EnforcedStyle: only_raise
+Style/SingleArgumentDig:
+  Enabled: true
+Style/SlicingWithRange:
+  Enabled: false
+Style/SoleNestedConditional:
+  Enabled: true
+Style/StringChars:
+  Enabled: true
+Style/StringConcatenation:
+  Enabled: false
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+Style/SwapValues:
+  Enabled: true
+Style/OpenStructUse:
+  Enabled: false
+Style/SpecialGlobalVars:
+  Enabled: false
+Style/SelectByRegexp:
+  Enabled: false
+
+# TODO these were temporarily disabled during the Ruby 2.7 -> 3.1 upgrade
+# in order to keep the upgrade diff small, they will be enabled/fixed in
+# a follow-on PR.
+Naming/BlockForwarding:
+  Enabled: false
+Style/MutableConstant:
+  Enabled: false

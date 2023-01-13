@@ -5,4 +5,4 @@ cd "$(dirname "$0")/.."
 source script/_common
 
 export OMNIBUS_VERSION="latest"
-docker_bundle_exec rubocop lib/ spec/
+docker_bundle_exec rubocop
