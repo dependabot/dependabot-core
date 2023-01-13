@@ -1,4 +1,4 @@
-name: CI-Eco
+name: CI-Eco-python
 on:
   push:
     branches:
