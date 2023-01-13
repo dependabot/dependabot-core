@@ -366,7 +366,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       context "including pep621 dependencies" do
         let(:pyproject_fixture_name) { "pep621_exact_requirement.toml" }
 
-        it "delegates to PoetryVersionResolver" do
+        it "delegates to PipVersionResolver" do
           dummy_resolver =
             instance_double(described_class::PipVersionResolver)
           allow(described_class::PipVersionResolver).to receive(:new).
