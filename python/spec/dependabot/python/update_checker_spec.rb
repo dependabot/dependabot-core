@@ -256,6 +256,9 @@ RSpec.describe Dependabot::Python::UpdateChecker do
         allow(described_class::PipCompileVersionResolver).to receive(:new).
           and_return(dummy_resolver)
         expect(dummy_resolver).
+          to receive(:resolvable?).
+          and_return(false)
+        expect(dummy_resolver).
           to receive(:latest_resolvable_version).
           and_return(Gem::Version.new("2.5.0"))
         expect(checker.latest_resolvable_version).
@@ -285,17 +288,41 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           }]
         end
 
-        it "delegates to PipCompileVersionResolver" do
-          dummy_resolver =
-            instance_double(described_class::PipCompileVersionResolver)
+        let(:dummy_resolver) { instance_double(described_class::PipCompileVersionResolver) }
+
+        before do
           allow(described_class::PipCompileVersionResolver).to receive(:new).
             and_return(dummy_resolver)
-          expect(dummy_resolver).
-            to receive(:latest_resolvable_version).
-            with(requirement: ">= 1.22, <= 1.24.2").
-            and_return(Gem::Version.new("1.24.2"))
-          expect(checker.latest_resolvable_version).
-            to eq(Gem::Version.new("1.24.2"))
+        end
+
+        context "when the latest version is not resolvable" do
+          before do
+            expect(dummy_resolver).
+              to receive(:resolvable?).
+              and_return(false)
+          end
+
+          it "delegates to PipCompileVersionResolver" do
+            expect(dummy_resolver).
+              to receive(:latest_resolvable_version).
+              with(requirement: ">= 1.22, <= 1.24.2").
+              and_return(Gem::Version.new("1.24.2"))
+            expect(checker.latest_resolvable_version).
+              to eq(Gem::Version.new("1.24.2"))
+          end
+        end
+
+        context "when the latest version is resolvable" do
+          before do
+            expect(dummy_resolver).
+              to receive(:resolvable?).
+              and_return(true)
+          end
+
+          it "returns the latest version" do
+            expect(checker.latest_resolvable_version).
+              to eq(Gem::Version.new("1.24.2"))
+          end
         end
       end
     end

@@ -36,6 +36,8 @@ module Dependabot
         @latest_resolvable_version ||=
           if resolver_type == :requirements
             resolver.latest_resolvable_version
+          elsif resolver_type == :pip_compile && resolver.resolvable?(version: latest_version)
+            latest_version
           else
             resolver.latest_resolvable_version(
               requirement: unlocked_requirement_string
