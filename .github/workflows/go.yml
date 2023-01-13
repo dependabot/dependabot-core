@@ -14,8 +14,8 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
-          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1 }
 
     steps:
       - name: Checkout code
