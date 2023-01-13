@@ -15,7 +15,7 @@ jobs:
       matrix:
         suite:
           - { path: python, name: python, ci_node_total: 2, index: 0 }
-          - { path: python, name: python-slow, ci_node_total: 2, index: 1 }
+          - { path: python, name: python_slow, ci_node_total: 2, index: 1 }
 
     steps:
       - name: Checkout code
