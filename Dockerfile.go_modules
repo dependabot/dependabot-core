@@ -22,5 +22,7 @@ RUN cd /tmp \
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 COPY go_modules/helpers /opt/go_modules/helpers
-COPY --chown=dependabot:dependabot go_modules go_modules
 RUN bash /opt/go_modules/helpers/build
+
+USER dependabot
+COPY --chown=dependabot:dependabot go_modules /home/dependabot/go_modules
