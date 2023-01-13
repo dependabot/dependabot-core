@@ -1,4 +1,4 @@
-name: CI-Eco-python
+name: CI-Eco
 on:
   push:
     branches:
@@ -14,10 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { path: python, name: python, ci_node_total: 2, ci_node_index: 0 }
-          - { path: python, name: python, ci_node_total: 2, ci_node_index: 1}
-          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0 }
-          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
+          - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
+          - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
+          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
+          - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
 
     steps:
       - name: Checkout code
@@ -31,6 +33,10 @@ jobs:
               - Dockerfile.python
               - 'common/**'
               - 'python/**'
+            go_modules:
+              - Dockerfile.go_modules
+              - 'common/**'
+              - 'go_modules/**'
 
       - name: Build updater core image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
@@ -50,10 +56,10 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "dependabot/dependabot-updater-pip:latest" \
+            -t "dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-pip \
-            -f Dockerfile.python \
+            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
+            -f Dockerfile.${{ matrix.suite.path }} \
             .
 
       - name: Run ${{ matrix.suite.name }} tests
@@ -66,7 +72,7 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot/dependabot-updater-pip bash -c \
+            --rm dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   lint:
