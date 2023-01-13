@@ -1,5 +1,5 @@
 # Runs all ecosystems cached and concurrently.
-name: Go Smoke
+name: Python Smoke
 
 on:
   workflow_dispatch:

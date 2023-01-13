@@ -1,4 +1,4 @@
-name: CI-Eco
+name: CI-Eco-gomod
 on:
   push:
     branches:
