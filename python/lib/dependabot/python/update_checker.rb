@@ -34,43 +34,23 @@ module Dependabot
 
       def latest_resolvable_version
         @latest_resolvable_version ||=
-          case resolver_type
-          when :pipenv
-            pipenv_version_resolver.latest_resolvable_version(
+          if resolver_type == :requirements
+            resolver.latest_resolvable_version
+          else
+            resolver.latest_resolvable_version(
               requirement: unlocked_requirement_string
             )
-          when :poetry
-            poetry_version_resolver.latest_resolvable_version(
-              requirement: unlocked_requirement_string
-            )
-          when :pip_compile
-            pip_compile_version_resolver.latest_resolvable_version(
-              requirement: unlocked_requirement_string
-            )
-          when :requirements
-            pip_version_resolver.latest_resolvable_version
-          else raise "Unexpected resolver type #{resolver_type}"
           end
       end
 
       def latest_resolvable_version_with_no_unlock
         @latest_resolvable_version_with_no_unlock ||=
-          case resolver_type
-          when :pipenv
-            pipenv_version_resolver.latest_resolvable_version(
+          if resolver_type == :requirements
+            resolver.latest_resolvable_version_with_no_unlock
+          else
+            resolver.latest_resolvable_version(
               requirement: current_requirement_string
             )
-          when :poetry
-            poetry_version_resolver.latest_resolvable_version(
-              requirement: current_requirement_string
-            )
-          when :pip_compile
-            pip_compile_version_resolver.latest_resolvable_version(
-              requirement: current_requirement_string
-            )
-          when :requirements
-            pip_version_resolver.latest_resolvable_version_with_no_unlock
-          else raise "Unexpected resolver type #{resolver_type}"
           end
       end
 
@@ -130,17 +110,19 @@ module Dependabot
         fix_version = lowest_security_fix_version
         return latest_resolvable_version if fix_version.nil?
 
-        return pip_version_resolver.lowest_resolvable_security_fix_version if resolver_type == :requirements
-
-        resolver =
-          case resolver_type
-          when :pip_compile then pip_compile_version_resolver
-          when :pipenv then pipenv_version_resolver
-          when :poetry then poetry_version_resolver
-          else raise "Unexpected resolver type #{resolver_type}"
-          end
+        return resolver.lowest_resolvable_security_fix_version if resolver_type == :requirements
 
         resolver.resolvable?(version: fix_version) ? fix_version : nil
+      end
+
+      def resolver
+        case resolver_type
+        when :pip_compile then pip_compile_version_resolver
+        when :pipenv then pipenv_version_resolver
+        when :poetry then poetry_version_resolver
+        when :requirements then pip_version_resolver
+        else raise "Unexpected resolver type #{resolver_type}"
+        end
       end
 
       def resolver_type
