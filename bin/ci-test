@@ -35,18 +35,36 @@ function build() {
   export DOCKER_BUILDKIT=1
   export DOCKER_SCAN_SUGGEST=false
   export CORE=dependabot/dependabot-core
-  export CI=dependabot/dependabot-core-ci
+  export UPDATER=dependabot/dependabot-updater
+
+  local TARGETARCH;
+  case "$(uname -m)"
+  in
+    amd64 | x86_64) TARGETARCH=amd64 ;;
+    arm64 | aarch64) TARGETARCH=arm64 ;;
+    *) TARGETARCH=amd64 ;;
+  esac
 
   set -x
-  docker build -qt $CORE .
-  docker build -qt $CI -f Dockerfile.ci .
+  docker build \
+    --build-arg "TARGETARCH=${TARGETARCH}" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from ghcr.io/dependabot/dependabot-core \
+    -t $CORE .
+  docker build \
+    --build-arg "TARGETARCH=${TARGETARCH}" \
+    --build-arg OMNIBUS_VERSION=latest \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    -f Dockerfile.updater \
+    -t $UPDATER .
   docker run --rm \
     -e "CI=true" \
     -e "SUITE_NAME=$SUITE" \
     -e "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
-    -it $CI \
+    -e "RAISE_ON_WARNINGS=true" \
+    -it $UPDATER \
     bash -c \
-    "cd /home/dependabot/dependabot-core/$MODULE && ./script/ci-test"
+    "cd /home/dependabot/$MODULE && ./script/ci-test"
 }
 
 function main() {
