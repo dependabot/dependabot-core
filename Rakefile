@@ -100,8 +100,8 @@ end
 namespace :rubocop do
   task :sort do
     File.write(
-      ".rubocop.yml",
-      YAML.load_file(".rubocop.yml").sort_by_key(true).to_yaml
+      "omnibus/.rubocop.yml",
+      YAML.load_file("omnibus/.rubocop.yml").sort_by_key(true).to_yaml
     )
   end
 end
