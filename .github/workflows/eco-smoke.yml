@@ -1,5 +1,5 @@
 # Runs all ecosystems cached and concurrently.
-name: Python Smoke
+name: Eco Smoke
 
 on:
   workflow_dispatch:
@@ -18,10 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - pip
-          - pipenv
-          - pip-compile
-          - poetry
+          - { path: go_modules, name: go, ecosystem: gomod }
+          - { path: python, name: pip, ecosystem: pip }
+          - { path: python, name: pipenv, ecosystem: pip}
+          - { path: python, name: pip-compile, ecosystem: pip }
+          - { path: python, name: poetry, ecosystem: pip }
     steps:
     - uses: actions/checkout@v3
     - uses: dorny/paths-filter@v2
@@ -29,31 +30,56 @@ jobs:
       id: changes
       with:
         filters: |
-          python:
+          go:
+            - Dockerfile.go_modules
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          pip:
             - Dockerfile.python
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          'pip-compile':
+            - Dockerfile.python
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          pipenv:
+            - Dockerfile.python
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          poetry:
+            - Dockerfile.python
+            - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
 
     - name: Download CLI and test
-      if: steps.changes.outputs[matrix.suite] == 'true'
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: |
         gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
         tar xzvf *.tar.gz >/dev/null 2>&1
         ./dependabot --version
-        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite }}.yaml
+        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
     - name: Download cache
-      if: steps.changes.outputs[matrix.suite] == 'true'
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: |
         mkdir cache
         cd cache
-        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite }}
+        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
 
     - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        if: steps.changes.outputs[matrix.suite.name] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -65,7 +91,7 @@ jobs:
             .
 
     - name: Build ecosystem image
-      if: steps.changes.outputs[matrix.suite] == 'true'
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
       env:
         DOCKER_BUILDKIT: 1
         OMNIBUS_VERSION: latest
@@ -74,12 +100,12 @@ jobs:
           -t "dependabot/updater:latest" \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ghcr.io/dependabot/dependabot-updater-core \
-          --cache-from ghcr.io/dependabot/dependabot-updater-pip \
-          -f Dockerfile.python \
+          --cache-from ghcr.io/dependabot/dependabot-updater-gomod \
+          -f Dockerfile.${{ matrix.suite.path }} \
           .
 
-    - name: ${{ matrix.suite }}
-      if: steps.changes.outputs[matrix.suite] == 'true'
+    - name: ${{ matrix.suite.name }}
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -92,7 +118,7 @@ jobs:
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
     - name: Create summary
-      if: steps.changes.outputs[matrix.suite] == 'true'
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
 
     # No upload at the end:
