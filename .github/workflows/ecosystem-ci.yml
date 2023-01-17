@@ -30,13 +30,17 @@ jobs:
         with:
           filters: |
             python:
+              - Dockerfile.updater-core
               - Dockerfile.python
               - 'common/**'
               - 'python/**'
+              - '.github/workflows/ecosystem-ci.yml'
             go_modules:
+              - Dockerfile.updater-core
               - Dockerfile.go_modules
               - 'common/**'
               - 'go_modules/**'
+              - '.github/workflows/ecosystem-ci.yml'
 
       - name: Build updater core image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
