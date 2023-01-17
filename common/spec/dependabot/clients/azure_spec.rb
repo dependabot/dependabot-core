@@ -241,7 +241,7 @@ RSpec.describe Dependabot::Clients::Azure do
       response_body = fixture("azure", "update_pull_request_details.json")
 
       before do
-       request_body = {
+        request_body = {
           autoCompleteSetBy: { id: "d6245f20-2af8-44f4-9451-8107cb2767db" },
           completionOptions: {
             mergeCommitMessage: "Dependabot merge", deleteSourceBranch: true,

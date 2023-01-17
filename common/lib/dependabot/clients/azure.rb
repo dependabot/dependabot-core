@@ -192,7 +192,6 @@ module Dependabot
           "/pullrequests?api-version=5.0", content.to_json)
       end
 
-      # rubocop:disable Metrics/ParameterLists
       def autocomplete_pull_request(pull_request_id, auto_complete_set_by, merge_commit_message,
                                     delete_source_branch = true, squash_merge = true, merge_strategy = "squash",
                                     trans_work_items = true)
