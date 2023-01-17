@@ -79,16 +79,16 @@ jobs:
         gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
 
     - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.name] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      env:
+        DOCKER_BUILDKIT: 1
+      run: |
+        docker build \
+          -t "dependabot/dependabot-updater-core:latest" \
+          --build-arg BUILDKIT_INLINE_CACHE=1 \
+          --cache-from ghcr.io/dependabot/dependabot-updater-core \
+          -f Dockerfile.updater-core \
+          .
 
     - name: Build ecosystem image
       if: steps.changes.outputs[matrix.suite.name] == 'true'
