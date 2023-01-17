@@ -40,6 +40,7 @@ class _DependencyServicesCommandRunner extends CommandRunner<int>
             usageLineLength: lineLength) {
     argParser.addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
