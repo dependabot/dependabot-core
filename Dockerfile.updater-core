@@ -93,10 +93,6 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
 
-###############################################################################################
-# BEGIN UPDATER PASTE
-###############################################################################################
-
 ENV DEPENDABOT_HOME /home/dependabot
 
 RUN mkdir $DEPENDABOT_HOME/dependabot-updater
@@ -107,24 +103,30 @@ COPY --chown=dependabot:dependabot .ruby-version ${DEPENDABOT_HOME}/.ruby-versio
 COPY --chown=dependabot:dependabot .rubocop.yml ${DEPENDABOT_HOME}/.rubocop.yml
 
 WORKDIR ${DEPENDABOT_HOME}
-COPY --chown=dependabot:dependabot omnibus ${DEPENDABOT_HOME}/omnibus
-COPY --chown=dependabot:dependabot git_submodules ${DEPENDABOT_HOME}/git_submodules
-COPY --chown=dependabot:dependabot terraform ${DEPENDABOT_HOME}/terraform
-COPY --chown=dependabot:dependabot github_actions ${DEPENDABOT_HOME}/github_actions
-COPY --chown=dependabot:dependabot hex ${DEPENDABOT_HOME}/hex
-COPY --chown=dependabot:dependabot elm ${DEPENDABOT_HOME}/elm
-COPY --chown=dependabot:dependabot docker ${DEPENDABOT_HOME}/docker
-COPY --chown=dependabot:dependabot nuget ${DEPENDABOT_HOME}/nuget
-COPY --chown=dependabot:dependabot maven ${DEPENDABOT_HOME}/maven
-COPY --chown=dependabot:dependabot gradle ${DEPENDABOT_HOME}/gradle
-COPY --chown=dependabot:dependabot cargo ${DEPENDABOT_HOME}/cargo
-COPY --chown=dependabot:dependabot composer ${DEPENDABOT_HOME}/composer
-COPY --chown=dependabot:dependabot go_modules ${DEPENDABOT_HOME}/go_modules
-COPY --chown=dependabot:dependabot python ${DEPENDABOT_HOME}/python
-COPY --chown=dependabot:dependabot pub ${DEPENDABOT_HOME}/pub
-COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn
-COPY --chown=dependabot:dependabot bundler ${DEPENDABOT_HOME}/bundler
-COPY --chown=dependabot:dependabot common ${DEPENDABOT_HOME}/common
+COPY omnibus omnibus
+COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
+COPY terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
+COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
+COPY hex/Gemfile hex/dependabot-hex.gemspec hex/
+COPY elm/Gemfile elm/dependabot-elm.gemspec elm/
+COPY docker/Gemfile docker/dependabot-docker.gemspec docker/
+COPY nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
+COPY maven/Gemfile maven/dependabot-maven.gemspec maven/
+COPY gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
+COPY cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
+COPY composer/Gemfile composer/dependabot-composer.gemspec composer/
+COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
+COPY python/Gemfile python/dependabot-python.gemspec python/
+COPY pub/Gemfile pub/dependabot-pub.gemspec pub/
+COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
+COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
+COPY common common
+
+# prevent having all the source in every ecosystem image
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
+      mkdir -p $ecosystem/lib/dependabot; \
+      touch $ecosystem/lib/dependabot/$ecosystem.rb; \
+    done
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
