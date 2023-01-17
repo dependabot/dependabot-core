@@ -7,14 +7,14 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "40.0.0"
+    version: "52.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.0"
+    version: "5.4.0"
   args:
     dependency: "direct main"
     description:
@@ -70,7 +70,7 @@ packages:
       name: frontend_server_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.3"
+    version: "3.2.0"
   glob:
     dependency: transitive
     description:
@@ -138,8 +138,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "9bf4289d6fd5d6872a8929d6312bbd7098f3ea9c"
-      resolved-ref: "9bf4289d6fd5d6872a8929d6312bbd7098f3ea9c"
+      ref: "97f638d091e1afa66f422d0b83f71a0d65692b4e"
+      resolved-ref: "97f638d091e1afa66f422d0b83f71a0d65692b4e"
       url: "https://github.com/dart-lang/pub"
     source: git
     version: "0.0.0"

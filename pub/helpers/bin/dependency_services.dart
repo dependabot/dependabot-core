@@ -14,7 +14,7 @@ import 'package:pub/src/log.dart' as log;
 class _DependencyServicesCommandRunner extends CommandRunner<int>
     implements PubTopLevel {
   @override
-  String? get directory => argResults['directory'];
+  String get directory => argResults['directory'];
 
   @override
   bool get captureStackChains => argResults['verbose'];
