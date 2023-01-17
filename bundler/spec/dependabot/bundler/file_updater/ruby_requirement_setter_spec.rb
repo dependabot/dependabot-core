@@ -114,6 +114,17 @@ RSpec.describe Dependabot::Bundler::FileUpdater::RubyRequirementSetter do
         it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
       end
 
+      context "when requiring ruby 3.2" do
+        let(:gemspec) do
+          bundler_project_dependency_file("gemfile_require_ruby_3_2", filename: "example.gemspec")
+        end
+        let(:content) do
+          bundler_project_dependency_file("gemfile", filename: "Gemfile").content
+        end
+        it { is_expected.to include("ruby '3.2.0'\n") }
+        it { is_expected.to include(%(gem "business", "~> 1.4.0")) }
+      end
+
       context "that can't be evaluated" do
         let(:content) do
           bundler_project_dependency_file("gemfile", filename: "Gemfile").content
