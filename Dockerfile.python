@@ -64,3 +64,6 @@ RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --
   && rm -Rf versions/3.9.16 \
   && rm -Rf versions/3.8.16 \
   && rm -Rf versions/3.7.16
+
+USER dependabot
+COPY --chown=dependabot:dependabot python /home/dependabot/python
