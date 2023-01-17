@@ -15,9 +15,15 @@ on:
       - submitted
 
 jobs:
-  push-updater-image:
+  push-updater-images:
     name: Deploy
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: go, ecosystem: gomod }
+          - { name: python, ecosystem: pip }
     permissions:
       contents: read
       packages: write
@@ -40,7 +46,6 @@ jobs:
         run: echo "DECISION=FORK" >> $GITHUB_ENV
 
       - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -57,11 +62,11 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "$UPDATER_IMAGE_MIRROR:$TAG" \
+            -t "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "$UPDATER_IMAGE" \
-            --cache-from "$UPDATER_IMAGE_MIRROR" \
-            -f "$DOCKERFILE" \
+            --cache-from "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" \
+            -f Dockerfile.${{ matrix.suite.name }} \
             .
 
       - name: Log in to GHCR
@@ -72,12 +77,12 @@ jobs:
       - name: Push branch image
         if: env.DECISION == 'APPROVED:OPEN'
         run: |
-          docker push "$UPDATER_IMAGE_MIRROR:$TAG"
+          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
 
       - name: Set summary
         if: env.DECISION == 'APPROVED:OPEN'
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
