@@ -2,8 +2,6 @@ name: Eco branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   UPDATER_IMAGE: "dependabot/updater-core"
-  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-gomod"
-  DOCKERFILE: "Dockerfile.go_modules"
 on:
   pull_request:
     branches:
