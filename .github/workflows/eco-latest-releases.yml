@@ -16,8 +16,11 @@ on:
 jobs:
   date-version:
     runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.date.outputs.DATE_BASED_VERSION }}
     steps:
-      - name: Set date based version
+      - id: date
+        name: Set date based version
         # The v2 tag is the Updater image tag, not related to the core version.
         # This env var has to be set here so all versions are the same.
         run: |
@@ -80,7 +83,7 @@ jobs:
       - name: Push latest on main
         run: |
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:${{ needs.date-version.outputs.DATE_BASED_VERSION }}"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
           docker push --all-tags "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}"
 
       - name: Set summary
