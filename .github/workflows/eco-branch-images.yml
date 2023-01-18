@@ -1,6 +1,4 @@
 name: Eco branch images
-env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 on:
   pull_request:
     branches:
