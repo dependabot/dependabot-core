@@ -4,8 +4,6 @@ env:
   BASE_IMAGE: "ubuntu:20.04"
   UPDATER_IMAGE: "dependabot/updater-"
   UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-"
-  # The v2 tag is the Updater image tag, not related to the core version.
-  DATE_BASED_VERSION: v2.0.$(date +%Y%m%d%H%M%S)
 on:
   push:
     branches:
@@ -16,9 +14,17 @@ on:
       - "common/lib/dependabot/version.rb"
 
 jobs:
+  set-date-based-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set date based version
+        # The v2 tag is the Updater image tag, not related to the core version.
+        # This env var has to be set here so all versions are the same.
+        run: echo "DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
   push-updater-image:
     name: Deploy
     runs-on: ubuntu-latest
+    needs: set-date-based-version
     permissions:
       contents: read
       packages: write
