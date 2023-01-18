@@ -36,6 +36,12 @@ jobs:
               - 'common/**'
               - 'python/**'
               - '.github/workflows/ecosystem-ci.yml'
+            maven:
+              - Dockerfile.updater-core
+              - Dockerfile.maven
+              - 'common/**'
+              - 'maven/**'
+              - '.github/workflows/ecosystem-ci.yml'
             go_modules:
               - Dockerfile.updater-core
               - Dockerfile.go_modules
