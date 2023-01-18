@@ -38,7 +38,7 @@ jobs:
             - 'updater/**'
             - 'go_modules/**'
           maven:
-            - Dockerfile
+            - Dockerfile.maven
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
