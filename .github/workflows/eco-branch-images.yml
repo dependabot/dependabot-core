@@ -42,6 +42,11 @@ jobs:
         if: github.event.pull_request.head.repo.fork
         run: echo "DECISION=FORK" >> $GITHUB_ENV
 
+      - name: Log in to GHCR
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
       - name: Build updater core image
         env:
           DOCKER_BUILDKIT: 1
@@ -65,11 +70,6 @@ jobs:
             --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
             -f Dockerfile.${{ matrix.suite.name }} \
             .
-
-      - name: Log in to GHCR
-        if: env.DECISION == 'APPROVED:OPEN'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push branch image
         if: env.DECISION == 'APPROVED:OPEN'
