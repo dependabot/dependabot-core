@@ -19,6 +19,7 @@ jobs:
       matrix:
         suite:
           - { path: go_modules, name: go, ecosystem: gomod }
+          - { path: maven, name: maven, ecosystem: maven }
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
@@ -36,6 +37,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
+          maven:
+            - Dockerfile
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'maven/**'
           pip:
             - Dockerfile.python
             - Dockerfile.updater-core

@@ -20,6 +20,7 @@ jobs:
       matrix:
         suite:
           - { name: go_modules, ecosystem: gomod }
+          - { name: maven, ecosystem: maven }
           - { name: python, ecosystem: pip }
     permissions:
       contents: read
