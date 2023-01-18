@@ -52,7 +52,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "dependabot/dependabot-updater-core:latest" \
+            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-updater-core \
             -f Dockerfile.updater-core \
