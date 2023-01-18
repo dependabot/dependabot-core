@@ -77,7 +77,11 @@ RUN pyenv install $PY_3_7 \
 
 FROM dependabot/dependabot-updater-core
 USER root
-
+ENV PY_3_11=3.11.1 \
+  PY_3_10=3.10.9 \
+  PY_3_9=3.9.16 \
+  PY_3_8=3.8.16 \
+  PY_3_7=3.7.16
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
