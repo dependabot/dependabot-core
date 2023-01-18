@@ -20,6 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: go_modules, ecosystem: gomod }
           - { name: python, ecosystem: pip }
     permissions:
       contents: read
