@@ -1,7 +1,6 @@
 name: Eco branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  UPDATER_IMAGE: "dependabot/updater-core"
 on:
   pull_request:
     branches:
@@ -62,8 +61,8 @@ jobs:
           docker build \
             -t "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$UPDATER_IMAGE" \
-            --cache-from "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
             -f Dockerfile.${{ matrix.suite.name }} \
             .
 
