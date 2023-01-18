@@ -1,0 +1,47 @@
+name: Push updater-core image
+env:
+  UPDATER_CORE_IMAGE: "dependabot/dependabot-updater-core"
+  UPDATER_CORE_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-core"
+on:
+  push:
+    branches:
+      - main
+      - jakecoffman/deploy-updater-core
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+jobs:
+  push-updater-core-image:
+    name: Push dependabot-updater-core image to docker hub
+    runs-on: ubuntu-latest
+    if: github.repository == 'dependabot/dependabot-core'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-updater-core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "$UPDATER_CORE_IMAGE:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from "$BASE_IMAGE" \
+            --cache-from "$UPDATER_CORE_IMAGE:latest" \
+            -f Dockerfile.updater-core \
+            .
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push latest image
+        run: |
+          docker push "$UPDATER_CORE_IMAGE:latest"
+          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE_MIRROR:latest"
+          docker push "$UPDATER_CORE_IMAGE_MIRROR:latest"
+      - name: Push tagged image
+        if: contains(github.ref, 'refs/tags')
+        run: |
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
+          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE_MIRROR:$VERSION"
+          docker push "$UPDATER_CORE_IMAGE_MIRROR:$VERSION"
