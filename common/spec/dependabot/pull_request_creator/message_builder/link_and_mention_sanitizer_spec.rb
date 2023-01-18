@@ -345,6 +345,16 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
     end
 
+    context "when a line has softbreaks" do
+      let(:text) { "Soft \n break" }
+
+        it "it converts to hardbreaks" do
+          expect(sanitize_links_and_mentions).to eq(
+            "<p>Soft<br />\nbreak</p>\n"
+          )
+        end
+    end
+
     context "with a changelog that doesn't need sanitizing" do
       let(:text) { fixture("changelogs", "jsdom.md") }
       let(:html) { fixture("changelogs", "jsdom.html") }
