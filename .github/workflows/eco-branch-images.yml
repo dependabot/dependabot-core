@@ -30,7 +30,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-        # sets DECISION to the PR's review decision, handling the push-after-approval case
+        # sets DECISION to the PR's review decision, handling the push-after-approval case noop change to trigger rebuild.
       - name: Check if pull request is approved
         run: |
           DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
