@@ -192,6 +192,32 @@ module Dependabot
           "/pullrequests?api-version=5.0", content.to_json)
       end
 
+      def autocomplete_pull_request(pull_request_id, auto_complete_set_by, merge_commit_message,
+                                    delete_source_branch = true, squash_merge = true, merge_strategy = "squash",
+                                    trans_work_items = true)
+
+        content = {
+          autoCompleteSetBy: {
+            id: auto_complete_set_by
+          },
+          completionOptions: {
+            mergeCommitMessage: merge_commit_message,
+            deleteSourceBranch: delete_source_branch,
+            squashMerge: squash_merge,
+            mergeStrategy: merge_strategy,
+            transitionWorkItems: trans_work_items,
+            autoCompleteIgnoreConfigIds: []
+          }
+        }
+
+        response = patch(source.api_endpoint +
+                           source.organization + "/" + source.project +
+                           "/_apis/git/repositories/" + source.unscoped_repo +
+                           "/pullrequests/" + pull_request_id.to_s + "?api-version=5.1", content.to_json)
+
+        JSON.parse(response.body)
+      end
+
       def pull_request(pull_request_id)
         response = get(source.api_endpoint +
           source.organization + "/" + source.project +
@@ -286,6 +312,37 @@ module Dependabot
 
           raise Forbidden
         end
+        raise NotFound if response.status == 404
+
+        response
+      end
+
+      def patch(url, json)
+        response = nil
+
+        retry_connection_failures do
+          response = Excon.patch(
+            url,
+            body: json,
+            user: credentials&.fetch("username", nil),
+            password: credentials&.fetch("password", nil),
+            idempotent: true,
+            **SharedHelpers.excon_defaults(
+              headers: auth_header.merge(
+                {
+                  "Content-Type" => "application/json"
+                }
+              )
+            )
+          )
+
+          raise InternalServerError if response.status == 500
+          raise BadGateway if response.status == 502
+          raise ServiceNotAvailable if response.status == 503
+        end
+
+        raise Unauthorized if response.status == 401
+        raise Forbidden if response.status == 403
         raise NotFound if response.status == 404
 
         response
