@@ -217,6 +217,74 @@ RSpec.describe Dependabot::Clients::Azure do
     end
   end
 
+  describe "#autocomplete_pull_request" do
+    subject(:autocomplete_pull_request) do
+      client.autocomplete_pull_request(
+        pull_request_id, auto_complete_set_by, merge_commit_message,
+        delete_source_branch, squash_merge, merge_strategy,
+        trans_work_items
+      )
+    end
+
+    let(:auto_complete_set_by) { "d6245f20-2af8-44f4-9451-8107cb2767db" }
+    let(:merge_commit_message) { "Dependabot merge" }
+    let(:delete_source_branch) { true }
+    let(:squash_merge) { true }
+    let(:merge_strategy) { "squash" }
+    let(:trans_work_items) { true }
+    let(:pull_request_id) { 42 }
+    let(:autocomplete_pull_request_url) do
+      base_url + "/_apis/git/repositories/#{source.unscoped_repo}/pullrequests/42?api-version=5.1"
+    end
+
+    context "when response is 200" do
+      response_body = fixture("azure", "update_pull_request_details.json")
+
+      before do
+        request_body = {
+          autoCompleteSetBy: { id: "d6245f20-2af8-44f4-9451-8107cb2767db" },
+          completionOptions: {
+            mergeCommitMessage: "Dependabot merge", deleteSourceBranch: true,
+            squashMerge: true, mergeStrategy: "squash", transitionWorkItems: true,
+            autoCompleteIgnoreConfigIds: []
+          }
+        }
+
+        stub_request(:patch, autocomplete_pull_request_url).
+          with(basic_auth: [username, password], body: JSON.dump(request_body)).
+          to_return(status: 200, body: response_body)
+      end
+
+      specify { expect { autocomplete_pull_request }.to_not raise_error }
+
+      it { is_expected.to eq(JSON.parse(response_body)) }
+    end
+
+    context "when response is 401" do
+      before do
+        stub_request(:patch, autocomplete_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 401)
+      end
+
+      it "raises a helpful error" do
+        expect { autocomplete_pull_request }.to raise_error(Dependabot::Clients::Azure::Unauthorized)
+      end
+    end
+
+    context "when response is 404" do
+      before do
+        stub_request(:patch, autocomplete_pull_request_url).
+          with(basic_auth: [username, password]).
+          to_return(status: 404)
+      end
+
+      it "raises a helpful error" do
+        expect { autocomplete_pull_request }.to raise_error(Dependabot::Clients::Azure::NotFound)
+      end
+    end
+  end
+
   describe "#pull_request" do
     subject { client.pull_request(pull_request_id) }
 

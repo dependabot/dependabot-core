@@ -228,6 +228,20 @@ RSpec.describe Dependabot::Python::FileParser::PyprojectFilesParser do
         end
       end
     end
+
+    context "with group dependencies" do
+      let(:pyproject_fixture_name) { "poetry_group_dependencies.toml" }
+      subject(:dependency_names) { dependencies.map(&:name) }
+
+      it "includes dev-dependencies and group.dev.dependencies" do
+        expect(dependency_names).to include("black")
+        expect(dependency_names).to include("pytest")
+      end
+
+      it "includes other group dependencies" do
+        expect(dependency_names).to include("sphinx")
+      end
+    end
   end
 
   describe "parse standard python files" do
