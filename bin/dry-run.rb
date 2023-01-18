@@ -477,10 +477,15 @@ end
 StackProf.start(raw: true) if $options[:profile]
 
 $network_trace_count = 0
-ActiveSupport::Notifications.subscribe(/excon.request/) do |*args|
-  $network_trace_count += 1
+ActiveSupport::Notifications.subscribe(/excon/) do |*args|
+  name = args.first
+  $network_trace_count += 1 if name == "excon.request"
+
   payload = args.last
-  puts "🌍 #{payload[:scheme]}://#{payload[:host]}#{payload[:path]}"
+  if name == "excon.request" || name == "excon.response"
+    puts "🌍 #{name == 'excon.response' ? "<-- #{payload[:status]}" : "--> #{payload[:method].upcase}"}" \
+         " #{Excon::Utils.request_uri(payload)}"
+  end
 end
 
 $package_manager_version_log = []
