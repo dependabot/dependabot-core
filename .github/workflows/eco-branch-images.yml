@@ -1,4 +1,6 @@
 name: Eco branch images
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 on:
   pull_request:
     branches:
@@ -18,7 +20,7 @@ jobs:
       matrix:
         suite:
           - { name: go_modules, ecosystem: gomod }
-          - { name: python, ecosystem: pip }
+          - { name: python, ecosystem: python }
     permissions:
       contents: read
       packages: write
