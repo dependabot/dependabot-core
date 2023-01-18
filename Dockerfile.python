@@ -50,11 +50,6 @@ USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv
 
-FROM python-core AS python-3.11
-RUN pyenv install $PY_3_11 \
-  && pyenv global $PY_3_11 \
-  && bash /opt/python/helpers/build $PY_3_11
-
 FROM python-core as python-3.10
 RUN pyenv install $PY_3_10 \
   && bash /opt/python/helpers/build $PY_3_10 \
@@ -126,8 +121,11 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv
+RUN pyenv install $PY_3_11 \
+  && pyenv global $PY_3_11 \
+  && bash /opt/python/helpers/build $PY_3_11
 
-COPY --from=python-3.11 /usr/local/.pyenv /usr/local/.pyenv
 COPY --from=python-3.10 /usr/local/.pyenv/3.10.tar.gz /usr/local/.pyenv/3.10.tar.gz
 COPY --from=python-3.9 /usr/local/.pyenv/3.9.tar.gz /usr/local/.pyenv/3.9.tar.gz
 COPY --from=python-3.8 /usr/local/.pyenv/3.8.tar.gz /usr/local/.pyenv/3.8.tar.gz
