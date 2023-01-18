@@ -37,7 +37,6 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1 }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2 }
           - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
@@ -63,91 +62,103 @@ jobs:
             bundler:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
             composer:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'go_modules/**'
             gradle:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'maven/**'
               - 'gradle/**'
             hex:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'maven/**'
             npm_and_yarn:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'nuget/**'
-            omnibus:
-              - Dockerfile
-              - 'common/**'
-              - '.github/workflows/ci.yml'
-              - 'omnibus/**'
             pub:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'python/**'
             terraform:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
               - '.github/workflows/ci.yml'
               - 'terraform/**'
 
@@ -204,10 +215,6 @@ jobs:
             .
       - name: Build
         run: script/build
-      - name: Lint
-        run: script/lint
-        env:
-          SKIP_BUILD: true
       - name: Run updater tests
         run: ./script/ci-test-updater
         env:
@@ -219,4 +226,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
       - run: ./bin/lint
