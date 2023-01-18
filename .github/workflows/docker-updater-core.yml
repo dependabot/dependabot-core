@@ -36,7 +36,6 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push latest image
         run: |
-          docker push "$UPDATER_CORE_IMAGE:latest"
           docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE_MIRROR:latest"
           docker push "$UPDATER_CORE_IMAGE_MIRROR:latest"
       - name: Push tagged image
