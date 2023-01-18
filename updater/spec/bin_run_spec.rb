@@ -26,6 +26,7 @@ RSpec.describe "bin/run" do
         ENV["DEPENDABOT_JOB_ID"] = nil
         ENV["DEPENDABOT_JOB_TOKEN"] = nil
         ENV["DEPENDABOT_JOB_PATH"] = nil
+        ENV["DEPENDABOT_OUTPUT_PATH"] = nil
         ENV["DEPENDABOT_API_URL"] = nil
       end
     end
