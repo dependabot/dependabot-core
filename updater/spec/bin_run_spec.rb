@@ -5,20 +5,29 @@ require "spec_helper"
 
 RSpec.describe "bin/run" do
   describe "fetch_files" do
-    before do
-      ENV["DEPENDABOT_JOB_ID"] = "1"
-      ENV["DEPENDABOT_JOB_TOKEN"] = "token"
-      ENV["DEPENDABOT_JOB_PATH"] =
-        "spec/fixtures/jobs/job_with_credentials.json"
-      ENV["DEPENDABOT_OUTPUT_PATH"] = File.join(Dir.mktmpdir, "output.json")
-      ENV["DEPENDABOT_API_URL"] = "http://example.com"
-    end
+    around do |example|
+      Dir.mktmpdir do |tempdir|
+        output_path = File.join(tempdir, "output.json")
+        job_path = File.join(tempdir, "job.json")
 
-    after do
-      ENV["DEPENDABOT_JOB_ID"] = nil
-      ENV["DEPENDABOT_JOB_TOKEN"] = nil
-      ENV["DEPENDABOT_JOB_PATH"] = nil
-      ENV["DEPENDABOT_API_URL"] = nil
+        job_info = JSON.parse(File.read("spec/fixtures/jobs/job_with_credentials.json"))
+        job_info["job"]["credentials"][0]["password"] = test_access_token
+
+        File.write(job_path, JSON.dump(job_info))
+
+        ENV["DEPENDABOT_JOB_ID"] = "1"
+        ENV["DEPENDABOT_JOB_TOKEN"] = "token"
+        ENV["DEPENDABOT_JOB_PATH"] = job_path
+        ENV["DEPENDABOT_OUTPUT_PATH"] = output_path
+        ENV["DEPENDABOT_API_URL"] = "http://example.com"
+
+        example.run
+      ensure
+        ENV["DEPENDABOT_JOB_ID"] = nil
+        ENV["DEPENDABOT_JOB_TOKEN"] = nil
+        ENV["DEPENDABOT_JOB_PATH"] = nil
+        ENV["DEPENDABOT_API_URL"] = nil
+      end
     end
 
     it "completes the job successfully and persists the files" do
