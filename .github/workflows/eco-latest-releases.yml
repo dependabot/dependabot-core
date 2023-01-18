@@ -14,13 +14,15 @@ on:
       - "common/lib/dependabot/version.rb"
 
 jobs:
-  set-date-based-version:
+  date-version:
     runs-on: ubuntu-latest
     steps:
       - name: Set date based version
         # The v2 tag is the Updater image tag, not related to the core version.
         # This env var has to be set here so all versions are the same.
-        run: echo "DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+        run: |
+          export DATE_BASED_VERSION=v2.0.$(date +%Y%m%d%H%M%S)
+          echo "::set-output name=DATE_BASED_VERSION::$DATE_BASED_VERSION"
   push-updater-image:
     name: Deploy
     runs-on: ubuntu-latest
@@ -78,7 +80,7 @@ jobs:
       - name: Push latest on main
         run: |
           docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$DATE_BASED_VERSION"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:${{ needs.date-version.outputs.DATE_BASED_VERSION }}"
           docker push --all-tags "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}"
 
       - name: Set summary
