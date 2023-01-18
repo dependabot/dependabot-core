@@ -8,7 +8,6 @@ on:
   push:
     branches:
       - main
-      - jakecoffman/push-latest-ecosystem-images
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
