@@ -3,5 +3,4 @@
 set -e
 
 bundle install
-bundle exec rubocop .
 bundle exec rspec spec

@@ -11,3 +11,5 @@ shellcheck \
   ./*/helpers/build \
   ./*/script/* \
   "$@"
+
+bundle exec rubocop
