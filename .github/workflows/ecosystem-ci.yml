@@ -16,7 +16,7 @@ jobs:
         suite:
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
-          - { path: maven, name: maven }
+          - { path: maven, name: maven, ecosystem: maven }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
