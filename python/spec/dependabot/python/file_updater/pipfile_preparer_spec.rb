@@ -158,5 +158,31 @@ RSpec.describe Dependabot::Python::FileUpdater::PipfilePreparer do
           to include("https://username:password@pypi.posrip.com/pypi/")
       end
     end
+
+    context "with auth details provided in Pipfile" do
+      let(:credentials) do
+        [{
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "token"
+        }, {
+          "type" => "python_index",
+          "index-url" => "https://pypi.posrip.com/pypi/",
+          "token" => "username:password"
+        }]
+      end
+
+      let(:pipfile_fixture_name) { "private_source_auth" }
+
+      it "keeps source config" do
+        expect(updated_content).to include(
+          "[[source]]\n" \
+          "name = \"pypi\"\n" \
+          "url = \"https://username:password@pypi.posrip.com/pypi/\"\n" \
+          "verify_ssl = true\n"
+        )
+      end
+    end
   end
 end
