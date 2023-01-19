@@ -1,5 +1,5 @@
 #!/bin/bash -e
-#/ usage: ci-test SUITE
+#/ usage: ci-test SUITE_NAME
 #/ simulate the process followed by ~/.github/workflows/ci.yml
 
 function print_usage() {
@@ -7,8 +7,8 @@ function print_usage() {
 }
 
 function handle_args() {
-  export SUITE=$1
-  case $SUITE in
+  export SUITE_NAME=$1
+  case $SUITE_NAME in
     bundler1 | bundler2)
       export MODULE=bundler
       ;;
@@ -17,7 +17,7 @@ function handle_args() {
       exit 1
       ;;
     *)
-      export MODULE=$SUITE
+      export MODULE=$SUITE_NAME
   esac
 
   if ! [ -d "$MODULE" ]; then
@@ -37,7 +37,9 @@ function build() {
   export CORE=dependabot/dependabot-core
   export UPDATER=dependabot/dependabot-updater
 
+  # shellcheck disable=SC2034  # shellcheck isn't smart enough to realize `docker build` uses `TARGETARCH`
   local TARGETARCH;
+  # shellcheck disable=SC2034  # shellcheck isn't smart enough to realize `docker build` uses `TARGETARCH`
   case "$(uname -m)"
   in
     amd64 | x86_64) TARGETARCH=amd64 ;;
@@ -47,19 +49,19 @@ function build() {
 
   set -x
   docker build \
-    --build-arg "TARGETARCH=${TARGETARCH}" \
+    --build-arg TARGETARCH \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from ghcr.io/dependabot/dependabot-core \
     -t $CORE .
   docker build \
-    --build-arg "TARGETARCH=${TARGETARCH}" \
+    --build-arg TARGETARCH \
     --build-arg OMNIBUS_VERSION=latest \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     -f Dockerfile.updater \
     -t $UPDATER .
   docker run --rm \
     -e "CI=true" \
-    -e "SUITE_NAME=$SUITE" \
+    -e SUITE_NAME \
     -e "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
     -e "RAISE_ON_WARNINGS=true" \
     -it $UPDATER \
