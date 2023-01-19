@@ -11,7 +11,7 @@ RSpec.describe "bin/run" do
         job_path = File.join(tempdir, "job.json")
 
         job_info = JSON.parse(File.read("spec/fixtures/jobs/job_with_credentials.json"))
-        job_info["job"]["credentials"][0]["password"] = test_access_token
+        job_info["credentials"][0]["password"] = test_access_token
 
         File.write(job_path, JSON.dump(job_info))
 
