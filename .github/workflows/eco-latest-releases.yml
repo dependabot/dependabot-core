@@ -1,13 +1,13 @@
 name: Push latest ecosystem images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  BASE_IMAGE: "ubuntu:20.04"
   UPDATER_IMAGE: "dependabot/updater-"
   UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-"
 on:
   push:
     branches:
       - main
+      - jakecoffman/eco-latest-caching-problems
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
@@ -65,9 +65,7 @@ jobs:
           docker build \
             -t "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
             --cache-from "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}" \
-            --build-arg OMNIBUS_VERSION=$TAG \
             -f Dockerfile.${NAME} \
             .
 
