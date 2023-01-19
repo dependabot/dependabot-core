@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - main
-      - jakecoffman/eco-latest-caching-problems
     paths-ignore:
       - "CHANGELOG.md"
       - "common/lib/dependabot/version.rb"
