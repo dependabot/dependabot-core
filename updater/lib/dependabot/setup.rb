@@ -6,6 +6,31 @@ Bundler.settings.set_command_option(:frozen, "0")
 
 require "dependabot/sentry"
 Raven.configure do |config|
+  config.project_root = File.expand_path("../../..", __dir__)
+
+  config.app_dirs_pattern = %r{(
+    dependabot-updater/bin|
+    dependabot-updater/config|
+    dependabot-updater/lib|
+    common|
+    python|
+    terraform|
+    elm|
+    docker|
+    git_submodules|
+    github_actions|
+    composer|
+    nuget|
+    gradle|
+    maven|
+    hex|
+    cargo|
+    go_modules|
+    npm_and_yarn|
+    bundler|
+    pub
+  )}x
+
   config.processors += [ExceptionSanitizer]
 end
 
