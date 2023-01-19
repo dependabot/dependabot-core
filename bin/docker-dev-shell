@@ -101,6 +101,7 @@ fi
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
 CODE_DIR="/home/dependabot/dependabot-core"
 touch .core-bash_history
+mkdir -p dry-run tmp
 docker run --rm -ti \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
