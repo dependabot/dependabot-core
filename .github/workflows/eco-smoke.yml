@@ -18,17 +18,18 @@ jobs:
       fail-fast: false
       matrix:
         suite:
-          - { name: cargo, ecosystem: cargo }
-          - { name: docker, ecosystem: docker }
-          - { name: git_submodules, ecosystem: gitsubmodule }
-          - { name: github_actions, ecosystem: github-actions }
+          - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: docker, name: docker, ecosystem: docker }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
-          - { name: gradle, ecosystem: gradle }
+          - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
           - { name: nuget, ecosystem: nuget }
+          - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
