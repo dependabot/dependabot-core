@@ -42,25 +42,21 @@ jobs:
       with:
         filters: |
           cargo:
-            - Dockerfile.cargo
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'cargo/**'
           docker:
-            - Dockerfile.docker
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'docker/**'
           git_submodules:
-            - Dockerfile.git_submodules
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'git_submodules/**'
           github_actions:
-            - Dockerfile.github_actions
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
@@ -71,7 +67,6 @@ jobs:
             - 'updater/**'
             - 'go_modules/**'
           gradle:
-            - Dockerfile.gradle
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
@@ -92,7 +87,6 @@ jobs:
             - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
-            - Dockerfile.nuget
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'

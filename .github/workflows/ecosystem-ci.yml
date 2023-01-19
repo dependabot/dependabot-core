@@ -41,35 +41,30 @@ jobs:
           filters: |
             cargo:
               - Dockerfile.updater-core
-              - Dockerfile.python
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'cargo/**'
             docker:
               - Dockerfile.updater-core
-              - Dockerfile.docker
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'docker/**'
             git_submodules:
               - Dockerfile.updater-core
-              - Dockerfile.git_submodules
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'git_submodules/**'
             github_actions:
               - Dockerfile.updater-core
-              - Dockerfile.github_actions
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'github_actions/**'
             gradle:
               - Dockerfile.updater-core
-              - Dockerfile.gradle
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
@@ -77,7 +72,6 @@ jobs:
               - 'gradle/**'
             nuget:
               - Dockerfile.updater-core
-              - Dockerfile.nuget
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
