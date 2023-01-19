@@ -106,7 +106,7 @@ module Dependabot
 
     def fetch_raw_upload_pack_with_git_for(uri)
       service_pack_uri = uri
-      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
 
       env = { "PATH" => ENV.fetch("PATH", nil) }
       command = "git ls-remote #{service_pack_uri}"
@@ -158,8 +158,25 @@ module Dependabot
     def service_pack_uri(uri)
       service_pack_uri = uri_with_auth(uri)
       service_pack_uri = service_pack_uri.gsub(%r{/$}, "")
-      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git")
+      service_pack_uri += ".git" unless service_pack_uri.end_with?(".git") || skip_git_suffix(uri)
       service_pack_uri + "/info/refs?service=git-upload-pack"
+    end
+
+    def skip_git_suffix(uri)
+      # TODO: Unlike the other providers (GitHub, GitLab, BitBucket), as of 2023-01-18 Azure DevOps does not support the
+      # ".git" suffix. It will return a 404.
+      # So skip adding ".git" if looks like an ADO URI.
+      # There's no access to the source object here, so have to check the URI instead.
+      # Even if we had the current source object, the URI may be for a dependency hosted elsewhere.
+      # Unfortunately as a consequence, urls pointing to Azure DevOps Server will not work.
+      # Only alternative is to remove the addition of ".git" suffix since the other providers
+      # (GitHub, GitLab, BitBucket) work with or without the suffix.
+      # That change has other ramifications, so it'd be better if Azure started supporting ".git"
+      # like all the other providers.
+      uri = "https://#{uri.split('git@').last.sub(%r{:/?}, '/')}" if uri.start_with?("git@")
+      uri = URI(uri)
+      hostname = uri.hostname.to_s
+      hostname == "dev.azure.com" || hostname.end_with?(".visualstudio.com")
     end
 
     # Add in username and password if present in credentials.
