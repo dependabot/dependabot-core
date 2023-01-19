@@ -14,5 +14,5 @@ if [ -z "$GPR_TOKEN" ]; then
 fi
 
 # Log into GPR to pull downstream images
-echo $GPR_TOKEN | docker login docker.pkg.github.com -u x --password-stdin
+echo "$GPR_TOKEN" | docker login docker.pkg.github.com -u x --password-stdin
 docker_build
