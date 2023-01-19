@@ -26,8 +26,7 @@ jobs:
           docker build \
             -t "$UPDATER_CORE_IMAGE:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "$BASE_IMAGE" \
-            --cache-from "$UPDATER_CORE_IMAGE:latest" \
+            --cache-from "$UPDATER_CORE_IMAGE_MIRROR:latest" \
             -f Dockerfile.updater-core \
             .
       - name: Log in to GHCR
