@@ -20,8 +20,8 @@ jobs:
         suite:
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: docker, name: docker, ecosystem: docker }
-          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: github_actions, ecosystem: github-actions }
+          - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: maven, name: maven, ecosystem: maven }
