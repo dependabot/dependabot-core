@@ -21,6 +21,7 @@ jobs:
         suite:
           - { name: go_modules, ecosystem: gomod }
           - { name: maven, ecosystem: maven }
+          - { name: npm_and_yarn, ecosystem: npm }
           - { name: python, ecosystem: pip }
     permissions:
       contents: read
@@ -69,7 +70,7 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-updater-core \
             --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-            -f Dockerfile.${{ matrix.suite.name }} \
+            -f ${{ matrix.suite.name }}/Dockerfile \
             .
 
       - name: Push branch image

@@ -17,6 +17,9 @@ jobs:
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
           - { path: maven, name: maven, ecosystem: maven }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
+          - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2, ecosystem: npm }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
@@ -32,19 +35,22 @@ jobs:
           filters: |
             python:
               - Dockerfile.updater-core
-              - Dockerfile.python
               - 'common/**'
               - 'python/**'
               - '.github/workflows/ecosystem-ci.yml'
             maven:
               - Dockerfile.updater-core
-              - Dockerfile.maven
               - 'common/**'
               - 'maven/**'
               - '.github/workflows/ecosystem-ci.yml'
+            npm_and_yarn:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'npm_and_yarn/**'
             go_modules:
               - Dockerfile.updater-core
-              - Dockerfile.go_modules
               - 'common/**'
               - 'go_modules/**'
               - '.github/workflows/ecosystem-ci.yml'
@@ -70,7 +76,7 @@ jobs:
             -t "dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-            -f Dockerfile.${{ matrix.suite.path }} \
+            -f ${{ matrix.suite.path }}/Dockerfile \
             .
 
       - name: Run ${{ matrix.suite.name }} tests
