@@ -1,9 +1,15 @@
-FROM dependabot/dependabot-updater-core as python-core
-ENV PY_3_11=3.11.1 \
-  PY_3_10=3.10.9 \
-  PY_3_9=3.9.16 \
-  PY_3_8=3.8.16 \
-  PY_3_7=3.7.16
+ARG PY_3_11=3.11.1
+ARG PY_3_10=3.10.9
+ARG PY_3_9=3.9.16
+ARG PY_3_8=3.8.16
+ARG PY_3_7=3.7.16
+
+FROM ghcr.io/dependabot/dependabot-updater-core as python-core
+ARG PY_3_11
+ARG PY_3_10
+ARG PY_3_9
+ARG PY_3_8
+ARG PY_3_7
 USER root
 
 RUN apt-get update \
@@ -75,13 +81,9 @@ RUN pyenv install $PY_3_7 \
   && tar czf 3.7.tar.gz versions/$PY_3_7
 
 
-FROM dependabot/dependabot-updater-core
+FROM ghcr.io/dependabot/dependabot-updater-core
+ARG PY_3_11
 USER root
-ENV PY_3_11=3.11.1 \
-  PY_3_10=3.10.9 \
-  PY_3_9=3.9.16 \
-  PY_3_8=3.8.16 \
-  PY_3_7=3.7.16
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
