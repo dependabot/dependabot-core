@@ -18,11 +18,17 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: cargo, ecosystem: cargo }
+          - { name: docker, ecosystem: docker }
+          - { name: git_submodules, ecosystem: gitsubmodule }
+          - { name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
+          - { name: gradle, ecosystem: gradle }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
+          - { name: nuget, ecosystem: nuget }
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
@@ -34,11 +40,41 @@ jobs:
       id: changes
       with:
         filters: |
+          cargo:
+            - Dockerfile.cargo
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'cargo/**'
+          docker:
+            - Dockerfile.docker
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'docker/**'
+          git_submodules:
+            - Dockerfile.git_submodules
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'git_submodules/**'
+          github_actions:
+            - Dockerfile.github_actions
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'github_actions/**'
           go:
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
+          gradle:
+            - Dockerfile.gradle
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'gradle/**'
           maven:
             - Dockerfile.updater-core
             - 'common/**'
@@ -54,6 +90,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
+          nuget:
+            - Dockerfile.nuget
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'nuget/**'
           pip:
             - Dockerfile.updater-core
             - 'common/**'
