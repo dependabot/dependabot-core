@@ -37,6 +37,7 @@ jobs:
         suite:
           - { name: go_modules, ecosystem: gomod }
           - { name: maven, ecosystem: maven }
+          - { name: npm_and_yarn, ecosystem: npm }
           - { name: python, ecosystem: pip }
     env:
       TAG: ${{ github.sha }}
@@ -65,7 +66,7 @@ jobs:
             -t "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}" \
-            -f Dockerfile.${NAME} \
+            -f ${NAME}/Dockerfile \
             .
 
       - name: Log in to GHCR

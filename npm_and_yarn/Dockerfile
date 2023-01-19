@@ -3,8 +3,14 @@ ENV DEPENDABOT_HOME /home/dependabot
 ### JAVASCRIPT
 
 # Install Node and npm
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
-  && apt-get install -y --no-install-recommends nodejs \
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+  curl \
+  && curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g npm@8.19.2 \
   && rm -rf ~/.npm
@@ -28,5 +34,10 @@ COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc 
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+RUN bash /opt/npm_and_yarn/helpers/build
+# Our native helpers pull in yarn 1, so we need to reset the version globally to
+# 3.2.3.
+RUN corepack prepare yarn@3.2.3 --activate
 
-COPY --chown=dependabot:dependabot . /home/dependabot/npm_and_yarn
+COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn

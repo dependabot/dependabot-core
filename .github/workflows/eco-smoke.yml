@@ -20,6 +20,9 @@ jobs:
         suite:
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: maven, name: maven, ecosystem: maven }
+          - { path: npm_and_yarn, name: npm, ecosystem: npm}
+          - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
+          - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
@@ -32,41 +35,50 @@ jobs:
       with:
         filters: |
           go:
-            - Dockerfile.go_modules
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           maven:
-            - Dockerfile.maven
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'maven/**'
+          npm:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          'npm-remove-transitive':
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
           pip:
-            - Dockerfile.python
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           'pip-compile':
-            - Dockerfile.python
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pipenv:
-            - Dockerfile.python
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           poetry:
-            - Dockerfile.python
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
+          'yarn-berry':
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
 
     - name: Download CLI and test
       if: steps.changes.outputs[matrix.suite.name] == 'true'
@@ -108,7 +120,7 @@ jobs:
           --build-arg BUILDKIT_INLINE_CACHE=1 \
           --cache-from ghcr.io/dependabot/dependabot-updater-core \
           --cache-from ghcr.io/dependabot/dependabot-updater-gomod \
-          -f Dockerfile.${{ matrix.suite.path }} \
+          -f ${{ matrix.suite.path }}/Dockerfile \
           .
 
     - name: ${{ matrix.suite.name }}
