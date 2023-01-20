@@ -14,6 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
+          - { path: bundler, name: bundler1, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
+          - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: git_submodules, name: git_submodules, ecosystem: submodule }
@@ -39,6 +43,12 @@ jobs:
         id: changes
         with:
           filters: |
+            bundler:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'bundler/**'
             cargo:
               - Dockerfile.updater-core
               - 'common/**'
