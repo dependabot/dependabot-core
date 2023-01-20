@@ -35,6 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
           - { name: docker, ecosystem: docker }
           - { name: git_submodules, ecosystem: gitsubmodule }

@@ -18,6 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
@@ -40,6 +41,11 @@ jobs:
       id: changes
       with:
         filters: |
+          bundler:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'bundler/**'
           cargo:
             - Dockerfile.updater-core
             - 'common/**'
