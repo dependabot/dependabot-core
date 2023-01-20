@@ -92,10 +92,7 @@ module Dependabot
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)
 
-        if fetched_filenames.include?(path) ||
-           fetched_filenames.include?(path.gsub("pom.xml", "pom_parent.xml"))
-          return []
-        end
+        return [] if fetched_filenames.include?(path)
 
         full_path_parts =
           [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
@@ -107,7 +104,6 @@ module Dependabot
 
         parent_pom = fetch_file_from_host(path)
         parent_pom.support_file = true
-        parent_pom.name = parent_pom.name.gsub("pom.xml", "pom_parent.xml")
 
         [
           parent_pom,
