@@ -35,9 +35,15 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { name: cargo, ecosystem: cargo }
+          - { name: docker, ecosystem: docker }
+          - { name: git_submodules, ecosystem: gitsubmodule }
+          - { name: github_actions, ecosystem: github-actions }
           - { name: go_modules, ecosystem: gomod }
+          - { name: gradle, ecosystem: gradle }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
+          - { name: nuget, ecosystem: nuget }
           - { name: python, ecosystem: pip }
     env:
       TAG: ${{ github.sha }}

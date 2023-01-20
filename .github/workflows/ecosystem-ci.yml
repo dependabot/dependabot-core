@@ -14,12 +14,18 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: docker, name: docker, ecosystem: docker }
+          - { path: git_submodules, name: git_submodules, ecosystem: submodule }
+          - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
+          - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2, ecosystem: npm }
+          - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
@@ -33,6 +39,43 @@ jobs:
         id: changes
         with:
           filters: |
+            cargo:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'cargo/**'
+            docker:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'docker/**'
+            git_submodules:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'git_submodules/**'
+            github_actions:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'github_actions/**'
+            gradle:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'maven/**'
+              - 'gradle/**'
+            nuget:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'nuget/**'
             python:
               - Dockerfile.updater-core
               - 'common/**'
