@@ -3,6 +3,7 @@ ARG PY_3_10=3.10.9
 ARG PY_3_9=3.9.16
 ARG PY_3_8=3.8.16
 ARG PY_3_7=3.7.16
+ARG PYENV_VERSION=v2.3.9
 
 FROM ghcr.io/dependabot/dependabot-updater-core as python-core
 ARG PY_3_11
@@ -10,6 +11,7 @@ ARG PY_3_10
 ARG PY_3_9
 ARG PY_3_8
 ARG PY_3_7
+ARG PYENV_VERSION
 USER root
 
 RUN apt-get update \
@@ -23,7 +25,6 @@ RUN apt-get update \
     tzdata \
     zip \
     openssh-client \
-    software-properties-common \
     build-essential \
     make \
     libpq-dev \
@@ -51,7 +52,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 
 FROM python-core as python-3.10
 RUN pyenv install $PY_3_10 \
@@ -80,6 +81,7 @@ RUN pyenv install $PY_3_7 \
 
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG PY_3_11
+ARG PYENV_VERSION
 USER root
 RUN apt-get update \
   && apt-get upgrade -y \
@@ -92,7 +94,6 @@ RUN apt-get update \
     tzdata \
     zip \
     openssh-client \
-    software-properties-common \
     build-essential \
     make \
     libpq-dev \
@@ -121,7 +122,7 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch $PYENV_VERSION --single-branch --depth=1 /usr/local/.pyenv
 RUN pyenv install $PY_3_11 \
   && pyenv global $PY_3_11 \
   && bash /opt/python/helpers/build_for_version $PY_3_11

@@ -20,20 +20,25 @@ jobs:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: hex, name: hex, ecosystem: hex }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: pip, ecosystem: pip }
           - { path: python, name: pipenv, ecosystem: pip}
           - { path: python, name: pip-compile, ecosystem: pip }
           - { path: python, name: poetry, ecosystem: pip }
+          - { path: terraform, name: terraform, ecosystem: terraform }
     steps:
     - uses: actions/checkout@v3
     - uses: dorny/paths-filter@v2
@@ -51,11 +56,21 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'cargo/**'
+          composer:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'composer/**'
           docker:
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'docker/**'
+          elm:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'elm/**'
           git_submodules:
             - Dockerfile.updater-core
             - 'common/**'
@@ -76,6 +91,11 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
+          hex:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'hex/**'
           maven:
             - Dockerfile.updater-core
             - 'common/**'
@@ -116,6 +136,16 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'python/**'
+          pub:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'pub/**'
+          terraform:
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'terraform/**'
           'yarn-berry':
             - Dockerfile.updater-core
             - 'common/**'
