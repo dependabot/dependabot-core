@@ -847,7 +847,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
       end
       it { is_expected.to eq(true) }
 
-      context "that inherits from a parent POM downloaded for support" do
+      context "that inherits from a parent POM" do
         let(:dependency_files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
@@ -872,7 +872,7 @@ RSpec.describe Dependabot::Maven::UpdateChecker do
           }]
         end
 
-        it { is_expected.to eq(false) }
+        it { is_expected.to eq(true) }
       end
 
       context "that inherits from a remote POM" do
