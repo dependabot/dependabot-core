@@ -105,6 +105,8 @@ bundle install
 
 FROM ubuntu:20.04
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 ENV DEBIAN_FRONTEND="noninteractive" \
   LC_ALL="en_US.UTF-8" \
   LANG="en_US.UTF-8"
