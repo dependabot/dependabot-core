@@ -174,7 +174,11 @@ module Dependabot
       end
 
       def default_labels_for_pr
-        if custom_labels then custom_labels & labels
+        if custom_labels
+          # Azure does not have centralised labels
+          return custom_labels if source.provider == "azure"
+
+          custom_labels & labels
         else
           [
             default_dependencies_label,
