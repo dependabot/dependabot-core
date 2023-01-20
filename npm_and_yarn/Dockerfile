@@ -20,6 +20,9 @@ RUN corepack enable \
   && corepack prepare yarn@3.2.3 --activate
 
 USER dependabot
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
+RUN bash /opt/npm_and_yarn/helpers/build
 
 # START: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
@@ -34,9 +37,7 @@ COPY --chown=dependabot:dependabot updater/config/.yarnrc updater/config/.npmrc 
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
-RUN bash /opt/npm_and_yarn/helpers/build
+
 # Our native helpers pull in yarn 1, so we need to reset the version globally to
 # 3.2.3.
 RUN corepack prepare yarn@3.2.3 --activate
