@@ -58,7 +58,7 @@ module Dependabot
       end
 
       def recursively_fetch_child_poms(pom, fetched_filenames:)
-        base_path = pom.name.gsub(/pom\.xml$/, "")
+        base_path = File.dirname(pom.name)
         doc = Nokogiri::XML(pom.content)
 
         doc.css(MODULE_SELECTOR).flat_map do |module_node|
@@ -128,7 +128,7 @@ module Dependabot
           doc.at_xpath("/project/parent/relativePath")&.content&.strip || ".."
 
         name_parts = [
-          pom.name.gsub(/pom\.xml$/, "").gsub(/pom_parent\.xml$/, ""),
+          File.dirname(pom.name),
           relative_parent_path,
           relative_parent_path.end_with?("pom.xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
