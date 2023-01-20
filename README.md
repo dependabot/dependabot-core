@@ -6,7 +6,7 @@
     </picture>
 </h1>
 
-Welcome to the public home of Dependabot. This repository serves 2 purposes:
+Welcome to the public home of Dependabot :dependabot:. This repository serves 2 purposes:
 
 1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
 2. It is the public issue tracker for issues related to Dependabot's updating logic. For issues about Dependabot the service, please contact [GitHub support][support]. While the distinction between Dependabot Core and the service can be fuzzy, a good rule of thumb is if your issue is with the _diff_ that Dependabot created, it belongs here and for most other things the GitHub support team is best equipped to help you.
