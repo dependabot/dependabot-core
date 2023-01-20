@@ -87,7 +87,7 @@ module Dependabot
     end
 
     def eql?(other)
-      self.==(other)
+      self == other
     end
 
     def support_file?

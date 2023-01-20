@@ -45,7 +45,7 @@ module Dependabot
         release_str = @version_string.split("-").first || ""
         other_release_str = other.to_s.split("-").first || ""
 
-        Gem::Version.new(release_str).<=>(Gem::Version.new(other_release_str))
+        Gem::Version.new(release_str) <=> Gem::Version.new(other_release_str)
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
