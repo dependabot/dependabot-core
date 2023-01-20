@@ -16,7 +16,6 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     dirmngr \
-    gnupg2 \
     zlib1g-dev \
     liblzma-dev \
     libgdbm-dev \
@@ -86,7 +85,6 @@ RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
     dirmngr \
-    gnupg2 \
     zlib1g-dev \
     liblzma-dev \
     libgdbm-dev \

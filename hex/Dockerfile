@@ -1,5 +1,8 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    gnupg2
 # Install Erlang and Elixir
 ENV PATH="$PATH:/usr/local/elixir/bin"
 # https://github.com/elixir-lang/elixir/releases
