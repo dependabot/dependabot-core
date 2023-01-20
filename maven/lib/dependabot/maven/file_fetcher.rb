@@ -130,7 +130,7 @@ module Dependabot
         name_parts = [
           File.dirname(pom.name),
           relative_parent_path,
-          relative_parent_path.end_with?("pom.xml") ? nil : "pom.xml"
+          relative_parent_path.end_with?("pom.xml", "pom_parent.xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
 
         Pathname.new(File.join(*name_parts)).cleanpath.to_path
