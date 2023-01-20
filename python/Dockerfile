@@ -23,10 +23,8 @@ RUN apt-get update \
     bison \
     tzdata \
     zip \
-    unzip \
     openssh-client \
     software-properties-common \
-    curl \
     build-essential \
     make \
     libpq-dev \
@@ -95,10 +93,8 @@ RUN apt-get update \
     bison \
     tzdata \
     zip \
-    unzip \
     openssh-client \
     software-properties-common \
-    curl \
     build-essential \
     make \
     libpq-dev \

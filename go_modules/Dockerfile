@@ -2,9 +2,6 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH=amd64
 
 USER root
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends curl
 
 # Install Go
 ARG GOLANG_VERSION=1.19

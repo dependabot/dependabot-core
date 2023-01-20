@@ -116,8 +116,10 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     # dev dependencies for CI
     build-essential \
+    curl \
     zlib1g-dev \
     libgmp-dev \
+    unzip \
     # VCS section
     git \
     git-lfs \
