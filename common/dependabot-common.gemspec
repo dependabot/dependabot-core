@@ -35,19 +35,19 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parser", ">= 2.5", "< 4.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
-  spec.add_development_dependency "debug", ">= 1.0.0"
+  spec.add_development_dependency "debug", "~> 1.7.1"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "parallel_tests", "~> 4.1.0"
   spec.add_development_dependency "rake", "~> 13"
-  spec.add_development_dependency "rspec", "~> 3.11"
+  spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
   spec.add_development_dependency "rubocop", "~> 1.42.0"
-  spec.add_development_dependency "rubocop-performance", "~> 1.15.0"
+  spec.add_development_dependency "rubocop-performance", "~> 1.15.2"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "simplecov-console", "~> 0.9.1"
   spec.add_development_dependency "stackprof", "~> 0.2.16"
-  spec.add_development_dependency "vcr", "6.1.0"
-  spec.add_development_dependency "webmock", "~> 3.4"
+  spec.add_development_dependency "vcr", "~> 6.1"
+  spec.add_development_dependency "webmock", "~> 3.18"
 
   next unless File.exist?("../.gitignore")
 

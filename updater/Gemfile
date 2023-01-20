@@ -27,12 +27,24 @@ gem "sentry-raven", "~> 3.1"
 gem "terminal-table", "~> 3.0.2"
 
 group :test do
-  gem "debug", "~> 1.7.1"
-  gem "rspec", "~> 3.12"
-  gem "rubocop", "~> 1.42.0"
-  gem "rubocop-performance", "~> 1.15.2"
-  gem "vcr", "~> 6.1"
-  gem "webmock", "~> 3.18"
+  common_gemspec = File.expand_path("../common/dependabot-common.gemspec", __dir__)
+
+  deps_shared_with_core = %w(
+    debug
+    rspec
+    rubocop
+    rubocop-performance
+    vcr
+    webmock
+  )
+
+  Dir.chdir(File.dirname(common_gemspec)) do
+    Gem::Specification.load(common_gemspec).development_dependencies.each do |dep|
+      next unless deps_shared_with_core.include?(dep.name)
+
+      gem dep.name, *dep.requirement.as_list
+    end
+  end
 end
 
 group :development do
