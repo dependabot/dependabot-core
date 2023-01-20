@@ -271,9 +271,8 @@ module Dependabot
       end
 
       def pomfiles
-        # NOTE: this (correctly) excludes any parent POMs that were downloaded
         @pomfiles ||=
-          dependency_files.select { |f| f.name.end_with?("pom.xml") }
+          dependency_files.select { |f| f.name.end_with?("pom.xml", "pom_parent.xml") }
       end
 
       def extensionfiles

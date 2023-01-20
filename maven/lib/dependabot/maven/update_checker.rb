@@ -68,8 +68,7 @@ module Dependabot
             property_details(property_name: prop_name, callsite_pom: pom)&.
             fetch(:file)
 
-          declaration_pom_name == "remote_pom.xml" ||
-            declaration_pom_name&.end_with?("pom_parent.xml")
+          declaration_pom_name == "remote_pom.xml"
         end
       end
 
