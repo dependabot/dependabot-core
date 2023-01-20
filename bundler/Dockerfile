@@ -1,5 +1,10 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    curl
+
 USER dependabot
 
 COPY --chown=dependabot:dependabot bundler/helpers /opt/bundler/helpers
