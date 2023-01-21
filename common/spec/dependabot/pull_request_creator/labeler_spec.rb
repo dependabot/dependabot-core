@@ -336,6 +336,40 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
       end
     end
 
+    context "with Azure details" do
+      let(:source) do
+        Dependabot::Source.new(provider: "azure", repo: "gocardless/bump")
+      end
+
+      context "when the 'dependencies' label doesn't yet exist" do
+        it "creates a 'dependencies' label" do
+          labeler.create_default_labels_if_required
+
+          expect(labeler.labels_for_pr).to include("dependencies")
+        end
+      end
+
+      context "for an update that fixes a security vulnerability" do
+        let(:includes_security_fixes) { true }
+
+        context "when the 'security' label doesn't yet exist" do
+          it "creates a 'security' label" do
+            labeler.create_default_labels_if_required
+
+            expect(labeler.labels_for_pr).to include("security")
+          end
+        end
+
+        context "when a 'security' label already exist" do
+          it "does not creates a 'security' label" do
+            labeler.create_default_labels_if_required
+
+            expect(labeler.labels_for_pr).to include("security")
+          end
+        end
+      end
+    end
+
     context "with GitLab details" do
       let(:source) do
         Dependabot::Source.new(provider: "gitlab", repo: "gocardless/bump")
@@ -675,6 +709,41 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           end
 
           it { is_expected.to eq(%w(dependencies security)) }
+        end
+      end
+    end
+
+    context "with Azure details" do
+      let(:source) do
+        Dependabot::Source.new(provider: "azure", repo: "gocardless/bump")
+      end
+
+      context "when a 'dependencies' label exists" do
+        it { is_expected.to eq(["dependencies"]) }
+
+        context "for a security fix" do
+          let(:includes_security_fixes) { true }
+
+          it { is_expected.to eq(%w(dependencies security)) }
+        end
+      end
+
+      context "when a custom dependencies label exists" do
+        it { is_expected.to eq(["dependencies"]) }
+      end
+
+      context "when asking for custom labels" do
+        let(:custom_labels) { ["critical"] }
+        it { is_expected.to eq(["critical"]) }
+
+        context "that don't exist" do
+          let(:custom_labels) { ["non-existent"] }
+          it { is_expected.to eq(["non-existent"]) }
+        end
+
+        context "when only one doesn't exist" do
+          let(:custom_labels) { %w(critical non-existent) }
+          it { is_expected.to eq(%w(critical non-existent)) }
         end
       end
     end
