@@ -19,21 +19,29 @@ jobs:
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0, ecosystem: composer }
+          - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
+          - { path: elm, name: elm, ecosystem: elm }
           - { path: git_submodules, name: git_submodules, ecosystem: submodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: hex }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: hex }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2, ecosystem: npm }
           - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 0, ecosystem: pub }
+          - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 1, ecosystem: pub }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
+          - { path: terraform, name: terraform, ecosystem: terraform }
 
     steps:
       - name: Checkout code
@@ -55,12 +63,24 @@ jobs:
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'cargo/**'
+            composer:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'composer/**'
             docker:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'docker/**'
+            elm:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'elm/**'
             git_submodules:
               - Dockerfile.updater-core
               - 'common/**'
@@ -73,6 +93,11 @@ jobs:
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'github_actions/**'
+            go_modules:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'go_modules/**'
+              - '.github/workflows/ecosystem-ci.yml'
             gradle:
               - Dockerfile.updater-core
               - 'common/**'
@@ -80,17 +105,12 @@ jobs:
               - '.github/workflows/ecosystem-ci.yml'
               - 'maven/**'
               - 'gradle/**'
-            nuget:
+            hex:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
-              - 'nuget/**'
-            python:
-              - Dockerfile.updater-core
-              - 'common/**'
-              - 'python/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - 'hex/**'
             maven:
               - Dockerfile.updater-core
               - 'common/**'
@@ -102,10 +122,29 @@ jobs:
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'npm_and_yarn/**'
-            go_modules:
+            nuget:
               - Dockerfile.updater-core
               - 'common/**'
-              - 'go_modules/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'nuget/**'
+            pub:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
+              - 'pub/**'
+            python:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - 'python/**'
+              - '.github/workflows/ecosystem-ci.yml'
+            terraform:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - 'terraform/**'
               - '.github/workflows/ecosystem-ci.yml'
 
       - name: Build updater core image
@@ -114,7 +153,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "dependabot/dependabot-updater-core:latest" \
+            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-updater-core \
             -f Dockerfile.updater-core \
