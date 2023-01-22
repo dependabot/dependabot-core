@@ -70,12 +70,13 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
 ### RUBY
 
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
-ARG RUBY_VERSION=3.1.2
+ARG RUBY_VERSION=3.1.3
 ARG RUBY_INSTALL_VERSION=0.8.5
 
-ARG BUNDLER_V1_VERSION=1.17.3
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-ARG BUNDLER_V2_VERSION=2.3.25
+# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
+# This way other projects that import this library don't have to futz around with installing new /unexpected bundler versions.
+ARG BUNDLER_V2_VERSION=2.3.26
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
 # Allow gem installs as the dependabot user
 ENV BUNDLE_PATH=".bundle"
@@ -88,7 +89,6 @@ RUN mkdir -p /tmp/ruby-install \
  && cd ruby-install-$RUBY_INSTALL_VERSION/ \
  && make \
  && ./bin/ruby-install --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
- && gem install bundler -v $BUNDLER_V1_VERSION --no-document \
  && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
  && rm -rf /var/lib/gems/*/cache/* \
  && rm -rf /tmp/ruby-install
@@ -103,25 +103,25 @@ ENV PYENV_ROOT=/usr/local/.pyenv \
 RUN mkdir -p "$PYENV_ROOT" && chown dependabot:dependabot "$PYENV_ROOT"
 USER dependabot
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.6 --single-branch --depth=1 /usr/local/.pyenv \
+RUN git -c advice.detachedHead=false clone https://github.com/pyenv/pyenv.git --branch v2.3.9 --single-branch --depth=1 /usr/local/.pyenv \
   # This is the version of CPython that gets installed
-  && pyenv install 3.11.0 \
-  && pyenv global 3.11.0 \
-  && pyenv install 3.10.8 \
-  && pyenv install 3.9.15 \
-  && pyenv install 3.8.15 \
-  && pyenv install 3.7.15 \
+  && pyenv install 3.11.1 \
+  && pyenv global 3.11.1 \
+  && pyenv install 3.10.9 \
+  && pyenv install 3.9.16 \
+  && pyenv install 3.8.16 \
+  && pyenv install 3.7.16 \
   && rm -Rf /tmp/python-build* \
   && bash /opt/python/helpers/build \
   && cd /usr/local/.pyenv \
-  && tar czf 3.10.tar.gz versions/3.10.8 \
-  && tar czf 3.9.tar.gz versions/3.9.15 \
-  && tar czf 3.8.tar.gz versions/3.8.15 \
-  && tar czf 3.7.tar.gz versions/3.7.15 \
-  && rm -Rf versions/3.10.8 \
-  && rm -Rf versions/3.9.15 \
-  && rm -Rf versions/3.8.15 \
-  && rm -Rf versions/3.7.15
+  && tar czf 3.10.tar.gz versions/3.10.9 \
+  && tar czf 3.9.tar.gz versions/3.9.16 \
+  && tar czf 3.8.tar.gz versions/3.8.16 \
+  && tar czf 3.7.tar.gz versions/3.7.16 \
+  && rm -Rf versions/3.10.9 \
+  && rm -Rf versions/3.9.16 \
+  && rm -Rf versions/3.8.16 \
+  && rm -Rf versions/3.7.16
 
 USER root
 ### JAVASCRIPT
@@ -247,15 +247,15 @@ ENV RUSTUP_HOME=/opt/rust \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 USER dependabot
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.64.0 --profile minimal
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.66.0 --profile minimal
 
 
 ### Terraform
 
 USER root
-ARG TERRAFORM_VERSION=1.3.6
-ARG TERRAFORM_AMD64_CHECKSUM=bb44a4c2b0a832d49253b9034d8ccbd34f9feeb26eda71c665f6e7fa0861f49b
-ARG TERRAFORM_ARM64_CHECKSUM=f4b1af29094290f1b3935c29033c4e5291664ee2c015ca251a020dd425c847c3
+ARG TERRAFORM_VERSION=1.3.7
+ARG TERRAFORM_AMD64_CHECKSUM=b8cf184dee15dfa89713fe56085313ab23db22e17284a9a27c0999c67ce3021e
+ARG TERRAFORM_ARM64_CHECKSUM=5b491c555ea8a62dda551675fd9f27d369f5cdbe87608d2a7367d3da2d38ea38
 RUN cd /tmp \
   && curl -o terraform-${TARGETARCH}.tar.gz https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip \
   && printf "$TERRAFORM_AMD64_CHECKSUM terraform-amd64.tar.gz\n$TERRAFORM_ARM64_CHECKSUM terraform-arm64.tar.gz\n" | sha256sum -c --ignore-missing - \

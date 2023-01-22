@@ -9,6 +9,14 @@
             "gitObjectType": "blob",
             "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/3e759b75bf455ac809d0987d369aab89137b568a",
             "size": 5582
+        },
+        {
+            "objectId": "8b23cf04122670142ba2e64c7b3293f82409726a",
+            "relativePath": "CHANGELOG.md",
+            "mode": "100644",
+            "gitObjectType": "blob",
+            "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/8b23cf04122670142ba2e64c7b3293f82409726a",
+            "size": 1250
         }
     ],
     "size": 180,

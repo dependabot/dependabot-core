@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 export LOCAL_IMAGE="dependabot/updater:latest"
 export GPR_IMAGE="docker.pkg.github.com/dependabot/dependabot-updater/dependabot-updater"
 
@@ -6,7 +7,8 @@ function docker_build() {
 
   extract_version
 
-  docker build $DOCKER_BUILD_ARGS -f Dockerfile.updater -t "$LOCAL_IMAGE" --build-arg OMNIBUS_VERSION=$OMNIBUS_VERSION .
+  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  docker build $DOCKER_BUILD_ARGS -f Dockerfile.updater -t "$LOCAL_IMAGE" --build-arg OMNIBUS_VERSION .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
   IMAGE_LAYERS=$(docker history -q "$LOCAL_IMAGE" | wc -l | sed -e 's/ //g')
@@ -16,7 +18,7 @@ function docker_build() {
 
 function docker_exec() {
   docker_build
-  docker run --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" \
+  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --rm \
   -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
   -ti "$LOCAL_IMAGE" "$@"
@@ -25,13 +27,8 @@ function docker_exec() {
 function docker_bundle_exec() {
   docker_build
 
-  VCR_ARGS=""
-  if [ -n "$VCR" ]; then
-    VCR_ARGS="--env \"VCR=$VCR\""
-  fi
-
-  docker run --env "DEPENDABOT_TEST_ACCESS_TOKEN=$DEPENDABOT_TEST_ACCESS_TOKEN" \
-  $VCR_ARGS \
+  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  --env VCR \
   --rm \
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
   "$LOCAL_IMAGE" bundle exec "$@"

@@ -88,10 +88,17 @@ module Dependabot
           case update_strategy
           when :widen_ranges then widen_pyproject_requirement(req)
           when :bump_versions then update_pyproject_version(req)
+          when :bump_versions_if_necessary then update_pyproject_version_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
+        end
+
+        def update_pyproject_version_if_needed(req)
+          return req if new_version_satisfies?(req)
+
+          update_pyproject_version(req)
         end
 
         def update_pyproject_version(req)
@@ -184,6 +191,8 @@ module Dependabot
             update_requirement(req)
           when :bump_versions_if_necessary
             update_requirement_if_needed(req)
+          else
+            raise "Unexpected update strategy: #{update_strategy}"
           end
         end
 

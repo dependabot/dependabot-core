@@ -1,0 +1,10 @@
+[[source]]
+url = "https://${ENV_USER}:${ENV_PASSWORD}@pypi.posrip.com/pypi/"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+pytest = "==3.4.0"
+
+[packages]
+requests = "==2.18.0"

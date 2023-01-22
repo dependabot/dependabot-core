@@ -82,11 +82,12 @@ module Dependabot
           return unless suggested_changelog_url
 
           # TODO: Support other providers
-          source = Source.from_url(suggested_changelog_url)
-          return unless source&.provider == "github"
+          suggested_source = Source.from_url(suggested_changelog_url)
+          return unless suggested_source&.provider == "github"
 
-          opts = { path: source.directory, ref: source.branch }.compact
-          tmp_files = github_client.contents(source.repo, opts)
+          opts = { path: suggested_source.directory, ref: suggested_source.branch }.compact
+          suggested_source_client = github_client_for_source(suggested_source)
+          tmp_files = suggested_source_client.contents(suggested_source.repo, opts)
 
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
@@ -161,12 +162,13 @@ module Dependabot
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
-            provider = Source.from_url(file.html_url).provider
+            file_source = Source.from_url(file.html_url)
             @file_text[file.download_url] =
-              case provider
-              when "github" then fetch_github_file(file)
+              case file_source.provider
+              when "github" then fetch_github_file(file_source, file)
               when "gitlab" then fetch_gitlab_file(file)
               when "bitbucket" then fetch_bitbucket_file(file)
+              when "azure" then fetch_azure_file(file)
               when "codecommit" then nil # TODO: git file from codecommit
               else raise "Unsupported provider '#{provider}'"
               end
@@ -177,9 +179,9 @@ module Dependabot
           @file_text[file.download_url].sub(/\n*\z/, "")
         end
 
-        def fetch_github_file(file)
+        def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = github_client.get(file.url).content
+          raw_content = github_client_for_source(file_source).get(file.url).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -193,6 +195,11 @@ module Dependabot
 
         def fetch_bitbucket_file(file)
           bitbucket_client.get(file.download_url).body.
+            force_encoding("UTF-8").encode
+        end
+
+        def fetch_azure_file(file)
+          azure_client.get(file.download_url).body.
             force_encoding("UTF-8").encode
         end
 
@@ -220,7 +227,7 @@ module Dependabot
           when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
           when "gitlab" then fetch_gitlab_file_list
-          when "azure" then [] # TODO: Fetch files from Azure
+          when "azure" then fetch_azure_file_list
           when "codecommit" then [] # TODO: Fetch Files from Codecommit
           else raise "Unexpected repo provider '#{source.provider}'"
           end
@@ -292,6 +299,29 @@ module Dependabot
           []
         end
 
+        def fetch_azure_file_list
+          azure_client.fetch_repo_contents.map do |entry|
+            type = case entry.fetch("gitObjectType")
+                   when "blob" then "file"
+                   when "tree" then "dir"
+                   else entry.fetch("gitObjectType")
+                   end
+
+            OpenStruct.new(
+              name: File.basename(entry.fetch("relativePath")),
+              type: type,
+              size: entry.fetch("size"),
+              path: entry.fetch("relativePath"),
+              html_url: "#{source.url}?path=/#{entry.fetch('relativePath')}",
+              download_url: entry.fetch("url")
+            )
+          end
+        rescue Dependabot::Clients::Azure::NotFound,
+               Dependabot::Clients::Azure::Unauthorized,
+               Dependabot::Clients::Azure::Forbidden
+          []
+        end
+
         def new_version
           return @new_version if defined?(@new_version)
 
@@ -346,7 +376,19 @@ module Dependabot
 
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_github_dot_com(credentials: credentials)
+                             for_source(source: source, credentials: credentials)
+        end
+
+        def azure_client
+          @azure_client ||= Dependabot::Clients::Azure.
+                            for_source(source: source, credentials: credentials)
+        end
+
+        def github_client_for_source(client_source)
+          return github_client if client_source == source
+
+          Dependabot::Clients::GithubWithRetries.
+            for_source(source: client_source, credentials: credentials)
         end
 
         def bitbucket_client

@@ -168,7 +168,7 @@ module Dependabot
         modified_content = file.content
 
         old_tags.each do |old_tag|
-          old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+#{old_tag}(?=\s|$)/
+          old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
           modified_content = modified_content.gsub(old_tag_regex) do |old_img_tag|
             old_img_tag.gsub(old_tag.to_s, new_yaml_tag(file).to_s)
           end

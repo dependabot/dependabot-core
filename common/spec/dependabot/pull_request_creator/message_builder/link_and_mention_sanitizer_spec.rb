@@ -374,4 +374,116 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder::LinkAndMentionSan
       end
     end
   end
+
+  describe "#sanitize_links_and_mentions not formatting to html" do
+    subject(:sanitize_links_and_mentions_to_markdown) do
+      sanitizer.sanitize_links_and_mentions(text: text, format_html: false)
+    end
+
+    context "with an @-mention" do
+      let(:text) { "Great work @greysteil!" }
+
+      it "sanitizes the text" do
+        expect(sanitize_links_and_mentions_to_markdown).
+          to eq("Great work [`@\u200Bgreysteil`](https://github.com/greysteil)\\!\n")
+      end
+
+      context "that includes a dash" do
+        let(:text) { "Great work @greysteil-work!" }
+
+        it "sanitizes the text" do
+          expect(sanitize_links_and_mentions_to_markdown).to eq(
+            "Great work [`@\u200Bgreysteil-work`](https://github.com/greysteil-work)\\!\n"
+          )
+        end
+      end
+
+      context "that is in brackets" do
+        let(:text) { "The team (by @greysteil) etc." }
+
+        it "sanitizes the text" do
+          expect(sanitize_links_and_mentions_to_markdown).to eq(
+            "The team (by [`@\u200Bgreysteil`](https://github.com/greysteil)) etc.\n"
+          )
+        end
+      end
+    end
+
+    context "with an email" do
+      let(:text) { "Contact support@dependabot.com for details" }
+      it do
+        is_expected.to eq(
+          "Contact <support@dependabot.com> for details\n"
+        )
+      end
+    end
+
+    context "with a GitHub link" do
+      let(:text) { "Check out https://github.com/my/repo/issues/5" }
+
+      it do
+        is_expected.to eq(
+          "Check out [my/repo\\#5](https://github-redirect.com/my/repo/issues/5)\n"
+        )
+      end
+    end
+
+    context "with a GitHub link including www" do
+      let(:text) { "Check out https://www.github.com/my/repo/issues/5" }
+
+      it do
+        is_expected.to eq(
+          "Check out [my/repo\\#5](https://github-redirect.com/my/repo/issues/5)\n"
+        )
+      end
+    end
+
+    context "with a GitHub pull request link" do
+      let(:text) do
+        "https://github.com/rust-num/num-traits/pull/144"
+      end
+
+      it do
+        is_expected.to eq(
+          "[rust-num/num-traits\\#144](https://github-redirect.com/rust-num/num-traits/pull/144)\n"
+        )
+      end
+    end
+
+    context "with a GitHub NWO and PR number" do
+      let(:text) do
+        "dsp-testing/dependabot-ts-definitely-typed#25"
+      end
+      it do
+        is_expected.to eq(
+          "`dsp-testing/dependabot-ts-definitely-typed#25`\n"
+        )
+      end
+    end
+
+    context "with a GitHub link in rdoc" do
+      let(:text) do
+        "{Issue 111}[https://github.com/dependabot/dependabot-core/issues/111]"
+      end
+
+      it do
+        is_expected.to eq(
+          "{Issue 111}\\[https://github-redirect.com/dependabot/" \
+          "dependabot-core/issues/111\\]\n"
+        )
+      end
+    end
+
+    context "with a GitHub repo settings link link" do
+      let(:text) do
+        "https://github.com/rust-num/num-traits/settings"
+      end
+
+      it do
+        is_expected.to eq(
+          "<https://github.com/rust-num/num-traits/settings>\n"
+        )
+      end
+    end
+  end
 end

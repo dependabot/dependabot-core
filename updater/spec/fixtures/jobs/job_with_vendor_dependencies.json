@@ -10,19 +10,6 @@
         "update-type": "security"
       }
     ],
-    "credentials": [
-      {
-        "type": "git_source",
-        "host": "github.com",
-        "username": "x-access-token",
-        "password": "v1.exampletokenfromgithubinityesitisforsure"
-      },
-      {
-        "type": "rubygems_index",
-        "host": "my.rubygems-host.org",
-        "token": "secret"
-      }
-    ],
     "credentials-metadata": [
       {
         "type": "git_source",
@@ -54,5 +41,18 @@
     "updating-a-pull-request": false,
     "vendor-dependencies": true,
     "security-updates-only": false
-  }
+  },
+  "credentials": [
+    {
+      "type": "git_source",
+      "host": "github.com",
+      "username": "x-access-token",
+      "password": "v1.exampletokenfromgithubinityesitisforsure"
+    },
+    {
+      "type": "rubygems_index",
+      "host": "my.rubygems-host.org",
+      "token": "secret"
+    }
+  ]
 }

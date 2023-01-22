@@ -34,6 +34,9 @@ if ENV["COVERAGE"]
   end
 end
 
+Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
+Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
+
 RSpec.configure do |config|
   config.color = true
   config.order = :rand

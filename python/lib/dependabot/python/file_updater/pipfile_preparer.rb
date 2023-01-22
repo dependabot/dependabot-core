@@ -21,7 +21,7 @@ module Dependabot
           pipfile_object = TomlRB.parse(pipfile_content)
 
           pipfile_object["source"] =
-            pipfile_sources.reject { |h| h["url"].include?("${") } +
+            pipfile_sources.filter_map { |h| sub_auth_url(h, credentials) } +
             config_variable_sources(credentials)
 
           TomlRB.dump(pipfile_object)
@@ -112,6 +112,22 @@ module Dependabot
           @pipfile_sources ||=
             TomlRB.parse(pipfile_content).fetch("source", []).
             map { |h| h.dup.merge("url" => h["url"].gsub(%r{/*$}, "") + "/") }
+        end
+
+        def sub_auth_url(source, credentials)
+          if source["url"].include?("${")
+            base_url = source["url"].sub(/\${.*}@/, "")
+
+            source_cred = credentials.
+                          select { |cred| cred["type"] == "python_index" }.
+                          find { |c| c["index-url"].sub(/\${.*}@/, "") == base_url }
+
+            return nil if source_cred.nil?
+
+            source["url"] = AuthedUrlBuilder.authed_url(credential: source_cred)
+          end
+
+          source
         end
 
         def config_variable_sources(credentials)

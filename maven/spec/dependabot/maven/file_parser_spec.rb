@@ -497,7 +497,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           to include("junit:junit")
       end
 
-      context "when the parent was downloaded only as a supporting POM" do
+      context "when parent is named pom_parent" do
         let(:files) { [pom, parent_pom] }
         let(:pom_body) { fixture("poms", "sigtran-map.pom") }
         let(:parent_pom) do
@@ -507,11 +507,11 @@ RSpec.describe Dependabot::Maven::FileParser do
           )
         end
 
-        it "excludes parent dependencies" do
+        it "includes parent dependencies" do
           expect(dependencies.map(&:name)).
             to include("uk.me.lwood.sigtran:sigtran-tcap")
           expect(dependencies.map(&:name)).
-            to_not include("junit:junit")
+            to include("junit:junit")
         end
       end
     end

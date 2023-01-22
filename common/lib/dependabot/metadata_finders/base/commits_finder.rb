@@ -22,7 +22,6 @@ module Dependabot
 
         def commits_url
           return unless source
-          return if source.provider == "azure" # TODO: Fetch Azure commits
           return if source.provider == "codecommit" # TODO: Fetch Codecommit commits
 
           path =
@@ -30,6 +29,7 @@ module Dependabot
             when "github" then github_compare_path(new_tag, previous_tag)
             when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
             when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
+            when "azure" then azure_compare_path(new_tag, previous_tag)
             else raise "Unexpected source provider '#{source.provider}'"
             end
 
@@ -44,7 +44,7 @@ module Dependabot
           when "github" then fetch_github_commits
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
-          when "azure" then [] # TODO: Fetch Azure commits
+          when "azure" then fetch_azure_commits
           when "codecommit" then [] # TODO: Fetch Codecommit commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
@@ -216,6 +216,18 @@ module Dependabot
           end
         end
 
+        def azure_compare_path(new_tag, previous_tag)
+          # GC for commits, GT for tags, and GB for branches
+          type = git_sha?(new_tag) ? "GC" : "GT"
+          if new_tag && previous_tag
+            "branchCompare?baseVersion=#{type}#{previous_tag}&targetVersion=#{type}#{new_tag}"
+          elsif new_tag
+            "commits?itemVersion=#{type}#{new_tag}"
+          else
+            "commits"
+          end
+        end
+
         def fetch_github_commits
           commits =
             begin
@@ -282,6 +294,26 @@ module Dependabot
           []
         end
 
+        def fetch_azure_commits
+          type = git_sha?(new_tag) ? "commit" : "tag"
+          azure_client.
+            compare(previous_tag, new_tag, type).
+            map do |commit|
+            {
+              message: commit["comment"],
+              sha: commit["commitId"],
+              html_url: commit["remoteUrl"]
+            }
+          end
+        rescue Dependabot::Clients::Azure::NotFound,
+               Dependabot::Clients::Azure::Unauthorized,
+               Dependabot::Clients::Azure::Forbidden,
+               Excon::Error::Server,
+               Excon::Error::Socket,
+               Excon::Error::Timeout
+          []
+        end
+
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
                              for_gitlab_dot_com(credentials: credentials)
@@ -289,7 +321,12 @@ module Dependabot
 
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_github_dot_com(credentials: credentials)
+                             for_source(source: source, credentials: credentials)
+        end
+
+        def azure_client
+          @azure_client ||= Dependabot::Clients::Azure.
+                            for_source(source: source, credentials: credentials)
         end
 
         def bitbucket_client

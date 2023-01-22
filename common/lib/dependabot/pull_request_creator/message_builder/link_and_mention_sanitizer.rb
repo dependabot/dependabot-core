@@ -34,7 +34,7 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
-        def sanitize_links_and_mentions(text:, unsafe: false)
+        def sanitize_links_and_mentions(text:, unsafe: false, format_html: true)
           doc = CommonMarker.render_doc(
             text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
           )
@@ -45,6 +45,8 @@ module Dependabot
           sanitize_nwo_text(doc)
 
           mode = unsafe ? :UNSAFE : :DEFAULT
+          return doc.to_commonmark([mode] + COMMONMARKER_OPTIONS) unless format_html
+
           doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
 

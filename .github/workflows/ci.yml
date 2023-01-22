@@ -37,7 +37,6 @@ jobs:
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1 }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 2 }
           - { path: nuget, name: nuget }
-          - { path: omnibus, name: omnibus }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 0 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 1 }
           - { path: python, name: python, ci_node_total: 5, ci_node_index: 2 }
@@ -63,74 +62,104 @@ jobs:
             bundler:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
             composer:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'go_modules/**'
             gradle:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'maven/**'
               - 'gradle/**'
             hex:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'maven/**'
             npm_and_yarn:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
               - Dockerfile
               - 'common/**'
-              - 'nuget/**'
-            omnibus:
-              - Dockerfile
-              - 'common/**'
               - 'omnibus/**'
+              - '.github/workflows/ci.yml'
+              - 'nuget/**'
             pub:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'python/**'
             terraform:
               - Dockerfile
               - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ci.yml'
               - 'terraform/**'
 
       - name: Build dependabot-core image
@@ -144,14 +173,15 @@ jobs:
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
 
-      - name: Build dependabot-core-ci image
+      - name: Build dependabot-updater image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         env:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -f Dockerfile.ci \
-            -t "dependabot-core-ci:latest" \
+            -f Dockerfile.updater \
+            -t "dependabot-updater:latest" \
+            --build-arg OMNIBUS_VERSION=latest \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             .
 
@@ -165,8 +195,8 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot-core-ci bash -c \
-            "cd /home/dependabot/dependabot-core/${{ matrix.suite.path }} && ./script/ci-test"
+            --rm dependabot-updater bash -c \
+            "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
     name: Updater
@@ -185,10 +215,6 @@ jobs:
             .
       - name: Build
         run: script/build
-      - name: Lint
-        run: script/lint
-        env:
-          SKIP_BUILD: true
       - name: Run updater tests
         run: ./script/ci-test-updater
         env:
@@ -200,4 +226,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
       - run: ./bin/lint

@@ -1,0 +1,163 @@
+FROM ubuntu:20.04 as builder
+
+ARG TARGETARCH=amd64
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+### SYSTEM DEPENDENCIES
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+  LC_ALL="en_US.UTF-8" \
+  LANG="en_US.UTF-8"
+
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    zlib1g-dev \
+    libyaml-dev \
+    libgdbm-dev \
+    bison \
+    tzdata \
+    zip \
+    unzip \
+    locales \
+    make \
+    libssl-dev \
+    libbz2-dev \
+    libffi-dev \
+    libreadline-dev \
+    libncurses5-dev \
+    xz-utils \
+    tk-dev \
+  && locale-gen en_US.UTF-8
+
+### RUBY
+
+# When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
+ARG RUBY_VERSION=3.1.2
+ARG RUBY_INSTALL_VERSION=0.8.5
+
+# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
+ARG BUNDLER_V2_VERSION=2.3.25
+ENV BUNDLE_SILENCE_ROOT_WARNING=1
+# Allow gem installs as the dependabot user
+ENV BUNDLE_PATH=".bundle"
+
+# Install Ruby, update RubyGems, and install Bundler
+RUN mkdir -p /tmp/ruby-install \
+ && cd /tmp/ruby-install \
+ && curl -fsSL "https://github.com/postmodern/ruby-install/archive/v$RUBY_INSTALL_VERSION.tar.gz" -o ruby-install-$RUBY_INSTALL_VERSION.tar.gz  \
+ && tar -xzvf ruby-install-$RUBY_INSTALL_VERSION.tar.gz \
+ && cd ruby-install-$RUBY_INSTALL_VERSION/ \
+ && make \
+ && ./bin/ruby-install -j4 --system --cleanup ruby $RUBY_VERSION -- --disable-install-doc \
+ && gem install bundler -v $BUNDLER_V2_VERSION --no-document \
+ && rm -rf /var/lib/gems/*/cache/* \
+ && rm -rf /tmp/ruby-install
+
+ENV HOME="/home/dependabot"
+WORKDIR ${HOME}
+
+# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
+ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
+RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
+
+ENV DEPENDABOT_HOME /home/dependabot
+WORKDIR ${DEPENDABOT_HOME}
+
+COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
+COPY .ruby-version .ruby-version
+COPY .rubocop.yml .rubocop.yml
+COPY omnibus omnibus
+COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
+COPY terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
+COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
+COPY hex/Gemfile hex/dependabot-hex.gemspec hex/
+COPY elm/Gemfile elm/dependabot-elm.gemspec elm/
+COPY docker/Gemfile docker/dependabot-docker.gemspec docker/
+COPY nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
+COPY maven/Gemfile maven/dependabot-maven.gemspec maven/
+COPY gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
+COPY cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
+COPY composer/Gemfile composer/dependabot-composer.gemspec composer/
+COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
+COPY python/Gemfile python/dependabot-python.gemspec python/
+COPY pub/Gemfile pub/dependabot-pub.gemspec pub/
+COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
+COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
+COPY common common
+
+# prevent having all the source in every ecosystem image
+RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
+      mkdir -p $ecosystem/lib/dependabot; \
+      touch $ecosystem/lib/dependabot/$ecosystem.rb; \
+    done
+
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+RUN bundle config set --local path 'vendor' && \
+bundle config set --local frozen 'true' && \
+bundle config set --local without 'development' && \
+bundle install
+
+FROM ubuntu:20.04
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND="noninteractive" \
+  LC_ALL="en_US.UTF-8" \
+  LANG="en_US.UTF-8"
+
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
+    # dev dependencies for CI
+    build-essential \
+    zlib1g-dev \
+    libgmp-dev \
+    # VCS section
+    git \
+    git-lfs \
+    bzr \
+    mercurial \
+    # Installs certs in dependabot-action and CLI
+    ca-certificates \
+    # used to check if a file is binary in the VendorUpdater
+    file \
+    # used by Ruby to parse YAML
+    libyaml-dev \
+    locales \
+  && locale-gen en_US.UTF-8 \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; \
+     else GROUP_NAME=$(getent group $USER_GID | awk -F':' '{print $1}'); groupmod -n dependabot "$GROUP_NAME" ; fi \
+  && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
+  && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
+
+# Disable automatic pulling of files stored with Git LFS
+# This avoids downloading large files not necessary for the dependabot scripts
+ENV GIT_LFS_SKIP_SMUDGE=1
+
+COPY --from=builder /opt /opt
+COPY --from=builder --chown=dependabot:dependabot /usr/local /usr/local
+COPY --from=builder --chown=dependabot:dependabot /home/dependabot /home/dependabot
+
+ENV DEPENDABOT_HOME /home/dependabot
+
+# Add project
+COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+
+ENV PATH="$HOME/bin:$PATH"
+ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
+
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
+
+CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]

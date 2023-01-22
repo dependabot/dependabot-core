@@ -84,6 +84,19 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
       expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
     end
 
+    context "with an indirect dependency update" do
+      let(:requirements) { [] }
+      let(:previous_requirements) { [] }
+
+      it "includes an updated go.mod" do
+        expect(updated_files.find { |f| f.name == "go.mod" }).to_not be_nil
+      end
+
+      it "includes an updated go.sum" do
+        expect(updated_files.find { |f| f.name == "go.sum" }).to_not be_nil
+      end
+    end
+
     context "with an invalid module path" do
       let(:stderr) do
         <<~STDERR

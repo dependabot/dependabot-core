@@ -293,7 +293,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         it "fetches the relevant poms" do
           expect(file_fetcher_instance.files.count).to eq(3)
           expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(pom.xml ../pom_parent.xml ../../pom_parent.xml))
+            to match_array(%w(pom.xml ../pom.xml ../../pom.xml))
         end
       end
 

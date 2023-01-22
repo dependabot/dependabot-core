@@ -10,4 +10,8 @@ shellcheck \
   ./*/helpers/*/build \
   ./*/helpers/build \
   ./*/script/* \
+  ./script/* \
+  ./updater/bin/run \
   "$@"
+
+bundle exec rubocop

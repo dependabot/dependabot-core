@@ -40,7 +40,7 @@ RSpec.describe Dependabot::GoModules::FileParser do
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
-    its(:length) { is_expected.to eq(3) }
+    its(:length) { is_expected.to eq(4) }
 
     describe "top level dependencies" do
       subject(:dependencies) do
@@ -130,16 +130,34 @@ RSpec.describe Dependabot::GoModules::FileParser do
       end
     end
 
+    describe "indirect dependencies" do
+      subject(:dependencies) do
+        parser.parse.reject(&:top_level?)
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "a dependency that uses go modules" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "github.com/mattn/go-isatty" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("github.com/mattn/go-isatty")
+          expect(dependency.version).to eq("0.0.4")
+          expect(dependency.requirements).to be_empty
+        end
+      end
+    end
+
     describe "a dependency that is replaced" do
       subject(:dependency) do
         dependencies.find { |d| d.name == "rsc.io/qr" }
       end
 
-      it "has the right details" do
-        expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("rsc.io/qr")
-        expect(dependency.version).to eq("0.1.0")
-        expect(dependency.requirements).to eq([])
+      it "is skipped as unsupported" do
+        expect(dependency).to be_nil
       end
     end
 
@@ -274,9 +292,8 @@ RSpec.describe Dependabot::GoModules::FileParser do
         dependencies.find { |d| d.name == "rsc.io/qr" }
       end
 
-      it "has the right details" do
-        expect(dependency).to be_a(Dependabot::Dependency)
-        expect(dependency.name).to eq("rsc.io/qr")
+      it "is skipped as unsupported" do
+        expect(dependency).to be_nil
       end
     end
 
@@ -325,7 +342,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
       it "parses root file" do
         expect(dependencies.map(&:name)).
           to eq(%w(
-            github.com/dependabot/vgotest/common
             rsc.io/qr
           ))
       end
@@ -337,7 +353,6 @@ RSpec.describe Dependabot::GoModules::FileParser do
         it "parses nested file" do
           expect(dependencies.map(&:name)).
             to eq(%w(
-              github.com/dependabot/vgotest/common
               rsc.io/qr
             ))
         end

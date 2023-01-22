@@ -1,0 +1,94 @@
+name: Eco branch images
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
+
+jobs:
+  push-updater-images:
+    name: Deploy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: bundler, ecosystem: bundler }
+          - { name: cargo, ecosystem: cargo }
+          - { name: docker, ecosystem: docker }
+          - { name: git_submodules, ecosystem: gitsubmodule }
+          - { name: github_actions, ecosystem: github-actions }
+          - { name: go_modules, ecosystem: gomod }
+          - { name: gradle, ecosystem: gradle }
+          - { name: maven, ecosystem: maven }
+          - { name: npm_and_yarn, ecosystem: npm }
+          - { name: nuget, ecosystem: nuget }
+          - { name: python, ecosystem: pip }
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+        # sets DECISION to the PR's review decision, handling the push-after-approval case
+      - name: Check if pull request is approved
+        run: |
+          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          echo "Review decision is: $DECISION"
+          echo "DECISION=$DECISION" >> $GITHUB_ENV
+
+      # overwrite the previous result if this is a fork since forks can't publish to GHCR
+      - name: Skip forks
+        if: github.event.pull_request.head.repo.fork
+        run: echo "DECISION=FORK" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build updater core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            -f Dockerfile.updater-core \
+            .
+
+      - name: Build ecosystem image
+        if: env.DECISION == 'APPROVED:OPEN'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
+            -f ${{ matrix.suite.name }}/Dockerfile \
+            .
+
+      - name: Push branch image
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
+
+      - name: Set summary
+        if: env.DECISION == 'APPROVED:OPEN'
+        run: |
+          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
