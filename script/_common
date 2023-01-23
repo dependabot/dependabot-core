@@ -17,6 +17,7 @@ function docker_build() {
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg TARGETARCH="$TARGETARCH" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
     -t "ghcr.io/dependabot/dependabot-updater-core" \
     -f Dockerfile.updater-core \
@@ -26,6 +27,7 @@ function docker_build() {
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg TARGETARCH="$TARGETARCH" \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
     -t "$LOCAL_IMAGE$ECOSYSTEM" \
     -f $ECOSYSTEM/Dockerfile \
