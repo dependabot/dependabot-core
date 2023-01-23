@@ -204,9 +204,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build dependabot-core image
-        env:
-          DOCKER_BUILDKIT: 1
       - name: Build
         run: script/build bundler
       - name: Run updater tests
