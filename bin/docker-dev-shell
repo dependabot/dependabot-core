@@ -19,6 +19,11 @@ if [ $? != 0 ]; then
   exit 1
 fi
 
+if [[ -z "$1" ]]; then
+  HELP=true
+fi
+ECOSYSTEM="$1"
+
 while true; do
   case "$1" in
     -h | --help ) HELP=true; shift ;;
@@ -29,11 +34,12 @@ while true; do
 done
 
 if [ "$HELP" = "true" ]; then
-  echo "usage: $0 [--rebuild] [ARGS]"
+  echo "usage: $0 <ecosystem> [--rebuild] [ARGS]"
   exit 0
 fi
 
 build_image() {
+  ECOSYSTEM="$1"
   export BUILT_IMAGE=true
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
 
@@ -50,19 +56,34 @@ build_image() {
     --build-arg "TARGETARCH=${TARGETARCH}" \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
-    --cache-from "dependabot/dependabot-core:latest" \
-    -t dependabot/dependabot-core .
+    --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
+    -t "ghcr.io/dependabot/dependabot-updater-core" \
+    -f Dockerfile.updater-core \
+    .
+
+  docker build \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg "TARGETARCH=${TARGETARCH}" \
+    --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
+    -t "dependabot/dependabot-core" \
+    -f "$ECOSYSTEM"/Dockerfile \
+    .
+
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
-  docker build --build-arg BUILDKIT_INLINE_CACHE=1 -t "$IMAGE_NAME" -f "$DOCKERFILE" .
+  docker build \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    -t "$IMAGE_NAME" \
+    -f "$DOCKERFILE" \
+    .
 }
 
 IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
 if [ -z "$IMAGE_ID" ]; then
   echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
-  build_image
+  build_image "$ECOSYSTEM"
 elif [ "$REBUILD" = "true" ]; then
   echo "$(tput setaf 4) > rebuild of $IMAGE_NAME requested$(tput sgr0)"
-  build_image
+  build_image "$ECOSYSTEM"
 else
   echo "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
 fi
@@ -94,8 +115,8 @@ if [ -n "$DOCKER_NETWORK" ]; then
 fi
 
 CONTAINER_ARGS=("bash")
-if [ "$#" -gt "0" ]; then
-  CONTAINER_ARGS=("$@")
+if [ "$#" -gt "1" ]; then
+  CONTAINER_ARGS=("${@:2}")
 fi
 
 echo "$(tput setaf 2)=> running docker development shell$(tput sgr0)"
@@ -227,4 +248,4 @@ docker run --rm -ti \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
-  "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
+  "$IMAGE_NAME" "${CONTAINER_ARGS[${@:2}]}"

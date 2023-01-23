@@ -1,48 +1,56 @@
 # shellcheck shell=bash
-export LOCAL_IMAGE="dependabot/updater:latest"
-export GPR_IMAGE="docker.pkg.github.com/dependabot/dependabot-updater/dependabot-updater"
+export LOCAL_IMAGE="ghcr.io/dependabot/dependabot-updater-"
 
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
+  ECOSYSTEM="$1"
 
-  extract_version
+  local TARGETARCH;
+  case "$(uname -m)"
+  in
+    amd64 | x86_64) TARGETARCH=amd64 ;;
+    arm64 | aarch64) TARGETARCH=arm64 ;;
+    *) TARGETARCH=amd64 ;;
+  esac
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build $DOCKER_BUILD_ARGS -f Dockerfile.updater -t "$LOCAL_IMAGE" --build-arg OMNIBUS_VERSION .
+  docker build \
+    $DOCKER_BUILD_ARGS \
+    --build-arg TARGETARCH="$TARGETARCH" \
+    --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
+    -t "ghcr.io/dependabot/dependabot-updater-core" \
+    -f Dockerfile.updater-core \
+    .
+
+  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  docker build \
+    $DOCKER_BUILD_ARGS \
+    --build-arg TARGETARCH="$TARGETARCH" \
+    --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
+    -t "$LOCAL_IMAGE$ECOSYSTEM" \
+    -f $ECOSYSTEM/Dockerfile \
+    .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
-  IMAGE_LAYERS=$(docker history -q "$LOCAL_IMAGE" | wc -l | sed -e 's/ //g')
-  echo "$LOCAL_IMAGE contains $IMAGE_LAYERS layers"
+  IMAGE_LAYERS=$(docker history -q "$LOCAL_IMAGE$ECOSYSTEM" | wc -l | sed -e 's/ //g')
+  echo "$LOCAL_IMAGE$ECOSYSTEM contains $IMAGE_LAYERS layers"
   [[ $IMAGE_LAYERS -lt 126 ]]
 }
 
 function docker_exec() {
-  docker_build
+  docker_build "$1"
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --rm \
   -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
-  -ti "$LOCAL_IMAGE" "$@"
+  -ti "$LOCAL_IMAGE$ECOSYSTEM" "${@:2}"
 }
 
 function docker_bundle_exec() {
-  docker_build
+  docker_build $1
 
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --env VCR \
   --rm \
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
-  "$LOCAL_IMAGE" bundle exec "$@"
-}
-
-function extract_version() {
-  if [ -z "$OMNIBUS_VERSION" ]; then
-    OMNIBUS_VERSION="$(grep 'dependabot-omnibus ([0-9]' Gemfile.lock | sed -e 's/^[ ]*//g' | sort | uniq | sed -e 's/.*(//g' -e 's/).*//g')"
-      export OMNIBUS_VERSION
-
-      VERSION="$OMNIBUS_VERSION-$(git rev-parse HEAD)"
-  else
-    VERSION=$OMNIBUS_VERSION
-  fi
-
-  export VERSION
+  "$LOCAL_IMAGE$ECOSYSTEM" bundle exec "${@:2}"
 }
