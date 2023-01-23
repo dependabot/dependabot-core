@@ -6,6 +6,7 @@ namespace Dependabot\Composer;
 
 use Composer\DependencyResolver\Request;
 use Composer\Factory;
+use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
 
 final class Updater
@@ -74,6 +75,8 @@ final class Updater
             $composer->getAutoloadGenerator()
         );
 
+        $composer->getEventDispatcher()->setRunScripts(false);
+
         // For all potential options, see UpdateCommand in composer
         $install
             ->setWriteLock(true)
@@ -84,8 +87,11 @@ final class Updater
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
-            ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(false);
+            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false));
+
+        if (method_exists($install, 'setAudit')) {
+            $install->setAudit(false);
+        }
 
         $install->run();
 
