@@ -46,7 +46,7 @@ function docker_exec() {
 }
 
 function docker_bundle_exec() {
-  docker_build $1
+  docker_build "$1"
 
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --env VCR \

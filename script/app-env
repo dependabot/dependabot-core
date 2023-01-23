@@ -9,4 +9,4 @@ set -e
 cd "$(dirname "$0")/.."
 source script/_common
 
-docker_exec $1 bash
+docker_exec "$1" bash
