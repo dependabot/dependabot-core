@@ -214,7 +214,7 @@ jobs:
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
       - name: Build
-        run: script/build
+        run: script/build bundler
       - name: Run updater tests
         run: ./script/ci-test-updater
         env:
