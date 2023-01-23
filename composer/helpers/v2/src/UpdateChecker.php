@@ -69,11 +69,8 @@ final class UpdateChecker
             ->setDevMode(true)
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
-            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false));
-
-        if (method_exists($install, 'setAudit')) {
-            $install->setAudit(false);
-        }
+            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
+            ->setAudit(false);
 
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer
