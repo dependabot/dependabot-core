@@ -19,6 +19,7 @@ jobs:
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 0, ecosystem: bundler }
           - { path: bundler, name: bundler2, ci_node_total: 2, ci_node_index: 1, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: common, name: common, ecosystem: common}
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 0, ecosystem: composer }
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
@@ -63,6 +64,11 @@ jobs:
               - 'omnibus/**'
               - '.github/workflows/ecosystem-ci.yml'
               - 'cargo/**'
+            common:
+              - Dockerfile.updater-core
+              - 'common/**'
+              - 'omnibus/**'
+              - '.github/workflows/ecosystem-ci.yml'
             composer:
               - Dockerfile.updater-core
               - 'common/**'
@@ -183,6 +189,17 @@ jobs:
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
             --rm dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
+
+  updater:
+    name: Updater
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build and Run updater tests
+        run: ./script/ci-test-updater bundler
+        env:
+          DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint:
     name: Lint
