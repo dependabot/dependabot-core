@@ -125,6 +125,8 @@ RUN apt-get update \
     git-lfs \
     bzr \
     mercurial \
+    # needed to sign commits
+    gnupg2 \
     # Installs certs in dependabot-action and CLI
     ca-certificates \
     # used to check if a file is binary in the VendorUpdater
