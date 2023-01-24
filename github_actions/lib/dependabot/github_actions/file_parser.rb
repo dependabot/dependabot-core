@@ -61,44 +61,32 @@ module Dependabot
         unless source.hostname == "github.com"
           potential_url = "https://#{source.hostname}/#{name}"
 
-          dep = Dependency.new(
-            name: name,
+          dep = github_dependency(name, version, potential_url, ref, file.name)
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          return dep if git_checker.git_repo_reachable?
+        end
+
+        url = "https://github.com/#{name}"
+        github_dependency(name, version, url, ref, file.name)
+      end
+
+      def github_dependency(name, version, url, ref, file_name)
+        Dependency.new(
+          name: name,
             version: version,
             requirements: [{
               requirement: nil,
               groups: [],
               source: {
                 type: "git",
-                url: potential_url,
+                url: url,
                 ref: ref,
                 branch: nil
               },
-              file: file.name,
+              file: file_name,
               metadata: { declaration_string: string }
             }],
             package_manager: "github_actions"
-          )
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
-          return dep if git_checker.git_repo_reachable?
-        end
-
-        url = "https://github.com/#{name}"
-        Dependency.new(
-          name: name,
-          version: version,
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            source: {
-              type: "git",
-              url: url,
-              ref: ref,
-              branch: nil
-            },
-            file: file.name,
-            metadata: { declaration_string: string }
-          }],
-          package_manager: "github_actions"
         )
       end
 
