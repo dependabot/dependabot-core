@@ -62,6 +62,7 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build updater core image
+        if: env.DECISION == 'APPROVED:OPEN'
         env:
           DOCKER_BUILDKIT: 1
         run: |
