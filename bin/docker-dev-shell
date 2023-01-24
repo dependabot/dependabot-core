@@ -25,7 +25,7 @@ fi
 ECOSYSTEM="$1"
 
 while true; do
-  case "$1" in
+  case "$2" in
     -h | --help ) HELP=true; shift ;;
     -r | --rebuild ) REBUILD=true; shift ;;
     -- ) shift; break ;;
