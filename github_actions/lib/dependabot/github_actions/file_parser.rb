@@ -55,10 +55,34 @@ module Dependabot
       def build_github_dependency(file, string)
         details = string.match(GITHUB_REPO_REFERENCE).named_captures
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
-        url = "https://#{source.hostname}/#{name}"
-
         ref = details.fetch("ref")
         version = version_class.new(ref).to_s if version_class.correct?(ref)
+
+        unless source.hostname == "github.com"
+          potential_url = "https://#{source.hostname}/#{name}"
+
+          dep = Dependency.new(
+            name: name,
+            version: version,
+            requirements: [{
+              requirement: nil,
+              groups: [],
+              source: {
+                type: "git",
+                url: potential_url,
+                ref: ref,
+                branch: nil
+              },
+              file: file.name,
+              metadata: { declaration_string: string }
+            }],
+            package_manager: "github_actions"
+          )
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          return dep if git_checker.git_repo_reachable?
+        end
+
+        url = "https://github.com/#{name}"
         Dependency.new(
           name: name,
           version: version,
