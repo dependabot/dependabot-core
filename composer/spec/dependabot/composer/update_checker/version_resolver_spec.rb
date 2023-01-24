@@ -265,7 +265,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
         }]
       end
 
-      it "raises a Dependabot::DependencyFileNotResolvable error" do
+      it "raises a Dependabot::GitDependenciesNotReachable error" do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
             expect(error.dependency_urls).
