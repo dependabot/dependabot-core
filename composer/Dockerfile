@@ -20,7 +20,6 @@ RUN add-apt-repository ppa:ondrej/php \
     php8.2-imagick \
     php8.2-imap \
     php8.2-intl \
-    php8.2-json \
     php8.2-ldap \
     php8.2-mbstring \
     php8.2-memcached \
