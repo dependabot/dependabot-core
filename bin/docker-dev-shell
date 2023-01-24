@@ -248,4 +248,4 @@ docker run --rm -ti \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
-  "$IMAGE_NAME" "${CONTAINER_ARGS[${@:2}]}"
+  "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"
