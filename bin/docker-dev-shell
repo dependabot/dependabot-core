@@ -39,7 +39,6 @@ if [ "$HELP" = "true" ]; then
 fi
 
 build_image() {
-  ECOSYSTEM="$1"
   export BUILT_IMAGE=true
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
 
@@ -65,13 +64,14 @@ build_image() {
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --build-arg "TARGETARCH=${TARGETARCH}" \
     --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
-    -t "dependabot/dependabot-core" \
+    -t "dependabot/dependabot-updater-$ECOSYSTEM" \
     -f "$ECOSYSTEM"/Dockerfile \
     .
 
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg "FROM=dependabot/dependabot-updater-$ECOSYSTEM" \
     -t "$IMAGE_NAME" \
     -f "$DOCKERFILE" \
     .
@@ -80,10 +80,10 @@ build_image() {
 IMAGE_ID=$(docker inspect --type=image -f '{{.Id}}' "$IMAGE_NAME" 2> /dev/null || true)
 if [ -z "$IMAGE_ID" ]; then
   echo "$(tput setaf 4) > image $IMAGE_NAME doesn't exist$(tput sgr0)"
-  build_image "$ECOSYSTEM"
+  build_image
 elif [ "$REBUILD" = "true" ]; then
   echo "$(tput setaf 4) > rebuild of $IMAGE_NAME requested$(tput sgr0)"
-  build_image "$ECOSYSTEM"
+  build_image
 else
   echo "$(tput setaf 4) > image $IMAGE_NAME already exists$(tput sgr0)"
 fi
