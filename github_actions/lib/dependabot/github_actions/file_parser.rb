@@ -61,16 +61,16 @@ module Dependabot
         unless source.hostname == "github.com"
           potential_url = "https://#{source.hostname}/#{name}"
 
-          dep = github_dependency(name, version, potential_url, ref, file.name)
+          dep = github_dependency(name, version, potential_url, ref, file.name, string)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
 
         url = "https://github.com/#{name}"
-        github_dependency(name, version, url, ref, file.name)
+        github_dependency(name, version, url, ref, file.name, string)
       end
 
-      def github_dependency(name, version, url, ref, file_name)
+      def github_dependency(name, version, url, ref, file_name, string)
         Dependency.new(
           name: name,
             version: version,
