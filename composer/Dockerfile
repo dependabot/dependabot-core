@@ -8,33 +8,33 @@ RUN apt-get update \
 RUN add-apt-repository ppa:ondrej/php \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
-    php7.4 \
-    php7.4-apcu \
-    php7.4-bcmath \
-    php7.4-cli \
-    php7.4-common \
-    php7.4-curl \
-    php7.4-gd \
-    php7.4-geoip \
-    php7.4-gettext \
-    php7.4-gmp \
-    php7.4-imagick \
-    php7.4-imap \
-    php7.4-intl \
-    php7.4-json \
-    php7.4-ldap \
-    php7.4-mbstring \
-    php7.4-memcached \
-    php7.4-mongodb \
-    php7.4-mysql \
-    php7.4-redis \
-    php7.4-soap \
-    php7.4-sqlite3 \
-    php7.4-tidy \
-    php7.4-xml \
-    php7.4-zip \
-    php7.4-zmq \
-    php7.4-mcrypt \
+    php8.2 \
+    php8.2-apcu \
+    php8.2-bcmath \
+    php8.2-cli \
+    php8.2-common \
+    php8.2-curl \
+    php8.2-gd \
+    php8.2-geoip \
+    php8.2-gettext \
+    php8.2-gmp \
+    php8.2-imagick \
+    php8.2-imap \
+    php8.2-intl \
+    php8.2-json \
+    php8.2-ldap \
+    php8.2-mbstring \
+    php8.2-memcached \
+    php8.2-mongodb \
+    php8.2-mysql \
+    php8.2-redis \
+    php8.2-soap \
+    php8.2-sqlite3 \
+    php8.2-tidy \
+    php8.2-xml \
+    php8.2-zip \
+    php8.2-zmq \
+    php8.2-mcrypt \
   && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=${COMPOSER_V2_VERSION}
