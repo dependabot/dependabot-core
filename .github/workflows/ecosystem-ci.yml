@@ -196,10 +196,38 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build and Run updater tests
-        run: ./script/ci-test-updater bundler
+      - name: Build updater core image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            -f Dockerfile.updater-core \
+            .
+      # using bundler as the test updater
+      - name: Build ecosystem image
+        if: steps.changes.outputs[matrix.suite.path] == 'true'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "dependabot/dependabot-updater-bundler:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-bundler \
+            -f bundler/Dockerfile \
+            .
+      - name: Run updater tests
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+            --env VCR \
+            --rm \
+            -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
+            "dependabot/dependabot-updater-bundler:latest" bundle exec rspec
 
   lint:
     name: Lint
