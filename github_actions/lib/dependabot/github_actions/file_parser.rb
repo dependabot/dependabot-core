@@ -53,40 +53,39 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
-        details = string.match(GITHUB_REPO_REFERENCE).named_captures
-        name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
-        ref = details.fetch("ref")
-        version = version_class.new(ref).to_s if version_class.correct?(ref)
-
         unless source.hostname == "github.com"
           potential_url = "https://#{source.hostname}/#{name}"
 
-          dep = github_dependency(name, version, potential_url, ref, file.name, string)
+          dep = github_dependency(file, string, potential_url)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
 
         url = "https://github.com/#{name}"
-        github_dependency(name, version, url, ref, file.name, string)
+        github_dependency(file, string, url)
       end
 
-      def github_dependency(name, version, url, ref, file_name, string)
+      def github_dependency(file, string, url)
+        details = string.match(GITHUB_REPO_REFERENCE).named_captures
+        name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
+        ref = details.fetch("ref")
+        version = version_class.new(ref).to_s if version_class.correct?(ref)
         Dependency.new(
           name: name,
-            version: version,
-            requirements: [{
-              requirement: nil,
-              groups: [],
-              source: {
-                type: "git",
-                url: url,
-                ref: ref,
-                branch: nil
-              },
-              file: file_name,
-              metadata: { declaration_string: string }
-            }],
-            package_manager: "github_actions"
+          version: version,
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            source: {
+              type: "git",
+              url: url,
+              ref: ref,
+              branch: nil
+            },
+            file: file.name,
+            metadata: { declaration_string: string }
+          }],
+          package_manager: "github_actions"
         )
       end
 
