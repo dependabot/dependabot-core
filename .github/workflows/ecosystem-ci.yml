@@ -191,15 +191,14 @@ jobs:
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
+    env:
+      DOCKER_BUILDKIT: 1
     name: Updater
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
           docker build \
             -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
@@ -209,9 +208,6 @@ jobs:
             .
       # using bundler as the test updater
       - name: Build ecosystem image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
         run: |
           docker build \
             -t "dependabot/dependabot-updater-bundler:latest" \
