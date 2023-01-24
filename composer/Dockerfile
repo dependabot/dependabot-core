@@ -15,7 +15,6 @@ RUN add-apt-repository ppa:ondrej/php \
     php8.2-common \
     php8.2-curl \
     php8.2-gd \
-    php8.2-geoip \
     php8.2-gettext \
     php8.2-gmp \
     php8.2-imagick \
