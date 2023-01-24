@@ -87,11 +87,8 @@ final class Updater
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setExecuteOperations(true)
             ->setDumpAutoloader(false)
-            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false));
-
-        if (method_exists($install, 'setAudit')) {
-            $install->setAudit(false);
-        }
+            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
+            ->setAudit(false);
 
         $install->run();
 
