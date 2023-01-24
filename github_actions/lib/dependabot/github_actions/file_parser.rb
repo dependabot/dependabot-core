@@ -53,9 +53,10 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
+        details = string.match(GITHUB_REPO_REFERENCE).named_captures
+        name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
         unless source.hostname == "github.com"
           potential_url = "https://#{source.hostname}/#{name}"
-
           dep = github_dependency(file, string, potential_url)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
