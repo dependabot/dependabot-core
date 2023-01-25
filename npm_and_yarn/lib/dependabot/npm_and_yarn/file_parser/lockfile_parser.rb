@@ -155,30 +155,36 @@ module Dependabot
         def recursively_fetch_npm_lock_dependencies(object_with_dependencies)
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
-          object_with_dependencies.
-            fetch("dependencies", {}).each do |name, details|
-              next unless semver_version_for(details["version"])
+          dependencies = object_with_dependencies["dependencies"]
+          dependencies ||= object_with_dependencies.fetch("packages", {}).transform_keys do |name|
+            name.delete_prefix("node_modules/")
+          end
 
-              dependency_args = {
-                name: name,
-                version: semver_version_for(details["version"]),
-                package_manager: "npm_and_yarn",
-                requirements: []
-              }
+          dependencies.each do |name, details|
+            next if name.empty? # v3 lockfiles include an empty key holding info of the current package
 
-              if details["bundled"]
-                dependency_args[:subdependency_metadata] =
-                  [{ npm_bundled: details["bundled"] }]
-              end
+            next unless semver_version_for(details["version"])
 
-              if details["dev"]
-                dependency_args[:subdependency_metadata] =
-                  [{ production: !details["dev"] }]
-              end
+            dependency_args = {
+              name: name,
+              version: semver_version_for(details["version"]),
+              package_manager: "npm_and_yarn",
+              requirements: []
+            }
 
-              dependency_set << Dependency.new(**dependency_args)
-              dependency_set += recursively_fetch_npm_lock_dependencies(details)
+            if details["bundled"]
+              dependency_args[:subdependency_metadata] =
+                [{ npm_bundled: details["bundled"] }]
             end
+
+            if details["dev"]
+              dependency_args[:subdependency_metadata] =
+                [{ production: !details["dev"] }]
+            end
+
+            dependency_set << Dependency.new(**dependency_args)
+            dependency_set += recursively_fetch_npm_lock_dependencies(details)
+          end
 
           dependency_set
         end
