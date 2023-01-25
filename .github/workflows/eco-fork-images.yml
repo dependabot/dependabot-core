@@ -1,0 +1,104 @@
+name: Push fork images
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        required: true
+        type: string
+        description: PR number
+
+jobs:
+  push-fork-image:
+    name: Deploy
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: bundler, ecosystem: bundler }
+          - { name: cargo, ecosystem: cargo }
+          - { name: composer, ecosystem: composer }
+          - { name: docker, ecosystem: docker }
+          - { name: elm, ecosystem: elm }
+          - { name: git_submodules, ecosystem: gitsubmodule }
+          - { name: github_actions, ecosystem: github-actions }
+          - { name: go_modules, ecosystem: gomod }
+          - { name: gradle, ecosystem: gradle }
+          - { name: hex, ecosystem: mix }
+          - { name: maven, ecosystem: maven }
+          - { name: npm_and_yarn, ecosystem: npm }
+          - { name: nuget, ecosystem: nuget }
+          - { name: pub, ecosystem: pub }
+          - { name: python, ecosystem: pip }
+          - { name: terraform, ecosystem: terraform }
+    permissions:
+      contents: read
+      packages: write
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check if pull request is approved
+        # The PR must be approved. This is mostly to ensure you've typed the correct PR.
+        # Note: forks will have a blank review decision without approval. Not NEEDS_REVIEW.
+        run: |
+          DECISION=$(gh pr view ${{ github.event.inputs.pr }} --json reviewDecision -t {{.reviewDecision}})
+          echo "Review decision is: $DECISION"
+          [[ $DECISION == "APPROVED" ]] || exit 1
+
+      - name: Checkout the fork
+        # This checks out the fork and cherry-picks the changes onto main, creating a new merge SHA tag.
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          gh pr checkout ${{ github.event.inputs.pr }} --branch docker-branch-release-workflow
+          git reset main
+          git add .
+          git commit -m squashed
+          PICK=$(git rev-parse HEAD)
+          git checkout main
+          git cherry-pick $PICK
+          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Build updater core image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            -f Dockerfile.updater-core \
+            .
+
+      - name: Build ecosystem image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -t "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater-core \
+            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
+            -f ${{ matrix.suite.name }}/Dockerfile \
+            .
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push fork image
+        run: |
+          docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
+
+      - name: Set summary
+        run: |
+          echo "generated for PR ${{ github.event.inputs.pr }}" > $GITHUB_STEP_SUMMARY
+          echo "updaters uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
