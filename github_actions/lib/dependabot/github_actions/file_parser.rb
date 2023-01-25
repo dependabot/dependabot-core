@@ -53,20 +53,16 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
-        details = string.match(GITHUB_REPO_REFERENCE).named_captures
-        name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
         unless source.hostname == "github.com"
-          potential_url = "https://#{source.hostname}/#{name}"
-          dep = github_dependency(file, string, potential_url)
+          dep = github_dependency(file, string, source.hostname)
           git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
           return dep if git_checker.git_repo_reachable?
         end
 
-        url = "https://github.com/#{name}"
-        github_dependency(file, string, url)
+        github_dependency(file, string, "github.com")
       end
 
-      def github_dependency(file, string, url)
+      def github_dependency(file, string, hostname)
         details = string.match(GITHUB_REPO_REFERENCE).named_captures
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
         ref = details.fetch("ref")
@@ -79,7 +75,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: url,
+              url: "https://#{hostname}/#{name}",
               ref: ref,
               branch: nil
             },
