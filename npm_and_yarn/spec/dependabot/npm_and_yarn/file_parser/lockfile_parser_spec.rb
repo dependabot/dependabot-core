@@ -132,6 +132,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
           is_expected.to eq([{ npm_bundled: true }])
         end
       end
+
+      context "in v3 format" do
+        let(:dependency_files) { project_dependency_files("npm8/package-lock-v3") }
+
+        its(:length) { is_expected.to eq(2) }
+      end
     end
 
     context "for npm shrinkwraps" do
