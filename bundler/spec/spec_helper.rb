@@ -50,4 +50,11 @@ RSpec.configure do |config|
       example.run
     end
   end
+
+  config.after do
+    # Cleanup side effects from cloning git gems, so that they don't interfere
+    # with other specs.
+    helper_path = Dependabot::Bundler::NativeHelpers.versioned_helper_path(PackageManagerHelper.bundler_version)
+    FileUtils.rm_rf File.join(helper_path, ".bundle", "bundler")
+  end
 end

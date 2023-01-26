@@ -1168,21 +1168,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               to_return(status: 401)
           end
 
-          it "raises a helpful error on bundler v1", :bundler_v1_only do
+          it "raises a helpful error" do
             expect { checker.latest_resolvable_version }.
               to raise_error do |error|
                 expect(error).to be_a(Dependabot::GitDependenciesNotReachable)
                 expect(error.dependency_urls).
                   to eq(["git@github.com:no-exist-sorry/prius"])
               end
-          end
-
-          context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { bundler_project_dependency_files("private_git_source") }
-
-            it "updates the dependency" do
-              expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
-            end
           end
         end
 
@@ -1195,20 +1187,12 @@ RSpec.describe Dependabot::Bundler::UpdateChecker do
               to_return(status: 200)
           end
 
-          it "raises a helpful error", :bundler_v1_only do
+          it "raises a helpful error" do
             expect { checker.latest_resolvable_version }.
               to raise_error do |error|
                 expect(error).to be_a Dependabot::GitDependencyReferenceNotFound
                 expect(error.dependency).to eq("prius")
               end
-          end
-
-          context "bundler v2", :bundler_v2_only do
-            let(:dependency_files) { bundler_project_dependency_files("bad_ref") }
-
-            it "updates the dependency" do
-              expect(checker.latest_resolvable_version).to eq(Gem::Version.new("3.4.1"))
-            end
           end
         end
 
