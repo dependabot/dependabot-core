@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/bundler/file_parser"
+require "dependabot/file_parsers/base"
 require "dependabot/bundler/file_updater/gemspec_sanitizer"
 
 module Dependabot
   module Bundler
-    class FileParser
+    class FileParser < Dependabot::FileParsers::Base
       class FilePreparer
         def initialize(dependency_files:)
           @dependency_files = dependency_files
