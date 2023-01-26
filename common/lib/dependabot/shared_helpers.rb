@@ -221,7 +221,6 @@ module Dependabot
       )
 
       # see https://github.blog/2022-04-12-git-security-vulnerability-announced/
-      safe_directories ||= []
       safe_directories.each do |path|
         run_shell_command("git config --global --add safe.directory #{path}")
       end
