@@ -207,15 +207,13 @@ module Dependabot
         # errors when failing to update
         def check_original_requirements_resolvable
           SharedHelpers.in_a_temporary_directory do
-            SharedHelpers.with_git_configured(credentials: credentials) do
-              write_temporary_dependency_files(update_pipfile: false)
+            write_temporary_dependency_files(update_pipfile: false)
 
-              run_pipenv_command("pyenv exec pipenv lock")
+            run_pipenv_command("pyenv exec pipenv lock")
 
-              true
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              handle_pipenv_errors_resolving_original_reqs(e)
-            end
+            true
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            handle_pipenv_errors_resolving_original_reqs(e)
           end
         end
 
