@@ -12,14 +12,6 @@ updates:
       interval: "weekly"
 
   # Watch the per-ecosystem native helpers
-  - package-ecosystem: "bundler"
-    directory: "/bundler/helpers/v1"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "bundler"
-    directory: "/bundler/helpers/v2"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "composer"
     directory: "/composer/helpers/v1"
     schedule:
