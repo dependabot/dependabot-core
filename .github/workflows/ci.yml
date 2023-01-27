@@ -213,10 +213,24 @@ jobs:
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-core \
             .
-      - name: Build
-        run: script/build
+      - name: Build dependabot-updater image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            -f Dockerfile.updater \
+            -t "dependabot-updater:latest" \
+            --build-arg OMNIBUS_VERSION=latest \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ghcr.io/dependabot/dependabot-updater \
+            .
       - name: Run updater tests
-        run: ./script/ci-test-updater
+        run: |
+          docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+            --env VCR \
+            --rm \
+            -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
+            "dependabot-updater:latest" bundle exec rspec
         env:
           SKIP_BUILD: true
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
