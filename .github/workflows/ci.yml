@@ -219,6 +219,9 @@ jobs:
       - name: Run updater tests
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Previously the updater image contained all ecosystems. Now the ecosystems are broken apart,
+        # but we still have some tests that need to run against other ecosystems. So by mounting the
+        # other ecosystems with -v into the updater image we can still run those tests.
         run: |
           docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
             --env VCR \
