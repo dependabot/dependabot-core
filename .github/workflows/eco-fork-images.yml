@@ -1,18 +1,16 @@
-name: Eco branch images
+name: Push fork images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 on:
-  pull_request:
-    branches:
-      - main
-    types:
-      - synchronize
-  pull_request_review:
-    types:
-      - submitted
+  workflow_dispatch:
+    inputs:
+      pr:
+        required: true
+        type: string
+        description: PR number
 
 jobs:
-  push-updater-images:
+  push-fork-image:
     name: Deploy
     runs-on: ubuntu-latest
     strategy:
@@ -44,25 +42,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-        # sets DECISION to the PR's review decision, handling the push-after-approval case
       - name: Check if pull request is approved
+        # The PR must be approved. This is mostly to ensure you've typed the correct PR.
+        # Note: forks will have a blank review decision without approval. Not NEEDS_REVIEW.
         run: |
-          DECISION=$(gh pr view ${{ github.event.pull_request.number }} --json reviewDecision,state -t '{{.reviewDecision}}:{{.state}}')
+          DECISION=$(gh pr view ${{ github.event.inputs.pr }} --json reviewDecision -t {{.reviewDecision}})
           echo "Review decision is: $DECISION"
-          echo "DECISION=$DECISION" >> $GITHUB_ENV
+          [[ $DECISION == "APPROVED" ]] || exit 1
 
-      # overwrite the previous result if this is a fork since forks can't publish to GHCR
-      - name: Skip forks
-        if: github.event.pull_request.head.repo.fork
-        run: echo "DECISION=FORK" >> $GITHUB_ENV
-
-      - name: Log in to GHCR
-        if: env.DECISION == 'APPROVED:OPEN'
+      - name: Checkout the fork
+        # This checks out the fork and cherry-picks the changes onto main, creating a new merge SHA tag.
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          gh pr checkout ${{ github.event.inputs.pr }} --branch docker-branch-release-workflow
+          git reset main
+          git add .
+          git commit -m squashed
+          PICK=$(git rev-parse HEAD)
+          git checkout main
+          git cherry-pick $PICK
+          echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Build updater core image
-        if: env.DECISION == 'APPROVED:OPEN'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -74,7 +76,6 @@ jobs:
             .
 
       - name: Build ecosystem image
-        if: env.DECISION == 'APPROVED:OPEN'
         env:
           DOCKER_BUILDKIT: 1
         run: |
@@ -86,15 +87,18 @@ jobs:
             -f ${{ matrix.suite.name }}/Dockerfile \
             .
 
-      - name: Push branch image
-        if: env.DECISION == 'APPROVED:OPEN'
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push fork image
         run: |
           docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
 
       - name: Set summary
-        if: env.DECISION == 'APPROVED:OPEN'
         run: |
-          echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "generated for PR ${{ github.event.inputs.pr }}" > $GITHUB_STEP_SUMMARY
+          echo "updaters uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

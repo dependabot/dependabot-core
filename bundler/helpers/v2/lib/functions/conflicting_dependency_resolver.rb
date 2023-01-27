@@ -16,8 +16,6 @@ module Functions
     #   * version [String] the version of the blocking dependency
     #   * requirement [String] the requirement on the target_dependency
     def conflicting_dependencies
-      Bundler.settings.set_command_option("only_update_to_newer_versions", true)
-
       parent_specs.flat_map do |parent_spec|
         top_level_specs_for(parent_spec).map do |top_level|
           dependency = parent_spec.dependencies.find { |bd| bd.name == dependency_name }
