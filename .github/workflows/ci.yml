@@ -27,8 +27,8 @@ jobs:
           - { path: elm, name: elm }
           - { path: git_submodules, name: git_submodules }
           - { path: github_actions, name: github_actions }
-          - { path: go_modules, name: go_module, ci_node_total: 2, index: 0 }
-          - { path: go_modules, name: go_module, ci_node_total: 2, index: 1 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0 }
+          - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1 }
           - { path: gradle, name: gradle }
           - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0 }
           - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1 }
