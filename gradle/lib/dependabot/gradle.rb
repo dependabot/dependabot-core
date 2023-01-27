@@ -22,6 +22,6 @@ Dependabot::Dependency.
     "gradle",
     lambda { |name|
       artifact_id = name.split(":").last
-      %w(bom library).include?(artifact_id) ? name : artifact_id
+      name.length <= 100 ? name : artifact_id
     }
   )

@@ -17,11 +17,11 @@ RSpec.describe Dependabot::Gradle do
     end
     let(:name) { "group.com:dep" }
 
-    it { is_expected.to eq("dep") }
+    it { is_expected.to eq("group.com:dep") }
 
-    context "with a special-cased name" do
-      let(:name) { "group.com:bom" }
-      it { is_expected.to eq("group.com:bom") }
+    context "with a 100+ character name" do
+          let(:name) { "com.long-domain-name-that-should-be-replaced-by-ellipsis.this-is-longer-group-id:the-longest-artifact-id" }
+          it { is_expected.to eq("the-longest-artifact-id") }
     end
   end
 end
