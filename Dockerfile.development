@@ -1,5 +1,5 @@
-ARG FROM=dependabot/dependabot-core
-FROM $FROM
+ARG FROM_IMAGE=dependabot/dependabot-core
+FROM $FROM_IMAGE
 
 # Temporarily switch to root user in order to install packages
 USER root
