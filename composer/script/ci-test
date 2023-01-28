@@ -3,4 +3,4 @@
 set -e
 
 bundle install
-bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec --verbose
+bundle exec parallel_test spec/ --group-by filesize --type rspec --verbose
