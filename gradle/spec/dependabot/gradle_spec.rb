@@ -20,8 +20,8 @@ RSpec.describe Dependabot::Gradle do
     it { is_expected.to eq("group.com:dep") }
 
     context "with a 100+ character name" do
-          let(:name) { "com.long-domain-name-that-should-be-replaced-by-ellipsis.this-is-longer-group-id:the-longest-artifact-id" }
-          it { is_expected.to eq("the-longest-artifact-id") }
+      let(:name) { "com.long-domain-name-that-should-be-replaced-by-ellipsis.this-is-longer-group-id:the-longest-artifact-id" } # rubocop:disable Layout/LineLength
+      it { is_expected.to eq("the-longest-artifact-id") }
     end
   end
 end
