@@ -1585,6 +1585,55 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
       end
     end
 
+    describe "when provider version preceeds its source" do
+      let(:project_name) { "provider_version_preceed" }
+      let(:dependencies) do
+        [
+          Dependabot::Dependency.new(
+            name: "hashicorp/azurerm",
+            version: "3.40.0",
+            previous_version: "3.30.0",
+            requirements: [{
+               requirement: "3.40.0",
+               groups: [],
+               file: "providers.tf",
+               source: {
+                 type: "provider",
+                 registry_hostname: "registry.terraform.io",
+                 module_identifier: "hashicorp/azurerm"
+               }
+             }],
+            previous_requirements: [{
+              requirement: "3.31.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
+            package_manager: "terraform"
+          )
+        ]
+      end
+
+      it "parses correctly and updates the module version" do
+        updated_file = subject.find { |file| file.name == "providers.tf" }
+
+        expect(updated_file.content).to include(
+        <<~DEP
+                                            terraform {
+                                              required_providers {
+                                                azurerm = {
+                                                  version = "3.40.0"
+                                                  source  = "hashicorp/azurerm"
+                                                }
+        DEP
+        )
+      end
+    end
+
     context "with duplicate children modules" do
       let(:project_name) { "duplicate_child_modules" }
       let(:dependencies) do
