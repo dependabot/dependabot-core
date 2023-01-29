@@ -1594,15 +1594,15 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
             version: "3.40.0",
             previous_version: "3.30.0",
             requirements: [{
-               requirement: "3.40.0",
-               groups: [],
-               file: "providers.tf",
-               source: {
-                 type: "provider",
-                 registry_hostname: "registry.terraform.io",
-                 module_identifier: "hashicorp/azurerm"
-               }
-             }],
+              requirement: "3.40.0",
+              groups: [],
+              file: "providers.tf",
+              source: {
+                type: "provider",
+                registry_hostname: "registry.terraform.io",
+                module_identifier: "hashicorp/azurerm"
+              }
+            }],
             previous_requirements: [{
               requirement: "3.31.0",
               groups: [],
@@ -1622,14 +1622,14 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
         updated_file = subject.find { |file| file.name == "providers.tf" }
 
         expect(updated_file.content).to include(
-        <<~DEP
-                                            terraform {
-                                              required_providers {
-                                                azurerm = {
-                                                  version = "3.40.0"
-                                                  source  = "hashicorp/azurerm"
-                                                }
-        DEP
+          <<~DEP
+            terraform {
+              required_providers {
+                azurerm = {
+                  version = "3.40.0"
+                  source  = "hashicorp/azurerm"
+              }
+          DEP
         )
       end
     end
