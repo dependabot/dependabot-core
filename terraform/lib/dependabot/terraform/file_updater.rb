@@ -321,8 +321,7 @@ module Dependabot
               |(\s*source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)
                 ?#{Regexp.escape(dependency.name)}["']
                 |\s*#{Regexp.escape(dependency.name)}\s*=\s*\{.*
-                )
-          ){2}
+          )){2}
         }mx
       end
 
