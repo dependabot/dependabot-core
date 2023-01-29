@@ -45,8 +45,6 @@ ARG RUBY_INSTALL_VERSION=0.8.5
 # This way other projects that import this library don't have to futz around with installing new /unexpected bundler versions.
 ARG BUNDLER_V2_VERSION=2.3.26
 ENV BUNDLE_SILENCE_ROOT_WARNING=1
-# Allow gem installs as the dependabot user
-ENV BUNDLE_PATH=".bundle"
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \

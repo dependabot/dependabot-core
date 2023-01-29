@@ -39,18 +39,16 @@ COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraf
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 WORKDIR ${CODE_DIR}
 
+RUN for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 -name 'Gemfile' | xargs dirname`; do \
+  cd $d && bundle config path ${CODE_DIR}/omnibus/.bundle; \
+done
+
 RUN cd omnibus \
   && bundle install \
   && BUNDLE_BIN=.bundle/bin bundle binstubs --all \
   && rm .bundle/bin/bundle # let RubyGems manage Bundler
 
 ENV PATH="${CODE_DIR}/omnibus/.bundle/bin:$PATH"
-
-RUN for d in `find ${CODE_DIR} -type f -mindepth 2 -maxdepth 2 \
-    -not -path "${CODE_DIR}/omnibus/Gemfile" \
-    -name 'Gemfile' | xargs dirname`; do \
-    cd $d && bundle config path ${CODE_DIR}/omnibus/.bundle; \
-  done
 
 # Create directory for volume containing VS Code extensions, to avoid reinstalling on image rebuilds
 RUN mkdir -p ~/.vscode-server ~/.vscode-server-insiders
