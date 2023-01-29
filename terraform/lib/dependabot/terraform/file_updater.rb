@@ -317,14 +317,7 @@ module Dependabot
 
       def registry_declaration_regex
         %r{
-          (?<=\{)
-          (?:(?!^\}).)*
-          source\s*=\s*["']
-            (#{Regexp.escape(registry_host_for(dependency))}/)?
-            #{Regexp.escape(dependency.name)}
-            (//modules/\S+)?
-            ["']
-          (?:(?!^\}).)*
+          ((\s*version\s=\s*["'].*["'])|(\s*source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)){2}
         }mx
       end
 
