@@ -11,7 +11,7 @@ module Dependabot
                         "profile > modules > module"
 
       def self.required_files_in?(filenames)
-        (%w(pom.xml) - filenames).empty?
+        filenames.include?("pom.xml")
       end
 
       def self.required_files_message
@@ -66,7 +66,7 @@ module Dependabot
           name_parts = [
             base_path,
             relative_path,
-            relative_path.end_with?("pom.xml") ? nil : "pom.xml"
+            relative_path.end_with?(".xml") ? nil : "pom.xml"
           ].compact.reject(&:empty?)
           path = Pathname.new(File.join(*name_parts)).cleanpath.to_path
 
@@ -126,7 +126,7 @@ module Dependabot
         name_parts = [
           File.dirname(pom.name),
           relative_parent_path,
-          relative_parent_path.end_with?("pom.xml", "pom_parent.xml") ? nil : "pom.xml"
+          relative_parent_path.end_with?(".xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
 
         Pathname.new(File.join(*name_parts)).cleanpath.to_path
