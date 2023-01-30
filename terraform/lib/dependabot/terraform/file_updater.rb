@@ -310,18 +310,24 @@ module Dependabot
       def provider_declaration_regex
         name = Regexp.escape(dependency.name)
         %r{
-          ((source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)?#{name}["']|\s*#{name}\s*=\s*\{.*)
-          (?:(?!^\}).)+)
+          ((\s*version\s=\s*["'].*["'])
+              |(\s*source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)
+                ?#{name}["']
+                |\s*#{name}\s*=\s*\{.*
+          )){2}
         }mx
       end
 
       def registry_declaration_regex
         %r{
-          ((\s*version\s=\s*["'].*["'])
-              |(\s*source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)
-                ?#{Regexp.escape(dependency.name)}["']
-                |\s*#{Regexp.escape(dependency.name)}\s*=\s*\{.*
-          )){2}
+          (?<=\{)
+          (?:(?!^\}).)*
+          source\s*=\s*["']
+            (#{Regexp.escape(registry_host_for(dependency))}/)?
+            #{Regexp.escape(dependency.name)}
+            (//modules/\S+)?
+            ["']
+          (?:(?!^\}).)*
         }mx
       end
 
