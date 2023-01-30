@@ -5,18 +5,9 @@ function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
   ECOSYSTEM="$1"
 
-  local TARGETARCH;
-  case "$(uname -m)"
-  in
-    amd64 | x86_64) TARGETARCH=amd64 ;;
-    arm64 | aarch64) TARGETARCH=arm64 ;;
-    *) TARGETARCH=amd64 ;;
-  esac
-
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
     -t "ghcr.io/dependabot/dependabot-updater-core" \
@@ -26,7 +17,6 @@ function docker_build() {
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
     -t "$LOCAL_IMAGE$ECOSYSTEM" \

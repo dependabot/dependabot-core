@@ -1,7 +1,5 @@
 FROM ubuntu:20.04 as builder
 
-ARG TARGETARCH=amd64
-
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ### SYSTEM DEPENDENCIES
