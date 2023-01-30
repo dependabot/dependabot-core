@@ -249,7 +249,7 @@ module Dependabot
         def pip_compile_options(filename)
           options = @build_isolation ? ["--build-isolation"] : ["--no-build-isolation"]
           options += pip_compile_index_options
-          options += ["--allow-unsafe"]
+          options += ["--allow-unsafe", "--strip-extras"]
           options += ["--resolver backtracking"] if new_resolver_supported?
 
           if (requirements_file = compiled_file_for_filename(filename))
