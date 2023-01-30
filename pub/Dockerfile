@@ -1,5 +1,5 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ARG TARGETARCH=amd64
+ARG TARGETARCH
 # Install Dart
 ENV PUB_CACHE=/opt/dart/pub-cache \
   PUB_ENVIRONMENT="dependabot" \
