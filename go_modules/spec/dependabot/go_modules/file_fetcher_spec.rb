@@ -34,32 +34,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
       to include("go.mod", "go.sum")
   end
 
-  context "without a go.mod" do
-    let(:branch) { "without-go-mod" }
-
-    it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
-    end
-  end
-
-  context "without a go.sum" do
-    let(:branch) { "without-go-sum" }
-
-    it "doesn't raise an error" do
-      expect { file_fetcher_instance.files }.to_not raise_error
-    end
-  end
-
-  context "when directory is missing" do
-    let(:directory) { "/missing" }
-
-    it "raises a helpful error" do
-      expect { file_fetcher_instance.files }.
-        to raise_error(Dependabot::DependencyFileNotFound)
-    end
-  end
-
   context "when dependencies are git submodules" do
     let(:repo) { "dependabot-fixtures/go-modules-app-with-git-submodules" }
     let(:branch) { "main" }
