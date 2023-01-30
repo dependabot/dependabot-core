@@ -6,6 +6,7 @@ namespace Dependabot\Composer;
 
 use Composer\DependencyResolver\Request;
 use Composer\Factory;
+use Composer\Filter\PlatformRequirementFilter\PlatformRequirementFilterFactory;
 use Composer\Installer;
 use Composer\Package\PackageInterface;
 
@@ -59,6 +60,8 @@ final class UpdateChecker
             $composer->getAutoloadGenerator()
         );
 
+        $composer->getEventDispatcher()->setRunScripts(false);
+
         // For all potential options, see UpdateCommand in composer
         $install
             ->setUpdate(true)
@@ -66,8 +69,8 @@ final class UpdateChecker
             ->setDevMode(true)
             ->setUpdateAllowTransitiveDependencies(Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS)
             ->setDumpAutoloader(false)
-            ->setRunScripts(false)
-            ->setIgnorePlatformRequirements(false);
+            ->setPlatformRequirementFilter(PlatformRequirementFilterFactory::fromBoolOrList(false))
+            ->setAudit(false);
 
         // if no lock is present, we do not do a partial update as
         // this is not supported by the Installer

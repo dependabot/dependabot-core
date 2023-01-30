@@ -37,15 +37,20 @@ jobs:
         suite:
           - { name: bundler, ecosystem: bundler }
           - { name: cargo, ecosystem: cargo }
+          - { name: composer, ecosystem: composer }
           - { name: docker, ecosystem: docker }
+          - { name: elm, ecosystem: elm }
           - { name: git_submodules, ecosystem: gitsubmodule }
           - { name: github_actions, ecosystem: github-actions }
           - { name: go_modules, ecosystem: gomod }
           - { name: gradle, ecosystem: gradle }
+          - { name: hex, ecosystem: mix }
           - { name: maven, ecosystem: maven }
           - { name: npm_and_yarn, ecosystem: npm }
           - { name: nuget, ecosystem: nuget }
+          - { name: pub, ecosystem: pub }
           - { name: python, ecosystem: pip }
+          - { name: terraform, ecosystem: terraform }
     env:
       TAG: ${{ github.sha }}
       NAME: ${{ matrix.suite.name }}
@@ -59,7 +64,7 @@ jobs:
           DOCKER_BUILDKIT: 1
         run: |
           docker build \
-            -t "dependabot/dependabot-updater-core:$TAG" \
+            -t "ghcr.io/dependabot/dependabot-updater-core" \
             --build-arg BUILDKIT_INLINE_CACHE=1 \
             --cache-from ghcr.io/dependabot/dependabot-updater-core \
             -f Dockerfile.updater-core \
@@ -95,5 +100,5 @@ jobs:
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "$UPDATER_IMAGE_MIRROR:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

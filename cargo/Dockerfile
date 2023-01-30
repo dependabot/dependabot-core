@@ -1,9 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 
 USER root
-RUN apt-get update \
-  && apt-get upgrade -y \
-  && apt-get install -y --no-install-recommends curl
 
 # Install Rust
 ENV RUSTUP_HOME=/opt/rust \

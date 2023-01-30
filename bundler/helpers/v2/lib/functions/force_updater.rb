@@ -14,13 +14,6 @@ module Functions
     end
 
     def run
-      # Only allow upgrades. Otherwise it's unlikely that this
-      # resolution will be found by the FileUpdater
-      Bundler.settings.set_command_option(
-        "only_update_to_newer_versions",
-        true
-      )
-
       dependencies_to_unlock = []
 
       begin

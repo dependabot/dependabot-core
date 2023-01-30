@@ -116,13 +116,17 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     # dev dependencies for CI
     build-essential \
+    curl \
     zlib1g-dev \
     libgmp-dev \
+    unzip \
     # VCS section
     git \
     git-lfs \
     bzr \
     mercurial \
+    # needed to sign commits
+    gnupg2 \
     # Installs certs in dependabot-action and CLI
     ca-certificates \
     # used to check if a file is binary in the VendorUpdater

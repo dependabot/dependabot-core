@@ -4,4 +4,4 @@ set -e
 cd "$(dirname "$0")/.."
 source script/_common
 
-docker_bundle_exec rspec "$@"
+docker_bundle_exec bundler rspec "$@"
