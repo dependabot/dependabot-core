@@ -185,19 +185,7 @@ jobs:
       - name: Run updater tests
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Previously the updater image contained all ecosystems. Now the ecosystems are broken apart,
-        # but we still have some tests that need to run against other ecosystems. So by mounting the
-        # other ecosystems with -v into the updater image we can still run those tests.
-        run: |
-          docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
-            --pull never \
-            --env VCR \
-            --rm \
-            -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
-            -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
-            -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
-            -v "$(pwd)/composer:/home/dependabot/composer" \
-            "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec
+        run: script/ci-test-updater
 
   lint:
     name: Lint
