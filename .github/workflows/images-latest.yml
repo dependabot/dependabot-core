@@ -1,4 +1,4 @@
-name: Push latest ecosystem images
+name: Latest images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   UPDATER_IMAGE: "dependabot/updater-"
@@ -59,27 +59,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build dependabot-updater-core image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
-
       - name: Build dependabot-updater image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}" \
-            -f ${NAME}/Dockerfile \
-            .
+        run: script/build ${NAME}
 
       - name: Log in to GHCR
         run: |

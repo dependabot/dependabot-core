@@ -1,4 +1,4 @@
-name: Eco branch images
+name: Branch images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 on:
@@ -61,30 +61,9 @@ jobs:
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build updater core image
-        if: env.DECISION == 'APPROVED:OPEN'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
-
       - name: Build ecosystem image
         if: env.DECISION == 'APPROVED:OPEN'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-            -f ${{ matrix.suite.name }}/Dockerfile \
-            .
+        run: script/build ${{ matrix.suite.name }}
 
       - name: Push branch image
         if: env.DECISION == 'APPROVED:OPEN'

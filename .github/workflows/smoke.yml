@@ -1,5 +1,5 @@
 # Runs all ecosystems cached and concurrently.
-name: Eco Smoke
+name: Smoke
 
 on:
   workflow_dispatch:
@@ -27,7 +27,7 @@ jobs:
           - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ecosystem: hex }
+          - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
@@ -47,106 +47,127 @@ jobs:
       with:
         filters: |
           bundler:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
           cargo:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'cargo/**'
           composer:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'composer/**'
           docker:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'docker/**'
           elm:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'elm/**'
           git_submodules:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'git_submodules/**'
           github_actions:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'github_actions/**'
           go:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           gradle:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
           hex:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'hex/**'
           maven:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'maven/**'
           npm:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           'npm-remove-transitive':
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'nuget/**'
           pip:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           'pip-compile':
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pipenv:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           poetry:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pub:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'pub/**'
           terraform:
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'terraform/**'
           'yarn-berry':
+            - .github/workflows/eco-smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
@@ -169,30 +190,9 @@ jobs:
         cd cache
         gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
 
-    - name: Build updater core image
-      if: steps.changes.outputs[matrix.suite.name] == 'true'
-      env:
-        DOCKER_BUILDKIT: 1
-      run: |
-        docker build \
-          -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ghcr.io/dependabot/dependabot-updater-core \
-          -f Dockerfile.updater-core \
-          .
-
     - name: Build ecosystem image
       if: steps.changes.outputs[matrix.suite.name] == 'true'
-      env:
-        DOCKER_BUILDKIT: 1
-        OMNIBUS_VERSION: latest
-      run: |
-        docker build \
-          -t "dependabot/updater:latest" \
-          --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-          -f ${{ matrix.suite.path }}/Dockerfile \
-          .
+      run: script/build ${{ matrix.suite.path }}
 
     - name: ${{ matrix.suite.name }}
       if: steps.changes.outputs[matrix.suite.name] == 'true'
@@ -200,7 +200,13 @@ jobs:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         set -o pipefail
-        ./dependabot test -f=smoke.yaml -o=result.yaml --cache=cache --timeout=20m --updater-image=dependabot/updater:latest 2>&1 | tee -a log.txt
+        ./dependabot test \
+          -f=smoke.yaml \
+          -o=result.yaml \
+          --cache=cache \
+          --timeout=20m \
+          --updater-image=ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest \
+          2>&1 | tee -a log.txt
 
     - name: Diff
       if: always()

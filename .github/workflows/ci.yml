@@ -24,13 +24,13 @@ jobs:
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: git_submodules, ecosystem: submodule }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: hex }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: hex }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: mix }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
@@ -153,34 +153,15 @@ jobs:
               - 'terraform/**'
               - '.github/workflows/ecosystem-ci.yml'
 
-      - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
-
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-            -f ${{ matrix.suite.path }}/Dockerfile \
-            .
+        run: script/build ${{ matrix.suite.path }}
 
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
+            --pull never \
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
@@ -198,23 +179,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build updater core image
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
       # using bundler as the test updater
       - name: Build ecosystem image
-        run: |
-          docker build \
-            -t "dependabot/dependabot-updater-bundler:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-bundler \
-            -f bundler/Dockerfile \
-            .
+        run: script/build bundler
       - name: Run updater tests
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -223,6 +190,7 @@ jobs:
         # other ecosystems with -v into the updater image we can still run those tests.
         run: |
           docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+            --pull never \
             --env VCR \
             --rm \
             -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
