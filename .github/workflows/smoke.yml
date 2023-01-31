@@ -47,127 +47,127 @@ jobs:
       with:
         filters: |
           bundler:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
           cargo:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'cargo/**'
           composer:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'composer/**'
           docker:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'docker/**'
           elm:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'elm/**'
           git_submodules:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'git_submodules/**'
           github_actions:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'github_actions/**'
           go:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'go_modules/**'
           gradle:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
           hex:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'hex/**'
           maven:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'maven/**'
           npm:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           'npm-remove-transitive':
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'npm_and_yarn/**'
           nuget:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'nuget/**'
           pip:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           'pip-compile':
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pipenv:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           poetry:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'python/**'
           pub:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'pub/**'
           terraform:
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
             - 'terraform/**'
           'yarn-berry':
-            - .github/workflows/eco-smoke.yml
+            - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
             - 'updater/**'
