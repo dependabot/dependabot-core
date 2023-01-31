@@ -2,9 +2,6 @@
 
 set -e
 
-IMAGE_NAME="${IMAGE_NAME:=dependabot/dependabot-core-development}"
-CONTAINER_NAME="${CONTAINER_NAME:=dependabot-core-development}"
-DOCKERFILE="Dockerfile.development"
 HELP=false
 REBUILD=false
 
@@ -32,6 +29,10 @@ while true; do
     * ) break ;;
   esac
 done
+
+IMAGE_NAME="dependabot/dependabot-core-development-$ECOSYSTEM"
+CONTAINER_NAME="dependabot-core-development-$ECOSYSTEM"
+DOCKERFILE="Dockerfile.development"
 
 if [ "$HELP" = "true" ]; then
   echo "usage: $0 <ecosystem> [--rebuild] [ARGS]"
