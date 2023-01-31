@@ -190,8 +190,7 @@ jobs:
         docker build \
           -t "dependabot/updater:latest" \
           --build-arg BUILDKIT_INLINE_CACHE=1 \
-          --cache-from ghcr.io/dependabot/dependabot-updater-core \
-          --cache-from ghcr.io/dependabot/dependabot-updater-gomod \
+          --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
           -f ${{ matrix.suite.path }}/Dockerfile \
           .
 
