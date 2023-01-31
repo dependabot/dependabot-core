@@ -1,8 +1,7 @@
 name: Latest images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  UPDATER_IMAGE: "dependabot/updater-"
-  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-"
+  UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
 on:
   push:
     branches:
@@ -68,18 +67,18 @@ jobs:
 
       - name: Push branch image
         run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG"
-          docker push "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
+          docker push "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
 
       - name: Push latest on main
         run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
-          docker push --all-tags "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
+          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
 
       - name: Set summary
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
