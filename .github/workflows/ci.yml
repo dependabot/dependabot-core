@@ -168,7 +168,7 @@ jobs:
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
+            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
