@@ -1,7 +1,6 @@
 name: Updater-Core image
 env:
-  UPDATER_CORE_IMAGE: "dependabot/dependabot-updater-core"
-  UPDATER_CORE_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-core"
+  UPDATER_CORE_IMAGE: "ghcr.io/dependabot/dependabot-updater-core"
 on:
   push:
     branches:
@@ -26,11 +25,10 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push latest image
         run: |
-          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE_MIRROR:latest"
-          docker push "$UPDATER_CORE_IMAGE_MIRROR:latest"
+          docker push "$UPDATER_CORE_IMAGE:latest"
       - name: Push tagged image
         if: contains(github.ref, 'refs/tags')
         run: |
           VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot/version.rb)"
-          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE_MIRROR:$VERSION"
-          docker push "$UPDATER_CORE_IMAGE_MIRROR:$VERSION"
+          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
+          docker push "$UPDATER_CORE_IMAGE:$VERSION"
