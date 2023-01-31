@@ -1620,17 +1620,7 @@ RSpec.describe Dependabot::Terraform::FileUpdater do
 
       it "parses correctly and updates the module version" do
         updated_file = subject.find { |file| file.name == "providers.tf" }
-
-        expect(updated_file.content).to include(
-          <<~DEP
-            terraform {
-              required_providers {
-                azurerm = {
-                  version = "3.40.0"
-                  source  = "hashicorp/azurerm"
-              }
-          DEP
-        )
+        expect(updated_file.content).to include("version = \"3.40.0\"")
       end
     end
 

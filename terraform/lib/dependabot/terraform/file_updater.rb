@@ -112,7 +112,7 @@ module Dependabot
       end
 
       def update_registry_declaration(new_req, old_req, updated_content)
-        regex = new_req[:source][:type] == "provider" ? provider_declaration_regex : registry_declaration_regex
+        regex = new_req[:source][:type] == "provider" ? provider_declaration_regex(updated_content) : registry_declaration_regex
         updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
@@ -307,15 +307,26 @@ module Dependabot
         /(?<=\").*(?=\")/
       end
 
-      def provider_declaration_regex
+      def provider_declaration_regex(updated_content)
         name = Regexp.escape(dependency.name)
-        %r{
+        registry_host = Regexp.escape(registry_host_for(dependency))
+        regex_version_preceeds = %r{
+            (((?<!required_)version\s=\s*[^\}]*["'].*["'])
+            |(\s*source\s*=\s*["'](#{registry_host})?#{name}["']|\s*#{name}\s*=\s*\{.*))
+        }mx
+        regex_source_preceeds = %r{
           ((\s*version\s=\s*["'].*["'])
-              |(\s*source\s*=\s*["'](#{Regexp.escape(registry_host_for(dependency))}/)
+              |(\s*source\s*=\s*["'](#{registry_host}/)
                 ?#{name}["']
                 |\s*#{name}\s*=\s*\{.*
           )){2}
         }mx
+
+        if updated_content.match(regex_version_preceeds)
+          regex_version_preceeds
+        else
+          regex_source_preceeds
+        end
       end
 
       def registry_declaration_regex
