@@ -68,6 +68,7 @@ jobs:
       - name: Push branch image
         if: env.DECISION == 'APPROVED:OPEN'
         run: |
+          docker tag "dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
           docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
 
       - name: Set summary
