@@ -56,102 +56,102 @@ jobs:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             composer:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
               - Dockerfile.updater-core
               - 'common/**'
               - 'go_modules/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             gradle:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'maven/**'
               - 'gradle/**'
             hex:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
               - Dockerfile.updater-core
               - 'common/**'
               - 'maven/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             npm_and_yarn:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'nuget/**'
             pub:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - 'python/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             terraform:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - 'terraform/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
@@ -197,7 +197,7 @@ jobs:
             -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
             -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
             -v "$(pwd)/composer:/home/dependabot/composer" \
-            "dependabot/dependabot-updater-bundler:latest" bundle exec rspec
+            "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec
 
   lint:
     name: Lint
