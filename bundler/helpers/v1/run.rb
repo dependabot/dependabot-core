@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 gem "bundler", "~> 1.17"
-require "bundler/setup"
+require "bundler"
 require "json"
 
 $LOAD_PATH.unshift(File.expand_path("./lib", __dir__))
