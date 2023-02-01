@@ -112,11 +112,11 @@ module Dependabot
       end
 
       def update_registry_declaration(new_req, old_req, updated_content)
-        if (new_req[:source][:type] == "provider")
-          regex = provider_declaration_regex(updated_content)
-        else
-          regex = registry_declaration_regex
-        end
+        regex = if new_req[:source][:type] == "provider"
+                  provider_declaration_regex(updated_content)
+                else
+                  registry_declaration_regex
+                end
         updated_content.gsub!(regex) do |regex_match|
           regex_match.sub(/^\s*version\s*=.*/) do |req_line_match|
             req_line_match.sub(old_req[:requirement], new_req[:requirement])
