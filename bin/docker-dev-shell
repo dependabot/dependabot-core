@@ -2,9 +2,6 @@
 
 set -e
 
-IMAGE_NAME="${IMAGE_NAME:=dependabot/dependabot-core-development}"
-CONTAINER_NAME="${CONTAINER_NAME:=dependabot-core-development}"
-DOCKERFILE="Dockerfile.development"
 HELP=false
 REBUILD=false
 
@@ -33,6 +30,10 @@ while true; do
   esac
 done
 
+IMAGE_NAME="dependabot/dependabot-core-development-$ECOSYSTEM"
+CONTAINER_NAME="dependabot-core-development-$ECOSYSTEM"
+DOCKERFILE="Dockerfile.development"
+
 if [ "$HELP" = "true" ]; then
   echo "usage: $0 <ecosystem> [--rebuild] [ARGS]"
   exit 0
@@ -42,17 +43,8 @@ build_image() {
   export BUILT_IMAGE=true
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
 
-  local TARGETARCH;
-  case "$(uname -m)"
-  in
-    amd64 | x86_64) TARGETARCH=amd64 ;;
-    arm64 | aarch64) TARGETARCH=arm64 ;;
-    *) TARGETARCH=amd64 ;;
-  esac
-
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --build-arg "TARGETARCH=${TARGETARCH}" \
     --build-arg "USER_UID=$(id -u)" \
     --build-arg "USER_GID=$(id -g)" \
     --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
@@ -62,7 +54,6 @@ build_image() {
 
   docker build \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --build-arg "TARGETARCH=${TARGETARCH}" \
     --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
     -t "dependabot/dependabot-updater-$ECOSYSTEM" \
     -f "$ECOSYSTEM"/Dockerfile \

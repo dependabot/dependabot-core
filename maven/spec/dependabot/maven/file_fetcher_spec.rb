@@ -29,6 +29,40 @@ RSpec.describe Dependabot::Maven::FileFetcher do
     }]
   end
 
+  describe ".required_files_in?" do
+    subject { described_class.required_files_in?(filenames) }
+
+    context "with only a pom.xml" do
+      let(:filenames) { %w(pom.xml) }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with pom.xml and any other valid .xml" do
+      let(:filenames) { %w(pom.xml othermodule.xml) }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with only an extensions.xml" do
+      let(:filenames) { %w(extensions.xml) }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with an extensions.xml and a valid pom.xml file" do
+      let(:filenames) { %w(extensions.xml pom.xml) }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with a non .xml file" do
+      let(:filenames) { %w(nonxml.txt) }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with no files passed" do
+      let(:filenames) { %w() }
+      it { is_expected.to eq(false) }
+    end
+  end
+
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
 
@@ -291,9 +325,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         let(:directory) { "/util/util" }
 
         it "fetches the relevant poms" do
-          expect(file_fetcher_instance.files.count).to eq(3)
-          expect(file_fetcher_instance.files.map(&:name)).
-            to match_array(%w(pom.xml ../pom.xml ../../pom.xml))
+          expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
         end
       end
 
@@ -323,6 +355,90 @@ RSpec.describe Dependabot::Maven::FileFetcher do
           ).once
         end
       end
+    end
+  end
+
+  context "with a multimodule custom named child poms" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_multimodule_different_pom_names.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "submodule-one/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "submodule-three/some-other-name.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "submodule-two/notpom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+    end
+
+    it "fetches the child poms with different names" do
+      expect(file_fetcher_instance.files.count).to eq(4)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(pom.xml submodule-one/pom.xml submodule-three/some-other-name.xml submodule-two/notpom.xml)
+        )
+    end
+  end
+
+  context "with a parent pom with custom name" do
+    before do
+      stub_request(:get, File.join(url, "pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_parent_pom_custom_name.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parentpom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_java_basic_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+    end
+
+    it "fetches the parent pom" do
+      expect(file_fetcher_instance.files.count).to eq(2)
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(
+          %w(pom.xml parentpom.xml)
+        )
     end
   end
 end

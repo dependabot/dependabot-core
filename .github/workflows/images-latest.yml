@@ -1,8 +1,7 @@
-name: Push latest ecosystem images
+name: Latest images
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  UPDATER_IMAGE: "dependabot/updater-"
-  UPDATER_IMAGE_MIRROR: "ghcr.io/dependabot/dependabot-updater-"
+  UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
 on:
   push:
     branches:
@@ -59,27 +58,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Build dependabot-updater-core image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
-
       - name: Build dependabot-updater image
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}" \
-            -f ${NAME}/Dockerfile \
-            .
+        run: script/build ${NAME}
 
       - name: Log in to GHCR
         run: |
@@ -87,18 +67,18 @@ jobs:
 
       - name: Push branch image
         run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG"
-          docker push "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}" "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
+          docker push "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG"
 
       - name: Push latest on main
         run: |
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:latest"
-          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
-          docker push --all-tags "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:latest"
+          docker tag "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" "${UPDATER_IMAGE}${ECOSYSTEM}:${{ needs.date-version.outputs.date }}"
+          docker push --all-tags "${UPDATER_IMAGE}${ECOSYSTEM}"
 
       - name: Set summary
         run: |
           echo "updater uploaded with tag \`$TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${UPDATER_IMAGE_MIRROR}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
+          echo "${UPDATER_IMAGE}${ECOSYSTEM}:$TAG" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

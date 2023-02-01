@@ -11,7 +11,7 @@ module Dependabot
                         "profile > modules > module"
 
       def self.required_files_in?(filenames)
-        (%w(pom.xml) - filenames).empty?
+        filenames.include?("pom.xml")
       end
 
       def self.required_files_message
@@ -66,7 +66,7 @@ module Dependabot
           name_parts = [
             base_path,
             relative_path,
-            relative_path.end_with?("pom.xml") ? nil : "pom.xml"
+            relative_path.end_with?(".xml") ? nil : "pom.xml"
           ].compact.reject(&:empty?)
           path = Pathname.new(File.join(*name_parts)).cleanpath.to_path
 
@@ -92,18 +92,9 @@ module Dependabot
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)
 
-        return [] if fetched_filenames.include?(path)
-
-        full_path_parts =
-          [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
-
-        full_path = Pathname.new(File.join(*full_path_parts)).
-                    cleanpath.to_path
-
-        return [] if full_path.start_with?("..")
+        return [] if fetched_filenames.include?(path) || path.start_with?("..")
 
         parent_pom = fetch_file_from_host(path)
-        parent_pom.support_file = true
 
         [
           parent_pom,
@@ -126,7 +117,7 @@ module Dependabot
         name_parts = [
           File.dirname(pom.name),
           relative_parent_path,
-          relative_parent_path.end_with?("pom.xml", "pom_parent.xml") ? nil : "pom.xml"
+          relative_parent_path.end_with?(".xml") ? nil : "pom.xml"
         ].compact.reject(&:empty?)
 
         Pathname.new(File.join(*name_parts)).cleanpath.to_path

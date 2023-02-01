@@ -1,7 +1,5 @@
 FROM ubuntu:20.04 as builder
 
-ARG TARGETARCH=amd64
-
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ### SYSTEM DEPENDENCIES
@@ -37,14 +35,15 @@ RUN apt-get update \
 ### RUBY
 
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
+
 ARG RUBY_VERSION=3.2.0
+
 ARG RUBY_INSTALL_VERSION=0.8.5
 
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-ARG BUNDLER_V2_VERSION=2.3.25
-ENV BUNDLE_SILENCE_ROOT_WARNING=1
-# Allow gem installs as the dependabot user
-ENV BUNDLE_PATH=".bundle"
+# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
+# This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
+ARG BUNDLER_V2_VERSION=2.3.26
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \
@@ -64,9 +63,6 @@ WORKDIR ${HOME}
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
-
-ENV DEPENDABOT_HOME /home/dependabot
-WORKDIR ${DEPENDABOT_HOME}
 
 COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
 COPY .ruby-version .ruby-version
@@ -96,7 +92,7 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
       touch $ecosystem/lib/dependabot/$ecosystem.rb; \
     done
 
-WORKDIR $DEPENDABOT_HOME/dependabot-updater
+WORKDIR $HOME/dependabot-updater
 
 RUN bundle config set --local path 'vendor' && \
 bundle config set --local frozen 'true' && \

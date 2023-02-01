@@ -24,13 +24,13 @@ jobs:
           - { path: composer, name: composer, ci_node_total: 2, ci_node_index: 1, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: git_submodules, ecosystem: submodule }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 0, ecosystem: gomod }
           - { path: go_modules, name: go_module, ci_node_total: 2, ci_node_index: 1, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: hex }
-          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: hex }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 0, ecosystem: mix }
+          - { path: hex, name: hex, ci_node_total: 2, ci_node_index: 1, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 0, ecosystem: npm }
           - { path: npm_and_yarn, name: npm_and_yarn, ci_node_total: 3, ci_node_index: 1, ecosystem: npm }
@@ -56,138 +56,119 @@ jobs:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'bundler/**'
             cargo:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'cargo/**'
             common:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             composer:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'composer/**'
             docker:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'docker/**'
             elm:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'elm/**'
             git_submodules:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'git_submodules/**'
             github_actions:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'github_actions/**'
             go_modules:
               - Dockerfile.updater-core
               - 'common/**'
               - 'go_modules/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             gradle:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'maven/**'
               - 'gradle/**'
             hex:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'hex/**'
             maven:
               - Dockerfile.updater-core
               - 'common/**'
               - 'maven/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             npm_and_yarn:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'npm_and_yarn/**'
             nuget:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'nuget/**'
             pub:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
               - 'pub/**'
             python:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - 'python/**'
-              - '.github/workflows/ecosystem-ci.yml'
+              - '.github/workflows/ci.yml'
             terraform:
               - Dockerfile.updater-core
               - 'common/**'
               - 'omnibus/**'
               - 'terraform/**'
-              - '.github/workflows/ecosystem-ci.yml'
-
-      - name: Build updater core image
-        if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
+              - '.github/workflows/ci.yml'
 
       - name: Build ecosystem image
         if: steps.changes.outputs[matrix.suite.path] == 'true'
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker build \
-            -t "dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} \
-            -f ${{ matrix.suite.path }}/Dockerfile \
-            .
+        run: script/build ${{ matrix.suite.path }}
 
       - name: Run ${{ matrix.suite.name }} tests
         if: steps.changes.outputs[matrix.suite.path] == 'true'
         run: |
           docker run \
+            --pull never \
             --env "CI=true" \
             --env "RAISE_ON_WARNINGS=true" \
             --env "DEPENDABOT_TEST_ACCESS_TOKEN=${{ secrets.GITHUB_TOKEN }}" \
             --env "SUITE_NAME=${{ matrix.suite.name }}" \
             --env "CI_NODE_TOTAL=${{ matrix.suite.ci_node_total }}" \
             --env "CI_NODE_INDEX=${{ matrix.suite.ci_node_index }}" \
-            --rm dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
+            --rm ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }} bash -c \
             "cd /home/dependabot/${{ matrix.suite.path }} && ./script/ci-test"
 
   updater:
@@ -198,38 +179,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Build updater core image
-        run: |
-          docker build \
-            -t "ghcr.io/dependabot/dependabot-updater-core:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-core \
-            -f Dockerfile.updater-core \
-            .
       # using bundler as the test updater
       - name: Build ecosystem image
-        run: |
-          docker build \
-            -t "dependabot/dependabot-updater-bundler:latest" \
-            --build-arg BUILDKIT_INLINE_CACHE=1 \
-            --cache-from ghcr.io/dependabot/dependabot-updater-bundler \
-            -f bundler/Dockerfile \
-            .
+        run: script/build bundler
       - name: Run updater tests
         env:
           DEPENDABOT_TEST_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Previously the updater image contained all ecosystems. Now the ecosystems are broken apart,
-        # but we still have some tests that need to run against other ecosystems. So by mounting the
-        # other ecosystems with -v into the updater image we can still run those tests.
-        run: |
-          docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
-            --env VCR \
-            --rm \
-            -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
-            -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
-            -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
-            -v "$(pwd)/composer:/home/dependabot/composer" \
-            "dependabot/dependabot-updater-bundler:latest" bundle exec rspec
+        run: script/ci-test-updater
 
   lint:
     name: Lint

@@ -1,41 +1,60 @@
 # shellcheck shell=bash
-export LOCAL_IMAGE="ghcr.io/dependabot/dependabot-updater-"
+export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
+export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
+export DOCKER_BUILDKIT=1
+
+function set_tag() {
+    case $ECOSYSTEM in
+      go_modules)
+        TAG=gomod
+        ;;
+      hex)
+        TAG=mix
+        ;;
+      npm_and_yarn)
+        TAG=npm
+        ;;
+      python)
+        TAG=pip
+        ;;
+      git_submodules)
+        TAG=gitsubmodule
+        ;;
+      github_actions)
+        TAG=github-actions
+        ;;
+      *)
+        TAG=$ECOSYSTEM
+        ;;
+    esac
+}
 
 function docker_build() {
   [[ -n "$SKIP_BUILD" ]] && return
   ECOSYSTEM="$1"
-
-  local TARGETARCH;
-  case "$(uname -m)"
-  in
-    amd64 | x86_64) TARGETARCH=amd64 ;;
-    arm64 | aarch64) TARGETARCH=arm64 ;;
-    *) TARGETARCH=amd64 ;;
-  esac
+  set_tag
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "ghcr.io/dependabot/dependabot-updater-core" \
-    -t "ghcr.io/dependabot/dependabot-updater-core" \
+    --cache-from "$UPDATER_CORE_IMAGE" \
+    -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \
     .
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
-    --build-arg TARGETARCH="$TARGETARCH" \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "ghcr.io/dependabot/dependabot-updater-$ECOSYSTEM" \
-    -t "$LOCAL_IMAGE$ECOSYSTEM" \
+    --cache-from "$UPDATER_IMAGE$TAG" \
+    -t "$UPDATER_IMAGE$TAG" \
     -f $ECOSYSTEM/Dockerfile \
     .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
-  IMAGE_LAYERS=$(docker history -q "$LOCAL_IMAGE$ECOSYSTEM" | wc -l | sed -e 's/ //g')
-  echo "$LOCAL_IMAGE$ECOSYSTEM contains $IMAGE_LAYERS layers"
+  IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE$TAG" | wc -l | sed -e 's/ //g')
+  echo "$UPDATER_IMAGE$TAG contains $IMAGE_LAYERS layers"
   [[ $IMAGE_LAYERS -lt 126 ]]
 }
 
@@ -44,7 +63,7 @@ function docker_exec() {
   docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --rm \
   -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
-  -ti "$LOCAL_IMAGE$ECOSYSTEM" "${@:2}"
+  -ti "$UPDATER_IMAGE$TAG" "${@:2}"
 }
 
 function docker_bundle_exec() {
@@ -54,5 +73,5 @@ function docker_bundle_exec() {
   --env VCR \
   --rm \
   -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
-  "$LOCAL_IMAGE$ECOSYSTEM" bundle exec "${@:2}"
+  "$UPDATER_IMAGE$TAG" bundle exec "${@:2}"
 }
