@@ -234,6 +234,11 @@ docker run --rm -ti \
   -v "$(pwd)/omnibus/dependabot-omnibus.gemspec:$CODE_DIR/omnibus/dependabot-omnibus.gemspec" \
   -v "$(pwd)/omnibus/lib:$CODE_DIR/omnibus/lib" \
   -v "$(pwd)/omnibus/script:$CODE_DIR/omnibus/script" \
+  -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/updater/.rubocop.yml" \
+  -v "$(pwd)/updater/Gemfile:$CODE_DIR/updater/Gemfile" \
+  -v "$(pwd)/updater/Gemfile.lock:$CODE_DIR/updater/Gemfile.lock" \
+  -v "$(pwd)/updater/lib:$CODE_DIR/updater/lib" \
+  -v "$(pwd)/updater/spec:$CODE_DIR/updater/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
