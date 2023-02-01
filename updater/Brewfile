@@ -1,5 +1,0 @@
-# frozen_string_literal: true
-
-brew "awscli"
-brew "awssume"
-cask "docker" unless File.executable? "/usr/local/bin/docker"
