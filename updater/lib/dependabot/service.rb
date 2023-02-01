@@ -2,6 +2,7 @@
 
 require "terminal-table"
 require "dependabot/api_client"
+require "active_support/core_ext/module/delegation"
 
 # Wraps an API client with the current state of communications with the Dependabot Service
 # and provides an interface to summarise all actions taken.
