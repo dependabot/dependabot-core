@@ -84,8 +84,8 @@ $ bin/docker-dev-shell
 
 You can use the "dry-run" script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
-arguments: the package manager and the GitHub repo name (including the
-account):
+arguments: the [package manager](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+and the GitHub repo name (including the account):
 
 ```bash
 $ bin/docker-dev-shell
