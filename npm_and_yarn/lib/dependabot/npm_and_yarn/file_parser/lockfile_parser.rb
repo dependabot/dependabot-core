@@ -98,22 +98,24 @@ module Dependabot
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
           yarn_locks.each do |yarn_lock|
-            parse_yarn_lock(yarn_lock).each do |req, details|
-              next unless semver_version_for(details["version"])
-              next if alias_package?(req)
-              next if workspace_package?(req)
-              next if req == "__metadata"
+            parse_yarn_lock(yarn_lock).each do |reqs, details|
+              reqs.split(", ").each do |req|
+                next unless semver_version_for(details["version"])
+                next if alias_package?(req)
+                next if workspace_package?(req)
+                next if req == "__metadata"
 
-              # NOTE: The DependencySet will de-dupe our dependencies, so they
-              # end up unique by name. That's not a perfect representation of
-              # the nested nature of JS resolution, but it makes everything work
-              # comparably to other flat-resolution strategies
-              dependency_set << Dependency.new(
-                name: req.split(/(?<=\w)\@/).first,
-                version: semver_version_for(details["version"]),
-                package_manager: "npm_and_yarn",
-                requirements: []
-              )
+                # NOTE: The DependencySet will de-dupe our dependencies, so they
+                # end up unique by name. That's not a perfect representation of
+                # the nested nature of JS resolution, but it makes everything work
+                # comparably to other flat-resolution strategies
+                dependency_set << Dependency.new(
+                  name: req.split(/(?<=\w)\@/).first,
+                  version: semver_version_for(details["version"]),
+                  package_manager: "npm_and_yarn",
+                  requirements: []
+                )
+              end
             end
           end
 
