@@ -18,16 +18,31 @@
 
 ## Setup instructions
 
-Getting set up to run all of the tests on Dependabot isn't as simple as we'd like it to be - sorry about that. Dependabot needs to shell out to multiple different languages to correctly update dependency files, which makes things a little complicated.
+Dependabot runs through [Docker](https://www.docker.com/products/docker-desktop/), so that's the only thing you need to get started.
 
-Assuming you're working on a single language, the best thing to do is just to install Ruby and the language you're working on as follows:
+Then, assuming you're working on a single language, you'll need to start a
+development container for that language through
 
-* [Install rbenv](https://github.com/rbenv/rbenv#installation) (a Ruby version manager)
-* [Install the latest Ruby](https://github.com/rbenv/rbenv#installing-ruby-versions)
-* Install Bundler with `gem install bundler` (this is Ruby's package manager)
-* Install Dependabot's Ruby dependencies with `bundle install`
-* Install the language dependencies for whatever languages you're working on (see [how we do it in CI](.github/workflows/ci.yml))
-* Run the tests for the file you're working on with `bundle exec rspec spec/dependabot/file_updaters/elixir/` (for example). They should be green (although might need an internet connection).
+```
+bin/docker-dev-shell <ecosystem>
+```
+
+The name of the ecosystem should be one of the top level root folders in this
+repo. That folder is where you'll want to make your changes.
+
+Once inside the development container, switch to the ecosystem folder you want
+to work with and from there you can run tests with
+
+```
+rspec
+```
+
+You can also run the specific tests for the file you're working on with, for
+example:
+
+```
+rspec spec/dependabot/file_updaters/elixir
+```
 
 ## Project layout
 
