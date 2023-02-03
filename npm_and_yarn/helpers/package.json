@@ -13,6 +13,7 @@
     "@npmcli/arborist": "^6.2.0",
     "detect-indent": "^6.1.0",
     "nock": "^13.3.0",
+    # TODO: Fake comment to generate a commit to stop Dependabot auto-rebasing
     "npm": "9.4.1",
     "semver": "^7.3.8"
   },
