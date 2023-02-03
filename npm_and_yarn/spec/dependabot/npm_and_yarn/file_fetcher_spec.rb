@@ -79,21 +79,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       described_class.new(source: source, credentials: credentials, repo_contents_path: repo_contents_path)
     end
 
+    before do
+      allow(Dependabot::SharedHelpers).to receive(:run_shell_command).and_call_original
+    end
+
     it "pulls files from lfs after cloning" do
       # Calling #files triggers the clone
       expect(file_fetcher_instance.files.map(&:name)).to contain_exactly("package.json", "yarn.lock", ".yarnrc.yml")
-      expect(
-        File.read(
-          File.join(repo_contents_path, ".yarn", "releases", "yarn-3.2.4.cjs")
-        )
-      ).to start_with("#!/usr/bin/env node")
-
-      # LFS files not needed by dependabot are not pulled
-      expect(
-        File.read(
-          File.join(repo_contents_path, ".pnp.cjs")
-        )
-      ).to start_with("version https://git-lfs.github.com/spec/v1")
+      expect(Dependabot::SharedHelpers).to have_received(:run_shell_command).with(
+        %r{\Agit lfs pull --include .yarn,./yarn/cache}
+      )
     end
   end
 
