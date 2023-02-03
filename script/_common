@@ -34,9 +34,17 @@ function docker_build() {
   ECOSYSTEM="$1"
   set_tag
 
+  # create buildx builder if it doesn't exist
+  docker buildx inspect dependabot || docker buildx create \
+    --name dependabot \
+    --driver docker-container \
+    --bootstrap \
+    --platform linux/arm64,linux/amd64
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  docker buildx build \
     $DOCKER_BUILD_ARGS \
+    --builder dependabot \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
@@ -44,8 +52,9 @@ function docker_build() {
     .
 
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
-  docker build \
+  docker buildx build \
     $DOCKER_BUILD_ARGS \
+    --builder dependabot \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
     --cache-from "$UPDATER_IMAGE$TAG" \
     -t "$UPDATER_IMAGE$TAG" \

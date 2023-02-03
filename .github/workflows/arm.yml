@@ -1,0 +1,43 @@
+name: ARM
+on:
+  push:
+    branches:
+      - jakecoffman/arm
+
+jobs:
+  arm:
+    name: ARM
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: bundler, ecosystem: bundler }
+          - { name: cargo, ecosystem: cargo }
+          - { name: composer, ecosystem: composer }
+          - { name: docker, ecosystem: docker }
+          - { name: elm, ecosystem: elm }
+          - { name: git_submodules, ecosystem: gitsubmodule }
+          - { name: github_actions, ecosystem: github-actions }
+          - { name: go_modules, ecosystem: gomod }
+          - { name: gradle, ecosystem: gradle }
+          - { name: hex, ecosystem: mix }
+          - { name: maven, ecosystem: maven }
+          - { name: npm_and_yarn, ecosystem: npm }
+          - { name: nuget, ecosystem: nuget }
+          - { name: pub, ecosystem: pub }
+          - { name: python, ecosystem: pip }
+          - { name: terraform, ecosystem: terraform }
+    env:
+      TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Do the thing
+        run: docker run --privileged --rm tonistiigi/binfmt --install linux/arm64
+
+      - name: Build ecosystem image
+        run: |
+          export DOCKER_BUILD_ARGS="--platform linux/arm64"
+          script/build ${{ matrix.suite.name }}
