@@ -36,6 +36,12 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
 
+      context "and the property name starts with 'project' but not an attribute of the project" do
+        let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
+        let(:property_name) { "project.dependency.spring-boot.version" }
+        its([:value]) { is_expected.to eq("2.2.1.RELEASE") }
+      end
+
       context "and the property is within a profile" do
         let(:base_pom_fixture_name) { "profile_property_pom.xml" }
         its([:value]) { is_expected.to eq("4.3.12.RELEASE") }

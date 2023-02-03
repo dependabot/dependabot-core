@@ -36,8 +36,8 @@ module Dependabot
             loop do
               candidate_node =
                 doc.at_xpath("/project/#{nm}") ||
-                doc.at_xpath("/project/properties/#{nm}") ||
-                doc.at_xpath("/project/profiles/profile/properties/#{nm}")
+                doc.at_xpath("/project/properties/#{property_name}") ||
+                doc.at_xpath("/project/profiles/profile/properties/#{property_name}")
               break candidate_node if candidate_node
               break unless nm.match?(DOT_SEPARATOR_REGEX)
 
