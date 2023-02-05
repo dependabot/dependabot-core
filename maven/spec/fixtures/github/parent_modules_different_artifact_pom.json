@@ -1,0 +1,18 @@
+{
+  "name": "pom.xml",
+  "path": "parent_modules_project/different_artifact_id/pom.xml",
+  "sha": "dbb97f2ddeb67065a95444dc871445486e86c2ff",
+  "size": 910,
+  "url": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/parent_modules_project/different_artifact_id/pom.xml?ref=main",
+  "html_url": "https://github.com/soulus13/dependabot-maven-test/blob/main/parent_modules_project/different_artifact_id/pom.xml",
+  "git_url": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/dbb97f2ddeb67065a95444dc871445486e86c2ff",
+  "download_url": "https://raw.githubusercontent.com/soulus13/dependabot-maven-test/main/parent_modules_project/different_artifact_id/pom.xml",
+  "type": "file",
+  "content": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHByb2pl\nY3QgeG1sbnM9Imh0dHA6Ly9tYXZlbi5hcGFjaGUub3JnL1BPTS80LjAuMCIK\nICAgICAgICAgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hN\nTFNjaGVtYS1pbnN0YW5jZSIKICAgICAgICAgeHNpOnNjaGVtYUxvY2F0aW9u\nPSJodHRwOi8vbWF2ZW4uYXBhY2hlLm9yZy9QT00vNC4wLjAgaHR0cDovL21h\ndmVuLmFwYWNoZS5vcmcveHNkL21hdmVuLTQuMC4wLnhzZCI+CiAgICA8bW9k\nZWxWZXJzaW9uPjQuMC4wPC9tb2RlbFZlcnNpb24+CgogICAgPHBhY2thZ2lu\nZz5wb208L3BhY2thZ2luZz4KCiAgICA8cGFyZW50PgogICAgICAgIDxncm91\ncElkPm9yZy5wYXJlbnQubW9kdWxlczwvZ3JvdXBJZD4KICAgICAgICA8YXJ0\naWZhY3RJZD5wYXJlbnQtbW9kdWxlcy1hcnRpZmFjdC1uZXc8L2FydGlmYWN0\nSWQ+CiAgICAgICAgPHZlcnNpb24+MS4wLjA8L3ZlcnNpb24+CiAgICAgICAg\nPHJlbGF0aXZlUGF0aD4uLi9wb20ueG1sPC9yZWxhdGl2ZVBhdGg+CiAgICA8\nL3BhcmVudD4KCiAgICA8Z3JvdXBJZD5vcmcucGFyZW50Lm1vZHVsZXM8L2dy\nb3VwSWQ+CiAgICA8YXJ0aWZhY3RJZD5wYXJlbnQtbW9kdWxlcy1hcnRpZmFj\ndDwvYXJ0aWZhY3RJZD4KICAgIDx2ZXJzaW9uPjEuNi4wPC92ZXJzaW9uPgoK\nICAgIDxwcm9wZXJ0aWVzPgogICAgICAgIDxtYXZlbi5jb21waWxlci5zb3Vy\nY2U+ODwvbWF2ZW4uY29tcGlsZXIuc291cmNlPgogICAgICAgIDxtYXZlbi5j\nb21waWxlci50YXJnZXQ+ODwvbWF2ZW4uY29tcGlsZXIudGFyZ2V0PgogICAg\nICAgIDxwcm9qZWN0LmJ1aWxkLnNvdXJjZUVuY29kaW5nPlVURi04PC9wcm9q\nZWN0LmJ1aWxkLnNvdXJjZUVuY29kaW5nPgogICAgPC9wcm9wZXJ0aWVzPgoK\nPC9wcm9qZWN0Pg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/soulus13/dependabot-maven-test/contents/parent_modules_project/different_artifact_id/pom.xml?ref=main",
+    "git": "https://api.github.com/repos/soulus13/dependabot-maven-test/git/blobs/dbb97f2ddeb67065a95444dc871445486e86c2ff",
+    "html": "https://github.com/soulus13/dependabot-maven-test/blob/main/parent_modules_project/different_artifact_id/pom.xml"
+  }
+}
