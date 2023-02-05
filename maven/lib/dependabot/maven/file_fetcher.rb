@@ -92,9 +92,18 @@ module Dependabot
       def recursively_fetch_relative_path_parents(pom, fetched_filenames:)
         path = parent_path_for_pom(pom)
 
-        return [] if fetched_filenames.include?(path) || path.start_with?("..")
+        return [] if fetched_filenames.include?(path)
+
+        full_path_parts =
+          [directory.gsub(%r{^/}, ""), path].reject(&:empty?).compact
+
+        full_path = Pathname.new(File.join(*full_path_parts)).
+                    cleanpath.to_path
+
+        return [] if full_path.start_with?("..")
 
         parent_pom = fetch_file_from_host(path)
+        parent_pom.support_file = true
 
         [
           parent_pom,
