@@ -2,6 +2,7 @@
 
 require "dependabot/shared_helpers"
 require "dependabot/errors"
+require "dependabot/logger"
 require "dependabot/go_modules/file_updater"
 require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/replace_stubber"
@@ -139,10 +140,11 @@ module Dependabot
           command = "go mod tidy -e"
 
           # we explicitly don't raise an error for 'go mod tidy' and silently
-          # continue here. `go mod tidy` shouldn't block updating versions
-          # because there are some edge cases where it's OK to fail (such as
-          # generated files not available yet to us).
-          Open3.capture3(environment, command)
+          # continue with an info log here. `go mod tidy` shouldn't block
+          # updating versions because there are some edge cases where it's OK to fail
+          # (such as generated files not available yet to us).
+          _, stderr, status = Open3.capture3(environment, command)
+          Dependabot.logger.info "Failed to `go mod tidy`: #{stderr}" unless status.success?
         end
 
         def run_go_vendor
