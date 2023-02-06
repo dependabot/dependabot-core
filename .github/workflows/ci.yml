@@ -39,7 +39,7 @@ jobs:
           - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 0, ecosystem: pub }
           - { path: pub, name: pub, ci_node_total: 2, ci_node_index: 1, ecosystem: pub }
           - { path: python, name: python, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
-          - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip}
+          - { path: python, name: python, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 0, ecosystem: pip }
           - { path: python, name: python_slow, ci_node_total: 2, ci_node_index: 1, ecosystem: pip }
           - { path: terraform, name: terraform, ecosystem: terraform }
