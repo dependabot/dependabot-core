@@ -17,6 +17,7 @@ module Dependabot
   module Python
     class FileUpdater
       class PoetryFileUpdater
+      include Helpers
         require_relative "pyproject_preparer"
 
         attr_reader :dependencies, :dependency_files, :credentials
@@ -135,7 +136,7 @@ module Dependabot
         def update_python_requirement(pyproject_content)
           PyprojectPreparer.
             new(pyproject_content: pyproject_content).
-            update_python_requirement(Helpers.python_major_minor(dependency_files))
+            update_python_requirement(python_major_minor)
         end
 
         def lock_declaration_to_new_version!(poetry_object, dep)
@@ -178,10 +179,10 @@ module Dependabot
               write_temporary_dependency_files(pyproject_content)
               add_auth_env_vars
 
-              Helpers.install_required_python(dependency_files)
+              install_required_python
 
               # use system git instead of the pure Python dulwich
-              unless Helpers.python_version(dependency_files)&.start_with?("3.6")
+              unless python_version&.start_with?("3.6")
                 run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
               end
 
@@ -232,7 +233,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(dependency_files)) if Helpers.python_version(dependency_files)
+          File.write(".python-version", python_major_minor) if python_version
 
           # Overwrite the pyproject with updated content
           File.write("pyproject.toml", pyproject_content)

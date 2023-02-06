@@ -18,6 +18,7 @@ module Dependabot
     class FileUpdater
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
+      include Helpers
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
@@ -66,7 +67,7 @@ module Dependabot
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
-            Helpers.install_required_python(python_version)
+            install_required_python
 
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
@@ -176,7 +177,7 @@ module Dependabot
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(dependency_files)}",
+            "pyenv local #{python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -210,7 +211,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(dependency_files))
+          File.write(".python-version", python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -543,48 +544,6 @@ module Dependabot
                   path
                 end.uniq.compact
             end
-        end
-
-        def python_version
-          @python_version ||=
-            user_specified_python_version ||
-            python_version_matching_imputed_requirements ||
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-        end
-
-        def user_specified_python_version
-          return unless python_requirement_parser.user_specified_requirements.any?
-
-          user_specified_requirements =
-            python_requirement_parser.user_specified_requirements.
-            map { |r| Python::Requirement.requirements_array(r) }
-          python_version_matching(user_specified_requirements)
-        end
-
-        def python_version_matching_imputed_requirements
-          compiled_file_python_requirement_markers =
-            python_requirement_parser.imputed_requirements.map do |r|
-              Dependabot::Python::Requirement.new(r)
-            end
-          python_version_matching(compiled_file_python_requirement_markers)
-        end
-
-        def python_version_matching(requirements)
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
-            version = Python::Version.new(version_string)
-            requirements.all? do |req|
-              next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
-
-              req.satisfied_by?(version)
-            end
-          end
-        end
-
-        def python_requirement_parser
-          @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.new(
-              dependency_files: dependency_files
-            )
         end
 
         def setup_files

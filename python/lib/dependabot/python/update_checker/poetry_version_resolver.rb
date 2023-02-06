@@ -23,6 +23,7 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
+      include Helpers
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
           'checkout',
@@ -92,7 +93,7 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
                 add_auth_env_vars
 
-                Helpers.install_required_python(python_version)
+                install_required_python
 
                 # use system git instead of the pure Python dulwich
                 unless python_version&.start_with?("3.6")
@@ -205,7 +206,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version)) if python_version
+          File.write(".python-version", python_major_minor) if python_version
 
           # Overwrite the pyproject with updated content
           if update_pyproject

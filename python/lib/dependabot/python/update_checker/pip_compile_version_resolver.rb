@@ -25,6 +25,7 @@ module Dependabot
       # - Run `pip-compile` and see what the result is
       # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
+      include Helpers
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
@@ -71,7 +72,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
-                Helpers.install_required_python(python_version)
+                install_required_python
 
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
@@ -275,7 +276,7 @@ module Dependabot
 
         def run_pip_compile_command(command, fingerprint:)
           run_command(
-            "pyenv local #{Helpers.python_major_minor(python_version)}",
+            "pyenv local #{python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -322,7 +323,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(dependency_files))
+          File.write(".python-version", python_major_minor)
 
           setup_files.each do |file|
             path = file.name
