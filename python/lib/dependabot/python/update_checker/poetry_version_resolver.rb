@@ -225,36 +225,6 @@ module Dependabot
             add_auth_env_vars(credentials)
         end
 
-        def python_version
-          requirements = python_requirement_parser.user_specified_requirements
-          requirements = requirements.
-                         map { |r| Python::Requirement.requirements_array(r) }
-
-          version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
-            requirements.all? do |reqs|
-              reqs.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
-            end
-          end
-          return version if version
-
-          msg = "Dependabot detected the following Python requirements " \
-                "for your project: '#{requirements}'.\n\nCurrently, the " \
-                "following Python versions are supported in Dependabot: " \
-                "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
-          raise DependencyFileNotResolvable, msg
-        end
-
-        def python_requirement_parser
-          @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.new(
-              dependency_files: dependency_files
-            )
-        end
-
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
-        end
-
         def updated_pyproject_content(updated_requirement:)
           content = pyproject.content
           content = sanitize_pyproject_content(content)

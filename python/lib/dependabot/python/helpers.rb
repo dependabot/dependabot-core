@@ -34,21 +34,26 @@ module Dependabot
       end
 
       def python_version
-        @python_version ||=
-          user_specified_python_version ||
-          python_version_matching_imputed_requirements ||
+        @python_version ||= python_version_from_supported_versions
+      end
+
+      def python_requirement_string
+        if user_specified_python_version
+          if user_specified_python_version.start_with?(/\d/)
+            parts = user_specified_python_version.split(".")
+            parts.fill("*", (parts.length)..2).join(".")
+          else
+            user_specified_python_version
+          end
+        elsif python_version_matching_imputed_requirements
+          python_version_matching_imputed_requirements
+        else
           PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
+        end
       end
 
       def python_version_from_supported_versions
-        requirement_string =
-          if @using_python_two then "2.7.*"
-          elsif user_specified_python_requirement
-            parts = user_specified_python_requirement.split(".")
-            parts.fill("*", (parts.length)..2).join(".")
-          else
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-          end
+        requirement_string = python_requirement_string
 
         # Ideally, the requirement is satisfied by a Python version we support
         requirement =
@@ -58,14 +63,17 @@ module Dependabot
           find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
         return version if version
 
-        # If not, and changing the patch version would fix things, we do that
+        # If not, and we're dealing with a simple version string
+        # and changing the patch version would fix things, we do that
         # as the patch version is unlikely to affect resolution
-        requirement =
-          Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
-        version =
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
-          find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
-        return version if version
+        if requirement_string.start_with?(/\d/)
+          requirement =
+            Python::Requirement.new(requirement_string.gsub(/\.\d+$/, ".*"))
+          version =
+            PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.
+            find { |v| requirement.satisfied_by?(Python::Version.new(v)) }
+          return version if version
+        end
 
         # Otherwise we have to raise, giving details of the Python versions
         # that Dependabot supports
@@ -77,12 +85,7 @@ module Dependabot
       end
 
       def user_specified_python_version
-        return unless python_requirement_parser.user_specified_requirements.any?
-
-        user_specified_requirements =
-          python_requirement_parser.user_specified_requirements.
-          map { |r| Python::Requirement.requirements_array(r) }
-        python_version_matching(user_specified_requirements)
+        python_requirement_parser.user_specified_requirements.first
       end
 
       def python_version_matching_imputed_requirements
@@ -108,6 +111,10 @@ module Dependabot
         @python_requirement_parser ||=
           FileParser::PythonRequirementParser.
           new(dependency_files: dependency_files)
+      end
+
+      def pre_installed_python?(version)
+        PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
       end
     end
   end

@@ -182,7 +182,7 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
-             user_specified_python_requirement
+             user_specified_python_version
             check_original_requirements_resolvable
 
             # The latest version of the dependency we're updating to needs a
@@ -238,7 +238,7 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
-             user_specified_python_requirement
+             user_specified_python_version
             msg = clean_error_message(error.message).
                   lines.take_while { |l| !l.start_with?("File") }.join.strip
             raise if msg.empty?
