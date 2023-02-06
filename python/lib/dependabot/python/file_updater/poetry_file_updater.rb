@@ -17,7 +17,7 @@ module Dependabot
   module Python
     class FileUpdater
       class PoetryFileUpdater
-      include Helpers
+        include Helpers
         require_relative "pyproject_preparer"
 
         attr_reader :dependencies, :dependency_files, :credentials

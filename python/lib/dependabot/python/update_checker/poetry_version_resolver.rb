@@ -23,7 +23,7 @@ module Dependabot
     class UpdateChecker
       # This class does version resolution for pyproject.toml files.
       class PoetryVersionResolver
-      include Helpers
+        include Helpers
         GIT_REFERENCE_NOT_FOUND_REGEX = /
           (?:'git'.*pypoetry-git-(?<name>.+?).{8}',
           'checkout',

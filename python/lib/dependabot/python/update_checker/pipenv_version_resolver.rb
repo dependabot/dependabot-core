@@ -29,7 +29,7 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
-      include Helpers
+        include Helpers
         # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone -q (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m

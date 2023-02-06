@@ -15,7 +15,7 @@ module Dependabot
   module Python
     class FileUpdater
       class PipfileFileUpdater
-      include Helpers
+        include Helpers
         require_relative "pipfile_preparer"
         require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"

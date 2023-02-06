@@ -9,7 +9,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class PipVersionResolver
-      include Helpers
+        include Helpers
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)

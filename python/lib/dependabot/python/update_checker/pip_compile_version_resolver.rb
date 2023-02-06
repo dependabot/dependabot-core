@@ -23,9 +23,8 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
-      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-      include Helpers
+        include Helpers
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
@@ -496,7 +495,6 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
-      # rubocop:enable Metrics/ClassLength
     end
   end
 end

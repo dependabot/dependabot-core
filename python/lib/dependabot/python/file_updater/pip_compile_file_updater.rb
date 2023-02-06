@@ -18,7 +18,7 @@ module Dependabot
     class FileUpdater
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
-      include Helpers
+        include Helpers
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
