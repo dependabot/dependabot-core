@@ -110,10 +110,6 @@ module Dependabot
           end
         end
       end
-
-      def pre_installed_python?(version)
-        PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
-      end
     end
   end
 end
