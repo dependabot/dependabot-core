@@ -20,7 +20,7 @@ PATH
       bundler (>= 1.16, < 3.0.0)
       commonmarker (>= 0.20.1, < 0.24.0)
       docker_registry2 (~> 1.11, >= 1.11.0)
-      excon (~> 0.96, < 0.99)
+      excon (~> 0.96, < 0.100)
       faraday (= 2.7.4)
       faraday-retry (= 2.0.0)
       gitlab (= 4.19.0)
