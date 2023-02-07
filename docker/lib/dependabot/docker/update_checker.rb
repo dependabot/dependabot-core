@@ -152,8 +152,9 @@ module Dependabot
         candidate_tags = sort_tags(candidate_tags, version)
 
         latest_tag = candidate_tags.last
+        return version unless latest_tag
 
-        if latest_tag && same_precision?(latest_tag, version)
+        if same_precision?(latest_tag, version)
           latest_tag
         else
           latest_same_precision_tag = remove_precision_changes(candidate_tags, version).last
@@ -161,7 +162,7 @@ module Dependabot
           if latest_same_precision_tag && digest_of(latest_same_precision_tag) == digest_of(latest_tag)
             latest_same_precision_tag
           else
-            latest_tag || version
+            latest_tag
           end
         end
       end
