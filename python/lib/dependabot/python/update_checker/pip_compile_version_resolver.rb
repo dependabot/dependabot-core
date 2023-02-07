@@ -11,7 +11,7 @@ require "dependabot/python/file_updater/requirement_replacer"
 require "dependabot/python/file_updater/setup_file_sanitizer"
 require "dependabot/python/version"
 require "dependabot/shared_helpers"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
@@ -23,8 +23,8 @@ module Dependabot
       # This class does version resolution for pip-compile. Its approach is:
       # - Unlock the dependency we're checking in the requirements.in file
       # - Run `pip-compile` and see what the result is
+      # rubocop:disable Metrics/ClassLength
       class PipCompileVersionResolver
-        include Helpers
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone --filter=blob:none --quiet (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = /Did not find branch or tag '(?<tag>[^\n"]+)'/m
         NATIVE_COMPILATION_ERROR =
@@ -71,7 +71,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(updated_req: requirement)
-                install_required_python
+                language_version_manager.install_required_python
 
                 filenames_to_compile.each do |filename|
                   # Shell out to pip-compile.
@@ -233,7 +233,7 @@ module Dependabot
         end
 
         def new_resolver_supported?
-          python_version >= Python::Version.new("3.7")
+          language_version_manager.python_version >= Python::Version.new("3.7")
         end
 
         def pip_compile_options_fingerprint(options)
@@ -275,7 +275,7 @@ module Dependabot
 
         def run_pip_compile_command(command, fingerprint:)
           run_command(
-            "pyenv local #{python_major_minor}",
+            "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -322,7 +322,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_major_minor)
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -479,6 +479,18 @@ module Dependabot
           ).parse.find { |d| d.name == dependency.name }&.version
         end
 
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.
+            new(dependency_files: dependency_files)
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.
+            new(python_requirement_parser: python_requirement_parser)
+        end
+
         def setup_files
           dependency_files.select { |f| f.name.end_with?("setup.py") }
         end
@@ -495,6 +507,7 @@ module Dependabot
           dependency_files.select { |f| f.name.end_with?("setup.cfg") }
         end
       end
+      # rubocop:enable Metrics/ClassLength
     end
   end
 end

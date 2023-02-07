@@ -29,7 +29,6 @@ module Dependabot
       # just raise if the latest version can't be resolved. Knowing that is
       # still better than nothing, though.
       class PipenvVersionResolver
-        include Helpers
         # rubocop:disable Layout/LineLength
         GIT_DEPENDENCY_UNREACHABLE_REGEX = /git clone -q (?<url>[^\s]+).* /
         GIT_REFERENCE_NOT_FOUND_REGEX = %r{git checkout -q (?<tag>[^\n"]+)\n?[^\n]*/(?<name>.*?)(\\n'\]|$)}m
@@ -85,7 +84,7 @@ module Dependabot
                 rescue Dependabot::SharedHelpers::HelperSubprocessFailed
                   nil
                 end
-                install_required_python
+                language_version_manager.install_required_python
 
                 # Shell out to Pipenv, which handles everything for us.
                 # Whilst calling `lock` avoids doing an install as part of the
@@ -182,7 +181,7 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
-             user_specified_python_version
+             language_version_manager.user_specified_python_version
             check_original_requirements_resolvable
 
             # The latest version of the dependency we're updating to needs a
@@ -238,7 +237,7 @@ module Dependabot
           end
 
           if error.message.include?("UnsupportedPythonVersion") &&
-             user_specified_python_version
+             language_version_manager.user_specified_python_version
             msg = clean_error_message(error.message).
                   lines.take_while { |l| !l.start_with?("File") }.join.strip
             raise if msg.empty?
@@ -297,7 +296,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_major_minor)
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -350,7 +349,7 @@ module Dependabot
         def update_python_requirement(pipfile_content)
           Python::FileUpdater::PipfilePreparer.
             new(pipfile_content: pipfile_content).
-            update_python_requirement(python_major_minor)
+            update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -413,7 +412,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{python_major_minor}")
+          run_command("pyenv local #{language_version_manager.python_major_minor}")
           run_command(command, env: env)
         end
 
@@ -429,6 +428,18 @@ module Dependabot
 
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.
+            new(dependency_files: dependency_files)
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.
+            new(python_requirement_parser: python_requirement_parser)
         end
 
         def pipfile

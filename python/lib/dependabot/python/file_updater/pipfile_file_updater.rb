@@ -6,7 +6,7 @@ require "dependabot/dependency"
 require "dependabot/python/requirement_parser"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/shared_helpers"
 require "dependabot/python/native_helpers"
 require "dependabot/python/name_normaliser"
@@ -15,7 +15,6 @@ module Dependabot
   module Python
     class FileUpdater
       class PipfileFileUpdater
-        include Helpers
         require_relative "pipfile_preparer"
         require_relative "pipfile_manifest_updater"
         require_relative "setup_file_sanitizer"
@@ -148,7 +147,7 @@ module Dependabot
         def update_python_requirement(pipfile_content)
           PipfilePreparer.
             new(pipfile_content: pipfile_content).
-            update_python_requirement(python_major_minor)
+            update_python_requirement(language_version_manager.python_major_minor)
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
@@ -204,7 +203,7 @@ module Dependabot
                 rescue Dependabot::SharedHelpers::HelperSubprocessFailed
                   nil
                 end
-                install_required_python
+                language_version_manager.install_required_python
 
                 # Initialize a git repo to appease pip-tools
                 command = SharedHelpers.escape_command("git init")
@@ -279,7 +278,7 @@ module Dependabot
         end
 
         def run_pipenv_command(command, env: pipenv_env_variables)
-          run_command("pyenv local #{python_major_minor}")
+          run_command("pyenv local #{language_version_manager.python_major_minor}")
           run_command(command, env: env)
         end
 
@@ -291,7 +290,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_major_minor)
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -344,6 +343,18 @@ module Dependabot
 
         def normalise(name)
           NameNormaliser.normalise(name)
+        end
+
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.
+            new(dependency_files: dependency_files)
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.
+            new(python_requirement_parser: python_requirement_parser)
         end
 
         def parsed_lockfile

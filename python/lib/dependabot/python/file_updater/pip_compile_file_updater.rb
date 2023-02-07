@@ -7,7 +7,7 @@ require "dependabot/python/file_fetcher"
 require "dependabot/python/file_parser/python_requirement_parser"
 require "dependabot/python/file_updater"
 require "dependabot/shared_helpers"
-require "dependabot/python/helpers"
+require "dependabot/python/language_version_manager"
 require "dependabot/python/native_helpers"
 require "dependabot/python/python_versions"
 require "dependabot/python/name_normaliser"
@@ -18,7 +18,6 @@ module Dependabot
     class FileUpdater
       # rubocop:disable Metrics/ClassLength
       class PipCompileFileUpdater
-        include Helpers
         require_relative "requirement_replacer"
         require_relative "requirement_file_updater"
         require_relative "setup_file_sanitizer"
@@ -67,7 +66,7 @@ module Dependabot
         def compile_new_requirement_files
           SharedHelpers.in_a_temporary_directory do
             write_updated_dependency_files
-            install_required_python
+            language_version_manager.install_required_python
 
             filenames_to_compile.each do |filename|
               # Shell out to pip-compile, generate a new set of requirements.
@@ -177,7 +176,7 @@ module Dependabot
 
         def run_pip_compile_command(command, allow_unsafe_shell_command: false, fingerprint:)
           run_command(
-            "pyenv local #{python_major_minor}",
+            "pyenv local #{language_version_manager.python_major_minor}",
             fingerprint: "pyenv local <python_major_minor>"
           )
 
@@ -211,7 +210,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", python_major_minor)
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           setup_files.each do |file|
             path = file.name
@@ -544,6 +543,18 @@ module Dependabot
                   path
                 end.uniq.compact
             end
+        end
+
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.
+            new(dependency_files: dependency_files)
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.
+            new(python_requirement_parser: python_requirement_parser)
         end
 
         def setup_files

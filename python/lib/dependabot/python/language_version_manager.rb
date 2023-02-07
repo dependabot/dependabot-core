@@ -5,7 +5,11 @@ require "dependabot/python/version"
 
 module Dependabot
   module Python
-    module Helpers
+    class LanguageVersionManager
+      def initialize(python_requirement_parser:)
+        @python_requirement_parser = python_requirement_parser
+      end
+
       def install_required_python
         # The leading space is important in the version check
         return if SharedHelpers.run_shell_command("pyenv versions").include?(" #{python_major_minor}.")
@@ -85,12 +89,12 @@ module Dependabot
       end
 
       def user_specified_python_version
-        python_requirement_parser.user_specified_requirements.first
+        @python_requirement_parser.user_specified_requirements.first
       end
 
       def python_version_matching_imputed_requirements
         compiled_file_python_requirement_markers =
-          python_requirement_parser.imputed_requirements.map do |r|
+          @python_requirement_parser.imputed_requirements.map do |r|
             Dependabot::Python::Requirement.new(r)
           end
         python_version_matching(compiled_file_python_requirement_markers)
