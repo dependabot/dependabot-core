@@ -275,6 +275,9 @@ module Dependabot
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
 
+        current_depth = File.join(directory, file.name).split("/").count { |path| !path.empty? }
+        path_to_directory = "../" * current_depth
+
         dep_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
         parsed_manifest = JSON.parse(file.content)
         dependency_objects = parsed_manifest.values_at(*dep_types).compact
@@ -294,7 +297,7 @@ module Dependabot
           select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
           map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
-            raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
+            raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/", "#{path_to_directory}..")
 
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
