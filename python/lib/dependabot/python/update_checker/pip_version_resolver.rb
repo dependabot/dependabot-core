@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/python/language_version_manager"
 require "dependabot/python/update_checker"
 require "dependabot/python/update_checker/latest_version_finder"
 require "dependabot/python/file_parser/python_requirement_parser"
@@ -20,17 +21,17 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          latest_version_finder.latest_version(python_version: python_version)
+          latest_version_finder.latest_version(python_version: language_version_manager.python_version)
         end
 
         def latest_resolvable_version_with_no_unlock
           latest_version_finder.
-            latest_version_with_no_unlock(python_version: python_version)
+            latest_version_with_no_unlock(python_version: language_version_manager.python_version)
         end
 
         def lowest_resolvable_security_fix_version
           latest_version_finder.
-            lowest_security_fix_version(python_version: python_version)
+            lowest_security_fix_version(python_version: language_version_manager.python_version)
         end
 
         private
@@ -49,45 +50,18 @@ module Dependabot
           )
         end
 
-        def python_version
-          @python_version ||=
-            user_specified_python_version ||
-            python_version_matching_imputed_requirements ||
-            PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.first
-        end
-
-        def user_specified_python_version
-          return unless python_requirement_parser.user_specified_requirements.any?
-
-          user_specified_requirements =
-            python_requirement_parser.user_specified_requirements.
-            map { |r| Python::Requirement.requirements_array(r) }
-          python_version_matching(user_specified_requirements)
-        end
-
-        def python_version_matching_imputed_requirements
-          compiled_file_python_requirement_markers =
-            python_requirement_parser.imputed_requirements.map do |r|
-              Dependabot::Python::Requirement.new(r)
-            end
-          python_version_matching(compiled_file_python_requirement_markers)
-        end
-
-        def python_version_matching(requirements)
-          PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |version_string|
-            version = Python::Version.new(version_string)
-            requirements.all? do |req|
-              next req.any? { |r| r.satisfied_by?(version) } if req.is_a?(Array)
-
-              req.satisfied_by?(version)
-            end
-          end
-        end
-
         def python_requirement_parser
           @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.
-            new(dependency_files: dependency_files)
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
       end
     end
