@@ -111,12 +111,6 @@ module Dependabot
         end
       end
 
-      def python_requirement_parser
-        @python_requirement_parser ||=
-          FileParser::PythonRequirementParser.
-          new(dependency_files: dependency_files)
-      end
-
       def pre_installed_python?(version)
         PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
       end

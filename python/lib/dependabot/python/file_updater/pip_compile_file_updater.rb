@@ -547,14 +547,16 @@ module Dependabot
 
         def python_requirement_parser
           @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.
-            new(dependency_files: dependency_files)
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
         end
 
         def language_version_manager
           @language_version_manager ||=
-            LanguageVersionManager.
-            new(python_requirement_parser: python_requirement_parser)
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def setup_files

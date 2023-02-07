@@ -197,13 +197,7 @@ module Dependabot
             SharedHelpers.in_a_temporary_directory do
               SharedHelpers.with_git_configured(credentials: credentials) do
                 write_temporary_dependency_files(prepared_pipfile_content)
-                # Initialize a git repo to appease pip-tools
-                begin
-                  run_command("git init") if setup_files.any?
-                rescue Dependabot::SharedHelpers::HelperSubprocessFailed
-                  nil
-                end
-                language_version_manager.install_required_python
+                install_required_python
 
                 # Initialize a git repo to appease pip-tools
                 command = SharedHelpers.escape_command("git init")
@@ -308,6 +302,17 @@ module Dependabot
           File.write("Pipfile", pipfile_content)
         end
 
+        def install_required_python
+          # Initialize a git repo to appease pip-tools
+          begin
+            run_command("git init") if setup_files.any?
+          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+            nil
+          end
+
+          language_version_manager.install_required_python
+        end
+
         def sanitized_setup_file_content(file)
           @sanitized_setup_file_content ||= {}
           return @sanitized_setup_file_content[file.name] if @sanitized_setup_file_content[file.name]
@@ -347,14 +352,16 @@ module Dependabot
 
         def python_requirement_parser
           @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.
-            new(dependency_files: dependency_files)
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
         end
 
         def language_version_manager
           @language_version_manager ||=
-            LanguageVersionManager.
-            new(python_requirement_parser: python_requirement_parser)
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def parsed_lockfile
