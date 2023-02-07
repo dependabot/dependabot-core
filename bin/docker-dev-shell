@@ -45,6 +45,10 @@ build_image() {
   export BUILT_IMAGE=true
   echo "$(tput setaf 2)=> building image from Dockerfile$(tput sgr0)"
 
+  DEPENDABOT_USER_UID=$(id -u)
+  DEPENDABOT_USER_GID=$(id -g)
+  export DEPENDABOT_USER_UID
+  export DEPENDABOT_USER_GID
   docker_build "$ECOSYSTEM"
 
   echo "$(tput setaf 2)=> building image from $DOCKERFILE$(tput sgr0)"

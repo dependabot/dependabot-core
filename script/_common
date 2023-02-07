@@ -34,10 +34,19 @@ function docker_build() {
   ECOSYSTEM="$1"
   set_tag
 
+  if [ -z "$DEPENDABOT_USER_UID" ]; then
+    export DEPENDABOT_USER_UID=1000
+  fi
+  if [ -z "$DEPENDABOT_USER_GID" ]; then
+    export DEPENDABOT_USER_GID=1000
+  fi
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg USER_UID=$DEPENDABOT_USER_UID \
+    --build-arg USER_GID=$DEPENDABOT_USER_GID \
     --cache-from "$UPDATER_CORE_IMAGE" \
     -t "$UPDATER_CORE_IMAGE" \
     -f Dockerfile.updater-core \
