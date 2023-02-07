@@ -199,10 +199,6 @@ module Dependabot
                 write_temporary_dependency_files(prepared_pipfile_content)
                 install_required_python
 
-                # Initialize a git repo to appease pip-tools
-                command = SharedHelpers.escape_command("git init")
-                IO.popen(command, err: %i(child out)) if setup_files.any?
-
                 run_pipenv_command(
                   "pyenv exec pipenv lock"
                 )
