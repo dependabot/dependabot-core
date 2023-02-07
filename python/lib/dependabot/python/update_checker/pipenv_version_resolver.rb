@@ -315,12 +315,12 @@ module Dependabot
         end
 
         def install_required_python
-          # Initialize a git repo to appease pip-tools
-          begin
-            run_command("git init") if setup_files.any?
-          rescue Dependabot::SharedHelpers::HelperSubprocessFailed
-            nil
-          end
+          # # Initialize a git repo to appease pip-tools
+          # begin
+          #   run_command("git init") if setup_files.any?
+          # rescue Dependabot::SharedHelpers::HelperSubprocessFailed
+          #   nil
+          # end
 
           language_version_manager.install_required_python
         end
