@@ -198,8 +198,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
     end
 
     context "when the user is ignoring the latest version" do
-      let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
-      it { is_expected.to eq(Gem::Version.new("2.8.0")) }
+      let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+      it { is_expected.to eq(Gem::Version.new("1.21.0")) }
     end
 
     context "without a lockfile" do
@@ -746,8 +746,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker do
   describe "#preferred_resolvable_version" do
     subject { checker.preferred_resolvable_version }
 
-    let(:ignored_versions) { [">= 1.22.0.a, < 3.0"] }
-    it { is_expected.to eq(Gem::Version.new("2.8.0")) }
+    let(:ignored_versions) { [">= 1.22.0.a, < 4.0"] }
+    it { is_expected.to eq(Gem::Version.new("1.21.0")) }
 
     context "with an insecure version" do
       let(:dependency_version) { "1.0.1" }
