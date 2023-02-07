@@ -43,18 +43,20 @@ function docker_build() {
     -f Dockerfile.updater-core \
     .
 
+  export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
+
   # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
   docker build \
     $DOCKER_BUILD_ARGS \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
-    --cache-from "$UPDATER_IMAGE$TAG" \
-    -t "$UPDATER_IMAGE$TAG" \
+    --cache-from "$UPDATER_IMAGE_NAME" \
+    -t "$UPDATER_IMAGE_NAME" \
     -f $ECOSYSTEM/Dockerfile \
     .
 
   # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
-  IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE$TAG" | wc -l | sed -e 's/ //g')
-  echo "$UPDATER_IMAGE$TAG contains $IMAGE_LAYERS layers"
+  IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
+  echo "$UPDATER_IMAGE_NAME contains $IMAGE_LAYERS layers"
   [[ $IMAGE_LAYERS -lt 126 ]]
 }
 
