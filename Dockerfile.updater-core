@@ -62,27 +62,28 @@ WORKDIR ${HOME}
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
-COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
-COPY .ruby-version .ruby-version
 COPY .rubocop.yml .rubocop.yml
+COPY .ruby-version .ruby-version
+COPY common common
 COPY omnibus omnibus
-COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
-COPY terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
-COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
-COPY hex/Gemfile hex/dependabot-hex.gemspec hex/
-COPY elm/Gemfile elm/dependabot-elm.gemspec elm/
-COPY docker/Gemfile docker/dependabot-docker.gemspec docker/
-COPY nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
-COPY maven/Gemfile maven/dependabot-maven.gemspec maven/
-COPY gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
+COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
+
+COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
 COPY composer/Gemfile composer/dependabot-composer.gemspec composer/
+COPY docker/Gemfile docker/dependabot-docker.gemspec docker/
+COPY elm/Gemfile elm/dependabot-elm.gemspec elm/
+COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
+COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
 COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
-COPY python/Gemfile python/dependabot-python.gemspec python/
-COPY pub/Gemfile pub/dependabot-pub.gemspec pub/
+COPY gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
+COPY hex/Gemfile hex/dependabot-hex.gemspec hex/
+COPY maven/Gemfile maven/dependabot-maven.gemspec maven/
 COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
-COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
-COPY common common
+COPY nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
+COPY pub/Gemfile pub/dependabot-pub.gemspec pub/
+COPY python/Gemfile python/dependabot-python.gemspec python/
+COPY terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
 RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
