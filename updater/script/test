@@ -1,13 +1,13 @@
 #!/bin/bash
 
 set -e
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 source script/_common
 
 # Previously the updater image contained all ecosystems. Now the ecosystems are broken apart,
 # but we still have some tests that need to run against other ecosystems. So by mounting the
 # other ecosystems with -v into the updater image we can still run those tests.
-script/build bundler
+updater/script/build
 docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   --pull never \
   --env VCR \
@@ -16,4 +16,4 @@ docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
   -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
   -v "$(pwd)/composer:/home/dependabot/composer" \
-  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec
+  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec "${@}"

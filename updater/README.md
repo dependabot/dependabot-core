@@ -11,30 +11,33 @@ GitHub network, and so is not generally accessible.
 
 ## Setup
 
-You will need to provide the build a Personal Access Token to access the GitHub Package Registry to retrieve
-dependency containers.
+To work with the updater, you will need to build the bundler image using the
+build script in this directory:
 
-[Create a token](https://github.com/settings/tokens/new) with the `packages:read` scope and set it in your environment
-as `GPR_TOKEN`
-
-Run the setup script:
-
-```
-script/setup
+```bash
+script/build
 ```
 
 ## Tests
 
 We run [rspec](https://rspec.info/) tests inside a Docker container for this project:
 
-```
+```bash
 script/test
 ```
 
 You can run an individual test file like so:
 
-```
+```bash
 script/test spec/dependabot/integration_spec.rb
+```
+
+A small number of tests hit the GitHub API, so you will need to set the envvar
+`DEPENDABOT_TEST_ACCESS_TOKEN` with a Personal Access Token with the full `repo`
+scope.
+
+```bash
+export DEPENDABOT_TEST_ACCESS_TOKEN=ghp_xxx
 ```
 
 ### VCR
@@ -51,17 +54,13 @@ If you are adding a new test that makes network calls, please ensure you record 
 If you've added a new test which has the `vcr: true` metadata, you can record a fixture for just those changes like so:
 
 ```
-VCR=new_episodes DEPENDABOT_TEST_ACCESS_TOKEN=<redacted> script/test
+VCR=new_episodes script/test
 ```
-
-`DEPENDABOT_TEST_ACCESS_TOKEN` will need to be a Personal Access Token with the full `repo` scope.
 
 #### Updating existing fixtures
 
 If you need to upadate existing fixtures, you can use the `all` flag like so:
 
 ```
-VCR=all DEPENDABOT_TEST_ACCESS_TOKEN=<redacted> bundle exec rspec spec
+VCR=all script/test
 ```
-
-As above, you will need a PAT with the full `repo` scope

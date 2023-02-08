@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname "$0")/../.."
+# For simplicity, we just use the bundler base image for the updater environment
+script/build bundler
