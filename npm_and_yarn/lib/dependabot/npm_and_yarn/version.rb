@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
-require "rubygems_version_patch"
 
 # JavaScript pre-release versions use 1.0.1-rc1 syntax, which Gem::Version
 # converts into 1.0.1.pre.rc1. We override the `to_s` method to stop that
@@ -11,7 +11,7 @@ require "rubygems_version_patch"
 
 module Dependabot
   module NpmAndYarn
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       attr_reader :build_info
 
       VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'

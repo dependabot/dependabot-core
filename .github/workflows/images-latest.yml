@@ -8,7 +8,7 @@ on:
       - main
     paths-ignore:
       - "CHANGELOG.md"
-      - "common/lib/dependabot/version.rb"
+      - "common/lib/dependabot.rb"
 
 jobs:
   date-version:

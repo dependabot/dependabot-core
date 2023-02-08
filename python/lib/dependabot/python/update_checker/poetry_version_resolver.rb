@@ -92,10 +92,10 @@ module Dependabot
                 write_temporary_dependency_files(updated_req: requirement)
                 add_auth_env_vars
 
-                Helpers.install_required_python(python_version)
+                language_version_manager.install_required_python
 
                 # use system git instead of the pure Python dulwich
-                unless python_version&.start_with?("3.6")
+                unless language_version_manager.python_version&.start_with?("3.6")
                   run_poetry_command("pyenv exec poetry config experimental.system-git-client true")
                 end
 
@@ -205,7 +205,7 @@ module Dependabot
           end
 
           # Overwrite the .python-version with updated content
-          File.write(".python-version", Helpers.python_major_minor(python_version)) if python_version
+          File.write(".python-version", language_version_manager.python_major_minor)
 
           # Overwrite the pyproject with updated content
           if update_pyproject
@@ -222,36 +222,6 @@ module Dependabot
           Python::FileUpdater::PyprojectPreparer.
             new(pyproject_content: pyproject.content).
             add_auth_env_vars(credentials)
-        end
-
-        def python_version
-          requirements = python_requirement_parser.user_specified_requirements
-          requirements = requirements.
-                         map { |r| Python::Requirement.requirements_array(r) }
-
-          version = PythonVersions::SUPPORTED_VERSIONS_TO_ITERATE.find do |v|
-            requirements.all? do |reqs|
-              reqs.any? { |r| r.satisfied_by?(Python::Version.new(v)) }
-            end
-          end
-          return version if version
-
-          msg = "Dependabot detected the following Python requirements " \
-                "for your project: '#{requirements}'.\n\nCurrently, the " \
-                "following Python versions are supported in Dependabot: " \
-                "#{PythonVersions::SUPPORTED_VERSIONS.join(', ')}."
-          raise DependencyFileNotResolvable, msg
-        end
-
-        def python_requirement_parser
-          @python_requirement_parser ||=
-            FileParser::PythonRequirementParser.new(
-              dependency_files: dependency_files
-            )
-        end
-
-        def pre_installed_python?(version)
-          PythonVersions::PRE_INSTALLED_PYTHON_VERSIONS.include?(version)
         end
 
         def updated_pyproject_content(updated_requirement:)
@@ -316,6 +286,20 @@ module Dependabot
             fetch("category")
 
           category == "dev" ? "dev-dependencies" : "dependencies"
+        end
+
+        def python_requirement_parser
+          @python_requirement_parser ||=
+            FileParser::PythonRequirementParser.new(
+              dependency_files: dependency_files
+            )
+        end
+
+        def language_version_manager
+          @language_version_manager ||=
+            LanguageVersionManager.new(
+              python_requirement_parser: python_requirement_parser
+            )
         end
 
         def pyproject

@@ -324,7 +324,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         end
         let(:directory) { "/util/util" }
 
-        it "fetches the relevant poms" do
+        it "fetches the relevant pom" do
           expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
         end
       end
@@ -422,7 +422,7 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_java_basic_pom.json"),
+          body: fixture("github", "contents_java_parent_pom_custom_name_parent.json"),
           headers: { "content-type" => "application/json" }
         )
 
@@ -439,6 +439,163 @@ RSpec.describe Dependabot::Maven::FileFetcher do
         to match_array(
           %w(pom.xml parentpom.xml)
         )
+    end
+  end
+
+  context "with a project with multiple related and unrelated maven modules inside" do
+    before do
+      stub_request(:get, File.join(url, "parent_modules_project/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_root_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get,
+                   File.join(url, "parent_modules_project/pom_with_parent_groupid/pom_with_parent/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_pom_with_parent.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_parent_groupid/pom_parent.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_parent_of_pom_with_parent.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_no_parent/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_no_parent_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_implicit_parent_path/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_implicit_parent_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_version/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_different_version_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_group_id/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_different_group_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_artifact_id/pom.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "parent_modules_different_artifact_pom.json"),
+          headers: { "content-type" => "application/json" }
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_parent_groupid/pom_with_parent/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_no_parent/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/pom_with_implicit_parent_path/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_version/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_group_id/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, "parent_modules_project/different_artifact_id/.mvn?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+
+      stub_request(:get, File.join(url, ".mvn/extensions.xml?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 404
+        )
+    end
+
+    context "when asked to fetch a pom with a parent which has inherited group id" do
+      let(:directory) { "/parent_modules_project/pom_with_parent_groupid/pom_with_parent" }
+      it "fetches the relevant poms" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pom.xml ../pom_parent.xml ../../pom.xml))
+      end
+    end
+
+    context "when asked to fetch a pom with no parent defined" do
+      let(:directory) { "/parent_modules_project/pom_with_no_parent" }
+      it "fetches only this pom" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+
+    context "when asked to fetch a pom with an implicit path to parent defined" do
+      let(:directory) { "/parent_modules_project/pom_with_implicit_parent_path" }
+      it "fetches only both this pom and its implicit parent" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pom.xml ../pom.xml))
+      end
+    end
+
+    context "when asked to fetch a pom which local parent has different version" do
+      let(:directory) { "/parent_modules_project/different_version" }
+      it "fetches only this pom" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+
+    context "when asked to fetch a pom which local parent has different groupId" do
+      let(:directory) { "/parent_modules_project/different_group_id" }
+      it "fetches only this pom" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
+    end
+
+    context "when asked to fetch a pom which local parent has different artifactId" do
+      let(:directory) { "/parent_modules_project/different_artifact_id" }
+      it "fetches only this pom" do
+        expect(file_fetcher_instance.files.map(&:name)).to eq(%w(pom.xml))
+      end
     end
   end
 end

@@ -711,17 +711,6 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
           package_manager: "composer"
         )
       end
-
-      # This is a known issue in the composer-patches plugin and composer v2:
-      # https://github.com/cweagans/composer-patches/issues/338
-      pending "doesn't strip the patches" do
-        updated_dep = JSON.parse(updated_lockfile_content).
-                      fetch("packages").
-                      find { |p| p["name"] == "ehime/hello-world" }
-
-        expect(updated_dep.dig("extra", "patches_applied")).
-          to include("[PATCH] markdown modified")
-      end
     end
 
     context "regression spec for media-organizer" do
