@@ -22,7 +22,7 @@ ARG HOME=/home/dependabot
 ARG CODE_DIR=${HOME}/dependabot-core
 
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
-COPY --chown=dependabot:dependabot common/lib/dependabot/version.rb ${CODE_DIR}/common/lib/dependabot/
+COPY --chown=dependabot:dependabot common/lib/dependabot.rb ${CODE_DIR}/common/lib/
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/

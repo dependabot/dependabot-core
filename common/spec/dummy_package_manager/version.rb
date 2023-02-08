@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
 
 module DummyPackageManager
-  class Version < Gem::Version
+  class Version < Dependabot::Version
     def initialize(version)
       version = Version.remove_leading_v(version)
       super
@@ -18,6 +19,10 @@ module DummyPackageManager
     def self.correct?(version)
       version = Version.remove_leading_v(version)
       super
+    end
+
+    def to_semver
+      @original_version
     end
   end
 end

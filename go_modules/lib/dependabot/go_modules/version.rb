@@ -5,11 +5,12 @@
 # alteration.
 # Best docs are at https://github.com/Masterminds/semver
 
+require "dependabot/version"
 require "dependabot/utils"
 
 module Dependabot
   module GoModules
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       VERSION_PATTERN = '[0-9]+[0-9a-zA-Z]*(?>\.[0-9a-zA-Z]+)*' \
                         '(-[0-9A-Za-z-]+(\.[0-9a-zA-Z-]+)*)?' \
                         '(\+incompatible)?'

@@ -7,7 +7,7 @@ require "uri"
 require "json"
 require "rubygems/package"
 require "bundler"
-require "./common/lib/dependabot/version"
+require "./common/lib/dependabot"
 require "yaml"
 
 GEMSPECS = %w(

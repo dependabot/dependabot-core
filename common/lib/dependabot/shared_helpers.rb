@@ -12,7 +12,7 @@ require "tmpdir"
 
 require "dependabot/utils"
 require "dependabot/errors"
-require "dependabot/version"
+require "dependabot"
 
 module Dependabot
   module SharedHelpers
