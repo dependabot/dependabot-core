@@ -155,6 +155,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to be_falsey }
     end
+
+    context "when the 'latest' version is a newer version with more precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.7-923.1669829893" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_request(:head, repo_url + "manifests/8.7-923.1669829893").
+          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+        stub_request(:head, repo_url + "manifests/8.7-1049").
+          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+      end
+
+      it { is_expected.to be true }
+    end
   end
 
   describe "#latest_version" do
@@ -559,6 +581,28 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when the 'latest' version is a newer version with more precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.7-923.1669829893" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_request(:head, repo_url + "manifests/8.7-923.1669829893").
+          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+        stub_request(:head, repo_url + "manifests/8.7-1049").
+          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+      end
+
+      it { is_expected.to eq("8.7-1049") }
+    end
+
     context "when the latest tag points to an older version" do
       let(:tags_fixture_name) { "dotnet.json" }
       let(:headers_response) do
@@ -846,7 +890,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
-    context "when the docker registery only knows about versions older than the current version" do
+    context "when the docker registry only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
       let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
