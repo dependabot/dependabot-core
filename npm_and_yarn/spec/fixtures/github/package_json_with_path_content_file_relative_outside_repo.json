@@ -1,0 +1,18 @@
+{
+  "name": "package.json",
+  "path": "package.json",
+  "sha": "c8857484c3de00d7e9eff435b2f9513d849163a9",
+  "size": 517,
+  "url": "https://api.github.com/repos/rodcisal/meteor-react-native-simple-boilerplate/contents/package.json?ref=master",
+  "html_url": "https://github.com/rodcisal/meteor-react-native-simple-boilerplate/blob/master/package.json",
+  "git_url": "https://api.github.com/repos/rodcisal/meteor-react-native-simple-boilerplate/git/blobs/c8857484c3de00d7e9eff435b2f9513d849163a9",
+  "download_url": "https://raw.githubusercontent.com/rodcisal/meteor-react-native-simple-boilerplate/master/package.json",
+  "type": "file",
+  "content": "ewogICJuYW1lIjogIlJOQXBwIiwKICAidmVyc2lvbiI6ICIwLjAuMSIsCiAg\nInByaXZhdGUiOiB0cnVlLAogICJzY3JpcHRzIjogewogICAgInN0YXJ0Ijog\nIm5vZGUgbm9kZV9tb2R1bGVzL3JlYWN0LW5hdGl2ZS9sb2NhbC1jbGkvY2xp\nLmpzIHN0YXJ0IiwKICAgICJpb3MiOiAib3BlbiBpb3MvUk5BcHAueGNvZGVw\ncm9qIgogIH0sCiAgImRlcGVuZGVuY2llcyI6IHsKICAgICJyZWFjdCI6ICJe\nMTUuMy4xIiwKICAgICJyZWFjdC1uYXRpdmUiOiAiXjAuMzguMCIsCiAgICAi\ncmVhY3QtbmF0aXZlLW1ldGVvciI6ICJmaWxlOi4uLy4uIiwKICAgICJyZWFj\ndC1uYXRpdmUtcm91dGVyLWZsdXgiOiAiXjMuMjYuMyIsCiAgICAicmVhY3Qt\nbmF0aXZlLXRhYnMiOiAiXjEuMC41IgogIH0sCiAgImRldkRlcGVuZGVuY2ll\ncyI6IHsKICAgICJiYWJlbC1wbHVnaW4tdHJhbnNmb3JtLWRlY29yYXRvcnMt\nbGVnYWN5IjogIl4xLjMuNCIsCiAgICAiYmFiZWwtcHJlc2V0LXJlYWN0LW5h\ndGl2ZSI6ICJeMS41LjMiCiAgfQp9Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/rodcisal/meteor-react-native-simple-boilerplate/contents/package.json?ref=master",
+    "git": "https://api.github.com/repos/rodcisal/meteor-react-native-simple-boilerplate/git/blobs/c8857484c3de00d7e9eff435b2f9513d849163a9",
+    "html": "https://github.com/rodcisal/meteor-react-native-simple-boilerplate/blob/master/package.json"
+  }
+}
