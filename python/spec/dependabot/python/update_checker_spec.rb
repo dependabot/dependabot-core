@@ -133,9 +133,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           )
       end
 
-      it "does not attempt an update, because updating requirements.txt file does not yet support widening ranges" do
-        expect(subject).to be_falsey
-      end
+      it { is_expected.to be_truthy }
     end
   end
 
