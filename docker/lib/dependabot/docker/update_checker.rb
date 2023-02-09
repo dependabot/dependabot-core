@@ -404,7 +404,10 @@ module Dependabot
             version = comparable_version_from(tag)
             ignore_requirements.any? { |r| r.satisfied_by?(version) }
           end
-        if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(candidate_tags).any?
+        if @raise_on_ignored &&
+           filter_lower_versions(filtered).empty? &&
+           filter_lower_versions(candidate_tags).any? &&
+           digest_up_to_date?
           raise AllVersionsIgnored
         end
 
