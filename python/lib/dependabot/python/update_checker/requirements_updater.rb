@@ -187,6 +187,8 @@ module Dependabot
           return req unless req.fetch(:requirement)
 
           case update_strategy
+          when :widen_ranges
+            widen_requirement(req)
           when :bump_versions
             update_requirement(req)
           when :bump_versions_if_necessary
@@ -219,6 +221,14 @@ module Dependabot
           req.merge(requirement: new_requirement)
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
+        end
+
+        def widen_requirement(req)
+          return req if new_version_satisfies?(req)
+
+          new_requirement = widen_requirement_range(req[:requirement])
+
+          req.merge(requirement: new_requirement)
         end
 
         def new_version_satisfies?(req)
