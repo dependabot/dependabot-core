@@ -107,7 +107,6 @@ CODE_DIR="/home/dependabot/dependabot-core"
 touch .core-bash_history
 mkdir -p dry-run tmp
 docker run --rm -ti \
-  -v "$HOME/.aws:$CODE_DIR/../.aws" \
   -v "$(pwd)/.core-bash_history:/home/dependabot/.bash_history" \
   -v "$(pwd)/.rubocop.yml:$CODE_DIR/.rubocop.yml" \
   -v "$(pwd)/bin:$CODE_DIR/bin" \
