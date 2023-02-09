@@ -67,9 +67,9 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        # If the dependency version come from a property we couldn't
-        # interpolate then there's nothing we can do.
-        !dependency.version.include?("$")
+        # If requirements come from a property we couldn't interpolate then
+        # there's nothing we can do.
+        dependency.requirements.none? {|req | req[:requirement].include?("$") }
       end
 
       private

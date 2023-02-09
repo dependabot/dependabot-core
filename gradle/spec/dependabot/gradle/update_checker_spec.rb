@@ -596,4 +596,23 @@ RSpec.describe Dependabot::Gradle::UpdateChecker do
       it { is_expected.to eq(false) }
     end
   end
+
+  describe "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    let(:buildfile_fixture_name) { "version_range_dependency.gradle" }
+    let(:dependency_name) { "junit:junit" }
+    let(:dependency_version) { nil }
+    let(:dependency_requirements) do
+      [{
+        file: "gradle.build",
+        requirement: "4.+",
+        groups: [],
+        source: nil,
+        metadata: nil
+      }]
+    end
+
+    it { is_expected.to eq(true) }
+  end
 end

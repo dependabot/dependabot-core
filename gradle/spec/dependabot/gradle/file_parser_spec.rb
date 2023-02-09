@@ -50,6 +50,28 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
+    context "specified as a version range" do
+      let(:buildfile_fixture_name) { "version_range_dependency.gradle" }
+
+      subject(:dependencies) { parser.parse }
+
+      it "handles that fine" do
+        expect(dependencies.map(&:name)).to eq(["junit:junit"])
+
+        expect(dependencies.first.version).to be_nil
+
+        expect(dependencies.first.requirements).to eq(
+          [{
+            requirement: "4.+",
+            file: "build.gradle",
+            groups: [],
+            source: nil,
+            metadata: nil
+          }]
+        )
+      end
+    end
+
     context "specified in short form" do
       let(:buildfile_fixture_name) { "shortform_build.gradle" }
 

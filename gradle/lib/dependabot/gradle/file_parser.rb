@@ -4,7 +4,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
-require "dependabot/gradle/version"
+require "dependabot/gradle/requirement"
 
 # The best Gradle documentation is at:
 # - https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.dsl.
@@ -191,7 +191,9 @@ module Dependabot
       def dependency_from(details_hash:, buildfile:, in_dependency_set: false)
         group   = evaluated_value(details_hash[:group], buildfile)
         name    = evaluated_value(details_hash[:name], buildfile)
-        version = evaluated_value(details_hash[:version], buildfile)
+        requirement = evaluated_value(details_hash[:version], buildfile)
+        return if requirement == ".*"
+
         extra_groups = details_hash[:extra_groups] || []
 
         dependency_name =
@@ -205,18 +207,17 @@ module Dependabot
             []
           end
         source =
-          source_from(group, name, version)
+          source_from(group, name, requirement)
 
         # If we can't evaluate a property they we won't be able to
         # update this dependency
-        return if "#{dependency_name}:#{version}".match?(PROPERTY_REGEX)
-        return unless Gradle::Version.correct?(version)
+        return if "#{dependency_name}:#{requirement}".match?(PROPERTY_REGEX)
 
         Dependency.new(
           name: dependency_name,
-          version: version,
+          version: version_from(requirement),
           requirements: [{
-            requirement: version,
+            requirement: requirement,
             file: buildfile.name,
             source: source,
             groups: groups,
@@ -224,6 +225,14 @@ module Dependabot
           }],
           package_manager: "gradle"
         )
+      end
+
+      def version_from(version_requirement)
+        req = Dependabot::Gradle::Requirement.new(version_requirement)
+
+        return unless req.exact?
+
+        req.requirements.first.last.to_s
       end
 
       def source_from(group, name, version)
