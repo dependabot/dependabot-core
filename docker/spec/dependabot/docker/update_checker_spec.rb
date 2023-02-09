@@ -238,6 +238,26 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
     end
 
+    context "when all later versions are being ignored, but more tags available" do
+      let(:ignored_versions) { [">= 17.10"] }
+      let(:source) { { digest: "old_digest", tag: "17.04" } }
+
+      context "raise_on_ignored" do
+        let(:raise_on_ignored) { true }
+
+        before do
+          new_headers =
+            fixture("docker", "registry_manifest_headers", "generic.json")
+          stub_request(:head, repo_url + "manifests/17.04").
+            and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+        end
+
+        it "doesn't raise an error" do
+          expect { subject }.to_not raise_error
+        end
+      end
+    end
+
     context "when ignoring multiple versions" do
       let(:ignored_versions) { [">= 17.10, < 17.2"] }
       it { is_expected.to eq("17.10") }
