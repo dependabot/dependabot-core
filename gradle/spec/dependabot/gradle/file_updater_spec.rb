@@ -339,6 +339,42 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         end
       end
 
+      context "with multiple configurations using the same dependency" do
+        let(:buildfile_fixture_name) { "multiple_configurations.gradle" }
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.projectlombok:lombok",
+              version: "1.18.26",
+              previous_version: "1.18.24",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "1.18.26",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "1.18.24",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        it "updates the version in all configurations" do
+          expect(updated_buildfile.content).
+            to include("compileOnly 'org.projectlombok:lombok:1.18.26'").
+            and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
+        end
+      end
+
       context "with a dependency version defined by a property" do
         let(:dependency_files) { [buildfile, subproject_buildfile] }
         let(:subproject_buildfile) do
