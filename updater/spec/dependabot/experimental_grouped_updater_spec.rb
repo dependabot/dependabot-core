@@ -1236,7 +1236,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         let(:updating_a_pull_request) { false }
 
         it "only attempts to update dependencies on the specified list" do
-          expect(updater_delegate).
+          expect(updater).
             to receive(:check_and_create_pr_with_error_handling).
             and_call_original
           expect(updater_delegate).
@@ -1259,7 +1259,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
           let(:requested_dependencies) { ["Dummy-pkg-b"] }
 
           it "only attempts to update dependencies on the specified list" do
-            expect(updater_delegate).
+            expect(updater).
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
             expect(updater_delegate).
@@ -1289,7 +1289,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
           end
 
           it "still attempts to update the dependency" do
-            expect(updater_delegate).
+            expect(updater).
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
             expect(updater_delegate).
@@ -1954,7 +1954,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       end
 
       it "raises a not implemented error" do
-        expect{ updater.run }.
+        expect { updater.run }.
           to raise_error(Dependabot::NotImplemented, "Grouped updates do not currently support rebasing.")
       end
     end
