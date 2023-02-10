@@ -30,6 +30,10 @@ require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 require "wildcard_matcher"
 
+# FIXME: This provides an isolated codepath to hack into the updater without
+#        disrupting current users. It shouldn't be long-lived beyond March 2023
+require "dependabot/experimental_grouped_updater"
+
 # rubocop:disable Metrics/ClassLength
 module Dependabot
   class Updater
@@ -68,6 +72,7 @@ module Dependabot
 
     def run
       return unless job
+      return ExperimentalGroupedUpdater.new(self).run if Dependabot::Experiments.enabled?(:grouped_updates_prototype)
       return run_update_existing if job.updating_a_pull_request?
 
       run_fresh
@@ -86,7 +91,12 @@ module Dependabot
       record_error(error)
     end
 
-    private
+    # FIXME: Private methods are currently made public to allow the
+    #        ExperimentalGroupedUpdater to access them as a delegater.
+    #
+    #        They should be made private again once we complete the refactor
+    #        on this class to make Single vs Grouped strategies more coherant.
+    # private
 
     attr_accessor :errors, :created_pull_requests
     attr_reader :service, :job_id, :job, :dependency_files, :base_commit_sha,

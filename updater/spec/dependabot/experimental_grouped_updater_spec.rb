@@ -1,5 +1,14 @@
 # frozen_string_literal: true
 
+# FIXME: This file is a copy-paste of `spec/dependabot/updater_spec.rb`
+#
+#       The intent is to run the tests for existing behaviour without the churn
+#       of refactoring the existing tests into shared examples until we know
+#       how the code is going to decompose
+#
+#       Tests that don't apply or work properly for grouped updates are skipped
+#       rather than deleted, and new group-specific tests are added under the
+#       `run_grouped` block.
 require "spec_helper"
 require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
@@ -9,8 +18,10 @@ require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
 
-RSpec.describe Dependabot::Updater do
-  subject(:updater) do
+require "dependabot/experimental_grouped_updater"
+
+RSpec.describe Dependabot::ExperimentalGroupedUpdater do
+  let(:updater_delegate) do
     Dependabot::Updater.new(
       service: service,
       job_id: 1,
@@ -19,6 +30,10 @@ RSpec.describe Dependabot::Updater do
       base_commit_sha: "sha",
       repo_contents_path: repo_contents_path
     )
+  end
+
+  subject(:updater) do
+    described_class.new(updater_delegate)
   end
 
   let(:logger) { double(Logger) }
@@ -217,7 +232,7 @@ RSpec.describe Dependabot::Updater do
       ]
     end
 
-    context "when the host is out of disk space" do
+    context "when the host is out of disk space", skip: "Error is handled for us by Dependabot::Updater#run" do
       before do
         allow(service).to receive(:record_update_job_error).and_return(nil)
         allow(job).to receive(:updating_a_pull_request?).and_raise(Errno::ENOSPC)
@@ -254,11 +269,11 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when the job has already been processed" do
+    context "when the job has already been processed", skip: "handled for us by Dependabot::Updater#run" do
       let(:job) { nil }
 
       it "no-ops" do
-        expect(updater).to_not receive(:dependencies)
+        expect(updater_delegate).to_not receive(:dependencies)
         updater.run
       end
     end
@@ -471,7 +486,7 @@ RSpec.describe Dependabot::Updater do
       context "when the dependency is deemed up-to-date but still vulnerable" do
         it "doesn't update the dependency" do
           expect(checker).to receive(:up_to_date?).and_return(true)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -801,7 +816,7 @@ RSpec.describe Dependabot::Updater do
         before { allow(peer_checker).to receive(:can_update?).and_return(true) }
 
         it "doesn't update the dependency" do
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           updater.run
         end
@@ -865,7 +880,7 @@ RSpec.describe Dependabot::Updater do
 
         it "doesn't call can_update? (so short-circuits resolution)" do
           expect(checker).to_not receive(:can_update?)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
           expect(logger).
@@ -886,7 +901,7 @@ RSpec.describe Dependabot::Updater do
         it "doesn't update the dependency" do
           expect(checker).to receive(:up_to_date?).and_return(false, false)
           expect(checker).to receive(:can_update?).and_return(true, false)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
           expect(logger).
@@ -913,7 +928,7 @@ RSpec.describe Dependabot::Updater do
         it "creates an update job error and short-circuits" do
           expect(checker).to receive(:up_to_date?).and_return(false)
           expect(checker).to receive(:can_update?).and_return(true)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -949,7 +964,7 @@ RSpec.describe Dependabot::Updater do
 
         it "doesn't call can_update? (so short-circuits resolution)" do
           expect(checker).to_not receive(:can_update?)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -1039,7 +1054,7 @@ RSpec.describe Dependabot::Updater do
       it "creates an update job error and short-circuits" do
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(updater_delegate).to_not receive(:generate_dependency_files_for)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
@@ -1068,14 +1083,14 @@ RSpec.describe Dependabot::Updater do
     context "when a list of dependencies is specified" do
       let(:requested_dependencies) { ["dummy-pkg-b"] }
 
-      context "and the job is to update a PR" do
+      context "and the job is to update a PR", skip: "Updating existing PRs is out of scope for the prototype" do
         let(:updating_a_pull_request) { true }
 
         it "only attempts to update dependencies on the specified list" do
-          expect(updater).
+          expect(updater_delegate).
             to receive(:run_update_existing).
             and_call_original
-          expect(updater).
+          expect(updater_delegate).
             to_not receive(:check_and_create_pr_with_error_handling)
           expect(service).to receive(:create_pull_request).once
 
@@ -1159,10 +1174,10 @@ RSpec.describe Dependabot::Updater do
           let(:requested_dependencies) { ["Dummy-pkg-b"] }
 
           it "only attempts to update dependencies on the specified list" do
-            expect(updater).
+            expect(updater_delegate).
               to receive(:run_update_existing).
               and_call_original
-            expect(updater).
+            expect(updater_delegate).
               to_not receive(:check_and_create_pr_with_error_handling)
             expect(service).to receive(:create_pull_request).once
             expect(service).not_to receive(:close_pull_request)
@@ -1221,10 +1236,10 @@ RSpec.describe Dependabot::Updater do
         let(:updating_a_pull_request) { false }
 
         it "only attempts to update dependencies on the specified list" do
-          expect(updater).
+          expect(updater_delegate).
             to receive(:check_and_create_pr_with_error_handling).
             and_call_original
-          expect(updater).
+          expect(updater_delegate).
             to_not receive(:run_update_existing)
           expect(service).to receive(:create_pull_request).once
 
@@ -1244,10 +1259,10 @@ RSpec.describe Dependabot::Updater do
           let(:requested_dependencies) { ["Dummy-pkg-b"] }
 
           it "only attempts to update dependencies on the specified list" do
-            expect(updater).
+            expect(updater_delegate).
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
-            expect(updater).
+            expect(updater_delegate).
               to_not receive(:run_update_existing)
             expect(service).to receive(:create_pull_request).once
 
@@ -1274,10 +1289,10 @@ RSpec.describe Dependabot::Updater do
           end
 
           it "still attempts to update the dependency" do
-            expect(updater).
+            expect(updater_delegate).
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
-            expect(updater).
+            expect(updater_delegate).
               to_not receive(:run_update_existing)
             expect(service).to receive(:create_pull_request).once
 
@@ -1403,7 +1418,7 @@ RSpec.describe Dependabot::Updater do
           end
         end
 
-        context "but it's a Dependabot::DependencyFileNotFound" do
+        context "but it's a Dependabot::DependencyFileNotFound", skip: "Handled for us in Dependabot::Updater#run" do
           let(:error) { Dependabot::DependencyFileNotFound.new("path/to/file") }
 
           it "doesn't tell Sentry" do
@@ -1423,7 +1438,7 @@ RSpec.describe Dependabot::Updater do
           end
         end
 
-        context "but it's a Dependabot::BranchNotFound" do
+        context "but it's a Dependabot::BranchNotFound", skip: "Handled for us in Dependabot::Updater#run" do
           let(:error) { Dependabot::BranchNotFound.new("my_branch") }
 
           it "doesn't tell Sentry" do
@@ -1443,7 +1458,8 @@ RSpec.describe Dependabot::Updater do
           end
         end
 
-        context "but it's a Dependabot::DependencyFileNotParseable" do
+        context "but it's a Dependabot::DependencyFileNotParseable",
+                skip: "Handled for us in Dependabot::Updater#run" do
           let(:error) do
             Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
           end
@@ -1465,7 +1481,8 @@ RSpec.describe Dependabot::Updater do
           end
         end
 
-        context "but it's a Dependabot::PathDependenciesNotReachable" do
+        context "but it's a Dependabot::PathDependenciesNotReachable",
+                skip: "Handled for us in Dependabot::Updater#run" do
           let(:error) do
             Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
           end
@@ -1910,55 +1927,6 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot::FileParsers).to receive(:for_package_manager).once
 
         updater.run
-      end
-    end
-
-    context "the prototype_grouped_update experiment" do
-      let(:mock_grouped_updater) do
-        instance_double(Dependabot::ExperimentalGroupedUpdater, run: true)
-      end
-
-      before do
-        allow(Dependabot::ExperimentalGroupedUpdater).to receive(:new).and_return(mock_grouped_updater)
-      end
-
-      context "the experiment is not present" do
-        it "runs normally and creates a pull request" do
-          expect(service).to receive(:create_pull_request)
-          expect(mock_grouped_updater).not_to receive(:run)
-
-          updater.run
-        end
-      end
-
-      context "the experiment is disabled" do
-        let(:experiments) { { "grouped-updates-prototype" => false } }
-
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "runs normally and creates a pull request" do
-          expect(service).to receive(:create_pull_request)
-          expect(mock_grouped_updater).not_to receive(:run)
-
-          updater.run
-        end
-      end
-
-      context "the experiment is enabled" do
-        let(:experiments) { { "grouped-updates-prototype" => true } }
-
-        after do
-          Dependabot::Experiments.reset!
-        end
-
-        it "delegates to the experimental updater shim" do
-          expect(mock_grouped_updater).to receive(:run)
-          expect(service).not_to receive(:create_pull_request)
-
-          updater.run
-        end
       end
     end
   end
