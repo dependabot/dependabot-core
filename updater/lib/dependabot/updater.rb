@@ -68,14 +68,9 @@ module Dependabot
 
     def run
       return unless job
+      return run_update_existing if job.updating_a_pull_request?
 
-      if job.updating_a_pull_request?
-        logger_info("Starting PR update job for #{job.source.repo}")
-        check_and_update_existing_pr_with_error_handling(dependencies)
-      else
-        logger_info("Starting update job for #{job.source.repo}")
-        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
-      end
+      run_fresh
     rescue *RUN_HALTING_ERRORS.keys => e
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
         error = StandardError.new(
@@ -97,6 +92,14 @@ module Dependabot
     attr_reader :service, :job_id, :job, :dependency_files, :base_commit_sha,
                 :repo_contents_path
 
+    # In this case, the dependency list may be either:
+    # - The full list from the manifest files for version updates
+    # - A specific dependency for security updates
+    def run_fresh
+      logger_info("Starting update job for #{job.source.repo}")
+      dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+    end
+
     def check_and_create_pr_with_error_handling(dependency)
       check_and_create_pull_request(dependency)
     rescue Dependabot::InconsistentRegistryResponse => e
@@ -112,7 +115,15 @@ module Dependabot
       handle_dependabot_error(error: e, dependency: dependency)
     end
 
-    def check_and_update_existing_pr_with_error_handling(dependencies)
+    # In this case, the full dependency list is filtered by job.dependencies to
+    # only those involved in the existing Pull Request.
+    def run_update_existing
+      logger_info("Starting PR update job for #{job.source.repo}")
+      # TODO: Determine why this isn't the first dependency
+      #
+      # In `check_and_update_pull_request`, we consider the first dependency
+      # to be the 'lead_dependency'. It is unclear why we don't report errors
+      # against this instead of the last one.
       dependency = dependencies.last
       check_and_update_pull_request(dependencies)
     rescue StandardError => e
@@ -625,6 +636,9 @@ module Dependabot
       # the same dependencies
       allowed_deps = allowed_deps.shuffle unless ENV["UPDATER_DETERMINISTIC"]
 
+      # TODO: Determine if we should early return if all_deps.any? is false
+      #       with a different logged message as that seems like a distinct
+      #       problem.
       if all_deps.any? && allowed_deps.none?
         logger_info("Found no dependencies to update after filtering allowed " \
                     "updates")
@@ -632,6 +646,13 @@ module Dependabot
 
       # Consider updating vulnerable deps first. Only consider the first 10,
       # though, to ensure they don't take up the entire update run
+      #
+      # TODO: Skip this for version updates?
+      #
+      #       We currently do not feed advisory information into version updates
+      #       but we may in future. It might make sense to have a flag detect
+      #       whether we have any vulnerable data vs iterating the whole
+      #       dependency list.
       deps = allowed_deps.select { |d| job.vulnerable?(d) }.sample(10) +
              allowed_deps.reject { |d| job.vulnerable?(d) }
 

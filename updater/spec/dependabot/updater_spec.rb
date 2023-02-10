@@ -1073,7 +1073,7 @@ RSpec.describe Dependabot::Updater do
 
         it "only attempts to update dependencies on the specified list" do
           expect(updater).
-            to receive(:check_and_update_existing_pr_with_error_handling).
+            to receive(:run_update_existing).
             and_call_original
           expect(updater).
             to_not receive(:check_and_create_pr_with_error_handling)
@@ -1160,7 +1160,7 @@ RSpec.describe Dependabot::Updater do
 
           it "only attempts to update dependencies on the specified list" do
             expect(updater).
-              to receive(:check_and_update_existing_pr_with_error_handling).
+              to receive(:run_update_existing).
               and_call_original
             expect(updater).
               to_not receive(:check_and_create_pr_with_error_handling)
@@ -1225,7 +1225,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:check_and_create_pr_with_error_handling).
             and_call_original
           expect(updater).
-            to_not receive(:check_and_update_existing_pr_with_error_handling)
+            to_not receive(:run_update_existing)
           expect(service).to receive(:create_pull_request).once
 
           updater.run
@@ -1248,7 +1248,7 @@ RSpec.describe Dependabot::Updater do
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
             expect(updater).
-              to_not receive(:check_and_update_existing_pr_with_error_handling)
+              to_not receive(:run_update_existing)
             expect(service).to receive(:create_pull_request).once
 
             updater.run
@@ -1278,7 +1278,7 @@ RSpec.describe Dependabot::Updater do
               to receive(:check_and_create_pr_with_error_handling).
               and_call_original
             expect(updater).
-              to_not receive(:check_and_update_existing_pr_with_error_handling)
+              to_not receive(:run_update_existing)
             expect(service).to receive(:create_pull_request).once
 
             updater.run
@@ -1859,6 +1859,57 @@ RSpec.describe Dependabot::Updater do
           with(
             "<job_1>   version-update:semver-patch - from .github/dependabot.yaml (doesn't apply to security update)"
           )
+      end
+    end
+
+    # FIXME: Consider removing this test in the next phase of grouped update support
+    #
+    # The `dependencies` method is _not_ memoized and we generally do a good job
+    # of passing it to other private methods, but we are about to refactor this
+    # class heavily and it would be easy to treat this as an instance variable
+    # unwittingly as it is a ubiqious business object for the Updater.
+    #
+    context "dependency file parsing" do
+      before do
+        allow(Dependabot::FileParsers).to receive(:for_package_manager).and_call_original
+      end
+
+      it "is only performed once when creating an update" do
+        job_id = 1
+        dependencies = [have_attributes(name: "dummy-pkg-b")]
+        updated_dependency_files = [
+          {
+            "name" => "Gemfile",
+            "content" => fixture("bundler/updated/Gemfile"),
+            "directory" => "/",
+            "type" => "file",
+            "mode" => "100644",
+            "support_file" => false,
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "operation" => "update"
+          },
+          {
+            "name" => "Gemfile.lock",
+            "content" => fixture("bundler/updated/Gemfile.lock"),
+            "directory" => "/",
+            "type" => "file",
+            "mode" => "100644",
+            "support_file" => false,
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "operation" => "update"
+          }
+        ]
+        base_commit_sha = "sha"
+        pr_message = nil
+        expect(service).
+          to receive(:create_pull_request).
+          with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+
+        expect(Dependabot::FileParsers).to receive(:for_package_manager).once
+
+        updater.run
       end
     end
   end
