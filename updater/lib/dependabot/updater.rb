@@ -66,8 +66,6 @@ module Dependabot
       @created_pull_requests = []
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/PerceivedComplexity
     def run
       return unless job
 
@@ -76,11 +74,7 @@ module Dependabot
         check_and_update_existing_pr_with_error_handling(dependencies)
       else
         logger_info("Starting update job for #{job.source.repo}")
-        if ENV["UPDATER_DETERMINISTIC"]
-          dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
-        else
-          dependencies.shuffle.each { |dep| check_and_create_pr_with_error_handling(dep) }
-        end
+        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
       end
     rescue *RUN_HALTING_ERRORS.keys => e
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
@@ -96,8 +90,6 @@ module Dependabot
       error = { "error-type": RUN_HALTING_ERRORS.fetch(e.class) }
       record_error(error)
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/PerceivedComplexity
 
     private
 
