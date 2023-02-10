@@ -15,6 +15,8 @@ module Dependabot
   # unless we override it.
   class ExperimentalGroupedUpdater < SimpleDelegator
     def run_grouped
+      raise Dependabot::NotImplemented, "Grouped updates do not currently support rebasing." if job.updating_a_pull_request?
+
       # Nothing new implemented yet, let's just shake loose the Dependabot::Updater tests
       # which relate to top-level error handling and update/rebase jobs
       run_fresh

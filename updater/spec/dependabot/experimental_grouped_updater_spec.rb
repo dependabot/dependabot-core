@@ -1930,4 +1930,33 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       end
     end
   end
+
+  describe "#run_grouped" do
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler/original/Gemfile"),
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler/original/Gemfile.lock"),
+          directory: "/"
+        )
+      ]
+    end
+
+    context "the job wants to update an existing PR" do
+      before do
+        allow(service).to receive(:record_update_job_error).and_return(nil)
+        allow(job).to receive(:updating_a_pull_request?).and_return(true)
+      end
+
+      it "raises a not implemented error" do
+        expect{ updater.run }.
+          to raise_error(Dependabot::NotImplemented, "Grouped updates do not currently support rebasing.")
+      end
+    end
+  end
 end
