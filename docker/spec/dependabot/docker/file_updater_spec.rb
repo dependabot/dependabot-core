@@ -1139,7 +1139,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
   let(:helmfile) do
     Dependabot::DependencyFile.new(
       content: helmfile_body,
-      name: "values.yaml"
+      name: "values.yaml" # TODO not sure if I need to replace the filenames here or if I can override later in a specific test
     )
   end
   let(:helmfile_body) { fixture("helm", "yaml", "values.yaml") }
