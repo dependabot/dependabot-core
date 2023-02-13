@@ -120,25 +120,49 @@ module Dependabot
       #   return record_security_update_not_possible_error(checker)
       # end
 
-      if (existing_pr = existing_pull_request(updated_deps))
-        # Create a update job error to prevent dependabot-api from creating a
-        # update_not_possible error, this is likely caused by a update job retry
-        # so should be invisible to users (as the first job completed with a pull
-        # request)
-        record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
+      # FIXME: Prototype grouped updates do not need to check for existing PRs
+      #        at this stage as we haven't defined their mutual exclusivity
+      #        requirements yet.
+      #
+      #        The caveat is that `existing_pull_request` does two things:
+      #          - Check `job.existing_pull_requests`` for PRs created by
+      #            Dependabot outside the current job at some point in the past
+      #          - Check the `created_pull_request` set for PRs created earlier
+      #            in the previous job process
+      #
+      #        For grouped updates, this first should be trivial but distinct
+      #        from existing behaviour; we should prefer to update an existing,
+      #        unmerged PR for the given group.
+      #
+      #        The second initially seems like it does not apply as a process
+      #        should only PR each group once but it is possible we could update
+      #        a dependency that falls within a group rule _individually_ or as
+      #        part of another group.
+      #
+      #        Solving the overlap/exclusivity strateg(y|ies) we want to support
+      #        is out of scope at this stage, so let's bypass for now.
+      #
+      # BEGIN: Existing Pull Request Checks
+      # if (existing_pr = existing_pull_request(updated_deps))
+      #   # Create a update job error to prevent dependabot-api from creating a
+      #   # update_not_possible error, this is likely caused by a update job retry
+      #   # so should be invisible to users (as the first job completed with a pull
+      #   # request)
+      #   record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
 
-        deps = existing_pr.map do |dep|
-          if dep.fetch("dependency-removed", false)
-            "#{dep.fetch('dependency-name')}@removed"
-          else
-            "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
-          end
-        end
+      #   deps = existing_pr.map do |dep|
+      #     if dep.fetch("dependency-removed", false)
+      #       "#{dep.fetch('dependency-name')}@removed"
+      #     else
+      #       "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
+      #     end
+      #   end
 
-        return logger_info(
-          "Pull request already exists for #{deps.join(', ')}"
-        )
-      end
+      #   return logger_info(
+      #     "Pull request already exists for #{deps.join(', ')}"
+      #   )
+      # end
+      # END: Existing Pull Request Checks
 
       if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
         return logger_info(
