@@ -20,7 +20,7 @@
     "eslint": "^8.33.0",
     "eslint-config-prettier": "^8.6.0",
     "jest": "^29.4.1",
-    "prettier": "^2.8.3",
+    "prettier": "^2.8.4",
     "rimraf": "^4.1.2"
   }
 }
