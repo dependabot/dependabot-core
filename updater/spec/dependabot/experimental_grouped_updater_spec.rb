@@ -1093,8 +1093,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
           expect(updater_delegate).
             to receive(:run_update_existing).
             and_call_original
-          expect(updater_delegate).
-            to_not receive(:check_and_create_pr_with_error_handling)
+          expect(updater).
+            to_not receive(:compile_updates_for)
           expect(service).to receive(:create_pull_request).once
 
           updater.run
@@ -1180,8 +1180,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
             expect(updater_delegate).
               to receive(:run_update_existing).
               and_call_original
-            expect(updater_delegate).
-              to_not receive(:check_and_create_pr_with_error_handling)
+            expect(updater).
+              to_not receive(:compile_updates_for)
             expect(service).to receive(:create_pull_request).once
             expect(service).not_to receive(:close_pull_request)
 
@@ -1240,7 +1240,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
 
         it "only attempts to update dependencies on the specified list" do
           expect(updater).
-            to receive(:check_and_create_pr_with_error_handling).
+            to receive(:compile_updates_for).
             and_call_original
           expect(updater_delegate).
             to_not receive(:run_update_existing)
@@ -1263,7 +1263,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
 
           it "only attempts to update dependencies on the specified list" do
             expect(updater).
-              to receive(:check_and_create_pr_with_error_handling).
+              to receive(:compile_updates_for).
               and_call_original
             expect(updater_delegate).
               to_not receive(:run_update_existing)
@@ -1293,7 +1293,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
 
           it "still attempts to update the dependency" do
             expect(updater).
-              to receive(:check_and_create_pr_with_error_handling).
+              to receive(:compile_updates_for).
               and_call_original
             expect(updater_delegate).
               to_not receive(:run_update_existing)

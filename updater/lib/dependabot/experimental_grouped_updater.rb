@@ -21,32 +21,32 @@ module Dependabot
       end
 
       logger_info("[Experimental] Starting grouped update job for #{job.source.repo}")
-      # Establish collection
-      # Do the check and diff
-      dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
-      # PR everything
+      # We should log the rule being executed, let's just hard-code wildcard for now
+      # since the prototype makes best-effort to do everything in one pass.
+      logger_info("Starting batch for Group Rule: '*'")
+      update_batch = dependencies.each_with_object({}) do |dep, batch|
+        updated_deps = compile_updates_for(dep)
+        batch[dep.name] = updated_deps if updated_deps
+      end
+      if update_batch.any?
+        update_files_and_create_pull_request(update_batch)
+      else
+        logger_info("Nothing to update for Group Rule: '*'")
+      end
     end
-    alias run run_grouped
+    alias run run_grouped # Override the base run implementation
 
-    def check_and_create_pr_with_error_handling(dependency)
-      check_and_create_pull_request(dependency)
-    rescue Dependabot::InconsistentRegistryResponse => e
-      log_error(
-        dependency: dependency,
-        error: e,
-        error_type: "inconsistent_registry_response",
-        error_detail: e.message
-      )
-    rescue StandardError => e
-      raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+    private
 
-      __getobj__.handle_dependabot_error(error: e, dependency: dependency)
+    # We should allow the rescue in Dependabot::Updater#run to handle errors and avoid trapping them ourselves in case
+    # it results in deviating from shared behaviour. This is a safety-catch to stop that happening by accident and fail
+    # tests if we override something without thinking carefully about how it should raise.
+    def handle_dependabot_error(_error:, _dependency:)
+      raise NoMethodError, "#{__method__} is not implemented by the delegator, call __getobj__.#{__method__} instead."
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/PerceivedComplexity
-    # rubocop:disable Metrics/MethodLength
-    def check_and_create_pull_request(dependency)
+    # This method decomposes Updater#check_and_create_pull_request to just compile
+    def compile_updates_for(dependency)
       checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
       log_checking_for_update(dependency)
@@ -170,27 +170,75 @@ module Dependabot
           "(peer dependency can be updated)"
         )
       end
+      filter_unrelated_and_unchanged(updated_deps, checker)
+    # FIXME: This rescue logic is pulled in from Updater#check_and_create_pr_with_error_handling
+    #        and duplicated in update_files_and_create_pull_request.
+    #
+    #        It isn't completely intuitive which parts of this logic belong to the
+    #        "check" and which parts belong to the "create", but it should be tried
+    #        out in a way that the "dependency" it reports is less of a guess for
+    #        groups -or- we need to implement new error types for Grouped Pull Requests
+    rescue Dependabot::InconsistentRegistryResponse => e
+      log_error(
+        dependency: dependency,
+        error: e,
+        error_type: "inconsistent_registry_response",
+        error_detail: e.message
+      )
+    rescue StandardError => e
+      raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
+      __getobj__.handle_dependabot_error(error: e, dependency: dependency)
+    end
+
+    def filter_unrelated_and_unchanged(updated_dependencies, checker)
+      updated_dependencies.reject do |d|
         next false if d.name == checker.dependency.name
         next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
-      create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
     end
-    # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/PerceivedComplexity
 
-    private
+    def update_files_and_create_pull_request(update_batch)
+      logger_info("Generated #{update_batch.count} changes")
+      # FIXME: This needs to be de-duped, but it isn't clear which dupe should
+      #        'win' right now in terms of version.
+      #
+      #        To start out with, using a variant on the 'existing_pull_request'
+      #        logic might make sense -or- we could employ a one-and-done rule
+      #        where the first update to a dependency blocks subsequent changes.
+      #
+      #        In a follow-up iteration, a 'shared workspace' could provide the
+      #        filtering for us assuming we iteratively make file changes for
+      #        each Array of dependencies in the batch and the FileUpdater tells
+      #        us which cannot be applied.
 
-    # We should allow the rescue in Dependabot::Updater#run to handle errors and avoid trapping them ourselves in case
-    # it results in deviating from shared behaviour. This is a safety-catch to stop that happening by accident and fail
-    # tests if we override something without thinking carefully about how it should raise.
-    def handle_dependabot_error(_error:, _dependency:)
-      raise NoMethodError, "#{__method__} is not implemented by the delegator, call __getobj__.#{__method__} instead."
+      all_updated_deps = update_batch.values.flatten
+      logger_info("Updated #{all_updated_deps.count} dependencies")
+      updated_files = generate_dependency_files_for(all_updated_deps)
+
+      create_pull_request(all_updated_deps, updated_files, pr_message(all_updated_deps, updated_files))
+    # FIXME: This rescue logic is pulled in from Updater#check_and_create_pr_with_error_handling
+    #        and duplicated in update_files_and_create_pull_request.
+    #
+    #        It isn't completely intuitive which parts of this logic belong to the
+    #        "check" and which parts belong to the "create", but it should be tried
+    #        out in a way that the "dependency" it reports is less of a guess for
+    #        groups -or- we need to implement new error types for Grouped Pull Requests
+    rescue Dependabot::InconsistentRegistryResponse => e
+      log_error(
+        # FIXME: This is a workround for not having a single Dependency to report against
+        dependency: all_updated_deps.first,
+        error: e,
+        error_type: "inconsistent_registry_response",
+        error_detail: e.message
+      )
+    rescue StandardError => e
+      raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+      # FIXME: This is a workround for not having a single Dependency to report against
+      __getobj__.handle_dependabot_error(error: e, dependency: all_updated_deps.first)
     end
 
     # Override the checker initialisation to skip configuration we don't use right now
