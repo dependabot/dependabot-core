@@ -44,7 +44,6 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/MethodLength
     def check_and_create_pull_request(dependency)
@@ -55,34 +54,39 @@ module Dependabot
       # FIXME: Prototype grouped updates do not interact with the ignore list
       # return if all_versions_ignored?(dependency, checker)
 
-      # If the dependency isn't vulnerable or we can't know for sure we won't be
-      # able to know if the updated dependency fixes any advisories
-      if job.security_updates_only?
-        unless checker.vulnerable?
-          # The current dependency isn't vulnerable if the version is correct and
-          # can be matched against the advisories affected versions
-          if checker.version_class.correct?(checker.dependency.version)
-            return record_security_update_not_needed_error(checker)
-          end
+      # FIXME: Security-only updates are not supported for grouped updates yet
+      #
+      # BEGIN: Security-only updates checks
+      # # If the dependency isn't vulnerable or we can't know for sure we won't be
+      # # able to know if the updated dependency fixes any advisories
+      # if job.security_updates_only?
+      #   unless checker.vulnerable?
+      #     # The current dependency isn't vulnerable if the version is correct and
+      #     # can be matched against the advisories affected versions
+      #     if checker.version_class.correct?(checker.dependency.version)
+      #       return record_security_update_not_needed_error(checker)
+      #     end
 
-          return record_dependency_file_not_supported_error(checker)
-        end
-        return record_security_update_ignored(checker) unless job.allowed_update?(dependency)
-      end
+      #     return record_dependency_file_not_supported_error(checker)
+      #   end
+      #   return record_security_update_ignored(checker) unless job.allowed_update?(dependency)
+      # end
+      # if checker.up_to_date?
+      #   # The current version is still vulnerable and  Dependabot can't find a
+      #   # published or compatible non-vulnerable version, this can happen if the
+      #   # fixed version hasn't been published yet or the published version isn't
+      #   # compatible with the current enviroment (e.g. python version) or
+      #   # version (uses a different version suffix for gradle/maven)
+      #   return record_security_update_not_found(checker) if job.security_updates_only?
 
-      if checker.up_to_date?
-        # The current version is still vulnerable and  Dependabot can't find a
-        # published or compatible non-vulnerable version, this can happen if the
-        # fixed version hasn't been published yet or the published version isn't
-        # compatible with the current enviroment (e.g. python version) or
-        # version (uses a different version suffix for gradle/maven)
-        return record_security_update_not_found(checker) if job.security_updates_only?
-
-        return log_up_to_date(dependency)
-      end
+      #   return log_up_to_date(dependency)
+      # end
+      # END: Security-only updates checks
+      return log_up_to_date(dependency) if checker.up_to_date? # retained from above block
 
       if pr_exists_for_latest_version?(checker)
-        record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
+        # FIXME: Security-only updates are not supported for grouped updates yet
+        # record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
         return logger_info(
           "Pull request already exists for #{checker.dependency.name} " \
           "with latest version #{checker.latest_version}"
@@ -93,7 +97,8 @@ module Dependabot
       log_requirements_for_update(requirements_to_unlock, checker)
 
       if requirements_to_unlock == :update_not_possible
-        return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
+        # FIXME: Security-only updates are not supported for grouped updates yet
+        # return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
 
         return logger_info(
           "No update possible for #{dependency.name} #{dependency.version}"
@@ -104,15 +109,16 @@ module Dependabot
         requirements_to_unlock: requirements_to_unlock
       )
 
-      # Prevent updates that don't end up fixing any security advisories,
-      # blocking any updates where dependabot-core updates to a vulnerable
-      # version. This happens for npm/yarn subdendencies where Dependabot has no
-      # control over the target version. Related issue:
-      # https://github.com/github/dependabot-api/issues/905
-      if job.security_updates_only? &&
-         updated_deps.none? { |d| job.security_fix?(d) }
-        return record_security_update_not_possible_error(checker)
-      end
+      # FIXME: Security-only updates are not supported for grouped updates yet
+      # # Prevent updates that don't end up fixing any security advisories,
+      # # blocking any updates where dependabot-core updates to a vulnerable
+      # # version. This happens for npm/yarn subdendencies where Dependabot has no
+      # # control over the target version. Related issue:
+      # # https://github.com/github/dependabot-api/issues/905
+      # if job.security_updates_only? &&
+      #    updated_deps.none? { |d| job.security_fix?(d) }
+      #   return record_security_update_not_possible_error(checker)
+      # end
 
       if (existing_pr = existing_pull_request(updated_deps))
         # Create a update job error to prevent dependabot-api from creating a
@@ -152,7 +158,6 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity
 
     private

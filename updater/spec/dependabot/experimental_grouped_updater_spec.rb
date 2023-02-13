@@ -335,7 +335,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         updater.run
       end
 
-      context "when the dep has no version so we can't check vulnerability" do
+      context "when the dep has no version so we can't check vulnerability",
+              skip: "Security-only updates are out of scope" do
         let(:original_dependency) do
           Dependabot::Dependency.new(
             name: "dummy-pkg-b",
@@ -395,7 +396,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      context "when the update is still vulnerable" do
+      context "when the update is still vulnerable", skip: "Security-only updates are out of scope" do
         let(:security_advisories) do
           [{ "dependency-name" => "dummy-pkg-b",
              "affected-versions" => ["1.1.0", "1.2.0"] }]
@@ -483,7 +484,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      context "when the dependency is deemed up-to-date but still vulnerable" do
+      context "when the dependency is deemed up-to-date but still vulnerable",
+              skip: "Security-only updates are out of scope" do
         it "doesn't update the dependency" do
           expect(checker).to receive(:up_to_date?).and_return(true)
           expect(updater_delegate).to_not receive(:generate_dependency_files_for)
@@ -652,7 +654,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "when ignores define update-types with feature enabled", skip: "Ignore rules are out of scope for the prototype" do
+      describe "when ignores define update-types with feature enabled",
+               skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-b"] }
         let(:ignore_conditions) do
           [
@@ -948,7 +951,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      context "when security only updates for the latest version" do
+      context "when security only updates for the latest version", skip: "Security-only updates are out of scope" do
         let(:security_updates_only) { true }
         let(:security_advisories) do
           [{ "dependency-name" => "dummy-pkg-b",
@@ -1300,7 +1303,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
           end
         end
 
-        context "for security only updates" do
+        context "for security only updates", skip: "Security-only updates are out of scope" do
           let(:security_updates_only) { true }
 
           before do
