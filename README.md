@@ -195,7 +195,7 @@ The developer shell is built on top of an ecosystem image.
 Start by building the ecosystem image, or pull it from the Docker registry.
 
 ```shell
-$ docker pull ghcr.io/dependabot/dependabot-gomod # OR
+$ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
 $ script/build go_modules
 ```
 
