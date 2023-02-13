@@ -278,7 +278,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       end
     end
 
-    it "logs the current and latest versions" do
+    it "logs the current and latest versions", skip: "this secretly tests ignore functionality we've skipped" do
       expect(logger).
         to receive(:info).
         with("<job_1> Checking if dummy-pkg-b 1.1.0 needs updating")
@@ -509,7 +509,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       end
     end
 
-    context "when ignore conditions are set" do
+    context "when ignore conditions are set", skip: "Ignore rules are out of scope for the prototype" do
       def expect_update_checker_with_ignored_versions(versions)
         expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
           dependency: anything,
@@ -534,7 +534,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "when all versions are ignored" do
+      describe "when all versions are ignored", skip: "Ignore rules are out of scope for the prototype" do
         let(:ignore_conditions) do
           [
             { "dependency-name" => "dummy-pkg-a", "version-requirement" => "~> 2.0.0" },
@@ -590,7 +590,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "with an ignored version" do
+      describe "with an ignored version", skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-b"] }
         let(:ignore_conditions) { [{ "dependency-name" => "dummy-pkg-b", "version-requirement" => "~> 1.0.0" }] }
 
@@ -610,7 +610,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "with an ignored update-type" do
+      describe "with an ignored update-type", skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-b"] }
         let(:ignore_conditions) do
           [{ "dependency-name" => "dummy-pkg-b", "update-types" => ["version-update:semver-patch"] }]
@@ -632,7 +632,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "when ignores don't match the name" do
+      describe "when ignores don't match the name", skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-a"] }
         let(:ignore_conditions) { [{ "dependency-name" => "dummy-pkg-b", "version-requirement" => ">= 0" }] }
 
@@ -642,7 +642,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "when ignores match a wildcard name" do
+      describe "when ignores match a wildcard name", skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-a"] }
         let(:ignore_conditions) { [{ "dependency-name" => "dummy-pkg-*", "version-requirement" => ">= 0" }] }
 
@@ -652,7 +652,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         end
       end
 
-      describe "when ignores define update-types with feature enabled" do
+      describe "when ignores define update-types with feature enabled", skip: "Ignore rules are out of scope for the prototype" do
         let(:requested_dependencies) { ["dummy-pkg-b"] }
         let(:ignore_conditions) do
           [
@@ -1395,7 +1395,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         allow(checker).to receive(:can_update?) { values.shift.call }
       end
 
-      context "during parsing" do
+      context "during parsing", skip: "Handled for us in Dependabot::Updater#run, Inadvertantly tests ignoring" do
         before { allow(updater).to receive(:dependency_files).and_raise(error) }
 
         context "and it's an unknown error" do
@@ -1956,6 +1956,26 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       it "raises a not implemented error" do
         expect { updater.run }.
           to raise_error(Dependabot::NotImplemented, "Grouped updates do not currently support rebasing.")
+      end
+    end
+
+    describe "when ignores match the dependency name" do
+      let(:requested_dependencies) { ["dummy-pkg-b"] }
+      let(:ignore_conditions) { [{ "dependency-name" => "dummy-pkg-b", "version-requirement" => ">= 0" }] }
+
+      it "does not pass any ignore rules to the checker as they aren't supported" do
+        updater.run
+        expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
+          dependency: anything,
+          dependency_files: anything,
+          repo_contents_path: anything,
+          credentials: anything,
+          ignored_versions: [],
+          security_advisories: anything,
+          raise_on_ignored: anything,
+          requirements_update_strategy: anything,
+          options: anything
+        ).once
       end
     end
   end

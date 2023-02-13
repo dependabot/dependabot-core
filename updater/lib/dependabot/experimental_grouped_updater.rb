@@ -52,7 +52,8 @@ module Dependabot
 
       log_checking_for_update(dependency)
 
-      return if all_versions_ignored?(dependency, checker)
+      # FIXME: Prototype grouped updates do not interact with the ignore list
+      # return if all_versions_ignored?(dependency, checker)
 
       # If the dependency isn't vulnerable or we can't know for sure we won't be
       # able to know if the updated dependency fixes any advisories
@@ -161,6 +162,24 @@ module Dependabot
     # tests if we override something without thinking carefully about how it should raise.
     def handle_dependabot_error(_error:, _dependency:)
       raise NoMethodError, "#{__method__} is not implemented by the delegator, call __getobj__.#{__method__} instead."
+    end
+
+    # Override the checker initialisation to skip configuration we don't use right now
+    #
+    # FIXME: Prototype grouped updates do not interact with the ignore list
+    # FIXME: Prototype grouped updates to not interact with advisory data
+    def update_checker_for(dependency, raise_on_ignored:)
+      Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
+        dependency: dependency,
+        dependency_files: dependency_files,
+        repo_contents_path: repo_contents_path,
+        credentials: credentials,
+        ignored_versions: [],
+        security_advisories: [],
+        raise_on_ignored: raise_on_ignored,
+        requirements_update_strategy: job.requirements_update_strategy,
+        options: job.experiments
+      )
     end
   end
 end
