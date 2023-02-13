@@ -78,6 +78,18 @@ $ bin/docker-dev-shell go_modules
 [dependabot-core-dev] ~/dependabot-core $
 ```
 
+The ecosystem parameter is the top-level directory name of the ecosystem in this project.
+
+If you're running the amd64 architecture, you have the option to pull the image instead
+of building it directly:
+
+```shell
+$ docker pull ghcr.io/dependabot/dependabot-updater-gomod
+```
+
+The updater image name uses the [YAML name](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+to specify the ecosystem.
+
 ### Dry run script
 
 You can use the "dry-run" script to simulate a dependency update job, printing
