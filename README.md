@@ -80,8 +80,8 @@ $ bin/docker-dev-shell go_modules
 
 The ecosystem parameter is the top-level directory name of the ecosystem in this project.
 
-If you're running the amd64 architecture, you have the option to pull the image instead
-of building it directly:
+If you're running the amd64 architecture, you have the option to pull the updater image instead
+of building it from scratch:
 
 ```shell
 $ docker pull ghcr.io/dependabot/dependabot-updater-gomod
