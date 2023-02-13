@@ -64,6 +64,8 @@ module Dependabot
       def self.setup_yarn_berry
         # Always disable immutable installs so yarn's CI detection doesn't prevent updates.
         SharedHelpers.run_shell_command("yarn config set enableImmutableInstalls false")
+        # Do not generate a cache if offline cache disabled. Otherwise side effects may confuse further checks
+        SharedHelpers.run_shell_command("yarn config set enableGlobalCache true") unless yarn_berry_skip_build?
         # We never want to execute postinstall scripts, either set this config or mode=skip-build must be set
         if yarn_major_version == 2 || !yarn_zero_install?
           SharedHelpers.run_shell_command("yarn config set enableScripts false")
