@@ -40,6 +40,8 @@ module Dependabot
         dependency_set = DependencySet.new
 
         json = YAML.safe_load(file.content, aliases: true)
+        return dependency_set if json.nil?
+
         uses_strings = deep_fetch_uses(json.fetch("jobs", nil)).uniq
 
         uses_strings.each do |string|

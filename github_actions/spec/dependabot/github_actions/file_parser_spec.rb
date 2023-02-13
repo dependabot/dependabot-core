@@ -167,6 +167,16 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with empty" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "empty.yml" }
+
+      it "has no dependencies" do
+        expect(dependencies.count).to be(0)
+        expect(dependency).to be_nil
+      end
+    end
+
     context "with a bad Ruby object" do
       let(:workflow_file_fixture_name) { "bad_ruby_object.yml" }
 
