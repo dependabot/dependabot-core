@@ -70,15 +70,25 @@ best way to work with the project.
 
 ## Running with Docker
 
-Start by pulling the developer image from the [GitHub Container Registry][ghcr-core-dev] and then start the developer shell:
+Start by running the developer shell:
 
 ```shell
-$ docker pull ghcr.io/dependabot/dependabot-core-development:latest
-$ docker tag ghcr.io/dependabot/dependabot-core-development dependabot/dependabot-core-development
-$ bin/docker-dev-shell
+$ bin/docker-dev-shell go_modules
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
 ```
+
+The ecosystem parameter is the top-level directory name of the ecosystem in this project.
+
+If you're running the amd64 architecture, you have the option to pull the updater image instead
+of building it from scratch:
+
+```shell
+$ docker pull ghcr.io/dependabot/dependabot-updater-gomod
+```
+
+The updater image name uses the [YAML name](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+to specify the ecosystem.
 
 ### Dry run script
 
@@ -88,7 +98,7 @@ arguments: the package manager and the GitHub repo name (including the
 account):
 
 ```bash
-$ bin/docker-dev-shell
+$ bin/docker-dev-shell go_modules
 => running docker development shell
 $ bin/dry-run.rb go_modules rsc/quote
 => fetching dependency files
@@ -127,7 +137,7 @@ Once you have made any edits to the helper files, run the appropriate build scri
 installed version with your changes like so:
 
 ```bash
-$ bin/docker-dev-shell
+$ bin/docker-dev-shell bundler
 => running docker development shell
 $ bundler/helpers/v1/build
 $ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
@@ -180,24 +190,28 @@ Edit the native helper function and re-run the above, for example: `vi /opt/bund
 The developer shell uses volume mounts to incorporate your local changes to Dependabot's source
 code. If you need to make changes to the development shell itself, you can rebuild it locally.
 
-Start by building the initial Dependabot Core image, or pull it from the
-Docker registry.
+The developer shell is built on top of an ecosystem image.
+
+Start by building the ecosystem image, or pull it from the Docker registry.
 
 ```shell
-$ docker pull dependabot/dependabot-core # OR
-$ docker build -f Dockerfile -t dependabot/dependabot-core . # This may take a while
+$ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
+$ script/build go_modules
 ```
 
 Once you have the base Docker image, you can build and run the development
 container using the `docker-dev-shell` script. The script will automatically
 build the container if it's not present and can be forced to rebuild with the
-`--rebuild` flag. The image includes all dependencies, and the script runs the
-image, mounting the local copy of Dependabot Core so changes made locally will
-be reflected inside the container. This means you can continue to use your
-editor of choice while running the tests inside the container.
+`--rebuild` flag. The image includes all dependencies of the ecosystem, and
+the script runs the image, mounting the local copy of Dependabot Core so changes
+made locally will be reflected inside the container. This means you can continue
+to use your editor of choice while running the tests inside the container.
+
+The `docker-dev-shell` and other scripts take a single parameter of the ecosystem directory
+you wish to run against.
 
 ```shell
-$ bin/docker-dev-shell
+$ bin/docker-dev-shell go_modules --rebuild
 => building image from Dockerfile.development
 => running docker development shell
 [dependabot-core-dev] ~/dependabot-core $
