@@ -48,13 +48,17 @@ module Dependabot
       def self.yarn_berry_args
         if yarn_major_version == 2
           ""
-        elsif yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
+        elsif yarn_berry_skip_build?
           "--mode=skip-build"
         else
           # We only want this mode if the cache is not being updated/managed
           # as this improperly leaves old versions in the cache
           "--mode=update-lockfile"
         end
+      end
+
+      def self.yarn_berry_skip_build?
+        yarn_major_version >= 3 && (yarn_zero_install? || yarn_offline_cache?)
       end
 
       def self.setup_yarn_berry
