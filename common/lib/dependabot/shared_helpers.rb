@@ -97,6 +97,7 @@ module Dependabot
 
       if ENV["DEBUG_HELPERS"] == "true"
         puts env_cmd
+        puts function
         puts stdout
         puts stderr
       end
