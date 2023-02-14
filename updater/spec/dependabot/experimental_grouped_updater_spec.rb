@@ -488,7 +488,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
               skip: "Security-only updates are out of scope" do
         it "doesn't update the dependency" do
           expect(checker).to receive(:up_to_date?).and_return(true)
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -819,7 +819,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         before { allow(peer_checker).to receive(:can_update?).and_return(true) }
 
         it "doesn't update the dependency" do
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           updater.run
         end
@@ -883,7 +883,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
 
         it "doesn't call can_update? (so short-circuits resolution)" do
           expect(checker).to_not receive(:can_update?)
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
           expect(logger).
@@ -904,7 +904,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         it "doesn't update the dependency" do
           expect(checker).to receive(:up_to_date?).and_return(false, false)
           expect(checker).to receive(:can_update?).and_return(true, false)
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
           expect(logger).
@@ -931,7 +931,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         it "creates an update job error and short-circuits" do
           expect(checker).to receive(:up_to_date?).and_return(false)
           expect(checker).to receive(:can_update?).and_return(true)
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -967,7 +967,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
 
         it "doesn't call can_update? (so short-circuits resolution)" do
           expect(checker).to_not receive(:can_update?)
-          expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+          expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -1058,7 +1058,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       it "creates an update job error and short-circuits" do
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(updater_delegate).to_not receive(:generate_dependency_files_for)
+        expect(updater).to_not receive(:generate_dependency_files_for)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(

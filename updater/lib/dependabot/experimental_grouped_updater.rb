@@ -272,5 +272,36 @@ module Dependabot
         options: job.experiments
       )
     end
+
+    # Override the updated file generation so we can pass through the files from
+    # the previous call instead of using the `dependency_files` instance variable.
+    def generate_dependency_files_for(updated_dependencies)
+      if updated_dependencies.count == 1
+        updated_dependency = updated_dependencies.first
+        logger_info("Updating #{updated_dependency.name} from " \
+                    "#{updated_dependency.previous_version} to " \
+                    "#{updated_dependency.version}")
+      else
+        dependency_names = updated_dependencies.map(&:name)
+        logger_info("Updating #{dependency_names.join(', ')}")
+      end
+
+      # Ignore dependencies that are tagged as information_only. These will be
+      # updated indirectly as a result of a parent dependency update and are
+      # only included here to be included in the PR info.
+      deps_to_update = updated_dependencies.reject(&:informational_only?)
+      updater = file_updater_for(deps_to_update)
+      updater.updated_dependency_files
+    end
+
+    def file_updater_for(dependencies)
+      Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
+        dependencies: dependencies,
+        dependency_files: dependency_files,
+        repo_contents_path: repo_contents_path,
+        credentials: credentials,
+        options: job.experiments
+      )
+    end
   end
 end
