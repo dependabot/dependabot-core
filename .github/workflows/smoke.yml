@@ -32,6 +32,7 @@ jobs:
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
+          - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm}
           - { path: nuget, name: nuget, ecosystem: nuget }
           - { path: pub, name: pub, ecosystem: pub }
           - { path: python, name: pip, ecosystem: pip }
@@ -167,6 +168,12 @@ jobs:
             - 'updater/**'
             - 'terraform/**'
           'yarn-berry':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          'yarn-berry-workspaces':
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
