@@ -205,19 +205,6 @@ module Dependabot
     end
 
     def update_files_and_create_pull_request(update_batch)
-      # FIXME: This is a workround for not having a single Dependency to report against
-      #
-      #        We could use update_batch.values.first, but it might make more
-      #        sense to report dependency || group for the error types involved
-      #        so the problem is correctly attributed to the update creation
-      #        as opposed to checking any one dependency.
-      #
-      #        Alternatively, when we use a shared workspace to build the diff iteratively
-      #        we could report against the _active_ dependency in each step. At worst this
-      #        might result in an off-by-one issue if we have potential for an error between
-      #        loops.
-      group_dependency = OpenStruct.new(name: "group-all")
-
       logger_info("Generated #{update_batch.count} changes")
       # FIXME: This needs to be de-duped, but it isn't clear which dupe should
       #        'win' right now in terms of version.
@@ -230,29 +217,45 @@ module Dependabot
       #        filtering for us assuming we iteratively make file changes for
       #        each Array of dependencies in the batch and the FileUpdater tells
       #        us which cannot be applied.
-      all_updated_deps = update_batch.values.flatten
-      logger_info("Updated #{all_updated_deps.count} dependencies")
-      updated_files = generate_dependency_files_for(all_updated_deps)
+      all_updated_deps = update_batch.values.flatten.compact
+      # FIXME: This is a bit too terse, we should probably pre-filter batches
+      #        with empty values earlier once we've fixed the test contract so
+      #        we have a better guarantee of not receiving a nil set
+      #
+      #        It is also worth noting that it mutates the `dependency_files`
+      #        ivar which I *think* is acceptable in interests of memory management
+      group_updated_files = update_batch.inject(dependency_files) do |files, (lead_dep, updated_deps)|
+        # FIXME: Move the creation of the all_updated_deps list into this loop
+        #
+        # If we fail to generate a diff, the PR body and Service will still get the `updated_deps` that
+        # weren't actually applied right now.
+        #
+        # In addition to removing this buggy behaviour, we should probably handle de-duplication here
+        # which might include supressing 'downgrades' if a previous step moved a given dep to a higher
+        # value already.
+        if updated_deps&.any?
+          generate_dependency_files_for(lead_dep, updated_deps, files) if updated_deps&.any?
+        else
+          files # pass on the existing if there are no updated dependencies for this lead dependency
+        end
+      end
+      # FIXME: Deduplicate rescues
+      #
+      #        Our rescue logic currently wraps the UpdateChecker, FileUpdater and posting the PR to the service
+      #        so we've ended up with it duplicated around each function. We should dry this out by adding a shared
+      #        execution context wrapper or similar in a follow-up.
+      begin
+        create_pull_request(all_updated_deps, group_updated_files, pr_message(all_updated_deps, group_updated_files))
+      rescue StandardError => e
+        # FIXME: This is a workround for not having a single Dependency to report against
+        #
+        #        We could use all_updated_deps.first, but that could be misleading. It may
+        #        make more sense to handle the group rule as a Dependancy-ish object
+        group_dependency = OpenStruct.new(name: "group-all")
+        raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
-      create_pull_request(all_updated_deps, updated_files, pr_message(all_updated_deps, updated_files))
-    # FIXME: This rescue logic is pulled in from Updater#check_and_create_pr_with_error_handling
-    #        and duplicated in update_files_and_create_pull_request.
-    #
-    #        It isn't completely intuitive which parts of this logic belong to the
-    #        "check" and which parts belong to the "create", but it should be teased
-    #        out in a way that the "dependency" it reports is less of a guess for
-    #        groups -or- we need to implement new error types for Grouped Pull Requests
-    rescue Dependabot::InconsistentRegistryResponse => e
-      log_error(
-        dependency: group_dependency,
-        error: e,
-        error_type: "inconsistent_registry_response",
-        error_detail: e.message
-      )
-    rescue StandardError => e
-      raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-      __getobj__.handle_dependabot_error(error: e, dependency: group_dependency)
+        __getobj__.handle_dependabot_error(error: e, dependency: group_dependency)
+      end
     end
 
     # Override the checker initialisation to skip configuration we don't use right now
@@ -275,7 +278,9 @@ module Dependabot
 
     # Override the updated file generation so we can pass through the files from
     # the previous call instead of using the `dependency_files` instance variable.
-    def generate_dependency_files_for(updated_dependencies)
+    def generate_dependency_files_for(lead_dependency, updated_dependencies, current_dependency_files)
+      # FIXME: We probably should use lead_dependency here, but I'm err'ing on the side of existing
+      #        behaviour.
       if updated_dependencies.count == 1
         updated_dependency = updated_dependencies.first
         logger_info("Updating #{updated_dependency.name} from " \
@@ -290,14 +295,27 @@ module Dependabot
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
       deps_to_update = updated_dependencies.reject(&:informational_only?)
-      updater = file_updater_for(deps_to_update)
+      updater = file_updater_for(deps_to_update, current_dependency_files)
       updater.updated_dependency_files
+    rescue Dependabot::InconsistentRegistryResponse => e
+      log_error(
+        dependency: lead_dependency,
+        error: e,
+        error_type: "inconsistent_registry_response",
+        error_detail: e.message
+      )
+      current_dependency_files # return the files unchanged
+    rescue StandardError => e
+      raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+      __getobj__.handle_dependabot_error(error: e, dependency: lead_dependency)
+      current_dependency_files # return the files unchanged
     end
 
-    def file_updater_for(dependencies)
+    def file_updater_for(dependencies, current_dependency_files)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
-        dependency_files: dependency_files,
+        dependency_files: current_dependency_files,
         repo_contents_path: repo_contents_path,
         credentials: credentials,
         options: job.experiments
