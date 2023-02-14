@@ -96,7 +96,8 @@ WORKDIR $HOME/dependabot-updater
 RUN bundle config set --local path 'vendor' && \
 bundle config set --local frozen 'true' && \
 bundle config set --local without 'development' && \
-bundle install
+bundle install && \
+rm -rf ~/.bundle
 
 FROM ubuntu:20.04
 
