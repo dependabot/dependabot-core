@@ -669,6 +669,43 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       its(:content) { is_expected.to include("<version>0.4.7</version>") }
     end
 
+    context "when updating an annotationProcessorPaths dependency" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "annotation_processor_paths_dependencies.xml")
+        )
+      end
+      let(:dependency_files) { [pom] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.errorprone:error_prone_core",
+          version: "2.18.0",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "2.18.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "2.9.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
+      its(:content) { is_expected.to include("<version>2.18.0</version>") }
+    end
+
     context "with a multimodule pom" do
       let(:dependency_files) do
         [
