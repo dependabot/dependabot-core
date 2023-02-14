@@ -46,6 +46,7 @@ module Dependabot
     end
 
     # This method decomposes Updater#check_and_create_pull_request to just compile
+    # rubocop:disable Metrics/MethodLength
     def compile_updates_for(dependency)
       checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
@@ -185,11 +186,14 @@ module Dependabot
         error_type: "inconsistent_registry_response",
         error_detail: e.message
       )
+      nil # Return nothing
     rescue StandardError => e
       raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
       __getobj__.handle_dependabot_error(error: e, dependency: dependency)
+      nil # Return nothing
     end
+    # rubocop:enable Metrics/MethodLength
 
     def filter_unrelated_and_unchanged(updated_dependencies, checker)
       updated_dependencies.reject do |d|
@@ -201,6 +205,19 @@ module Dependabot
     end
 
     def update_files_and_create_pull_request(update_batch)
+      # FIXME: This is a workround for not having a single Dependency to report against
+      #
+      #        We could use update_batch.values.first, but it might make more
+      #        sense to report dependency || group for the error types involved
+      #        so the problem is correctly attributed to the update creation
+      #        as opposed to checking any one dependency.
+      #
+      #        Alternatively, when we use a shared workspace to build the diff iteratively
+      #        we could report against the _active_ dependency in each step. At worst this
+      #        might result in an off-by-one issue if we have potential for an error between
+      #        loops.
+      group_dependency = OpenStruct.new(name: "group-all")
+
       logger_info("Generated #{update_batch.count} changes")
       # FIXME: This needs to be de-duped, but it isn't clear which dupe should
       #        'win' right now in terms of version.
@@ -213,7 +230,6 @@ module Dependabot
       #        filtering for us assuming we iteratively make file changes for
       #        each Array of dependencies in the batch and the FileUpdater tells
       #        us which cannot be applied.
-
       all_updated_deps = update_batch.values.flatten
       logger_info("Updated #{all_updated_deps.count} dependencies")
       updated_files = generate_dependency_files_for(all_updated_deps)
@@ -223,13 +239,12 @@ module Dependabot
     #        and duplicated in update_files_and_create_pull_request.
     #
     #        It isn't completely intuitive which parts of this logic belong to the
-    #        "check" and which parts belong to the "create", but it should be tried
+    #        "check" and which parts belong to the "create", but it should be teased
     #        out in a way that the "dependency" it reports is less of a guess for
     #        groups -or- we need to implement new error types for Grouped Pull Requests
     rescue Dependabot::InconsistentRegistryResponse => e
       log_error(
-        # FIXME: This is a workround for not having a single Dependency to report against
-        dependency: all_updated_deps.first,
+        dependency: group_dependency,
         error: e,
         error_type: "inconsistent_registry_response",
         error_detail: e.message
@@ -237,8 +252,7 @@ module Dependabot
     rescue StandardError => e
       raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
-      # FIXME: This is a workround for not having a single Dependency to report against
-      __getobj__.handle_dependabot_error(error: e, dependency: all_updated_deps.first)
+      __getobj__.handle_dependabot_error(error: e, dependency: group_dependency)
     end
 
     # Override the checker initialisation to skip configuration we don't use right now

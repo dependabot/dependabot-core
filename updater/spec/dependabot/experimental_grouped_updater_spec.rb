@@ -1003,7 +1003,8 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       end
     end
 
-    context "when a PR already exists for a removed dependency", skip: "Managing existing PRs is out of scope for the prototype" do
+    context "when a PR already exists for a removed dependency",
+            skip: "Managing existing PRs is out of scope for the prototype" do
       let(:existing_pull_requests) do
         [
           [
@@ -1697,7 +1698,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         updater.run
       end
 
-      it "still processes the other jobs" do
+      it "still processes the other jobs", skip: "Grouped updates are one-and-done for now, nothing else runs after" do
         expect(service).to receive(:create_pull_request).once
         updater.run
       end
