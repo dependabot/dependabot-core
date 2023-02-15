@@ -77,6 +77,22 @@ RSpec.describe namespace::PoetryVersionResolver do
       it { is_expected.to eq(Gem::Version.new("2.18.4")) }
     end
 
+    context "with a dependency defined under a group" do
+      let(:pyproject_content) do
+        super().gsub(/\[tool\.poetry\.dependencies\]/, "[tool.poetry.group.dev.dependencies]")
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
+    context "with a dependency defined under a non-dev group" do
+      let(:pyproject_content) do
+        super().gsub(/\[tool\.poetry\.dependencies\]/, "[tool.poetry.group.docs.dependencies]")
+      end
+
+      it { is_expected.to eq(Gem::Version.new("2.18.4")) }
+    end
+
     context "with a lockfile" do
       let(:dependency_files) { [pyproject, lockfile] }
       let(:dependency_version) { "2.18.0" }

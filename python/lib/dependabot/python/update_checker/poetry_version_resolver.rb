@@ -263,6 +263,11 @@ module Dependabot
             update_dependency_requirement(dependencies, updated_requirement)
           end
 
+          groups = poetry_object["group"]&.values || []
+          groups.each do |group_spec|
+            update_dependency_requirement(group_spec["dependencies"], updated_requirement)
+          end
+
           # If this is a sub-dependency, add the new requirement
           unless dependency.requirements.find { |r| r[:file] == pyproject.name }
             poetry_object[subdep_type] ||= {}
