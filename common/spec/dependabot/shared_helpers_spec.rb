@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/shared_helpers"
+require "dependabot/simple_instrumentor"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
@@ -301,7 +302,7 @@ RSpec.describe Dependabot::SharedHelpers do
 
     it "includes the defaults" do
       expect(subject).to eq(
-        instrumentor: ActiveSupport::Notifications,
+        instrumentor: Dependabot::SimpleInstrumentor,
         connect_timeout: 5,
         write_timeout: 5,
         read_timeout: 20,

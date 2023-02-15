@@ -67,5 +67,3 @@ require "dependabot/go_modules"
 require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
-
-require "dependabot/instrumentation"

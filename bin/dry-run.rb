@@ -83,6 +83,7 @@ require "dependabot/update_checkers"
 require "dependabot/file_updaters"
 require "dependabot/pull_request_creator"
 require "dependabot/config/file_fetcher"
+require "dependabot/simple_instrumentor"
 
 require "dependabot/bundler"
 require "dependabot/cargo"
@@ -477,7 +478,7 @@ end
 StackProf.start(raw: true) if $options[:profile]
 
 $network_trace_count = 0
-ActiveSupport::Notifications.subscribe(/excon/) do |*args|
+Dependabot::SimpleInstrumentor.subscribe do |*args|
   name = args.first
   $network_trace_count += 1 if name == "excon.request"
 
@@ -486,11 +487,6 @@ ActiveSupport::Notifications.subscribe(/excon/) do |*args|
     puts "🌍 #{name == 'excon.response' ? "<-- #{payload[:status]}" : "--> #{payload[:method].upcase}"}" \
          " #{Excon::Utils.request_uri(payload)}"
   end
-end
-
-$package_manager_version_log = []
-Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-  $package_manager_version_log << args.last
 end
 
 $source = Dependabot::Source.new(
@@ -804,7 +800,8 @@ StackProf.stop if $options[:profile]
 StackProf.results("tmp/stackprof-#{Time.now.strftime('%Y-%m-%d-%H:%M')}.dump") if $options[:profile]
 
 puts "🌍 Total requests made: '#{$network_trace_count}'"
-puts "🎈 Package manager version log: #{$package_manager_version_log.join('\n')}" if $package_manager_version_log.any?
+package_manager = fetcher.package_manager_version
+puts "🎈 Package manager version log: #{package_manager}" unless package_manager.nil?
 
 # rubocop:enable Metrics/BlockLength
 

@@ -828,18 +828,5 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
     end
-
-    it "instruments the package manager version" do
-      events = []
-      Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-        events << ActiveSupport::Notifications::Event.new(*args)
-      end
-
-      parser.parse
-
-      expect(events.last.payload).to eq(
-        { ecosystem: "bundler", package_managers: { "bundler" => PackageManagerHelper.bundler_version } }
-      )
-    end
   end
 end

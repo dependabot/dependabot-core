@@ -16,6 +16,13 @@ module Dependabot
         @base_commit_sha = file_fetcher.commit
         raise "base commit SHA not found" unless @base_commit_sha
 
+        version = file_fetcher.package_manager_version
+        unless version.nil?
+          api_client.record_package_manager_version(
+            Dependabot::Environment.job_id, version[:ecosystem], version[:package_managers]
+          )
+        end
+
         dependency_files
       rescue StandardError => e
         @base_commit_sha ||= "unknown"

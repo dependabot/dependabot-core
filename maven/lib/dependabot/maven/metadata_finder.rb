@@ -42,7 +42,7 @@ module Dependabot
           any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
         # If we are attempting to find a branch, we should fail over to the default branch and retry once only
-        if tmp_source.branch.present?
+        unless tmp_source.branch.to_s.empty?
           tmp_source.branch = nil
           retry
         end

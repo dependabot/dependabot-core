@@ -6,7 +6,6 @@ require "dependabot/dependency_file"
 require "dependabot/file_fetchers"
 require "dependabot/end_to_end_job"
 require "dependabot/api_client"
-require "dependabot/instrumentation"
 
 RSpec.describe Dependabot::EndToEndJob do
   subject(:end_to_end_job) { Dependabot::EndToEndJob.new }
@@ -32,6 +31,7 @@ RSpec.describe Dependabot::EndToEndJob do
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:update_dependency_list)
     allow(api_client).to receive(:record_update_job_error)
+    allow(api_client).to receive(:record_package_manager_version)
     # Recording the package manager happens via an observer so the instantiated `api_client` does not receive this call
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
 
@@ -158,12 +158,6 @@ RSpec.describe Dependabot::EndToEndJob do
       expect(Dependabot.logger).to receive(:info).with(/Changes to Dependabot Pull Requests/) do |log_message|
         expect(log_message).to include("created", "dummy-pkg-b ( from 1.1.0 to 1.2.0 )")
       end
-
-      end_to_end_job.run
-    end
-
-    it "instruments the package manager version" do
-      expect_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
 
       end_to_end_job.run
     end
