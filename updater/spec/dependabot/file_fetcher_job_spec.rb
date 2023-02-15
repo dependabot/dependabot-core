@@ -17,8 +17,10 @@ RSpec.describe Dependabot::FileFetcherJob do
 
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
+    allow(api_client).to receive(:record_package_manager_version)
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
+    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
   end
 
   describe "#perform_job" do
@@ -110,6 +112,9 @@ RSpec.describe Dependabot::FileFetcherJob do
         allow_any_instance_of(Dependabot::Bundler::FileFetcher).
           to receive(:files).
           and_raise(exception)
+        allow_any_instance_of(Dependabot::Bundler::FileFetcher).
+          to receive(:package_manager_version).
+          and_return(nil)
       end
 
       it "retries the job when the rate-limit is reset and reports api error" do

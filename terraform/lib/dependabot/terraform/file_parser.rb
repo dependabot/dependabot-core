@@ -186,10 +186,12 @@ module Dependabot
 
       def provider_source_from(source_address, name)
         matches = source_address&.match(PROVIDER_SOURCE_ADDRESS)
+        matches = {} if matches.nil?
+
         [
-          matches.try(:[], :hostname) || DEFAULT_REGISTRY,
-          matches.try(:[], :namespace) || DEFAULT_NAMESPACE,
-          matches.try(:[], :name) || name
+          matches[:hostname] || DEFAULT_REGISTRY,
+          matches[:namespace] || DEFAULT_NAMESPACE,
+          matches[:name] || name
         ]
       end
 

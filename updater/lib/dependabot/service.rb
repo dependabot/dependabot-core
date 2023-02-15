@@ -8,6 +8,7 @@ require "dependabot/api_client"
 #
 module Dependabot
   class Service
+    extend Forwardable
     attr_reader :client, :events, :pull_requests, :errors
 
     def initialize(client:)
@@ -16,7 +17,7 @@ module Dependabot
       @errors = []
     end
 
-    delegate :get_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version, to: :@client
+    def_delegators :client, :get_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
 
     def create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
       client.create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)

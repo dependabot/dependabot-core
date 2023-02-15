@@ -14,7 +14,6 @@ PATH
   remote: ../common
   specs:
     dependabot-common (0.215.0)
-      activesupport (>= 6.0.0)
       aws-sdk-codecommit (~> 1.28)
       aws-sdk-ecr (~> 1.5)
       bundler (>= 1.16, < 3.0.0)
@@ -118,12 +117,6 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (6.1.7)
-      concurrent-ruby (~> 1.0, >= 1.0.2)
-      i18n (>= 1.6, < 2)
-      minitest (>= 5.1)
-      tzinfo (~> 2.0)
-      zeitwerk (~> 2.3)
     addressable (2.8.1)
       public_suffix (>= 2.0.2, < 6.0)
     ast (2.4.2)
@@ -302,7 +295,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  activesupport (~> 6.1.7)
   debug (~> 1.7.1)
   dependabot-bundler!
   dependabot-cargo!

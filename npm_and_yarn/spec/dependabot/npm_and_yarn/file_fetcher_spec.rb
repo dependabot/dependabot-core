@@ -28,7 +28,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
     }]
   end
   let(:json_header) { { "content-type" => "application/json" } }
-  let(:events) { [] }
 
   before do
     allow(file_fetcher_instance).to receive(:commit).and_return("sha")
@@ -56,10 +55,6 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         body: fixture("github", "package_lock_content.json"),
         headers: json_header
       )
-
-    Dependabot.subscribe(Dependabot::Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED) do |*args|
-      events << ActiveSupport::Notifications::Event.new(*args)
-    end
   end
 
   context "with .yarn data stored in git-lfs" do
@@ -286,9 +281,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to match_array(%w(package.json yarn.lock))
     end
 
-    it "instruments the yarn lockfile" do
-      file_fetcher_instance.files
-      expect(events.last.payload).to eq(
+    it "parses the yarn lockfile" do
+      expect(file_fetcher_instance.package_manager_version).to eq(
         { ecosystem: "npm", package_managers: { "yarn" => 1 } }
       )
     end
@@ -345,9 +339,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to match_array(%w(package.json npm-shrinkwrap.json))
     end
 
-    it "instruments the shrinkwrap file" do
-      file_fetcher_instance.files
-      expect(events.last.payload).to eq(
+    it "parses the shrinkwrap file" do
+      expect(file_fetcher_instance.package_manager_version).to eq(
         { ecosystem: "npm", package_managers: { "shrinkwrap" => 1 } }
       )
     end
@@ -379,9 +372,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to match_array(%w(package.json package-lock.json))
     end
 
-    it "instruments the npm lockfile" do
-      file_fetcher_instance.files
-      expect(events.last.payload).to eq(
+    it "parses the npm lockfile" do
+      expect(file_fetcher_instance.package_manager_version).to eq(
         { ecosystem: "npm", package_managers: { "npm" => 6 } }
       )
     end
@@ -417,9 +409,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         to match_array(%w(package.json package-lock.json yarn.lock))
     end
 
-    it "instruments the npm and yarn lockfiles" do
-      file_fetcher_instance.files
-      expect(events.last.payload).to eq(
+    it "parses the package manager version" do
+      expect(file_fetcher_instance.package_manager_version).to eq(
         { ecosystem: "npm", package_managers: { "npm" => 6, "yarn" => 1 } }
       )
     end

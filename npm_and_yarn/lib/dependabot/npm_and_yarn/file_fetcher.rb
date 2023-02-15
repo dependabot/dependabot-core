@@ -50,6 +50,19 @@ module Dependabot
         end
       end
 
+      def package_manager_version
+        package_managers = {}
+
+        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = yarn_version if yarn_version
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
+
+        {
+          ecosystem: "npm",
+          package_managers: package_managers
+        }
+      end
+
       private
 
       def fetch_files
@@ -65,7 +78,6 @@ module Dependabot
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
-        instrument_package_manager_version
 
         fetched_files << inferred_npmrc if inferred_npmrc
 
@@ -101,20 +113,6 @@ module Dependabot
         end
 
         @inferred_npmrc = nil
-      end
-
-      def instrument_package_manager_version
-        package_managers = {}
-
-        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
-        package_managers["yarn"] = yarn_version if yarn_version
-        package_managers["shrinkwrap"] = 1 if shrinkwrap
-
-        Dependabot.instrument(
-          Notifications::FILE_PARSER_PACKAGE_MANAGER_VERSION_PARSED,
-          ecosystem: "npm",
-          package_managers: package_managers
-        )
       end
 
       def yarn_version

@@ -100,6 +100,10 @@ module Dependabot
         raise Dependabot::RepoNotFound, source
       end
 
+      def package_manager_version
+        nil
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
