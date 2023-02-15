@@ -47,6 +47,12 @@ jobs:
       id: changes
       with:
         filters: |
+          actions:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'github_actions/**'
           bundler:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
@@ -77,18 +83,6 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'elm/**'
-          git_submodules:
-            - .github/workflows/smoke.yml
-            - Dockerfile.updater-core
-            - 'common/**'
-            - 'updater/**'
-            - 'git_submodules/**'
-          github_actions:
-            - .github/workflows/smoke.yml
-            - Dockerfile.updater-core
-            - 'common/**'
-            - 'updater/**'
-            - 'github_actions/**'
           go:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
@@ -161,6 +155,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'pub/**'
+          submodules:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'git_submodules/**'
           terraform:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
