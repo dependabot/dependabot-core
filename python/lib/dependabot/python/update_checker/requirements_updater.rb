@@ -275,8 +275,10 @@ module Dependabot
             next r.to_s if r.satisfied_by?(latest_resolvable_version)
 
             case op = r.requirements.first.first
-            when "<", "<="
-              "<" + update_greatest_version(r.to_s, latest_resolvable_version)
+            when "<"
+              "<" + update_greatest_version(r.requirements.first.last, latest_resolvable_version)
+            when "<="
+              "<=" + latest_resolvable_version.to_s
             when "!=", ">", ">="
               raise UnfixableRequirement
             else
@@ -348,14 +350,12 @@ module Dependabot
           end
         end
 
-        # Updates the version in a "<" or "<=" constraint to allow the given
-        # version
-        def update_greatest_version(req_string, version_to_be_permitted)
+        # Updates the version in a "<" constraint to allow the given version
+        def update_greatest_version(version, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted =
               Python::Version.new(version_to_be_permitted)
           end
-          version = Python::Version.new(req_string.gsub(/<=?/, ""))
           version = version.release if version.prerelease?
 
           index_to_update = [
