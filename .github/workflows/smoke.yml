@@ -23,8 +23,8 @@ jobs:
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
           - { path: elm, name: elm, ecosystem: elm }
-          - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
-          - { path: github_actions, name: actions, ecosystem: github-actions }
+          - { path: git_submodules, name: git_submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: github_actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: hex, name: hex, ecosystem: mix }
