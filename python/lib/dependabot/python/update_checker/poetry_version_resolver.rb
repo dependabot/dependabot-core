@@ -258,14 +258,17 @@ module Dependabot
           poetry_object = pyproject_object.dig("tool", "poetry")
 
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
-            names = poetry_object[type]&.keys || []
+            dependencies = poetry_object[type]
+            next unless dependencies
+
+            names = dependencies.keys
             pkg_name = names.find { |nm| normalise(nm) == dependency.name }
             next unless pkg_name
 
-            if poetry_object.dig(type, pkg_name).is_a?(Hash)
-              poetry_object[type][pkg_name]["version"] = updated_requirement
+            if dependencies[pkg_name].is_a?(Hash)
+              dependencies[pkg_name]["version"] = updated_requirement
             else
-              poetry_object[type][pkg_name] = updated_requirement
+              dependencies[pkg_name] = updated_requirement
             end
           end
 
