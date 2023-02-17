@@ -140,6 +140,43 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with reusable workflow" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "workflow_reusable.yml" }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout/.github/workflows/test.yml@v2.1.0" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("actions/checkout")
+        expect(dependency.version).to eq("2.1.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    describe "with empty" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "empty.yml" }
+
+      it "has no dependencies" do
+        expect(dependencies.count).to be(0)
+        expect(dependency).to be_nil
+      end
+    end
+
     context "with a bad Ruby object" do
       let(:workflow_file_fixture_name) { "bad_ruby_object.yml" }
 
@@ -165,6 +202,54 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       it "ignores the Docker url reference" do
         expect(dependencies.count).to be(0)
         expect(dependency).to be_nil
+      end
+    end
+
+    context "with a semver tag pinned to a reusable workflow commit" do
+      let(:workflow_file_fixture_name) { "workflow_semver_reusable.yml" }
+      let(:service_pack_url) do
+        "https://github.com/actions/checkout.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "checkout"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+              "actions/checkout/.github/workflows/test.yml@01aecccf739ca6ff86c0539fbc67a7a5007bbc81"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("2.1.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
       end
     end
 
