@@ -1,0 +1,41 @@
+name: 'Checkout QEMU Buildx'
+description: 'Checks out the repository, configures QEMU and Docker Buildx for all available architectures before logging in to DockerHub'
+author: 'JonasAlfredsson'
+branding:
+  icon: 'life-buoy'
+  color: 'blue'
+
+inputs:
+  should_login:
+    description: 'Boolean stating if we should login to DockerHub or not'
+    # Why string? -> https://github.com/actions/runner/issues/1483
+    type: string
+    required: false
+    default: 'true'
+  username:
+    description: 'Username used to login to DockerHub'
+    type: string
+    required: false
+  password:
+    description: 'Password or personal access token used to login to DockerHub'
+    type: string
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v3.3.0
+
+    - name: Set up QEMU environment
+      uses: docker/setup-qemu-action@v2.1.0
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2.4.1
+
+    - name: Login to DockerHub
+      if: ${{ fromJSON(inputs.should_login) }}
+      uses: docker/login-action@v2.1.0
+      with:
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
