@@ -75,10 +75,17 @@ module Dependabot
                 find { |r| r[:file] == pyproject.name }.
                 fetch(:requirement)
 
-              updated_content =
-                content.gsub(declaration_regex(dep)) do |line|
-                  line.gsub(old_req, updated_requirement)
-                end
+              declaration_regex = declaration_regex(dep)
+              updated_content = if content.match?(declaration_regex)
+                                  content.gsub(declaration_regex(dep)) do |match|
+                                    match.gsub(old_req, updated_requirement)
+                                  end
+                                else
+                                  content.gsub(table_declaration_regex(dep)) do |match|
+                                    match.gsub(/(\s*version\s*=\s*["'])#{Regexp.escape(old_req)}/,
+                                               '\1' + updated_requirement)
+                                  end
+                                end
 
               raise "Content did not change!" if content == updated_content
 
@@ -259,8 +266,15 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          escaped_name = Regexp.escape(dep.name).gsub("\\-", "[-_.]")
-          /(?:^\s*|["'])#{escaped_name}["']?\s*=.*$/i
+          /(?:^\s*|["'])#{escape(dep)}["']?\s*=.*$/i
+        end
+
+        def table_declaration_regex(dep)
+          /tool\.poetry\.[^\n]+\.#{escape(dep)}\]\n.*?\s*version\s* =.*?\n/m
+        end
+
+        def escape(dep)
+          Regexp.escape(dep.name).gsub("\\-", "[-_.]")
         end
 
         def file_changed?(file)
