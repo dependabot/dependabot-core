@@ -167,6 +167,44 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with composite actions" do
+      let(:workflow_file_fixture_name) { "composite_action.yml" }
+      let(:workflow_files) do
+        Dependabot::DependencyFile.new(
+          name: "action.yml",
+          content: workflow_file_body
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "action.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3.3.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@v3.3.0" }
+        }]
+      end
+
+      its(:length) { is_expected.to eq(4) }
+
+      context "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("3.3.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     describe "with empty" do
       subject(:dependency) { dependencies.first }
       let(:workflow_file_fixture_name) { "empty.yml" }
