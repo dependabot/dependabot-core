@@ -10,6 +10,10 @@ RUN apt-get update \
     ltrace \
     gdb \
     shellcheck \
+    # Required for updater/ development
+    libgit2-dev \
+    cmake \
+    pkg-config \
   && rm -rf /var/lib/apt/lists/*
 USER dependabot
 
@@ -21,10 +25,12 @@ RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla
 ARG HOME=/home/dependabot
 ARG CODE_DIR=${HOME}/dependabot-core
 
+# Prepare the common & omnibus gems
 COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec ${CODE_DIR}/common/
 COPY --chown=dependabot:dependabot common/lib/dependabot.rb ${CODE_DIR}/common/lib/
 COPY --chown=dependabot:dependabot omnibus/Gemfile omnibus/dependabot-omnibus.gemspec ${CODE_DIR}/omnibus/
 
+# Prepare the ecosystem gems
 COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec ${CODE_DIR}/bundler/
 COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec ${CODE_DIR}/cargo/
 COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec ${CODE_DIR}/composer/
@@ -41,6 +47,9 @@ COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec 
 COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec ${CODE_DIR}/python/
 COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec ${CODE_DIR}/pub/
 COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec ${CODE_DIR}/terraform/
+
+# Prepare the updater project
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock ${CODE_DIR}/updater/
 
 WORKDIR ${CODE_DIR}
 
