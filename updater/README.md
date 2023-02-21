@@ -39,7 +39,9 @@ A small number of tests hit the GitHub API, so you will need to set the envvar
 scope.
 
 ```zsh
-export DEPENDABOT_TEST_ACCESS_TOKEN=ghp_xxx
+# keep secrets from being stored in shell history by prefixing with a space
+export HISTCONTROL=ignorespace
+export  DEPENDABOT_TEST_ACCESS_TOKEN=ghp_xxx
 # The DEPENDABOT_TEST_ACCESS_TOKEN will be forwarded to the dev shell container
 ➜ bin/docker-dev-shell bundler
 ```
