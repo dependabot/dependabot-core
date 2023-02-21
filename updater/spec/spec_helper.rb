@@ -21,7 +21,7 @@ require "logger"
 require "vcr"
 require "webmock/rspec"
 
-# TODO: Stop rescuing StandardError in Dependabot::BaseJob#run
+# TODO: Stop rescuing StandardError in Dependabot::BaseCommand#run
 #
 # For now we log errors as these can surface exceptions that currently get rescued
 # in integration tests.

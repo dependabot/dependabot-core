@@ -6,7 +6,7 @@ $stdout.sync = true
 
 require "raven"
 require "dependabot/setup"
-require "dependabot/update_files_job"
+require "dependabot/update_files_command"
 require "debug" if ENV["DEBUG"]
 
 class UpdaterKilledError < StandardError; end
@@ -20,7 +20,7 @@ trap("TERM") do
 end
 
 begin
-  Dependabot::UpdateFilesJob.new.run
- rescue Dependabot::RunFailure
+  Dependabot::UpdateFilesCommand.new.run
+rescue Dependabot::RunFailure
    exit 1
 end

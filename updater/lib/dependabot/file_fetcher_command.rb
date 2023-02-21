@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "base64"
-require "dependabot/base_job"
+require "dependabot/base_command"
 require "dependabot/updater"
 require "octokit"
 
 module Dependabot
-  class FileFetcherJob < BaseJob
+  class FileFetcherCommand < BaseCommand
     def perform_job
       @base_commit_sha = nil
 

@@ -4,11 +4,11 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_fetchers"
-require "dependabot/end_to_end_job"
+require "dependabot/end_to_end_command"
 require "dependabot/api_client"
 
-RSpec.describe Dependabot::EndToEndJob do
-  subject(:end_to_end_job) { Dependabot::EndToEndJob.new }
+RSpec.describe Dependabot::EndToEndCommand do
+  subject(:end_to_end_job) { Dependabot::EndToEndCommand.new }
 
   before { WebMock.disable! }
   after { WebMock.enable! }

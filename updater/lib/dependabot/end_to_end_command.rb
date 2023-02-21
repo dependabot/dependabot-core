@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/base_job"
+require "dependabot/base_command"
 require "dependabot/updater"
 
 module Dependabot
-  class EndToEndJob < BaseJob
+  class EndToEndCommand < BaseCommand
     def perform_job
       begin
         base_commit_sha

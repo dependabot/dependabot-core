@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(__dir__ + "/../lib")
 
 require "raven"
 require "dependabot/setup"
-require "dependabot/end_to_end_job"
+require "dependabot/end_to_end_command"
 
 class UpdaterKilledError < StandardError; end
 
@@ -17,7 +17,7 @@ trap("TERM") do
 end
 
 begin
-  Dependabot::EndToEndJob.new.run
+  Dependabot::EndToEndCommand.new.run
 rescue Dependabot::RunFailure
   exit 1
 end
