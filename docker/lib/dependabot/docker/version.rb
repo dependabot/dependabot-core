@@ -27,6 +27,10 @@ module Dependabot
         @release_part.to_semver
       end
 
+      def segments
+        @release_part.segments
+      end
+
       attr_reader :release_part
 
       def <=>(other)

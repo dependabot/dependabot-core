@@ -37,4 +37,14 @@ RSpec.describe Dependabot::Docker::Version do
       expect(described_class.new("11.0.16.1").to_semver).to eq("11.0.16.1")
     end
   end
+
+  describe "#segments" do
+    it "returns segments for standard versions" do
+      expect(described_class.new("2.4.2").segments).to eq([2, 4, 2])
+    end
+
+    it "ignores java versions" do
+      expect(described_class.new("11.0.16_8").segments).to eq([11, 0, 16])
+    end
+  end
 end
