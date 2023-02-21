@@ -26,6 +26,8 @@ test-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.r
 test-compose-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "composeUi" }
 test-espresso-Core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 
+my-lib = "com.mycompany:mylib:1.4"
+
 [bundles]
 compose = ["compose-activity", "compose-ui", "compose-ui-tooling", "compose-material"]
 
@@ -33,3 +35,5 @@ compose = ["compose-activity", "compose-ui", "compose-ui-tooling", "compose-mate
 kotlinter = { id = "org.jmailen.kotlinter", version = "3.10.0" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 ktlintUpdated = { id = "org.jlleitschuh.gradle.ktlint", version = "9.0.0" }
+
+short-notation = "some.plugin.id:1.4"

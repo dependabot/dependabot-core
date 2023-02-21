@@ -88,15 +88,13 @@ module Dependabot
         return dependency_set unless declarations
 
         declarations.each do |_mod, declaration|
-          version = declaration["version"]
-          next if version.nil?
+          group, name, version = send(details_getter, declaration)
 
           # Only support basic version and reference formats for now,
           # refrain from updating anything else as it's likely to be a very deliberate choice.
           next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
 
           version_details = version["ref"].nil? ? version : "$" + version["ref"]
-          group, name = send(details_getter, declaration)
           details = { group: group, name: name, version: version_details }
 
           dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
@@ -105,15 +103,27 @@ module Dependabot
       end
 
       def details_for_library_dependency(declaration)
-        if declaration["module"]
-          declaration["module"].split(":")
-        else
-          [declaration["group"], declaration["name"]]
-        end
+        version = declaration["version"]
+        return declaration.split(":") if version.nil?
+
+        group, name = if declaration["module"]
+                        declaration["module"].split(":")
+                      else
+                        [declaration["group"], declaration["name"]]
+                      end
+
+        [group, name, version]
       end
 
       def details_for_plugin_dependency(declaration)
-        ["plugins", declaration["id"]]
+        version = declaration["version"]
+        if version.nil?
+          name, version = declaration.split(":")
+        else
+          name = declaration["id"]
+        end
+
+        ["plugins", name, version]
       end
 
       def parsed_toml_file(file)

@@ -813,7 +813,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(33) }
+      its(:length) { is_expected.to eq(35) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
