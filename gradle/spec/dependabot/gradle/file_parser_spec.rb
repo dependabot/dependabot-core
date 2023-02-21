@@ -813,7 +813,7 @@ RSpec.describe Dependabot::Gradle::FileParser do
         )
       end
 
-      its(:length) { is_expected.to eq(35) }
+      its(:length) { is_expected.to eq(36) }
 
       describe "the first dependency" do
         subject(:dependency) { dependencies.first }
@@ -897,6 +897,17 @@ RSpec.describe Dependabot::Gradle::FileParser do
               metadata: nil
             }]
           )
+        end
+      end
+
+      describe "dependency with short format and 'ref' in its version" do
+        let(:dependency) do
+          dependencies.find { |dep| dep.name == "com.mycompany:mylib-with-version-including-ref" }
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.version).to eq("1.4-ref")
         end
       end
 

@@ -94,7 +94,7 @@ module Dependabot
           # refrain from updating anything else as it's likely to be a very deliberate choice.
           next unless Gradle::Version.correct?(version) || (version.is_a?(Hash) && version.key?("ref"))
 
-          version_details = version["ref"].nil? ? version : "$" + version["ref"]
+          version_details = Gradle::Version.correct?(version) ? version : "$" + version["ref"]
           details = { group: group, name: name, version: version_details }
 
           dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
@@ -103,27 +103,19 @@ module Dependabot
       end
 
       def details_for_library_dependency(declaration)
-        version = declaration["version"]
-        return declaration.split(":") if version.nil?
+        return declaration.split(":") if declaration.is_a?(String)
 
-        group, name = if declaration["module"]
-                        declaration["module"].split(":")
-                      else
-                        [declaration["group"], declaration["name"]]
-                      end
-
-        [group, name, version]
+        if declaration["module"]
+          [*declaration["module"].split(":"), declaration["version"]]
+        else
+          [declaration["group"], declaration["name"], declaration["version"]]
+        end
       end
 
       def details_for_plugin_dependency(declaration)
-        version = declaration["version"]
-        if version.nil?
-          name, version = declaration.split(":")
-        else
-          name = declaration["id"]
-        end
+        return ["plugins", *declaration.split(":")] if declaration.is_a?(String)
 
-        ["plugins", name, version]
+        ["plugins", declaration["id"], declaration["version"]]
       end
 
       def parsed_toml_file(file)

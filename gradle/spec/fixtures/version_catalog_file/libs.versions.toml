@@ -27,6 +27,7 @@ test-compose-manifest = { module = "androidx.compose.ui:ui-test-manifest", versi
 test-espresso-Core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 
 my-lib = "com.mycompany:mylib:1.4"
+my-lib-with-version-including-ref = "com.mycompany:mylib-with-version-including-ref:1.4-ref"
 
 [bundles]
 compose = ["compose-activity", "compose-ui", "compose-ui-tooling", "compose-material"]
