@@ -95,6 +95,12 @@ module Dependabot
             begin
               new_lockfile = updated_lockfile_content_for(prepared_pyproject)
 
+              original_locked_python = TomlRB.parse(lockfile.content)["metadata"]["python-versions"]
+
+              new_lockfile.gsub!(/\[metadata\]\n.*python-versions[^\n]+\n/m) do |match|
+                match.gsub(/(["']).*(['"])\n\Z/, '\1' + original_locked_python + '\1' + "\n")
+              end
+
               tmp_hash =
                 TomlRB.parse(new_lockfile)["metadata"]["content-hash"]
               correct_hash = pyproject_hash_for(updated_pyproject_content)

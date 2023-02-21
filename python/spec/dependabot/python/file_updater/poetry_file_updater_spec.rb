@@ -116,6 +116,10 @@ RSpec.describe Dependabot::Python::FileUpdater::PoetryFileUpdater do
         updated_pyproj = updated_files.find { |f| f.name == "pyproject.toml" }
         pyproj_obj = TomlRB.parse(updated_pyproj.content)
         expect(pyproj_obj["tool"]["poetry"]["dependencies"]["python"]).to eq("3.10.7")
+
+        updated_lockfile = updated_files.find { |f| f.name == "poetry.lock" }
+        lockfile_obj = TomlRB.parse(updated_lockfile.content)
+        expect(lockfile_obj["metadata"]["python-versions"]).to eq("3.10.7")
       end
     end
 
