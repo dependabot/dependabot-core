@@ -504,7 +504,7 @@ module Dependabot
           _fetch_file_content_from_github(path, repo, commit)
         when "gitlab"
           tmp = gitlab_client.get_file(repo, path, commit).content
-          Base64.decode64(tmp).force_encoding("UTF-8").encode
+          decode_binary_string(tmp)
         when "azure"
           azure_client.fetch_file_contents(commit, path)
         when "bitbucket"
@@ -540,7 +540,7 @@ module Dependabot
           # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
           github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
         else
-          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+          decode_binary_string(tmp.content)
         end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
@@ -555,7 +555,7 @@ module Dependabot
         tmp = github_client.blob(repo, file_details.sha)
         return tmp.content if tmp.encoding == "utf-8"
 
-        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        decode_binary_string(tmp.content)
       end
       # rubocop:enable Metrics/AbcSize
 
@@ -658,6 +658,11 @@ module Dependabot
       # rubocop:enable Metrics/MethodLength
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/BlockLength
+
+      def decode_binary_string(str)
+        bom = (+"\xEF\xBB\xBF").force_encoding(Encoding::BINARY)
+        Base64.decode64(str).delete_prefix(bom).force_encoding("UTF-8").encode
+      end
     end
   end
 end

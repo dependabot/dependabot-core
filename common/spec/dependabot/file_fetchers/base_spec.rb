@@ -333,6 +333,22 @@ RSpec.describe Dependabot::FileFetchers::Base do
           its(:content) { is_expected.to eq("öäöä") }
         end
 
+        context "when it includes a BOM" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(
+                status: 200,
+                body: fixture("github", "bom.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "is stripped" do
+            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+          end
+        end
+
         context "when the file is a directory" do
           before do
             stub_request(:get, url + "requirements.txt?ref=sha").
@@ -759,6 +775,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
           end
 
           its(:content) { is_expected.to eq("öäöä") }
+        end
+
+        context "when it includes a BOM" do
+          before do
+            stub_request(:get, url + "requirements.txt?ref=sha").
+              to_return(
+                status: 200,
+                body: fixture("gitlab", "bom.json"),
+                headers: { "content-type" => "application/json" }
+              )
+          end
+
+          it "is stripped" do
+            expect(subject.content.bytes.first(3)).not_to eq(["EF".hex, "BB".hex, "BF".hex])
+          end
         end
       end
 
