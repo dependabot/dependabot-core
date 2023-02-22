@@ -120,7 +120,8 @@ RSpec.describe Dependabot::GoModules::Version do
     end
 
     it "sorts pre-release versions correctly" do
-      expect(described_class.new("v1.0.0-pre2.0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.0-pre2")
+      expect(described_class.new("v1.0.0-pre2.0.20231231120000-abcdefabcdef")).to be >
+                                                                                  described_class.new("v1.0.0-pre2")
     end
 
     it "sorts minor versions correctly" do
