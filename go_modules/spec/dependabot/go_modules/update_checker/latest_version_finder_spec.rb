@@ -63,6 +63,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
 
   describe "#latest_version" do
     context "when there's a newer major version but not a new minor version" do
+      before do
+        allow(Dependabot::SharedHelpers).
+          to receive(:run_shell_command).and_call_original
+      end
+
       it "returns the latest minor version for the dependency's current major version" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
       end
@@ -71,7 +76,14 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         let(:goprivate) { "" }
 
         it "returns the latest minor version for the dependency's current major version" do
-          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+          # The Go proxy can return unexpected results, so better to check that the env was set with a spy
+          expect(finder.latest_version).instance_of?(Dependabot::GoModules::Version)
+
+          expect(Dependabot::SharedHelpers).
+            to have_received(:run_shell_command).
+            with("go list -m -versions -json github.com/dependabot-fixtures/go-modules-lib",
+                 { env: { "GOPRIVATE" => "" },
+                   fingerprint: "go list -m -versions -json <dependency_name>" })
         end
       end
 
