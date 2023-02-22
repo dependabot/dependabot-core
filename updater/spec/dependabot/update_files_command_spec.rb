@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/update_files_job"
+require "dependabot/update_files_command"
 require "tmpdir"
 
-RSpec.describe Dependabot::UpdateFilesJob do
+RSpec.describe Dependabot::UpdateFilesCommand do
   subject(:job) { described_class.new }
 
   let(:service) { double(Dependabot::Service) }

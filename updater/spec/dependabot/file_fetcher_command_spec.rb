@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/file_fetcher_job"
+require "dependabot/file_fetcher_command"
 require "tmpdir"
 
-RSpec.describe Dependabot::FileFetcherJob do
+RSpec.describe Dependabot::FileFetcherCommand do
   subject(:job) { described_class.new }
 
   let(:api_client) { double(Dependabot::ApiClient) }

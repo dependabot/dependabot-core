@@ -25,7 +25,7 @@ require "dependabot/environment"
 module Dependabot
   class RunFailure < StandardError; end
 
-  class BaseJob
+  class BaseCommand
     # Implement in subclass
     def perform_job
       raise NotImplementedError
