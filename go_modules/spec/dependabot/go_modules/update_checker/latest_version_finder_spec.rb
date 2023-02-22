@@ -71,7 +71,9 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
         let(:goprivate) { "" }
 
         it "returns the latest minor version for the dependency's current major version" do
-          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.1.0"))
+          # v1.2.5 isn't a tag on the repo, but it exists in proxy.golang.org, so it
+          # gets listed by `go list` since goprivate (and $GOPROXY) are blank.
+          expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.5"))
         end
       end
 
@@ -132,8 +134,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     context "for a Git pseudo-version with releases available" do
       let(:dependency_version) { "1.0.0-20181018214848-ab544413d0d3" }
 
-      it "doesn't return the releases, currently" do
-        expect(finder.latest_version).to eq(dependency_version)
+      it "returns the latest pre-release" do
+        # Since a pseudo-version is always a pre-release, those aren't filtered.
+        # Here there was the choice to go to v1.1.0 or v1.2.0 pre-release, and it chose
+        # the largest since being on a pre-release means all pre-releases are considered.
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("1.2.0-pre2"))
       end
     end
 
@@ -141,7 +146,10 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
       pending "updates to newer commits to master" do
-        expect(finder.latest_version).to eq("1.2.0-pre2.0.20181018214848-bbed29f74d16")
+        # This is rolling back to an earlier commit since `go list` is only showing
+        # tagged versions. This is not what we want, Dependabot will be rolling back many repos
+        # to earlier commits.
+        expect(finder.latest_version).to eq("1.2.0-pre2")
       end
     end
 

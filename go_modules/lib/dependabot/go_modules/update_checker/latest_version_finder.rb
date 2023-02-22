@@ -25,7 +25,6 @@ module Dependabot
           /module .*: git ls-remote .*: exit status 128/m
         ].freeze
         INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
-        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:, raise_on_ignored: false,
@@ -52,8 +51,6 @@ module Dependabot
         attr_reader :dependency, :dependency_files, :credentials, :ignored_versions, :security_advisories
 
         def fetch_latest_version
-          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
-
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
@@ -62,8 +59,6 @@ module Dependabot
         end
 
         def fetch_lowest_security_fix_version
-          return dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
-
           relevant_versions = available_versions
           relevant_versions = filter_prerelease_versions(relevant_versions)
           relevant_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(relevant_versions,
