@@ -142,14 +142,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       end
     end
 
-    context "for a Git pseudo-version with newer revisions available" do
+    context "for a Git pseudo-version that is later than all releases" do
       let(:dependency_version) { "1.2.0-pre2.0.20181018214848-1f3e41dce654" }
 
-      pending "updates to newer commits to master" do
-        # This is rolling back to an earlier commit since `go list` is only showing
-        # tagged versions. This is not what we want, Dependabot will be rolling back many repos
-        # to earlier commits.
-        expect(finder.latest_version).to eq("1.2.0-pre2")
+      it "doesn't downgrade the dependency" do
+        expect(finder.latest_version).to eq(dependency_version)
       end
     end
 

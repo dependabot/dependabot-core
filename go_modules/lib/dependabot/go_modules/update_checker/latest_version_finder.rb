@@ -25,6 +25,7 @@ module Dependabot
           /module .*: git ls-remote .*: exit status 128/m
         ].freeze
         INVALID_VERSION_REGEX = /version "[^"]+" invalid/m
+        PSEUDO_VERSION_REGEX = /\b\d{14}-[0-9a-f]{12}$/
 
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, security_advisories:, raise_on_ignored: false,
@@ -54,6 +55,8 @@ module Dependabot
           candidate_versions = available_versions
           candidate_versions = filter_prerelease_versions(candidate_versions)
           candidate_versions = filter_ignored_versions(candidate_versions)
+          # Adding the psuedo-version to the list to avoid downgrades
+          candidate_versions << dependency.version if PSEUDO_VERSION_REGEX.match?(dependency.version)
 
           candidate_versions.max
         end
