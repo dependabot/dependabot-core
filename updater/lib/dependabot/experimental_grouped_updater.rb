@@ -26,7 +26,7 @@ module Dependabot
       logger_info("Starting batch for Group Rule: '*'")
       update_batch = dependencies.each_with_object({}) do |dep, batch|
         updated_deps = compile_updates_for(dep)
-        batch[dep.name] = updated_deps if updated_deps
+        batch[dep.name] = updated_deps if updated_deps.any?
       end
       if update_batch.any?
         update_files_and_create_pull_request(update_batch)
@@ -45,7 +45,9 @@ module Dependabot
       raise NoMethodError, "#{__method__} is not implemented by the delegator, call __getobj__.#{__method__} instead."
     end
 
-    # This method decomposes Updater#check_and_create_pull_request to just compile
+    # This method decomposes Updater#check_and_create_pull_request to just compile the updated dependencies for a
+    # given top-level dependency. This method **must** must return an Array.
+    #
     # rubocop:disable Metrics/MethodLength
     def compile_updates_for(dependency)
       checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
@@ -83,7 +85,10 @@ module Dependabot
       #   return log_up_to_date(dependency)
       # end
       # END: Security-only updates checks
-      return log_up_to_date(dependency) if checker.up_to_date? # retained from above block
+      if checker.up_to_date? # retained from above block
+        log_up_to_date(dependency)
+        return []
+      end
 
       # FIXME: Prototype grouped updates do not need to check for existing PRs
       #        at this stage as we haven't defined their mutual exclusivity
@@ -104,9 +109,10 @@ module Dependabot
         # FIXME: Security-only updates are not supported for grouped updates yet
         # return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
 
-        return logger_info(
+        logger_info(
           "No update possible for #{dependency.name} #{dependency.version}"
         )
+        return []
       end
 
       updated_deps = checker.updated_dependencies(
@@ -169,10 +175,11 @@ module Dependabot
       # END: Existing Pull Request Checks
 
       if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-        return logger_info(
+        logger_info(
           "No update possible for #{dependency.name} #{dependency.version} " \
           "(peer dependency can be updated)"
         )
+        return []
       end
       filter_unrelated_and_unchanged(updated_deps, checker)
     # FIXME: This rescue logic is pulled in from Updater#check_and_create_pr_with_error_handling
@@ -189,12 +196,12 @@ module Dependabot
         error_type: "inconsistent_registry_response",
         error_detail: e.message
       )
-      nil # Return nothing
+      [] # Return an empty set
     rescue StandardError => e
       raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
       __getobj__.handle_dependabot_error(error: e, dependency: dependency)
-      nil # Return nothing
+      [] # Return an empty set
     end
     # rubocop:enable Metrics/MethodLength
 
