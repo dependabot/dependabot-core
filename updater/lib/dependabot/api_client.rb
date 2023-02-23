@@ -39,6 +39,7 @@ module Dependabot
       Job.new(job_data.merge(token: token))
     end
 
+    # rubocop:disable Metrics:ParameterLists
     def create_pull_request(job_id, dependencies, updated_dependency_files,
                             base_commit_sha, pr_message, grouped_update = false)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
@@ -58,6 +59,7 @@ module Dependabot
 
       sleep(rand(3.0..10.0)) && retry
     end
+    # rubocop:enable Metrics:ParameterLists
 
     def update_pull_request(job_id, dependencies, updated_dependency_files,
                             base_commit_sha)
@@ -199,9 +201,10 @@ module Dependabot
           }.compact)
         end,
         "updated-dependency-files": updated_dependency_files,
-        "base-commit-sha": base_commit_sha,
-        "grouped-update": grouped_update
-      }
+        "base-commit-sha": base_commit_sha
+      }.merge({
+        "grouped-update": grouped_update ? true : nil
+      }.compact)
       return data unless pr_message
 
       data["commit-message"] = pr_message.commit_message

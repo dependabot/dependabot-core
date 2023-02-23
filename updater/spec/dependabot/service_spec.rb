@@ -132,7 +132,7 @@ RSpec.describe Dependabot::Service do
 
     it "delegates to @client" do
       expect(mock_client).
-        to have_received(:create_pull_request).with(job_id, dependencies, dependency_files, base_sha, pr_message)
+        to have_received(:create_pull_request).with(job_id, dependencies, dependency_files, base_sha, pr_message, false)
     end
 
     it "memoizes a shorthand summary of the PR" do
