@@ -331,5 +331,28 @@ module Dependabot
         options: job.experiments
       )
     end
+
+    # Override the PR creation to add the grouped_update flag
+    def create_pull_request(dependencies, updated_dependency_files, pr_message)
+      logger_info("Submitting #{dependencies.map(&:name).join(', ')} " \
+                  "pull request for creation")
+
+      service.create_pull_request(
+        job_id,
+        dependencies,
+        updated_dependency_files.map(&:to_h),
+        base_commit_sha,
+        pr_message,
+        true # grouped_update is true
+      )
+
+      created_pull_requests << dependencies.map do |dep|
+        {
+          "dependency-name" => dep.name,
+          "dependency-version" => dep.version,
+          "dependency-removed" => dep.removed? ? true : nil
+        }.compact
+      end
+    end
   end
 end

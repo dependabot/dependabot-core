@@ -763,7 +763,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
       pr_message = nil
       expect(service).
         to receive(:create_pull_request).
-        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message, true)
 
       updater.run
     end
@@ -1797,7 +1797,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
           pr_message = nil
           expect(service).
             to receive(:create_pull_request).
-            with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+            with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message, true)
 
           updater.run
         end
@@ -1926,7 +1926,7 @@ RSpec.describe Dependabot::ExperimentalGroupedUpdater do
         pr_message = nil
         expect(service).
           to receive(:create_pull_request).
-          with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+          with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message, true)
 
         expect(Dependabot::FileParsers).to receive(:for_package_manager).once
 

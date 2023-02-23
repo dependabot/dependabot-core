@@ -40,9 +40,15 @@ module Dependabot
     end
 
     def create_pull_request(job_id, dependencies, updated_dependency_files,
-                            base_commit_sha, pr_message)
+                            base_commit_sha, pr_message, grouped_update = false)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
-      data = create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+      data = create_pull_request_data(
+        dependencies,
+        updated_dependency_files,
+        base_commit_sha,
+        pr_message,
+        grouped_update
+      )
       response = http_client.post(api_url, json: { data: data })
       raise ApiError, response.body if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
@@ -179,7 +185,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+    def create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message, grouped_update)
       data = {
         dependencies: dependencies.map do |dep|
           {
@@ -193,7 +199,8 @@ module Dependabot
           }.compact)
         end,
         "updated-dependency-files": updated_dependency_files,
-        "base-commit-sha": base_commit_sha
+        "base-commit-sha": base_commit_sha,
+        "grouped-update": grouped_update
       }
       return data unless pr_message
 

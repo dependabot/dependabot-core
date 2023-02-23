@@ -19,10 +19,20 @@ module Dependabot
 
     def_delegators :client, :get_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
 
-    def create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
-      client.create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+    # rubocop:disable Metrics:ParameterLists
+    def create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message,
+                            grouped_update = false)
+      client.create_pull_request(
+        job_id,
+        dependencies,
+        updated_dependency_files,
+        base_commit_sha,
+        pr_message,
+        grouped_update
+      )
       @pull_requests << [humanize(dependencies), :created]
     end
+    # rubocop:enable Metrics:ParameterLists
 
     def update_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha)
       client.update_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha)
