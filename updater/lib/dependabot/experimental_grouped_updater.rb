@@ -85,14 +85,17 @@ module Dependabot
       # END: Security-only updates checks
       return log_up_to_date(dependency) if checker.up_to_date? # retained from above block
 
-      if pr_exists_for_latest_version?(checker)
-        # FIXME: Security-only updates are not supported for grouped updates yet
-        # record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
-        return logger_info(
-          "Pull request already exists for #{checker.dependency.name} " \
-          "with latest version #{checker.latest_version}"
-        )
-      end
+      # FIXME: Prototype grouped updates do not need to check for existing PRs
+      #        at this stage as we haven't defined their mutual exclusivity
+      #        requirements yet.
+      # if pr_exists_for_latest_version?(checker)
+      #   # FIXME: Security-only updates are not supported for grouped updates yet
+      #   # record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
+      #   return logger_info(
+      #     "Pull request already exists for #{checker.dependency.name} " \
+      #     "with latest version #{checker.latest_version}"
+      #   )
+      # end
 
       requirements_to_unlock = requirements_to_unlock(checker)
       log_requirements_for_update(requirements_to_unlock, checker)
