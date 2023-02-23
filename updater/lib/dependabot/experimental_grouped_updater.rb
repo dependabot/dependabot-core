@@ -234,7 +234,7 @@ module Dependabot
       #
       #        It is also worth noting that it mutates the `dependency_files`
       #        ivar which I *think* is acceptable in interests of memory management
-      group_updated_files = update_batch.inject(dependency_files) do |files, (lead_dep, updated_deps)|
+      group_updated_files = update_batch.inject(dependency_files) do |files, (lead_dep_name, updated_deps)|
         # FIXME: Move the creation of the all_updated_deps list into this loop
         #
         # If we fail to generate a diff, the PR body and Service will still get the `updated_deps` that
@@ -244,6 +244,10 @@ module Dependabot
         # which might include supressing 'downgrades' if a previous step moved a given dep to a higher
         # value already.
         if updated_deps&.any?
+          lead_dep_name = lead_dep_name.downcase
+          lead_dep = updated_deps.find do |dep|
+            dep.name.downcase == lead_dep_name
+          end
           generate_dependency_files_for(lead_dep, updated_deps, files) if updated_deps&.any?
         else
           files # pass on the existing if there are no updated dependencies for this lead dependency
