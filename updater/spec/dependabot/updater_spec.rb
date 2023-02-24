@@ -17,7 +17,7 @@ RSpec.describe Dependabot::Updater do
       job: job,
       dependency_files: dependency_files,
       base_commit_sha: "sha",
-      repo_contents_path: repo_contents_path
+      repo_contents_path: nil
     )
   end
 
@@ -58,7 +58,15 @@ RSpec.describe Dependabot::Updater do
         "api-endpoint" => "https://api.github.com/",
         "hostname" => "github.com"
       },
-      credentials: credentials,
+      credentials: [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "github-token"
+        },
+        { "type" => "random", "secret" => "codes" }
+      ],
       lockfile_only: false,
       requirements_update_strategy: nil,
       update_subdependencies: false,
@@ -66,9 +74,9 @@ RSpec.describe Dependabot::Updater do
       vendor_dependencies: false,
       experiments: experiments,
       commit_message_options: {
-        "prefix" => commit_message_prefix,
-        "prefix-development" => commit_message_prefix_development,
-        "include-scope" => commit_message_include_scope
+        "prefix" => "[bump]",
+        "prefix-development" => "[bump-dev]",
+        "include-scope" => true
       },
       security_updates_only: security_updates_only
     )
@@ -79,7 +87,6 @@ RSpec.describe Dependabot::Updater do
   let(:security_advisories) { [] }
   let(:ignore_conditions) { [] }
   let(:security_updates_only) { false }
-  let(:ignore_conditions) { [] }
   let(:allowed_updates) do
     [
       {
@@ -92,22 +99,7 @@ RSpec.describe Dependabot::Updater do
       }
     ]
   end
-  let(:credentials) do
-    [
-      {
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "github-token"
-      },
-      { "type" => "random", "secret" => "codes" }
-    ]
-  end
   let(:experiments) { {} }
-  let(:repo_contents_path) { nil }
-  let(:commit_message_prefix) { "[bump]" }
-  let(:commit_message_prefix_development) { "[bump-dev]" }
-  let(:commit_message_include_scope) { true }
 
   let(:checker) { double(Dependabot::Bundler::UpdateChecker) }
   before do
@@ -670,8 +662,16 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
           dependencies: [dependency],
           dependency_files: dependency_files,
-          repo_contents_path: repo_contents_path,
-          credentials: credentials,
+          repo_contents_path: nil,
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "github-token"
+            },
+            { "type" => "random", "secret" => "codes" }
+          ],
           options: { cloning: true }
         ).and_call_original
         expect(service).to receive(:create_pull_request).once
@@ -756,11 +756,19 @@ RSpec.describe Dependabot::Updater do
           source: job.source,
           files: an_instance_of(Array),
           dependencies: an_instance_of(Array),
-          credentials: credentials,
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "github-token"
+            },
+            { "type" => "random", "secret" => "codes" }
+          ],
           commit_message_options: {
-            include_scope: commit_message_include_scope,
-            prefix: commit_message_prefix,
-            prefix_development: commit_message_prefix_development
+            include_scope: true,
+            prefix: "[bump]",
+            prefix_development: "[bump-dev]"
           },
           github_redirection_service: "github-redirect.dependabot.com"
         )
@@ -1691,9 +1699,17 @@ RSpec.describe Dependabot::Updater do
       it "passes the experiments to the FileParser as options" do
         expect(Dependabot::Bundler::FileParser).to receive(:new).with(
           dependency_files: dependency_files,
-          repo_contents_path: repo_contents_path,
+          repo_contents_path: nil,
           source: job.source,
-          credentials: credentials,
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "github-token"
+            },
+            { "type" => "random", "secret" => "codes" }
+          ],
           reject_external_code: job.reject_external_code?,
           options: { large_hadron_collider: true }
         ).and_call_original
@@ -1705,8 +1721,16 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
           dependencies: [dependency],
           dependency_files: dependency_files,
-          repo_contents_path: repo_contents_path,
-          credentials: credentials,
+          repo_contents_path: nil,
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "github-token"
+            },
+            { "type" => "random", "secret" => "codes" }
+          ],
           options: { large_hadron_collider: true }
         ).and_call_original
 
