@@ -301,7 +301,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       expect(dependency_set.dependency_for_name("foo")).to eq(
         Dependabot::Dependency.new(
           name: "foo",
-          version: "1.0",
+          version: "1.1",
           requirements: (
             foo_v1.requirements +
             foo_sha.requirements +
@@ -325,7 +325,7 @@ RSpec.describe Dependabot::FileParsers::Base::DependencySet do
       expect(combined_set.dependency_for_name("foo")).to eq(
         Dependabot::Dependency.new(
           name: "foo",
-          version: "1.0",
+          version: "1.1",
           requirements: (
             foo_v1.requirements +
             foo_sha.requirements +
