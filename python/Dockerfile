@@ -1,9 +1,9 @@
-ARG PY_3_11=3.11.1
-ARG PY_3_10=3.10.9
+ARG PY_3_11=3.11.2
+ARG PY_3_10=3.10.10
 ARG PY_3_9=3.9.16
 ARG PY_3_8=3.8.16
 ARG PY_3_7=3.7.16
-ARG PYENV_VERSION=v2.3.9
+ARG PYENV_VERSION=v2.3.13
 
 FROM ghcr.io/dependabot/dependabot-updater-core as python-core
 ARG PY_3_11
