@@ -68,11 +68,9 @@ module Dependabot
         raise NotImplementedError
       end
 
-      # Override the base class's check for whether this is a git dependency,
-      # since not all dep git dependencies have a SHA version (sometimes their
-      # version is the tag)
+      # Go only supports semver and semver-compliant pseudo-versions, so it can't be a SHA.
       def existing_version_is_sha?
-        git_dependency?
+        false
       end
 
       def version_from_tag(tag)
@@ -83,23 +81,10 @@ module Dependabot
         tag&.fetch(:tag)
       end
 
-      def git_dependency?
-        git_commit_checker.git_dependency?
-      end
-
       def default_source
         { type: "default", source: dependency.name }
       end
 
-      def git_commit_checker
-        @git_commit_checker ||=
-          GitCommitChecker.new(
-            dependency: dependency,
-            credentials: credentials,
-            ignored_versions: ignored_versions,
-            raise_on_ignored: raise_on_ignored
-          )
-      end
     end
   end
 end
