@@ -175,11 +175,11 @@ RSpec.describe Dependabot::GoModules::UpdateChecker do
       let(:dependency_version) { "0.0.0-20180826012351-8a410e7b638d" }
       let(:requirements) do
         [{
-           file: "go.mod",
-           requirement: dependency_version,
-           groups: [],
-           source: { type: "git", source: dependency_name }
-         }]
+          file: "go.mod",
+          requirement: dependency_version,
+          groups: [],
+          source: { type: "git", source: dependency_name }
+        }]
       end
 
       it "returns true" do

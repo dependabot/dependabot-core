@@ -84,7 +84,6 @@ module Dependabot
       def default_source
         { type: "default", source: dependency.name }
       end
-
     end
   end
 end
