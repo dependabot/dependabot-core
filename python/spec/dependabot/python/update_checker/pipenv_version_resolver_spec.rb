@@ -218,7 +218,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::PipenvVersionResolver do
                 to start_with("Dependabot detected the following Python")
               expect(error.message).to include("3.4.*")
               expect(error.message).
-                to include("supported in Dependabot: 3.11.1, 3.11.0, 3.10.9, 3.10.8")
+                to include("supported in Dependabot: 3.11.2, 3.11.1, 3.11.0, 3.10.10, 3.10.9, 3.10.8")
             end
         end
       end
