@@ -26,7 +26,7 @@ module Dependabot
         REPO_RESOLVABILITY_ERROR_REGEXES = [
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
-          /net\/http: TLS handshake timeout/,
+          %r{net/http: TLS handshake timeout},
           # (Private) module could not be fetched
           /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
           # (Private) module could not be found
