@@ -15,12 +15,18 @@ module Dependabot
         RESOLVABILITY_ERROR_REGEXES = [
           # The checksum in go.sum does not match the downloaded content
           /verifying .*: checksum mismatch/,
-          /go(?: get)?: .*: go.mod has post-v\d+ module path/
+          /go(?: get)?: .*: go.mod has post-v\d+ module path/,
+          # The Go tool is suggesting the user should run go mod tidy
+          /go mod tidy/,
+          /malformed module path/,
+          # https://github.com/golang/go/issues/56494
+          /can't find reason for requirement on/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
           /fatal: The remote end hung up unexpectedly/,
           /repository '.+' not found/,
+          %r{net/http: TLS handshake timeout},
           # (Private) module could not be fetched
           /go(?: get)?: .*: git (fetch|ls-remote) .*: exit status 128/m,
           # (Private) module could not be found
