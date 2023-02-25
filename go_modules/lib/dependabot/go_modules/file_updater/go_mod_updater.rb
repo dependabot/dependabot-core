@@ -18,7 +18,12 @@ module Dependabot
           /go(?: get)?: .*: go.mod has post-v\d+ module path/,
           # The Go tool is suggesting the user should run go mod tidy
           /go mod tidy/,
+          # Something wrong in the chain of go.mod/go.sum files
+          # These are often fixable with go mod tidy too.
+          /no required module provides package/,
+          /missing go\.sum entry for module providing package/,
           /malformed module path/,
+          /used for two different module paths/,
           # https://github.com/golang/go/issues/56494
           /can't find reason for requirement on/
         ].freeze
