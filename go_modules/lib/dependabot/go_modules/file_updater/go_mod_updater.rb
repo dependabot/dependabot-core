@@ -25,7 +25,9 @@ module Dependabot
           /malformed module path/,
           /used for two different module paths/,
           # https://github.com/golang/go/issues/56494
-          /can't find reason for requirement on/
+          /can't find reason for requirement on/,
+          # import path doesn't exist
+          /package \S+ is not in GOROOT/
         ].freeze
 
         REPO_RESOLVABILITY_ERROR_REGEXES = [
