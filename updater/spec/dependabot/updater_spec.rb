@@ -21,8 +21,6 @@ RSpec.describe Dependabot::Updater do
     )
   end
 
-  let(:logger) { double(Logger) }
-
   def service
     @service ||=
       instance_double(
@@ -38,10 +36,9 @@ RSpec.describe Dependabot::Updater do
   end
 
   before do
+    allow(Dependabot.logger).to receive(:info)
+    allow(Dependabot.logger).to receive(:error)
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
-    allow(Dependabot).to receive(:logger).and_return(logger)
-    allow(logger).to receive(:info)
-    allow(logger).to receive(:error)
 
     allow(Dependabot::Environment).to receive(:token).and_return("some_token")
     allow(Dependabot::Environment).to receive(:job_id).and_return(1)
@@ -259,10 +256,10 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "logs the current and latest versions" do
-      expect(logger).
+      expect(Dependabot.logger).
         to receive(:info).
         with("<job_1> Checking if dummy-pkg-b 1.1.0 needs updating")
-      expect(logger).
+      expect(Dependabot.logger).
         to receive(:info).
         with("<job_1> Latest version is 1.2.0")
       updater.run
@@ -276,10 +273,10 @@ RSpec.describe Dependabot::Updater do
       end
 
       it "logs the update requirements and strategy" do
-        expect(logger).
+        expect(Dependabot.logger).
           to receive(:info).
           with("<job_1> Requirements to unlock own")
-        expect(logger).
+        expect(Dependabot.logger).
           to receive(:info).
           with("<job_1> Requirements update strategy bump_versions")
         updater.run
@@ -290,7 +287,7 @@ RSpec.describe Dependabot::Updater do
       let(:allowed_updates) { [{ "dependency-name" => "typoed-dep-name" }] }
 
       it "logs the current and latest versions" do
-        expect(logger).
+        expect(Dependabot.logger).
           to receive(:info).
           with("<job_1> Found no dependencies to update after filtering " \
                "allowed updates")
@@ -347,7 +344,7 @@ RSpec.describe Dependabot::Updater do
               }
             }
           )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).with(
               "<job_1> Dependabot can't update vulnerable dependencies for " \
               "projects without a lockfile or pinned version requirement as " \
@@ -423,7 +420,7 @@ RSpec.describe Dependabot::Updater do
               }
             }
           )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).with(
               "<job_1> The latest possible version that can be installed is " \
               "1.2.0 because of the following conflicting dependency:\n" \
@@ -454,7 +451,7 @@ RSpec.describe Dependabot::Updater do
               }
             }
           )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).with(
               "<job_1> The latest possible version of dummy-pkg-b that can be " \
               "installed is 1.1.0"
@@ -477,7 +474,7 @@ RSpec.describe Dependabot::Updater do
                 "dependency-version": "1.1.0"
               }
             )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with(
               "<job_1> Dependabot can't find a published or compatible " \
@@ -532,12 +529,12 @@ RSpec.describe Dependabot::Updater do
         end
 
         it "logs the errors" do
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with(
               "<job_1> All updates for dummy-pkg-a were ignored"
             )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with(
               "<job_1> All updates for dummy-pkg-b were ignored"
@@ -879,7 +876,7 @@ RSpec.describe Dependabot::Updater do
           expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with("<job_1> Pull request already exists for dummy-pkg-b " \
                  "with latest version 1.2.0")
@@ -900,7 +897,7 @@ RSpec.describe Dependabot::Updater do
           expect(updater).to_not receive(:generate_dependency_files_for)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to_not receive(:record_update_job_error)
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with("<job_1> Pull request already exists for dummy-pkg-b@1.2.0")
           updater.run
@@ -937,7 +934,7 @@ RSpec.describe Dependabot::Updater do
                 ]
               }
             )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with("<job_1> Pull request already exists for dummy-pkg-b@1.2.0")
           updater.run
@@ -971,7 +968,7 @@ RSpec.describe Dependabot::Updater do
                 "dependency-version": "1.2.0"
               }
             )
-          expect(logger).
+          expect(Dependabot.logger).
             to receive(:info).
             with("<job_1> Pull request already exists for dummy-pkg-b " \
                  "with latest version 1.2.0")
@@ -1069,7 +1066,7 @@ RSpec.describe Dependabot::Updater do
               ]
             }
           )
-        expect(logger).
+        expect(Dependabot.logger).
           to receive(:info).
           with("<job_1> Pull request already exists for dummy-pkg-c@1.4.0, dummy-pkg-b@removed")
         updater.run
@@ -1134,7 +1131,7 @@ RSpec.describe Dependabot::Updater do
 
             it "closes the pull request" do
               expect(service).to receive(:close_pull_request).once
-              expect(logger).
+              expect(Dependabot.logger).
                 to receive(:info).with(
                   "<job_1> Dependency no longer allowed to update dummy-pkg-b 1.1.0"
                 )
@@ -1339,7 +1336,7 @@ RSpec.describe Dependabot::Updater do
                   }
                 }
               )
-              expect(logger).
+              expect(Dependabot.logger).
                 to receive(:info).with(
                   "<job_1> Dependabot cannot update to the required version as all " \
                   "versions were ignored for dummy-pkg-b"
@@ -1370,7 +1367,7 @@ RSpec.describe Dependabot::Updater do
                   }
                 }
               )
-              expect(logger).
+              expect(Dependabot.logger).
                 to receive(:info).with(
                   "<job_1> no security update needed as dummy-pkg-b " \
                   "is no longer vulnerable"
@@ -1811,7 +1808,7 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "does not log empty ignore conditions" do
-      expect(logger).
+      expect(Dependabot.logger).
         not_to receive(:info).
         with(/Ignored versions:/)
       updater.run
@@ -1836,24 +1833,24 @@ RSpec.describe Dependabot::Updater do
 
       it "logs ignored versions" do
         updater.run
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with(/Ignored versions:/)
       end
 
       it "logs ignore conditions" do
         updater.run
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with("<job_1>   >= 1.a, < 2.0.0 - from @dependabot ignore command")
       end
 
       it "logs ignored update types" do
         updater.run
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with("<job_1>   version-update:semver-patch - from .github/dependabot.yaml")
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with("<job_1>   version-update:semver-minor - from .github/dependabot.yaml")
       end
@@ -1874,14 +1871,14 @@ RSpec.describe Dependabot::Updater do
 
       it "logs ignored versions" do
         updater.run
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with(/Ignored versions:/)
       end
 
       it "logs ignored update types" do
         updater.run
-        expect(logger).
+        expect(Dependabot.logger).
           to have_received(:info).
           with(
             "<job_1>   version-update:semver-patch - from .github/dependabot.yaml (doesn't apply to security update)"
