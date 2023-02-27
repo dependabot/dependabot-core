@@ -22,16 +22,22 @@ RSpec.describe Dependabot::Updater do
   end
 
   let(:logger) { double(Logger) }
-  let(:service) { double(Dependabot::Service) }
+
+  def service
+    @service ||=
+      instance_double(
+        Dependabot::Service,
+        get_job: job,
+        create_pull_request: nil,
+        update_pull_request: nil,
+        close_pull_request: nil,
+        mark_job_as_processed: nil,
+        update_dependency_list: nil,
+        record_update_job_error: nil
+      )
+  end
 
   before do
-    allow(service).to receive(:get_job).and_return(job)
-    allow(service).to receive(:create_pull_request)
-    allow(service).to receive(:update_pull_request)
-    allow(service).to receive(:close_pull_request)
-    allow(service).to receive(:mark_job_as_processed)
-    allow(service).to receive(:update_dependency_list)
-    allow(service).to receive(:record_update_job_error)
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
     allow(Dependabot).to receive(:logger).and_return(logger)
     allow(logger).to receive(:info)
@@ -211,7 +217,6 @@ RSpec.describe Dependabot::Updater do
 
     context "when the host is out of disk space" do
       before do
-        allow(service).to receive(:record_update_job_error).and_return(nil)
         allow(job).to receive(:updating_a_pull_request?).and_raise(Errno::ENOSPC)
       end
 
@@ -227,8 +232,6 @@ RSpec.describe Dependabot::Updater do
       let(:experiments) { { "build-pull-request-message" => true } }
 
       before do
-        allow(service).to receive(:record_update_job_error).and_return(nil)
-
         error = Octokit::TooManyRequests.new({
           status: 403,
           response_headers: { "X-RateLimit-Reset" => 42 }
