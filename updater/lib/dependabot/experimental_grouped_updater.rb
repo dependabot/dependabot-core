@@ -14,7 +14,7 @@ module Dependabot
   # Let's use SimpleDelegator so this class behaves like Dependabot::Updater
   # unless we override it.
   class ExperimentalGroupedUpdater < SimpleDelegator
-    def run_grouped
+    def run_grouped # rubocop:disable Metrics/PerceivedComplexity
       if job.updating_a_pull_request?
         raise Dependabot::NotImplemented,
               "Grouped updates do not currently support rebasing."
@@ -24,12 +24,49 @@ module Dependabot
       # We should log the rule being executed, let's just hard-code wildcard for now
       # since the prototype makes best-effort to do everything in one pass.
       logger_info("Starting batch for Group Rule: '*'")
-      update_batch = dependencies.each_with_object({}) do |dep, batch|
-        updated_deps = compile_updates_for(dep)
-        batch[dep.name] = updated_deps if updated_deps.any?
+
+      all_updated_dependencies = []
+      updated_files = dependencies.inject(dependency_files) do |files, dependency|
+        updated_dependencies = compile_updates_for(dependency)
+
+        if updated_dependencies.any?
+          lead_dependency = updated_dependencies.find do |dep|
+            dep.name.casecmp(dependency.name).zero?
+          end
+
+          # FIXME: This needs to be de-duped, but it isn't clear which dupe should
+          #        'win' right now in terms of version.
+          #
+          #        To start out with, using a variant on the 'existing_pull_request'
+          #        logic might make sense -or- we could employ a one-and-done rule
+          #        where the first update to a dependency blocks subsequent changes.
+          #
+          #        In a follow-up iteration, a 'shared workspace' could provide the
+          #        filtering for us assuming we iteratively make file changes for
+          #        each Array of dependencies in the batch and the FileUpdater tells
+          #        us which cannot be applied.
+          all_updated_dependencies.concat(updated_dependencies)
+          generate_dependency_files_for(lead_dependency, updated_dependencies, files)
+        else
+          files # pass on the existing if there are no updated dependencies for this lead dependency
+        end
       end
-      if update_batch.any?
-        update_files_and_create_pull_request(update_batch)
+
+      if all_updated_dependencies.any?
+        logger_info("Creating a PR for Group Rule: '*'")
+        begin
+          create_pull_request(all_updated_dependencies, updated_files,
+                              pr_message(all_updated_dependencies, updated_files))
+        rescue StandardError => e
+          # FIXME: This is a workround for not having a single Dependency to report against
+          #
+          #        We could use all_updated_deps.first, but that could be misleading. It may
+          #        make more sense to handle the group rule as a Dependancy-ish object
+          group_dependency = OpenStruct.new(name: "group-all")
+          raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+          __getobj__.handle_dependabot_error(error: e, dependency: group_dependency)
+        end
       else
         logger_info("Nothing to update for Group Rule: '*'")
       end
@@ -211,64 +248,6 @@ module Dependabot
         next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
-      end
-    end
-
-    def update_files_and_create_pull_request(update_batch)
-      logger_info("Generated #{update_batch.count} changes")
-      # FIXME: This needs to be de-duped, but it isn't clear which dupe should
-      #        'win' right now in terms of version.
-      #
-      #        To start out with, using a variant on the 'existing_pull_request'
-      #        logic might make sense -or- we could employ a one-and-done rule
-      #        where the first update to a dependency blocks subsequent changes.
-      #
-      #        In a follow-up iteration, a 'shared workspace' could provide the
-      #        filtering for us assuming we iteratively make file changes for
-      #        each Array of dependencies in the batch and the FileUpdater tells
-      #        us which cannot be applied.
-      all_updated_deps = update_batch.values.flatten.compact
-      # FIXME: This is a bit too terse, we should probably pre-filter batches
-      #        with empty values earlier once we've fixed the test contract so
-      #        we have a better guarantee of not receiving a nil set
-      #
-      #        It is also worth noting that it mutates the `dependency_files`
-      #        ivar which I *think* is acceptable in interests of memory management
-      group_updated_files = update_batch.inject(dependency_files) do |files, (lead_dep_name, updated_deps)|
-        # FIXME: Move the creation of the all_updated_deps list into this loop
-        #
-        # If we fail to generate a diff, the PR body and Service will still get the `updated_deps` that
-        # weren't actually applied right now.
-        #
-        # In addition to removing this buggy behaviour, we should probably handle de-duplication here
-        # which might include supressing 'downgrades' if a previous step moved a given dep to a higher
-        # value already.
-        if updated_deps&.any?
-          lead_dep_name = lead_dep_name.downcase
-          lead_dep = updated_deps.find do |dep|
-            dep.name.downcase == lead_dep_name
-          end
-          generate_dependency_files_for(lead_dep, updated_deps, files) if updated_deps&.any?
-        else
-          files # pass on the existing if there are no updated dependencies for this lead dependency
-        end
-      end
-      # FIXME: Deduplicate rescues
-      #
-      #        Our rescue logic currently wraps the UpdateChecker, FileUpdater and posting the PR to the service
-      #        so we've ended up with it duplicated around each function. We should dry this out by adding a shared
-      #        execution context wrapper or similar in a follow-up.
-      begin
-        create_pull_request(all_updated_deps, group_updated_files, pr_message(all_updated_deps, group_updated_files))
-      rescue StandardError => e
-        # FIXME: This is a workround for not having a single Dependency to report against
-        #
-        #        We could use all_updated_deps.first, but that could be misleading. It may
-        #        make more sense to handle the group rule as a Dependancy-ish object
-        group_dependency = OpenStruct.new(name: "group-all")
-        raise if Dependabot::Updater::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-        __getobj__.handle_dependabot_error(error: e, dependency: group_dependency)
       end
     end
 
