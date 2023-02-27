@@ -42,6 +42,13 @@ RSpec.describe Dependabot::Updater do
 
     allow(Dependabot::Environment).to receive(:token).and_return("some_token")
     allow(Dependabot::Environment).to receive(:job_id).and_return(1)
+
+    stub_request(:get, "https://index.rubygems.org/versions").
+      to_return(status: 200, body: fixture("rubygems-index"))
+    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a").
+      to_return(status: 200, body: fixture("rubygems-info-a"))
+    stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
+      to_return(status: 200, body: fixture("rubygems-info-b"))
   end
 
   let(:job) do
@@ -183,14 +190,6 @@ RSpec.describe Dependabot::Updater do
       allow_any_instance_of(Bundler::CompactIndexClient::Updater).
         to receive(:etag_for).
         and_return("")
-
-      stub_request(:get, "https://index.rubygems.org/versions").
-        to_return(status: 200, body: fixture("rubygems-index"))
-
-      stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a").
-        to_return(status: 200, body: fixture("rubygems-info-a"))
-      stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
-        to_return(status: 200, body: fixture("rubygems-info-b"))
 
       message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
