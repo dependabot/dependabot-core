@@ -40,9 +40,6 @@ RSpec.describe Dependabot::Updater do
     allow(Dependabot.logger).to receive(:error)
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
 
-    allow(Dependabot::Environment).to receive(:token).and_return("some_token")
-    allow(Dependabot::Environment).to receive(:job_id).and_return(1)
-
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(status: 200, body: fixture("rubygems-index"))
     stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a").
