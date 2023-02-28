@@ -112,18 +112,7 @@ module Dependabot
         old_v = numeric_version_from(version)
         latest_v = numeric_version_from(latest_version)
 
-        return true if version_class.new(latest_v) <= version_class.new(old_v)
-
-        # Check the precision of the potentially higher tag is the same as the
-        # one it would replace. In the event that it's not the same, check the
-        # digests are also unequal. Avoids 'updating' ruby-2 -> ruby-2.5.1
-        return false if precision_of(old_v) == precision_of(latest_v)
-
-        digest = digest_of(version)
-        latest_digest = digest_of(latest_version)
-        return false unless digest && latest_digest
-
-        digest == latest_digest
+        version_class.new(latest_v) <= version_class.new(old_v)
       end
 
       def digest_up_to_date?
