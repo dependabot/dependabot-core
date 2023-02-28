@@ -896,7 +896,7 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    # FIXME: This spec fails (locally) because mode is being changed to 100666
+    # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
     it "updates dependencies correctly" do
       job = build_job
       service = build_service(job: job)
@@ -2309,7 +2309,7 @@ RSpec.describe Dependabot::Updater do
         ).twice
       end
 
-      # FIXME: This spec fails (locally) because mode is being changed to 100666
+      # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
       context "with a bundler 2 project" do
         it "updates dependencies correctly" do
           job = build_job(
