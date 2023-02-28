@@ -147,9 +147,8 @@ module Dependabot
 
         latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
         latest_digest = digest_of(latest_tag.name)
-        return latest_tag unless latest_same_precision_digest && latest_digest
 
-        if latest_same_precision_digest == latest_digest
+        if latest_same_precision_digest == latest_digest && latest_same_precision_tag.same_but_less_precise?(latest_tag)
           latest_same_precision_tag
         else
           latest_tag

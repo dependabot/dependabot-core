@@ -57,6 +57,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       and_return(status: 200, body: registry_tags)
   end
 
+  def stub_tag_with_no_digest(tag)
+    stub_request(:head, repo_url + "manifests/#{tag}").
+      and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
@@ -169,10 +174,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
-        stub_request(:head, repo_url + "manifests/8.7-923.1669829893").
-          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
-        stub_request(:head, repo_url + "manifests/8.7-1049").
-          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
       end
 
       it { is_expected.to be true }
@@ -614,13 +617,33 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
-        stub_request(:head, repo_url + "manifests/8.7-923.1669829893").
-          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
-        stub_request(:head, repo_url + "manifests/8.7-1049").
-          and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
       end
 
       it { is_expected.to eq("8.7-1049") }
+    end
+
+    context "when there are newer tags with the same and different precision, and the API does not provide digests" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) { { registry: "registry.access.redhat.com" } }
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.5")
+        stub_tag_with_no_digest("8.7")
+        stub_tag_with_no_digest("8.7-923.1669829893")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to eq("8.7") }
     end
 
     context "when the latest tag points to an older version" do

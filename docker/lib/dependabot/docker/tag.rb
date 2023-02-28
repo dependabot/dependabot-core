@@ -32,6 +32,12 @@ module Dependabot
         other.precision == precision
       end
 
+      def same_but_less_precise?(other)
+        other.segments.zip(segments).all? do |segment, other_segment|
+          segment == other_segment || other_segment.nil?
+        end
+      end
+
       def canonical?
         return false unless numeric_version
         return true if name == numeric_version
@@ -66,7 +72,11 @@ module Dependabot
       end
 
       def precision
-        numeric_version.split(/[.-]/).length
+        segments.length
+      end
+
+      def segments
+        numeric_version.split(/[.-]/)
       end
     end
   end
