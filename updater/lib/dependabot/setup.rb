@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# Heroku's ruby buildpack freezes the Gemfile to prevent accidental damage
-# However, we actually *want* to manipulate Gemfiles for other repos.
-Bundler.settings.set_command_option(:frozen, "0")
-
 require "dependabot/sentry"
 Raven.configure do |config|
   config.project_root = File.expand_path("../../..", __dir__)
