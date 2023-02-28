@@ -21,7 +21,7 @@ module Dependabot
         "a" => 1, "alpha"     => 1,
         "b" => 2, "beta"      => 2,
         "m" => 3, "milestone" => 3,
-        "rc" => 4, "cr" => 4, "pr" => 4,
+        "rc" => 4, "cr" => 4, "pr" => 4, "preview" => 5,
         "snapshot" => 5, "dev" => 5,
         "ga" => 6, "" => 6, "final" => 6,
         "sp" => 7
