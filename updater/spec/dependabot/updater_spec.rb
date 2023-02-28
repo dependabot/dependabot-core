@@ -14,75 +14,72 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates,
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
                 experiments: {}, updating_a_pull_request: false, security_updates_only: false)
-    @build_job ||=
-      Dependabot::Job.new(
-        token: "token",
-        dependencies: requested_dependencies,
-        allowed_updates: allowed_updates,
-        existing_pull_requests: existing_pull_requests,
-        ignore_conditions: ignore_conditions,
-        security_advisories: security_advisories,
-        package_manager: "bundler",
-        source: {
-          "provider" => "github",
-          "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-          "directory" => "/",
-          "branch" => nil,
-          "api-endpoint" => "https://api.github.com/",
-          "hostname" => "github.com"
+    Dependabot::Job.new(
+      token: "token",
+      dependencies: requested_dependencies,
+      allowed_updates: allowed_updates,
+      existing_pull_requests: existing_pull_requests,
+      ignore_conditions: ignore_conditions,
+      security_advisories: security_advisories,
+      package_manager: "bundler",
+      source: {
+        "provider" => "github",
+        "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
+        "directory" => "/",
+        "branch" => nil,
+        "api-endpoint" => "https://api.github.com/",
+        "hostname" => "github.com"
+      },
+      credentials: [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "github-token"
         },
-        credentials: [
-          {
-            "type" => "git_source",
-            "host" => "github.com",
-            "username" => "x-access-token",
-            "password" => "github-token"
-          },
-          {
-            "type" => "random",
-            "secret" => "codes"
-          }
-        ],
-        lockfile_only: false,
-        requirements_update_strategy: nil,
-        update_subdependencies: false,
-        updating_a_pull_request: updating_a_pull_request,
-        vendor_dependencies: false,
-        experiments: experiments,
-        commit_message_options: {
-          "prefix" => "[bump]",
-          "prefix-development" => "[bump-dev]",
-          "include-scope" => true
-        },
-        security_updates_only: security_updates_only
-      )
+        {
+          "type" => "random",
+          "secret" => "codes"
+        }
+      ],
+      lockfile_only: false,
+      requirements_update_strategy: nil,
+      update_subdependencies: false,
+      updating_a_pull_request: updating_a_pull_request,
+      vendor_dependencies: false,
+      experiments: experiments,
+      commit_message_options: {
+        "prefix" => "[bump]",
+        "prefix-development" => "[bump-dev]",
+        "include-scope" => true
+      },
+      security_updates_only: security_updates_only
+    )
   end
   # rubocop:enable Metrics/MethodLength
 
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
-    @build_updater ||=
-      Dependabot::Updater.new(
-        service: service,
-        job_id: 1,
-        job: job,
-        dependency_files: dependency_files,
-        base_commit_sha: "sha",
-        repo_contents_path: nil
-      )
+    Dependabot::Updater.new(
+      service: service,
+      job_id: 1,
+      job: job,
+      dependency_files: dependency_files,
+      base_commit_sha: "sha",
+      repo_contents_path: nil
+    )
   end
 
   def build_service(job: build_job)
-    @build_service ||=
-      instance_double(
-        Dependabot::Service,
-        get_job: job,
-        create_pull_request: nil,
-        update_pull_request: nil,
-        close_pull_request: nil,
-        mark_job_as_processed: nil,
-        update_dependency_list: nil,
-        record_update_job_error: nil
-      )
+    instance_double(
+      Dependabot::Service,
+      get_job: job,
+      create_pull_request: nil,
+      update_pull_request: nil,
+      close_pull_request: nil,
+      mark_job_as_processed: nil,
+      update_dependency_list: nil,
+      record_update_job_error: nil
+    )
   end
 
   def default_dependency_files
