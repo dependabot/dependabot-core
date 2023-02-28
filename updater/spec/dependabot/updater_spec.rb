@@ -1934,7 +1934,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::DependencyFileNotResolvable" do
         let(:error) { Dependabot::DependencyFileNotResolvable.new("message") }
 
@@ -1967,7 +1966,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::DependencyFileNotEvaluatable" do
         let(:error) { Dependabot::DependencyFileNotEvaluatable.new("message") }
 
@@ -2000,7 +1998,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::InconsistentRegistryResponse" do
         let(:error) { Dependabot::InconsistentRegistryResponse.new("message") }
 
@@ -2025,7 +2022,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::GitDependenciesNotReachable" do
         let(:error) do
           Dependabot::GitDependenciesNotReachable.new("https://example.com")
@@ -2058,7 +2054,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::GitDependencyReferenceNotFound" do
         let(:error) do
           Dependabot::GitDependencyReferenceNotFound.new("some_dep")
@@ -2091,7 +2086,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::GoModulePathMismatch" do
         let(:error) do
           Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
@@ -2128,7 +2122,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::PrivateSourceAuthenticationFailure" do
         let(:error) do
           Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
@@ -2161,7 +2154,6 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      # FIXME: This test is expecting an error to be raised, but that's not happening
       context "but it's a Dependabot::SharedHelpers::HelperSubprocessFailed" do
         let(:error) do
           Dependabot::SharedHelpers::HelperSubprocessFailed.new(
