@@ -57,6 +57,12 @@ RSpec.describe "Dependabot Updates" do
                     record_update_job_error: nil,
                     record_package_manager_version: nil)
   end
+  let(:file_fetcher) do
+    instance_double(Dependabot::FileFetchers::Base,
+                    files: dependency_files,
+                    commit: "sha",
+                    package_manager_version: nil)
+  end
   let(:message_builder) do
     instance_double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
   end
@@ -74,13 +80,11 @@ RSpec.describe "Dependabot Updates" do
     )
     allow(Dependabot::Environment).to receive(:token).and_return("token")
 
-    # TODO: Stub the file fetcher instead
-    allow(fetch_files).to receive(:dependency_files).and_return(dependency_files)
-
     # Stub Dependabot object with instance doubles
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
     # Recording the package manager happens via an observer so the instantiated `api_client` does not receive this call
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
+    allow(Dependabot::FileFetchers).to receive_message_chain(:for_package_manager, :new).and_return(file_fetcher)
     allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
 
     allow(Dependabot.logger).to receive(:info).and_call_original
