@@ -36,8 +36,14 @@ RSpec.describe "Dependabot Updates" do
 
   let(:update_job_definition) do
     # for the update step, we expect the base commit sha and files to be prepared
+    # by the previous step
     fetch_job_definition.merge({
-      "base_commit_sha" => "sha"
+      "base_commit_sha" => "sha",
+      "base64_dependency_files" => dependency_files.map do |file|
+        base64_file = file.dup
+        base64_file.content = Base64.encode64(file.content) unless file.binary?
+        base64_file.to_h
+      end
     })
   end
 
@@ -70,7 +76,6 @@ RSpec.describe "Dependabot Updates" do
 
     # TODO: Stub the file fetcher instead
     allow(fetch_files).to receive(:dependency_files).and_return(dependency_files)
-    allow(update_files).to receive(:dependency_files).and_return(dependency_files)
 
     # Stub Dependabot object with instance doubles
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
