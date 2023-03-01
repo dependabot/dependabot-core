@@ -47,6 +47,7 @@ module Dependabot
     end
 
     def save_job_details
+      # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
 
       File.write(Environment.job_path, JSON.dump(

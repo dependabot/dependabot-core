@@ -23,7 +23,6 @@ RSpec.describe "Dependabot Updates" do
   after { WebMock.enable! }
 
   let(:job_id) { 1 }
-  let(:api_client) { double(Dependabot::ApiClient) }
   let(:job_path) do
     File.join("spec", "fixtures", "file_fetcher_output/output.json")
   end
@@ -31,9 +30,21 @@ RSpec.describe "Dependabot Updates" do
     File.join(Dir.mktmpdir, "output.json")
   end
 
-  before do
-    allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
+  let(:api_client) do
+    instance_double(Dependabot::ApiClient,
+                    create_pull_request: nil,
+                    update_pull_request: nil,
+                    close_pull_request: nil,
+                    mark_job_as_processed: nil,
+                    update_dependency_list: nil,
+                    record_update_job_error: nil,
+                    record_package_manager_version: nil)
+  end
+  let(:message_builder) do
+    instance_double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
+  end
 
+  before do
     # Stub out the environment
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
     allow(Dependabot::Environment).to receive(:job_path).and_return(job_path)
@@ -50,20 +61,13 @@ RSpec.describe "Dependabot Updates" do
 
     allow(update_files).to receive(:base_commit_sha).and_return("sha")
 
-    allow(api_client).to receive(:create_pull_request)
-    allow(api_client).to receive(:update_pull_request)
-    allow(api_client).to receive(:close_pull_request)
-    allow(api_client).to receive(:mark_job_as_processed)
-    allow(api_client).to receive(:update_dependency_list)
-    allow(api_client).to receive(:record_update_job_error)
-    allow(api_client).to receive(:record_package_manager_version)
+    # Stub Dependabot object with instance doubles
+    allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
     # Recording the package manager happens via an observer so the instantiated `api_client` does not receive this call
     allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
+    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
 
     allow(Dependabot.logger).to receive(:info).and_call_original
-    message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
-    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
-    allow(message_builder).to receive(:message).and_return(nil)
   end
 
   describe "bundler" do
