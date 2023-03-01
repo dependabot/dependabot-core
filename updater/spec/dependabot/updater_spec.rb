@@ -197,21 +197,6 @@ RSpec.describe Dependabot::Updater do
   end
 
   describe "#run" do
-    let(:dependency_files) do
-      [
-        Dependabot::DependencyFile.new(
-          name: "Gemfile",
-          content: fixture("bundler/original/Gemfile"),
-          directory: "/"
-        ),
-        Dependabot::DependencyFile.new(
-          name: "Gemfile.lock",
-          content: fixture("bundler/original/Gemfile.lock"),
-          directory: "/"
-        )
-      ]
-    end
-
     context "when the host is out of disk space" do
       it "records an 'out_of_disk' error" do
         job = build_job
@@ -2252,7 +2237,18 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot::Bundler::FileParser).to receive(:new).with(
-          dependency_files: dependency_files,
+          dependency_files: [
+            Dependabot::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("bundler/original/Gemfile"),
+              directory: "/"
+            ),
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("bundler/original/Gemfile.lock"),
+              directory: "/"
+            )
+          ],
           repo_contents_path: nil,
           source: job.source,
           credentials: [
@@ -2282,7 +2278,18 @@ RSpec.describe Dependabot::Updater do
 
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
           dependencies: [dependency],
-          dependency_files: dependency_files,
+          dependency_files: [
+            Dependabot::DependencyFile.new(
+              name: "Gemfile",
+              content: fixture("bundler/original/Gemfile"),
+              directory: "/"
+            ),
+            Dependabot::DependencyFile.new(
+              name: "Gemfile.lock",
+              content: fixture("bundler/original/Gemfile.lock"),
+              directory: "/"
+            )
+          ],
           repo_contents_path: nil,
           credentials: [
             {
