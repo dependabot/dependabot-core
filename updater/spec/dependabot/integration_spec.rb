@@ -23,11 +23,22 @@ RSpec.describe "Dependabot Updates" do
   after { WebMock.enable! }
 
   let(:job_id) { 1 }
-  let(:job_path) do
-    File.join("spec", "fixtures", "file_fetcher_output/output.json")
-  end
   let(:output_path) do
     File.join(Dir.mktmpdir, "output.json")
+  end
+
+  let(:fetch_job_definition) do
+    # for the fetch step, the definition is just the parameters
+    {
+      "job" => job_parameters
+    }
+  end
+
+  let(:update_job_definition) do
+    # for the update step, we expect the base commit sha and files to be prepared
+    fetch_job_definition.merge({
+      "base_commit_sha" => "sha"
+    })
   end
 
   let(:api_client) do
@@ -47,19 +58,19 @@ RSpec.describe "Dependabot Updates" do
   before do
     # Stub out the environment
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
-    allow(Dependabot::Environment).to receive(:job_path).and_return(job_path)
-    allow(Dependabot::Environment).to receive(:output_path).and_return(output_path)
+    allow(Dependabot::Environment).to receive(:job_definition).and_return(
+      fetch_job_definition,
+      update_job_definition
+    )
+    allow(Dependabot::Environment).to receive(:output_path).and_return(
+      File.join(Dir.mktmpdir, "fetch/output.json"),
+      File.join(Dir.mktmpdir, "update/output.json")
+    )
     allow(Dependabot::Environment).to receive(:token).and_return("token")
-
-    # TODO: Wrap job-from-file processing in a class
-    allow(fetch_files).to receive(:job).and_return(job)
-    allow(update_files).to receive(:job).and_return(job)
 
     # TODO: Stub the file fetcher instead
     allow(fetch_files).to receive(:dependency_files).and_return(dependency_files)
     allow(update_files).to receive(:dependency_files).and_return(dependency_files)
-
-    allow(update_files).to receive(:base_commit_sha).and_return("sha")
 
     # Stub Dependabot object with instance doubles
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
@@ -86,11 +97,11 @@ RSpec.describe "Dependabot Updates" do
       ]
     end
 
-    let(:job) do
-      Dependabot::Job.new(
-        token: "token",
-        dependencies: nil,
-        allowed_updates: [
+    let(:job_parameters) do
+      {
+        "token" => "token",
+        "dependencies" => nil,
+        "allowed_updates" => [
           {
             "dependency-type" => "direct",
             "update-type" => "all"
@@ -100,11 +111,11 @@ RSpec.describe "Dependabot Updates" do
             "update-type" => "security"
           }
         ],
-        existing_pull_requests: [],
-        ignore_conditions: [],
-        security_advisories: [],
-        package_manager: "bundler",
-        source: {
+        "existing_pull_requests" => [],
+        "ignore_conditions" => [],
+        "security_advisories" => [],
+        "package_manager" => "bundler",
+        "source" => {
           "provider" => "github",
           "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
           "directory" => "/",
@@ -112,19 +123,19 @@ RSpec.describe "Dependabot Updates" do
           "hostname" => "github.com",
           "branch" => nil
         },
-        credentials: [{
+        "credentials" => [{
           "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => "github-token"
         }],
-        lockfile_only: false,
-        requirements_update_strategy: nil,
-        update_subdependencies: false,
-        updating_a_pull_request: false,
-        vendor_dependencies: false,
-        security_updates_only: false
-      )
+        "lockfile_only" => false,
+        "requirements_update_strategy" => nil,
+        "update_subdependencies" => false,
+        "updating_a_pull_request" => false,
+        "vendor_dependencies" => false,
+        "security_updates_only" => false
+      }
     end
 
     it "updates dependencies correctly" do
@@ -277,11 +288,11 @@ RSpec.describe "Dependabot Updates" do
       ]
     end
 
-    let(:job) do
-      Dependabot::Job.new(
-        token: "token",
-        dependencies: nil,
-        allowed_updates: [
+    let(:job_parameters) do
+      {
+        "token" => "token",
+        "dependencies" => nil,
+        "allowed_updates" => [
           {
             "dependency-type" => "direct",
             "update-type" => "all"
@@ -291,11 +302,11 @@ RSpec.describe "Dependabot Updates" do
             "update-type" => "security"
           }
         ],
-        existing_pull_requests: [],
-        ignore_conditions: [],
-        security_advisories: [],
-        package_manager: "bundler",
-        source: {
+        "existing_pull_requests" => [],
+        "ignore_conditions" => [],
+        "security_advisories" => [],
+        "package_manager" => "bundler",
+        "source" => {
           "provider" => "github",
           "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
           "directory" => "/",
@@ -303,19 +314,19 @@ RSpec.describe "Dependabot Updates" do
           "hostname" => "github.com",
           "branch" => nil
         },
-        credentials: [{
+        "credentials" => [{
           "type" => "git_source",
           "host" => "github.com",
           "username" => "x-access-token",
           "password" => test_access_token
         }],
-        lockfile_only: false,
-        requirements_update_strategy: nil,
-        update_subdependencies: false,
-        updating_a_pull_request: false,
-        vendor_dependencies: false,
-        security_updates_only: false
-      )
+        "lockfile_only" => false,
+        "requirements_update_strategy" => nil,
+        "update_subdependencies" => false,
+        "updating_a_pull_request" => false,
+        "vendor_dependencies" => false,
+        "security_updates_only" => false
+      }
     end
 
     it "updates dependencies correctly" do
