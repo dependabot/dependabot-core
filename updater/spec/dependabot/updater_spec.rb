@@ -198,10 +198,6 @@ RSpec.describe Dependabot::Updater do
 
   describe "#run" do
     before do
-      allow_any_instance_of(Bundler::CompactIndexClient::Updater).
-        to receive(:etag_for).
-        and_return("")
-
       message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
       allow(message_builder).to receive(:message).and_return(nil)
