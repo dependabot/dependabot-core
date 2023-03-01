@@ -234,7 +234,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with(anything, { error_type: "out_of_disk", error_details: nil })
+          with(anything, { error_type: "out_of_disk", error_details: nil, dependency: nil })
       end
     end
 
@@ -261,7 +261,14 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with(anything, { error_type: "octokit_rate_limited", error_details: { "rate-limit-reset": 42 } })
+          with(
+            anything,
+            {
+              error_type: "octokit_rate_limited",
+              error_details: { "rate-limit-reset": 42 },
+              dependency: an_instance_of(Dependabot::Dependency)
+            }
+          )
       end
     end
 
@@ -401,7 +408,8 @@ RSpec.describe Dependabot::Updater do
               error_type: "dependency_file_not_supported",
               error_details: {
                 "dependency-name": "dummy-pkg-b"
-              }
+              },
+              dependency: nil
             }
           )
           expect(Dependabot.logger).
@@ -492,7 +500,8 @@ RSpec.describe Dependabot::Updater do
                     "requirement" => "= 1.2.0"
                   }
                 ]
-              }
+              },
+              dependency: nil
             }
           )
           expect(Dependabot.logger).
@@ -535,7 +544,8 @@ RSpec.describe Dependabot::Updater do
                 "latest-resolvable-version": "1.1.0",
                 "lowest-non-vulnerable-version": nil,
                 "conflicting-dependencies": []
-              }
+              },
+              dependency: nil
             }
           )
           expect(Dependabot.logger).
@@ -572,7 +582,8 @@ RSpec.describe Dependabot::Updater do
               error_details: {
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.1.0"
-              }
+              },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
           expect(Dependabot.logger).
             to receive(:info).
@@ -1173,7 +1184,8 @@ RSpec.describe Dependabot::Updater do
                   "dependency-name": "dummy-pkg-b",
                   "dependency-version": "1.2.0"
                 ]
-              }
+              },
+              dependency: nil
             )
           expect(Dependabot.logger).
             to receive(:info).
@@ -1222,7 +1234,8 @@ RSpec.describe Dependabot::Updater do
               error_details: {
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.2.0"
-              }
+              },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
           expect(Dependabot.logger).
             to receive(:info).
@@ -1329,7 +1342,8 @@ RSpec.describe Dependabot::Updater do
                   "dependency-removed": true
                 }
               ]
-            }
+            },
+            dependency: nil
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1694,7 +1708,8 @@ RSpec.describe Dependabot::Updater do
                   error_type: "all_versions_ignored",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  }
+                  },
+                  dependency: nil
                 }
               )
               expect(Dependabot.logger).
@@ -1734,7 +1749,8 @@ RSpec.describe Dependabot::Updater do
                   error_type: "security_update_not_needed",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  }
+                  },
+                  dependency: nil
                 }
               )
               expect(Dependabot.logger).
@@ -1786,7 +1802,8 @@ RSpec.describe Dependabot::Updater do
               with(
                 1,
                 error_type: "unknown_error",
-                error_details: nil
+                error_details: nil,
+                dependency: nil
               )
 
             updater.run
@@ -1820,7 +1837,8 @@ RSpec.describe Dependabot::Updater do
               with(
                 1,
                 error_type: "dependency_file_not_found",
-                error_details: { "file-path": "path/to/file" }
+                error_details: { "file-path": "path/to/file" },
+                dependency: nil
               )
 
             updater.run
@@ -1854,7 +1872,8 @@ RSpec.describe Dependabot::Updater do
               with(
                 1,
                 error_type: "branch_not_found",
-                error_details: { "branch-name": "my_branch" }
+                error_details: { "branch-name": "my_branch" },
+                dependency: nil
               )
 
             updater.run
@@ -1890,7 +1909,8 @@ RSpec.describe Dependabot::Updater do
               with(
                 1,
                 error_type: "dependency_file_not_parseable",
-                error_details: { "file-path": "path/to/file", message: "a" }
+                error_details: { "file-path": "path/to/file", message: "a" },
+                dependency: nil
               )
 
             updater.run
@@ -1926,7 +1946,8 @@ RSpec.describe Dependabot::Updater do
               with(
                 1,
                 error_type: "path_dependencies_not_reachable",
-                error_details: { dependencies: ["bad_gem"] }
+                error_details: { dependencies: ["bad_gem"] },
+                dependency: nil
               )
 
             updater.run
@@ -1957,7 +1978,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "dependency_file_not_resolvable",
-              error_details: { message: "message" }
+              error_details: { message: "message" },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -1987,7 +2009,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "dependency_file_not_evaluatable",
-              error_details: { message: "message" }
+              error_details: { message: "message" },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -2043,7 +2066,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "git_dependencies_not_reachable",
-              error_details: { "dependency-urls": ["https://example.com"] }
+              error_details: { "dependency-urls": ["https://example.com"] },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -2075,7 +2099,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "git_dependency_reference_not_found",
-              error_details: { dependency: "some_dep" }
+              error_details: { dependency: "some_dep" },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -2111,7 +2136,8 @@ RSpec.describe Dependabot::Updater do
                 "declared-path": "foo",
                 "discovered-path": "bar",
                 "go-mod": "/go.mod"
-              }
+              },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -2143,7 +2169,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "private_source_authentication_failure",
-              error_details: { source: "some.example.com" }
+              error_details: { source: "some.example.com" },
+              dependency: an_instance_of(Dependabot::Dependency)
             )
 
           updater.run
@@ -2168,7 +2195,8 @@ RSpec.describe Dependabot::Updater do
             with(
               1,
               error_type: "unknown_error",
-              error_details: nil
+              error_details: nil,
+              dependency: an_instance_of(Dependabot::Dependency)
             )
           updater.run
         end
@@ -2206,7 +2234,8 @@ RSpec.describe Dependabot::Updater do
           with(
             1,
             error_type: "unknown_error",
-            error_details: nil
+            error_details: nil,
+            dependency: an_instance_of(Dependabot::Dependency)
           )
 
         updater.run
