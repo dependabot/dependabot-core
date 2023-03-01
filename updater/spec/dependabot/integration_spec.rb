@@ -23,10 +23,6 @@ RSpec.describe "Dependabot Updates" do
   after { WebMock.enable! }
 
   let(:job_id) { 1 }
-  let(:output_path) do
-    File.join(Dir.mktmpdir, "output.json")
-  end
-
   let(:fetch_job_definition) do
     # for the fetch step, the definition is just the parameters
     {
@@ -75,8 +71,8 @@ RSpec.describe "Dependabot Updates" do
       update_job_definition
     )
     allow(Dependabot::Environment).to receive(:output_path).and_return(
-      File.join(Dir.mktmpdir, "fetch/output.json"),
-      File.join(Dir.mktmpdir, "update/output.json")
+      File.join(Dir.mktmpdir("fetch"), "output.json"),
+      File.join(Dir.mktmpdir("update"), "output.json")
     )
     allow(Dependabot::Environment).to receive(:token).and_return("token")
 
