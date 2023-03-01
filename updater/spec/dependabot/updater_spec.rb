@@ -113,7 +113,6 @@ RSpec.describe Dependabot::Updater do
   before do
     allow(Dependabot.logger).to receive(:info)
     allow(Dependabot.logger).to receive(:error)
-    allow_any_instance_of(Dependabot::ApiClient).to receive(:record_package_manager_version)
 
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(status: 200, body: fixture("rubygems-index"))
