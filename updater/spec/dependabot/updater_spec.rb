@@ -1952,8 +1952,6 @@ RSpec.describe Dependabot::Updater do
           service = build_service(job: job)
           updater = build_updater(service: service, job: job)
 
-          # allow(updater).to receive(:dependency_files).and_raise(error)
-
           expect(service).
             to receive(:record_update_job_error).
             with(
@@ -1983,8 +1981,6 @@ RSpec.describe Dependabot::Updater do
           job = build_job
           service = build_service(job: job)
           updater = build_updater(service: service, job: job)
-
-          # allow(updater).to receive(:dependency_files).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
