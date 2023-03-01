@@ -197,12 +197,6 @@ RSpec.describe Dependabot::Updater do
   end
 
   describe "#run" do
-    before do
-      message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
-      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
-      allow(message_builder).to receive(:message).and_return(nil)
-    end
-
     let(:dependency_files) do
       [
         Dependabot::DependencyFile.new(
