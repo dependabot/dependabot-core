@@ -53,7 +53,7 @@ module Dependabot
       File.write(Environment.job_path, JSON.dump(
                                          base64_dependency_files: base64_dependency_files.map(&:to_h),
                                          base_commit_sha: @base_commit_sha,
-                                         job: job_definition["job"]
+                                         job: Environment.job_definition["job"]
                                        ))
     end
 
@@ -81,7 +81,7 @@ module Dependabot
 
     def job
       attrs =
-        job_definition["job"].
+        Environment.job_definition["job"].
         transform_keys { |key| key.tr("-", "_") }.
         transform_keys(&:to_sym).
         slice(
@@ -101,7 +101,7 @@ module Dependabot
 
       args = {
         source: job.source,
-        credentials: job_definition.fetch("credentials", []),
+        credentials: Environment.job_definition.fetch("credentials", []),
         options: job.experiments
       }
       args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || job.already_cloned?
@@ -177,10 +177,6 @@ module Dependabot
       expires_at = error.response_headers["X-RateLimit-Reset"].to_i
       remaining = Time.at(expires_at) - Time.now
       remaining.positive? ? remaining : 0
-    end
-
-    def job_definition
-      @job_definition ||= JSON.parse(File.read(Environment.job_path))
     end
 
     def record_error(error_details)
