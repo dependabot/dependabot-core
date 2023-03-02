@@ -79,7 +79,7 @@ module Dependabot
     end
 
     def job_token
-      Environment.token
+      Environment.job_token
     end
 
     def api_client

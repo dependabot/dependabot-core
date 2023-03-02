@@ -74,7 +74,7 @@ RSpec.describe "Dependabot Updates" do
       File.join(Dir.mktmpdir("fetch"), "output.json"),
       File.join(Dir.mktmpdir("update"), "output.json")
     )
-    allow(Dependabot::Environment).to receive(:token).and_return("token")
+    allow(Dependabot::Environment).to receive(:job_token).and_return("token")
 
     # Stub Dependabot object with instance doubles
     allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)

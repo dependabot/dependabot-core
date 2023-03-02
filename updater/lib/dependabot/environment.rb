@@ -6,7 +6,7 @@ module Dependabot
       @job_id ||= environment_variable("DEPENDABOT_JOB_ID")
     end
 
-    def self.token
+    def self.job_token
       @token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
     end
 
