@@ -110,6 +110,34 @@ RSpec.describe Dependabot::Service do
     end
   end
 
+  shared_context :a_dependency_error_was_reported do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "dependabot-cobol",
+        package_manager: "bundler",
+        version: "3.8.0",
+        previous_version: "3.7.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 3.8.0", groups: [], source: nil }
+        ],
+        previous_requirements: [
+          { file: "Gemfile", requirement: "~> 3.7.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    before do
+      service.record_update_job_error(
+        job_id,
+        error_type: :unknown_error,
+        error_details: {
+          message: "0001 Undefined error. Inform Technical Support"
+        },
+        dependency: dependency
+      )
+    end
+  end
+
   describe "Instance methods delegated to @client" do
     {
       get_job: "mock_job_id",
@@ -181,7 +209,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql(["epoch_error"])
+      expect(service.errors).to eql([["epoch_error", nil]])
     end
   end
 
@@ -268,6 +296,27 @@ RSpec.describe Dependabot::Service do
         expect(service.summary).
           to include("Dependabot encountered '1' error(s) during execution")
       end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("epoch_error")
+      end
+    end
+
+    context "when there was an dependency error" do
+      include_context :a_dependency_error_was_reported
+
+      it "includes an error count" do
+        expect(service.summary).
+          to include("Dependabot encountered '1' error(s) during execution")
+      end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("unknown_error")
+        expect(service.summary).
+          to include("dependabot-cobol")
+      end
     end
 
     context "when there was a mix of pr activity" do
@@ -289,6 +338,7 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_created
       include_context :a_pr_was_closed
       include_context :an_error_was_reported
+      include_context :a_dependency_error_was_reported
 
       it "includes the summary of the created PR" do
         expect(service.summary).
@@ -302,7 +352,16 @@ RSpec.describe Dependabot::Service do
 
       it "includes an error count" do
         expect(service.summary).
-          to include("Dependabot encountered '1' error(s) during execution")
+          to include("Dependabot encountered '2' error(s) during execution")
+      end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("epoch_error")
+        expect(service.summary).
+          to include("unknown_error")
+        expect(service.summary).
+          to include("dependabot-fortran")
       end
     end
   end

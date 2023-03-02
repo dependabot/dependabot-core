@@ -408,7 +408,8 @@ module Dependabot
             "dependency-name": checker.dependency.name,
             "dependency-version": checker.dependency.version
           }
-        }
+        },
+        dependency: checker.dependency
       )
     end
 
@@ -420,7 +421,8 @@ module Dependabot
             "dependency-name": checker.dependency.name,
             "dependency-version": checker.latest_version&.to_s
           }
-        }
+        },
+        dependency: checker.dependency
       )
     end
 
@@ -866,7 +868,7 @@ module Dependabot
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details)
+      record_error(error_details, dependency: dependency)
 
       log_error(
         dependency: dependency,
@@ -1012,11 +1014,12 @@ module Dependabot
       "<job_#{job_id}>" if job_id
     end
 
-    def record_error(error_details)
+    def record_error(error_details, dependency: nil)
       service.record_update_job_error(
         job_id,
         error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
+        error_details: error_details[:"error-detail"],
+        dependency: dependency
       )
 
       errors << error_details

@@ -34,8 +34,8 @@ module Dependabot
       @pull_requests << [dependency_name, "closed: #{reason}"]
     end
 
-    def record_update_job_error(job_id, error_type:, error_details:)
-      @errors << error_type.to_s
+    def record_update_job_error(job_id, error_type:, error_details:, dependency: nil)
+      @errors << [error_type.to_s, dependency]
       client.record_update_job_error(job_id, error_type: error_type, error_details: error_details)
     end
 
@@ -63,7 +63,9 @@ module Dependabot
       [
         "Results:",
         pull_request_summary,
-        error_summary
+        error_summary,
+        job_error_type_summary,
+        dependency_error_summary
       ].compact.join("\n")
     end
 
@@ -82,6 +84,42 @@ module Dependabot
       return unless errors.any?
 
       "Dependabot encountered '#{errors.length}' error(s) during execution, please check the logs for more details."
+    end
+
+    # Example output:
+    #
+    # +--------------------+
+    # |    Errors          |
+    # +--------------------+
+    # | job_repo_not_found |
+    # +--------------------+
+    def job_error_type_summary
+      job_error_types = errors.filter_map { |error_type, dependency| [error_type] if dependency.nil? }
+      return if job_error_types.none?
+
+      Terminal::Table.new do |t|
+        t.title = "Errors"
+        t.rows = job_error_types
+      end
+    end
+
+    # Example output:
+    #
+    # +-------------------------------------+
+    # |    Dependencies failed to update    |
+    # +---------------------+---------------+
+    # | best_dependency_yay | unknown_error |
+    # +---------------------+---------------+
+    def dependency_error_summary
+      dependency_errors = errors.filter_map do |error_type, dependency|
+        [dependency.name, error_type] unless dependency.nil?
+      end
+      return if dependency_errors.none?
+
+      Terminal::Table.new do |t|
+        t.title = "Dependencies failed to update"
+        t.rows = dependency_errors
+      end
     end
 
     def truncate(string, max: 120)
