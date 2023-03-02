@@ -180,6 +180,11 @@ RSpec.describe Dependabot::Updater do
   end
   # rubocop:enable Metrics/MethodLength
 
+  def stub_pr_message_building
+    builder = double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
+    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(builder)
+  end
+
   describe "#run" do
     context "when the host is out of disk space" do
       it "records an 'out_of_disk' error" do
@@ -876,6 +881,7 @@ RSpec.describe Dependabot::Updater do
     # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
     it "updates dependencies correctly" do
       stub_update_checker
+      stub_pr_message_building
 
       job = build_job
       service = build_service(job: job)
@@ -2525,6 +2531,7 @@ RSpec.describe Dependabot::Updater do
       context "with a bundler 2 project" do
         it "updates dependencies correctly" do
           stub_update_checker
+          stub_pr_message_building
 
           job = build_job(
             experiments: {
