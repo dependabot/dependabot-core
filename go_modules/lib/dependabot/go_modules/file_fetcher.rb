@@ -15,6 +15,8 @@ module Dependabot
       end
 
       def package_manager_version
+        return nil unless go_mod
+
         {
           ecosystem: "gomod",
           package_managers: {
