@@ -2676,18 +2676,6 @@ RSpec.describe Dependabot::Updater do
     end
 
     context "with ignored versions that don't apply during a security update" do
-      let(:security_updates_only) { true }
-      let(:requested_dependencies) { ["dummy-pkg-b"] }
-      let(:ignore_conditions) do
-        [
-          {
-            "dependency-name" => "dummy-pkg-b",
-            "update-types" => ["version-update:semver-patch"],
-            "source" => ".github/dependabot.yaml"
-          }
-        ]
-      end
-
       it "logs ignored versions" do
         job = build_job(
           ignore_conditions: [
