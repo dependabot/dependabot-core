@@ -95,7 +95,7 @@ module Dependabot
     # +--------------------+
     def job_error_type_summary
       job_error_types = errors.filter_map { |error_type, dependency| [error_type] if dependency.nil? }
-      return unless job_error_types.any?
+      return if job_error_types.none?
 
       Terminal::Table.new do |t|
         t.title = "Errors"
@@ -114,7 +114,7 @@ module Dependabot
       dependency_errors = errors.filter_map do |error_type, dependency|
         [dependency.name, error_type] unless dependency.nil?
       end
-      return unless dependency_errors.any?
+      return if dependency_errors.none?
 
       Terminal::Table.new do |t|
         t.title = "Dependencies failed to update"
