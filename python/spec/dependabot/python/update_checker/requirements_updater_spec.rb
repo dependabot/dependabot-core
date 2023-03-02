@@ -134,7 +134,7 @@ RSpec.describe Dependabot::Python::UpdateChecker::RequirementsUpdater do
                 let(:requirement_txt_req_string) { "<=1.9.2,>=1.9" }
                 let(:latest_resolvable_version) { "1.10" }
 
-                its([:requirement]) { is_expected.to eq(">=1.9,<1.11.0") }
+                its([:requirement]) { is_expected.to eq(">=1.9,<=1.10") }
               end
             end
           end

@@ -203,7 +203,7 @@ module Dependabot
           SharedHelpers.run_helper_subprocess(
             command: NativeHelpers.helper_path,
             function: "yarn:updateSubdependency",
-            args: [Dir.pwd, lockfile_name, sub_dependencies.first.to_h]
+            args: [Dir.pwd, lockfile_name, sub_dependencies.map(&:to_h)]
           )
         end
 

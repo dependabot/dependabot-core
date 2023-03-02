@@ -258,6 +258,33 @@ RSpec.describe Dependabot::Maven::FileParser do
       end
     end
 
+    context "for annotationProcessorPaths dependencies" do
+      let(:pom_body) do
+        fixture("poms", "annotation_processor_paths_dependencies.xml")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("com.google.errorprone:error_prone_core")
+          expect(dependency.version).to eq("2.9.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "2.9.0",
+              file: "pom.xml",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }]
+          )
+        end
+      end
+    end
+
     context "for pluginManagement dependencies" do
       let(:pom_body) do
         fixture("poms", "plugin_management_dependencies_pom.xml")
@@ -628,7 +655,7 @@ RSpec.describe Dependabot::Maven::FileParser do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).
             to eq("org.apache.maven.plugins:maven-javadoc-plugin")
-          expect(dependency.version).to eq("3.0.0-M1")
+          expect(dependency.version).to eq("2.10.4")
           expect(dependency.requirements).to eq(
             [{
               requirement: "3.0.0-M1",

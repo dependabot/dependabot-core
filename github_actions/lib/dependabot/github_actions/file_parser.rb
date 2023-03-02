@@ -40,11 +40,19 @@ module Dependabot
         dependency_set = DependencySet.new
 
         json = YAML.safe_load(file.content, aliases: true)
-        uses_strings = deep_fetch_uses(json).uniq
+        return dependency_set if json.nil?
+
+        uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
-          dependency_set << build_github_dependency(file, string) if string.match?(GITHUB_REPO_REFERENCE)
+          next unless string.match?(GITHUB_REPO_REFERENCE)
+
+          dep = build_github_dependency(file, string)
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          next unless git_checker.pinned?
+
+          dependency_set << dep
         end
 
         dependency_set
@@ -86,10 +94,10 @@ module Dependabot
         )
       end
 
-      def deep_fetch_uses(json_obj)
+      def deep_fetch_uses(json_obj, found_uses = [])
         case json_obj
-        when Hash then deep_fetch_uses_from_hash(json_obj)
-        when Array then json_obj.flat_map { |o| deep_fetch_uses(o) }
+        when Hash then deep_fetch_uses_from_hash(json_obj, found_uses)
+        when Array then json_obj.flat_map { |o| deep_fetch_uses(o, found_uses) }
         else []
         end
       end
@@ -111,20 +119,17 @@ module Dependabot
         resolved.compact.each { |dep| dependency_set << dep }
       end
 
-      def deep_fetch_uses_from_hash(json_object)
-        steps = json_object.fetch("steps", [])
+      def deep_fetch_uses_from_hash(json_object, found_uses)
+        if json_object.key?("uses")
+          found_uses << json_object["uses"]
+        elsif json_object.key?("steps")
+          # Bypass other fields as uses are under steps if they exist
+          deep_fetch_uses(json_object["steps"], found_uses)
+        else
+          json_object.values.flat_map { |obj| deep_fetch_uses(obj, found_uses) }
+        end
 
-        uses_strings =
-          if steps.is_a?(Array) && steps.all?(Hash)
-            steps.
-              map { |step| step.fetch("uses", nil) }.
-              select { |use| use.is_a?(String) }
-          else
-            []
-          end
-
-        uses_strings +
-          json_object.values.flat_map { |obj| deep_fetch_uses(obj) }
+        found_uses
       end
 
       def workflow_files

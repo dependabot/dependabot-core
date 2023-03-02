@@ -112,4 +112,20 @@ RSpec.describe Dependabot::GoModules::Version do
       end
     end
   end
+
+  describe "<=>" do
+    # These identifiers come from the Go docs: https://go.dev/ref/mod#pseudo-versions
+    it "sorts major versions correctly" do
+      expect(described_class.new("v1.0.0-0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.0")
+    end
+
+    it "sorts pre-release versions correctly" do
+      expect(described_class.new("v1.0.0-pre2.0.20231231120000-abcdefabcdef")).to be >
+                                                                                  described_class.new("v1.0.0-pre2")
+    end
+
+    it "sorts minor versions correctly" do
+      expect(described_class.new("v1.0.1-0.20231231120000-abcdefabcdef")).to be < described_class.new("v1.0.1")
+    end
+  end
 end

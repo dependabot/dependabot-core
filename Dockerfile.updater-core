@@ -160,4 +160,4 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
-CMD ["bundle", "exec", "ruby", "bin/dependabot_update.rb"]
+CMD ["bin/run"]

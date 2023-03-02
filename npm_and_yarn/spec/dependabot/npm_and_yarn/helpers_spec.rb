@@ -143,7 +143,7 @@ RSpec.describe Dependabot::NpmAndYarn::Helpers do
           ),
           Dependabot::Dependency.new(
             name: "bar",
-            version: "0.2.3",
+            version: "0.2.1",
             requirements: (bar_c.requirements + bar_b.requirements + bar_a.requirements).uniq,
             package_manager: "npm_and_yarn",
             metadata: { all_versions: [bar_c, bar_b, bar_a] }

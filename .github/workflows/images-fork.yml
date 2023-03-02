@@ -50,18 +50,11 @@ jobs:
           echo "Review decision is: $DECISION"
           [[ $DECISION == "APPROVED" ]] || exit 1
 
-      - name: Checkout the fork
-        # This checks out the fork and cherry-picks the changes onto main, creating a new merge SHA tag.
+      - name: Checkout the fork and set TAG
         run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          gh pr checkout ${{ github.event.inputs.pr }} --branch docker-branch-release-workflow
-          git reset main
-          git add .
-          git commit -m squashed
-          PICK=$(git rev-parse HEAD)
-          git checkout main
-          git cherry-pick $PICK
+          gh pr checkout ${{ github.event.inputs.pr }}
+          git fetch origin main
+          git merge origin/main --ff-only || exit 1
           echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Build ecosystem image
@@ -73,6 +66,7 @@ jobs:
 
       - name: Push fork image
         run: |
+          docker tag "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}" "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
           docker push "ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:$TAG"
 
       - name: Set summary

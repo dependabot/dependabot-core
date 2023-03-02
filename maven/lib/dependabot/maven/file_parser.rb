@@ -23,7 +23,8 @@ module Dependabot
       # - Any extensions
       DEPENDENCY_SELECTOR = "project > parent, " \
                             "dependencies > dependency, " \
-                            "extensions > extension"
+                            "extensions > extension, " \
+                            "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
       EXTENSION_SELECTOR  = "extensions > extension"
 

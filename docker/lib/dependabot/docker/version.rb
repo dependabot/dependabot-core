@@ -21,10 +21,17 @@ module Dependabot
 
       def self.correct?(version)
         super(new(version).to_semver)
+      rescue ArgumentError
+        # if we can't instantiate a version, it can't be correct
+        false
       end
 
       def to_semver
         @release_part.to_semver
+      end
+
+      def segments
+        @release_part.segments
       end
 
       attr_reader :release_part

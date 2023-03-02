@@ -33,10 +33,9 @@ module Dependabot
         lowest_security_fix_version
       end
 
-      def updated_requirements # rubocop:disable Metrics/PerceivedComplexity
+      def updated_requirements
         previous = dependency_source_details
         updated = updated_source
-        return dependency.requirements if updated == previous
 
         # Maintain a short git hash only if it matches the latest
         if previous[:type] == "git" &&

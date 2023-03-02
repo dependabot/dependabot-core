@@ -234,6 +234,7 @@ docker run --rm -ti \
   -v "$(pwd)/updater/spec:$CODE_DIR/updater/spec" \
   --name "$CONTAINER_NAME" \
   --env "LOCAL_GITHUB_ACCESS_TOKEN=$LOCAL_GITHUB_ACCESS_TOKEN" \
+  --env "DEPENDABOT_TEST_ACCESS_TOKEN" \
   "${DOCKER_OPTS[@]}" \
   --cap-add=SYS_PTRACE \
   "$IMAGE_NAME" "${CONTAINER_ARGS[@]}"

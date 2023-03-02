@@ -80,7 +80,7 @@ RSpec.describe Dependabot::Nuget::FileParser do
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("Microsoft.Extensions.DependencyModel")
-          expect(dependency.version).to eq("1.1.1")
+          expect(dependency.version).to eq("1.0.1")
           expect(dependency.requirements).to eq(
             [{
               requirement: "1.1.1",

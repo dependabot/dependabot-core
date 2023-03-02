@@ -36,11 +36,11 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "debug", "~> 1.7.1"
   spec.add_development_dependency "gpgme", "~> 2.0"
-  spec.add_development_dependency "parallel_tests", "~> 4.1.0"
+  spec.add_development_dependency "parallel_tests", "~> 4.2.0"
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
-  spec.add_development_dependency "rubocop", "~> 1.44.0"
+  spec.add_development_dependency "rubocop", "~> 1.46.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.16.0"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "simplecov-console", "~> 0.9.1"

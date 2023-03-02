@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 require "base64"
-require "dependabot/base_job"
+require "dependabot/base_command"
 require "dependabot/updater"
 
 module Dependabot
-  class UpdateFilesJob < BaseJob
+  class UpdateFilesCommand < BaseCommand
     def perform_job
       Dependabot::Updater.new(
         service: service,

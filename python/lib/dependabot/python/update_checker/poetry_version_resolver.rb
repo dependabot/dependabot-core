@@ -250,7 +250,6 @@ module Dependabot
             freeze_top_level_dependencies_except([dependency])
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def set_target_dependency_req(pyproject_content, updated_requirement)
           return pyproject_content unless updated_requirement
 
@@ -258,15 +257,15 @@ module Dependabot
           poetry_object = pyproject_object.dig("tool", "poetry")
 
           Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |type|
-            names = poetry_object[type]&.keys || []
-            pkg_name = names.find { |nm| normalise(nm) == dependency.name }
-            next unless pkg_name
+            dependencies = poetry_object[type]
+            next unless dependencies
 
-            if poetry_object.dig(type, pkg_name).is_a?(Hash)
-              poetry_object[type][pkg_name]["version"] = updated_requirement
-            else
-              poetry_object[type][pkg_name] = updated_requirement
-            end
+            update_dependency_requirement(dependencies, updated_requirement)
+          end
+
+          groups = poetry_object["group"]&.values || []
+          groups.each do |group_spec|
+            update_dependency_requirement(group_spec["dependencies"], updated_requirement)
           end
 
           # If this is a sub-dependency, add the new requirement
@@ -277,7 +276,18 @@ module Dependabot
 
           TomlRB.dump(pyproject_object)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        def update_dependency_requirement(toml_node, requirement)
+          names = toml_node.keys
+          pkg_name = names.find { |nm| normalise(nm) == dependency.name }
+          return unless pkg_name
+
+          if toml_node[pkg_name].is_a?(Hash)
+            toml_node[pkg_name]["version"] = requirement
+          else
+            toml_node[pkg_name] = requirement
+          end
+        end
 
         def subdep_type
           category =

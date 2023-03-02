@@ -30,8 +30,24 @@ RSpec.describe Dependabot::GithubActions::FileParser do
     )
   end
 
+  def mock_service_pack_request(nwo)
+    stub_request(:get, "https://github.com/#{nwo}.git/info/refs?service=git-upload-pack").
+      to_return(
+        status: 200,
+        body: fixture("git", "upload_packs", "checkout"),
+        headers: {
+          "content-type" => "application/x-git-upload-pack-advertisement"
+        }
+      )
+  end
+
   describe "parse" do
     subject(:dependencies) { parser.parse }
+
+    before do
+      mock_service_pack_request("actions/checkout")
+      mock_service_pack_request("actions/setup-node")
+    end
 
     its(:length) { is_expected.to eq(2) }
 
@@ -45,23 +61,27 @@ RSpec.describe Dependabot::GithubActions::FileParser do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "master",
+            ref: "v1",
             branch: nil
           },
-          metadata: { declaration_string: "actions/checkout@master" }
+          metadata: { declaration_string: "actions/checkout@v1" }
         }]
       end
 
       it "has the right details" do
         expect(dependency).to be_a(Dependabot::Dependency)
         expect(dependency.name).to eq("actions/checkout")
-        expect(dependency.version).to be_nil
+        expect(dependency.version).to eq("1")
         expect(dependency.requirements).to eq(expected_requirements)
       end
     end
 
     context "with a path" do
       let(:workflow_file_fixture_name) { "workflow_monorepo.yml" }
+
+      before do
+        mock_service_pack_request("actions/aws")
+      end
 
       its(:length) { is_expected.to eq(2) }
 
@@ -75,10 +95,10 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             source: {
               type: "git",
               url: "https://github.com/actions/aws",
-              ref: "master",
+              ref: "v1.0.0",
               branch: nil
             },
-            metadata: { declaration_string: "actions/aws/ec2@master" }
+            metadata: { declaration_string: "actions/aws/ec2@v1.0.0" }
           }, {
             requirement: nil,
             groups: [],
@@ -86,17 +106,17 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             source: {
               type: "git",
               url: "https://github.com/actions/aws",
-              ref: "master",
+              ref: "v1.0.0",
               branch: nil
             },
-            metadata: { declaration_string: "actions/aws@master" }
+            metadata: { declaration_string: "actions/aws@v1.0.0" }
           }]
         end
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
           expect(dependency.name).to eq("actions/aws")
-          expect(dependency.version).to be_nil
+          expect(dependency.version).to eq("1.0.0")
           expect(dependency.requirements).to eq(expected_requirements)
         end
       end
@@ -118,17 +138,6 @@ RSpec.describe Dependabot::GithubActions::FileParser do
             branch: nil
           },
           metadata: { declaration_string: "actions/checkout@v2.1.0" }
-        }, {
-          requirement: nil,
-          groups: [],
-          file: ".github/workflows/workflow.yml",
-          source: {
-            type: "git",
-            url: "https://github.com/actions/checkout",
-            ref: "master",
-            branch: nil
-          },
-          metadata: { declaration_string: "actions/checkout@master" }
         }]
       end
 
@@ -137,6 +146,87 @@ RSpec.describe Dependabot::GithubActions::FileParser do
         expect(dependency.name).to eq("actions/checkout")
         expect(dependency.version).to eq("2.1.0")
         expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    describe "with reusable workflow" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "workflow_reusable.yml" }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout/.github/workflows/test.yml@v2.1.0" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("actions/checkout")
+        expect(dependency.version).to eq("2.1.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
+    describe "with composite actions" do
+      let(:workflow_file_fixture_name) { "composite_action.yml" }
+      let(:workflow_files) do
+        Dependabot::DependencyFile.new(
+          name: "action.yml",
+          content: workflow_file_body
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "action.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v3.3.0",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@v3.3.0" }
+        }]
+      end
+
+      its(:length) { is_expected.to eq(4) }
+
+      before do
+        mock_service_pack_request("docker/setup-qemu-action")
+        mock_service_pack_request("docker/setup-buildx-action")
+        mock_service_pack_request("docker/login-action")
+      end
+
+      context "the first dependency" do
+        subject(:dependency) { dependencies.first }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("3.3.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
+    describe "with empty" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "empty.yml" }
+
+      it "has no dependencies" do
+        expect(dependencies.count).to be(0)
+        expect(dependency).to be_nil
       end
     end
 
@@ -165,6 +255,40 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       it "ignores the Docker url reference" do
         expect(dependencies.count).to be(0)
         expect(dependency).to be_nil
+      end
+    end
+
+    context "with a semver tag pinned to a reusable workflow commit" do
+      let(:workflow_file_fixture_name) { "workflow_semver_reusable.yml" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "01aecccf739ca6ff86c0539fbc67a7a5007bbc81",
+              branch: nil
+            },
+            metadata: {
+              declaration_string:
+              "actions/checkout/.github/workflows/test.yml@01aecccf739ca6ff86c0539fbc67a7a5007bbc81"
+            }
+          }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("2.1.0")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
       end
     end
 

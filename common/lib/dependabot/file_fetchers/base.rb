@@ -611,7 +611,7 @@ module Dependabot
               CMD
             )
           rescue SharedHelpers::HelperSubprocessFailed => e
-            raise unless GIT_SUBMODULE_ERROR_REGEX && e.message.downcase.include?("submodule")
+            raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
 
             submodule_cloning_failed = true
             match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
