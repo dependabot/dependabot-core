@@ -12,7 +12,7 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
   before do
     allow(job).to receive(:job_id).and_return(job_id)
-    allow(job).to receive(:token).and_return("job_token")
+    allow(job).to receive(:job_token).and_return("job_token")
     allow(job).to receive(:api_client).and_return(api_client)
 
     allow(api_client).to receive(:mark_job_as_processed)
@@ -64,7 +64,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: { "branch-name": "my_branch" },
             error_type: "branch_not_found"
           )
@@ -89,7 +88,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: {},
             error_type: "job_repo_not_found"
           )
@@ -121,7 +119,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: { "rate-limit-reset": reset_at },
             error_type: "octokit_rate_limited"
           )
@@ -185,7 +182,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client).
             to receive(:record_update_job_error).
             with(
-              job_id,
               error_details: { "branch-name": "my_branch" },
               error_type: "branch_not_found"
             )

@@ -51,7 +51,7 @@ module Dependabot
       logger_info("Finished job processing")
     rescue StandardError => e
       handle_exception(e)
-      service.mark_job_as_processed(job_id, base_commit_sha)
+      service.mark_job_as_processed(base_commit_sha)
     ensure
       Dependabot.logger.info(service.summary) unless service.noop?
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
@@ -70,20 +70,20 @@ module Dependabot
       )
     end
 
-    def job_id
-      Environment.job_id
-    end
-
     def api_url
       Environment.api_url
     end
 
-    def token
+    def job_id
+      Environment.job_id
+    end
+
+    def job_token
       Environment.token
     end
 
     def api_client
-      @api_client ||= Dependabot::ApiClient.new(api_url, token)
+      @api_client ||= Dependabot::ApiClient.new(api_url, job_id, job_token)
     end
 
     def service

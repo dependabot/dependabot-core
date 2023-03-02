@@ -145,8 +145,7 @@ RSpec.describe "Dependabot Updates" do
 
     it "updates dependencies correctly" do
       expect(api_client).
-        to receive(:create_pull_request) do |id, deps, files, commit_sha|
-          expect(id).to eq(1)
+        to receive(:create_pull_request) do |deps, files, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-pkg-b",
             package_manager: "bundler",
@@ -212,7 +211,7 @@ RSpec.describe "Dependabot Updates" do
 
       it "notifies Dependabot API of the problem" do
         expect(api_client).to receive(:record_update_job_error).
-          with(job_id, { error_type: "unknown_error", error_details: nil })
+          with({ error_type: "unknown_error", error_details: nil })
 
         expect { run_job }.to output(/oh no!/).to_stdout_from_any_process
       end
@@ -244,7 +243,6 @@ RSpec.describe "Dependabot Updates" do
       before do
         # Pre-populate an updater error
         update_files.service.record_update_job_error(
-          job_id,
           error_type: :epoch_error,
           error_details: {
             message: "What is fortran doing here?!"
@@ -336,8 +334,7 @@ RSpec.describe "Dependabot Updates" do
 
     it "updates dependencies correctly" do
       expect(api_client).
-        to receive(:create_pull_request) do |id, deps, files, commit_sha|
-          expect(id).to eq(1)
+        to receive(:create_pull_request) do |deps, files, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-git-dependency",
             package_manager: "bundler",

@@ -746,7 +746,6 @@ module Dependabot
                   "pull request for creation")
 
       service.create_pull_request(
-        job_id,
         dependencies,
         updated_dependency_files.map(&:to_h),
         base_commit_sha,
@@ -767,7 +766,6 @@ module Dependabot
                   "pull request for update")
 
       service.update_pull_request(
-        job_id,
         dependencies,
         updated_dependency_files.map(&:to_h),
         base_commit_sha
@@ -778,7 +776,7 @@ module Dependabot
       reason_string = reason.to_s.tr("_", " ")
       logger_info("Telling backend to close pull request for " \
                   "#{job.dependencies.join(', ')} - #{reason_string}")
-      service.close_pull_request(job_id, job.dependencies, reason)
+      service.close_pull_request(job.dependencies, reason)
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -978,7 +976,6 @@ module Dependabot
 
     def update_dependency_list(dependencies)
       service.update_dependency_list(
-        job_id,
         dependencies.map do |dep|
           {
             name: dep.name,
@@ -1016,7 +1013,6 @@ module Dependabot
 
     def record_error(error_details, dependency: nil)
       service.record_update_job_error(
-        job_id,
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"],
         dependency: dependency
