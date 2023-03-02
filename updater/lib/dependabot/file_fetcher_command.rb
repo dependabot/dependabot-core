@@ -9,7 +9,7 @@ module Dependabot
   class FileFetcherCommand < BaseCommand
     # BaseCommand does not implement this method, so we should expose
     # the instance variable for error handling to avoid raising a
-    # NotImplementError if it is referenced
+    # NotImplementedError if it is referenced
     attr_reader :base_commit_sha
 
     def perform_job
