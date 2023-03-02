@@ -180,21 +180,6 @@ RSpec.describe Dependabot::Updater do
   end
   # rubocop:enable Metrics/MethodLength
 
-  let(:dependency) do
-    Dependabot::Dependency.new(
-      name: "dummy-pkg-b",
-      package_manager: "bundler",
-      version: "1.2.0",
-      previous_version: "1.1.0",
-      requirements: [
-        { file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }
-      ],
-      previous_requirements: [
-        { file: "Gemfile", requirement: "~> 1.1.0", groups: [], source: nil }
-      ]
-    )
-  end
-
   describe "#run" do
     context "when the host is out of disk space" do
       it "records an 'out_of_disk' error" do
@@ -428,7 +413,7 @@ RSpec.describe Dependabot::Updater do
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:lowest_resolvable_security_fix_version).
-            and_return(dependency.version)
+            and_return("1.2.0")
           expect(checker).to receive(:lowest_security_fix_version).
             and_return(Dependabot::Bundler::Version.new("1.3.0"))
           expect(checker).to receive(:conflicting_dependencies).and_return(
@@ -2468,7 +2453,20 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
-          dependencies: [dependency],
+          dependencies: [
+            Dependabot::Dependency.new(
+              name: "dummy-pkg-b",
+              package_manager: "bundler",
+              version: "1.2.0",
+              previous_version: "1.1.0",
+              requirements: [
+                { file: "Gemfile", requirement: "~> 1.2.0", groups: [], source: nil }
+              ],
+              previous_requirements: [
+                { file: "Gemfile", requirement: "~> 1.1.0", groups: [], source: nil }
+              ]
+            )
+          ],
           dependency_files: [
             Dependabot::DependencyFile.new(
               name: "Gemfile",
@@ -2607,7 +2605,7 @@ RSpec.describe Dependabot::Updater do
               "source" => ".github/dependabot.yaml"
             },
             {
-              "dependency-name" => dependency.name,
+              "dependency-name" => "dummy-pkg-b",
               "version-requirement" => ">= 1.a, < 2.0.0",
               "source" => "@dependabot ignore command"
             }
@@ -2632,7 +2630,7 @@ RSpec.describe Dependabot::Updater do
               "source" => ".github/dependabot.yaml"
             },
             {
-              "dependency-name" => dependency.name,
+              "dependency-name" => "dummy-pkg-b",
               "version-requirement" => ">= 1.a, < 2.0.0",
               "source" => "@dependabot ignore command"
             }
@@ -2657,7 +2655,7 @@ RSpec.describe Dependabot::Updater do
               "source" => ".github/dependabot.yaml"
             },
             {
-              "dependency-name" => dependency.name,
+              "dependency-name" => "dummy-pkg-b",
               "version-requirement" => ">= 1.a, < 2.0.0",
               "source" => "@dependabot ignore command"
             }
