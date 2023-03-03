@@ -205,36 +205,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::LockfileUpdater do
       end
     end
 
-    context "with a plugin that conflicts with the current composer version v1" do
-      let(:project_name) { "v1/outdated_flex" }
-      let(:dependency) do
-        Dependabot::Dependency.new(
-          name: "symphony/lock",
-          version: "4.1.3",
-          requirements: [{
-            file: "composer.json",
-            requirement: "^4.1",
-            groups: ["runtime"],
-            source: nil
-          }],
-          previous_version: "4.1.1",
-          previous_requirements: [{
-            file: "composer.json",
-            requirement: "^4.1",
-            groups: ["runtime"],
-            source: nil
-          }],
-          package_manager: "composer"
-        )
-      end
-
-      it "raises a helpful error" do
-        expect { updated_lockfile_content }.to raise_error do |error|
-          expect(error.message).to start_with("One of your Composer plugins is not compatible")
-          expect(error).to be_a Dependabot::DependencyFileNotResolvable
-        end
-      end
-    end
+    # We stopped testing/handling errors for plugins that conflict with the current version of composer v1
+    # because composer v1 was deprecated before PHP 8.2 was released, which Dependabot now runs on.
+    # So any plugins that are new enough to support PHP 8 will definitely support the newest version
+    # of composer v1.
 
     context "with a plugin that conflicts with the current composer version v2" do
       let(:project_name) { "outdated_flex" }
