@@ -1,0 +1,36 @@
+{
+    "packages": {
+        "dependabot/dummy-pkg-a": {
+            "2.0.1-alpha.1": {
+                "name": "dependabot/dummy-pkg-a",
+                "version": "2.0.1-alpha.1",
+                "dist": {
+                    "url": "https://codes:@php.fury.io/dependabot-throwaway/~/d/dependabot%2Fdummy-pkg-a/dependabot%2Fdummy-pkg-a-2.0.1-alpha.1",
+                    "type": "zip"
+                },
+                "type": "library",
+                "require": {}
+            },
+            "2.1.0": {
+                "name": "dependabot/dummy-pkg-a",
+                "version": "2.1.0",
+                "dist": {
+                    "url": "https://codes:@php.fury.io/dependabot-throwaway/~/d/dependabot%2Fdummy-pkg-a/dependabot%2Fdummy-pkg-a-2.1.0",
+                    "type": "zip"
+                },
+                "type": "library",
+                "require": {}
+            },
+            "2.2.0": {
+                "name": "dependabot/dummy-pkg-a",
+                "version": "2.2.0",
+                "dist": {
+                    "url": "https://codes:@php.fury.io/dependabot-throwaway/~/d/dependabot%2Fdummy-pkg-a/dependabot%2Fdummy-pkg-a-2.2.0",
+                    "type": "zip"
+                },
+                "type": "library",
+                "require": {}
+            }
+        }
+    }
+}

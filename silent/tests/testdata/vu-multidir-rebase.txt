@@ -1,0 +1,51 @@
+dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stdout -count=1 'create_pull_request'
+stderr -count=1 'created \| dependency-a \( from 1.2.3 to 1.2.5 \)'
+pr-created backend/expected.json
+
+# After a multi-directory update occurs we are left with individual PRs.
+# When rebasing one of those PRs we end up with this situation.
+
+-- frontend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "1.2.3" }
+}
+
+-- backend/manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- backend/expected.json --
+{
+  "dependency-a": { "version": "1.2.5" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3",
+    "1.2.4",
+    "1.2.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  source:
+    directories:
+#     - "/frontend" It's important that the API doesn't send unrelated directories.
+      - "/backend"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  dependencies:
+    - dependency-a
+  updating-a-pull-request: true
+  existing-pull-requests:
+    - - dependency-name: dependency-a
+        dependency-version: 1.2.4
+        directory: "/backend"

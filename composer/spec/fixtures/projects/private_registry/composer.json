@@ -1,0 +1,14 @@
+{
+  "repositories": [
+      {
+          "type": "composer",
+          "url": "https://php.fury.io/dependabot-throwaway/"
+      },
+      {
+          "packagist.org": false
+      }
+  ],
+  "require": {
+      "dependabot/dummy-pkg-a": "*"
+  }
+}

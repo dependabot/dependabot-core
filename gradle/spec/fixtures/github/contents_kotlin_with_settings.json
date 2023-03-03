@@ -1,0 +1,50 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "a1c2a238a965f004ff76978ac1086aa6fe95caea",
+    "size": 278,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/a1c2a238a965f004ff76978ac1086aa6fe95caea",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle-kotlin-with-settings/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/a1c2a238a965f004ff76978ac1086aa6fe95caea",
+      "html": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": "build.gradle.kts",
+    "path": "build.gradle.kts",
+    "sha": "08a3a5e40bc0d95f6d9fde89a3ab5efbe811cc5f",
+    "size": 2742,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/build.gradle.kts?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/build.gradle.kts",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/08a3a5e40bc0d95f6d9fde89a3ab5efbe811cc5f",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle-kotlin-with-settings/main/build.gradle.kts",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/build.gradle.kts?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/08a3a5e40bc0d95f6d9fde89a3ab5efbe811cc5f",
+      "html": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/build.gradle.kts"
+    }
+  },
+  {
+    "name": "settings.gradle.kts",
+    "path": "settings.gradle.kts",
+    "sha": "15a801b10aae6b804d004eb07ba03a659ae4bb72",
+    "size": 16,
+    "url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/settings.gradle.kts?ref=main",
+    "html_url": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/settings.gradle.kts",
+    "git_url": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/15a801b10aae6b804d004eb07ba03a659ae4bb72",
+    "download_url": "https://raw.githubusercontent.com/dependabot-fixtures/gradle-kotlin-with-settings/main/settings.gradle.kts",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/contents/settings.gradle.kts?ref=main",
+      "git": "https://api.github.com/repos/dependabot-fixtures/gradle-kotlin-with-settings/git/blobs/15a801b10aae6b804d004eb07ba03a659ae4bb72",
+      "html": "https://github.com/dependabot-fixtures/gradle-kotlin-with-settings/blob/main/settings.gradle.kts"
+    }
+  }
+]

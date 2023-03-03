@@ -1,0 +1,18 @@
+{
+  "name": "mix.exs",
+  "path": "mix.exs",
+  "sha": "611c38ac024bbe16004d106167ac5d840a56523d",
+  "size": 2952,
+  "url": "https://api.github.com/repos/Accenture/reactive-interaction-gateway/contents/mix.exs?ref=master",
+  "html_url": "https://github.com/Accenture/reactive-interaction-gateway/blob/master/mix.exs",
+  "git_url": "https://api.github.com/repos/Accenture/reactive-interaction-gateway/git/blobs/611c38ac024bbe16004d106167ac5d840a56523d",
+  "download_url": "https://raw.githubusercontent.com/Accenture/reactive-interaction-gateway/master/mix.exs",
+  "type": "file",
+  "content": "ZGVmbW9kdWxlIERlcGVuZGFib3RUZXN0Lk1peGZpbGUgZG8KICB1c2UgTWl4\nLlByb2plY3QKCiAgZGVmIHByb2plY3QgZG8KICAgICV7ZWxpeGlyOiBlbGl4\naXJfdmVyc2lvbn0gPSB2ZXJzaW9ucygpCiAgICBbCiAgICAgIGFwcDogOmRl\ncGVuZGFib3RfdGVzdCwKICAgICAgdmVyc2lvbjogIjAuMS4wIiwKICAgICAg\nZWxpeGlyOiBlbGl4aXJfdmVyc2lvbiwKICAgICAgc3RhcnRfcGVybWFuZW50\nOiBNaXguZW52ID09IDpwcm9kLAogICAgICBkZXBzOiBkZXBzKCkKICAgIF0K\nICBlbmQKCiAgZGVmcCB2ZXJzaW9ucyBkbwogICAge21hcCwgW119ID0gQ29k\nZS5ldmFsX2ZpbGUoInZlcnNpb24iLCAiLiIpCiAgICBtYXAKICBlbmQKCiAg\nZGVmIGFwcGxpY2F0aW9uIGRvCiAgICBbZXh0cmFfYXBwbGljYXRpb25zOiBb\nOmxvZ2dlcl1dCiAgZW5kCgogIGRlZnAgZGVwcyBkbwogICAgWwogICAgICB7\nOnBsdWcsICIxLjMuMCJ9LAogICAgICB7OnBob2VuaXgsICI9PSAxLjIuMSJ9\nCiAgICBdCiAgZW5kCmVuZAo=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/Accenture/reactive-interaction-gateway/contents/mix.exs?ref=master",
+    "git": "https://api.github.com/repos/Accenture/reactive-interaction-gateway/git/blobs/611c38ac024bbe16004d106167ac5d840a56523d",
+    "html": "https://github.com/Accenture/reactive-interaction-gateway/blob/master/mix.exs"
+  }
+}

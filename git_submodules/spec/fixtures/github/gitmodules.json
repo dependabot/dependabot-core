@@ -1,0 +1,18 @@
+{
+    "name": ".gitmodules",
+    "path": ".gitmodules",
+    "sha": "dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "size": 291,
+    "url": "https://api.github.com/repos/gocardless/bump/contents/.gitmodules?ref=master",
+    "html_url": "https://github.com/gocardless/bump/blob/master/.gitmodules",
+    "git_url": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+    "download_url": "https://raw.githubusercontent.com/gocardless/bump/master/.gitmodules?token=ABF4KfGg6a7sE1n1i2rrhUvqAKRhIkPiks5WD8X5wA%3D%3D",
+    "type": "file",
+    "content": "W3N1Ym1vZHVsZSAiYWJvdXQvZG9jdW1lbnRzIl0KICBwYXRoID0gYWJvdXQv\nZG9jdW1lbnRzCiAgdXJsID0gaHR0cHM6Ly9naXRodWIuY29tL2V4YW1wbGUv\nZG9jdW1lbnRzLmdpdAogIGJyYW5jaCA9IGdoLXBhZ2VzCltzdWJtb2R1bGUg\nIm1hbmlmZXN0byJdCiAgcGF0aCA9IG1hbmlmZXN0bwogIHVybCA9IGh0dHBz\nOi8vZ2l0aHViLmNvbS9leGFtcGxlL21hbmlmZXN0by5naXQK\n",
+    "encoding": "base64",
+    "_links": {
+        "self": "https://api.github.com/repos/gocardless/bump/contents/.gitmodules?ref=master",
+        "git": "https://api.github.com/repos/gocardless/bump/git/blobs/dbce0c9e2e7efd19139c2c0aeb0110e837812c2f",
+        "html": "https://github.com/gocardless/bump/blob/master/.gitmodules"
+    }
+}

@@ -1,0 +1,4 @@
+source "https://rubygems.org"
+
+gem "couchrb", path: "vendor/couchrb"
+gem "net-imap", path: "vendor/net-imap"

@@ -1,0 +1,6 @@
+source "https://rubygems.org"
+
+# The Gemfile.lock for this project has `business` at 1.4.1, which has been
+# yanked
+gem "business", "~> 1.4"
+gem "statesman", "~> 1.2"

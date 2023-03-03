@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <RootNamespace></RootNamespace>
+    <IsPackable>False</IsPackable>
+    <NoWarn>CS0649;CS0169</NoWarn>
+
+    <!-- NUKE CONFIGURATION -->
+    <NukeVersion Condition="$(NukeVersion) == ''">0.1.434</NukeVersion>
+    <NukeCodeGeneration>False</NukeCodeGeneration>
+    <FunctionVersion>$(NukeVersion.Substring(2,2))</FunctionVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nuke.Common" Version="$(NukeVersion)" />
+    <PackageReference Include="Nuke.CodeGeneration" Version="$(NukeVersion)" Condition="'$(NukeCodeGeneration)' != 'False'" />
+    <PackageReference Include="GitVersion.CommandLine" Version="4.0.0-beta0012" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <NukeMetadata Include="**/*.json" Exclude="bin/**;obj/**" />
+    <None Remove="*.csproj.dotsettings;_schema.json;*.ref.*.txt" />
+    <None Remove="*.json;*.json.new" Condition="'$(NukeCodeGeneration)' == 'False'" />
+  </ItemGroup>
+
+</Project>

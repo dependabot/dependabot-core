@@ -1,0 +1,45 @@
+{
+    "objectId": "9fea8a9fd1877daecde8f80137f9dfee6ec0b01a",
+    "url": "https://dev.azure.com/org/gocardless/_apis/git/repositories/bump/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a",
+    "treeEntries": [
+        {
+            "objectId": "3e759b75bf455ac809d0987d369aab89137b568a",
+            "relativePath": "requirements.txt",
+            "mode": "100644",
+            "gitObjectType": "blob",
+            "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/3e759b75bf455ac809d0987d369aab89137b568a",
+            "size": 5582
+        },
+        {
+            "objectId": "8b23cf04122670142ba2e64c7b3293f82409726a",
+            "relativePath": "CHANGELOG.md",
+            "mode": "100644",
+            "gitObjectType": "blob",
+            "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/8b23cf04122670142ba2e64c7b3293f82409726a",
+            "size": 1250
+        }
+    ],
+    "size": 180,
+    "_links": {
+        "self": {
+            "href": "https://dev.azure.com/org/gocardless/_apis/git/repositories/bump/trees/9fea8a9fd1877daecde8f80137f9dfee6ec0b01a"
+        },
+        "repository": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a"
+        },
+        "treeEntries": [
+            {
+                "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/3e759b75bf455ac809d0987d369aab89137b568a"
+            },
+            {
+                "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/trees/8b23cf04122670142ba2e64c7b3293f82409726a"
+            },
+            {
+                "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/d476f1a7d1d6b24e05ca34abec0301c0a209a34a"
+            },
+            {
+                "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/blobs/925dd1b77d02eb1366af7b4b3f878099a7a407fa"
+            }
+        ]
+    }
+}

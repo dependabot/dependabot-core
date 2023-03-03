@@ -1,0 +1,8 @@
+/.bundle/
+!.bundle/config
+/.env
+/tmp
+/dependabot-*.gem
+Properties/
+bin/
+obj/

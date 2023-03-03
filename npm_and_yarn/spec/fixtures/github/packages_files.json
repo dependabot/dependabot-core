@@ -1,0 +1,50 @@
+[
+    {
+        "name": "README.md",
+        "path": "README.md",
+        "sha": "f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+        "size": 4187,
+        "url": "https://api.github.com/repos/gocardless/business/contents/README.md?ref=master",
+        "html_url": "https://github.com/gocardless/business/blob/master/README.md",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/blobs/f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+        "download_url": "https://raw.githubusercontent.com/gocardless/business/master/README.md",
+        "type": "file",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/README.md?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/blobs/f3b764a5099ffa9f52a7e1799e85bd8171036cbb",
+            "html": "https://github.com/gocardless/business/blob/master/README.md"
+        }
+    },
+    {
+        "name": "package1",
+        "path": "packages/package1",
+        "sha": "9a243198d483ad8407f8ee38d8e5bb1b18564d8f",
+        "size": 0,
+        "url": "https://api.github.com/repos/gocardless/business/contents/lib?ref=master",
+        "html_url": "https://github.com/gocardless/business/tree/master/lib",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/trees/9a243198d483ad8407f8ee38d8e5bb1b18564d8f",
+        "download_url": null,
+        "type": "dir",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/lib?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/trees/9a243198d483ad8407f8ee38d8e5bb1b18564d8f",
+            "html": "https://github.com/gocardless/business/tree/master/lib"
+        }
+    },
+    {
+        "name": "package2",
+        "path": "packages/package2",
+        "sha": "ddaa472673172f2407888ec366282a08b23f681c",
+        "size": 0,
+        "url": "https://api.github.com/repos/gocardless/business/contents/spec?ref=master",
+        "html_url": "https://github.com/gocardless/business/tree/master/spec",
+        "git_url": "https://api.github.com/repos/gocardless/business/git/trees/ddaa472673172f2407888ec366282a08b23f681c",
+        "download_url": null,
+        "type": "dir",
+        "_links": {
+            "self": "https://api.github.com/repos/gocardless/business/contents/spec?ref=master",
+            "git": "https://api.github.com/repos/gocardless/business/git/trees/ddaa472673172f2407888ec366282a08b23f681c",
+            "html": "https://github.com/gocardless/business/tree/master/spec"
+        }
+    }
+]

@@ -1,0 +1,158 @@
+{
+    "categories": [],
+    "crate": {
+        "badges": [],
+        "categories": [],
+        "created_at": "2015-10-16T01:21:55.954778+00:00",
+        "description": "Convert ranges of Unicode codepoints to UTF-8 byte ranges.",
+        "documentation": "https://docs.rs/utf8-ranges",
+        "downloads": 3284871,
+        "exact_match": false,
+        "homepage": "https://github.com/BurntSushi/utf8-ranges",
+        "id": "utf8-ranges",
+        "keywords": [
+            "utf8",
+            "range",
+            "codepoint",
+            "automaton"
+        ],
+        "links": {
+            "owner_team": "/api/v1/crates/utf8-ranges/owner_team",
+            "owner_user": "/api/v1/crates/utf8-ranges/owner_user",
+            "owners": "/api/v1/crates/utf8-ranges/owners",
+            "reverse_dependencies": "/api/v1/crates/utf8-ranges/reverse_dependencies",
+            "version_downloads": "/api/v1/crates/utf8-ranges/downloads",
+            "versions": null
+        },
+        "max_version": "1.0.0",
+        "name": "utf8-ranges",
+        "recent_downloads": 535554,
+        "repository": "https://github.com/BurntSushi/utf8-ranges",
+        "updated_at": "2016-12-30T07:10:09.763299+00:00",
+        "versions": [
+            41152,
+            16797,
+            16796,
+            16754,
+            16753
+        ]
+    },
+    "keywords": [
+        {
+            "crates_cnt": 5,
+            "created_at": "2015-01-05T01:40:27.031846+00:00",
+            "id": "utf8",
+            "keyword": "utf8"
+        },
+        {
+            "crates_cnt": 10,
+            "created_at": "2015-01-07T18:19:09.315276+00:00",
+            "id": "range",
+            "keyword": "range"
+        },
+        {
+            "crates_cnt": 3,
+            "created_at": "2015-10-16T01:21:56.005386+00:00",
+            "id": "codepoint",
+            "keyword": "codepoint"
+        },
+        {
+            "crates_cnt": 4,
+            "created_at": "2015-10-16T01:21:56.015028+00:00",
+            "id": "automaton",
+            "keyword": "automaton"
+        }
+    ],
+    "versions": [
+        {
+            "crate": "utf8-ranges",
+            "created_at": "2016-12-30T07:10:09.763299+00:00",
+            "dl_path": "/api/v1/crates/utf8-ranges/1.0.0/download",
+            "downloads": 1539064,
+            "features": {},
+            "id": 41152,
+            "license": "Unlicense/MIT",
+            "links": {
+                "authors": "/api/v1/crates/utf8-ranges/1.0.0/authors",
+                "dependencies": "/api/v1/crates/utf8-ranges/1.0.0/dependencies",
+                "version_downloads": "/api/v1/crates/utf8-ranges/1.0.0/downloads"
+            },
+            "num": "1.0.0",
+            "readme_path": "/api/v1/crates/utf8-ranges/1.0.0/readme",
+            "updated_at": "2017-11-30T02:33:46.765119+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "utf8-ranges",
+            "created_at": "2015-10-17T05:51:10.576605+00:00",
+            "dl_path": "/api/v1/crates/utf8-ranges/0.1.3/download",
+            "downloads": 1745282,
+            "features": {},
+            "id": 16797,
+            "license": "Unlicense/MIT",
+            "links": {
+                "authors": "/api/v1/crates/utf8-ranges/0.1.3/authors",
+                "dependencies": "/api/v1/crates/utf8-ranges/0.1.3/dependencies",
+                "version_downloads": "/api/v1/crates/utf8-ranges/0.1.3/downloads"
+            },
+            "num": "0.1.3",
+            "readme_path": "/api/v1/crates/utf8-ranges/0.1.3/readme",
+            "updated_at": "2017-11-30T03:33:11.153692+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "utf8-ranges",
+            "created_at": "2015-10-17T05:36:16.573445+00:00",
+            "dl_path": "/api/v1/crates/utf8-ranges/0.1.2/download",
+            "downloads": 169,
+            "features": {},
+            "id": 16796,
+            "license": "Unlicense/MIT",
+            "links": {
+                "authors": "/api/v1/crates/utf8-ranges/0.1.2/authors",
+                "dependencies": "/api/v1/crates/utf8-ranges/0.1.2/dependencies",
+                "version_downloads": "/api/v1/crates/utf8-ranges/0.1.2/downloads"
+            },
+            "num": "0.1.2",
+            "readme_path": "/api/v1/crates/utf8-ranges/0.1.2/readme",
+            "updated_at": "2017-11-30T03:52:51.656612+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "utf8-ranges",
+            "created_at": "2015-10-16T01:24:16.945496+00:00",
+            "dl_path": "/api/v1/crates/utf8-ranges/0.1.1/download",
+            "downloads": 202,
+            "features": {},
+            "id": 16754,
+            "license": "Unlicense/MIT",
+            "links": {
+                "authors": "/api/v1/crates/utf8-ranges/0.1.1/authors",
+                "dependencies": "/api/v1/crates/utf8-ranges/0.1.1/dependencies",
+                "version_downloads": "/api/v1/crates/utf8-ranges/0.1.1/downloads"
+            },
+            "num": "0.1.1",
+            "readme_path": "/api/v1/crates/utf8-ranges/0.1.1/readme",
+            "updated_at": "2017-11-30T02:27:13.031880+00:00",
+            "yanked": false
+        },
+        {
+            "crate": "utf8-ranges",
+            "created_at": "2015-10-16T01:21:55.967680+00:00",
+            "dl_path": "/api/v1/crates/utf8-ranges/0.1.0/download",
+            "downloads": 154,
+            "features": {},
+            "id": 16753,
+            "license": "Unlicense/MIT",
+            "links": {
+                "authors": "/api/v1/crates/utf8-ranges/0.1.0/authors",
+                "dependencies": "/api/v1/crates/utf8-ranges/0.1.0/dependencies",
+                "version_downloads": "/api/v1/crates/utf8-ranges/0.1.0/downloads"
+            },
+            "num": "0.1.0",
+            "readme_path": "/api/v1/crates/utf8-ranges/0.1.0/readme",
+            "updated_at": "2017-11-30T03:54:43.127640+00:00",
+            "yanked": false
+        }
+    ]
+}

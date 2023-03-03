@@ -1,0 +1,11 @@
+{
+    "message": "Validation Failed",
+    "errors": [
+        {
+            "resource": "PullRequest",
+            "code": "custom",
+            "message": "A pull request already exists for base branch 'develop' and head branch 'dependabot/maven/com.fasterxml.jackson.dataformat-jackson-dataformat-xml-2.9.7"
+        }
+    ],
+    "documentation_url": "https://developer.github.com/v3/pulls/#update-a-pull-request"
+}

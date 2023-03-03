@@ -1,0 +1,5 @@
+name: dependabot_testcase
+environment:
+  sdk: ^3.5.0
+dependencies:
+  retry: ^3.0.0

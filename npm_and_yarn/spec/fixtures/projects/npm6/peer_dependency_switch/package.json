@@ -1,0 +1,9 @@
+{
+  "name": "dependabot-website",
+  "description": "https://dependabot.com/",
+  "version": "1.0.0",
+  "author": "Harry Marr <harry.marr@gmail.com>",
+  "dependencies": {
+    "react-burger-menu": "~1.8.0"
+  }
+}

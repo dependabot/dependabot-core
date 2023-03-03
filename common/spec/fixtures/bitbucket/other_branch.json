@@ -1,0 +1,97 @@
+{
+    "default_merge_strategy": "merge_commit",
+    "heads": [
+        {
+            "hash": "4c2ea65f2eb932c438557cb6ec29b984794c6108",
+            "links": {
+                "html": {
+                    "href": "https://bitbucket.org/gocardless/bump/commits/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+                },
+                "self": {
+                    "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+                }
+            },
+            "type": "commit"
+        }
+    ],
+    "links": {
+        "commits": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commits/stable"
+        },
+        "html": {
+            "href": "https://bitbucket.org/gocardless/bump/branch/stable"
+        },
+        "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/refs/branches/stable"
+        }
+    },
+    "merge_strategies": [
+        "merge_commit"
+    ],
+    "name": "stable",
+    "target": {
+        "author": {
+            "raw": "Jeff Davis <davis.jeffrey@gmail.com>",
+            "type": "author"
+        },
+        "date": "2008-10-14T05:27:45+00:00",
+        "hash": "4c2ea65f2eb932c438557cb6ec29b984794c6108",
+        "links": {
+            "approve": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/4c2ea65f2eb932c438557cb6ec29b984794c6108/approve"
+            },
+            "comments": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/4c2ea65f2eb932c438557cb6ec29b984794c6108/comments"
+            },
+            "diff": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/diff/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+            },
+            "html": {
+                "href": "https://bitbucket.org/gocardless/bump/commits/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+            },
+            "patch": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/patch/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+            },
+            "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/4c2ea65f2eb932c438557cb6ec29b984794c6108"
+            },
+            "statuses": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/4c2ea65f2eb932c438557cb6ec29b984794c6108/statuses"
+            }
+        },
+        "message": "Merged revisions 175 via svnmerge from\nsvn+ssh://jdavis@rubyforge.org/var/svn/ruby-pg/ruby-pg/trunk\n\n........\n  r175 | jdavis | 2008-10-13 22:25:00 -0700 (Mon, 13 Oct 2008) | 4 lines\n\n\n  Revert r172.\n........",
+        "parents": [
+            {
+                "hash": "7e7c22be0302b00ea4da328aeaaf4d27530f65ca",
+                "links": {
+                    "html": {
+                        "href": "https://bitbucket.org/gocardless/bump/commits/7e7c22be0302b00ea4da328aeaaf4d27530f65ca"
+                    },
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/7e7c22be0302b00ea4da328aeaaf4d27530f65ca"
+                    }
+                },
+                "type": "commit"
+            }
+        ],
+        "repository": {
+            "full_name": "gocardless/bump",
+            "links": {
+                "avatar": {
+                    "href": "https://bytebucket.org/ravatar/%7B5c90c765-fa64-474a-b9de-e8fe69162212%7D?ts=c"
+                },
+                "html": {
+                    "href": "https://bitbucket.org/gocardless/bump"
+                },
+                "self": {
+                    "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump"
+                }
+            },
+            "name": "bump",
+            "type": "repository",
+            "uuid": "{5c90c765-fa64-474a-b9de-e8fe69162212}"
+        },
+        "type": "commit"
+    },
+    "type": "named_branch"
+}

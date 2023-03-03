@@ -1,0 +1,23 @@
+{
+    "type": "application",
+    "source-directories": [
+        "src/frontend"
+    ],
+    "dependencies": {
+        "direct": {
+            "elm/html": "1.0.0",
+            "elm/browser": "1.0.0"
+        },
+        "indirect": {
+            "elm/parser": "1.0.0",
+            "elm/time": "1.0.0",
+            "elm/virtual-dom": "1.0.0"
+        }
+    },
+    "test-dependencies": {
+        "direct": {
+            "elm/regex": "1.0.0"
+        },
+        "indirect": {}
+    }
+}

@@ -1,0 +1,4 @@
+{
+  "message": "Required status check \"ci/jenkins/pr-merge\" is expected. At least 1 approving review is required by reviewers with write access.",
+  "documentation_url": "https://help.github.com/articles/about-protected-branches"
+}

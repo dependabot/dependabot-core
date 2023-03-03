@@ -1,0 +1,58 @@
+group 'de.fhaachen'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = '1.1.4-3'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.github.jengelman.gradle.plugins:shadow:2.0.2"
+    }
+}
+
+apply plugin: 'kotlin'
+apply plugin: "com.github.johnrengelman.shadow"
+
+repositories {
+    mavenCentral()
+}
+
+// Here to ensure we don't parse SCM URLs as dependency declarations
+scm {
+    url 'scm:git@github.com:mapfish/mapfish-print.git'
+    connection 'scm:git@github.com:mapfish/mapfish-print.git'
+    developerConnection 'scm:git@github.com:mapfish/mapfish-print.git'
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "com.sparkjava:spark-core:2.5.4@jar"
+    compile "org.slf4j:slf4j-simple:1.7.21"
+    compile 'com.github.jeremyh:jBCrypt:master-SNAPSHOT'
+    compile 'com.github.salomonbrys.kotson:kotson:2.5.0'
+    compile 'mysql:mysql-connector-java:5.1.6'
+    compile "com.github.heremaps:oksse:be5d2cd6deb8cf3ca2c9a740bdacec816871d4f7"
+    
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'de.fhaachen.cryptoclicker.MainKt'
+    }
+}
+
+shadowJar {
+    mergeServiceFiles()
+    configurations = [project.configurations.compile]
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+build.dependsOn shadowJar

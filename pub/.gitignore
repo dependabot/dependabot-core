@@ -1,0 +1,7 @@
+/.bundle/
+!.bundle/config
+/.env
+/tmp
+/dependabot-*.gem
+.dart_tool/
+.packages

@@ -1,0 +1,10 @@
+{
+  "name": "yanked",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "etag": "^1.0.0",
+    "lodash": "^99.0.0"
+  }
+}

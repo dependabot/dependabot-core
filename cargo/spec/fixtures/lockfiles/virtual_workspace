@@ -1,0 +1,33 @@
+[[package]]
+name = "cfg-if"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "dependabot_sub_crate"
+version = "0.2.0"
+dependencies = [
+ "log 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "dependabot_sub_crate2"
+version = "0.2.0"
+dependencies = [
+ "dependabot_sub_crate 0.2.0",
+]
+
+[[package]]
+name = "dependabot_sub_crate3"
+version = "0.2.0"
+dependencies = [
+ "dependabot_sub_crate 0.2.0",
+]
+
+[[package]]
+name = "log"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]

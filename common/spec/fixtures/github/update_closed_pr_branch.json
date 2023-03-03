@@ -1,0 +1,11 @@
+{
+    "message": "Cannot change base branch of closed pull request",
+    "errors": [
+        {
+            "resource": "PullRequest",
+            "code": "invalid",
+            "field": "base"
+        }
+    ],
+    "documentation_url": "https://developer.github.com/v3/pulls/#update-a-pull-request"
+}

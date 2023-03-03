@@ -1,0 +1,17 @@
+{
+    "type": "application",
+    "source-directories": [
+    ],
+    "elm-version": "0.19.0",
+    "dependencies": {
+        "direct": {
+            "NoRedInk/datetimepicker": "3.0.0"
+        },
+        "indirect": {
+        }
+    },
+    "test-dependencies": {
+        "direct": {},
+        "indirect": {}
+    }
+}

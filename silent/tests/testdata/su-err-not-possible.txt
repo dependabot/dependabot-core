@@ -1,0 +1,48 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr security_update_not_possible
+stdout '{"data":{"error-type":"security_update_not_possible","error-details":{"conflicting-dependencies":\[\],"dependency-name":"dependency-a","latest-resolvable-version":"","lowest-non-vulnerable-version":""}},"type":"record_update_job_error"}'
+! stdout create_pull_request
+
+# Since there are no updates for dependency-a that are not vulnerable, the security update is not possible.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" },
+  "dependency-b": { "version": "2.3.4" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.4",
+    "1.3.0",
+    "2.0.0"
+  ]
+}
+
+-- dependency-b --
+{
+  "versions": [
+    "2.3.4",
+    "2.3.5"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - dependency-a
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: dependency-a
+      affected-versions:
+        - <= 9.0.0
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

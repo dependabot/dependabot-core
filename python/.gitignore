@@ -1,0 +1,6 @@
+/.bundle/
+!.bundle/config
+/.env
+/tmp
+/dependabot-*.gem
+helpers/install-dir

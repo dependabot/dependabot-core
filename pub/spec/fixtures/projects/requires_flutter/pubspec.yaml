@@ -1,0 +1,10 @@
+name: foo
+environment:
+  flutter: '>= 3.24.0'
+  sdk: '^3.5.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  lints: ^3.0.0

@@ -1,0 +1,242 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "7e91b6639922ea70f2883ce6db4238158f0e37bc",
+    "size": 29,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/7e91b6639922ea70f2883ce6db4238158f0e37bc",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/7e91b6639922ea70f2883ce6db4238158f0e37bc",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": "Gopkg.lock",
+    "path": "Gopkg.lock",
+    "sha": "a67e32e5016a0c87370ab615a2e425aaf428700a",
+    "size": 6328,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/Gopkg.lock?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/Gopkg.lock",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/a67e32e5016a0c87370ab615a2e425aaf428700a",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/Gopkg.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/Gopkg.lock?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/a67e32e5016a0c87370ab615a2e425aaf428700a",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/Gopkg.lock"
+    }
+  },
+  {
+    "name": "Gopkg.toml",
+    "path": "Gopkg.toml",
+    "sha": "e82880283ab7883139621a9ac5e0e0d726e99830",
+    "size": 687,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/Gopkg.toml?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/Gopkg.toml",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/e82880283ab7883139621a9ac5e0e0d726e99830",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/Gopkg.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/Gopkg.toml?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/e82880283ab7883139621a9ac5e0e0d726e99830",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/Gopkg.toml"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "a72e778c43dfa8f21e3f0523df00362acc18d367",
+    "size": 1080,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/a72e778c43dfa8f21e3f0523df00362acc18d367",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/a72e778c43dfa8f21e3f0523df00362acc18d367",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "d5eea791577773aeb5f3df32c0b5db2ca144a917",
+    "size": 17991,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/README.md?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/d5eea791577773aeb5f3df32c0b5db2ca144a917",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/d5eea791577773aeb5f3df32c0b5db2ca144a917",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/README.md"
+    }
+  },
+  {
+    "name": "alias",
+    "path": "alias",
+    "sha": "734729db20202ea30874b002bf0fa045811f2b3f",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/alias?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/alias",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/734729db20202ea30874b002bf0fa045811f2b3f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/alias?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/734729db20202ea30874b002bf0fa045811f2b3f",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/alias"
+    }
+  },
+  {
+    "name": "aliases",
+    "path": "aliases",
+    "sha": "e85fe9dbbb9a4f3a0d66c699c7d06e3118845d1a",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/aliases?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/aliases",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/e85fe9dbbb9a4f3a0d66c699c7d06e3118845d1a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/aliases?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/e85fe9dbbb9a4f3a0d66c699c7d06e3118845d1a",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/aliases"
+    }
+  },
+  {
+    "name": "cmd",
+    "path": "cmd",
+    "sha": "f261ba43c83621b43057be3eef1dd8f5e5ed4146",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/cmd?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/cmd",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/f261ba43c83621b43057be3eef1dd8f5e5ed4146",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/cmd?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/f261ba43c83621b43057be3eef1dd8f5e5ed4146",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/cmd"
+    }
+  },
+  {
+    "name": "command",
+    "path": "command",
+    "sha": "f6e3bdc0588698a9ff866b47b2269a0f09853874",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/command?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/command",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/f6e3bdc0588698a9ff866b47b2269a0f09853874",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/command?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/f6e3bdc0588698a9ff866b47b2269a0f09853874",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/command"
+    }
+  },
+  {
+    "name": "commandlist",
+    "path": "commandlist",
+    "sha": "245c319d66325245bf2a0edc18b36abf167c97b7",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/commandlist?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/commandlist",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/245c319d66325245bf2a0edc18b36abf167c97b7",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/commandlist?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/245c319d66325245bf2a0edc18b36abf167c97b7",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/commandlist"
+    }
+  },
+  {
+    "name": "composer",
+    "path": "composer",
+    "sha": "516cbce2375b703b4b247ff9032ccca622049600",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/composer?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/composer",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/516cbce2375b703b4b247ff9032ccca622049600",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/composer?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/516cbce2375b703b4b247ff9032ccca622049600",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/composer"
+    }
+  },
+  {
+    "name": "main.go",
+    "path": "main.go",
+    "sha": "88e3091a8e0f00d7af1ef2d9bef6f61521b49829",
+    "size": 696,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/main.go?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/blob/master/main.go",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/88e3091a8e0f00d7af1ef2d9bef6f61521b49829",
+    "download_url": "https://raw.githubusercontent.com/fubarhouse/drubuild/master/main.go",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/main.go?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/blobs/88e3091a8e0f00d7af1ef2d9bef6f61521b49829",
+      "html": "https://github.com/fubarhouse/drubuild/blob/master/main.go"
+    }
+  },
+  {
+    "name": "make",
+    "path": "make",
+    "sha": "a18edaace3ac19d6daaccc6ffe5b97b4afcd92d5",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/make?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/make",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/a18edaace3ac19d6daaccc6ffe5b97b4afcd92d5",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/make?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/a18edaace3ac19d6daaccc6ffe5b97b4afcd92d5",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/make"
+    }
+  },
+  {
+    "name": "user",
+    "path": "user",
+    "sha": "bd578b8457dd84a2da03d6b648a34c26c2a7c4a1",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/user?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/user",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/bd578b8457dd84a2da03d6b648a34c26c2a7c4a1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/user?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/bd578b8457dd84a2da03d6b648a34c26c2a7c4a1",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/user"
+    }
+  },
+  {
+    "name": "vhost",
+    "path": "vhost",
+    "sha": "99c21b67c1c7393ba95c0f7c5712a454d7c20980",
+    "size": 0,
+    "url": "https://api.github.com/repos/fubarhouse/drubuild/contents/vhost?ref=master",
+    "html_url": "https://github.com/fubarhouse/drubuild/tree/master/vhost",
+    "git_url": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/99c21b67c1c7393ba95c0f7c5712a454d7c20980",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/fubarhouse/drubuild/contents/vhost?ref=master",
+      "git": "https://api.github.com/repos/fubarhouse/drubuild/git/trees/99c21b67c1c7393ba95c0f7c5712a454d7c20980",
+      "html": "https://github.com/fubarhouse/drubuild/tree/master/vhost"
+    }
+  }
+]

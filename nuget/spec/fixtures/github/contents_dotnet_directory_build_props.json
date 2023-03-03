@@ -1,0 +1,18 @@
+{
+  "name": "Directory.Build.props",
+  "path": "Directory.Build.props",
+  "sha": "0a0ea641fe436b7d9258ae145c1890c23be015a9",
+  "size": 504,
+  "url": "https://api.github.com/repos/jyotirmaya12/MusicStore/contents/Directory.Build.props?ref=master",
+  "html_url": "https://github.com/jyotirmaya12/MusicStore/blob/master/Directory.Build.props",
+  "git_url": "https://api.github.com/repos/jyotirmaya12/MusicStore/git/blobs/0a0ea641fe436b7d9258ae145c1890c23be015a9",
+  "download_url": "https://raw.githubusercontent.com/jyotirmaya12/MusicStore/master/Directory.Build.props",
+  "type": "file",
+  "content": "77u/PFByb2plY3Q+CiAgPEltcG9ydAogICAgUHJvamVjdD0iJChbTVNCdWls\nZF06OkdldERpcmVjdG9yeU5hbWVPZkZpbGVBYm92ZSgkKE1TQnVpbGRUaGlz\nRmlsZURpcmVjdG9yeSksIEFzcE5ldENvcmVTZXR0aW5ncy5wcm9wcykpXEFz\ncE5ldENvcmVTZXR0aW5ncy5wcm9wcyIKICAgIENvbmRpdGlvbj0iICckKENJ\nKScgIT0gJ3RydWUnIEFORCAnJChbTVNCdWlsZF06OkdldERpcmVjdG9yeU5h\nbWVPZkZpbGVBYm92ZSgkKE1TQnVpbGRUaGlzRmlsZURpcmVjdG9yeSksIEFz\ncE5ldENvcmVTZXR0aW5ncy5wcm9wcykpJyAhPSAnJyAiIC8+CgogIDxJbXBv\ncnQgUHJvamVjdD0iYnVpbGRcZGVwZW5kZW5jaWVzLnByb3BzIiAvPgogIDxJ\nbXBvcnQgUHJvamVjdD0iYnVpbGRcc291cmNlcy5wcm9wcyIgLz4KCiAgPFBy\nb3BlcnR5R3JvdXA+CiAgICA8VHJlYXRXYXJuaW5nc0FzRXJyb3JzPnRydWU8\nL1RyZWF0V2FybmluZ3NBc0Vycm9ycz4KICA8L1Byb3BlcnR5R3JvdXA+Cjwv\nUHJvamVjdD4K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/jyotirmaya12/MusicStore/contents/Directory.Build.props?ref=master",
+    "git": "https://api.github.com/repos/jyotirmaya12/MusicStore/git/blobs/0a0ea641fe436b7d9258ae145c1890c23be015a9",
+    "html": "https://github.com/jyotirmaya12/MusicStore/blob/master/Directory.Build.props"
+  }
+}

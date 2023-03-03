@@ -1,0 +1,10 @@
+[submodule "about/documents"]
+  path = about/documents
+  url = git@github.com:example/documents.git
+  branch = gh-pages
+[submodule "custom-name"]
+  path = manifesto
+  url = https://github.com/example/manifesto.git
+[submodule "relative/url"]
+  path = relative/url
+  url = ../such-relative.git

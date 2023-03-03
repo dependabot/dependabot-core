@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "Cargo.toml",
+  "sha": "49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+  "size": 1966,
+  "url": "https://api.github.com/repos/rust-lang/crates.io/contents/Cargo.toml?ref=master",
+  "html_url": "https://github.com/rust-lang/crates.io/blob/master/Cargo.toml",
+  "git_url": "https://api.github.com/repos/rust-lang/crates.io/git/blobs/49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+  "download_url": "https://raw.githubusercontent.com/rust-lang/crates.io/master/Cargo.toml",
+  "type": "file",
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAicGhvdG9veGlkZSIKdmVyc2lvbiA9ICIwLjEu\nMCIKYXV0aG9ycyA9IFsiR3V5IFRheWxvciA8dGhlYmlnZ3V5LmNvLnVrQGdt\nYWlsLmNvbT4iXQoKW2RlcGVuZGVuY2llc10KZ29vZ2xlLXBob3Rvc2xpYnJh\ncnkxID0geyBnaXQgPSAiaHR0cHM6Ly9naXRodWIuY29tL1RoZUJpZ2dlckd1\neS9nb29nbGUtYXBpcy1ycyIsIHBhdGggPSAiZ2VuL3Bob3Rvc2xpYnJhcnkx\nIiwgYnJhbmNoID0gInBob3Rvc2xpYnJhcnlfc3RyX2ludCIgfQpmdXNlID0g\nIjAuMy4xIgpoeXBlciA9ICJeIDAuMTAiCmh5cGVyLXJ1c3RscyA9ICJeMC42\nIgp5dXAtb2F1dGgyID0gIl4gMS4wIgpzZXJkZSA9ICIqIgpzZXJkZV9qc29u\nID0gIioiCnNlcmRlX2Rlcml2ZSA9ICIqIgp0aW1lID0gIioiCmVudl9sb2dn\nZXIgPSAiKiIKbGliYyA9ICIqIgpsb2cgPSAiKiIKY2hyb25vID0gIjAuNCIK\ndXNlcnMgPSAiMC43IgpzY2hlZHVsZWQtZXhlY3V0b3IgPSAiMC40IgoKW2Rl\ncGVuZGVuY2llcy5ydXNxbGl0ZV0KdmVyc2lvbiA9ICIwLjE0LjAiCmZlYXR1\ncmVzID0gWyJidW5kbGVkIl0K\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/rust-lang/crates.io/contents/Cargo.toml?ref=master",
+    "git": "https://api.github.com/repos/rust-lang/crates.io/git/blobs/49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+    "html": "https://github.com/rust-lang/crates.io/blob/master/Cargo.toml"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "{{ name }}",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://github.com/waltfy/PROTO_TEST#readme",
+  "dependencies": {
+    "@Codertocat/hello-world-npm": "^0.0.1"
+  }
+}

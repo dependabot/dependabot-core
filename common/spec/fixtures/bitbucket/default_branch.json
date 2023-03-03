@@ -1,0 +1,124 @@
+{
+    "default_merge_strategy": "merge_commit",
+    "heads": [
+        {
+            "hash": "0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37",
+            "links": {
+                "html": {
+                    "href": "https://bitbucket.org/gocardless/bump/commits/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37"
+                },
+                "self": {
+                    "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37"
+                }
+            },
+            "type": "commit"
+        }
+    ],
+    "links": {
+        "commits": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commits/default"
+        },
+        "html": {
+            "href": "https://bitbucket.org/gocardless/bump/branch/default"
+        },
+        "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/refs/branches/default"
+        }
+    },
+    "merge_strategies": [
+        "merge_commit"
+    ],
+    "name": "default",
+    "target": {
+        "author": {
+            "raw": "Lars Kanis <lars@greiz-reinsdorf.de>",
+            "type": "author",
+            "user": {
+                "account_id": "557058:e7024124-e281-4b49-929e-aa8361e13886",
+                "display_name": "Lars Kanis",
+                "links": {
+                    "avatar": {
+                        "href": "https://bitbucket.org/account/larskanis/avatar/"
+                    },
+                    "html": {
+                        "href": "https://bitbucket.org/larskanis/"
+                    },
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/users/larskanis"
+                    }
+                },
+                "type": "user",
+                "username": "larskanis",
+                "uuid": "{5b2e2ff9-a608-4ab6-aff9-f0bc3703edea}"
+            }
+        },
+        "date": "2018-09-07T22:04:22+00:00",
+        "hash": "0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37",
+        "links": {
+            "approve": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37/approve"
+            },
+            "comments": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37/comments"
+            },
+            "diff": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/diff/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37"
+            },
+            "html": {
+                "href": "https://bitbucket.org/gocardless/bump/commits/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37"
+            },
+            "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37"
+            },
+            "statuses": {
+                "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/0fd7bb2494e8cc11c71c05f8f12deafa6b41fb37/statuses"
+            }
+        },
+        "message": "Merge changes on git",
+        "parents": [
+            {
+                "hash": "8423f6a31ef8c92424bbfdcf292cbf90581d0881",
+                "links": {
+                    "html": {
+                        "href": "https://bitbucket.org/gocardless/bump/commits/8423f6a31ef8c92424bbfdcf292cbf90581d0881"
+                    },
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/8423f6a31ef8c92424bbfdcf292cbf90581d0881"
+                    }
+                },
+                "type": "commit"
+            },
+            {
+                "hash": "f959ea54a397a1f32744db37cdfa4d670a3ddf4d",
+                "links": {
+                    "html": {
+                        "href": "https://bitbucket.org/gocardless/bump/commits/f959ea54a397a1f32744db37cdfa4d670a3ddf4d"
+                    },
+                    "self": {
+                        "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump/commit/f959ea54a397a1f32744db37cdfa4d670a3ddf4d"
+                    }
+                },
+                "type": "commit"
+            }
+        ],
+        "repository": {
+            "full_name": "gocardless/bump",
+            "links": {
+                "avatar": {
+                    "href": "https://bytebucket.org/ravatar/%7B5c90c765-fa64-474a-b9de-e8fe69162212%7D?ts=c"
+                },
+                "html": {
+                    "href": "https://bitbucket.org/gocardless/bump"
+                },
+                "self": {
+                    "href": "https://api.bitbucket.org/2.0/repositories/gocardless/bump"
+                }
+            },
+            "name": "bump",
+            "type": "repository",
+            "uuid": "{5c90c765-fa64-474a-b9de-e8fe69162212}"
+        },
+        "type": "commit"
+    },
+    "type": "named_branch"
+}

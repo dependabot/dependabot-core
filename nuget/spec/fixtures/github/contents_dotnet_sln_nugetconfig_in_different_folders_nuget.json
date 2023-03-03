@@ -1,0 +1,18 @@
+{
+  "name": "NuGet.config",
+  "path": "NuGet.config",
+  "sha": "c1e1ed578a37fac6a254216237791ce2b9ffdf68",
+  "size": 257,
+  "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/NuGet.config?ref=main",
+  "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/NuGet.config",
+  "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/c1e1ed578a37fac6a254216237791ce2b9ffdf68",
+  "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/NuGet.config",
+  "type": "file",
+  "content": "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPGNvbmZp\nZ3VyYXRpb24+CjxwYWNrYWdlU291cmNlcz4KICAgIDxjbGVhciAvPgogICAg\nPGFkZCBrZXk9IkxvY2FsRGV2IiB2YWx1ZT0iYXJ0aWZhY3RzIiAvPgogICAg\nPGFkZCBrZXk9Im51Z2V0Lm9yZyIgdmFsdWU9Imh0dHBzOi8vYXBpLm51Z2V0\nLm9yZy92My9pbmRleC5qc29uIiBwcm90b2NvbFZlcnNpb249IjMiIC8+Cjwv\ncGFja2FnZVNvdXJjZXM+CjwvY29uZmlndXJhdGlvbj4=\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/NuGet.config?ref=main",
+    "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/c1e1ed578a37fac6a254216237791ce2b9ffdf68",
+    "html": "https://github.com/ElectronNET/Electron.NET/blob/main/NuGet.config"
+  }
+}

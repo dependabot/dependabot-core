@@ -1,0 +1,13 @@
+[package]
+name = "dependabot" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+authors = ["support@dependabot.com"]
+
+[workspace]
+members = ["lib/sub_crate"]
+
+[dependencies]
+regex = "=0.2.10"
+
+[patch.crates-io]
+log = { git = "https://github.com/rust-lang-nursery/log" }

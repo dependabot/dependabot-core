@@ -1,0 +1,16 @@
+{
+  "requires": true,
+  "lockfileVersion": 1,
+  "dependencies": {
+    "etag": {
+      "version": "1.8.0",
+      "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.0.tgz",
+      "integrity": "sha1-Qa4u62XvpiJorr/qg6x9eSm111c="
+    },
+    "lodash": {
+      "version": "1.3.1",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-1.3.1.tgz",
+      "integrity": "sha1-pGY7U2hriV/wdOK6UE37dqjit3A="
+    }
+  }
+}

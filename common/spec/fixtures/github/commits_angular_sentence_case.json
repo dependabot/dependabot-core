@@ -1,0 +1,78 @@
+[
+  {
+    "sha": "10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "commit": {
+      "author": {
+        "name": "dependabot[bot]",
+        "email": "dependabot[bot]@users.noreply.github.com",
+        "date": "2017-12-08T08:52:57Z"
+      },
+      "committer": {
+        "name": "Lipis",
+        "email": "lipiridis@gmail.com",
+        "date": "2017-12-08T08:52:57Z"
+      },
+      "message": "chore(dependencies): Bump sinon from 4.1.2 to 4.1.3 (#103)\n\nBumps [sinon](https://github.com/sinonjs/sinon) from 4.1.2 to 4.1.3.\r\n- [Changelog](https://github.com/sinonjs/sinon/blob/master/History.md)\r\n- [Commits](https://github.com/sinonjs/sinon/commits/v4.1.3)",
+      "tree": {
+        "sha": "6eb23c51f73515e851071be31319ea1a9e109bba",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/trees/6eb23c51f73515e851071be31319ea1a9e109bba"
+      },
+      "url": "https://api.github.com/repos/wireapp/wire-web-packages/git/commits/10c8e4fc039ec6fa512264149067fbb8b0752452",
+      "comment_count": 0,
+      "verification": {
+        "verified": false,
+        "reason": "unsigned",
+        "signature": null,
+        "payload": null
+      }
+    },
+    "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "html_url": "https://github.com/wireapp/wire-web-packages/commit/10c8e4fc039ec6fa512264149067fbb8b0752452",
+    "comments_url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/10c8e4fc039ec6fa512264149067fbb8b0752452/comments",
+    "author": {
+      "login": "dependabot[bot]",
+      "id": 27856297,
+      "avatar_url": "https://avatars3.githubusercontent.com/in/2141?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/dependabot%5Bbot%5D",
+      "html_url": "https://github.com/apps/dependabot",
+      "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+      "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+      "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+      "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+      "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+      "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+      "type": "Bot",
+      "site_admin": false
+    },
+    "committer": {
+      "login": "lipis",
+      "id": 125676,
+      "avatar_url": "https://avatars1.githubusercontent.com/u/125676?v=4",
+      "gravatar_id": "",
+      "url": "https://api.github.com/users/lipis",
+      "html_url": "https://github.com/lipis",
+      "followers_url": "https://api.github.com/users/lipis/followers",
+      "following_url": "https://api.github.com/users/lipis/following{/other_user}",
+      "gists_url": "https://api.github.com/users/lipis/gists{/gist_id}",
+      "starred_url": "https://api.github.com/users/lipis/starred{/owner}{/repo}",
+      "subscriptions_url": "https://api.github.com/users/lipis/subscriptions",
+      "organizations_url": "https://api.github.com/users/lipis/orgs",
+      "repos_url": "https://api.github.com/users/lipis/repos",
+      "events_url": "https://api.github.com/users/lipis/events{/privacy}",
+      "received_events_url": "https://api.github.com/users/lipis/received_events",
+      "type": "User",
+      "site_admin": false
+    },
+    "parents": [
+      {
+        "sha": "b855453dd17c485121387eb24139bec9f25f5f37",
+        "url": "https://api.github.com/repos/wireapp/wire-web-packages/commits/b855453dd17c485121387eb24139bec9f25f5f37",
+        "html_url": "https://github.com/wireapp/wire-web-packages/commit/b855453dd17c485121387eb24139bec9f25f5f37"
+      }
+    ]
+  }
+]

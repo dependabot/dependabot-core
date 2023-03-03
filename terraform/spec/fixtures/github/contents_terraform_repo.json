@@ -1,0 +1,178 @@
+[
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "338e4eeb4765339f0a7aac0ff032cfae8041b252",
+    "size": 123,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/338e4eeb4765339f0a7aac0ff032cfae8041b252",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/338e4eeb4765339f0a7aac0ff032cfae8041b252",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".travis.yml",
+    "path": ".travis.yml",
+    "sha": "b7cf90109e1b115519d83fa72802103336abbe3e",
+    "size": 240,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/.travis.yml?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/.travis.yml",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/b7cf90109e1b115519d83fa72802103336abbe3e",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/.travis.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/.travis.yml?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/b7cf90109e1b115519d83fa72802103336abbe3e",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/.travis.yml"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "808ecf30b4a34cae955f534155e9be688947b83d",
+    "size": 11351,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/808ecf30b4a34cae955f534155e9be688947b83d",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/808ecf30b4a34cae955f534155e9be688947b83d",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "Makefile",
+    "sha": "97d80875cfdd973f66e6f551e7ea41111085539b",
+    "size": 389,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/Makefile?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/Makefile",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/97d80875cfdd973f66e6f551e7ea41111085539b",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/Makefile?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/97d80875cfdd973f66e6f551e7ea41111085539b",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/Makefile"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "7fbd7f9602f4611d907e35b7e892c7c84624c784",
+    "size": 14971,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/README.md?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/7fbd7f9602f4611d907e35b7e892c7c84624c784",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/7fbd7f9602f4611d907e35b7e892c7c84624c784",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/README.md"
+    }
+  },
+  {
+    "name": "README.yaml",
+    "path": "README.yaml",
+    "sha": "da094dc42a175aa0613c21f84ebb24f5e604d6ac",
+    "size": 3635,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/README.yaml?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/README.yaml",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/da094dc42a175aa0613c21f84ebb24f5e604d6ac",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/README.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/README.yaml?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/da094dc42a175aa0613c21f84ebb24f5e604d6ac",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/README.yaml"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "6a424f5261597fc5f8a7bc8d9a8c530781a6bfd4",
+    "size": 0,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/docs?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/tree/master/docs",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/trees/6a424f5261597fc5f8a7bc8d9a8c530781a6bfd4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/docs?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/trees/6a424f5261597fc5f8a7bc8d9a8c530781a6bfd4",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/tree/master/docs"
+    }
+  },
+  {
+    "name": "examples",
+    "path": "examples",
+    "sha": "e22ba8fbe1d7b50129db08264cadb62d21c97602",
+    "size": 0,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/examples?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/tree/master/examples",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/trees/e22ba8fbe1d7b50129db08264cadb62d21c97602",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/examples?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/trees/e22ba8fbe1d7b50129db08264cadb62d21c97602",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/tree/master/examples"
+    }
+  },
+  {
+    "name": "main.tf",
+    "path": "main.tf",
+    "sha": "9d12380afbaca16275c67d297883439fe47fbcb3",
+    "size": 4330,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/main.tf?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/main.tf",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/9d12380afbaca16275c67d297883439fe47fbcb3",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/main.tf",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/main.tf?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/9d12380afbaca16275c67d297883439fe47fbcb3",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/main.tf"
+    }
+  },
+  {
+    "name": "outputs.tf",
+    "path": "outputs.tf",
+    "sha": "2841e79a969e476886bf501d9c1da5224351bdfa",
+    "size": 1246,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/outputs.tf?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/outputs.tf",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/2841e79a969e476886bf501d9c1da5224351bdfa",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/outputs.tf",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/outputs.tf?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/2841e79a969e476886bf501d9c1da5224351bdfa",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/outputs.tf"
+    }
+  },
+  {
+    "name": "variables.tf",
+    "path": "variables.tf",
+    "sha": "62311455719d67af2877c617fc5ae5b3de679c68",
+    "size": 7266,
+    "url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/variables.tf?ref=master",
+    "html_url": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/variables.tf",
+    "git_url": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/62311455719d67af2877c617fc5ae5b3de679c68",
+    "download_url": "https://raw.githubusercontent.com/cloudposse/terraform-aws-cloudfront-cdn/master/variables.tf",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/contents/variables.tf?ref=master",
+      "git": "https://api.github.com/repos/cloudposse/terraform-aws-cloudfront-cdn/git/blobs/62311455719d67af2877c617fc5ae5b3de679c68",
+      "html": "https://github.com/cloudposse/terraform-aws-cloudfront-cdn/blob/master/variables.tf"
+    }
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "",
+  "workspaces": [
+    "./api"
+  ],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,0 +1,125 @@
+{
+    "@context": {
+        "@vocab": "http://schema.nuget.org/schema#",
+        "comment": "http://www.w3.org/2000/01/rdf-schema#comment"
+    },
+    "resources": [
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/autocomplete",
+            "@type": "SearchAutocompleteService",
+            "comment": "Autocomplete endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/autocomplete",
+            "@type": "SearchAutocompleteService/3.0.0-beta",
+            "comment": "Autocomplete endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/autocomplete",
+            "@type": "SearchAutocompleteService/3.0.0-rc",
+            "comment": "Autocomplete endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/query",
+            "@type": "SearchQueryService",
+            "comment": "Query endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/query",
+            "@type": "SearchQueryService/3.0.0-beta",
+            "comment": "Query endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/query",
+            "@type": "SearchQueryService/3.0.0-rc",
+            "comment": "Query endpoint of NuGet Search service."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl/3.0.0-beta",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl/3.0.0-rc",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl/3.4.0",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl/3.6.0",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format. This base URL includes SemVer 2.0.0 packages."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/",
+            "@type": "RegistrationsBaseUrl/Versioned",
+            "clientVersion": "4.3.0-alpha",
+            "comment": "Base URL of Azure storage where NuGet package registration info is stored in GZIP format. This base URL includes SemVer 2.0.0 packages."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/index.json",
+            "@type": "PackageDisplayMetadataUriTemplate",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/index.json",
+            "@type": "PackageDisplayMetadataUriTemplate/3.0.0-beta",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/index.json",
+            "@type": "PackageDisplayMetadataUriTemplate/3.0.0-rc",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/{version-lower}.json",
+            "@type": "PackageVersionDisplayMetadataUriTemplate",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID, Version."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/{version-lower}.json",
+            "@type": "PackageVersionDisplayMetadataUriTemplate/3.0.0-beta",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID, Version."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/registration1/{id-lower}/{version-lower}.json",
+            "@type": "PackageVersionDisplayMetadataUriTemplate/3.0.0-rc",
+            "comment": "URI template used by NuGet Client to construct display metadata for Packages using ID, Version."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/",
+            "@type": "PackageBaseAddress/3.0.0",
+            "comment": "Base URL of Azure storage where NuGet package registration info for DNX is stored."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v3/repository-signatures/index.json",
+            "@type": "RepositorySignatures/4.7.0",
+            "comment": "The endpoint for discovering information about this package source's repository signatures."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v2",
+            "@type": "LegacyGallery",
+            "comment": "Legacy gallery using the V2 protocol."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v2",
+            "@type": "LegacyGallery/2.0.0",
+            "comment": "Legacy gallery using the V2 protocol."
+        },
+        {
+            "@id": "https://www.myget.org/F/exceptionless/api/v2/package",
+            "@type": "PackagePublish/2.0.0",
+            "comment": "Legacy gallery publish endpoint using the V2 protocol."
+        }
+    ],
+    "version": "3.0.0"
+}

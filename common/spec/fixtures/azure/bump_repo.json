@@ -1,0 +1,49 @@
+{
+    "id": "3c492e10-aa73-4855-b11e-5d6d9bd7d03a",
+    "name": "bump",
+    "url": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a",
+    "project": {
+        "id": "8929b42a-8f67-4075-bdb1-908ea8ebfb3a",
+        "name": "bump",
+        "description": "Example project",
+        "url": "https://dev.azure.com/org/_apis/projects/8929b42a-8f67-4075-bdb1-908ea8ebfb3a",
+        "state": "wellFormed",
+        "revision": 46,
+        "visibility": "private",
+        "lastUpdateTime": "2019-06-11T20:18:58.59Z"
+    },
+    "defaultBranch": "refs/heads/master",
+    "size": 13541,
+    "remoteUrl": "https://org@dev.azure.com/org/gocardless/_git/bump",
+    "sshUrl": "git@ssh.dev.azure.com:v3/org/gocardless/bump",
+    "webUrl": "https://dev.azure.com/org/gocardless/_git/bump",
+    "_links": {
+        "self": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a"
+        },
+        "project": {
+            "href": "vstfs:///Classification/TeamProject/8929b42a-8f67-4075-bdb1-908ea8ebfb3a"
+        },
+        "web": {
+            "href": "https://dev.azure.com/org/gocardless/_git/bump"
+        },
+        "ssh": {
+            "href": "git@ssh.dev.azure.com:v3/org/gocardless/bump"
+        },
+        "commits": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/commits"
+        },
+        "refs": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/refs"
+        },
+        "pullRequests": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/pullRequests"
+        },
+        "items": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/items"
+        },
+        "pushes": {
+            "href": "https://dev.azure.com/org/8929b42a-8f67-4075-bdb1-908ea8ebfb3a/_apis/git/repositories/3c492e10-aa73-4855-b11e-5d6d9bd7d03a/pushes"
+        }
+    }
+}

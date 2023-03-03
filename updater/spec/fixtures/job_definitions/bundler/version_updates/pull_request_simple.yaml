@@ -1,0 +1,45 @@
+job:
+  allowed-updates:
+    - dependency-type: direct
+      update-type: all
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  credentials-metadata:
+    - type: git_source
+      host: github.com
+  debug:
+  dependencies:
+  dependency-groups: []
+  dependency-group-to-refresh:
+  existing-pull-requests:
+    - - dependency-name: "dummy-pkg-a"
+        dependency-version: 2.0.0
+  existing-group-pull-requests: []
+  experiments:
+    record-ecosystem-versions: true
+    record-update-job-unknown-error: true
+    proxy-cached: true
+    dependency-change-validation: true
+  ignore-conditions: []
+  lockfile-only: false
+  max-updater-run-time: 2700
+  package-manager: bundler
+  proxy-log-response-body-on-auth-failure: true
+  requirements-update-strategy: bump_versions_if_necessary
+  reject-external-code: false
+  security-advisories: []
+  security-updates-only: false
+  source:
+    provider: github
+    repo: bundler/test-repo
+    branch:
+    directory: "/."
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    commit: 6654774ff4d65e1165d598e8c7f19a815dfd66ee
+  updating-a-pull-request: false
+  update-subdependencies: false
+  vendor-dependencies: false
+  repo-private: true

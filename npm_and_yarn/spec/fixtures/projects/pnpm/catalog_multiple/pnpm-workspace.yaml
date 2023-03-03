@@ -1,0 +1,6 @@
+packages:
+  - packages/*
+
+catalog:
+  prettier: ^3.3.0
+  left-pad: ^1.0.1

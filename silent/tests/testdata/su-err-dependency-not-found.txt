@@ -1,0 +1,37 @@
+! dependabot update -f input.yml --local . --updater-image ghcr.io/dependabot/dependabot-updater-silent
+stderr security_update_dependency_not_found
+stdout '{"data":{"error-type":"security_update_dependency_not_found","error-details":{}},"type":"record_update_job_error"}'
+! stdout create_pull_request
+
+# Since 'not-found' is not in the manifest, it errors with security_update_dependency_not_found.
+
+-- manifest.json --
+{
+  "dependency-a": { "version": "1.2.3" }
+}
+
+-- dependency-a --
+{
+  "versions": [
+    "1.2.3"
+  ]
+}
+
+-- input.yml --
+job:
+  package-manager: "silent"
+  dependencies:
+    - not-found
+  source:
+    directory: "/"
+    provider: example
+    hostname: example.com
+    api-endpoint: https://example.com/api/v3
+    repo: dependabot/smoke-tests
+  security-advisories:
+    - dependency-name: not-found
+      affected-versions:
+        - <= 1.2.3
+      patched-versions: []
+      unaffected-versions: []
+  security-updates-only: true

@@ -1,0 +1,13 @@
+{
+  "name": "{{ name }}",
+  "version": "1.0.0",
+  "description": "description",
+  "author": "author",
+  "license": "ISC",
+  "dependencies": {
+    "fetch-factory": "^0.0.2"
+  },
+  "devDependencies": {
+    "etag": "^1.0.0"
+  }
+}

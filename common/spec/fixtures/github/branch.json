@@ -1,0 +1,77 @@
+{
+    "_links": {
+        "html": "https://github.com/dependabot/bump-test/tree/dependabot/bundler/business-2.10.12",
+        "self": "https://api.github.com/repos/dependabot/bump-test/branches/dependabot/bundler/business-2.10.12"
+    },
+    "commit": {
+        "author": {
+            "avatar_url": "https://avatars7.githubusercontent.com/in/2141?v=4",
+            "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+            "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+            "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+            "gravatar_id": "",
+            "html_url": "https://github.com/apps/dependabot",
+            "id": 27856297,
+            "login": "dependabot[bot]",
+            "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+            "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+            "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+            "site_admin": false,
+            "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+            "type": "Bot",
+            "url": "https://api.github.com/users/dependabot%5Bbot%5D"
+        },
+        "comments_url": "https://api.github.com/repos/dependabot/bump-test/commits/252c6d28b2aa19c1f74488f52bb4fb0e230979b3/comments",
+        "commit": {
+            "author": {
+                "date": "2017-07-14T23:08:32.000Z",
+                "email": "dependabot[bot]@users.noreply.github.com",
+                "name": "dependabot[bot]"
+            },
+            "comment_count": 0,
+            "committer": {
+                "date": "2017-07-14T23:08:32.000Z",
+                "email": "dependabot[bot]@users.noreply.github.com",
+                "name": "dependabot[bot]"
+            },
+            "message": "Bump business from 2.10.9 to 2.10.12\n\nBumps [business](https://github.com/gocardless/business) from 2.10.9 to 2.10.12.\n- [Release notes](https://github.com/gocardless/business/releases/tag/v2.10.12)\n- [Changelog](https://github.com/gocardless/business/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/gocardless/business/compare/v2.10.9...v2.10.12)",
+            "tree": {
+                "sha": "6bf699e45dbb4a29e2ab1dabf490c81224e5d92f",
+                "url": "https://api.github.com/repos/dependabot/bump-test/git/trees/6bf699e45dbb4a29e2ab1dabf490c81224e5d92f"
+            },
+            "url": "https://api.github.com/repos/dependabot/bump-test/git/commits/252c6d28b2aa19c1f74488f52bb4fb0e230979b3"
+        },
+        "committer": {
+            "avatar_url": "https://avatars7.githubusercontent.com/in/2141?v=4",
+            "events_url": "https://api.github.com/users/dependabot%5Bbot%5D/events{/privacy}",
+            "followers_url": "https://api.github.com/users/dependabot%5Bbot%5D/followers",
+            "following_url": "https://api.github.com/users/dependabot%5Bbot%5D/following{/other_user}",
+            "gists_url": "https://api.github.com/users/dependabot%5Bbot%5D/gists{/gist_id}",
+            "gravatar_id": "",
+            "html_url": "https://github.com/apps/dependabot",
+            "id": 27856297,
+            "login": "dependabot[bot]",
+            "organizations_url": "https://api.github.com/users/dependabot%5Bbot%5D/orgs",
+            "received_events_url": "https://api.github.com/users/dependabot%5Bbot%5D/received_events",
+            "repos_url": "https://api.github.com/users/dependabot%5Bbot%5D/repos",
+            "site_admin": false,
+            "starred_url": "https://api.github.com/users/dependabot%5Bbot%5D/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/dependabot%5Bbot%5D/subscriptions",
+            "type": "Bot",
+            "url": "https://api.github.com/users/dependabot%5Bbot%5D"
+        },
+        "html_url": "https://github.com/dependabot/bump-test/commit/252c6d28b2aa19c1f74488f52bb4fb0e230979b3",
+        "parents": [
+            {
+                "html_url": "https://github.com/dependabot/bump-test/commit/c456b789223468e664729fdb611936f5d0c05139",
+                "sha": "c456b789223468e664729fdb611936f5d0c05139",
+                "url": "https://api.github.com/repos/dependabot/bump-test/commits/c456b789223468e664729fdb611936f5d0c05139"
+            }
+        ],
+        "sha": "252c6d28b2aa19c1f74488f52bb4fb0e230979b3",
+        "url": "https://api.github.com/repos/dependabot/bump-test/commits/252c6d28b2aa19c1f74488f52bb4fb0e230979b3"
+    },
+    "name": "dependabot/bundler/business-2.10.12"
+}

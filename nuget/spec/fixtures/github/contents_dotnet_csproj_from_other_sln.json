@@ -1,0 +1,18 @@
+{
+  "name": "Validator.csproj",
+  "path": "src/Validator/Validator.csproj",
+  "sha": "b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "size": 1345,
+  "url": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Validator/Validator.csproj?ref=master",
+  "html_url": "https://github.com/NancyFx/Nancy/blob/master/src/Validator/Validator.csproj",
+  "git_url": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+  "download_url": "https://raw.githubusercontent.com/NancyFx/Nancy/master/src/Validator/Validator.csproj",
+  "type": "file",
+  "content": "PFByb2plY3QgU2RrPSJNaWNyb3NvZnQuTkVULlNkayI+CgogIDxQcm9wZXJ0eUdyb3VwPgogICAgPE91dHB1dFR5cGU+RXhlPC9PdXRwdXRUeXBlPgogICAgPFRhcmdldEZyYW1ld29yaz5uZXQ0NjE8L1RhcmdldEZyYW1ld29yaz4KICAgIDxSb290TmFtZXNwYWNlPlZhbGlkYXRvcjwvUm9vdE5hbWVzcGFjZT4KICAgIDxBc3NlbWJseU5hbWU+VmFsaWRhdG9yPC9Bc3NlbWJseU5hbWU+CiAgICA8SXNUb29sPnRydWU8L0lzVG9vbD4KICA8L1Byb3BlcnR5R3JvdXA+Cgo8L1Byb2plY3Q+\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/NancyFx/Nancy/contents/src/Validator/Validator.csproj?ref=master",
+    "git": "https://api.github.com/repos/NancyFx/Nancy/git/blobs/b573d85dc67e9d2b32d39f220b353d9d4daa7ff7",
+    "html": "https://github.com/NancyFx/Nancy/blob/master/src/Validator/Validator.csproj"
+  }
+}

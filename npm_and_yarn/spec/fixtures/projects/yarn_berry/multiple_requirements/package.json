@@ -1,0 +1,11 @@
+{
+  "name": "{{ name }}",
+  "dependencies": {
+    "next": "^12.3.1"
+  },
+  "devDependencies": {
+    "eslint-plugin-tailwindcss": "^3.6.2",
+    "postcss": "^8.4.17"
+  },
+  "packageManager": "yarn@3.2.3"
+}

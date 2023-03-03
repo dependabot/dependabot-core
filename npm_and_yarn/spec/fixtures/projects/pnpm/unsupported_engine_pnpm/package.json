@@ -1,0 +1,14 @@
+{
+  "name": "name",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "@npmcli/fs": "3.1.0"
+  },
+  "engines": {
+    "node": "20.11.1",
+    "npm": ">=9",
+    "pnpm": "use npm",
+    "yarn": "use npm"
+  }
+}

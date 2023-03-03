@@ -1,0 +1,70 @@
+{
+  "job": {
+    "allowed-updates": [
+      {
+        "dependency-type": "direct",
+        "update-type": "all"
+      },
+      {
+        "dependency-type": "indirect",
+        "update-type": "security"
+      }
+    ],
+    "credentials": [
+      {
+        "type": "git_source",
+        "host": "github.com",
+        "username": "x-access-token",
+        "password": "v1.exampletokenfromgithubinityesitisforsure"
+      },
+      {
+        "type": "rubygems_index",
+        "host": "my.rubygems-host.org",
+        "token": "secret"
+      }
+    ],
+    "credentials-metadata": [
+      {
+        "type": "git_source",
+        "host": "github.com"
+      },
+      {
+        "type": "rubygems_index",
+        "host": "my.rubygems-host.org"
+      }
+    ],
+    "dependencies": null,
+    "directory": "/",
+    "existing-pull-requests": [],
+    "ignore-conditions": [],
+    "security-advisories": [],
+    "package_manager": "bundler",
+    "repo-name": "dependabot-fixtures/dependabot-test-ruby-package",
+    "source": {
+      "provider": "github",
+      "repo": "dependabot-fixtures/dependabot-test-ruby-package",
+      "directory": "/",
+      "branch": null,
+      "hostname": "github.com",
+      "api-endpoint": "https://api.github.com/"
+    },
+    "lockfile-only": false,
+    "requirements-update-strategy": null,
+    "update-subdependencies": false,
+    "updating-a-pull-request": false,
+    "vendor-dependencies": false,
+    "security-updates-only": false
+  },
+  "base64_dependency_files":[
+     {
+        "name":"dependabot-test-ruby-package.gemspec",
+        "content":"IyBmcm96ZW5fc3RyaW5nX2xpdGVyYWw6IHRydWUKCkdlbTo6U3BlY2lmaWNh\ndGlvbi5uZXcgZG8gfHNwZWN8CiAgc3BlYy5uYW1lICAgICA9ICdkZXBlbmRh\nYm90LXRlc3QtcnVieS1wYWNrYWdlJwogIHNwZWMudmVyc2lvbiAgPSAnMS4w\nLjEnCiAgc3BlYy5zdW1tYXJ5ICA9ICdBIGR1bW15IHBhY2thZ2UgZm9yIHRl\nc3RpbmcgRGVwZW5kYWJvdCcKICBzcGVjLmF1dGhvciAgID0gJ0RlcGVuZGFi\nb3QnCiAgc3BlYy5saWNlbnNlICA9ICdNSVQnCiAgc3BlYy5lbWFpbCAgICA9\nICdub3JlcGx5QGdpdGh1Yi5jb20nCiAgc3BlYy5ob21lcGFnZSA9ICdodHRw\nOi8vZ2l0aHViLmNvbS9kZXBlbmRhYm90LWZpeHR1cmVzL2RlcGVuZGFib3Qt\ndGVzdC1ydWJ5LXBhY2thZ2UnCmVuZAo=\n",
+        "directory":"/",
+        "type":"file",
+        "support_file":false,
+        "content_encoding":"utf-8",
+        "deleted":false
+     }
+  ],
+  "base_commit_sha":"1c6331732c41e4557a16dacb82534f1d1c831848"
+}

@@ -1,0 +1,33 @@
+on: [push]
+
+name: Integration
+jobs:
+  chore:
+    name: Testing chores
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Use Node.js 10.x
+      uses: actions/aws/ec2@v1.0.0
+      with:
+        version: 10.x
+
+    - name: Use Yarn 1.17.2
+      run: |
+        npm install -g yarn@1.17.2
+  acceptance:
+    strategy:
+      fail-fast: false
+
+    name: ${{matrix.platform}} w/ Node.js ${{matrix.node}}.x
+    runs-on: ${{matrix.platform}}
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Use Node.js ${{matrix.node}}.x
+      uses: actions/aws@v1.0.0
+      with:
+        version: ${{matrix.node}}.x

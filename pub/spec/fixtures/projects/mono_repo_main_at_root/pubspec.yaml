@@ -1,0 +1,6 @@
+name: dependabot_testcase
+environment:
+  sdk: ^3.5.0
+dependencies:
+  dep:
+    path: dep

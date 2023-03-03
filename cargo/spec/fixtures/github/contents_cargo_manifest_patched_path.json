@@ -1,0 +1,18 @@
+{
+  "name": "Cargo.toml",
+  "path": "Cargo.toml",
+  "sha": "49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+  "size": 1966,
+  "url": "https://api.github.com/repos/rust-lang/crates.io/contents/Cargo.toml?ref=master",
+  "html_url": "https://github.com/rust-lang/crates.io/blob/master/Cargo.toml",
+  "git_url": "https://api.github.com/repos/rust-lang/crates.io/git/blobs/49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+  "download_url": "https://raw.githubusercontent.com/rust-lang/crates.io/master/Cargo.toml",
+  "type": "file",
+  "content": "W3BhY2thZ2VdCm5hbWUgPSAiZGVwZW5kYWJvdCIgIyB0aGUgbmFtZSBvZiB0\naGUgcGFja2FnZQp2ZXJzaW9uID0gIjAuMS4wIiAgICAjIHRoZSBjdXJyZW50\nIHZlcnNpb24sIG9iZXlpbmcgc2VtdmVyCmF1dGhvcnMgPSBbInN1cHBvcnRA\nZGVwZW5kYWJvdC5jb20iXQoKW2RlcGVuZGVuY2llc10KdGltZSA9ICIwLjEu\nMTIiCnJlZ2V4ID0gIjAuMS40MSIKCltwYXRjaC5jcmF0ZXMtaW9dCnRpbWUg\nPSB7IHBhdGggPSAic3JjL3MzIiB9Cg==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/rust-lang/crates.io/contents/Cargo.toml?ref=master",
+    "git": "https://api.github.com/repos/rust-lang/crates.io/git/blobs/49cd8299125f9ea1c4c6e22b3ae98c97539f74ae",
+    "html": "https://github.com/rust-lang/crates.io/blob/master/Cargo.toml"
+  }
+}

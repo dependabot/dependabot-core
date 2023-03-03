@@ -1,0 +1,135 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug current file",
+      "type": "rdbg",
+      "request": "launch",
+      "command": "rspec",
+      "cwd": "${workspaceRoot}/${input:ecosystem}",
+      "script": "${file}",
+      "rdbgPath": "bundle exec rdbg"
+    },
+    {
+      "name": "Debug dry run",
+      "type": "rdbg",
+      "request": "launch",
+      "script": "${workspaceRoot}/bin/dry-run.rb",
+      "cwd": "${workspaceRoot}",
+      "useBundler": true,
+      "args": ["${input:package_manager}", "${input:repository}"]
+    },
+    {
+      "type": "rdbg",
+      "name": "Attach with rdbg",
+      "request": "attach"
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests",
+      "request": "launch",
+      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
+      "args": [
+        "--runInBand",
+        "-c",
+        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true
+    },
+    {
+      "type": "node",
+      "name": "Run jest tests (watch)",
+      "request": "launch",
+      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
+      "args": [
+        "--runInBand",
+        "--watchAll",
+        "-c",
+        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true
+    },
+    {
+      "type": "node",
+      "name": "Run jest tests on opened file (watch)",
+      "request": "launch",
+      "program": "${workspaceFolder}/npm_and_yarn/helpers/node_modules/jest/bin/jest.js",
+      "args": [
+        "${fileBasenameNoExtension}",
+        "--runInBand",
+        "--watchAll",
+        "-c",
+        "${workspaceFolder}/npm_and_yarn/helpers/jest.config.js"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "disableOptimisticBPs": true
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "package_manager",
+      "description": "What type of package manager do you want to debug?",
+      "options": [
+        "bundler",
+        "cargo",
+        "composer",
+        "dep",
+        "docker",
+        "dotnet_sdk",
+        "elm",
+        "github_actions",
+        "go_modules",
+        "gradle",
+        "hex",
+        "maven",
+        "npm_and_yarn",
+        "nuget",
+        "pip",
+        "pub",
+        "submodules",
+        "terraform"
+      ],
+      "default": "go_modules"
+    },
+    {
+      "type": "pickString",
+      "id": "ecosystem",
+      "description": "What type of ecosystem tests do you want to debug?",
+      "options": [
+        "bundler",
+        "cargo",
+        "common",
+        "composer",
+        "docker",
+        "dotnet_sdk",
+        "elm",
+        "github_actions",
+        "go_modules",
+        "gradle",
+        "hex",
+        "maven",
+        "npm_and_yarn",
+        "nuget",
+        "pub",
+        "python",
+        "terraform"
+      ],
+      "default": "common"
+    },
+    {
+      "type": "promptString",
+      "id": "repository",
+      "description": "Enter the name of the repository to scan.",
+      "default": "zonedb/zonedb"
+    }
+  ]
+}
