@@ -10,106 +10,6 @@ require "dependabot/updater"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Updater do
-  # rubocop:disable Metrics/MethodLength
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates,
-                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false)
-    Dependabot::Job.new(
-      token: "token",
-      dependencies: requested_dependencies,
-      allowed_updates: allowed_updates,
-      existing_pull_requests: existing_pull_requests,
-      ignore_conditions: ignore_conditions,
-      security_advisories: security_advisories,
-      package_manager: "bundler",
-      source: {
-        "provider" => "github",
-        "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
-        "directory" => "/",
-        "branch" => nil,
-        "api-endpoint" => "https://api.github.com/",
-        "hostname" => "github.com"
-      },
-      credentials: [
-        {
-          "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "github-token"
-        },
-        {
-          "type" => "random",
-          "secret" => "codes"
-        }
-      ],
-      lockfile_only: false,
-      requirements_update_strategy: nil,
-      update_subdependencies: false,
-      updating_a_pull_request: updating_a_pull_request,
-      vendor_dependencies: false,
-      experiments: experiments,
-      commit_message_options: {
-        "prefix" => "[bump]",
-        "prefix-development" => "[bump-dev]",
-        "include-scope" => true
-      },
-      security_updates_only: security_updates_only
-    )
-  end
-  # rubocop:enable Metrics/MethodLength
-
-  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
-    Dependabot::Updater.new(
-      service: service,
-      job_id: 1,
-      job: job,
-      dependency_files: dependency_files,
-      base_commit_sha: "sha",
-      repo_contents_path: nil
-    )
-  end
-
-  def build_service(job: build_job)
-    instance_double(
-      Dependabot::Service,
-      get_job: job,
-      create_pull_request: nil,
-      update_pull_request: nil,
-      close_pull_request: nil,
-      mark_job_as_processed: nil,
-      update_dependency_list: nil,
-      record_update_job_error: nil
-    )
-  end
-
-  def default_dependency_files
-    [
-      Dependabot::DependencyFile.new(
-        name: "Gemfile",
-        content: fixture("bundler/original/Gemfile"),
-        directory: "/"
-      ),
-      Dependabot::DependencyFile.new(
-        name: "Gemfile.lock",
-        content: fixture("bundler/original/Gemfile.lock"),
-        directory: "/"
-      )
-    ]
-  end
-
-  def default_allowed_updates
-    [
-      {
-        "dependency-type" => "direct",
-        "update-type" => "all"
-      },
-      {
-        "dependency-type" => "indirect",
-        "update-type" => "security"
-      }
-    ]
-  end
-
   before do
     allow(Dependabot.logger).to receive(:info)
     allow(Dependabot.logger).to receive(:error)
@@ -120,69 +20,6 @@ RSpec.describe Dependabot::Updater do
       to_return(status: 200, body: fixture("rubygems-info-a"))
     stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
       to_return(status: 200, body: fixture("rubygems-info-b"))
-  end
-
-  # rubocop:disable Metrics/MethodLength
-  def stub_update_checker(stubs = {})
-    update_checker =
-      instance_double(
-        Dependabot::Bundler::UpdateChecker,
-        {
-          up_to_date?: false,
-          vulnerable?: false,
-          version_class: Dependabot::Bundler::Version,
-          latest_version: Gem::Version.new("1.2.0"),
-          dependency: Dependabot::Dependency.new(
-            name: "dummy-pkg-b",
-            package_manager: "bundler",
-            version: "1.1.0",
-            requirements: [
-              {
-                file: "Gemfile",
-                requirement: "~> 1.1.0",
-                groups: [],
-                source: nil
-              }
-            ]
-          ),
-          updated_dependencies: [
-            Dependabot::Dependency.new(
-              name: "dummy-pkg-b",
-              package_manager: "bundler",
-              version: "1.2.0",
-              previous_version: "1.1.0",
-              requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.2.0",
-                  groups: [],
-                  source: nil
-                }
-              ],
-              previous_requirements: [
-                {
-                  file: "Gemfile",
-                  requirement: "~> 1.1.0",
-                  groups: [],
-                  source: nil
-                }
-              ]
-            )
-          ]
-        }.merge(stubs)
-      )
-
-    allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(update_checker)
-    allow(update_checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
-    allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :own).and_return(true, false)
-    allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
-    update_checker
-  end
-  # rubocop:enable Metrics/MethodLength
-
-  def stub_pr_message_building
-    builder = double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
-    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(builder)
   end
 
   describe "#run" do
@@ -2728,5 +2565,164 @@ RSpec.describe Dependabot::Updater do
           )
       end
     end
+  end
+
+  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
+    Dependabot::Updater.new(
+      service: service,
+      job_id: 1,
+      job: job,
+      dependency_files: dependency_files,
+      base_commit_sha: "sha",
+      repo_contents_path: nil
+    )
+  end
+
+  def default_dependency_files
+    [
+      Dependabot::DependencyFile.new(
+        name: "Gemfile",
+        content: fixture("bundler/original/Gemfile"),
+        directory: "/"
+      ),
+      Dependabot::DependencyFile.new(
+        name: "Gemfile.lock",
+        content: fixture("bundler/original/Gemfile.lock"),
+        directory: "/"
+      )
+    ]
+  end
+
+  def build_service(job: build_job)
+    instance_double(
+      Dependabot::Service,
+      get_job: job,
+      create_pull_request: nil,
+      update_pull_request: nil,
+      close_pull_request: nil,
+      mark_job_as_processed: nil,
+      update_dependency_list: nil,
+      record_update_job_error: nil
+    )
+  end
+
+  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
+                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
+                experiments: {}, updating_a_pull_request: false, security_updates_only: false)
+    Dependabot::Job.new(
+      token: "token",
+      dependencies: requested_dependencies,
+      allowed_updates: allowed_updates,
+      existing_pull_requests: existing_pull_requests,
+      ignore_conditions: ignore_conditions,
+      security_advisories: security_advisories,
+      package_manager: "bundler",
+      source: {
+        "provider" => "github",
+        "repo" => "dependabot-fixtures/dependabot-test-ruby-package",
+        "directory" => "/",
+        "branch" => nil,
+        "api-endpoint" => "https://api.github.com/",
+        "hostname" => "github.com"
+      },
+      credentials: [
+        {
+          "type" => "git_source",
+          "host" => "github.com",
+          "username" => "x-access-token",
+          "password" => "github-token"
+        },
+        {
+          "type" => "random",
+          "secret" => "codes"
+        }
+      ],
+      lockfile_only: false,
+      requirements_update_strategy: nil,
+      update_subdependencies: false,
+      updating_a_pull_request: updating_a_pull_request,
+      vendor_dependencies: false,
+      experiments: experiments,
+      commit_message_options: {
+        "prefix" => "[bump]",
+        "prefix-development" => "[bump-dev]",
+        "include-scope" => true
+      },
+      security_updates_only: security_updates_only
+    )
+  end
+
+  def default_allowed_updates
+    [
+      {
+        "dependency-type" => "direct",
+        "update-type" => "all"
+      },
+      {
+        "dependency-type" => "indirect",
+        "update-type" => "security"
+      }
+    ]
+  end
+
+  def stub_update_checker(stubs = {}) # rubocop:disable Metrics/MethodLength
+    update_checker =
+      instance_double(
+        Dependabot::Bundler::UpdateChecker,
+        {
+          up_to_date?: false,
+          vulnerable?: false,
+          version_class: Dependabot::Bundler::Version,
+          latest_version: Gem::Version.new("1.2.0"),
+          dependency: Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: [],
+                source: nil
+              }
+            ]
+          ),
+          updated_dependencies: [
+            Dependabot::Dependency.new(
+              name: "dummy-pkg-b",
+              package_manager: "bundler",
+              version: "1.2.0",
+              previous_version: "1.1.0",
+              requirements: [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.2.0",
+                  groups: [],
+                  source: nil
+                }
+              ],
+              previous_requirements: [
+                {
+                  file: "Gemfile",
+                  requirement: "~> 1.1.0",
+                  groups: [],
+                  source: nil
+                }
+              ]
+            )
+          ]
+        }.merge(stubs)
+      )
+
+    allow(Dependabot::Bundler::UpdateChecker).to receive(:new).and_return(update_checker)
+    allow(update_checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
+    allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :own).and_return(true, false)
+    allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
+    update_checker
+  end
+
+  def stub_pr_message_building
+    builder = double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
+    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(builder)
   end
 end
