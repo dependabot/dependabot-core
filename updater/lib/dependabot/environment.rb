@@ -7,7 +7,7 @@ module Dependabot
     end
 
     def self.job_token
-      @token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
+      @job_token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
     end
 
     def self.api_url
