@@ -162,14 +162,15 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
     context "with a registry that times out" do
       let(:files) { project_dependency_files("yarn/simple_with_registry_that_times_out") }
 
-      # This test is extremely slow (it takes 1m45 to run) so should only be
-      # run locally.
-      # it "raises a helpful error" do
-      #   expect { updated_yarn_lock_content }.
-      #     to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-      #       expect(error.source).to eq("timeout.cv/repository/mirror")
-      #     end
-      # end
+      it "raises a helpful error" do
+        pending("This test is extremely slow (1m45s) so only run locally. TODO: stub a custom timeout value.")
+        # TODO: stub a custom short timeout via the .yarnrc file:
+        # https://azureossd.github.io/2022/09/10/fix-yarn-ESOCKETTIMEDOUT-with-.yarnrc-configuration-file/
+        expect { updated_yarn_lock_content }.
+          to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+            expect(error.source).to eq("timeout.cv/repository/mirror")
+          end
+      end
     end
 
     context "when scoped sub dependency version is missing" do
