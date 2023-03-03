@@ -23,6 +23,163 @@ RSpec.describe Dependabot::Updater do
   end
 
   describe "#run" do
+    # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
+    it "updates dependencies correctly" do
+      stub_update_checker
+      stub_pr_message_building
+
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      job_id = 1
+      dependencies = [have_attributes(name: "dummy-pkg-b")]
+      updated_dependency_files = [
+        {
+          "name" => "Gemfile",
+          "content" => fixture("bundler/updated/Gemfile"),
+          "directory" => "/",
+          "type" => "file",
+          "mode" => "100644",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => "update"
+        },
+        {
+          "name" => "Gemfile.lock",
+          "content" => fixture("bundler/updated/Gemfile.lock"),
+          "directory" => "/",
+          "type" => "file",
+          "mode" => "100644",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => "update"
+        }
+      ]
+      base_commit_sha = "sha"
+      pr_message = nil
+
+      expect(service).
+        to receive(:create_pull_request).
+        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+
+      updater.run
+    end
+
+    it "updates the update config's dependency list" do
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      job_id = 1
+      dependencies = [
+        {
+          name: "dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.0.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        },
+        {
+          name: "dummy-pkg-b",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        }
+      ]
+      dependency_files = ["/Gemfile", "/Gemfile.lock"]
+
+      expect(service).
+        to receive(:update_dependency_list).with(job_id, dependencies, dependency_files)
+
+      updater.run
+    end
+
+    it "updates only the dependencies that need updating" do
+      stub_update_checker
+
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      expect(service).to receive(:create_pull_request).once
+
+      updater.run
+    end
+
+    it "builds pull request message" do
+      stub_update_checker
+
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      expect(Dependabot::PullRequestCreator::MessageBuilder).
+        to receive(:new).with(
+          source: job.source,
+          files: an_instance_of(Array),
+          dependencies: an_instance_of(Array),
+          credentials: [
+            {
+              "type" => "git_source",
+              "host" => "github.com",
+              "username" => "x-access-token",
+              "password" => "github-token"
+            },
+            { "type" => "random", "secret" => "codes" }
+          ],
+          commit_message_options: {
+            include_scope: true,
+            prefix: "[bump]",
+            prefix_development: "[bump-dev]"
+          },
+          github_redirection_service: "github-redirect.dependabot.com"
+        )
+
+      updater.run
+    end
+
+    it "logs the current and latest versions" do
+      stub_update_checker
+
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      expect(Dependabot.logger).
+        to receive(:info).
+        with("<job_1> Checking if dummy-pkg-b 1.1.0 needs updating")
+      expect(Dependabot.logger).
+        to receive(:info).
+        with("<job_1> Latest version is 1.2.0")
+
+      updater.run
+    end
+
+    it "does not log empty ignore conditions" do
+      job = build_job
+      service = build_service(job: job)
+      updater = build_updater(service: service, job: job)
+
+      expect(Dependabot.logger).
+        not_to receive(:info).
+        with(/Ignored versions:/)
+      updater.run
+    end
+
     context "when the host is out of disk space" do
       it "records an 'out_of_disk' error" do
         job = build_job
@@ -84,23 +241,6 @@ RSpec.describe Dependabot::Updater do
 
         updater.run
       end
-    end
-
-    it "logs the current and latest versions" do
-      stub_update_checker
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(Dependabot.logger).
-        to receive(:info).
-        with("<job_1> Checking if dummy-pkg-b 1.1.0 needs updating")
-      expect(Dependabot.logger).
-        to receive(:info).
-        with("<job_1> Latest version is 1.2.0")
-
-      updater.run
     end
 
     context "when the checker has an requirements update strategy" do
@@ -673,135 +813,6 @@ RSpec.describe Dependabot::Updater do
 
         updater.run
       end
-    end
-
-    it "updates the update config's dependency list" do
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      job_id = 1
-      dependencies = [
-        {
-          name: "dummy-pkg-a",
-          version: "2.0.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 2.0.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        },
-        {
-          name: "dummy-pkg-b",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        }
-      ]
-      dependency_files = ["/Gemfile", "/Gemfile.lock"]
-
-      expect(service).
-        to receive(:update_dependency_list).with(job_id, dependencies, dependency_files)
-
-      updater.run
-    end
-
-    # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
-    it "updates dependencies correctly" do
-      stub_update_checker
-      stub_pr_message_building
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      job_id = 1
-      dependencies = [have_attributes(name: "dummy-pkg-b")]
-      updated_dependency_files = [
-        {
-          "name" => "Gemfile",
-          "content" => fixture("bundler/updated/Gemfile"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        },
-        {
-          "name" => "Gemfile.lock",
-          "content" => fixture("bundler/updated/Gemfile.lock"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        }
-      ]
-      base_commit_sha = "sha"
-      pr_message = nil
-
-      expect(service).
-        to receive(:create_pull_request).
-        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
-
-      updater.run
-    end
-
-    it "builds pull request message" do
-      stub_update_checker
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
-          source: job.source,
-          files: an_instance_of(Array),
-          dependencies: an_instance_of(Array),
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
-          commit_message_options: {
-            include_scope: true,
-            prefix: "[bump]",
-            prefix_development: "[bump-dev]"
-          },
-          github_redirection_service: "github-redirect.dependabot.com"
-        )
-
-      updater.run
-    end
-
-    it "updates only the dependencies that need updating" do
-      stub_update_checker
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(service).to receive(:create_pull_request).once
-
-      updater.run
     end
 
     context "when an update requires multiple dependencies to be updated" do
@@ -2426,17 +2437,6 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
       end
-    end
-
-    it "does not log empty ignore conditions" do
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(Dependabot.logger).
-        not_to receive(:info).
-        with(/Ignored versions:/)
-      updater.run
     end
 
     context "with ignore conditions" do
