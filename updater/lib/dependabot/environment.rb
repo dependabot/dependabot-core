@@ -31,6 +31,10 @@ module Dependabot
       @github_actions ||= environment_variable("GITHUB_ACTIONS", false)
     end
 
+    def self.job_definition
+      @job_definition ||= JSON.parse(File.read(job_path))
+    end
+
     def self.environment_variable(variable_name, default = :_undefined)
       return ENV.fetch(variable_name, default) unless default == :_undefined
 
