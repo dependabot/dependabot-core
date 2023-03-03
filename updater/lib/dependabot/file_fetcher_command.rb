@@ -144,6 +144,11 @@ module Dependabot
             "error-type": "dependency_file_not_found",
             "error-detail": { "file-path": error.file_path }
           }
+        when Dependabot::OutOfDisk
+          {
+            "error-type": "out_of_disk",
+            "error-detail": {}
+          }
         when Dependabot::PathDependenciesNotReachable
           {
             "error-type": "path_dependencies_not_reachable",

@@ -194,6 +194,27 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
         end
       end
+
+      context "when the fetcher raises a OutOfDisk error while cloning" do
+        before do
+          allow_any_instance_of(Dependabot::GoModules::FileFetcher).
+            to receive(:clone_repo_contents).
+            and_raise(Dependabot::OutOfDisk)
+        end
+
+        it "tells the backend about the error (and doesn't re-raise it)" do
+          expect(api_client).
+            to receive(:record_update_job_error).
+            with(
+              job_id,
+              error_details: {},
+              error_type: "out_of_disk"
+            )
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
+      end
     end
 
     context "when the connectivity check is enabled", vcr: true do
