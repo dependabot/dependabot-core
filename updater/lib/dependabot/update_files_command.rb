@@ -21,7 +21,7 @@ module Dependabot
 
     def job
       attrs =
-        job_definition["job"].
+        Environment.job_definition["job"].
         transform_keys { |key| key.tr("-", "_") }.
         transform_keys(&:to_sym).
         tap { |h| h[:credentials] = h.delete(:credentials_metadata) || [] }.
@@ -39,7 +39,7 @@ module Dependabot
 
     def dependency_files
       @dependency_files ||=
-        job_definition["base64_dependency_files"].map do |a|
+        Environment.job_definition["base64_dependency_files"].map do |a|
           file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
           file.content = Base64.decode64(file.content).force_encoding("utf-8") unless file.binary? && !file.deleted?
           file
@@ -53,11 +53,7 @@ module Dependabot
     end
 
     def base_commit_sha
-      job_definition["base_commit_sha"]
-    end
-
-    def job_definition
-      @job_definition ||= JSON.parse(File.read(Environment.job_path))
+      Environment.job_definition["base_commit_sha"]
     end
   end
 end

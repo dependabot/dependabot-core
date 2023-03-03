@@ -21,15 +21,14 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
+    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
   end
 
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    before do
-      allow(job).
-        to receive(:job_definition).
-        and_return(JSON.parse(fixture("jobs/job_with_credentials.json")))
+    let(:job_definition) do
+      JSON.parse(fixture("jobs/job_with_credentials.json"))
     end
 
     it "fetches the files and writes the fetched files to output.json", vcr: true do
@@ -76,8 +75,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a RepoNotFound error" do
-      let(:provider) { job.job_definition.dig("job", "source", "provider") }
-      let(:repo) { job.job_definition.dig("job", "source", "repo") }
+      let(:provider) { job_definition.dig("job", "source", "provider") }
+      let(:repo) { job_definition.dig("job", "source", "repo") }
       let(:source) { ::Dependabot::Source.new(provider: provider, repo: repo) }
 
       before do
@@ -133,13 +132,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when vendoring dependencies", vcr: true do
-      before do
-        allow(job).
-          to receive(:job_definition).
-          and_return(
-            JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
-          )
+      let(:job_definition) do
+        JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
+      end
 
+      before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
       end
 
@@ -158,13 +155,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when package ecosystem always clones", vcr: true do
-      before do
-        allow(job).
-          to receive(:job_definition).
-          and_return(
-            JSON.parse(fixture("jobs/job_with_go_modules.json"))
-          )
+      let(:job_definition) do
+        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+      end
 
+      before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
       end
 

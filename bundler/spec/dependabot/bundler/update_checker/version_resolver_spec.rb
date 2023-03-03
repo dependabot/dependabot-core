@@ -90,7 +90,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:dependency_name) { "nokogiri" }
           let(:requirements) { [] }
 
-          pending "is updated, skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+          it "is updated" do
+            pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
             expect(subject.version).to eq(Gem::Version.new("1.10.9"))
           end
         end
@@ -122,7 +123,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
               "bundler_specified_and_required.lock"
             end
 
-            pending "skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+            it "is nil" do
+              pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
               is_expected.to be_nil
             end
           end
@@ -430,7 +432,8 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             source: nil
           }]
         end
-        pending "skipped due to https://github.com/dependabot/dependabot-core/issues/2364" do
+        it "is nil" do
+          pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
           is_expected.to be_nil
         end
       end

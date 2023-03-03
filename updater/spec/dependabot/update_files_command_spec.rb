@@ -8,8 +8,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
   subject(:job) { described_class.new }
 
   let(:service) { double(Dependabot::Service) }
-  let(:job_path) do
-    File.join("spec", "fixtures", "file_fetcher_output/output.json")
+  let(:job_definition) do
+    JSON.parse(fixture("file_fetcher_output/output.json"))
   end
   let(:repo_contents_path) { "repo/path" }
   let(:job_id) { "123123" }
@@ -19,7 +19,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     allow(job).to receive(:job_id).and_return(job_id)
     allow(service).to receive(:mark_job_as_processed)
 
-    allow(Dependabot::Environment).to receive(:job_path).and_return(job_path)
+    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
     allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(repo_contents_path)
   end
 
@@ -48,9 +48,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     end
 
     context "with vendoring_dependencies" do
-      let(:job_path) do
-        File.join("spec", "fixtures",
-                  "file_fetcher_output/vendoring_output.json")
+      let(:job_definition) do
+        JSON.parse(fixture("file_fetcher_output/vendoring_output.json"))
       end
 
       it "delegates to Dependabot::Updater" do
