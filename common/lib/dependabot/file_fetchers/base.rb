@@ -95,6 +95,8 @@ module Dependabot
       rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
         if e.message.include?("fatal: Remote branch #{target_branch} not found in upstream origin")
           raise Dependabot::BranchNotFound, target_branch
+        elsif e.message.include?("No space left on device")
+          raise Dependabot::OutOfDisk
         end
 
         raise Dependabot::RepoNotFound, source
