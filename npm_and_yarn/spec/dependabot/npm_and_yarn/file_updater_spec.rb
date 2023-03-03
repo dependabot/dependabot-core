@@ -2719,11 +2719,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:previous_version) { "3b1bb80b302c2e552685dc8a029797ec832ea7c9" }
             let(:version) { "5677730fd3b9de2eb2224b968259893e5fc9adac" }
 
-            # TODO: npm 8 silently ignores this issue and generates a broken lockfile
             context "with a npm lockfile" do
               let(:files) { project_dependency_files("npm8/git_dependency_local_file") }
 
-              pending "raises a helpful error" do
+              it "raises a helpful error" do
+                pending("npm 8 silently ignores this issue and generates a broken lockfile")
                 expect { updated_files }.
                   to raise_error(
                     Dependabot::DependencyFileNotResolvable,
