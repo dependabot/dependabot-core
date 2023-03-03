@@ -63,11 +63,7 @@ module Dependabot
 
       Raven.capture_exception(err, raven_context)
 
-      service.record_update_job_error(
-        job_id,
-        error_type: "unknown_error",
-        error_details: { message: err.message }
-      )
+      service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
     end
 
     def api_url
