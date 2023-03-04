@@ -134,21 +134,8 @@ module Dependabot
           [nil, "widen_ranges", "bump_versions", "bump_versions_if_necessary"].include? requirements_update_strategy
 
         if requirements_update_strategy.nil?
-          # Check for a version field in the pubspec.yaml. If it is present
-          # we assume the package is a library, and the requirement update
-          # strategy is widening. Otherwise we assume it is an application, and
-          # go for "bump_versions".
-          pubspec = dependency_files.find { |d| d.name == "pubspec.yaml" }
-          begin
-            parsed_pubspec = YAML.safe_load(pubspec.content, aliases: false)
-          rescue ScriptError
-            return "bump_versions"
-          end
-          if parsed_pubspec["version"].nil? || parsed_pubspec["publish_to"] == "none"
-            "bump_versions"
-          else
-            "widen_ranges"
-          end
+          # If no explicit strategy is given, default to 'increase-if-necessary' (#4979).
+          "bump_versions_if_necessary"
         else
           requirements_update_strategy
         end
