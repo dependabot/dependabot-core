@@ -32,16 +32,21 @@ RSpec.describe Dependabot::ApiClient do
   describe "create_pull_request" do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        job: job,
         dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
     end
-
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: nil,
+                      credentials: [],
+                      commit_message_options: [],
+                      updating_a_pull_request?: false)
+    end
     let(:dependencies) do
       [dependency]
     end
-
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -74,7 +79,13 @@ RSpec.describe Dependabot::ApiClient do
       "http://example.com/update_jobs/1/create_pull_request"
     end
     let(:base_commit) { "sha" }
-    let(:message) { nil }
+    let(:message) do
+      Dependabot::PullRequestCreator::Message.new(
+        pr_name: "PR name",
+        pr_message: "PR message",
+        commit_message: "Commit message"
+      )
+    end
 
     before do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
@@ -91,38 +102,18 @@ RSpec.describe Dependabot::ApiClient do
         with(headers: { "Authorization" => "token" })
     end
 
-    it "does not send pull request message" do
+    it "encodes the pull request fields" do
       client.create_pull_request(dependency_change, base_commit)
-
       expect(WebMock).
         to(have_requested(:post, create_pull_request_url).
-           with do |req|
-             expect(req.body).not_to include("commit-message")
-           end)
-    end
-
-    context "with pull request message" do
-      let(:message) do
-        Dependabot::PullRequestCreator::Message.new(
-          pr_name: "PR name",
-          pr_message: "PR message",
-          commit_message: "Commit message"
-        )
-      end
-
-      it "encodes fields" do
-        client.create_pull_request(dependency_change, base_commit)
-        expect(WebMock).
-          to(have_requested(:post, create_pull_request_url).
-            with(headers: { "Authorization" => "token" }).
-            with do |req|
-              data = JSON.parse(req.body)["data"]
-              expect(data["commit-message"]).to eq("Commit message")
-              expect(data["pr-title"]).to eq("PR name")
-              expect(data["pr-body"]).to eq("PR message")
-              true
-            end)
-      end
+          with(headers: { "Authorization" => "token" }).
+          with do |req|
+            data = JSON.parse(req.body)["data"]
+            expect(data["commit-message"]).to eq("Commit message")
+            expect(data["pr-title"]).to eq("PR name")
+            expect(data["pr-body"]).to eq("PR message")
+            true
+          end)
     end
 
     context "with a removed dependency" do
@@ -161,12 +152,18 @@ RSpec.describe Dependabot::ApiClient do
   describe "update_pull_request" do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
-        job: anything,
+        job: job,
         dependencies: [dependency],
         updated_dependency_files: dependency_files
       )
     end
-
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: nil,
+                      credentials: [],
+                      commit_message_options: [],
+                      updating_a_pull_request?: true)
+    end
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -211,6 +208,20 @@ RSpec.describe Dependabot::ApiClient do
       expect(WebMock).
         to have_requested(:post, update_pull_request_url).
         with(headers: { "Authorization" => "token" })
+    end
+
+    it "does not encode the pull request fields" do
+      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
+
+      client.update_pull_request(dependency_change, base_commit)
+
+      expect(WebMock).
+        to(have_requested(:post, update_pull_request_url).
+           with do |req|
+             expect(req.body).not_to include("commit-message")
+             expect(req.body).not_to include("pr-title")
+             expect(req.body).not_to include("pr-body")
+           end)
     end
   end
 

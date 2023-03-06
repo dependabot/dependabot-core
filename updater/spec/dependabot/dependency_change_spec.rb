@@ -92,18 +92,36 @@ RSpec.describe Dependabot::DependencyChange do
       allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder_mock)
     end
 
-    it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the correct configuration" do
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
-          source: github_source,
-          files: updated_dependency_files,
-          dependencies: dependencies,
-          credentials: job_credentials,
-          commit_message_options: commit_message_options,
-          github_redirection_service: "github-redirect.dependabot.com"
-        )
+    context "when the change is for a new pull request" do
+      before do
+        allow(job).to receive(:updating_a_pull_request?).and_return(false)
+      end
 
-      expect(dependency_change.pr_message).to eql("Hello World!")
+      it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the correct configuration" do
+        expect(Dependabot::PullRequestCreator::MessageBuilder).
+          to receive(:new).with(
+            source: github_source,
+            files: updated_dependency_files,
+            dependencies: dependencies,
+            credentials: job_credentials,
+            commit_message_options: commit_message_options,
+            github_redirection_service: "github-redirect.dependabot.com"
+          )
+
+        expect(dependency_change.pr_message).to eql("Hello World!")
+      end
+    end
+
+    context "when the change is updating an existing pull request" do
+      before do
+        allow(job).to receive(:updating_a_pull_request?).and_return(true)
+      end
+
+      it "it does not invoke Dependabot::PullRequestCreator::MessageBuilder" do
+        expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
+
+        expect(dependency_change.pr_message).to be_nil
+      end
     end
   end
 end
