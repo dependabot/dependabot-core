@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_change"
 require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do
@@ -29,6 +30,18 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "create_pull_request" do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+
+    let(:dependencies) do
+      [dependency]
+    end
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -56,12 +69,14 @@ RSpec.describe Dependabot::ApiClient do
     let(:message) { nil }
 
     before do
+      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
+
       stub_request(:post, create_pull_request_url).
         to_return(status: 204, headers: headers)
     end
 
     it "hits the correct endpoint" do
-      client.create_pull_request([dependency], dependency_files, base_commit, message)
+      client.create_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
         to have_requested(:post, create_pull_request_url).
@@ -69,7 +84,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "does not send pull request message" do
-      client.create_pull_request([dependency], dependency_files, base_commit, message)
+      client.create_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
         to(have_requested(:post, create_pull_request_url).
@@ -88,7 +103,7 @@ RSpec.describe Dependabot::ApiClient do
       end
 
       it "encodes fields" do
-        client.create_pull_request([dependency], dependency_files, base_commit, message)
+        client.create_pull_request(dependency_change, base_commit)
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
             with(headers: { "Authorization" => "token" }).
@@ -114,8 +129,12 @@ RSpec.describe Dependabot::ApiClient do
         )
       end
 
+      let(:dependencies) do
+        [removed_dependency, dependency]
+      end
+
       it "encodes fields" do
-        client.create_pull_request([removed_dependency, dependency], dependency_files, base_commit, message)
+        client.create_pull_request(dependency_change, base_commit)
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
             with(headers: { "Authorization" => "token" }).
@@ -132,6 +151,14 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "update_pull_request" do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: anything,
+        dependencies: [dependency],
+        updated_dependency_files: dependency_files
+      )
+    end
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -163,7 +190,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "hits the correct endpoint" do
-      client.update_pull_request([dependency], dependency_files, base_commit)
+      client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
         to have_requested(:post, update_pull_request_url).
