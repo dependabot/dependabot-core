@@ -1200,78 +1200,78 @@ RSpec.describe Dependabot::Updater do
         end
 
         context "when the dependency isn't vulnerable in a security update" do
-            it "closes the pull request" do
-              stub_update_checker(vulnerable?: true)
+          it "closes the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                updating_a_pull_request: true
-              )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:close_pull_request).once
+            expect(service).to receive(:close_pull_request).once
 
-              updater.run
-            end
+            updater.run
+          end
         end
 
         context "when the dependency is vulnerable in a security update" do
-            it "creates the pull request" do
-              stub_update_checker(vulnerable?: true)
+          it "creates the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                updating_a_pull_request: true
-              )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:create_pull_request)
+            expect(service).to receive(:create_pull_request)
 
-              updater.run
-            end
+            updater.run
+          end
         end
 
         context "when the dependency is vulnerable in a security update but updates aren't allowed" do
-            it "closes the pull request" do
-              stub_update_checker(vulnerable?: true)
+          it "closes the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                allowed_updates: [
-                  {
-                    "dependency-type" => "development"
-                  }
-                ],
-                updating_a_pull_request: true
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              allowed_updates: [
+                {
+                  "dependency-type" => "development"
+                }
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:close_pull_request).once
+            expect(Dependabot.logger).
+              to receive(:info).with(
+                "<job_1> Dependency no longer allowed to update dummy-pkg-b 1.1.0"
               )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:close_pull_request).once
-              expect(Dependabot.logger).
-                to receive(:info).with(
-                  "<job_1> Dependency no longer allowed to update dummy-pkg-b 1.1.0"
-                )
-
-              updater.run
-            end
+            updater.run
+          end
         end
 
         context "when the dependency doesn't appear in the parsed file" do
