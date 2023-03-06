@@ -58,8 +58,16 @@ RSpec.describe Dependabot::ApiClient do
     end
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some things" },
-        { name: "Gemfile.lock", content: "more things" }
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: "some things",
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "more things",
+          directory: "/"
+        )
       ]
     end
     let(:create_pull_request_url) do
@@ -175,8 +183,16 @@ RSpec.describe Dependabot::ApiClient do
     end
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some things" },
-        { name: "Gemfile.lock", content: "more things" }
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: "some things",
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "more things",
+          directory: "/"
+        )
       ]
     end
     let(:update_pull_request_url) do
