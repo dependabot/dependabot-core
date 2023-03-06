@@ -58,11 +58,8 @@ RSpec.describe Dependabot::Updater do
         }
       ]
       base_commit_sha = "sha"
-      pr_message = nil
 
-      expect(service).
-        to receive(:create_pull_request).
-        with(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+      expect(service).to receive(:create_pull_request).with(anything, base_commit_sha)
 
       updater.run
     end
@@ -194,25 +191,16 @@ RSpec.describe Dependabot::Updater do
     end
 
     context "when github pr creation is rate limiting" do
-      before do
+      it "records an 'octokit_rate_limited' error" do
+        stub_update_checker
+
+        job = build_job
+        service = build_service(job: job)
         error = Octokit::TooManyRequests.new({
           status: 403,
           response_headers: { "X-RateLimit-Reset" => 42 }
         })
-        message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
-        allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
-        allow(message_builder).to receive(:message).and_raise(error)
-      end
-
-      it "records an 'octokit_rate_limited' error" do
-        stub_update_checker
-
-        job = build_job(
-          experiments: {
-            "build-pull-request-message" => true
-          }
-        )
-        service = build_service(job: job)
+        allow(service).to receive(:create_pull_request).and_raise(error)
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2376,37 +2364,36 @@ RSpec.describe Dependabot::Updater do
           ]
           updater = build_updater(service: service, job: job, dependency_files: dependency_files)
 
-          dependencies = [have_attributes(name: "dummy-pkg-b")]
-          updated_dependency_files = [
-            {
-              "name" => "Gemfile",
-              "content" => fixture("bundler2/updated/Gemfile"),
-              "directory" => "/",
-              "type" => "file",
-              "mode" => "100644",
-              "support_file" => false,
-              "content_encoding" => "utf-8",
-              "deleted" => false,
-              "operation" => "update"
-            },
-            {
-              "name" => "Gemfile.lock",
-              "content" => fixture("bundler2/updated/Gemfile.lock"),
-              "directory" => "/",
-              "type" => "file",
-              "mode" => "100644",
-              "support_file" => false,
-              "content_encoding" => "utf-8",
-              "deleted" => false,
-              "operation" => "update"
-            }
-          ]
-          base_commit_sha = "sha"
-          pr_message = nil
-
-          expect(service).
-            to receive(:create_pull_request).
-            with(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+          expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+            expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+            expect(dependency_change.updated_dependency_files_hash).to eql(
+              [
+                {
+                  "name" => "Gemfile",
+                  "content" => fixture("bundler2/updated/Gemfile"),
+                  "directory" => "/",
+                  "type" => "file",
+                  "mode" => "100644",
+                  "support_file" => false,
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "operation" => "update"
+                },
+                {
+                  "name" => "Gemfile.lock",
+                  "content" => fixture("bundler2/updated/Gemfile.lock"),
+                  "directory" => "/",
+                  "type" => "file",
+                  "mode" => "100644",
+                  "support_file" => false,
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "operation" => "update"
+                }
+              ]
+            )
+            expect(base_commit_sha).to eql("sha")
+          end
 
           updater.run
         end

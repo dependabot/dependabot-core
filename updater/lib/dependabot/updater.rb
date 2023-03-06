@@ -3,6 +3,7 @@
 require "raven"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/dependency_change"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
@@ -62,6 +63,7 @@ module Dependabot
       @dependency_files = dependency_files
       @base_commit_sha = base_commit_sha
       @repo_contents_path = repo_contents_path
+      # TODO: Collect @created_pull_requests and @errors on the Job object
       @errors = []
       @created_pull_requests = []
     end
@@ -189,13 +191,13 @@ module Dependabot
         # The dependencies being updated have changed. Close the existing
         # multi-dependency PR and try creating a new one.
         close_pull_request(reason: :dependencies_changed)
-        create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+        create_pull_request(updated_deps, updated_files)
       elsif existing_pull_request(updated_deps)
         # The existing PR is for this version. Update it.
         update_pull_request(updated_deps, updated_files)
       else
         # The existing PR is for a previous version. Supersede it.
-        create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+        create_pull_request(updated_deps, updated_files)
       end
     end
     # rubocop:enable Metrics/AbcSize
@@ -307,7 +309,7 @@ module Dependabot
 
         d.version == d.previous_version
       end
-      create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+      create_pull_request(updated_deps, updated_files)
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
@@ -741,16 +743,17 @@ module Dependabot
       updater.updated_dependency_files
     end
 
-    def create_pull_request(dependencies, updated_dependency_files, pr_message)
+    def create_pull_request(dependencies, updated_dependency_files)
       logger_info("Submitting #{dependencies.map(&:name).join(', ')} " \
                   "pull request for creation")
 
-      service.create_pull_request(
-        dependencies,
-        updated_dependency_files.map(&:to_h),
-        base_commit_sha,
-        pr_message
+      dependency_change = Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: dependencies,
+        updated_dependency_files: updated_dependency_files
       )
+
+      service.create_pull_request(dependency_change, base_commit_sha)
 
       created_pull_requests << dependencies.map do |dep|
         {
@@ -765,11 +768,13 @@ module Dependabot
       logger_info("Submitting #{dependencies.map(&:name).join(', ')} " \
                   "pull request for update")
 
-      service.update_pull_request(
-        dependencies,
-        updated_dependency_files.map(&:to_h),
-        base_commit_sha
+      dependency_change = Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: dependencies,
+        updated_dependency_files: updated_dependency_files
       )
+
+      service.update_pull_request(dependency_change, base_commit_sha)
     end
 
     def close_pull_request(reason:)
@@ -954,25 +959,8 @@ module Dependabot
 
       record_error(error_details) if error_details
     end
-
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/CyclomaticComplexity
-    def pr_message(dependencies, files)
-      Dependabot::PullRequestCreator::MessageBuilder.new(
-        source: job.source,
-        dependencies: dependencies,
-        files: files,
-        credentials: credentials,
-        commit_message_options: job.commit_message_options,
-        # This ensures that PR messages we build replace github.com links with
-        # a redirect that stop markdown enriching them into mentions on the source
-        # repository.
-        #
-        # TODO: Promote this value to a constant or similar once we have
-        # updated core to avoid surprise outcomes if this is unset.
-        github_redirection_service: "github-redirect.dependabot.com"
-      ).message
-    end
 
     def update_dependency_list(dependencies)
       service.update_dependency_list(
