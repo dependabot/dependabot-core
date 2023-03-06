@@ -4,6 +4,16 @@ require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"
 
+# Describes a single Dependabot workload within the GitHub-integrated Service
+#
+# This primarily acts as a value class to hold inputs for various Core objects
+# and is an approximate data structure for the 'job description file' used by
+# the CLI tool.
+#
+# See: https://github.com/dependabot/cli#job-description-file
+#
+# This class should evenually be promoted to common/lib and augmented to
+# validate job description files.
 module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze

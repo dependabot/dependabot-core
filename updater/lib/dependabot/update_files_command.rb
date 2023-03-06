@@ -16,7 +16,7 @@ module Dependabot
         base_commit_sha: base_commit_sha
       ).run
 
-      service.mark_job_as_processed(job_id, base_commit_sha)
+      service.mark_job_as_processed(base_commit_sha)
     end
 
     def job

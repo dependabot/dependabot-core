@@ -6,8 +6,8 @@ module Dependabot
       @job_id ||= environment_variable("DEPENDABOT_JOB_ID")
     end
 
-    def self.token
-      @token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
+    def self.job_token
+      @job_token ||= environment_variable("DEPENDABOT_JOB_TOKEN")
     end
 
     def self.api_url

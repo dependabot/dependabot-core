@@ -22,11 +22,7 @@ module Dependabot
         raise "base commit SHA not found" unless @base_commit_sha
 
         version = file_fetcher.package_manager_version
-        unless version.nil?
-          api_client.record_package_manager_version(
-            Dependabot::Environment.job_id, version[:ecosystem], version[:package_managers]
-          )
-        end
+        api_client.record_package_manager_version(version[:ecosystem], version[:package_managers]) unless version.nil?
 
         dependency_files
       rescue StandardError => e
@@ -39,7 +35,7 @@ module Dependabot
           logger_error("Error during file fetching; aborting")
         end
         handle_file_fetcher_error(e)
-        service.mark_job_as_processed(job_id, @base_commit_sha)
+        service.mark_job_as_processed(@base_commit_sha)
         return
       end
 
@@ -191,7 +187,6 @@ module Dependabot
 
     def record_error(error_details)
       service.record_update_job_error(
-        job_id,
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"]
       )

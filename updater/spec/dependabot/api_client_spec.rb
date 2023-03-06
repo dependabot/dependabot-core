@@ -5,17 +5,17 @@ require "dependabot/dependency"
 require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do
-  subject(:client) { Dependabot::ApiClient.new("http://example.com", "token") }
+  subject(:client) { Dependabot::ApiClient.new("http://example.com", 1, "token") }
   let(:headers) { { "Content-Type" => "application/json" } }
 
-  describe "get_job" do
+  describe "fetch_job" do
     before do
       stub_request(:get, "http://example.com/update_jobs/1").
-        to_return(body: fixture("get_job.json"), headers: headers)
+        to_return(body: fixture("fetch_job.json"), headers: headers)
     end
 
     it "hits the correct endpoint" do
-      client.get_job(1)
+      client.fetch_job
 
       expect(WebMock).
         to have_requested(:get, "http://example.com/update_jobs/1").
@@ -23,7 +23,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "returns a job" do
-      job = client.get_job(1)
+      job = client.fetch_job
       expect(job).to be_a(Dependabot::Job)
     end
   end
@@ -61,7 +61,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "hits the correct endpoint" do
-      client.create_pull_request(1, [dependency], dependency_files, base_commit, message)
+      client.create_pull_request([dependency], dependency_files, base_commit, message)
 
       expect(WebMock).
         to have_requested(:post, create_pull_request_url).
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "does not send pull request message" do
-      client.create_pull_request(1, [dependency], dependency_files, base_commit, message)
+      client.create_pull_request([dependency], dependency_files, base_commit, message)
 
       expect(WebMock).
         to(have_requested(:post, create_pull_request_url).
@@ -88,7 +88,7 @@ RSpec.describe Dependabot::ApiClient do
       end
 
       it "encodes fields" do
-        client.create_pull_request(1, [dependency], dependency_files, base_commit, message)
+        client.create_pull_request([dependency], dependency_files, base_commit, message)
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
             with(headers: { "Authorization" => "token" }).
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::ApiClient do
       end
 
       it "encodes fields" do
-        client.create_pull_request(1, [removed_dependency, dependency], dependency_files, base_commit, message)
+        client.create_pull_request([removed_dependency, dependency], dependency_files, base_commit, message)
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
             with(headers: { "Authorization" => "token" }).
@@ -163,7 +163,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "hits the correct endpoint" do
-      client.update_pull_request(1, [dependency], dependency_files, base_commit)
+      client.update_pull_request([dependency], dependency_files, base_commit)
 
       expect(WebMock).
         to have_requested(:post, update_pull_request_url).
@@ -183,7 +183,7 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "hits the correct endpoint" do
-      client.close_pull_request(1, dependency_name, :dependency_removed)
+      client.close_pull_request(dependency_name, :dependency_removed)
 
       expect(WebMock).
         to have_requested(:post, close_pull_request_url).
@@ -199,7 +199,6 @@ RSpec.describe Dependabot::ApiClient do
 
     it "hits the correct endpoint" do
       client.record_update_job_error(
-        1,
         error_type: error_type,
         error_details: error_detail
       )
@@ -216,7 +215,7 @@ RSpec.describe Dependabot::ApiClient do
     before { stub_request(:patch, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
-      client.mark_job_as_processed(1, base_commit)
+      client.mark_job_as_processed(base_commit)
 
       expect(WebMock).
         to have_requested(:patch, url).
@@ -239,7 +238,7 @@ RSpec.describe Dependabot::ApiClient do
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
-      client.update_dependency_list(1, [dependency], ["Gemfile"])
+      client.update_dependency_list([dependency], ["Gemfile"])
 
       expect(WebMock).
         to have_requested(:post, url).
@@ -253,7 +252,7 @@ RSpec.describe Dependabot::ApiClient do
 
     it "hits the correct endpoint" do
       client.record_package_manager_version(
-        1, "bundler", { "bundler" => "2" }
+        "bundler", { "bundler" => "2" }
       )
 
       expect(WebMock).

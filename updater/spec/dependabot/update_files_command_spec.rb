@@ -42,7 +42,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         and_return(dummy_runner)
       expect(dummy_runner).to receive(:run)
       expect(service).to receive(:mark_job_as_processed).
-        with(job_id, base_commit_sha)
+        with(base_commit_sha)
 
       perform_job
     end
@@ -68,7 +68,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
           and_return(dummy_runner)
         expect(dummy_runner).to receive(:run)
         expect(service).to receive(:mark_job_as_processed).
-          with(job_id, base_commit_sha)
+          with(base_commit_sha)
 
         perform_job
       end

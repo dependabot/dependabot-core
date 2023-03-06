@@ -32,7 +32,6 @@ RSpec.describe Dependabot::Updater do
       service = build_service(job: job)
       updater = build_updater(service: service, job: job)
 
-      job_id = 1
       dependencies = [have_attributes(name: "dummy-pkg-b")]
       updated_dependency_files = [
         {
@@ -63,7 +62,7 @@ RSpec.describe Dependabot::Updater do
 
       expect(service).
         to receive(:create_pull_request).
-        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+        with(dependencies, updated_dependency_files, base_commit_sha, pr_message)
 
       updater.run
     end
@@ -73,7 +72,6 @@ RSpec.describe Dependabot::Updater do
       service = build_service(job: job)
       updater = build_updater(service: service, job: job)
 
-      job_id = 1
       dependencies = [
         {
           name: "dummy-pkg-a",
@@ -103,7 +101,7 @@ RSpec.describe Dependabot::Updater do
       dependency_files = ["/Gemfile", "/Gemfile.lock"]
 
       expect(service).
-        to receive(:update_dependency_list).with(job_id, dependencies, dependency_files)
+        to receive(:update_dependency_list).with(dependencies, dependency_files)
 
       updater.run
     end
@@ -191,7 +189,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with(anything, { error_type: "out_of_disk", error_details: nil, dependency: nil })
+          with({ error_type: "out_of_disk", error_details: nil, dependency: nil })
       end
     end
 
@@ -221,7 +219,6 @@ RSpec.describe Dependabot::Updater do
 
         expect(service).to have_received(:record_update_job_error).
           with(
-            anything,
             {
               error_type: "octokit_rate_limited",
               error_details: { "rate-limit-reset": 42 },
@@ -337,7 +334,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "dependency_file_not_supported",
               error_details: {
@@ -412,7 +408,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "security_update_not_possible",
               error_details: {
@@ -466,7 +461,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "security_update_not_possible",
               error_details: {
@@ -509,7 +503,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
-              1,
               error_type: "security_update_not_found",
               error_details: {
                 "dependency-name": "dummy-pkg-b",
@@ -1061,7 +1054,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
-              1,
               error_type: "pull_request_exists_for_security_update",
               error_details: {
                 "updated-dependencies": [
@@ -1108,7 +1100,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
-              1,
               error_type: "pull_request_exists_for_latest_version",
               error_details: {
                 "dependency-name": "dummy-pkg-b",
@@ -1209,7 +1200,6 @@ RSpec.describe Dependabot::Updater do
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
-            1,
             error_type: "pull_request_exists_for_security_update",
             error_details: {
               "updated-dependencies": [
@@ -1602,7 +1592,6 @@ RSpec.describe Dependabot::Updater do
 
               expect(service).not_to receive(:create_pull_request)
               expect(service).to receive(:record_update_job_error).with(
-                1,
                 {
                   error_type: "all_versions_ignored",
                   error_details: {
@@ -1641,7 +1630,6 @@ RSpec.describe Dependabot::Updater do
 
               expect(service).to_not receive(:create_pull_request)
               expect(service).to receive(:record_update_job_error).with(
-                1,
                 {
                   error_type: "security_update_not_needed",
                   error_details: {
@@ -1698,7 +1686,6 @@ RSpec.describe Dependabot::Updater do
             expect(service).
               to receive(:record_update_job_error).
               with(
-                1,
                 error_type: "unknown_error",
                 error_details: nil,
                 dependency: nil
@@ -1741,7 +1728,6 @@ RSpec.describe Dependabot::Updater do
             expect(service).
               to receive(:record_update_job_error).
               with(
-                1,
                 error_type: "dependency_file_not_found",
                 error_details: { "file-path": "path/to/file" },
                 dependency: nil
@@ -1784,7 +1770,6 @@ RSpec.describe Dependabot::Updater do
             expect(service).
               to receive(:record_update_job_error).
               with(
-                1,
                 error_type: "branch_not_found",
                 error_details: { "branch-name": "my_branch" },
                 dependency: nil
@@ -1827,7 +1812,6 @@ RSpec.describe Dependabot::Updater do
             expect(service).
               to receive(:record_update_job_error).
               with(
-                1,
                 error_type: "dependency_file_not_parseable",
                 error_details: { "file-path": "path/to/file", message: "a" },
                 dependency: nil
@@ -1870,7 +1854,6 @@ RSpec.describe Dependabot::Updater do
             expect(service).
               to receive(:record_update_job_error).
               with(
-                1,
                 error_type: "path_dependencies_not_reachable",
                 error_details: { dependencies: ["bad_gem"] },
                 dependency: nil
@@ -1910,7 +1893,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "dependency_file_not_resolvable",
               error_details: { message: "message" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -1949,7 +1931,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "dependency_file_not_evaluatable",
               error_details: { message: "message" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2020,7 +2001,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "git_dependencies_not_reachable",
               error_details: { "dependency-urls": ["https://example.com"] },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2059,7 +2039,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "git_dependency_reference_not_found",
               error_details: { dependency: "some_dep" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2098,7 +2077,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "go_module_path_mismatch",
               error_details: {
                 "declared-path": "foo",
@@ -2141,7 +2119,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "private_source_authentication_failure",
               error_details: { source: "some.example.com" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2169,7 +2146,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "unknown_error",
               error_details: nil,
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2227,7 +2203,6 @@ RSpec.describe Dependabot::Updater do
         expect(service).
           to receive(:record_update_job_error).
           with(
-            1,
             error_type: "unknown_error",
             error_details: nil,
             dependency: an_instance_of(Dependabot::Dependency)
@@ -2401,7 +2376,6 @@ RSpec.describe Dependabot::Updater do
           ]
           updater = build_updater(service: service, job: job, dependency_files: dependency_files)
 
-          job_id = 1
           dependencies = [have_attributes(name: "dummy-pkg-b")]
           updated_dependency_files = [
             {
@@ -2432,7 +2406,7 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).
             to receive(:create_pull_request).
-            with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+            with(dependencies, updated_dependency_files, base_commit_sha, pr_message)
 
           updater.run
         end
@@ -2596,7 +2570,7 @@ RSpec.describe Dependabot::Updater do
   def build_service(job: build_job)
     instance_double(
       Dependabot::Service,
-      get_job: job,
+      fetch_job: job,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
