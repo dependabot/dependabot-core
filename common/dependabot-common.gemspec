@@ -40,7 +40,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", "~> 13"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-its", "~> 1.3"
-  spec.add_development_dependency "rubocop", "~> 1.46.0"
+  spec.add_development_dependency "rubocop", "~> 1.47.0"
   spec.add_development_dependency "rubocop-performance", "~> 1.16.0"
   spec.add_development_dependency "simplecov", "~> 0.22.0"
   spec.add_development_dependency "simplecov-console", "~> 0.9.1"
