@@ -202,7 +202,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client).
             to receive(:record_update_job_error).
             with(
-              job_id,
               error_details: {},
               error_type: "out_of_disk"
             )
