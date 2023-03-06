@@ -1199,8 +1199,7 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
-        context "when security only updates" do
-          context "the dependency isn't vulnerable" do
+        context "when the dependency isn't vulnerable in a security update" do
             it "closes the pull request" do
               stub_update_checker(vulnerable?: true)
 
@@ -1216,9 +1215,9 @@ RSpec.describe Dependabot::Updater do
 
               updater.run
             end
-          end
+        end
 
-          context "the dependency is vulnerable" do
+        context "when the dependency is vulnerable in a security update" do
             it "creates the pull request" do
               stub_update_checker(vulnerable?: true)
 
@@ -1240,9 +1239,9 @@ RSpec.describe Dependabot::Updater do
 
               updater.run
             end
-          end
+        end
 
-          context "the dependency is vulnerable but updates aren't allowed" do
+        context "when the dependency is vulnerable in a security update but updates aren't allowed" do
             it "closes the pull request" do
               stub_update_checker(vulnerable?: true)
 
@@ -1273,7 +1272,6 @@ RSpec.describe Dependabot::Updater do
 
               updater.run
             end
-          end
         end
 
         context "when the dependency doesn't appear in the parsed file" do
