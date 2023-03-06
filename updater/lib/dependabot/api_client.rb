@@ -52,6 +52,7 @@ module Dependabot
       Job.new(job_data.merge(token: job_token))
     end
 
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     def create_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
       data = create_pull_request_data(dependency_change, base_commit_sha)
@@ -65,6 +66,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     # TODO: Determine if we should regenerate the PR message within core for updates
     def update_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"

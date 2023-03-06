@@ -127,6 +127,11 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/MethodLength
+    #
+    # TODO: Push checks on dependencies into Dependabot::DependencyChange
+    #
+    # Some of this logic would make more sense as interrogations of the
+    # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
         close_pull_request(reason: :dependency_removed) unless errors.any?
