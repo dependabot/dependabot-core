@@ -31,34 +31,36 @@ RSpec.describe Dependabot::Updater do
       service = build_service(job: job)
       updater = build_updater(service: service, job: job)
 
-      dependencies = [have_attributes(name: "dummy-pkg-b")]
-      updated_dependency_files = [
-        {
-          "name" => "Gemfile",
-          "content" => fixture("bundler/updated/Gemfile"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        },
-        {
-          "name" => "Gemfile.lock",
-          "content" => fixture("bundler/updated/Gemfile.lock"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        }
-      ]
-      base_commit_sha = "sha"
-
-      expect(service).to receive(:create_pull_request).with(anything, base_commit_sha)
+      expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+        expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+        expect(dependency_change.updated_dependency_files_hash).to eql(
+          [
+            {
+              "name" => "Gemfile",
+              "content" => fixture("bundler/updated/Gemfile"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            },
+            {
+              "name" => "Gemfile.lock",
+              "content" => fixture("bundler/updated/Gemfile.lock"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            }
+          ]
+        )
+        expect(base_commit_sha).to eql("sha")
+      end
 
       updater.run
     end
