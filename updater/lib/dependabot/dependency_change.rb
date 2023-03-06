@@ -20,10 +20,6 @@ module Dependabot
       @group_rule = group_rule
     end
 
-    def to_set
-      dependency_set
-    end
-
     def pr_message
       # If we are updating an existing PullRequest, we do not generate a new message as part of the change
       return nil if job.updating_a_pull_request?
@@ -60,20 +56,6 @@ module Dependabot
     # use a flag on whether a rule has been assigned to the change.
     def grouped_update?
       !!@group_rule
-    end
-
-    private
-
-    def dependency_set
-      @dependency_set ||= Set.new(
-        dependencies.map do |dep|
-          {
-            "dependency-name" => dep.name,
-            "dependency-version" => dep.version,
-            "dependency-removed" => dep.removed? ? true : nil
-          }.compact
-        end
-      )
     end
   end
 end
