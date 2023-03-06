@@ -147,6 +147,36 @@ RSpec.describe Dependabot::ApiClient do
             end)
       end
     end
+
+    context "grouped updates" do
+      it "does not include the grouped_update key by default" do
+        client.create_pull_request(dependency_change, base_commit)
+
+        expect(WebMock).
+          to(have_requested(:post, create_pull_request_url).
+             with do |req|
+               expect(req.body).not_to include("grouped-update")
+             end)
+      end
+
+      it "flags the PR as a grouped-update if the dependency change has a group rule assigned" do
+        grouped_dependency_change = Dependabot::DependencyChange.new(
+          job: job,
+          dependencies: dependencies,
+          updated_dependency_files: dependency_files,
+          group_rule: anything
+        )
+
+        client.create_pull_request(grouped_dependency_change, base_commit)
+
+        expect(WebMock).
+          to(have_requested(:post, create_pull_request_url).
+             with do |req|
+               data = JSON.parse(req.body)["data"]
+               expect(data["grouped-update"]).to be true
+             end)
+      end
+    end
   end
 
   describe "update_pull_request" do

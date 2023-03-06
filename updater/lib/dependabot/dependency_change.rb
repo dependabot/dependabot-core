@@ -3,9 +3,9 @@
 # This class describes a change to the project's Dependencies which has been
 # determined by a Dependabot operation.
 #
-# It includes a list of changed Dependabot::Dependency objects, the
-# Dependabot::DependencyFile objects which contain the diff to be applied along
-# with any Dependabot::GroupRule that was used to generate the change.
+# It includes a list of changed Dependabot::Dependency objects, an array of
+# Dependabot::DependencyFile objects which contain the changes to be applied
+# along with any Dependabot::GroupRule that was used to generate the change.
 #
 # This class provides methods for presenting the change set which can be used
 # by adapters to create a Pull Request, apply the changes on disk, etc.
@@ -53,6 +53,13 @@ module Dependabot
 
     def updated_dependency_files_hash
       updated_dependency_files.map(&:to_h)
+    end
+
+    # FIXME: This is a placeholder for using a concrete GroupRule object to create
+    # as grouped rule hash to pass to the Dependabot API client. For now, we just
+    # use a flag on whether a rule has been assigned to the change.
+    def grouped_update?
+      !!@group_rule
     end
 
     private

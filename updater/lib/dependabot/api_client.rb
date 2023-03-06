@@ -208,7 +208,17 @@ module Dependabot
         end,
         "updated-dependency-files": dependency_change.updated_dependency_files_hash,
         "base-commit-sha": base_commit_sha
-      }
+      }.merge({
+        # TODO: Replace this flag with a group-rule object
+        #
+        # In future this should be something like:
+        #    "group-rule": dependency_change.group_rule_hash
+        #
+        # This will allow us to pass back the rule id and other parameters
+        # to allow Dependabot API to augment PR creation and associate it
+        # with the rule for rebasing, etc.
+        "grouped-update": dependency_change.grouped_update? ? true : nil
+      }.compact)
       return data unless dependency_change.pr_message
 
       data["commit-message"] = dependency_change.pr_message.commit_message
