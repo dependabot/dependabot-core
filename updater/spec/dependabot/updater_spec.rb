@@ -26,7 +26,6 @@ RSpec.describe Dependabot::Updater do
     # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
     it "updates dependencies correctly" do
       stub_update_checker
-      stub_pr_message_building
 
       job = build_job
       service = build_service(job: job)
@@ -111,38 +110,6 @@ RSpec.describe Dependabot::Updater do
       updater = build_updater(service: service, job: job)
 
       expect(service).to receive(:create_pull_request).once
-
-      updater.run
-    end
-
-    it "builds pull request message" do
-      stub_update_checker
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
-          source: job.source,
-          files: an_instance_of(Array),
-          dependencies: an_instance_of(Array),
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
-          commit_message_options: {
-            include_scope: true,
-            prefix: "[bump]",
-            prefix_development: "[bump-dev]"
-          },
-          github_redirection_service: "github-redirect.dependabot.com"
-        )
 
       updater.run
     end
@@ -2342,7 +2309,6 @@ RSpec.describe Dependabot::Updater do
       context "with a bundler 2 project" do
         it "updates dependencies correctly" do
           stub_update_checker
-          stub_pr_message_building
 
           job = build_job(
             experiments: {
@@ -2680,10 +2646,5 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :own).and_return(true, false)
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
-  end
-
-  def stub_pr_message_building
-    builder = double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
-    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(builder)
   end
 end
