@@ -1604,9 +1604,7 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when an error is raised" do
-      context "during parsing" do
-        context "and it's an unknown error" do
+    context "when an unknown error is raised during parsing" do
           it "tells Sentry" do
             checker = stub_update_checker
             error = StandardError.new("hell")
@@ -1646,9 +1644,8 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
 
-        context "but it's a Dependabot::DependencyFileNotFound" do
+      context "when Dependabot::DependencyFileNotFound is raised during parsing" do
           it "doesn't tell Sentry" do
             checker = stub_update_checker
             error = Dependabot::DependencyFileNotFound.new("path/to/file")
@@ -1688,9 +1685,9 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
+      end
 
-        context "but it's a Dependabot::BranchNotFound" do
+      context "when Dependabot::BranchNotFound is raised during parsing" do
           it "doesn't tell Sentry" do
             checker = stub_update_checker
             error = Dependabot::BranchNotFound.new("my_branch")
@@ -1730,9 +1727,9 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
+      end
 
-        context "but it's a Dependabot::DependencyFileNotParseable" do
+      context "when Dependabot::DependencyFileNotParseable is raised during parsing" do
           it "doesn't tell Sentry" do
             checker = stub_update_checker
             error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
@@ -1772,9 +1769,9 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
+      end
 
-        context "but it's a Dependabot::PathDependenciesNotReachable" do
+      context "when Dependabot::PathDependenciesNotReachable is raised during parsing" do
           it "doesn't tell Sentry" do
             checker = stub_update_checker
             error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
@@ -1814,10 +1811,9 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
       end
 
-      context "but it's a Dependabot::DependencyFileNotResolvable" do
+      context "when Dependabot::DependencyFileNotResolvable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotResolvable.new("message")
@@ -1855,7 +1851,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::DependencyFileNotEvaluatable" do
+      context "when Dependabot::DependencyFileNotEvaluatable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotEvaluatable.new("message")
@@ -1893,7 +1889,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::InconsistentRegistryResponse" do
+      context "when Dependabot::InconsistentRegistryResponse is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::InconsistentRegistryResponse.new("message")
@@ -1925,7 +1921,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GitDependenciesNotReachable" do
+      context "when Dependabot::GitDependenciesNotReachable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
@@ -1963,7 +1959,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GitDependencyReferenceNotFound" do
+      context "when Dependabot::GitDependencyReferenceNotFound is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
@@ -2001,7 +1997,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GoModulePathMismatch" do
+      context "when Dependabot::GoModulePathMismatch is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
@@ -2043,7 +2039,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::PrivateSourceAuthenticationFailure" do
+      context "when Dependabot::PrivateSourceAuthenticationFailure is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
@@ -2081,7 +2077,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::SharedHelpers::HelperSubprocessFailed" do
+      context "when Dependabot::SharedHelpers::HelperSubprocessFailed is raised" do
         it "tells the main backend there has been an unknown error" do
           checker = stub_update_checker
           error =
