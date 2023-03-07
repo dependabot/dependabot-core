@@ -1605,212 +1605,212 @@ RSpec.describe Dependabot::Updater do
     end
 
     context "when an unknown error is raised during parsing" do
-          it "tells Sentry" do
-            checker = stub_update_checker
-            error = StandardError.new("hell")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+      it "tells Sentry" do
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+        job = build_job
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+        allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to receive(:capture_exception)
+        expect(Raven).to receive(:capture_exception)
 
-            updater.run
-          end
+        updater.run
+      end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = StandardError.new("hell")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+      it "tells the main backend" do
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+        job = build_job
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+        allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                error_type: "unknown_error",
-                error_details: nil,
-                dependency: nil
-              )
+        expect(service).
+          to receive(:record_update_job_error).
+          with(
+            error_type: "unknown_error",
+            error_details: nil,
+            dependency: nil
+          )
 
-            updater.run
-          end
+        updater.run
+      end
 
       context "when Dependabot::DependencyFileNotFound is raised during parsing" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotFound.new("path/to/file")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotFound.new("path/to/file")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
-            updater.run
-          end
+          updater.run
+        end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotFound.new("path/to/file")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotFound.new("path/to/file")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                error_type: "dependency_file_not_found",
-                error_details: { "file-path": "path/to/file" },
-                dependency: nil
-              )
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "dependency_file_not_found",
+              error_details: { "file-path": "path/to/file" },
+              dependency: nil
+            )
 
-            updater.run
-          end
+          updater.run
+        end
       end
 
       context "when Dependabot::BranchNotFound is raised during parsing" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::BranchNotFound.new("my_branch")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::BranchNotFound.new("my_branch")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
-            updater.run
-          end
+          updater.run
+        end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::BranchNotFound.new("my_branch")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::BranchNotFound.new("my_branch")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                error_type: "branch_not_found",
-                error_details: { "branch-name": "my_branch" },
-                dependency: nil
-              )
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "branch_not_found",
+              error_details: { "branch-name": "my_branch" },
+              dependency: nil
+            )
 
-            updater.run
-          end
+          updater.run
+        end
       end
 
       context "when Dependabot::DependencyFileNotParseable is raised during parsing" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
-            updater.run
-          end
+          updater.run
+        end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                error_type: "dependency_file_not_parseable",
-                error_details: { "file-path": "path/to/file", message: "a" },
-                dependency: nil
-              )
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "dependency_file_not_parseable",
+              error_details: { "file-path": "path/to/file", message: "a" },
+              dependency: nil
+            )
 
-            updater.run
-          end
+          updater.run
+        end
       end
 
       context "when Dependabot::PathDependenciesNotReachable is raised during parsing" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to_not receive(:capture_exception)
+          expect(Raven).to_not receive(:capture_exception)
 
-            updater.run
-          end
+          updater.run
+        end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                error_type: "path_dependencies_not_reachable",
-                error_details: { dependencies: ["bad_gem"] },
-                dependency: nil
-              )
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "path_dependencies_not_reachable",
+              error_details: { dependencies: ["bad_gem"] },
+              dependency: nil
+            )
 
-            updater.run
-          end
+          updater.run
+        end
       end
 
       context "when Dependabot::DependencyFileNotResolvable is raised" do
