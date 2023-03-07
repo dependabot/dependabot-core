@@ -73,7 +73,7 @@ module Dependabot
       body = {
         data: {
           "dependency-names": dependency_change.dependencies.map(&:name),
-          "updated-dependency-files": dependency_change.updated_dependency_files,
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha
         }
       }
