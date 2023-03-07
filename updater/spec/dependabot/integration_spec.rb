@@ -145,7 +145,7 @@ RSpec.describe "Dependabot Updates" do
 
     it "updates dependencies correctly" do
       expect(api_client).
-        to receive(:create_pull_request) do |deps, files, commit_sha|
+        to receive(:create_pull_request) do |dependency_change, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-pkg-b",
             package_manager: "bundler",
@@ -164,8 +164,8 @@ RSpec.describe "Dependabot Updates" do
                 file: "Gemfile" }
             ]
           )
-          expect(deps).to eql([dep])
-          expect(files).to eq(
+          expect(dependency_change.dependencies).to eql([dep])
+          expect(dependency_change.updated_dependency_files_hash).to eq(
             [
               {
                 "name" => "Gemfile",
@@ -334,7 +334,7 @@ RSpec.describe "Dependabot Updates" do
 
     it "updates dependencies correctly" do
       expect(api_client).
-        to receive(:create_pull_request) do |deps, files, commit_sha|
+        to receive(:create_pull_request) do |dependency_change, commit_sha|
           dep = Dependabot::Dependency.new(
             name: "dummy-git-dependency",
             package_manager: "bundler",
@@ -365,8 +365,8 @@ RSpec.describe "Dependabot Updates" do
                 file: "Gemfile" }
             ]
           )
-          expect(deps).to eql([dep])
-          expect(files).to eq(
+          expect(dependency_change.dependencies).to eql([dep])
+          expect(dependency_change.updated_dependency_files_hash).to eq(
             [
               {
                 "name" => "Gemfile",

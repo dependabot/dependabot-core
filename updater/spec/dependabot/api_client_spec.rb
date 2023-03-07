@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/dependency"
+require "dependabot/dependency_change"
 require "dependabot/api_client"
 
 RSpec.describe Dependabot::ApiClient do
@@ -29,6 +30,23 @@ RSpec.describe Dependabot::ApiClient do
   end
 
   describe "create_pull_request" do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: nil,
+                      credentials: [],
+                      commit_message_options: [],
+                      updating_a_pull_request?: false)
+    end
+    let(:dependencies) do
+      [dependency]
+    end
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -45,61 +63,103 @@ RSpec.describe Dependabot::ApiClient do
     end
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some things" },
-        { name: "Gemfile.lock", content: "more things" }
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: "some things",
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "more things",
+          directory: "/"
+        )
       ]
     end
     let(:create_pull_request_url) do
       "http://example.com/update_jobs/1/create_pull_request"
     end
     let(:base_commit) { "sha" }
-    let(:message) { nil }
+    let(:message) do
+      Dependabot::PullRequestCreator::Message.new(
+        pr_name: "PR name",
+        pr_message: "PR message",
+        commit_message: "Commit message"
+      )
+    end
 
     before do
+      allow(Dependabot::PullRequestCreator::MessageBuilder).to receive_message_chain(:new, :message).and_return(message)
+
       stub_request(:post, create_pull_request_url).
         to_return(status: 204, headers: headers)
     end
 
     it "hits the correct endpoint" do
-      client.create_pull_request([dependency], dependency_files, base_commit, message)
+      client.create_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
         to have_requested(:post, create_pull_request_url).
         with(headers: { "Authorization" => "token" })
     end
 
-    it "does not send pull request message" do
-      client.create_pull_request([dependency], dependency_files, base_commit, message)
+    it "encodes the payload correctly fields" do
+      client.create_pull_request(dependency_change, base_commit)
 
-      expect(WebMock).
-        to(have_requested(:post, create_pull_request_url).
-           with do |req|
-             expect(req.body).not_to include("commit-message")
-           end)
-    end
+      expect(WebMock).to(have_requested(:post, create_pull_request_url).with do |req|
+        data = JSON.parse(req.body)["data"]
 
-    context "with pull request message" do
-      let(:message) do
-        Dependabot::PullRequestCreator::Message.new(
-          pr_name: "PR name",
-          pr_message: "PR message",
-          commit_message: "Commit message"
-        )
-      end
-
-      it "encodes fields" do
-        client.create_pull_request([dependency], dependency_files, base_commit, message)
-        expect(WebMock).
-          to(have_requested(:post, create_pull_request_url).
-            with(headers: { "Authorization" => "token" }).
-            with do |req|
-              data = JSON.parse(req.body)["data"]
-              expect(data["commit-message"]).to eq("Commit message")
-              expect(data["pr-title"]).to eq("PR name")
-              expect(data["pr-body"]).to eq("PR message")
-              true
-            end)
-      end
+        expect(data["dependencies"]).to eq([
+          {
+            "name" => "business",
+            "previous-requirements" =>
+            [
+              {
+                "file" => "Gemfile",
+                "groups" => [],
+                "requirement" => "~> 1.7.0",
+                "source" => nil
+              }
+            ],
+            "previous-version" => "1.7.0",
+            "requirements" =>
+              [
+                {
+                  "file" => "Gemfile",
+                  "groups" => [],
+                  "requirement" => "~> 1.8.0",
+                  "source" => nil
+                }
+              ],
+            "version" => "1.8.0"
+          }
+        ])
+        expect(data["updated-dependency-files"]).to eql([
+          {
+            "content" => "some things",
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "directory" => "/",
+            "mode" => "100644",
+            "name" => "Gemfile",
+            "operation" => "update",
+            "support_file" => false,
+            "type" => "file"
+          },
+          { "content" => "more things",
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "directory" => "/",
+            "mode" => "100644",
+            "name" => "Gemfile.lock",
+            "operation" => "update",
+            "support_file" => false,
+            "type" => "file" }
+        ])
+        expect(data["base-commit-sha"]).to eql("sha")
+        expect(data["commit-message"]).to eq("Commit message")
+        expect(data["pr-title"]).to eq("PR name")
+        expect(data["pr-body"]).to eq("PR message")
+      end)
     end
 
     context "with a removed dependency" do
@@ -114,8 +174,12 @@ RSpec.describe Dependabot::ApiClient do
         )
       end
 
+      let(:dependencies) do
+        [removed_dependency, dependency]
+      end
+
       it "encodes fields" do
-        client.create_pull_request([removed_dependency, dependency], dependency_files, base_commit, message)
+        client.create_pull_request(dependency_change, base_commit)
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
             with(headers: { "Authorization" => "token" }).
@@ -129,9 +193,53 @@ RSpec.describe Dependabot::ApiClient do
             end)
       end
     end
+
+    context "grouped updates" do
+      it "does not include the grouped_update key by default" do
+        client.create_pull_request(dependency_change, base_commit)
+
+        expect(WebMock).
+          to(have_requested(:post, create_pull_request_url).
+             with do |req|
+               expect(req.body).not_to include("grouped-update")
+             end)
+      end
+
+      it "flags the PR as a grouped-update if the dependency change has a group rule assigned" do
+        grouped_dependency_change = Dependabot::DependencyChange.new(
+          job: job,
+          dependencies: dependencies,
+          updated_dependency_files: dependency_files,
+          group_rule: anything
+        )
+
+        client.create_pull_request(grouped_dependency_change, base_commit)
+
+        expect(WebMock).
+          to(have_requested(:post, create_pull_request_url).
+             with do |req|
+               data = JSON.parse(req.body)["data"]
+               expect(data["grouped-update"]).to be true
+             end)
+      end
+    end
   end
 
   describe "update_pull_request" do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: [dependency],
+        updated_dependency_files: dependency_files
+      )
+    end
+    let(:job) do
+      instance_double(Dependabot::Job,
+                      source: nil,
+                      credentials: [],
+                      commit_message_options: [],
+                      updating_a_pull_request?: true)
+    end
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "business",
@@ -148,8 +256,16 @@ RSpec.describe Dependabot::ApiClient do
     end
     let(:dependency_files) do
       [
-        { name: "Gemfile", content: "some things" },
-        { name: "Gemfile.lock", content: "more things" }
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: "some things",
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: "more things",
+          directory: "/"
+        )
       ]
     end
     let(:update_pull_request_url) do
@@ -163,11 +279,51 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     it "hits the correct endpoint" do
-      client.update_pull_request([dependency], dependency_files, base_commit)
+      client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
         to have_requested(:post, update_pull_request_url).
         with(headers: { "Authorization" => "token" })
+    end
+
+    it "does not encode the pull request fields" do
+      expect(Dependabot::PullRequestCreator::MessageBuilder).not_to receive(:new)
+
+      client.update_pull_request(dependency_change, base_commit)
+
+      expect(WebMock).
+        to(have_requested(:post, update_pull_request_url).with do |req|
+             data = JSON.parse(req.body)["data"]
+
+             expect(data["dependency-names"]).to eq(["business"])
+             expect(data["updated-dependency-files"]).to eql([
+               {
+                 "content" => "some things",
+                 "content_encoding" => "utf-8",
+                 "deleted" => false,
+                 "directory" => "/",
+                 "mode" => "100644",
+                 "name" => "Gemfile",
+                 "operation" => "update",
+                 "support_file" => false,
+                 "type" => "file"
+               },
+               { "content" => "more things",
+                 "content_encoding" => "utf-8",
+                 "deleted" => false,
+                 "directory" => "/",
+                 "mode" => "100644",
+                 "name" => "Gemfile.lock",
+                 "operation" => "update",
+                 "support_file" => false,
+                 "type" => "file" }
+             ])
+             expect(data["base-commit-sha"]).to eql("sha")
+             expect(data).not_to have_key("commit-message")
+             expect(data).not_to have_key("pr-title")
+             expect(data).not_to have_key("pr-body")
+             expect(data).not_to have_key("grouped-update")
+           end)
     end
   end
 

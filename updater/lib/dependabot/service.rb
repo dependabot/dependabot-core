@@ -19,14 +19,14 @@ module Dependabot
 
     def_delegators :client, :fetch_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
 
-    def create_pull_request(dependencies, updated_dependency_files, base_commit_sha, pr_message)
-      client.create_pull_request(dependencies, updated_dependency_files, base_commit_sha, pr_message)
-      @pull_requests << [humanize(dependencies), :created]
+    def create_pull_request(dependency_change, base_commit_sha)
+      client.create_pull_request(dependency_change, base_commit_sha)
+      @pull_requests << [dependency_change.humanized, :created]
     end
 
-    def update_pull_request(dependencies, updated_dependency_files, base_commit_sha)
-      client.update_pull_request(dependencies, updated_dependency_files, base_commit_sha)
-      @pull_requests << [humanize(dependencies), :updated]
+    def update_pull_request(dependency_change, base_commit_sha)
+      client.update_pull_request(dependency_change, base_commit_sha)
+      @pull_requests << [dependency_change.humanized, :updated]
     end
 
     def close_pull_request(dependency_name, reason)

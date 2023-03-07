@@ -52,10 +52,10 @@ module Dependabot
       Job.new(job_data.merge(token: job_token))
     end
 
-    def create_pull_request(dependencies, updated_dependency_files,
-                            base_commit_sha, pr_message)
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
+    def create_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
-      data = create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+      data = create_pull_request_data(dependency_change, base_commit_sha)
       response = http_client.post(api_url, json: { data: data })
       raise ApiError, response.body if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
@@ -66,13 +66,14 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     # TODO: Determine if we should regenerate the PR message within core for updates
-    def update_pull_request(dependencies, updated_dependency_files, base_commit_sha)
+    def update_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
       body = {
         data: {
-          "dependency-names": dependencies.map(&:name),
-          "updated-dependency-files": updated_dependency_files,
+          "dependency-names": dependency_change.dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha
         }
       }
@@ -192,9 +193,9 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+    def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
-        dependencies: dependencies.map do |dep|
+        dependencies: dependency_change.dependencies.map do |dep|
           {
             name: dep.name,
             "previous-version": dep.previous_version,
@@ -205,14 +206,24 @@ module Dependabot
             removed: dep.removed? ? true : nil
           }.compact)
         end,
-        "updated-dependency-files": updated_dependency_files,
+        "updated-dependency-files": dependency_change.updated_dependency_files_hash,
         "base-commit-sha": base_commit_sha
-      }
-      return data unless pr_message
+      }.merge({
+        # TODO: Replace this flag with a group-rule object
+        #
+        # In future this should be something like:
+        #    "group-rule": dependency_change.group_rule_hash
+        #
+        # This will allow us to pass back the rule id and other parameters
+        # to allow Dependabot API to augment PR creation and associate it
+        # with the rule for rebasing, etc.
+        "grouped-update": dependency_change.grouped_update? ? true : nil
+      }.compact)
+      return data unless dependency_change.pr_message
 
-      data["commit-message"] = pr_message.commit_message
-      data["pr-title"] = pr_message.pr_name
-      data["pr-body"] = pr_message.pr_message
+      data["commit-message"] = dependency_change.pr_message.commit_message
+      data["pr-title"] = dependency_change.pr_message.pr_name
+      data["pr-body"] = dependency_change.pr_message.pr_message
       data
     end
   end

@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency_change"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
@@ -19,6 +20,14 @@ RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
 
   shared_context :a_pr_was_created do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+
     let(:pr_message) { "update all the things" }
     let(:dependencies) do
       [
@@ -56,11 +65,22 @@ RSpec.describe Dependabot::Service do
     end
 
     before do
-      service.create_pull_request(dependencies, dependency_files, base_sha, pr_message)
+      allow(Dependabot::PullRequestCreator::MessageBuilder).
+        to receive_message_chain(:new, :message).and_return(pr_message)
+
+      service.create_pull_request(dependency_change, base_sha)
     end
   end
 
   shared_context :a_pr_was_updated do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: anything,
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+
     let(:dependencies) do
       [
         Dependabot::Dependency.new(
@@ -85,7 +105,7 @@ RSpec.describe Dependabot::Service do
     end
 
     before do
-      service.update_pull_request(dependencies, dependency_files, base_sha)
+      service.update_pull_request(dependency_change, base_sha)
     end
   end
 
@@ -163,7 +183,7 @@ RSpec.describe Dependabot::Service do
 
     it "delegates to @client" do
       expect(mock_client).
-        to have_received(:create_pull_request).with(dependencies, dependency_files, base_sha, pr_message)
+        to have_received(:create_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
@@ -176,7 +196,7 @@ RSpec.describe Dependabot::Service do
     include_context :a_pr_was_updated
 
     it "delegates to @client" do
-      expect(mock_client).to have_received(:update_pull_request).with(dependencies, dependency_files, base_sha)
+      expect(mock_client).to have_received(:update_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
