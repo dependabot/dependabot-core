@@ -102,18 +102,64 @@ RSpec.describe Dependabot::ApiClient do
         with(headers: { "Authorization" => "token" })
     end
 
-    it "encodes the pull request fields" do
+    it "encodes the payload correctly fields" do
       client.create_pull_request(dependency_change, base_commit)
-      expect(WebMock).
-        to(have_requested(:post, create_pull_request_url).
-          with(headers: { "Authorization" => "token" }).
-          with do |req|
-            data = JSON.parse(req.body)["data"]
-            expect(data["commit-message"]).to eq("Commit message")
-            expect(data["pr-title"]).to eq("PR name")
-            expect(data["pr-body"]).to eq("PR message")
-            true
-          end)
+
+      expect(WebMock).to(have_requested(:post, create_pull_request_url).with do |req|
+        data = JSON.parse(req.body)["data"]
+
+        expect(data["dependencies"]).to eq([
+          {
+            "name" => "business",
+            "previous-requirements" =>
+            [
+              {
+                "file" => "Gemfile",
+                "groups" => [],
+                "requirement" => "~> 1.7.0",
+                "source" => nil
+              }
+            ],
+            "previous-version" => "1.7.0",
+            "requirements" =>
+              [
+                {
+                  "file" => "Gemfile",
+                  "groups" => [],
+                  "requirement" => "~> 1.8.0",
+                  "source" => nil
+                }
+              ],
+            "version" => "1.8.0"
+          }
+        ])
+        expect(data["updated-dependency-files"]).to eql([
+          {
+            "content" => "some things",
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "directory" => "/",
+            "mode" => "100644",
+            "name" => "Gemfile",
+            "operation" => "update",
+            "support_file" => false,
+            "type" => "file"
+          },
+          { "content" => "more things",
+            "content_encoding" => "utf-8",
+            "deleted" => false,
+            "directory" => "/",
+            "mode" => "100644",
+            "name" => "Gemfile.lock",
+            "operation" => "update",
+            "support_file" => false,
+            "type" => "file" }
+        ])
+        expect(data["base-commit-sha"]).to eql("sha")
+        expect(data["commit-message"]).to eq("Commit message")
+        expect(data["pr-title"]).to eq("PR name")
+        expect(data["pr-body"]).to eq("PR message")
+      end)
     end
 
     context "with a removed dependency" do
@@ -246,11 +292,37 @@ RSpec.describe Dependabot::ApiClient do
       client.update_pull_request(dependency_change, base_commit)
 
       expect(WebMock).
-        to(have_requested(:post, update_pull_request_url).
-           with do |req|
-             expect(req.body).not_to include("commit-message")
-             expect(req.body).not_to include("pr-title")
-             expect(req.body).not_to include("pr-body")
+        to(have_requested(:post, update_pull_request_url).with do |req|
+             data = JSON.parse(req.body)["data"]
+
+             expect(data["dependency-names"]).to eq(["business"])
+             expect(data["updated-dependency-files"]).to eql([
+               {
+                 "content" => "some things",
+                 "content_encoding" => "utf-8",
+                 "deleted" => false,
+                 "directory" => "/",
+                 "mode" => "100644",
+                 "name" => "Gemfile",
+                 "operation" => "update",
+                 "support_file" => false,
+                 "type" => "file"
+               },
+               { "content" => "more things",
+                 "content_encoding" => "utf-8",
+                 "deleted" => false,
+                 "directory" => "/",
+                 "mode" => "100644",
+                 "name" => "Gemfile.lock",
+                 "operation" => "update",
+                 "support_file" => false,
+                 "type" => "file" }
+             ])
+             expect(data["base-commit-sha"]).to eql("sha")
+             expect(data).not_to have_key("commit-message")
+             expect(data).not_to have_key("pr-title")
+             expect(data).not_to have_key("pr-body")
+             expect(data).not_to have_key("grouped-update")
            end)
     end
   end
