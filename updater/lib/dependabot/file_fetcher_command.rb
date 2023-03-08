@@ -94,7 +94,7 @@ module Dependabot
           :commit_message_options, :security_updates_only
         )
 
-      @job ||= Job.new(attrs)
+      @job ||= Job.new(attrs.merge(id: job_id))
     end
 
     def file_fetcher

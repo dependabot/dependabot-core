@@ -18,14 +18,15 @@ module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
 
-    attr_reader :token, :dependencies, :package_manager, :ignore_conditions,
+    attr_reader :id, :token, :dependencies, :package_manager, :ignore_conditions,
                 :existing_pull_requests, :source, :credentials,
                 :requirements_update_strategy, :security_advisories,
                 :allowed_updates, :vendor_dependencies, :security_updates_only
 
     # NOTE: "attributes" are fetched and injected at run time from both
-    # dependabot-api and dependabot-backend using the UpdateJobPrivateSerializer
+    # dependabot-api using the UpdateJobPrivateSerializer
     def initialize(attributes)
+      @id                           = attributes.fetch(:id)
       @allowed_updates              = attributes.fetch(:allowed_updates)
       @commit_message_options       = attributes.fetch(:commit_message_options, {})
       @credentials                  = attributes.fetch(:credentials, [])
