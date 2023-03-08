@@ -14,6 +14,10 @@ module Dependabot
       @debug_enabled ||= job_debug_enabled? || environment_debug_enabled?
     end
 
+    def self.log_level
+      debug_enabled? ? :debug : :info
+    end
+
     def self.api_url
       @api_url ||= environment_variable("DEPENDABOT_API_URL", "http://localhost:3001")
     end

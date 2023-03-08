@@ -30,18 +30,13 @@ Raven.configure do |config|
   config.processors += [ExceptionSanitizer]
 end
 
-require "logger"
 require "dependabot/logger"
-
-class LoggerFormatter < Logger::Formatter
-  # Strip out timestamps as these are included in the runner's logger
-  def call(severity, _datetime, _progname, msg)
-    "#{severity} #{msg2str(msg)}\n"
-  end
-end
+require "dependabot/logger/formats"
+require "dependabot/environment"
 
 Dependabot.logger = Logger.new($stdout).tap do |logger|
-  logger.formatter = LoggerFormatter.new
+  logger.level = Dependabot::Environment.log_level
+  logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
