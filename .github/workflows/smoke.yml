@@ -26,6 +26,9 @@ jobs:
           - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
           - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
+          - { path: go_modules, name: go-close-pr, ecosystem: gomod }
+          - { path: go_modules, name: go-security, ecosystem: gomod }
+          - { path: go_modules, name: go-update-pr, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
           - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
@@ -84,6 +87,24 @@ jobs:
             - 'updater/**'
             - 'elm/**'
           go:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-close-pr':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-security':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-update-pr':
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
