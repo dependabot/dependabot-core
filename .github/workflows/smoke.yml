@@ -207,7 +207,7 @@ jobs:
         gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
         tar xzvf *.tar.gz >/dev/null 2>&1
         ./dependabot --version
-        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
+        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml?ref=use-redirect-dot-github
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
