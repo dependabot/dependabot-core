@@ -29,10 +29,10 @@ module Dependabot
         @base_commit_sha ||= "unknown"
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
           remaining = rate_limit_error_remaining(e)
-          logger_error("Repository is rate limited, attempting to retry in " \
-                       "#{remaining}s")
+          Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
+                                  "#{remaining}s")
         else
-          logger_error("Error during file fetching; aborting")
+          Dependabot.logger.error("Error during file fetching; aborting")
         end
         handle_file_fetcher_error(e)
         service.mark_job_as_processed(@base_commit_sha)
@@ -167,8 +167,8 @@ module Dependabot
             }
           }
         else
-          logger_error error.message
-          error.backtrace.each { |line| logger_error line }
+          Dependabot.logger.error(error.message)
+          error.backtrace.each { |line| Dependabot.logger.error line }
           Raven.capture_exception(error, raven_context)
 
           { "error-type": "unknown_error" }
@@ -196,11 +196,11 @@ module Dependabot
     # connectivity through the proxy is established which can take 10-15s on
     # the first request in some customer's environments.
     def connectivity_check
-      logger_info("Connectivity check starting")
+      Dependabot.logger.info("Connectivity check starting")
       github_connectivity_client(job).repository(job.source.repo)
-      logger_info("Connectivity check successful")
+      Dependabot.logger.info("Connectivity check successful")
     rescue StandardError => e
-      logger_error("Connectivity check failed: #{e.message}")
+      Dependabot.logger.error("Connectivity check failed: #{e.message}")
     end
 
     def github_connectivity_client(job)
