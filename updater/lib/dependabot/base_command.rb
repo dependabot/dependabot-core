@@ -4,6 +4,7 @@ require "raven"
 require "dependabot/api_client"
 require "dependabot/service"
 require "dependabot/logger"
+require "dependabot/logger/formats"
 require "dependabot/python"
 require "dependabot/terraform"
 require "dependabot/elm"
@@ -46,20 +47,22 @@ module Dependabot
     # This means that exceptions in tests can occasionally be swallowed
     # and we must rely on reading RSpec output to detect certain problems.
     def run
-      logger_info("Starting job processing")
+      Dependabot.logger.formatter = Dependabot::Logger::JobFormatter.new(job_id)
+      Dependabot.logger.info("Starting job processing")
       perform_job
-      logger_info("Finished job processing")
+      Dependabot.logger.info("Finished job processing")
     rescue StandardError => e
       handle_exception(e)
       service.mark_job_as_processed(base_commit_sha)
     ensure
+      Dependabot.logger.formatter = Dependabot::Logger::BasicFormatter.new
       Dependabot.logger.info(service.summary) unless service.noop?
       raise Dependabot::RunFailure if Dependabot::Environment.github_actions? && service.failure?
     end
 
     def handle_exception(err)
-      logger_error(err.message)
-      err.backtrace.each { |line| logger_error(line) }
+      Dependabot.logger.error(err.message)
+      err.backtrace.each { |line| Dependabot.logger.error(line) }
 
       Raven.capture_exception(err, raven_context)
 
@@ -87,22 +90,6 @@ module Dependabot
     end
 
     private
-
-    def logger_info(message)
-      Dependabot.logger.info(prefixed_log_message(message))
-    end
-
-    def logger_error(message)
-      Dependabot.logger.error(prefixed_log_message(message))
-    end
-
-    def prefixed_log_message(message)
-      message.lines.map { |line| [log_prefix, line].join(" ") }.join
-    end
-
-    def log_prefix
-      "<job_#{job_id}>" if job_id
-    end
 
     def raven_context
       context = { tags: {}, extra: { update_job_id: job_id } }

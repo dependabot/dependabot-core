@@ -49,7 +49,7 @@ module Dependabot
           :vendor_dependencies, :security_updates_only
         )
 
-      Job.new(job_data.merge(token: job_token))
+      Job.new(job_data.merge(id: job_id, token: job_token))
     end
 
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
