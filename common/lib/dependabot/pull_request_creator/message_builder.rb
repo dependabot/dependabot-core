@@ -26,7 +26,7 @@ module Dependabot
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
-                     github_redirection_service:)
+                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
