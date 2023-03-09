@@ -17,7 +17,7 @@ require "wildcard_matcher"
 module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
-    PERMITTED_FETCH_KEYS = %i(
+    PERMITTED_KEYS = %i(
       allowed_updates
       commit_message_options
       dependencies
@@ -51,7 +51,16 @@ module Dependabot
                 :vendor_dependencies
 
     def self.new_fetch_job(job_id, job_definition)
-      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_FETCH_KEYS)
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
+
+      new(attrs.merge(id: job_id))
+    end
+
+    def self.new_update_job(job_id, job_definition)
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
+      # The Updater should only have metadata tokens which allows the proxy to
+      # inject the real credentials as a man-in-the-middle
+      attrs[:credentials] = job_definition.dig("job", "credentials_metadata") || []
 
       new(attrs.merge(id: job_id))
     end

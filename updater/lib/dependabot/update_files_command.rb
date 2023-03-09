@@ -20,21 +20,7 @@ module Dependabot
     end
 
     def job
-      attrs =
-        Environment.job_definition["job"].
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        tap { |h| h[:credentials] = h.delete(:credentials_metadata) || [] }.
-        slice(
-          :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request, :credentials,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :experiments, :reject_external_code,
-          :commit_message_options, :security_updates_only
-        )
-
-      @job ||= Job.new(attrs.merge(id: job_id))
+      @job ||= Job.new_update_job(job_id, Environment.job_definition)
     end
 
     def dependency_files
