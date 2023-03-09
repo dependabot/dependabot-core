@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Updater do
       stub_update_checker
 
       job = build_job
-      service = build_service(job: job)
+      service = build_service
       updater = build_updater(service: service, job: job)
 
       expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
@@ -67,7 +67,7 @@ RSpec.describe Dependabot::Updater do
 
     it "updates the update config's dependency list" do
       job = build_job
-      service = build_service(job: job)
+      service = build_service
       updater = build_updater(service: service, job: job)
 
       dependencies = [
@@ -108,7 +108,7 @@ RSpec.describe Dependabot::Updater do
       stub_update_checker
 
       job = build_job
-      service = build_service(job: job)
+      service = build_service
       updater = build_updater(service: service, job: job)
 
       expect(service).to receive(:create_pull_request).once
@@ -120,7 +120,7 @@ RSpec.describe Dependabot::Updater do
       stub_update_checker
 
       job = build_job
-      service = build_service(job: job)
+      service = build_service
       updater = build_updater(service: service, job: job)
 
       expect(Dependabot.logger).
@@ -135,7 +135,7 @@ RSpec.describe Dependabot::Updater do
 
     it "does not log empty ignore conditions" do
       job = build_job
-      service = build_service(job: job)
+      service = build_service
       updater = build_updater(service: service, job: job)
 
       expect(Dependabot.logger).
@@ -147,7 +147,7 @@ RSpec.describe Dependabot::Updater do
     context "when the host is out of disk space" do
       it "records an 'out_of_disk' error" do
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         allow(job).to receive(:updating_a_pull_request?).and_raise(Errno::ENOSPC)
@@ -164,7 +164,7 @@ RSpec.describe Dependabot::Updater do
         stub_update_checker
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         error = Octokit::TooManyRequests.new({
           status: 403,
           response_headers: { "X-RateLimit-Reset" => 42 }
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::Updater do
     context "when the job has already been processed" do
       it "no-ops" do
         job = nil
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(updater).to_not receive(:dependencies)
@@ -202,7 +202,7 @@ RSpec.describe Dependabot::Updater do
         stub_update_checker(requirements_update_strategy: :bump_versions)
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot.logger).
@@ -225,7 +225,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot.logger).
@@ -250,7 +250,7 @@ RSpec.describe Dependabot::Updater do
           ],
           security_updates_only: true
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(service).to receive(:create_pull_request).once
@@ -286,7 +286,7 @@ RSpec.describe Dependabot::Updater do
             ],
             security_updates_only: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).to_not receive(:create_pull_request)
@@ -322,7 +322,7 @@ RSpec.describe Dependabot::Updater do
             ],
             security_updates_only: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).to_not receive(:create_pull_request)
@@ -344,7 +344,7 @@ RSpec.describe Dependabot::Updater do
             ],
             security_updates_only: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:lowest_resolvable_security_fix_version).
@@ -407,7 +407,7 @@ RSpec.describe Dependabot::Updater do
             ],
             security_updates_only: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:lowest_resolvable_security_fix_version).
@@ -452,7 +452,7 @@ RSpec.describe Dependabot::Updater do
             ],
             security_updates_only: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:up_to_date?).and_return(true)
@@ -508,7 +508,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -527,7 +527,7 @@ RSpec.describe Dependabot::Updater do
             { "dependency-name" => "dummy-pkg-b", "version-requirement" => "~> 1.0.0" }
           ]
           job = build_job(ignore_conditions: ignore_conditions)
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Dependabot.logger).
@@ -550,7 +550,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:up_to_date?).and_raise(Dependabot::AllVersionsIgnored)
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -564,7 +564,7 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(requested_dependencies: ["dummy-pkg-b"])
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -596,7 +596,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -628,7 +628,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -660,7 +660,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -682,7 +682,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -712,7 +712,7 @@ RSpec.describe Dependabot::Updater do
               }
             ]
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -727,7 +727,7 @@ RSpec.describe Dependabot::Updater do
         stub_update_checker
 
         job = build_job(experiments: { "cloning" => true })
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
@@ -780,7 +780,7 @@ RSpec.describe Dependabot::Updater do
           and_return(checker, checker, peer_checker)
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(service).to receive(:create_pull_request).once
@@ -832,7 +832,7 @@ RSpec.describe Dependabot::Updater do
             and_return(checker, checker, peer_checker)
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(updater).to_not receive(:generate_dependency_files_for)
@@ -892,7 +892,7 @@ RSpec.describe Dependabot::Updater do
               "version-requirement" => "~> 1.0.0"
             }
           ])
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
@@ -936,7 +936,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         ])
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to_not receive(:can_update?)
@@ -964,7 +964,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         ])
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to receive(:up_to_date?).and_return(false, false)
@@ -1001,7 +1001,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to receive(:up_to_date?).and_return(false)
@@ -1048,7 +1048,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to_not receive(:can_update?)
@@ -1086,7 +1086,7 @@ RSpec.describe Dependabot::Updater do
             ]
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(service).to receive(:create_pull_request).once
@@ -1146,7 +1146,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(checker).to receive(:up_to_date?).and_return(false)
@@ -1186,7 +1186,7 @@ RSpec.describe Dependabot::Updater do
             requested_dependencies: ["dummy-pkg-b"],
             updating_a_pull_request: true
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(updater).
@@ -1208,7 +1208,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["dummy-pkg-b"],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:close_pull_request).once
@@ -1232,7 +1232,7 @@ RSpec.describe Dependabot::Updater do
               ],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:create_pull_request)
@@ -1261,7 +1261,7 @@ RSpec.describe Dependabot::Updater do
               ],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:close_pull_request).once
@@ -1280,7 +1280,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["removed_dependency"],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:close_pull_request).once
@@ -1294,7 +1294,7 @@ RSpec.describe Dependabot::Updater do
                 requested_dependencies: ["removed_dependency"],
                 updating_a_pull_request: true
               )
-              service = build_service(job: job)
+              service = build_service
               updater = build_updater(service: service, job: job)
 
               allow(updater).to receive(:dependency_files).
@@ -1315,7 +1315,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["Dummy-pkg-b"],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(updater).
@@ -1346,7 +1346,7 @@ RSpec.describe Dependabot::Updater do
               ],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:update_pull_request).once
@@ -1370,7 +1370,7 @@ RSpec.describe Dependabot::Updater do
                 ],
                 updating_a_pull_request: true
               )
-              service = build_service(job: job)
+              service = build_service
               updater = build_updater(service: service, job: job)
 
               expect(service).to receive(:create_pull_request).once
@@ -1389,7 +1389,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["dummy-pkg-b"],
               updating_a_pull_request: true
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to receive(:close_pull_request).once
@@ -1407,7 +1407,7 @@ RSpec.describe Dependabot::Updater do
             requested_dependencies: ["dummy-pkg-b"],
             updating_a_pull_request: false
           )
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(updater).
@@ -1428,7 +1428,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["removed_dependency"],
               updating_a_pull_request: false
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(service).to_not receive(:close_pull_request)
@@ -1445,7 +1445,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["Dummy-pkg-b"],
               updating_a_pull_request: false
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(service: service, job: job)
 
             expect(updater).
@@ -1467,7 +1467,7 @@ RSpec.describe Dependabot::Updater do
               requested_dependencies: ["dummy-pkg-a"],
               updating_a_pull_request: false
             )
-            service = build_service(job: job)
+            service = build_service
             updater = build_updater(
               service: service,
               job: job,
@@ -1512,7 +1512,7 @@ RSpec.describe Dependabot::Updater do
                 security_updates_only: true,
                 updating_a_pull_request: false
               )
-              service = build_service(job: job)
+              service = build_service
               updater = build_updater(service: service, job: job)
 
               expect(service).to receive(:create_pull_request)
@@ -1540,7 +1540,7 @@ RSpec.describe Dependabot::Updater do
                 ],
                 security_updates_only: true
               )
-              service = build_service(job: job)
+              service = build_service
               updater = build_updater(service: service, job: job)
 
               expect(service).not_to receive(:create_pull_request)
@@ -1578,7 +1578,7 @@ RSpec.describe Dependabot::Updater do
                 ],
                 security_updates_only: true
               )
-              service = build_service(job: job)
+              service = build_service
               updater = build_updater(service: service, job: job)
 
               expect(service).to_not receive(:create_pull_request)
@@ -1612,7 +1612,7 @@ RSpec.describe Dependabot::Updater do
         allow(checker).to receive(:can_update?) { values.shift.call }
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1629,7 +1629,7 @@ RSpec.describe Dependabot::Updater do
         allow(checker).to receive(:can_update?) { values.shift.call }
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1653,7 +1653,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1670,7 +1670,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1695,7 +1695,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1712,7 +1712,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1737,7 +1737,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1754,7 +1754,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1779,7 +1779,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1796,7 +1796,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           allow(updater).to receive(:dependency_files).and_raise(error)
@@ -1821,7 +1821,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -1836,7 +1836,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -1859,7 +1859,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -1874,7 +1874,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -1897,7 +1897,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -1912,7 +1912,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).to_not receive(:record_update_job_error)
@@ -1929,7 +1929,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -1944,7 +1944,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -1967,7 +1967,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -1982,7 +1982,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -2005,7 +2005,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -2020,7 +2020,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -2047,7 +2047,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).to_not receive(:capture_exception)
@@ -2062,7 +2062,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -2089,7 +2089,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(service).
@@ -2113,7 +2113,7 @@ RSpec.describe Dependabot::Updater do
           allow(checker).to receive(:can_update?) { values.shift.call }
 
           job = build_job
-          service = build_service(job: job)
+          service = build_service
           updater = build_updater(service: service, job: job)
 
           expect(Raven).
@@ -2131,7 +2131,7 @@ RSpec.describe Dependabot::Updater do
         allow(checker).to receive(:can_update?) { values.shift.call }
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Raven).to receive(:capture_exception).once
@@ -2146,7 +2146,7 @@ RSpec.describe Dependabot::Updater do
         allow(checker).to receive(:can_update?) { values.shift.call }
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(service).
@@ -2167,7 +2167,7 @@ RSpec.describe Dependabot::Updater do
         allow(checker).to receive(:can_update?) { values.shift.call }
 
         job = build_job
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(service).to receive(:create_pull_request).once
@@ -2185,7 +2185,7 @@ RSpec.describe Dependabot::Updater do
             "large-hadron-collider" => true
           }
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot::Bundler::FileParser).to receive(:new).with(
@@ -2227,7 +2227,7 @@ RSpec.describe Dependabot::Updater do
             "large-hadron-collider" => true
           }
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         expect(Dependabot::Bundler::FileUpdater).to receive(:new).with(
@@ -2281,7 +2281,7 @@ RSpec.describe Dependabot::Updater do
             "large-hadron-collider" => true
           }
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2309,7 +2309,7 @@ RSpec.describe Dependabot::Updater do
               "large-hadron-collider" => true
             }
           )
-          service = build_service(job: job)
+          service = build_service
           dependency_files = [
             Dependabot::DependencyFile.new(
               name: "Gemfile",
@@ -2376,7 +2376,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2401,7 +2401,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2426,7 +2426,7 @@ RSpec.describe Dependabot::Updater do
             }
           ]
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2453,7 +2453,7 @@ RSpec.describe Dependabot::Updater do
           requested_dependencies: ["dummy-pkg-b"],
           security_updates_only: true
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2474,7 +2474,7 @@ RSpec.describe Dependabot::Updater do
           requested_dependencies: ["dummy-pkg-b"],
           security_updates_only: true
         )
-        service = build_service(job: job)
+        service = build_service
         updater = build_updater(service: service, job: job)
 
         updater.run
@@ -2514,7 +2514,7 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  def build_service(job: build_job)
+  def build_service
     instance_double(
       Dependabot::Service,
       create_pull_request: nil,
