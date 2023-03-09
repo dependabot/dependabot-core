@@ -23,7 +23,7 @@ module Dependabot
                 :requirements_update_strategy, :security_advisories,
                 :allowed_updates, :vendor_dependencies, :security_updates_only
 
-    # NOTE: "attributes" are fetched and injected at run time from both
+    # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
     def initialize(attributes)
       @id                           = attributes.fetch(:id)
