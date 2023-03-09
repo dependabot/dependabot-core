@@ -17,11 +17,48 @@ require "wildcard_matcher"
 module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
+    PERMITTED_FETCH_KEYS = %i(
+      allowed_updates
+      commit_message_options
+      dependencies
+      existing_pull_requests
+      experiments
+      ignore_conditions
+      lockfile_only
+      package_manager
+      reject_external_code
+      requirements_update_strategy
+      security_advisories
+      security_updates_only
+      source
+      update_subdependencies
+      updating_a_pull_request
+      vendor_dependencies
+    )
 
-    attr_reader :id, :token, :dependencies, :package_manager, :ignore_conditions,
-                :existing_pull_requests, :source, :credentials,
-                :requirements_update_strategy, :security_advisories,
-                :allowed_updates, :vendor_dependencies, :security_updates_only
+    attr_reader :allowed_updates,
+                :credentials,
+                :dependencies,
+                :existing_pull_requests,
+                :id,
+                :ignore_conditions,
+                :package_manager,
+                :requirements_update_strategy,
+                :security_advisories,
+                :security_updates_only,
+                :source,
+                :token,
+                :vendor_dependencies
+
+    def self.new_fetch_job(job_id, job_definition)
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_FETCH_KEYS)
+
+      new(attrs.merge(id: job_id))
+    end
+
+    def self.standardise_keys(hash)
+      hash.transform_keys { |key| key.tr("-", "_").to_sym }
+    end
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
@@ -140,25 +177,19 @@ module Dependabot
     end
 
     def name_normaliser
-      Dependabot::Dependency.
-        name_normaliser_for_package_manager(package_manager)
+      Dependabot::Dependency.name_normaliser_for_package_manager(package_manager)
     end
 
     def experiments
       return {} unless @experiments
 
-      @experiments.
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym)
+      @experiments.transform_keys { |key| key.tr("-", "_") }.transform_keys(&:to_sym)
     end
 
     def commit_message_options
       return {} unless @commit_message_options
 
-      @commit_message_options.
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        compact
+      @commit_message_options.transform_keys { |key| key.tr("-", "_") }.transform_keys(&:to_sym).compact
     end
 
     private
