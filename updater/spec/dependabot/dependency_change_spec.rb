@@ -104,8 +104,7 @@ RSpec.describe Dependabot::DependencyChange do
             files: updated_dependency_files,
             dependencies: dependencies,
             credentials: job_credentials,
-            commit_message_options: commit_message_options,
-            github_redirection_service: "github-redirect.dependabot.com"
+            commit_message_options: commit_message_options
           )
 
         expect(dependency_change.pr_message).to eql("Hello World!")

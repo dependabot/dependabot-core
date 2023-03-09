@@ -30,14 +30,7 @@ module Dependabot
         dependencies: dependencies,
         files: updated_dependency_files,
         credentials: job.credentials,
-        commit_message_options: job.commit_message_options,
-        # This ensures that PR messages we build replace github.com links with
-        # a redirect that stop markdown enriching them into mentions on the source
-        # repository.
-        #
-        # TODO: Promote this value to a constant or similar once we have
-        # updated core to avoid surprise outcomes if this is unset.
-        github_redirection_service: "github-redirect.dependabot.com"
+        commit_message_options: job.commit_message_options
       ).message
     end
 

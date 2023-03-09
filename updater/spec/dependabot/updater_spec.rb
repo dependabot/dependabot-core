@@ -2531,6 +2531,7 @@ RSpec.describe Dependabot::Updater do
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
                 experiments: {}, updating_a_pull_request: false, security_updates_only: false)
     Dependabot::Job.new(
+      id: 1,
       token: "token",
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
