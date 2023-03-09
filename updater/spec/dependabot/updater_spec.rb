@@ -2517,7 +2517,6 @@ RSpec.describe Dependabot::Updater do
   def build_service(job: build_job)
     instance_double(
       Dependabot::Service,
-      fetch_job: job,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,

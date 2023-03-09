@@ -9,26 +9,6 @@ RSpec.describe Dependabot::ApiClient do
   subject(:client) { Dependabot::ApiClient.new("http://example.com", 1, "token") }
   let(:headers) { { "Content-Type" => "application/json" } }
 
-  describe "fetch_job" do
-    before do
-      stub_request(:get, "http://example.com/update_jobs/1").
-        to_return(body: fixture("fetch_job.json"), headers: headers)
-    end
-
-    it "hits the correct endpoint" do
-      client.fetch_job
-
-      expect(WebMock).
-        to have_requested(:get, "http://example.com/update_jobs/1").
-        with(headers: { "Authorization" => "token" })
-    end
-
-    it "returns a job" do
-      job = client.fetch_job
-      expect(job).to be_a(Dependabot::Job)
-    end
-  end
-
   describe "create_pull_request" do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(

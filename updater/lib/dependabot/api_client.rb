@@ -22,36 +22,6 @@ module Dependabot
       @job_token = job_token
     end
 
-    # TODO: Remove
-    #
-    # We don't seem to use this anymore and always read the job description
-    # from the file system.
-    def fetch_job
-      response = fetch_job_details_from_backend
-
-      # If the job has already been accessed then we can safely return quietly.
-      # This happens when the backend isn't sure if the updater has enqueued a
-      # job (because Heroku served a 500, for example) and enqueues a second to
-      # be on the safe side.
-      return if response.code == 400 && response.body.include?("been accessed")
-
-      # For other errors from the backend, just raise.
-      raise ApiError, response.body if response.code >= 400
-
-      job_data =
-        response.parse["data"]["attributes"].
-        transform_keys { |k| k.tr("-", "_").to_sym }.
-        slice(
-          :credentials, :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :security_updates_only
-        )
-
-      Job.new(job_data.merge(id: job_id, token: job_token))
-    end
-
     # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
     def create_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
@@ -179,18 +149,6 @@ module Dependabot
         client = client.via(*args)
       end
       client
-    end
-
-    def fetch_job_details_from_backend
-      api_url = "#{base_url}/update_jobs/#{job_id}"
-      http_client.get(api_url)
-    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-      # Retry connection errors (which are almost certainly transitory)
-      retry_count ||= 0
-      retry_count += 1
-      raise if retry_count > 3
-
-      sleep(rand(3.0..10.0)) && retry
     end
 
     def create_pull_request_data(dependency_change, base_commit_sha)
