@@ -235,9 +235,10 @@ jobs:
           --timeout=20m \
           --updater-image=ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest \
           2>&1 | tee -a log.txt
+      id: smoke_test
 
     - name: Diff
-      if: always()
+      if: always() && (steps.smoke_test.conclusion == 'failure' || steps.smoke_test.conclusion == 'success')
       continue-on-error: true
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
