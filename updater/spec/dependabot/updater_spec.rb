@@ -2491,11 +2491,9 @@ RSpec.describe Dependabot::Updater do
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
     Dependabot::Updater.new(
       service: service,
-      job_id: 1,
       job: job,
       dependency_files: dependency_files,
-      base_commit_sha: "sha",
-      repo_contents_path: nil
+      base_commit_sha: "sha"
     )
   end
 
@@ -2569,7 +2567,8 @@ RSpec.describe Dependabot::Updater do
         "prefix-development" => "[bump-dev]",
         "include-scope" => true
       },
-      security_updates_only: security_updates_only
+      security_updates_only: security_updates_only,
+      repo_contents_path: nil
     )
   end
 

@@ -9,10 +9,8 @@ module Dependabot
     def perform_job
       Dependabot::Updater.new(
         service: service,
-        job_id: job_id,
         job: job,
         dependency_files: dependency_files,
-        repo_contents_path: repo_contents_path,
         base_commit_sha: base_commit_sha
       ).run
 

@@ -55,15 +55,12 @@ module Dependabot
       Octokit::Unauthorized => "octokit_unauthorized"
     }.freeze
 
-    def initialize(service:, job_id:, job:, dependency_files:,
-                   base_commit_sha:, repo_contents_path:)
+    def initialize(service:, job:, dependency_files:, base_commit_sha:)
       @service = service
-      @job_id = job_id
       @job = job
       @dependency_files = dependency_files
       @base_commit_sha = base_commit_sha
-      @repo_contents_path = repo_contents_path
-      # TODO: Collect @created_pull_requests and @errors on the Job object
+      # TODO: Collect @created_pull_requests and @errors on the Job object?
       @errors = []
       @created_pull_requests = []
     end
@@ -96,8 +93,7 @@ module Dependabot
     private
 
     attr_accessor :errors, :created_pull_requests
-    attr_reader :service, :job_id, :job, :dependency_files, :base_commit_sha,
-                :repo_contents_path
+    attr_reader :service, :job, :dependency_files, :base_commit_sha
 
     def check_and_create_pr_with_error_handling(dependency)
       check_and_create_pull_request(dependency)
@@ -658,7 +654,7 @@ module Dependabot
     def dependency_file_parser
       Dependabot::FileParsers.for_package_manager(job.package_manager).new(
         dependency_files: dependency_files,
-        repo_contents_path: repo_contents_path,
+        repo_contents_path: job.repo_contents_path,
         source: job.source,
         credentials: credentials,
         reject_external_code: job.reject_external_code?,
@@ -670,7 +666,7 @@ module Dependabot
       Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
         dependency: dependency,
         dependency_files: dependency_files,
-        repo_contents_path: repo_contents_path,
+        repo_contents_path: job.repo_contents_path,
         credentials: credentials,
         ignored_versions: ignore_conditions_for(dependency),
         security_advisories: security_advisories_for(dependency),
@@ -684,7 +680,7 @@ module Dependabot
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
         dependency_files: dependency_files,
-        repo_contents_path: repo_contents_path,
+        repo_contents_path: job.repo_contents_path,
         credentials: credentials,
         options: job.experiments
       )
@@ -985,7 +981,7 @@ module Dependabot
     end
 
     def error_context(dependency)
-      { dependency_name: dependency.name, update_job_id: job_id }
+      { dependency_name: dependency.name, update_job_id: job.id }
     end
 
     def credentials
@@ -1003,8 +999,13 @@ module Dependabot
     end
 
     def raven_context(dependency: nil)
-      context = { tags: {}, extra: { update_job_id: job_id } }
-      context[:tags][:package_manager] = @job.package_manager if @job
+      context = {
+        tags: {},
+        extra: {
+          update_job_id: job.id,
+          package_manager: job.package_manager
+        }
+      }
       context[:extra][:dependency_name] = dependency.name if dependency
       context
     end
