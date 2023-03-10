@@ -19,6 +19,8 @@ module Dependabot
       service.mark_job_as_processed(base_commit_sha)
     end
 
+    private
+
     def job
       @job ||= Job.new_update_job(
         job_id: job_id,
