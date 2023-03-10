@@ -988,10 +988,6 @@ module Dependabot
       )
     end
 
-    def error_context(dependency)
-      { dependency_name: dependency.name, update_job_id: job.id }
-    end
-
     def record_error(error_details, dependency: nil)
       service.record_update_job_error(
         error_type: error_details.fetch(:"error-type"),
