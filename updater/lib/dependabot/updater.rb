@@ -656,7 +656,7 @@ module Dependabot
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
         source: job.source,
-        credentials: credentials,
+        credentials: job.credentials,
         reject_external_code: job.reject_external_code?,
         options: job.experiments
       )
@@ -667,7 +667,7 @@ module Dependabot
         dependency: dependency,
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
-        credentials: credentials,
+        credentials: job.credentials,
         ignored_versions: ignore_conditions_for(dependency),
         security_advisories: security_advisories_for(dependency),
         raise_on_ignored: raise_on_ignored,
@@ -681,7 +681,7 @@ module Dependabot
         dependencies: dependencies,
         dependency_files: dependency_files,
         repo_contents_path: job.repo_contents_path,
-        credentials: credentials,
+        credentials: job.credentials,
         options: job.experiments
       )
     end
@@ -982,10 +982,6 @@ module Dependabot
 
     def error_context(dependency)
       { dependency_name: dependency.name, update_job_id: job.id }
-    end
-
-    def credentials
-      job.credentials
     end
 
     def record_error(error_details, dependency: nil)
