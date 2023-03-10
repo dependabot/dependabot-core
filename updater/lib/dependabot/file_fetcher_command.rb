@@ -106,7 +106,7 @@ module Dependabot
     end
 
     def already_cloned?
-      return unless Environment.repo_contents_path
+      return false unless Environment.repo_contents_path
 
       # For testing, the source repo may already be mounted.
       @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
