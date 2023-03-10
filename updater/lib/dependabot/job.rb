@@ -196,13 +196,13 @@ module Dependabot
     def experiments
       return {} unless @experiments
 
-      @experiments.transform_keys { |key| key.tr("-", "_") }.transform_keys(&:to_sym)
+      self.class.standardise_keys(@experiments)
     end
 
     def commit_message_options
       return {} unless @commit_message_options
 
-      @commit_message_options.transform_keys { |key| key.tr("-", "_") }.transform_keys(&:to_sym).compact
+      self.class.standardise_keys(@commit_message_options).compact
     end
 
     private
