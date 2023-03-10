@@ -60,8 +60,7 @@ module Dependabot
       @job = job
       @dependency_files = dependency_files
       @base_commit_sha = base_commit_sha
-      # TODO: Collect @created_pull_requests and @errors on the Job object?
-      @errors = []
+      # TODO: Collect @created_pull_requests on the Job object?
       @created_pull_requests = []
     end
 
@@ -92,7 +91,7 @@ module Dependabot
 
     private
 
-    attr_accessor :errors, :created_pull_requests
+    attr_accessor :created_pull_requests
     attr_reader :service, :job, :dependency_files, :base_commit_sha
 
     def check_and_create_pr_with_error_handling(dependency)
@@ -130,7 +129,16 @@ module Dependabot
     # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
-        close_pull_request(reason: :dependency_removed) unless errors.any?
+        # TODO: Remove the unless statement
+        #
+        # This check is to determine if there was an error parsing the dependency
+        # dependency file.
+        #
+        # For update existing PR operations we should early exit after a failed
+        # parse instead, but we currently share the `#dependencies` method
+        # with other code paths. This will be fixed as we break out Operation
+        # classes.
+        close_pull_request(reason: :dependency_removed) unless service.errors.any?
         return
       end
 
@@ -990,8 +998,6 @@ module Dependabot
         error_details: error_details[:"error-detail"],
         dependency: dependency
       )
-
-      errors << error_details
     end
 
     def raven_context(dependency: nil)

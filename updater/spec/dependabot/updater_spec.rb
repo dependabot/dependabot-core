@@ -1300,6 +1300,12 @@ RSpec.describe Dependabot::Updater do
               allow(updater).to receive(:dependency_files).
                 and_raise(Dependabot::DependencyFileNotParseable.new("path/to/file"))
 
+              expect(service).to receive(:record_update_job_error).with(
+                error_type: "dependency_file_not_parseable",
+                error_details: anything,
+                dependency: nil
+              )
+              expect(service).to receive(:errors).and_return([anything])
               expect(service).to_not receive(:close_pull_request)
 
               updater.run
@@ -2520,7 +2526,8 @@ RSpec.describe Dependabot::Updater do
       close_pull_request: nil,
       mark_job_as_processed: nil,
       update_dependency_list: nil,
-      record_update_job_error: nil
+      record_update_job_error: nil,
+      errors: []
     )
   end
 
