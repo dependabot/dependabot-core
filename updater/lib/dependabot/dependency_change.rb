@@ -21,8 +21,6 @@ module Dependabot
     end
 
     def pr_message
-      # If we are updating an existing PullRequest, we do not generate a new message as part of the change
-      return nil if job.updating_a_pull_request?
       return @pr_message if defined?(@pr_message)
 
       @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
