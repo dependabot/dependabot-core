@@ -7,6 +7,7 @@ jUnitVersion = "4.13.2"
 androidxJunit = "1.1.3"
 espresso = "3.5.0"
 ktlint = "10.0.0"
+juice = { strictly = "3.0" }
 
 [libraries]
 corektx = { module = "androidx.core:core-ktx", version.ref = "corektx" }
@@ -28,6 +29,8 @@ test-espresso-Core = { module = "androidx.test.espresso:espresso-core", version.
 
 my-lib = "com.mycompany:mylib:1.4"
 my-lib-with-version-including-ref = "com.mycompany:mylib-with-version-including-ref:1.4-ref"
+
+juice = { module = "com.util.juice:juice", version.ref="juice" }
 
 [bundles]
 compose = ["compose-activity", "compose-ui", "compose-ui-tooling", "compose-material"]

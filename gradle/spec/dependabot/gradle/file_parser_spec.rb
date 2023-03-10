@@ -941,6 +941,15 @@ RSpec.describe Dependabot::Gradle::FileParser do
         end
       end
 
+      describe "rich version dependency specified as a property is ignored" do
+        subject(:dependency) do
+          dependencies.find { |d| d.name == "com.util.juice:juice" }
+        end
+        it "has the right details" do
+          expect(dependency).to be(nil)
+        end
+      end
+
       context "with version catalog file containing dependency overlap with build file" do
         let(:files) { [buildfile, version_catalog_overlap] }
 

@@ -96,8 +96,10 @@ module Dependabot
 
           version_details = Gradle::Version.correct?(version) ? version : "$" + version["ref"]
           details = { group: group, name: name, version: version_details }
+          dependency = dependency_from(details_hash: details, buildfile: toml_file)
+          next unless dependency
 
-          dependency_set << dependency_from(details_hash: details, buildfile: toml_file)
+          dependency_set << dependency
         end
         dependency_set
       end
