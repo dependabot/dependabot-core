@@ -27,6 +27,7 @@ module Dependabot
       lockfile_only
       package_manager
       reject_external_code
+      repo_contents_path
       requirements_update_strategy
       security_advisories
       security_updates_only
@@ -50,19 +51,19 @@ module Dependabot
                 :token,
                 :vendor_dependencies
 
-    def self.new_fetch_job(job_id, job_definition)
+    def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
 
-      new(attrs.merge(id: job_id))
+      new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
-    def self.new_update_job(job_id, job_definition)
+    def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
       # The Updater should only have metadata tokens which allows the proxy to
       # inject the real credentials as a man-in-the-middle
       attrs[:credentials] = job_definition.dig("job", "credentials_metadata") || []
 
-      new(attrs.merge(id: job_id))
+      new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
 
     def self.standardise_keys(hash)
@@ -83,6 +84,7 @@ module Dependabot
       @lockfile_only                = attributes.fetch(:lockfile_only)
       @package_manager              = attributes.fetch(:package_manager)
       @reject_external_code         = attributes.fetch(:reject_external_code, false)
+      @repo_contents_path           = attributes.fetch(:repo_contents_path, nil)
       @requirements_update_strategy = attributes.fetch(:requirements_update_strategy)
       @security_advisories          = attributes.fetch(:security_advisories)
       @security_updates_only        = attributes.fetch(:security_updates_only)
@@ -100,11 +102,13 @@ module Dependabot
         Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
     end
 
-    def already_cloned?
-      return unless Environment.repo_contents_path
+    # Some Core components test for a non-nil repo_contents_path as an implicit
+    # signal they should use cloning behaviour, so we present it as nil unless
+    # cloning is enabled to avoid unexpected behaviour.
+    def repo_contents_path
+      return nil unless clone?
 
-      # For testing, the source repo may already be mounted.
-      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
+      @repo_contents_path
     end
 
     def lockfile_only?

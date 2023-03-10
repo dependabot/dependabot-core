@@ -20,7 +20,11 @@ module Dependabot
     end
 
     def job
-      @job ||= Job.new_update_job(job_id, Environment.job_definition)
+      @job ||= Job.new_update_job(
+        job_id: job_id,
+        job_definition: Environment.job_definition,
+        repo_contents_path: Environment.repo_contents_path
+      )
     end
 
     def dependency_files
