@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
     expect(response.max).to eq(Gem::Version.new("0.10.1"))
   end
 
-  it "doesn't raise when the module has no versions" do
+  it "raises an exception when there are no modules" do
     hostname = "registry.terraform.io"
     stub_request(:get, "https://#{hostname}/.well-known/terraform.json").and_return(
       status: 200,
@@ -122,11 +122,12 @@ RSpec.describe Dependabot::Terraform::RegistryClient do
       }.to_json
     )
     stub_request(:get, "https://#{hostname}/v1/modules/hashicorp/aws/versions").
-      to_return(status: 200, body: { modules: [{ source: "hashicorp/consul/aws" }] }.to_json)
+      to_return(status: 200, body: { modules: [] }.to_json)
     client = described_class.new(hostname: hostname)
 
-    response = client.all_module_versions(identifier: "hashicorp/aws")
-    expect(response).to eq([])
+    expect do
+      client.all_module_versions(identifier: "hashicorp/aws")
+    end.to raise_error(Dependabot::DependabotError)
   end
 
   it "fetches module versions from a custom registry" do

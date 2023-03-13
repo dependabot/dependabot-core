@@ -80,7 +80,10 @@ module Dependabot
         response = http_get!(URI.join(base_url, "#{identifier}/versions"))
 
         JSON.parse(response.body).
-          fetch("modules").first.fetch("versions", []).
+          fetch("modules").
+          first.
+          tap { |mod| raise error("Registry returned no modules") if mod.nil? }.
+          fetch("versions", []).
           map { |release| version_class.new(release.fetch("version")) }
       end
 
