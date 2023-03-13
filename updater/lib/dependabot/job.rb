@@ -4,18 +4,29 @@ require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"
 
+# Describes a single Dependabot workload within the GitHub-integrated Service
+#
+# This primarily acts as a value class to hold inputs for various Core objects
+# and is an approximate data structure for the 'job description file' used by
+# the CLI tool.
+#
+# See: https://github.com/dependabot/cli#job-description-file
+#
+# This class should evenually be promoted to common/lib and augmented to
+# validate job description files.
 module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
 
-    attr_reader :token, :dependencies, :package_manager, :ignore_conditions,
+    attr_reader :id, :token, :dependencies, :package_manager, :ignore_conditions,
                 :existing_pull_requests, :source, :credentials,
                 :requirements_update_strategy, :security_advisories,
                 :allowed_updates, :vendor_dependencies, :security_updates_only
 
-    # NOTE: "attributes" are fetched and injected at run time from both
-    # dependabot-api and dependabot-backend using the UpdateJobPrivateSerializer
+    # NOTE: "attributes" are fetched and injected at run time from
+    # dependabot-api using the UpdateJobPrivateSerializer
     def initialize(attributes)
+      @id                           = attributes.fetch(:id)
       @allowed_updates              = attributes.fetch(:allowed_updates)
       @commit_message_options       = attributes.fetch(:commit_message_options, {})
       @credentials                  = attributes.fetch(:credentials, [])

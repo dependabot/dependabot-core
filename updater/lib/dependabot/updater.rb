@@ -3,6 +3,7 @@
 require "raven"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/dependency_change"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
@@ -62,6 +63,7 @@ module Dependabot
       @dependency_files = dependency_files
       @base_commit_sha = base_commit_sha
       @repo_contents_path = repo_contents_path
+      # TODO: Collect @created_pull_requests and @errors on the Job object
       @errors = []
       @created_pull_requests = []
     end
@@ -70,10 +72,10 @@ module Dependabot
       return unless job
 
       if job.updating_a_pull_request?
-        logger_info("Starting PR update job for #{job.source.repo}")
+        Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
         check_and_update_existing_pr_with_error_handling(dependencies)
       else
-        logger_info("Starting update job for #{job.source.repo}")
+        Dependabot.logger.info("Starting update job for #{job.source.repo}")
         dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
       end
     rescue *RUN_HALTING_ERRORS.keys => e
@@ -125,6 +127,11 @@ module Dependabot
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/MethodLength
+    #
+    # TODO: Push checks on dependencies into Dependabot::DependencyChange
+    #
+    # Some of this logic would make more sense as interrogations of the
+    # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
         close_pull_request(reason: :dependency_removed) unless errors.any?
@@ -139,9 +146,11 @@ module Dependabot
          dependencies.none? { |d| job.allowed_update?(d) }
         lead_dependency = dependencies.first
         if job.vulnerable?(lead_dependency)
-          logger_info("Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}")
+          Dependabot.logger.info(
+            "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
+          )
         else
-          logger_info("No longer vulnerable #{lead_dependency.name} #{lead_dependency.version}")
+          Dependabot.logger.info("No longer vulnerable #{lead_dependency.name} #{lead_dependency.version}")
         end
         close_pull_request(reason: :up_to_date)
         return
@@ -189,13 +198,13 @@ module Dependabot
         # The dependencies being updated have changed. Close the existing
         # multi-dependency PR and try creating a new one.
         close_pull_request(reason: :dependencies_changed)
-        create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+        create_pull_request(updated_deps, updated_files)
       elsif existing_pull_request(updated_deps)
         # The existing PR is for this version. Update it.
         update_pull_request(updated_deps, updated_files)
       else
         # The existing PR is for a previous version. Supersede it.
-        create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+        create_pull_request(updated_deps, updated_files)
       end
     end
     # rubocop:enable Metrics/AbcSize
@@ -242,7 +251,7 @@ module Dependabot
 
       if pr_exists_for_latest_version?(checker)
         record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
-        return logger_info(
+        return Dependabot.logger.info(
           "Pull request already exists for #{checker.dependency.name} " \
           "with latest version #{checker.latest_version}"
         )
@@ -254,7 +263,7 @@ module Dependabot
       if requirements_to_unlock == :update_not_possible
         return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
 
-        return logger_info(
+        return Dependabot.logger.info(
           "No update possible for #{dependency.name} #{dependency.version}"
         )
       end
@@ -288,13 +297,13 @@ module Dependabot
           end
         end
 
-        return logger_info(
+        return Dependabot.logger.info(
           "Pull request already exists for #{deps.join(', ')}"
         )
       end
 
       if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-        return logger_info(
+        return Dependabot.logger.info(
           "No update possible for #{dependency.name} #{dependency.version} " \
           "(peer dependency can be updated)"
         )
@@ -307,7 +316,7 @@ module Dependabot
 
         d.version == d.previous_version
       end
-      create_pull_request(updated_deps, updated_files, pr_message(updated_deps, updated_files))
+      create_pull_request(updated_deps, updated_files)
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
@@ -319,7 +328,7 @@ module Dependabot
     end
 
     def record_security_update_not_needed_error(checker)
-      logger_info(
+      Dependabot.logger.info(
         "no security update needed as #{checker.dependency.name} " \
         "is no longer vulnerable"
       )
@@ -335,7 +344,7 @@ module Dependabot
     end
 
     def record_security_update_ignored(checker)
-      logger_info(
+      Dependabot.logger.info(
         "Dependabot cannot update to the required version as all versions " \
         "were ignored for #{checker.dependency.name}"
       )
@@ -351,7 +360,7 @@ module Dependabot
     end
 
     def record_dependency_file_not_supported_error(checker)
-      logger_info(
+      Dependabot.logger.info(
         "Dependabot can't update vulnerable dependencies for projects " \
         "without a lockfile or pinned version requirement as the currently " \
         "installed version of #{checker.dependency.name} isn't known."
@@ -375,11 +384,11 @@ module Dependabot
         checker.lowest_security_fix_version&.to_s
       conflicting_dependencies = checker.conflicting_dependencies
 
-      logger_info(
+      Dependabot.logger.info(
         security_update_not_possible_message(checker, latest_allowed_version,
                                              conflicting_dependencies)
       )
-      logger_info(earliest_fixed_version_message(lowest_non_vulnerable_version))
+      Dependabot.logger.info(earliest_fixed_version_message(lowest_non_vulnerable_version))
 
       record_error(
         {
@@ -395,7 +404,7 @@ module Dependabot
     end
 
     def record_security_update_not_found(checker)
-      logger_info(
+      Dependabot.logger.info(
         "Dependabot can't find a published or compatible non-vulnerable " \
         "version for #{checker.dependency.name}. " \
         "The latest available version is #{checker.dependency.version}"
@@ -508,17 +517,17 @@ module Dependabot
     end
 
     def log_checking_for_update(dependency)
-      logger_info(
+      Dependabot.logger.info(
         "Checking if #{dependency.name} #{dependency.version} needs updating"
       )
       log_ignore_conditions(dependency)
     end
 
     def all_versions_ignored?(dependency, checker)
-      logger_info("Latest version is #{checker.latest_version}")
+      Dependabot.logger.info("Latest version is #{checker.latest_version}")
       false
     rescue Dependabot::AllVersionsIgnored
-      logger_info("All updates for #{dependency.name} were ignored")
+      Dependabot.logger.info("All updates for #{dependency.name} were ignored")
 
       # Report this error to the backend to create an update job error
       raise if job.security_updates_only?
@@ -531,31 +540,33 @@ module Dependabot
                    select { |ic| name_match?(ic["dependency-name"], dep.name) }
       return if conditions.empty?
 
-      logger_info("Ignored versions:")
+      Dependabot.logger.info("Ignored versions:")
       conditions.each do |ic|
-        logger_info("  #{ic['version-requirement']} - from #{ic['source']}") unless ic["version-requirement"].nil?
+        unless ic["version-requirement"].nil?
+          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
+        end
 
         ic["update-types"]&.each do |update_type|
           msg = "  #{update_type} - from #{ic['source']}"
           msg += " (doesn't apply to security update)" if job.security_updates_only?
-          logger_info(msg)
+          Dependabot.logger.info(msg)
         end
       end
     end
 
     def log_up_to_date(dependency)
-      logger_info(
+      Dependabot.logger.info(
         "No update needed for #{dependency.name} #{dependency.version}"
       )
     end
 
     def log_error(dependency:, error:, error_type:, error_detail: nil)
       if error_type == "unknown_error"
-        logger_error "Error processing #{dependency.name} (#{error.class.name})"
-        logger_error error.message
-        error.backtrace.each { |line| logger_error line }
+        Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
+        Dependabot.logger.error error.message
+        error.backtrace.each { |line| Dependabot.logger.error line }
       else
-        logger_info(
+        Dependabot.logger.info(
           "Handled error whilst updating #{dependency.name}: #{error_type} " \
           "#{error_detail}"
         )
@@ -563,11 +574,11 @@ module Dependabot
     end
 
     def log_requirements_for_update(requirements_to_unlock, checker)
-      logger_info("Requirements to unlock #{requirements_to_unlock}")
+      Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
       return unless checker.respond_to?(:requirements_update_strategy)
 
-      logger_info(
+      Dependabot.logger.info(
         "Requirements update strategy #{checker.requirements_update_strategy}"
       )
     end
@@ -628,8 +639,8 @@ module Dependabot
       allowed_deps = allowed_deps.shuffle unless ENV["UPDATER_DETERMINISTIC"]
 
       if all_deps.any? && allowed_deps.none?
-        logger_info("Found no dependencies to update after filtering allowed " \
-                    "updates")
+        Dependabot.logger.info("Found no dependencies to update after filtering allowed " \
+                               "updates")
       end
 
       # Consider updating vulnerable deps first. Only consider the first 10,
@@ -725,12 +736,12 @@ module Dependabot
     def generate_dependency_files_for(updated_dependencies)
       if updated_dependencies.count == 1
         updated_dependency = updated_dependencies.first
-        logger_info("Updating #{updated_dependency.name} from " \
-                    "#{updated_dependency.previous_version} to " \
-                    "#{updated_dependency.version}")
+        Dependabot.logger.info("Updating #{updated_dependency.name} from " \
+                               "#{updated_dependency.previous_version} to " \
+                               "#{updated_dependency.version}")
       else
         dependency_names = updated_dependencies.map(&:name)
-        logger_info("Updating #{dependency_names.join(', ')}")
+        Dependabot.logger.info("Updating #{dependency_names.join(', ')}")
       end
 
       # Ignore dependencies that are tagged as information_only. These will be
@@ -741,17 +752,17 @@ module Dependabot
       updater.updated_dependency_files
     end
 
-    def create_pull_request(dependencies, updated_dependency_files, pr_message)
-      logger_info("Submitting #{dependencies.map(&:name).join(', ')} " \
-                  "pull request for creation")
+    def create_pull_request(dependencies, updated_dependency_files)
+      Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+                             "pull request for creation")
 
-      service.create_pull_request(
-        job_id,
-        dependencies,
-        updated_dependency_files.map(&:to_h),
-        base_commit_sha,
-        pr_message
+      dependency_change = Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: dependencies,
+        updated_dependency_files: updated_dependency_files
       )
+
+      service.create_pull_request(dependency_change, base_commit_sha)
 
       created_pull_requests << dependencies.map do |dep|
         {
@@ -763,22 +774,23 @@ module Dependabot
     end
 
     def update_pull_request(dependencies, updated_dependency_files)
-      logger_info("Submitting #{dependencies.map(&:name).join(', ')} " \
-                  "pull request for update")
+      Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+                             "pull request for update")
 
-      service.update_pull_request(
-        job_id,
-        dependencies,
-        updated_dependency_files.map(&:to_h),
-        base_commit_sha
+      dependency_change = Dependabot::DependencyChange.new(
+        job: job,
+        dependencies: dependencies,
+        updated_dependency_files: updated_dependency_files
       )
+
+      service.update_pull_request(dependency_change, base_commit_sha)
     end
 
     def close_pull_request(reason:)
       reason_string = reason.to_s.tr("_", " ")
-      logger_info("Telling backend to close pull request for " \
-                  "#{job.dependencies.join(', ')} - #{reason_string}")
-      service.close_pull_request(job_id, job.dependencies, reason)
+      Dependabot.logger.info("Telling backend to close pull request for " \
+                             "#{job.dependencies.join(', ')} - #{reason_string}")
+      service.close_pull_request(job.dependencies, reason)
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -947,8 +959,8 @@ module Dependabot
         else
           raise if RUN_HALTING_ERRORS.keys.any? { |e| error.is_a?(e) }
 
-          logger_error error.message
-          error.backtrace.each { |line| logger_error line }
+          Dependabot.logger.error error.message
+          error.backtrace.each { |line| Dependabot.logger.error line }
 
           Raven.capture_exception(error, raven_context)
           { "error-type": "unknown_error" }
@@ -956,29 +968,11 @@ module Dependabot
 
       record_error(error_details) if error_details
     end
-
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/CyclomaticComplexity
-    def pr_message(dependencies, files)
-      Dependabot::PullRequestCreator::MessageBuilder.new(
-        source: job.source,
-        dependencies: dependencies,
-        files: files,
-        credentials: credentials,
-        commit_message_options: job.commit_message_options,
-        # This ensures that PR messages we build replace github.com links with
-        # a redirect that stop markdown enriching them into mentions on the source
-        # repository.
-        #
-        # TODO: Promote this value to a constant or similar once we have
-        # updated core to avoid surprise outcomes if this is unset.
-        github_redirection_service: "github-redirect.dependabot.com"
-      ).message
-    end
 
     def update_dependency_list(dependencies)
       service.update_dependency_list(
-        job_id,
         dependencies.map do |dep|
           {
             name: dep.name,
@@ -998,25 +992,8 @@ module Dependabot
       job.credentials
     end
 
-    def logger_info(message)
-      Dependabot.logger.info(prefixed_log_message(message))
-    end
-
-    def logger_error(message)
-      Dependabot.logger.error(prefixed_log_message(message))
-    end
-
-    def prefixed_log_message(message)
-      message.lines.map { |line| [log_prefix, line].join(" ") }.join
-    end
-
-    def log_prefix
-      "<job_#{job_id}>" if job_id
-    end
-
     def record_error(error_details, dependency: nil)
       service.record_update_job_error(
-        job_id,
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"],
         dependency: dependency

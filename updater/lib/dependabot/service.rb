@@ -17,26 +17,26 @@ module Dependabot
       @errors = []
     end
 
-    def_delegators :client, :get_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
+    def_delegators :client, :fetch_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
 
-    def create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
-      client.create_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
-      @pull_requests << [humanize(dependencies), :created]
+    def create_pull_request(dependency_change, base_commit_sha)
+      client.create_pull_request(dependency_change, base_commit_sha)
+      @pull_requests << [dependency_change.humanized, :created]
     end
 
-    def update_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha)
-      client.update_pull_request(job_id, dependencies, updated_dependency_files, base_commit_sha)
-      @pull_requests << [humanize(dependencies), :updated]
+    def update_pull_request(dependency_change, base_commit_sha)
+      client.update_pull_request(dependency_change, base_commit_sha)
+      @pull_requests << [dependency_change.humanized, :updated]
     end
 
-    def close_pull_request(job_id, dependency_name, reason)
-      client.close_pull_request(job_id, dependency_name, reason)
+    def close_pull_request(dependency_name, reason)
+      client.close_pull_request(dependency_name, reason)
       @pull_requests << [dependency_name, "closed: #{reason}"]
     end
 
-    def record_update_job_error(job_id, error_type:, error_details:, dependency: nil)
+    def record_update_job_error(error_type:, error_details:, dependency: nil)
       @errors << [error_type.to_s, dependency]
-      client.record_update_job_error(job_id, error_type: error_type, error_details: error_details)
+      client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
     def noop?

@@ -26,44 +26,41 @@ RSpec.describe Dependabot::Updater do
     # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
     it "updates dependencies correctly" do
       stub_update_checker
-      stub_pr_message_building
 
       job = build_job
       service = build_service(job: job)
       updater = build_updater(service: service, job: job)
 
-      job_id = 1
-      dependencies = [have_attributes(name: "dummy-pkg-b")]
-      updated_dependency_files = [
-        {
-          "name" => "Gemfile",
-          "content" => fixture("bundler/updated/Gemfile"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        },
-        {
-          "name" => "Gemfile.lock",
-          "content" => fixture("bundler/updated/Gemfile.lock"),
-          "directory" => "/",
-          "type" => "file",
-          "mode" => "100644",
-          "support_file" => false,
-          "content_encoding" => "utf-8",
-          "deleted" => false,
-          "operation" => "update"
-        }
-      ]
-      base_commit_sha = "sha"
-      pr_message = nil
-
-      expect(service).
-        to receive(:create_pull_request).
-        with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+      expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+        expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+        expect(dependency_change.updated_dependency_files_hash).to eql(
+          [
+            {
+              "name" => "Gemfile",
+              "content" => fixture("bundler/updated/Gemfile"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            },
+            {
+              "name" => "Gemfile.lock",
+              "content" => fixture("bundler/updated/Gemfile.lock"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            }
+          ]
+        )
+        expect(base_commit_sha).to eql("sha")
+      end
 
       updater.run
     end
@@ -73,7 +70,6 @@ RSpec.describe Dependabot::Updater do
       service = build_service(job: job)
       updater = build_updater(service: service, job: job)
 
-      job_id = 1
       dependencies = [
         {
           name: "dummy-pkg-a",
@@ -103,7 +99,7 @@ RSpec.describe Dependabot::Updater do
       dependency_files = ["/Gemfile", "/Gemfile.lock"]
 
       expect(service).
-        to receive(:update_dependency_list).with(job_id, dependencies, dependency_files)
+        to receive(:update_dependency_list).with(dependencies, dependency_files)
 
       updater.run
     end
@@ -120,38 +116,6 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "builds pull request message" do
-      stub_update_checker
-
-      job = build_job
-      service = build_service(job: job)
-      updater = build_updater(service: service, job: job)
-
-      expect(Dependabot::PullRequestCreator::MessageBuilder).
-        to receive(:new).with(
-          source: job.source,
-          files: an_instance_of(Array),
-          dependencies: an_instance_of(Array),
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
-          commit_message_options: {
-            include_scope: true,
-            prefix: "[bump]",
-            prefix_development: "[bump-dev]"
-          },
-          github_redirection_service: "github-redirect.dependabot.com"
-        )
-
-      updater.run
-    end
-
     it "logs the current and latest versions" do
       stub_update_checker
 
@@ -161,10 +125,10 @@ RSpec.describe Dependabot::Updater do
 
       expect(Dependabot.logger).
         to receive(:info).
-        with("<job_1> Checking if dummy-pkg-b 1.1.0 needs updating")
+        with("Checking if dummy-pkg-b 1.1.0 needs updating")
       expect(Dependabot.logger).
         to receive(:info).
-        with("<job_1> Latest version is 1.2.0")
+        with("Latest version is 1.2.0")
 
       updater.run
     end
@@ -191,37 +155,27 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with(anything, { error_type: "out_of_disk", error_details: nil, dependency: nil })
+          with({ error_type: "out_of_disk", error_details: nil, dependency: nil })
       end
     end
 
     context "when github pr creation is rate limiting" do
-      before do
+      it "records an 'octokit_rate_limited' error" do
+        stub_update_checker
+
+        job = build_job
+        service = build_service(job: job)
         error = Octokit::TooManyRequests.new({
           status: 403,
           response_headers: { "X-RateLimit-Reset" => 42 }
         })
-        message_builder = double(Dependabot::PullRequestCreator::MessageBuilder)
-        allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(message_builder)
-        allow(message_builder).to receive(:message).and_raise(error)
-      end
-
-      it "records an 'octokit_rate_limited' error" do
-        stub_update_checker
-
-        job = build_job(
-          experiments: {
-            "build-pull-request-message" => true
-          }
-        )
-        service = build_service(job: job)
+        allow(service).to receive(:create_pull_request).and_raise(error)
         updater = build_updater(service: service, job: job)
 
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
           with(
-            anything,
             {
               error_type: "octokit_rate_limited",
               error_details: { "rate-limit-reset": 42 },
@@ -253,10 +207,10 @@ RSpec.describe Dependabot::Updater do
 
         expect(Dependabot.logger).
           to receive(:info).
-          with("<job_1> Requirements to unlock own")
+          with("Requirements to unlock own")
         expect(Dependabot.logger).
           to receive(:info).
-          with("<job_1> Requirements update strategy bump_versions")
+          with("Requirements update strategy bump_versions")
 
         updater.run
       end
@@ -276,7 +230,7 @@ RSpec.describe Dependabot::Updater do
 
         expect(Dependabot.logger).
           to receive(:info).
-          with("<job_1> Found no dependencies to update after filtering " \
+          with("Found no dependencies to update after filtering " \
                "allowed updates")
         updater.run
       end
@@ -337,7 +291,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "dependency_file_not_supported",
               error_details: {
@@ -348,7 +301,7 @@ RSpec.describe Dependabot::Updater do
           )
           expect(Dependabot.logger).
             to receive(:info).with(
-              "<job_1> Dependabot can't update vulnerable dependencies for " \
+              "Dependabot can't update vulnerable dependencies for " \
               "projects without a lockfile or pinned version requirement as " \
               "the currently installed version of dummy-pkg-b isn't known."
             )
@@ -412,7 +365,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "security_update_not_possible",
               error_details: {
@@ -434,10 +386,10 @@ RSpec.describe Dependabot::Updater do
           )
           expect(Dependabot.logger).
             to receive(:info).with(
-              "<job_1> The latest possible version that can be installed is " \
+              "The latest possible version that can be installed is " \
               "1.2.0 because of the following conflicting dependency:\n" \
-              "<job_1> \n" \
-              "<job_1>   dummy-pkg-a (1.0.0) requires dummy-pkg-b (= 1.2.0)"
+              "\n" \
+              "  dummy-pkg-a (1.0.0) requires dummy-pkg-b (= 1.2.0)"
             )
 
           updater.run
@@ -466,7 +418,6 @@ RSpec.describe Dependabot::Updater do
 
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).with(
-            1,
             {
               error_type: "security_update_not_possible",
               error_details: {
@@ -480,7 +431,7 @@ RSpec.describe Dependabot::Updater do
           )
           expect(Dependabot.logger).
             to receive(:info).with(
-              "<job_1> The latest possible version of dummy-pkg-b that can be " \
+              "The latest possible version of dummy-pkg-b that can be " \
               "installed is 1.1.0"
             )
 
@@ -509,7 +460,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
-              1,
               error_type: "security_update_not_found",
               error_details: {
                 "dependency-name": "dummy-pkg-b",
@@ -520,7 +470,7 @@ RSpec.describe Dependabot::Updater do
           expect(Dependabot.logger).
             to receive(:info).
             with(
-              "<job_1> Dependabot can't find a published or compatible " \
+              "Dependabot can't find a published or compatible " \
               "non-vulnerable version for dummy-pkg-b. " \
               "The latest available version is 1.1.0"
             )
@@ -583,12 +533,12 @@ RSpec.describe Dependabot::Updater do
           expect(Dependabot.logger).
             to receive(:info).
             with(
-              "<job_1> All updates for dummy-pkg-a were ignored"
+              "All updates for dummy-pkg-a were ignored"
             )
           expect(Dependabot.logger).
             to receive(:info).
             with(
-              "<job_1> All updates for dummy-pkg-b were ignored"
+              "All updates for dummy-pkg-b were ignored"
             )
 
           updater.run
@@ -974,178 +924,174 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when a PR already exists" do
-      context "for the latest version" do
-        it "doesn't call can_update? (so short-circuits resolution)" do
-          checker = stub_update_checker
+    context "when a PR already exists for the latest version" do
+      it "doesn't call can_update? (so short-circuits resolution)" do
+        checker = stub_update_checker
 
-          job = build_job(existing_pull_requests: [
+        job = build_job(existing_pull_requests: [
+          [
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "dependency-version" => "1.2.0"
+            }
+          ]
+        ])
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
+
+        expect(checker).to_not receive(:can_update?)
+        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(service).to_not receive(:create_pull_request)
+        expect(service).to_not receive(:record_update_job_error)
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Pull request already exists for dummy-pkg-b " \
+               "with latest version 1.2.0")
+
+        updater.run
+      end
+    end
+
+    context "when a PR already exists for the resolved version" do
+      it "doesn't update the dependency" do
+        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"))
+
+        job = build_job(existing_pull_requests: [
+          [
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "dependency-version" => "1.2.0"
+            }
+          ]
+        ])
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
+
+        expect(checker).to receive(:up_to_date?).and_return(false, false)
+        expect(checker).to receive(:can_update?).and_return(true, false)
+        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(service).to_not receive(:create_pull_request)
+        expect(service).to_not receive(:record_update_job_error)
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Pull request already exists for dummy-pkg-b@1.2.0")
+
+        updater.run
+      end
+    end
+
+    context "when a security update PR exists for the resolved version" do
+      it "creates an update job error and short-circuits" do
+        checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
+
+        job = build_job(
+          existing_pull_requests: [
             [
               {
                 "dependency-name" => "dummy-pkg-b",
                 "dependency-version" => "1.2.0"
               }
             ]
-          ])
-          service = build_service(job: job)
-          updater = build_updater(service: service, job: job)
+          ],
+          security_updates_only: true,
+          security_advisories: [
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "affected-versions" => ["1.1.0"]
+            }
+          ]
+        )
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
 
-          expect(checker).to_not receive(:can_update?)
-          expect(updater).to_not receive(:generate_dependency_files_for)
-          expect(service).to_not receive(:create_pull_request)
-          expect(service).to_not receive(:record_update_job_error)
-          expect(Dependabot.logger).
-            to receive(:info).
-            with("<job_1> Pull request already exists for dummy-pkg-b " \
-                 "with latest version 1.2.0")
-
-          updater.run
-        end
-      end
-
-      context "for the resolved version" do
-        it "doesn't update the dependency" do
-          checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"))
-
-          job = build_job(existing_pull_requests: [
-            [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "dependency-version" => "1.2.0"
-              }
-            ]
-          ])
-          service = build_service(job: job)
-          updater = build_updater(service: service, job: job)
-
-          expect(checker).to receive(:up_to_date?).and_return(false, false)
-          expect(checker).to receive(:can_update?).and_return(true, false)
-          expect(updater).to_not receive(:generate_dependency_files_for)
-          expect(service).to_not receive(:create_pull_request)
-          expect(service).to_not receive(:record_update_job_error)
-          expect(Dependabot.logger).
-            to receive(:info).
-            with("<job_1> Pull request already exists for dummy-pkg-b@1.2.0")
-
-          updater.run
-        end
-      end
-
-      context "when security only updates for the resolved version" do
-        it "creates an update job error and short-circuits" do
-          checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
-
-          job = build_job(
-            existing_pull_requests: [
-              [
-                {
-                  "dependency-name" => "dummy-pkg-b",
-                  "dependency-version" => "1.2.0"
-                }
-              ]
-            ],
-            security_updates_only: true,
-            security_advisories: [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "affected-versions" => ["1.1.0"]
-              }
-            ]
-          )
-          service = build_service(job: job)
-          updater = build_updater(service: service, job: job)
-
-          expect(checker).to receive(:up_to_date?).and_return(false)
-          expect(checker).to receive(:can_update?).and_return(true)
-          expect(updater).to_not receive(:generate_dependency_files_for)
-          expect(service).to_not receive(:create_pull_request)
-          expect(service).to receive(:record_update_job_error).
-            with(
-              1,
-              error_type: "pull_request_exists_for_security_update",
-              error_details: {
-                "updated-dependencies": [
-                  "dependency-name": "dummy-pkg-b",
-                  "dependency-version": "1.2.0"
-                ]
-              },
-              dependency: nil
-            )
-          expect(Dependabot.logger).
-            to receive(:info).
-            with("<job_1> Pull request already exists for dummy-pkg-b@1.2.0")
-
-          updater.run
-        end
-      end
-
-      context "when security only updates for the latest version" do
-        it "doesn't call can_update? (so short-circuits resolution)" do
-          checker = stub_update_checker(vulnerable?: true)
-
-          job = build_job(
-            existing_pull_requests: [
-              [
-                {
-                  "dependency-name" => "dummy-pkg-b",
-                  "dependency-version" => "1.2.0"
-                }
-              ]
-            ],
-            security_updates_only: true,
-            security_advisories: [
-              {
-                "dependency-name" => "dummy-pkg-b",
-                "affected-versions" => ["1.1.0"]
-              }
-            ]
-          )
-          service = build_service(job: job)
-          updater = build_updater(service: service, job: job)
-
-          expect(checker).to_not receive(:can_update?)
-          expect(updater).to_not receive(:generate_dependency_files_for)
-          expect(service).to_not receive(:create_pull_request)
-          expect(service).to receive(:record_update_job_error).
-            with(
-              1,
-              error_type: "pull_request_exists_for_latest_version",
-              error_details: {
+        expect(checker).to receive(:up_to_date?).and_return(false)
+        expect(checker).to receive(:can_update?).and_return(true)
+        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(service).to_not receive(:create_pull_request)
+        expect(service).to receive(:record_update_job_error).
+          with(
+            error_type: "pull_request_exists_for_security_update",
+            error_details: {
+              "updated-dependencies": [
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.2.0"
-              },
-              dependency: an_instance_of(Dependabot::Dependency)
-            )
-          expect(Dependabot.logger).
-            to receive(:info).
-            with("<job_1> Pull request already exists for dummy-pkg-b " \
-                 "with latest version 1.2.0")
-
-          updater.run
-        end
-      end
-
-      context "for a different version" do
-        it "updates the dependency" do
-          stub_update_checker
-
-          job = build_job(
-            existing_pull_requests: [
-              [
-                {
-                  "dependency-name" => "dummy-pkg-b",
-                  "dependency-version" => "1.1.1"
-                }
               ]
-            ]
+            },
+            dependency: nil
           )
-          service = build_service(job: job)
-          updater = build_updater(service: service, job: job)
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Pull request already exists for dummy-pkg-b@1.2.0")
 
-          expect(service).to receive(:create_pull_request).once
+        updater.run
+      end
+    end
 
-          updater.run
-        end
+    context "when a security update PR exists for the latest version" do
+      it "doesn't call can_update? (so short-circuits resolution)" do
+        checker = stub_update_checker(vulnerable?: true)
+
+        job = build_job(
+          existing_pull_requests: [
+            [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "dependency-version" => "1.2.0"
+              }
+            ]
+          ],
+          security_updates_only: true,
+          security_advisories: [
+            {
+              "dependency-name" => "dummy-pkg-b",
+              "affected-versions" => ["1.1.0"]
+            }
+          ]
+        )
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
+
+        expect(checker).to_not receive(:can_update?)
+        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(service).to_not receive(:create_pull_request)
+        expect(service).to receive(:record_update_job_error).
+          with(
+            error_type: "pull_request_exists_for_latest_version",
+            error_details: {
+              "dependency-name": "dummy-pkg-b",
+              "dependency-version": "1.2.0"
+            },
+            dependency: an_instance_of(Dependabot::Dependency)
+          )
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Pull request already exists for dummy-pkg-b " \
+               "with latest version 1.2.0")
+
+        updater.run
+      end
+    end
+
+    context "when a PR exists for a different version" do
+      it "updates the dependency" do
+        stub_update_checker
+
+        job = build_job(
+          existing_pull_requests: [
+            [
+              {
+                "dependency-name" => "dummy-pkg-b",
+                "dependency-version" => "1.1.1"
+              }
+            ]
+          ]
+        )
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
+
+        expect(service).to receive(:create_pull_request).once
+
+        updater.run
       end
     end
 
@@ -1209,7 +1155,6 @@ RSpec.describe Dependabot::Updater do
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
-            1,
             error_type: "pull_request_exists_for_security_update",
             error_details: {
               "updated-dependencies": [
@@ -1227,7 +1172,7 @@ RSpec.describe Dependabot::Updater do
           )
         expect(Dependabot.logger).
           to receive(:info).
-          with("<job_1> Pull request already exists for dummy-pkg-c@1.4.0, dummy-pkg-b@removed")
+          with("Pull request already exists for dummy-pkg-c@1.4.0, dummy-pkg-b@removed")
         updater.run
       end
     end
@@ -1254,80 +1199,78 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
-        context "when security only updates" do
-          context "the dependency isn't vulnerable" do
-            it "closes the pull request" do
-              stub_update_checker(vulnerable?: true)
+        context "when the dependency isn't vulnerable in a security update" do
+          it "closes the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                updating_a_pull_request: true
-              )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:close_pull_request).once
+            expect(service).to receive(:close_pull_request).once
 
-              updater.run
-            end
+            updater.run
           end
+        end
 
-          context "the dependency is vulnerable" do
-            it "creates the pull request" do
-              stub_update_checker(vulnerable?: true)
+        context "when the dependency is vulnerable in a security update" do
+          it "creates the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                updating_a_pull_request: true
-              )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:create_pull_request)
+            expect(service).to receive(:create_pull_request)
 
-              updater.run
-            end
+            updater.run
           end
+        end
 
-          context "the dependency is vulnerable but updates aren't allowed" do
-            it "closes the pull request" do
-              stub_update_checker(vulnerable?: true)
+        context "when the dependency is vulnerable in a security update but updates aren't allowed" do
+          it "closes the pull request" do
+            stub_update_checker(vulnerable?: true)
 
-              job = build_job(
-                security_updates_only: true,
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                allowed_updates: [
-                  {
-                    "dependency-type" => "development"
-                  }
-                ],
-                updating_a_pull_request: true
+            job = build_job(
+              security_updates_only: true,
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              allowed_updates: [
+                {
+                  "dependency-type" => "development"
+                }
+              ],
+              updating_a_pull_request: true
+            )
+            service = build_service(job: job)
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:close_pull_request).once
+            expect(Dependabot.logger).
+              to receive(:info).with(
+                "Dependency no longer allowed to update dummy-pkg-b 1.1.0"
               )
-              service = build_service(job: job)
-              updater = build_updater(service: service, job: job)
 
-              expect(service).to receive(:close_pull_request).once
-              expect(Dependabot.logger).
-                to receive(:info).with(
-                  "<job_1> Dependency no longer allowed to update dummy-pkg-b 1.1.0"
-                )
-
-              updater.run
-            end
+            updater.run
           end
         end
 
@@ -1602,7 +1545,6 @@ RSpec.describe Dependabot::Updater do
 
               expect(service).not_to receive(:create_pull_request)
               expect(service).to receive(:record_update_job_error).with(
-                1,
                 {
                   error_type: "all_versions_ignored",
                   error_details: {
@@ -1613,7 +1555,7 @@ RSpec.describe Dependabot::Updater do
               )
               expect(Dependabot.logger).
                 to receive(:info).with(
-                  "<job_1> Dependabot cannot update to the required version as all " \
+                  "Dependabot cannot update to the required version as all " \
                   "versions were ignored for dummy-pkg-b"
                 )
 
@@ -1641,7 +1583,6 @@ RSpec.describe Dependabot::Updater do
 
               expect(service).to_not receive(:create_pull_request)
               expect(service).to receive(:record_update_job_error).with(
-                1,
                 {
                   error_type: "security_update_not_needed",
                   error_details: {
@@ -1652,7 +1593,7 @@ RSpec.describe Dependabot::Updater do
               )
               expect(Dependabot.logger).
                 to receive(:info).with(
-                  "<job_1> no security update needed as dummy-pkg-b " \
+                  "no security update needed as dummy-pkg-b " \
                   "is no longer vulnerable"
                 )
 
@@ -1663,225 +1604,216 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    context "when an error is raised" do
-      context "during parsing" do
-        context "and it's an unknown error" do
-          it "tells Sentry" do
-            checker = stub_update_checker
-            error = StandardError.new("hell")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+    context "when an unknown error is raised during parsing" do
+      it "tells Sentry" do
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+        job = build_job
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+        allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to receive(:capture_exception)
+        expect(Raven).to receive(:capture_exception)
 
-            updater.run
-          end
+        updater.run
+      end
 
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = StandardError.new("hell")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+      it "tells the main backend" do
+        checker = stub_update_checker
+        error = StandardError.new("hell")
+        values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+        allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+        job = build_job
+        service = build_service(job: job)
+        updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+        allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                1,
-                error_type: "unknown_error",
-                error_details: nil,
-                dependency: nil
-              )
+        expect(service).
+          to receive(:record_update_job_error).
+          with(
+            error_type: "unknown_error",
+            error_details: nil,
+            dependency: nil
+          )
 
-            updater.run
-          end
+        updater.run
+      end
+
+      context "when Dependabot::DependencyFileNotFound is raised during parsing" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotFound.new("path/to/file")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
         end
 
-        context "but it's a Dependabot::DependencyFileNotFound" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotFound.new("path/to/file")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotFound.new("path/to/file")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
 
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
 
-            allow(updater).to receive(:dependency_files).and_raise(error)
+          allow(updater).to receive(:dependency_files).and_raise(error)
 
-            expect(Raven).to_not receive(:capture_exception)
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "dependency_file_not_found",
+              error_details: { "file-path": "path/to/file" },
+              dependency: nil
+            )
 
-            updater.run
-          end
-
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotFound.new("path/to/file")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                1,
-                error_type: "dependency_file_not_found",
-                error_details: { "file-path": "path/to/file" },
-                dependency: nil
-              )
-
-            updater.run
-          end
-        end
-
-        context "but it's a Dependabot::BranchNotFound" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::BranchNotFound.new("my_branch")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(Raven).to_not receive(:capture_exception)
-
-            updater.run
-          end
-
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::BranchNotFound.new("my_branch")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                1,
-                error_type: "branch_not_found",
-                error_details: { "branch-name": "my_branch" },
-                dependency: nil
-              )
-
-            updater.run
-          end
-        end
-
-        context "but it's a Dependabot::DependencyFileNotParseable" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(Raven).to_not receive(:capture_exception)
-
-            updater.run
-          end
-
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                1,
-                error_type: "dependency_file_not_parseable",
-                error_details: { "file-path": "path/to/file", message: "a" },
-                dependency: nil
-              )
-
-            updater.run
-          end
-        end
-
-        context "but it's a Dependabot::PathDependenciesNotReachable" do
-          it "doesn't tell Sentry" do
-            checker = stub_update_checker
-            error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(Raven).to_not receive(:capture_exception)
-
-            updater.run
-          end
-
-          it "tells the main backend" do
-            checker = stub_update_checker
-            error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
-            values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
-            allow(checker).to receive(:can_update?) { values.shift.call }
-
-            job = build_job
-            service = build_service(job: job)
-            updater = build_updater(service: service, job: job)
-
-            allow(updater).to receive(:dependency_files).and_raise(error)
-
-            expect(service).
-              to receive(:record_update_job_error).
-              with(
-                1,
-                error_type: "path_dependencies_not_reachable",
-                error_details: { dependencies: ["bad_gem"] },
-                dependency: nil
-              )
-
-            updater.run
-          end
+          updater.run
         end
       end
 
-      context "but it's a Dependabot::DependencyFileNotResolvable" do
+      context "when Dependabot::BranchNotFound is raised during parsing" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::BranchNotFound.new("my_branch")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::BranchNotFound.new("my_branch")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "branch_not_found",
+              error_details: { "branch-name": "my_branch" },
+              dependency: nil
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::DependencyFileNotParseable is raised during parsing" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::DependencyFileNotParseable.new("path/to/file", "a")
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "dependency_file_not_parseable",
+              error_details: { "file-path": "path/to/file", message: "a" },
+              dependency: nil
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::PathDependenciesNotReachable is raised during parsing" do
+        it "doesn't tell Sentry" do
+          checker = stub_update_checker
+          error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(Raven).to_not receive(:capture_exception)
+
+          updater.run
+        end
+
+        it "tells the main backend" do
+          checker = stub_update_checker
+          error = Dependabot::PathDependenciesNotReachable.new(["bad_gem"])
+          values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
+          allow(checker).to receive(:can_update?) { values.shift.call }
+
+          job = build_job
+          service = build_service(job: job)
+          updater = build_updater(service: service, job: job)
+
+          allow(updater).to receive(:dependency_files).and_raise(error)
+
+          expect(service).
+            to receive(:record_update_job_error).
+            with(
+              error_type: "path_dependencies_not_reachable",
+              error_details: { dependencies: ["bad_gem"] },
+              dependency: nil
+            )
+
+          updater.run
+        end
+      end
+
+      context "when Dependabot::DependencyFileNotResolvable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotResolvable.new("message")
@@ -1910,7 +1842,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "dependency_file_not_resolvable",
               error_details: { message: "message" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -1920,7 +1851,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::DependencyFileNotEvaluatable" do
+      context "when Dependabot::DependencyFileNotEvaluatable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::DependencyFileNotEvaluatable.new("message")
@@ -1949,7 +1880,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "dependency_file_not_evaluatable",
               error_details: { message: "message" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -1959,7 +1889,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::InconsistentRegistryResponse" do
+      context "when Dependabot::InconsistentRegistryResponse is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::InconsistentRegistryResponse.new("message")
@@ -1991,7 +1921,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GitDependenciesNotReachable" do
+      context "when Dependabot::GitDependenciesNotReachable is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GitDependenciesNotReachable.new("https://example.com")
@@ -2020,7 +1950,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "git_dependencies_not_reachable",
               error_details: { "dependency-urls": ["https://example.com"] },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2030,7 +1959,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GitDependencyReferenceNotFound" do
+      context "when Dependabot::GitDependencyReferenceNotFound is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GitDependencyReferenceNotFound.new("some_dep")
@@ -2059,7 +1988,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "git_dependency_reference_not_found",
               error_details: { dependency: "some_dep" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2069,7 +1997,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::GoModulePathMismatch" do
+      context "when Dependabot::GoModulePathMismatch is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::GoModulePathMismatch.new("/go.mod", "foo", "bar")
@@ -2098,7 +2026,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "go_module_path_mismatch",
               error_details: {
                 "declared-path": "foo",
@@ -2112,7 +2039,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::PrivateSourceAuthenticationFailure" do
+      context "when Dependabot::PrivateSourceAuthenticationFailure is raised" do
         it "doesn't tell Sentry" do
           checker = stub_update_checker
           error = Dependabot::PrivateSourceAuthenticationFailure.new("some.example.com")
@@ -2141,7 +2068,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "private_source_authentication_failure",
               error_details: { source: "some.example.com" },
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2151,7 +2077,7 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "but it's a Dependabot::SharedHelpers::HelperSubprocessFailed" do
+      context "when Dependabot::SharedHelpers::HelperSubprocessFailed is raised" do
         it "tells the main backend there has been an unknown error" do
           checker = stub_update_checker
           error =
@@ -2169,7 +2095,6 @@ RSpec.describe Dependabot::Updater do
           expect(service).
             to receive(:record_update_job_error).
             with(
-              1,
               error_type: "unknown_error",
               error_details: nil,
               dependency: an_instance_of(Dependabot::Dependency)
@@ -2227,7 +2152,6 @@ RSpec.describe Dependabot::Updater do
         expect(service).
           to receive(:record_update_job_error).
           with(
-            1,
             error_type: "unknown_error",
             error_details: nil,
             dependency: an_instance_of(Dependabot::Dependency)
@@ -2379,7 +2303,6 @@ RSpec.describe Dependabot::Updater do
       context "with a bundler 2 project" do
         it "updates dependencies correctly" do
           stub_update_checker
-          stub_pr_message_building
 
           job = build_job(
             experiments: {
@@ -2401,38 +2324,36 @@ RSpec.describe Dependabot::Updater do
           ]
           updater = build_updater(service: service, job: job, dependency_files: dependency_files)
 
-          job_id = 1
-          dependencies = [have_attributes(name: "dummy-pkg-b")]
-          updated_dependency_files = [
-            {
-              "name" => "Gemfile",
-              "content" => fixture("bundler2/updated/Gemfile"),
-              "directory" => "/",
-              "type" => "file",
-              "mode" => "100644",
-              "support_file" => false,
-              "content_encoding" => "utf-8",
-              "deleted" => false,
-              "operation" => "update"
-            },
-            {
-              "name" => "Gemfile.lock",
-              "content" => fixture("bundler2/updated/Gemfile.lock"),
-              "directory" => "/",
-              "type" => "file",
-              "mode" => "100644",
-              "support_file" => false,
-              "content_encoding" => "utf-8",
-              "deleted" => false,
-              "operation" => "update"
-            }
-          ]
-          base_commit_sha = "sha"
-          pr_message = nil
-
-          expect(service).
-            to receive(:create_pull_request).
-            with(job_id, dependencies, updated_dependency_files, base_commit_sha, pr_message)
+          expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+            expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+            expect(dependency_change.updated_dependency_files_hash).to eql(
+              [
+                {
+                  "name" => "Gemfile",
+                  "content" => fixture("bundler2/updated/Gemfile"),
+                  "directory" => "/",
+                  "type" => "file",
+                  "mode" => "100644",
+                  "support_file" => false,
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "operation" => "update"
+                },
+                {
+                  "name" => "Gemfile.lock",
+                  "content" => fixture("bundler2/updated/Gemfile.lock"),
+                  "directory" => "/",
+                  "type" => "file",
+                  "mode" => "100644",
+                  "support_file" => false,
+                  "content_encoding" => "utf-8",
+                  "deleted" => false,
+                  "operation" => "update"
+                }
+              ]
+            )
+            expect(base_commit_sha).to eql("sha")
+          end
 
           updater.run
         end
@@ -2487,7 +2408,7 @@ RSpec.describe Dependabot::Updater do
 
         expect(Dependabot.logger).
           to have_received(:info).
-          with("<job_1>   >= 1.a, < 2.0.0 - from @dependabot ignore command")
+          with("  >= 1.a, < 2.0.0 - from @dependabot ignore command")
       end
 
       it "logs ignored update types" do
@@ -2512,10 +2433,10 @@ RSpec.describe Dependabot::Updater do
 
         expect(Dependabot.logger).
           to have_received(:info).
-          with("<job_1>   version-update:semver-patch - from .github/dependabot.yaml")
+          with("  version-update:semver-patch - from .github/dependabot.yaml")
         expect(Dependabot.logger).
           to have_received(:info).
-          with("<job_1>   version-update:semver-minor - from .github/dependabot.yaml")
+          with("  version-update:semver-minor - from .github/dependabot.yaml")
       end
     end
 
@@ -2561,7 +2482,7 @@ RSpec.describe Dependabot::Updater do
         expect(Dependabot.logger).
           to have_received(:info).
           with(
-            "<job_1>   version-update:semver-patch - from .github/dependabot.yaml (doesn't apply to security update)"
+            "  version-update:semver-patch - from .github/dependabot.yaml (doesn't apply to security update)"
           )
       end
     end
@@ -2596,7 +2517,7 @@ RSpec.describe Dependabot::Updater do
   def build_service(job: build_job)
     instance_double(
       Dependabot::Service,
-      get_job: job,
+      fetch_job: job,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
@@ -2610,6 +2531,7 @@ RSpec.describe Dependabot::Updater do
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
                 experiments: {}, updating_a_pull_request: false, security_updates_only: false)
     Dependabot::Job.new(
+      id: 1,
       token: "token",
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
@@ -2719,10 +2641,5 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :own).and_return(true, false)
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
-  end
-
-  def stub_pr_message_building
-    builder = double(Dependabot::PullRequestCreator::MessageBuilder, message: nil)
-    allow(Dependabot::PullRequestCreator::MessageBuilder).to receive(:new).and_return(builder)
   end
 end

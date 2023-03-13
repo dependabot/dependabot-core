@@ -10,6 +10,7 @@ RSpec.describe Dependabot::Job do
 
   let(:attributes) do
     {
+      id: 1,
       token: "token",
       dependencies: dependencies,
       allowed_updates: allowed_updates,
