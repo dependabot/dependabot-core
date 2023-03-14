@@ -69,20 +69,16 @@ module Dependabot
       service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
     end
 
-    def api_url
-      Environment.api_url
-    end
-
     def job_id
       Environment.job_id
     end
 
-    def job_token
-      Environment.job_token
-    end
-
     def api_client
-      @api_client ||= Dependabot::ApiClient.new(api_url, job_id, job_token)
+      @api_client ||= Dependabot::ApiClient.new(
+        Environment.api_url,
+        job_id,
+        Environment.job_token
+      )
     end
 
     def service

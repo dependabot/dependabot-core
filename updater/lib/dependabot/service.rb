@@ -3,13 +3,16 @@
 require "terminal-table"
 require "dependabot/api_client"
 
-# Wraps an API client with the current state of communications with the Dependabot Service
-# and provides an interface to summarise all actions taken.
+# This class provides an output adapter for the Dependabot Service which manages
+# communication with the private API as well as consolidated error handling.
+#
+# Currently this is the only output adapter available, but in future we may
+# support others for use with the dependabot/cli project.
 #
 module Dependabot
   class Service
     extend Forwardable
-    attr_reader :client, :events, :pull_requests, :errors
+    attr_reader :pull_requests, :errors
 
     def initialize(client:)
       @client = client
@@ -70,6 +73,8 @@ module Dependabot
     end
 
     private
+
+    attr_reader :client
 
     def pull_request_summary
       return unless pull_requests.any?
