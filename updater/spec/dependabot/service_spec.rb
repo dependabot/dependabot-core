@@ -10,7 +10,6 @@ RSpec.describe Dependabot::Service do
 
   let(:mock_client) do
     instance_double(Dependabot::ApiClient, {
-      fetch_job: nil,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
@@ -169,12 +168,6 @@ RSpec.describe Dependabot::Service do
 
         expect(mock_client).to have_received(method).with(*arguments)
       end
-    end
-
-    it "delegates fetch_job" do
-      service.fetch_job
-
-      expect(mock_client).to have_received(:fetch_job)
     end
   end
 

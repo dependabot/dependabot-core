@@ -17,11 +17,58 @@ require "wildcard_matcher"
 module Dependabot
   class Job
     TOP_LEVEL_DEPENDENCY_TYPES = %w(direct production development).freeze
+    PERMITTED_KEYS = %i(
+      allowed_updates
+      commit_message_options
+      dependencies
+      existing_pull_requests
+      experiments
+      ignore_conditions
+      lockfile_only
+      package_manager
+      reject_external_code
+      repo_contents_path
+      requirements_update_strategy
+      security_advisories
+      security_updates_only
+      source
+      update_subdependencies
+      updating_a_pull_request
+      vendor_dependencies
+    )
 
-    attr_reader :id, :token, :dependencies, :package_manager, :ignore_conditions,
-                :existing_pull_requests, :source, :credentials,
-                :requirements_update_strategy, :security_advisories,
-                :allowed_updates, :vendor_dependencies, :security_updates_only
+    attr_reader :allowed_updates,
+                :credentials,
+                :dependencies,
+                :existing_pull_requests,
+                :id,
+                :ignore_conditions,
+                :package_manager,
+                :requirements_update_strategy,
+                :security_advisories,
+                :security_updates_only,
+                :source,
+                :token,
+                :vendor_dependencies
+
+    def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
+
+      new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
+    end
+
+    def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
+      attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
+      # The Updater should NOT have access to credentials. Let's use metadata, which
+      # can be used by the proxy for matching and applying the real credentials
+      attrs[:credentials] = job_definition.dig("job", "credentials_metadata") || []
+
+      new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
+    end
+
+    def self.standardise_keys(hash)
+      hash.transform_keys { |key| key.tr("-", "_").to_sym }
+    end
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
@@ -37,6 +84,7 @@ module Dependabot
       @lockfile_only                = attributes.fetch(:lockfile_only)
       @package_manager              = attributes.fetch(:package_manager)
       @reject_external_code         = attributes.fetch(:reject_external_code, false)
+      @repo_contents_path           = attributes.fetch(:repo_contents_path, nil)
       @requirements_update_strategy = attributes.fetch(:requirements_update_strategy)
       @security_advisories          = attributes.fetch(:security_advisories)
       @security_updates_only        = attributes.fetch(:security_updates_only)
@@ -54,11 +102,13 @@ module Dependabot
         Dependabot::Utils.always_clone_for_package_manager?(@package_manager)
     end
 
-    def already_cloned?
-      return unless Environment.repo_contents_path
+    # Some Core components test for a non-nil repo_contents_path as an implicit
+    # signal they should use cloning behaviour, so we present it as nil unless
+    # cloning is enabled to avoid unexpected behaviour.
+    def repo_contents_path
+      return nil unless clone?
 
-      # For testing, the source repo may already be mounted.
-      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
+      @repo_contents_path
     end
 
     def lockfile_only?
@@ -140,25 +190,19 @@ module Dependabot
     end
 
     def name_normaliser
-      Dependabot::Dependency.
-        name_normaliser_for_package_manager(package_manager)
+      Dependabot::Dependency.name_normaliser_for_package_manager(package_manager)
     end
 
     def experiments
       return {} unless @experiments
 
-      @experiments.
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym)
+      self.class.standardise_keys(@experiments)
     end
 
     def commit_message_options
       return {} unless @commit_message_options
 
-      @commit_message_options.
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        compact
+      self.class.standardise_keys(@commit_message_options).compact
     end
 
     private

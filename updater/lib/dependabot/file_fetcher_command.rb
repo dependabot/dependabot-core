@@ -47,6 +47,8 @@ module Dependabot
       save_job_details
     end
 
+    private
+
     def save_job_details
       # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
@@ -81,20 +83,11 @@ module Dependabot
     end
 
     def job
-      attrs =
-        Environment.job_definition["job"].
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        slice(
-          :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :experiments, :reject_external_code,
-          :commit_message_options, :security_updates_only
-        )
-
-      @job ||= Job.new(attrs.merge(id: job_id))
+      @job ||= Job.new_fetch_job(
+        job_id: job_id,
+        job_definition: Environment.job_definition,
+        repo_contents_path: Environment.repo_contents_path
+      )
     end
 
     def file_fetcher
@@ -105,10 +98,18 @@ module Dependabot
         credentials: Environment.job_definition.fetch("credentials", []),
         options: job.experiments
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || job.already_cloned?
-      @file_fetcher ||=
-        Dependabot::FileFetchers.for_package_manager(job.package_manager).
-        new(**args)
+      # This bypasses the `job.repo_contents_path` presenter to ensure we fetch
+      # from the file system if the repository contents are mounted even if
+      # cloning is disabled.
+      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
+      @file_fetcher ||= Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+    end
+
+    def already_cloned?
+      return false unless Environment.repo_contents_path
+
+      # For testing, the source repo may already be mounted.
+      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
     end
 
     # rubocop:disable Metrics/MethodLength

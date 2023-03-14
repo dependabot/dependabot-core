@@ -17,7 +17,7 @@ module Dependabot
       @errors = []
     end
 
-    def_delegators :client, :fetch_job, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
+    def_delegators :client, :mark_job_as_processed, :update_dependency_list, :record_package_manager_version
 
     def create_pull_request(dependency_change, base_commit_sha)
       client.create_pull_request(dependency_change, base_commit_sha)
