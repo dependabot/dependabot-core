@@ -2,19 +2,43 @@
 
 require "base64"
 require "dependabot/base_command"
+require "dependabot/dependency_snapshot"
 require "dependabot/updater"
 
 module Dependabot
   class UpdateFilesCommand < BaseCommand
     def perform_job
+      # We expect the FileFetcherCommand to have been executed beforehand to place
+      # encoded files and commit information in the environment, so let's retrieve
+      # and decode them into an object.
+
+      # TODO: Parse the dependency files when instantiated
+      #
+      # We can pull the error handling for parser exceptions up into this class to
+      # completely remove the concern from Dependabot::Updater.
+      #
+      # This should happen separately to introducing the class as a shim.
+      #
+      # See: updater/lib/dependabot/dependency_snapshot.rb:52
+      dependency_snapshot = Dependabot::DependencySnapshot.create_from_job_definition(
+        job: job,
+        job_definition: Environment.job_definition
+      )
+
+      # TODO: Pull fatal error handling handling up into this class
+      #
+      # As above, we can remove the responsibility for handling fatal/job halting
+      # errors from Dependabot::Updater entirely.
       Dependabot::Updater.new(
         service: service,
         job: job,
-        dependency_files: dependency_files,
-        base_commit_sha: base_commit_sha
+        dependency_snapshot: dependency_snapshot
       ).run
 
-      service.mark_job_as_processed(base_commit_sha)
+      # Finally, mark the job as processed. The Dependabot::Updater may have
+      # reported errors to the service, but we always consider the job as
+      # successfully processed unless it actually raises.
+      service.mark_job_as_processed(dependency_snapshot.base_commit_sha)
     end
 
     private
@@ -25,25 +49,6 @@ module Dependabot
         job_definition: Environment.job_definition,
         repo_contents_path: Environment.repo_contents_path
       )
-    end
-
-    def dependency_files
-      @dependency_files ||=
-        Environment.job_definition["base64_dependency_files"].map do |a|
-          file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
-          file.content = Base64.decode64(file.content).force_encoding("utf-8") unless file.binary? && !file.deleted?
-          file
-        end
-    end
-
-    def repo_contents_path
-      return nil unless job.clone?
-
-      Environment.repo_contents_path
-    end
-
-    def base_commit_sha
-      Environment.job_definition["base_commit_sha"]
     end
   end
 end

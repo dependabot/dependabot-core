@@ -5,6 +5,7 @@ require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/dependency_snapshot"
 require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
@@ -1292,7 +1293,8 @@ RSpec.describe Dependabot::Updater do
               service = build_service
               updater = build_updater(service: service, job: job)
 
-              allow(updater).to receive(:dependency_files).
+              # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+              allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).
                 and_raise(Dependabot::DependencyFileNotParseable.new("path/to/file"))
 
               expect(service).to receive(:record_update_job_error).with(
@@ -1613,7 +1615,8 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        allow(updater).to receive(:dependency_files).and_raise(error)
+        # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+        allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
         expect(Raven).to receive(:capture_exception)
 
@@ -1630,7 +1633,8 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        allow(updater).to receive(:dependency_files).and_raise(error)
+        # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+        allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
         expect(service).
           to receive(:record_update_job_error).
@@ -1653,7 +1657,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1670,7 +1675,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
@@ -1694,7 +1700,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1711,7 +1718,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
@@ -1735,7 +1743,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1752,7 +1761,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
@@ -1776,7 +1786,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1793,7 +1804,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
@@ -2485,8 +2497,11 @@ RSpec.describe Dependabot::Updater do
     Dependabot::Updater.new(
       service: service,
       job: job,
-      dependency_files: dependency_files,
-      base_commit_sha: "sha"
+      dependency_snapshot: Dependabot::DependencySnapshot.new(
+        job: job,
+        dependency_files: dependency_files,
+        base_commit_sha: "sha"
+      )
     )
   end
 

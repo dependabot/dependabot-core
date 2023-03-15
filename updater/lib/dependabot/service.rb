@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "raven"
 require "terminal-table"
 require "dependabot/api_client"
 
