@@ -877,7 +877,11 @@ module Dependabot
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details, dependency: dependency)
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"],
+        dependency: dependency
+      )
 
       log_error(
         dependency: dependency,
