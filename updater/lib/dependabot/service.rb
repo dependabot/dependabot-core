@@ -42,6 +42,25 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
+    # This method wraps the Raven client as the Application error tracker
+    # the service uses to notice errors.
+    #
+    # This should be called as an alternative/in addition to record_update_job_error
+    # for cases where an error could indicate a problem with the service.
+    def capture_exception(error:, job: nil, dependency: nil, tags: {}, extra: {})
+      Raven.capture_exception(
+        error,
+        {
+          tags: tags,
+          extra: extra.merge({
+            update_job_id: job&.id,
+            package_manager: job&.package_manager,
+            dependency_name: dependency&.name
+          }.compact)
+        }
+      )
+    end
+
     def noop?
       pull_requests.empty? && errors.empty?
     end

@@ -80,7 +80,7 @@ module Dependabot
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
         )
         error.set_backtrace(e.backtrace)
-        Raven.capture_exception(error, raven_context)
+        service.capture_exception(error: error, job: job)
         return
       end
 
@@ -867,7 +867,7 @@ module Dependabot
           msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
           sanitized_error.set_backtrace(error.backtrace)
-          Raven.capture_exception(sanitized_error, raven_context)
+          service.capture_exception(error: sanitized_error, job: job)
 
           { "error-type": "unknown_error" }
         when *Octokit::RATE_LIMITED_ERRORS
@@ -880,7 +880,11 @@ module Dependabot
             }
           }
         else
-          Raven.capture_exception(error, raven_context(dependency: dependency))
+          service.capture_exception(
+            error: error,
+            job: job,
+            dependency: dependency
+          )
           { "error-type": "unknown_error" }
         end
 
@@ -966,7 +970,7 @@ module Dependabot
           Dependabot.logger.error error.message
           error.backtrace.each { |line| Dependabot.logger.error line }
 
-          Raven.capture_exception(error, raven_context)
+          service.capture_exception(error: error, job: job)
           { "error-type": "unknown_error" }
         end
 
@@ -994,18 +998,6 @@ module Dependabot
         error_details: error_details[:"error-detail"],
         dependency: dependency
       )
-    end
-
-    def raven_context(dependency: nil)
-      context = {
-        tags: {},
-        extra: {
-          update_job_id: job.id,
-          package_manager: job.package_manager
-        }
-      }
-      context[:extra][:dependency_name] = dependency.name if dependency
-      context
     end
   end
 end

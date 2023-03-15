@@ -2519,16 +2519,23 @@ RSpec.describe Dependabot::Updater do
   end
 
   def build_service
-    instance_double(
-      Dependabot::Service,
+    # Stub out a client so we don't hit the internet
+    api_client = instance_double(
+      Dependabot::ApiClient,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
       mark_job_as_processed: nil,
       update_dependency_list: nil,
-      record_update_job_error: nil,
-      errors: []
+      record_update_job_error: nil
     )
+
+    service = Dependabot::Service.new(
+      client: api_client
+    )
+    allow(service).to receive(:record_update_job_error)
+
+    service
   end
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength

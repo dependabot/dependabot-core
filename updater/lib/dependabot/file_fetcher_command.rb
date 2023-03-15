@@ -170,8 +170,8 @@ module Dependabot
         else
           Dependabot.logger.error(error.message)
           error.backtrace.each { |line| Dependabot.logger.error line }
-          Raven.capture_exception(error, raven_context)
 
+          service.capture_exception(error: error, job: job)
           { "error-type": "unknown_error" }
         end
 
