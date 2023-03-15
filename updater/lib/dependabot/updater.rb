@@ -967,7 +967,14 @@ module Dependabot
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details) if error_details
+      # TODO: Early return for Dependabot::BranchNotFound instead of assigning
+      #       nil to error_details
+      return unless error_details
+
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/CyclomaticComplexity
@@ -982,14 +989,6 @@ module Dependabot
           }
         end,
         dependency_files.reject(&:support_file).map(&:path)
-      )
-    end
-
-    def record_error(error_details, dependency: nil)
-      service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"],
-        dependency: dependency
       )
     end
   end

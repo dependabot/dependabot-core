@@ -1297,8 +1297,7 @@ RSpec.describe Dependabot::Updater do
 
               expect(service).to receive(:record_update_job_error).with(
                 error_type: "dependency_file_not_parseable",
-                error_details: anything,
-                dependency: nil
+                error_details: anything
               )
               expect(service).to receive(:errors).and_return([anything])
               expect(service).to_not receive(:close_pull_request)
@@ -1637,8 +1636,7 @@ RSpec.describe Dependabot::Updater do
           to receive(:record_update_job_error).
           with(
             error_type: "unknown_error",
-            error_details: nil,
-            dependency: nil
+            error_details: nil
           )
 
         updater.run
@@ -1678,8 +1676,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_found",
-              error_details: { "file-path": "path/to/file" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file" }
             )
 
           updater.run
@@ -1720,8 +1717,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "branch_not_found",
-              error_details: { "branch-name": "my_branch" },
-              dependency: nil
+              error_details: { "branch-name": "my_branch" }
             )
 
           updater.run
@@ -1762,8 +1758,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_parseable",
-              error_details: { "file-path": "path/to/file", message: "a" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file", message: "a" }
             )
 
           updater.run
@@ -1804,8 +1799,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "path_dependencies_not_reachable",
-              error_details: { dependencies: ["bad_gem"] },
-              dependency: nil
+              error_details: { dependencies: ["bad_gem"] }
             )
 
           updater.run
