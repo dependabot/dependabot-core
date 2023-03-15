@@ -895,8 +895,12 @@ module Dependabot
     # rubocop:enable Metrics/AbcSize
 
     # rubocop:disable Metrics/MethodLength
-    # rubocop:disable Metrics/CyclomaticComplexity
     def handle_parser_error(error)
+      # This happens if the repo gets removed after a job gets kicked off.
+      # The service will handle the removal without any prompt from the updater,
+      # so no need to add an error to the errors array
+      return if error.is_a? Dependabot::RepoNotFound
+
       error_details =
         case error
         when Dependabot::DependencyFileNotEvaluatable
@@ -914,11 +918,6 @@ module Dependabot
             "error-type": "branch_not_found",
             "error-detail": { "branch-name": error.branch_name }
           }
-        when Dependabot::RepoNotFound
-          # This happens if the repo gets removed after a job gets kicked off.
-          # The main backend will handle it without any prompt from the updater,
-          # so no need to add an error to the errors array
-          nil
         when Dependabot::DependencyFileNotParseable
           {
             "error-type": "dependency_file_not_parseable",
@@ -969,17 +968,12 @@ module Dependabot
           { "error-type": "unknown_error" }
         end
 
-      # TODO: Early return for Dependabot::BranchNotFound instead of assigning
-      #       nil to error_details
-      return unless error_details
-
       service.record_update_job_error(
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"]
       )
     end
     # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/CyclomaticComplexity
 
     def update_dependency_list(dependencies)
       service.update_dependency_list(
