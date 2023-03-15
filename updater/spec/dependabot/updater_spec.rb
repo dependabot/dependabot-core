@@ -295,8 +295,7 @@ RSpec.describe Dependabot::Updater do
               error_type: "dependency_file_not_supported",
               error_details: {
                 "dependency-name": "dummy-pkg-b"
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -380,8 +379,7 @@ RSpec.describe Dependabot::Updater do
                     "requirement" => "= 1.2.0"
                   }
                 ]
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -425,8 +423,7 @@ RSpec.describe Dependabot::Updater do
                 "latest-resolvable-version": "1.1.0",
                 "lowest-non-vulnerable-version": nil,
                 "conflicting-dependencies": []
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -1016,8 +1013,7 @@ RSpec.describe Dependabot::Updater do
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.2.0"
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1167,8 +1163,7 @@ RSpec.describe Dependabot::Updater do
                   "dependency-removed": true
                 }
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1556,7 +1551,6 @@ RSpec.describe Dependabot::Updater do
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
                   },
-                  dependency: nil
                 }
               )
               expect(Dependabot.logger).
@@ -1593,8 +1587,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "security_update_not_needed",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
-                  dependency: nil
+                  }
                 }
               )
               expect(Dependabot.logger).

@@ -339,12 +339,10 @@ module Dependabot
         "is no longer vulnerable"
       )
 
-      record_error(
-        {
-          "error-type": "security_update_not_needed",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_needed",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -355,12 +353,10 @@ module Dependabot
         "were ignored for #{checker.dependency.name}"
       )
 
-      record_error(
-        {
-          "error-type": "all_versions_ignored",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "all_versions_ignored",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -372,12 +368,10 @@ module Dependabot
         "installed version of #{checker.dependency.name} isn't known."
       )
 
-      record_error(
-        {
-          "error-type": "dependency_file_not_supported",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "dependency_file_not_supported",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -396,15 +390,13 @@ module Dependabot
       )
       Dependabot.logger.info(earliest_fixed_version_message(lowest_non_vulnerable_version))
 
-      record_error(
-        {
-          "error-type": "security_update_not_possible",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "latest-resolvable-version": latest_allowed_version,
-            "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
-            "conflicting-dependencies": conflicting_dependencies
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_possible",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "latest-resolvable-version": latest_allowed_version,
+          "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
+          "conflicting-dependencies": conflicting_dependencies
         }
       )
     end
@@ -416,26 +408,22 @@ module Dependabot
         "The latest available version is #{checker.dependency.version}"
       )
 
-      record_error(
-        {
-          "error-type": "security_update_not_found",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "dependency-version": checker.dependency.version
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_found",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "dependency-version": checker.dependency.version
         },
         dependency: checker.dependency
       )
     end
 
     def record_pull_request_exists_for_latest_version(checker)
-      record_error(
-        {
-          "error-type": "pull_request_exists_for_latest_version",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "dependency-version": checker.latest_version&.to_s
-          }
+      service.record_update_job_error(
+        error_type: "pull_request_exists_for_latest_version",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "dependency-version": checker.latest_version&.to_s
         },
         dependency: checker.dependency
       )
@@ -449,12 +437,11 @@ module Dependabot
           "dependency-removed": dep.fetch("dependency-removed", nil)
         }.compact
       end
-      record_error(
-        {
-          "error-type": "pull_request_exists_for_security_update",
-          "error-detail": {
-            "updated-dependencies": updated_dependencies
-          }
+
+      service.record_update_job_error(
+        error_type: "pull_request_exists_for_security_update",
+        error_details: {
+          "updated-dependencies": updated_dependencies
         }
       )
     end
