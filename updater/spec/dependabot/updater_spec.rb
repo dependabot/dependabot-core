@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with({ error_type: "out_of_disk", error_details: nil, dependency: nil })
+          with({ error_type: "out_of_disk", error_details: nil})
       end
     end
 

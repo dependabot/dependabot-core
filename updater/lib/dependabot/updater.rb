@@ -85,8 +85,10 @@ module Dependabot
       end
 
       # OOM errors are special cased so that we stop the update run early
-      error = { "error-type": RUN_HALTING_ERRORS.fetch(e.class) }
-      record_error(error)
+      service.record_update_job_error(
+        error_type: RUN_HALTING_ERRORS.fetch(e.class),
+        error_details: nil
+      )
     end
 
     private
