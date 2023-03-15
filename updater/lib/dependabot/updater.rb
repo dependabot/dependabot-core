@@ -786,6 +786,7 @@ module Dependabot
       service.close_pull_request(job.dependencies, reason)
     end
 
+    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     def handle_dependabot_error(error:, dependency:)
       error_details =
@@ -890,8 +891,9 @@ module Dependabot
         error_detail: error_details.fetch(:"error-detail", nil)
       )
     end
-
     # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
+
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/CyclomaticComplexity
     def handle_parser_error(error)

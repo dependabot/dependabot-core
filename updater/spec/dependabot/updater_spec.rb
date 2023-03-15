@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with({ error_type: "out_of_disk", error_details: nil})
+          with({ error_type: "out_of_disk", error_details: nil })
       end
     end
 
@@ -1549,7 +1549,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "all_versions_ignored",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
+                  }
                 }
               )
               expect(Dependabot.logger).
