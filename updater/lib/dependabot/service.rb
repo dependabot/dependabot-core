@@ -3,13 +3,16 @@
 require "terminal-table"
 require "dependabot/api_client"
 
-# Wraps an API client with the current state of communications with the Dependabot Service
-# and provides an interface to summarise all actions taken.
+# This class provides an output adapter for the Dependabot Service which manages
+# communication with the private API as well as consolidated error handling.
+#
+# Currently this is the only output adapter available, but in future we may
+# support others for use with the dependabot/cli project.
 #
 module Dependabot
   class Service
     extend Forwardable
-    attr_reader :client, :events, :pull_requests, :errors
+    attr_reader :pull_requests, :errors
 
     def initialize(client:)
       @client = client
@@ -37,6 +40,25 @@ module Dependabot
     def record_update_job_error(error_type:, error_details:, dependency: nil)
       @errors << [error_type.to_s, dependency]
       client.record_update_job_error(error_type: error_type, error_details: error_details)
+    end
+
+    # This method wraps the Raven client as the Application error tracker
+    # the service uses to notice errors.
+    #
+    # This should be called as an alternative/in addition to record_update_job_error
+    # for cases where an error could indicate a problem with the service.
+    def capture_exception(error:, job: nil, dependency: nil, tags: {}, extra: {})
+      Raven.capture_exception(
+        error,
+        {
+          tags: tags,
+          extra: extra.merge({
+            update_job_id: job&.id,
+            package_manager: job&.package_manager,
+            dependency_name: dependency&.name
+          }.compact)
+        }
+      )
     end
 
     def noop?
@@ -70,6 +92,8 @@ module Dependabot
     end
 
     private
+
+    attr_reader :client
 
     def pull_request_summary
       return unless pull_requests.any?

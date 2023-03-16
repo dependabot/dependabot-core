@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with({ error_type: "out_of_disk", error_details: nil, dependency: nil })
+          with({ error_type: "out_of_disk", error_details: nil })
       end
     end
 
@@ -295,8 +295,7 @@ RSpec.describe Dependabot::Updater do
               error_type: "dependency_file_not_supported",
               error_details: {
                 "dependency-name": "dummy-pkg-b"
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -380,8 +379,7 @@ RSpec.describe Dependabot::Updater do
                     "requirement" => "= 1.2.0"
                   }
                 ]
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -425,8 +423,7 @@ RSpec.describe Dependabot::Updater do
                 "latest-resolvable-version": "1.1.0",
                 "lowest-non-vulnerable-version": nil,
                 "conflicting-dependencies": []
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -1016,8 +1013,7 @@ RSpec.describe Dependabot::Updater do
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.2.0"
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1167,8 +1163,7 @@ RSpec.describe Dependabot::Updater do
                   "dependency-removed": true
                 }
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1300,6 +1295,11 @@ RSpec.describe Dependabot::Updater do
               allow(updater).to receive(:dependency_files).
                 and_raise(Dependabot::DependencyFileNotParseable.new("path/to/file"))
 
+              expect(service).to receive(:record_update_job_error).with(
+                error_type: "dependency_file_not_parseable",
+                error_details: anything
+              )
+              expect(service).to receive(:errors).and_return([anything])
               expect(service).to_not receive(:close_pull_request)
 
               updater.run
@@ -1549,8 +1549,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "all_versions_ignored",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
-                  dependency: nil
+                  }
                 }
               )
               expect(Dependabot.logger).
@@ -1587,8 +1586,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "security_update_not_needed",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
-                  dependency: nil
+                  }
                 }
               )
               expect(Dependabot.logger).
@@ -1638,8 +1636,7 @@ RSpec.describe Dependabot::Updater do
           to receive(:record_update_job_error).
           with(
             error_type: "unknown_error",
-            error_details: nil,
-            dependency: nil
+            error_details: nil
           )
 
         updater.run
@@ -1679,8 +1676,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_found",
-              error_details: { "file-path": "path/to/file" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file" }
             )
 
           updater.run
@@ -1721,8 +1717,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "branch_not_found",
-              error_details: { "branch-name": "my_branch" },
-              dependency: nil
+              error_details: { "branch-name": "my_branch" }
             )
 
           updater.run
@@ -1763,8 +1758,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_parseable",
-              error_details: { "file-path": "path/to/file", message: "a" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file", message: "a" }
             )
 
           updater.run
@@ -1805,8 +1799,7 @@ RSpec.describe Dependabot::Updater do
             to receive(:record_update_job_error).
             with(
               error_type: "path_dependencies_not_reachable",
-              error_details: { dependencies: ["bad_gem"] },
-              dependency: nil
+              error_details: { dependencies: ["bad_gem"] }
             )
 
           updater.run
@@ -2513,8 +2506,9 @@ RSpec.describe Dependabot::Updater do
   end
 
   def build_service
-    instance_double(
-      Dependabot::Service,
+    # Stub out a client so we don't hit the internet
+    api_client = instance_double(
+      Dependabot::ApiClient,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
@@ -2522,6 +2516,13 @@ RSpec.describe Dependabot::Updater do
       update_dependency_list: nil,
       record_update_job_error: nil
     )
+
+    service = Dependabot::Service.new(
+      client: api_client
+    )
+    allow(service).to receive(:record_update_job_error)
+
+    service
   end
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength

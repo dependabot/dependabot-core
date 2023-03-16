@@ -60,8 +60,7 @@ module Dependabot
       @job = job
       @dependency_files = dependency_files
       @base_commit_sha = base_commit_sha
-      # TODO: Collect @created_pull_requests and @errors on the Job object?
-      @errors = []
+      # TODO: Collect @created_pull_requests on the Job object?
       @created_pull_requests = []
     end
 
@@ -81,18 +80,20 @@ module Dependabot
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
         )
         error.set_backtrace(e.backtrace)
-        Raven.capture_exception(error, raven_context)
+        service.capture_exception(error: error, job: job)
         return
       end
 
       # OOM errors are special cased so that we stop the update run early
-      error = { "error-type": RUN_HALTING_ERRORS.fetch(e.class) }
-      record_error(error)
+      service.record_update_job_error(
+        error_type: RUN_HALTING_ERRORS.fetch(e.class),
+        error_details: nil
+      )
     end
 
     private
 
-    attr_accessor :errors, :created_pull_requests
+    attr_accessor :created_pull_requests
     attr_reader :service, :job, :dependency_files, :base_commit_sha
 
     def check_and_create_pr_with_error_handling(dependency)
@@ -130,7 +131,16 @@ module Dependabot
     # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
-        close_pull_request(reason: :dependency_removed) unless errors.any?
+        # TODO: Remove the unless statement
+        #
+        # This check is to determine if there was an error parsing the dependency
+        # dependency file.
+        #
+        # For update existing PR operations we should early exit after a failed
+        # parse instead, but we currently share the `#dependencies` method
+        # with other code paths. This will be fixed as we break out Operation
+        # classes.
+        close_pull_request(reason: :dependency_removed) unless service.errors.any?
         return
       end
 
@@ -329,12 +339,10 @@ module Dependabot
         "is no longer vulnerable"
       )
 
-      record_error(
-        {
-          "error-type": "security_update_not_needed",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_needed",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -345,12 +353,10 @@ module Dependabot
         "were ignored for #{checker.dependency.name}"
       )
 
-      record_error(
-        {
-          "error-type": "all_versions_ignored",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "all_versions_ignored",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -362,12 +368,10 @@ module Dependabot
         "installed version of #{checker.dependency.name} isn't known."
       )
 
-      record_error(
-        {
-          "error-type": "dependency_file_not_supported",
-          "error-detail": {
-            "dependency-name": checker.dependency.name
-          }
+      service.record_update_job_error(
+        error_type: "dependency_file_not_supported",
+        error_details: {
+          "dependency-name": checker.dependency.name
         }
       )
     end
@@ -386,15 +390,13 @@ module Dependabot
       )
       Dependabot.logger.info(earliest_fixed_version_message(lowest_non_vulnerable_version))
 
-      record_error(
-        {
-          "error-type": "security_update_not_possible",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "latest-resolvable-version": latest_allowed_version,
-            "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
-            "conflicting-dependencies": conflicting_dependencies
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_possible",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "latest-resolvable-version": latest_allowed_version,
+          "lowest-non-vulnerable-version": lowest_non_vulnerable_version,
+          "conflicting-dependencies": conflicting_dependencies
         }
       )
     end
@@ -406,26 +408,22 @@ module Dependabot
         "The latest available version is #{checker.dependency.version}"
       )
 
-      record_error(
-        {
-          "error-type": "security_update_not_found",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "dependency-version": checker.dependency.version
-          }
+      service.record_update_job_error(
+        error_type: "security_update_not_found",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "dependency-version": checker.dependency.version
         },
         dependency: checker.dependency
       )
     end
 
     def record_pull_request_exists_for_latest_version(checker)
-      record_error(
-        {
-          "error-type": "pull_request_exists_for_latest_version",
-          "error-detail": {
-            "dependency-name": checker.dependency.name,
-            "dependency-version": checker.latest_version&.to_s
-          }
+      service.record_update_job_error(
+        error_type: "pull_request_exists_for_latest_version",
+        error_details: {
+          "dependency-name": checker.dependency.name,
+          "dependency-version": checker.latest_version&.to_s
         },
         dependency: checker.dependency
       )
@@ -439,12 +437,11 @@ module Dependabot
           "dependency-removed": dep.fetch("dependency-removed", nil)
         }.compact
       end
-      record_error(
-        {
-          "error-type": "pull_request_exists_for_security_update",
-          "error-detail": {
-            "updated-dependencies": updated_dependencies
-          }
+
+      service.record_update_job_error(
+        error_type: "pull_request_exists_for_security_update",
+        error_details: {
+          "updated-dependencies": updated_dependencies
         }
       )
     end
@@ -789,6 +786,7 @@ module Dependabot
       service.close_pull_request(job.dependencies, reason)
     end
 
+    # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/MethodLength
     def handle_dependabot_error(error:, dependency:)
       error_details =
@@ -859,7 +857,7 @@ module Dependabot
           msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
           sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
           sanitized_error.set_backtrace(error.backtrace)
-          Raven.capture_exception(sanitized_error, raven_context)
+          service.capture_exception(error: sanitized_error, job: job)
 
           { "error-type": "unknown_error" }
         when *Octokit::RATE_LIMITED_ERRORS
@@ -872,11 +870,19 @@ module Dependabot
             }
           }
         else
-          Raven.capture_exception(error, raven_context(dependency: dependency))
+          service.capture_exception(
+            error: error,
+            job: job,
+            dependency: dependency
+          )
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details, dependency: dependency)
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"],
+        dependency: dependency
+      )
 
       log_error(
         dependency: dependency,
@@ -885,11 +891,16 @@ module Dependabot
         error_detail: error_details.fetch(:"error-detail", nil)
       )
     end
-
     # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
+
     # rubocop:disable Metrics/MethodLength
-    # rubocop:disable Metrics/CyclomaticComplexity
     def handle_parser_error(error)
+      # This happens if the repo gets removed after a job gets kicked off.
+      # The service will handle the removal without any prompt from the updater,
+      # so no need to add an error to the errors array
+      return if error.is_a? Dependabot::RepoNotFound
+
       error_details =
         case error
         when Dependabot::DependencyFileNotEvaluatable
@@ -907,11 +918,6 @@ module Dependabot
             "error-type": "branch_not_found",
             "error-detail": { "branch-name": error.branch_name }
           }
-        when Dependabot::RepoNotFound
-          # This happens if the repo gets removed after a job gets kicked off.
-          # The main backend will handle it without any prompt from the updater,
-          # so no need to add an error to the errors array
-          nil
         when Dependabot::DependencyFileNotParseable
           {
             "error-type": "dependency_file_not_parseable",
@@ -958,14 +964,16 @@ module Dependabot
           Dependabot.logger.error error.message
           error.backtrace.each { |line| Dependabot.logger.error line }
 
-          Raven.capture_exception(error, raven_context)
+          service.capture_exception(error: error, job: job)
           { "error-type": "unknown_error" }
         end
 
-      record_error(error_details) if error_details
+      service.record_update_job_error(
+        error_type: error_details.fetch(:"error-type"),
+        error_details: error_details[:"error-detail"]
+      )
     end
     # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/CyclomaticComplexity
 
     def update_dependency_list(dependencies)
       service.update_dependency_list(
@@ -978,32 +986,6 @@ module Dependabot
         end,
         dependency_files.reject(&:support_file).map(&:path)
       )
-    end
-
-    def error_context(dependency)
-      { dependency_name: dependency.name, update_job_id: job.id }
-    end
-
-    def record_error(error_details, dependency: nil)
-      service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"],
-        dependency: dependency
-      )
-
-      errors << error_details
-    end
-
-    def raven_context(dependency: nil)
-      context = {
-        tags: {},
-        extra: {
-          update_job_id: job.id,
-          package_manager: job.package_manager
-        }
-      }
-      context[:extra][:dependency_name] = dependency.name if dependency
-      context
     end
   end
 end

@@ -11,9 +11,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
   let(:job_id) { "123123" }
 
   before do
-    allow(job).to receive(:job_id).and_return(job_id)
-    allow(job).to receive(:job_token).and_return("job_token")
-    allow(job).to receive(:api_client).and_return(api_client)
+    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
+    allow(Dependabot::Environment).to receive(:job_token).and_return("job_token")
+    allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
 
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
