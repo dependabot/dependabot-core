@@ -26,19 +26,6 @@ module Dependabot
     def self.in_a_temporary_repo_directory(directory = "/",
                                            repo_contents_path = nil,
                                            &block)
-      if repo_contents_path && Dependabot::Experiments.enabled?(:shared_workspace)
-        stdout1, _proc1 = Open3.capture2("df -k /tmp 2>/dev/null || true")
-        stdout2, _proc2 = Open3.capture2("df -k /home/dependabot 2>/dev/null || true")
-        stdout3, _proc3 = Open3.capture2("df -k /home/dependabot/dependabot-core/tmp 2>/dev/null || true")
-        stdout4, _proc4 = Open3.capture2("df -k /home/dependabot/dependabot-updater/tmp 2>/dev/null || true")
-
-        Dependabot.logger.info("shared_workspace: repo_contents_path: #{repo_contents_path}")
-        Dependabot.logger.info("shared_workspace: df -k /tmp: #{stdout1}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot: #{stdout2}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-core/tmp: #{stdout3}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-updater/tmp: #{stdout4}")
-      end
-
       if repo_contents_path
         path = Pathname.new(File.join(repo_contents_path, directory)).
                expand_path
@@ -55,6 +42,18 @@ module Dependabot
     def self.in_a_temporary_directory(directory = "/")
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
       tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
+
+      if Dependabot::Experiments.enabled?(:shared_workspace)
+        stdout1, _proc1 = Open3.capture2("df -k /tmp 2>/dev/null || true")
+        stdout2, _proc2 = Open3.capture2("df -k /home/dependabot 2>/dev/null || true")
+        stdout3, _proc3 = Open3.capture2("df -k /home/dependabot/dependabot-core/tmp 2>/dev/null || true")
+        stdout4, _proc4 = Open3.capture2("df -k /home/dependabot/dependabot-updater/tmp 2>/dev/null || true")
+
+        Dependabot.logger.info("shared_workspace: df -k /tmp: #{stdout1}")
+        Dependabot.logger.info("shared_workspace: df -k /home/dependabot: #{stdout2}")
+        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-core/tmp: #{stdout3}")
+        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-updater/tmp: #{stdout4}")
+      end
 
       begin
         path = Pathname.new(File.join(tmp_dir, directory)).expand_path
