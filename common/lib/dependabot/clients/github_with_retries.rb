@@ -89,6 +89,12 @@ module Dependabot
         access_tokens << nil if access_tokens.empty?
         access_tokens.uniq!
 
+        # Explicitly set the proxy if one is set in the environment
+        # as Faraday's find_proxy is very slow.
+        Octokit.configure do |c|
+          c.proxy = ENV["HTTPS_PROXY"] if ENV["HTTPS_PROXY"]
+        end
+
         Octokit.middleware = Faraday::RackBuilder.new do |builder|
           builder.use Faraday::Retry::Middleware, exceptions: RETRYABLE_ERRORS, max: max_retries || 3
 
