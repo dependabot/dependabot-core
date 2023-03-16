@@ -43,18 +43,6 @@ module Dependabot
       FileUtils.mkdir_p(Utils::BUMP_TMP_DIR_PATH)
       tmp_dir = Dir.mktmpdir(Utils::BUMP_TMP_FILE_PREFIX, Utils::BUMP_TMP_DIR_PATH)
 
-      if Dependabot::Experiments.enabled?(:shared_workspace)
-        stdout1, _proc1 = Open3.capture2("df -k /tmp 2>/dev/null || true")
-        stdout2, _proc2 = Open3.capture2("df -k /home/dependabot 2>/dev/null || true")
-        stdout3, _proc3 = Open3.capture2("df -k /home/dependabot/dependabot-core/tmp 2>/dev/null || true")
-        stdout4, _proc4 = Open3.capture2("df -k /home/dependabot/dependabot-updater/tmp 2>/dev/null || true")
-
-        Dependabot.logger.info("shared_workspace: df -k /tmp: #{stdout1}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot: #{stdout2}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-core/tmp: #{stdout3}")
-        Dependabot.logger.info("shared_workspace: df -k /home/dependabot/dependabot-updater/tmp: #{stdout4}")
-      end
-
       begin
         path = Pathname.new(File.join(tmp_dir, directory)).expand_path
         FileUtils.mkpath(path)
