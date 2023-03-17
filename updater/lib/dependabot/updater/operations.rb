@@ -30,10 +30,10 @@ module Dependabot
         UpdateAllVersions
       ]
 
-      def self.operation_for(job:)
+      def self.class_for(job:)
         raise ArgumentError, "Expected Dependabot::Job, got #{job.class}" unless job.is_a?(Dependabot::Job)
 
-        OPERATIONS.first { |op| op.applies_to?(job: job) }
+        OPERATIONS.find { |op| op.applies_to?(job: job) }
       end
     end
   end
