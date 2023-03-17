@@ -374,7 +374,7 @@ module Dependabot
             user: registry_credentials&.fetch("username", nil),
             password: registry_credentials&.fetch("password", nil),
             read_timeout: 10,
-            http_options: { proxy: ENV['HTTPS_PROXY'] }
+            http_options: { proxy: ENV.fetch("HTTPS_PROXY", nil) }
           )
       end
 
