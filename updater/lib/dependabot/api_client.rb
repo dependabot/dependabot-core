@@ -143,7 +143,11 @@ module Dependabot
 
     def http_client
       client = HTTP.auth(job_token)
-      proxy = URI(base_url).find_proxy
+      if ENV["HTTPS_PROXY"]
+        proxy = URI(ENV["HTTPS_PROXY"])
+      else
+        proxy = URI(base_url).find_proxy
+      end
       unless proxy.nil?
         args = [proxy.host, proxy.port, proxy.user, proxy.password].compact
         client = client.via(*args)
