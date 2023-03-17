@@ -3,46 +3,29 @@
 require "http"
 require "dependabot/job"
 
+# Provides a client to access the internal Dependabot Service's API
+#
+# The Service acts as a relay to Core's GitHub API adapters while providing
+# some co-ordination and enrichment functionality that is only relevant to
+# the integrated service.
+#
+# This API is only available to Dependabot jobs being executed within our
+# hosted infrastructure and is not open to integrators at this time.
+#
 module Dependabot
   class ApiError < StandardError; end
 
   class ApiClient
-    # TODO: instantiate client with job_id?
-    def initialize(base_url, token)
+    def initialize(base_url, job_id, job_token)
       @base_url = base_url
-      @token = token
+      @job_id = job_id
+      @job_token = job_token
     end
 
-    def get_job(job_id)
-      response = fetch_job_details_from_backend(job_id)
-
-      # If the job has already been accessed then we can safely return quietly.
-      # This happens when the backend isn't sure if the updater has enqueued a
-      # job (because Heroku served a 500, for example) and enqueues a second to
-      # be on the safe side.
-      return if response.code == 400 && response.body.include?("been accessed")
-
-      # For other errors from the backend, just raise.
-      raise ApiError, response.body if response.code >= 400
-
-      job_data =
-        response.parse["data"]["attributes"].
-        transform_keys { |k| k.tr("-", "_").to_sym }.
-        slice(
-          :credentials, :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :security_updates_only
-        )
-
-      Job.new(job_data.merge(token: token))
-    end
-
-    def create_pull_request(job_id, dependencies, updated_dependency_files,
-                            base_commit_sha, pr_message)
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
+    def create_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/create_pull_request"
-      data = create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+      data = create_pull_request_data(dependency_change, base_commit_sha)
       response = http_client.post(api_url, json: { data: data })
       raise ApiError, response.body if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
@@ -53,13 +36,14 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def update_pull_request(job_id, dependencies, updated_dependency_files,
-                            base_commit_sha)
+    # TODO: Make `base_commit_sha` part of Dependabot::DependencyChange
+    # TODO: Determine if we should regenerate the PR message within core for updates
+    def update_pull_request(dependency_change, base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
       body = {
         data: {
-          "dependency-names": dependencies.map(&:name),
-          "updated-dependency-files": updated_dependency_files,
+          "dependency-names": dependency_change.dependencies.map(&:name),
+          "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha
         }
       }
@@ -73,7 +57,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def close_pull_request(job_id, dependency_name, reason)
+    def close_pull_request(dependency_name, reason)
       api_url = "#{base_url}/update_jobs/#{job_id}/close_pull_request"
       body = { data: { "dependency-names": dependency_name, reason: reason } }
       response = http_client.post(api_url, json: body)
@@ -86,7 +70,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def record_update_job_error(job_id, error_type:, error_details:)
+    def record_update_job_error(error_type:, error_details:)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_update_job_error"
       body = {
         data: {
@@ -104,7 +88,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def mark_job_as_processed(job_id, base_commit_sha)
+    def mark_job_as_processed(base_commit_sha)
       api_url = "#{base_url}/update_jobs/#{job_id}/mark_as_processed"
       body = { data: { "base-commit-sha": base_commit_sha } }
       response = http_client.patch(api_url, json: body)
@@ -117,7 +101,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def update_dependency_list(job_id, dependencies, dependency_files)
+    def update_dependency_list(dependencies, dependency_files)
       api_url = "#{base_url}/update_jobs/#{job_id}/update_dependency_list"
       body = {
         data: {
@@ -135,7 +119,7 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def record_package_manager_version(job_id, ecosystem, package_managers)
+    def record_package_manager_version(ecosystem, package_managers)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_package_manager_version"
       body = {
         data: {
@@ -155,11 +139,11 @@ module Dependabot
 
     private
 
-    attr_reader :token, :base_url
+    attr_reader :base_url, :job_id, :job_token
 
     def http_client
-      client = HTTP.auth(token)
-      proxy = URI(base_url).find_proxy
+      client = HTTP.auth(job_token)
+      proxy = ENV["HTTPS_PROXY"] ? URI(ENV["HTTPS_PROXY"]) : URI(base_url).find_proxy
       unless proxy.nil?
         args = [proxy.host, proxy.port, proxy.user, proxy.password].compact
         client = client.via(*args)
@@ -167,21 +151,9 @@ module Dependabot
       client
     end
 
-    def fetch_job_details_from_backend(job_id)
-      api_url = "#{base_url}/update_jobs/#{job_id}"
-      http_client.get(api_url)
-    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-      # Retry connection errors (which are almost certainly transitory)
-      retry_count ||= 0
-      retry_count += 1
-      raise if retry_count > 3
-
-      sleep(rand(3.0..10.0)) && retry
-    end
-
-    def create_pull_request_data(dependencies, updated_dependency_files, base_commit_sha, pr_message)
+    def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
-        dependencies: dependencies.map do |dep|
+        dependencies: dependency_change.dependencies.map do |dep|
           {
             name: dep.name,
             "previous-version": dep.previous_version,
@@ -192,14 +164,24 @@ module Dependabot
             removed: dep.removed? ? true : nil
           }.compact)
         end,
-        "updated-dependency-files": updated_dependency_files,
+        "updated-dependency-files": dependency_change.updated_dependency_files_hash,
         "base-commit-sha": base_commit_sha
-      }
-      return data unless pr_message
+      }.merge({
+        # TODO: Replace this flag with a group-rule object
+        #
+        # In future this should be something like:
+        #    "group-rule": dependency_change.group_rule_hash
+        #
+        # This will allow us to pass back the rule id and other parameters
+        # to allow Dependabot API to augment PR creation and associate it
+        # with the rule for rebasing, etc.
+        "grouped-update": dependency_change.grouped_update? ? true : nil
+      }.compact)
+      return data unless dependency_change.pr_message
 
-      data["commit-message"] = pr_message.commit_message
-      data["pr-title"] = pr_message.pr_name
-      data["pr-body"] = pr_message.pr_message
+      data["commit-message"] = dependency_change.pr_message.commit_message
+      data["pr-title"] = dependency_change.pr_message.pr_name
+      data["pr-body"] = dependency_change.pr_message.pr_message
       data
     end
   end

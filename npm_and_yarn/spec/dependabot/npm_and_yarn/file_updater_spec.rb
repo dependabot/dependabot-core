@@ -1098,7 +1098,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           parsed_package1_npm_lock = JSON.parse(package1_npm_lock.content)
 
           expect(package3_yarn_lock.content).
-            to include("extend@~2.0.0:\n  version \"2.0.1\"")
+            to include("extend@~2.0.0:\n  version \"2.0.2\"")
 
           # TODO: Change this to 2.0.1 once npm supports updating to specific
           # sub dependency versions
@@ -2719,11 +2719,11 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
             let(:previous_version) { "3b1bb80b302c2e552685dc8a029797ec832ea7c9" }
             let(:version) { "5677730fd3b9de2eb2224b968259893e5fc9adac" }
 
-            # TODO: npm 8 silently ignores this issue and generates a broken lockfile
             context "with a npm lockfile" do
               let(:files) { project_dependency_files("npm8/git_dependency_local_file") }
 
-              pending "raises a helpful error" do
+              it "raises a helpful error" do
+                pending("npm 8 silently ignores this issue and generates a broken lockfile")
                 expect { updated_files }.
                   to raise_error(
                     Dependabot::DependencyFileNotResolvable,
@@ -3382,14 +3382,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/no_lockfile_change") }
 
         let(:dependency_name) { "acorn" }
-        let(:version) { "5.7.3" }
+        let(:version) { "5.7.4" }
         let(:previous_version) { "5.1.1" }
         let(:requirements) { [] }
         let(:previous_requirements) { [] }
 
         it "updates the version" do
           expect(updated_yarn_lock.content).
-            to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.3"))
+            to include(%(acorn@^5.0.0, acorn@^5.1.2:\n  version "5.7.4"))
         end
       end
 
@@ -3681,7 +3681,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         let(:files) { project_dependency_files("yarn/multiple_sub_dependencies") }
 
         let(:dependency_name) { "js-yaml" }
-        let(:version) { "3.12.0" }
+        let(:version) { "3.14.1" }
         let(:previous_version) { "3.9.0" }
         let(:requirements) { [] }
         let(:previous_requirements) { nil }
@@ -3690,7 +3690,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
           expect(updated_files.map(&:name)).to match_array(["yarn.lock"])
           expect(updated_yarn_lock.content).
             to include("js-yaml@^3.10.0, js-yaml@^3.4.6, js-yaml@^3.9.0:\n" \
-                       '  version "3.12.0"')
+                       '  version "3.14.1"')
         end
       end
 

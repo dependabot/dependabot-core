@@ -9,37 +9,27 @@ module Dependabot
     def perform_job
       Dependabot::Updater.new(
         service: service,
-        job_id: job_id,
         job: job,
         dependency_files: dependency_files,
-        repo_contents_path: repo_contents_path,
         base_commit_sha: base_commit_sha
       ).run
 
-      service.mark_job_as_processed(job_id, base_commit_sha)
+      service.mark_job_as_processed(base_commit_sha)
     end
 
-    def job
-      attrs =
-        job_definition["job"].
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        tap { |h| h[:credentials] = h.delete(:credentials_metadata) || [] }.
-        slice(
-          :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request, :credentials,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :experiments, :reject_external_code,
-          :commit_message_options, :security_updates_only
-        )
+    private
 
-      @job ||= Job.new(attrs)
+    def job
+      @job ||= Job.new_update_job(
+        job_id: job_id,
+        job_definition: Environment.job_definition,
+        repo_contents_path: Environment.repo_contents_path
+      )
     end
 
     def dependency_files
       @dependency_files ||=
-        job_definition["base64_dependency_files"].map do |a|
+        Environment.job_definition["base64_dependency_files"].map do |a|
           file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
           file.content = Base64.decode64(file.content).force_encoding("utf-8") unless file.binary? && !file.deleted?
           file
@@ -53,11 +43,7 @@ module Dependabot
     end
 
     def base_commit_sha
-      job_definition["base_commit_sha"]
-    end
-
-    def job_definition
-      @job_definition ||= JSON.parse(File.read(Environment.job_path))
+      Environment.job_definition["base_commit_sha"]
     end
   end
 end

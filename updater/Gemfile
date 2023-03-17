@@ -21,7 +21,7 @@ gem "dependabot-python", path: "../python"
 gem "dependabot-terraform", path: "../terraform"
 
 gem "http", "~> 5.1"
-gem "octokit", "6.0.1"
+gem "octokit", "6.1.0"
 gem "sentry-raven", "~> 3.1"
 gem "terminal-table", "~> 3.0.2"
 
@@ -47,5 +47,5 @@ group :test do
 end
 
 group :development do
-  gem "licensed", "~> 4.1", require: false
+  gem "licensed", "~> 4.2", require: false
 end

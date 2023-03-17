@@ -173,6 +173,10 @@ module Dependabot
             raise GitDependenciesNotReachable, url
           end
 
+          raise Dependabot::OutOfDisk if error.message.end_with?("[Errno 28] No space left on device")
+
+          raise Dependabot::OutOfMemory if error.message.end_with?("MemoryError")
+
           raise
         end
         # rubocop:enable Metrics/AbcSize

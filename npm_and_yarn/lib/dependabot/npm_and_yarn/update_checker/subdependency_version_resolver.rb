@@ -95,7 +95,7 @@ module Dependabot
               SharedHelpers.run_helper_subprocess(
                 command: NativeHelpers.helper_path,
                 function: "yarn:updateSubdependency",
-                args: [Dir.pwd, lockfile_name]
+                args: [Dir.pwd, lockfile_name, [dependency.to_h]]
               )
             end
           end

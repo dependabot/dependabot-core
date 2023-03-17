@@ -10,6 +10,7 @@ RSpec.describe Dependabot::Job do
 
   let(:attributes) do
     {
+      id: 1,
       token: "token",
       dependencies: dependencies,
       allowed_updates: allowed_updates,
@@ -61,6 +62,30 @@ RSpec.describe Dependabot::Job do
   let(:experiments) { nil }
   let(:commit_message_options) { nil }
   let(:vendor_dependencies) { false }
+
+  describe "::new_update_job" do
+    let(:job_json) { fixture("jobs/job_with_credentials.json") }
+
+    let(:new_update_job) do
+      described_class.new_update_job(
+        job_id: anything,
+        job_definition: JSON.parse(job_json),
+        repo_contents_path: anything
+      )
+    end
+
+    it "correctly replaces the credentials with the credential-metadata" do
+      expect(new_update_job.credentials.length).to eql(2)
+
+      git_credential = new_update_job.credentials.find { |creds| creds["type"] == "git_source" }
+      expect(git_credential["host"]).to eql("github.com")
+      expect(git_credential.keys).not_to include("username", "password")
+
+      ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
+      expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
+      expect(ruby_credential.keys).not_to include("token")
+    end
+  end
 
   describe "#allowed_update?" do
     subject { job.allowed_update?(dependency) }

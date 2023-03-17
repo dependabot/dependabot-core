@@ -142,6 +142,8 @@ module Dependabot
           if dependency.name.include?(":")
             next false unless line.include?(dependency.name.split(":").first)
             next false unless line.include?(dependency.name.split(":").last)
+          elsif requirement.fetch(:file).end_with?(".toml")
+            next false unless line.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/

@@ -153,19 +153,21 @@ module Dependabot
       end
 
       def updated_yaml_content(file)
-        updated_content = Utils.likely_helm_chart?(file) ? update_helm(file) : update_image(file)
+        updated_content = file.content
+        updated_content = update_helm(file, updated_content) if Utils.likely_helm_chart?(file)
+        updated_content = update_image(file, updated_content)
 
         raise "Expected content to change!" if updated_content == file.content
 
         updated_content
       end
 
-      def update_helm(file)
+      def update_helm(file, content)
         # TODO: this won't work if two images have the same tag version
         old_tags = old_helm_tags(file)
         return if old_tags.empty?
 
-        modified_content = file.content
+        modified_content = content
 
         old_tags.each do |old_tag|
           old_tag_regex = /^\s+(?:-\s)?(?:tag|version):\s+["']?#{old_tag}["']?(?=\s|$)/
@@ -176,11 +178,11 @@ module Dependabot
         modified_content
       end
 
-      def update_image(file)
+      def update_image(file, content)
         old_images = old_yaml_images(file)
         return if old_images.empty?
 
-        modified_content = file.content
+        modified_content = content
 
         old_images.each do |old_image|
           old_image_regex = /^\s*(?:-\s)?image:\s+#{old_image}(?=\s|$)/

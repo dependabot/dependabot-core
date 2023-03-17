@@ -7,6 +7,11 @@ require "octokit"
 
 module Dependabot
   class FileFetcherCommand < BaseCommand
+    # BaseCommand does not implement this method, so we should expose
+    # the instance variable for error handling to avoid raising a
+    # NotImplementedError if it is referenced
+    attr_reader :base_commit_sha
+
     def perform_job
       @base_commit_sha = nil
 
@@ -17,24 +22,20 @@ module Dependabot
         raise "base commit SHA not found" unless @base_commit_sha
 
         version = file_fetcher.package_manager_version
-        unless version.nil?
-          api_client.record_package_manager_version(
-            Dependabot::Environment.job_id, version[:ecosystem], version[:package_managers]
-          )
-        end
+        api_client.record_package_manager_version(version[:ecosystem], version[:package_managers]) unless version.nil?
 
         dependency_files
       rescue StandardError => e
         @base_commit_sha ||= "unknown"
         if Octokit::RATE_LIMITED_ERRORS.include?(e.class)
           remaining = rate_limit_error_remaining(e)
-          logger_error("Repository is rate limited, attempting to retry in " \
-                       "#{remaining}s")
+          Dependabot.logger.error("Repository is rate limited, attempting to retry in " \
+                                  "#{remaining}s")
         else
-          logger_error("Error during file fetching; aborting")
+          Dependabot.logger.error("Error during file fetching; aborting")
         end
         handle_file_fetcher_error(e)
-        service.mark_job_as_processed(job_id, @base_commit_sha)
+        service.mark_job_as_processed(@base_commit_sha)
         return
       end
 
@@ -46,13 +47,16 @@ module Dependabot
       save_job_details
     end
 
+    private
+
     def save_job_details
+      # TODO: Use the Dependabot::Environment helper for this
       return unless ENV["UPDATER_ONE_CONTAINER"]
 
       File.write(Environment.job_path, JSON.dump(
                                          base64_dependency_files: base64_dependency_files.map(&:to_h),
                                          base_commit_sha: @base_commit_sha,
-                                         job: job_definition["job"]
+                                         job: Environment.job_definition["job"]
                                        ))
     end
 
@@ -79,20 +83,11 @@ module Dependabot
     end
 
     def job
-      attrs =
-        job_definition["job"].
-        transform_keys { |key| key.tr("-", "_") }.
-        transform_keys(&:to_sym).
-        slice(
-          :dependencies, :package_manager, :ignore_conditions,
-          :existing_pull_requests, :source, :lockfile_only, :allowed_updates,
-          :update_subdependencies, :updating_a_pull_request,
-          :requirements_update_strategy, :security_advisories,
-          :vendor_dependencies, :experiments, :reject_external_code,
-          :commit_message_options, :security_updates_only
-        )
-
-      @job ||= Job.new(attrs)
+      @job ||= Job.new_fetch_job(
+        job_id: job_id,
+        job_definition: Environment.job_definition,
+        repo_contents_path: Environment.repo_contents_path
+      )
     end
 
     def file_fetcher
@@ -100,13 +95,21 @@ module Dependabot
 
       args = {
         source: job.source,
-        credentials: job_definition.fetch("credentials", []),
+        credentials: Environment.job_definition.fetch("credentials", []),
         options: job.experiments
       }
-      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || job.already_cloned?
-      @file_fetcher ||=
-        Dependabot::FileFetchers.for_package_manager(job.package_manager).
-        new(**args)
+      # This bypasses the `job.repo_contents_path` presenter to ensure we fetch
+      # from the file system if the repository contents are mounted even if
+      # cloning is disabled.
+      args[:repo_contents_path] = Environment.repo_contents_path if job.clone? || already_cloned?
+      @file_fetcher ||= Dependabot::FileFetchers.for_package_manager(job.package_manager).new(**args)
+    end
+
+    def already_cloned?
+      return false unless Environment.repo_contents_path
+
+      # For testing, the source repo may already be mounted.
+      @already_cloned ||= File.directory?(File.join(Environment.repo_contents_path, ".git"))
     end
 
     # rubocop:disable Metrics/MethodLength
@@ -138,6 +141,11 @@ module Dependabot
             "error-type": "dependency_file_not_found",
             "error-detail": { "file-path": error.file_path }
           }
+        when Dependabot::OutOfDisk
+          {
+            "error-type": "out_of_disk",
+            "error-detail": {}
+          }
         when Dependabot::PathDependenciesNotReachable
           {
             "error-type": "path_dependencies_not_reachable",
@@ -160,10 +168,10 @@ module Dependabot
             }
           }
         else
-          logger_error error.message
-          error.backtrace.each { |line| logger_error line }
-          Raven.capture_exception(error, raven_context)
+          Dependabot.logger.error(error.message)
+          error.backtrace.each { |line| Dependabot.logger.error line }
 
+          service.capture_exception(error: error, job: job)
           { "error-type": "unknown_error" }
         end
 
@@ -178,13 +186,8 @@ module Dependabot
       remaining.positive? ? remaining : 0
     end
 
-    def job_definition
-      @job_definition ||= JSON.parse(File.read(Environment.job_path))
-    end
-
     def record_error(error_details)
       service.record_update_job_error(
-        job_id,
         error_type: error_details.fetch(:"error-type"),
         error_details: error_details[:"error-detail"]
       )
@@ -194,11 +197,11 @@ module Dependabot
     # connectivity through the proxy is established which can take 10-15s on
     # the first request in some customer's environments.
     def connectivity_check
-      logger_info("Connectivity check starting")
+      Dependabot.logger.info("Connectivity check starting")
       github_connectivity_client(job).repository(job.source.repo)
-      logger_info("Connectivity check successful")
+      Dependabot.logger.info("Connectivity check successful")
     rescue StandardError => e
-      logger_error("Connectivity check failed: #{e.message}")
+      Dependabot.logger.error("Connectivity check failed: #{e.message}")
     end
 
     def github_connectivity_client(job)

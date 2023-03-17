@@ -11,9 +11,9 @@ RSpec.describe Dependabot::FileFetcherCommand do
   let(:job_id) { "123123" }
 
   before do
-    allow(job).to receive(:job_id).and_return(job_id)
-    allow(job).to receive(:token).and_return("job_token")
-    allow(job).to receive(:api_client).and_return(api_client)
+    allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
+    allow(Dependabot::Environment).to receive(:job_token).and_return("job_token")
+    allow(Dependabot::ApiClient).to receive(:new).and_return(api_client)
 
     allow(api_client).to receive(:mark_job_as_processed)
     allow(api_client).to receive(:record_update_job_error)
@@ -21,15 +21,14 @@ RSpec.describe Dependabot::FileFetcherCommand do
 
     allow(Dependabot::Environment).to receive(:output_path).and_return(File.join(Dir.mktmpdir, "output.json"))
     allow(Dependabot::Environment).to receive(:job_id).and_return(job_id)
+    allow(Dependabot::Environment).to receive(:job_definition).and_return(job_definition)
   end
 
   describe "#perform_job" do
     subject(:perform_job) { job.perform_job }
 
-    before do
-      allow(job).
-        to receive(:job_definition).
-        and_return(JSON.parse(fixture("jobs/job_with_credentials.json")))
+    let(:job_definition) do
+      JSON.parse(fixture("jobs/job_with_credentials.json"))
     end
 
     it "fetches the files and writes the fetched files to output.json", vcr: true do
@@ -65,7 +64,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: { "branch-name": "my_branch" },
             error_type: "branch_not_found"
           )
@@ -76,8 +74,8 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when the fetcher raises a RepoNotFound error" do
-      let(:provider) { job.job_definition.dig("job", "source", "provider") }
-      let(:repo) { job.job_definition.dig("job", "source", "repo") }
+      let(:provider) { job_definition.dig("job", "source", "provider") }
+      let(:repo) { job_definition.dig("job", "source", "repo") }
       let(:source) { ::Dependabot::Source.new(provider: provider, repo: repo) }
 
       before do
@@ -90,7 +88,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: {},
             error_type: "job_repo_not_found"
           )
@@ -122,7 +119,6 @@ RSpec.describe Dependabot::FileFetcherCommand do
         expect(api_client).
           to receive(:record_update_job_error).
           with(
-            job_id,
             error_details: { "rate-limit-reset": reset_at },
             error_type: "octokit_rate_limited"
           )
@@ -133,13 +129,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when vendoring dependencies", vcr: true do
-      before do
-        allow(job).
-          to receive(:job_definition).
-          and_return(
-            JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
-          )
+      let(:job_definition) do
+        JSON.parse(fixture("jobs/job_with_vendor_dependencies.json"))
+      end
 
+      before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
       end
 
@@ -158,13 +152,11 @@ RSpec.describe Dependabot::FileFetcherCommand do
     end
 
     context "when package ecosystem always clones", vcr: true do
-      before do
-        allow(job).
-          to receive(:job_definition).
-          and_return(
-            JSON.parse(fixture("jobs/job_with_go_modules.json"))
-          )
+      let(:job_definition) do
+        JSON.parse(fixture("jobs/job_with_go_modules.json"))
+      end
 
+      before do
         allow(Dependabot::Environment).to receive(:repo_contents_path).and_return(Dir.mktmpdir)
       end
 
@@ -190,9 +182,28 @@ RSpec.describe Dependabot::FileFetcherCommand do
           expect(api_client).
             to receive(:record_update_job_error).
             with(
-              job_id,
               error_details: { "branch-name": "my_branch" },
               error_type: "branch_not_found"
+            )
+          expect(api_client).to receive(:mark_job_as_processed)
+
+          expect { perform_job }.to output(/Error during file fetching; aborting/).to_stdout_from_any_process
+        end
+      end
+
+      context "when the fetcher raises a OutOfDisk error while cloning" do
+        before do
+          allow_any_instance_of(Dependabot::GoModules::FileFetcher).
+            to receive(:clone_repo_contents).
+            and_raise(Dependabot::OutOfDisk)
+        end
+
+        it "tells the backend about the error (and doesn't re-raise it)" do
+          expect(api_client).
+            to receive(:record_update_job_error).
+            with(
+              error_details: {},
+              error_type: "out_of_disk"
             )
           expect(api_client).to receive(:mark_job_as_processed)
 

@@ -46,7 +46,13 @@ module Dependabot
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
-          dependency_set << build_github_dependency(file, string) if string.match?(GITHUB_REPO_REFERENCE)
+          next unless string.match?(GITHUB_REPO_REFERENCE)
+
+          dep = build_github_dependency(file, string)
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          next unless git_checker.pinned?
+
+          dependency_set << dep
         end
 
         dependency_set

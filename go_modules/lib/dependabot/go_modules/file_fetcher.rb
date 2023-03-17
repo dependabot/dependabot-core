@@ -14,6 +14,17 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
+      def package_manager_version
+        return nil unless go_mod
+
+        {
+          ecosystem: "gomod",
+          package_managers: {
+            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+          }
+        }
+      end
+
       private
 
       def fetch_files
@@ -32,10 +43,8 @@ module Dependabot
           end
 
           fetched_files = [go_mod]
-
           # Fetch the (optional) go.sum
           fetched_files << go_sum if go_sum
-
           fetched_files
         end
       end

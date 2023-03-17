@@ -2,10 +2,10 @@
 
 require "spec_helper"
 require "dependabot/api_client"
+require "dependabot/dependency_change"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
-  let(:job_id) { 42 }
   let(:base_sha) { "mock-sha" }
 
   let(:mock_client) do
@@ -19,6 +19,14 @@ RSpec.describe Dependabot::Service do
   subject(:service) { described_class.new(client: mock_client) }
 
   shared_context :a_pr_was_created do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+
     let(:pr_message) { "update all the things" }
     let(:dependencies) do
       [
@@ -56,11 +64,22 @@ RSpec.describe Dependabot::Service do
     end
 
     before do
-      service.create_pull_request(job_id, dependencies, dependency_files, base_sha, pr_message)
+      allow(Dependabot::PullRequestCreator::MessageBuilder).
+        to receive_message_chain(:new, :message).and_return(pr_message)
+
+      service.create_pull_request(dependency_change, base_sha)
     end
   end
 
   shared_context :a_pr_was_updated do
+    let(:dependency_change) do
+      Dependabot::DependencyChange.new(
+        job: anything,
+        dependencies: dependencies,
+        updated_dependency_files: dependency_files
+      )
+    end
+
     let(:dependencies) do
       [
         Dependabot::Dependency.new(
@@ -85,7 +104,7 @@ RSpec.describe Dependabot::Service do
     end
 
     before do
-      service.update_pull_request(job_id, dependencies, dependency_files, base_sha)
+      service.update_pull_request(dependency_change, base_sha)
     end
   end
 
@@ -94,14 +113,13 @@ RSpec.describe Dependabot::Service do
     let(:reason) { :dependency_removed }
 
     before do
-      service.close_pull_request(job_id, dependency_name, reason)
+      service.close_pull_request(dependency_name, reason)
     end
   end
 
   shared_context :an_error_was_reported do
     before do
       service.record_update_job_error(
-        job_id,
         error_type: :epoch_error,
         error_details: {
           message: "What is fortran doing here?!"
@@ -110,12 +128,38 @@ RSpec.describe Dependabot::Service do
     end
   end
 
+  shared_context :a_dependency_error_was_reported do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "dependabot-cobol",
+        package_manager: "bundler",
+        version: "3.8.0",
+        previous_version: "3.7.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 3.8.0", groups: [], source: nil }
+        ],
+        previous_requirements: [
+          { file: "Gemfile", requirement: "~> 3.7.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    before do
+      service.record_update_job_error(
+        error_type: :unknown_error,
+        error_details: {
+          message: "0001 Undefined error. Inform Technical Support"
+        },
+        dependency: dependency
+      )
+    end
+  end
+
   describe "Instance methods delegated to @client" do
     {
-      get_job: "mock_job_id",
-      mark_job_as_processed: %w(mock_job_id mock_sha),
-      update_dependency_list: %w(mock_job_id mock_dependencies mock_dependency_file),
-      record_package_manager_version: %w(mock_job_id mock_ecosystem mock_package_managers)
+      mark_job_as_processed: %w(mock_sha),
+      update_dependency_list: %w(mock_dependencies mock_dependency_file),
+      record_package_manager_version: %w(mock_ecosystem mock_package_managers)
     }.each do |method, arguments|
       before { allow(mock_client).to receive(method) }
 
@@ -132,7 +176,7 @@ RSpec.describe Dependabot::Service do
 
     it "delegates to @client" do
       expect(mock_client).
-        to have_received(:create_pull_request).with(job_id, dependencies, dependency_files, base_sha, pr_message)
+        to have_received(:create_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
@@ -145,7 +189,7 @@ RSpec.describe Dependabot::Service do
     include_context :a_pr_was_updated
 
     it "delegates to @client" do
-      expect(mock_client).to have_received(:update_pull_request).with(job_id, dependencies, dependency_files, base_sha)
+      expect(mock_client).to have_received(:update_pull_request).with(dependency_change, base_sha)
     end
 
     it "memoizes a shorthand summary of the PR" do
@@ -157,7 +201,7 @@ RSpec.describe Dependabot::Service do
     include_context :a_pr_was_closed
 
     it "delegates to @client" do
-      expect(mock_client).to have_received(:close_pull_request).with(job_id, dependency_name, reason)
+      expect(mock_client).to have_received(:close_pull_request).with(dependency_name, reason)
     end
 
     it "memoizes a shorthand summary of the reason for closing PRs for a dependency" do
@@ -170,7 +214,6 @@ RSpec.describe Dependabot::Service do
 
     it "delegates to @client" do
       expect(mock_client).to have_received(:record_update_job_error).with(
-        job_id,
         {
           error_type: :epoch_error,
           error_details: {
@@ -181,7 +224,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "memoizes a shorthand summary of the error" do
-      expect(service.errors).to eql(["epoch_error"])
+      expect(service.errors).to eql([["epoch_error", nil]])
     end
   end
 
@@ -192,7 +235,6 @@ RSpec.describe Dependabot::Service do
 
     it "is false if there has been an event" do
       service.record_update_job_error(
-        job_id,
         error_type: :epoch_error,
         error_details: {
           message: "What is fortran doing here?!"
@@ -203,7 +245,7 @@ RSpec.describe Dependabot::Service do
     end
 
     it "is false if there has been a pull request change" do
-      service.close_pull_request(job_id, "dependabot-cobol", "legacy code removed")
+      service.close_pull_request("dependabot-cobol", "legacy code removed")
 
       expect(service).not_to be_failure
     end
@@ -216,7 +258,6 @@ RSpec.describe Dependabot::Service do
 
     it "is true if there has been an error" do
       service.record_update_job_error(
-        job_id,
         error_type: :epoch_error,
         error_details: {
           message: "What is fortran doing here?!"
@@ -268,6 +309,27 @@ RSpec.describe Dependabot::Service do
         expect(service.summary).
           to include("Dependabot encountered '1' error(s) during execution")
       end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("epoch_error")
+      end
+    end
+
+    context "when there was an dependency error" do
+      include_context :a_dependency_error_was_reported
+
+      it "includes an error count" do
+        expect(service.summary).
+          to include("Dependabot encountered '1' error(s) during execution")
+      end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("unknown_error")
+        expect(service.summary).
+          to include("dependabot-cobol")
+      end
     end
 
     context "when there was a mix of pr activity" do
@@ -289,6 +351,7 @@ RSpec.describe Dependabot::Service do
       include_context :a_pr_was_created
       include_context :a_pr_was_closed
       include_context :an_error_was_reported
+      include_context :a_dependency_error_was_reported
 
       it "includes the summary of the created PR" do
         expect(service.summary).
@@ -302,7 +365,16 @@ RSpec.describe Dependabot::Service do
 
       it "includes an error count" do
         expect(service.summary).
-          to include("Dependabot encountered '1' error(s) during execution")
+          to include("Dependabot encountered '2' error(s) during execution")
+      end
+
+      it "includes an error summary" do
+        expect(service.summary).
+          to include("epoch_error")
+        expect(service.summary).
+          to include("unknown_error")
+        expect(service.summary).
+          to include("dependabot-fortran")
       end
     end
   end

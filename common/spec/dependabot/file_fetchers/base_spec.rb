@@ -1578,6 +1578,21 @@ RSpec.describe Dependabot::FileFetchers::Base do
           expect(`ls #{repo_contents_path}`).to include("README")
         end
       end
+
+      context "when the repo exceeds available disk space" do
+        it "raises an out of disk error" do
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_shell_command).
+            and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "fatal: write error: No space left on device",
+                error_context: {}
+              )
+            )
+
+          expect { subject }.to raise_error(Dependabot::OutOfDisk)
+        end
+      end
     end
   end
 
