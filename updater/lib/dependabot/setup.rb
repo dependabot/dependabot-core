@@ -1,7 +1,17 @@
 # frozen_string_literal: true
 
+require "dependabot/logger"
+require "dependabot/logger/formats"
+require "dependabot/environment"
+
+Dependabot.logger = Logger.new($stdout).tap do |logger|
+  logger.level = Dependabot::Environment.log_level
+  logger.formatter = Dependabot::Logger::BasicFormatter.new
+end
+
 require "dependabot/sentry"
 Raven.configure do |config|
+  config.logger = Dependabot.logger
   config.project_root = File.expand_path("../../..", __dir__)
 
   config.app_dirs_pattern = %r{(
@@ -28,15 +38,6 @@ Raven.configure do |config|
   )}x
 
   config.processors += [ExceptionSanitizer]
-end
-
-require "dependabot/logger"
-require "dependabot/logger/formats"
-require "dependabot/environment"
-
-Dependabot.logger = Logger.new($stdout).tap do |logger|
-  logger.level = Dependabot::Environment.log_level
-  logger.formatter = Dependabot::Logger::BasicFormatter.new
 end
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
