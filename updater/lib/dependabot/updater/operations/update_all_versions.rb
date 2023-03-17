@@ -34,7 +34,6 @@ module Dependabot
                     :error_handler,
                     :created_pull_requests
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def dependencies
           all_deps = dependency_snapshot.dependencies
 
@@ -56,7 +55,6 @@ module Dependabot
           error_handler.handle_parser_error(e)
           []
         end
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
@@ -72,7 +70,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
@@ -81,35 +78,9 @@ module Dependabot
           log_checking_for_update(dependency)
 
           return if all_versions_ignored?(dependency, checker)
-
-          # If the dependency isn't vulnerable or we can't know for sure we won't be
-          # able to know if the updated dependency fixes any advisories
-          if job.security_updates_only?
-            unless checker.vulnerable?
-              # The current dependency isn't vulnerable if the version is correct and
-              # can be matched against the advisories affected versions
-              if checker.version_class.correct?(checker.dependency.version)
-                return record_security_update_not_needed_error(checker)
-              end
-
-              return record_dependency_file_not_supported_error(checker)
-            end
-            return record_security_update_ignored(checker) unless job.allowed_update?(dependency)
-          end
-
-          if checker.up_to_date?
-            # The current version is still vulnerable and  Dependabot can't find a
-            # published or compatible non-vulnerable version, this can happen if the
-            # fixed version hasn't been published yet or the published version isn't
-            # compatible with the current enviroment (e.g. python version) or
-            # version (uses a different version suffix for gradle/maven)
-            return record_security_update_not_found(checker) if job.security_updates_only?
-
-            return log_up_to_date(dependency)
-          end
+          return log_up_to_date(dependency) if checker.up_to_date?
 
           if pr_exists_for_latest_version?(checker)
-            record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
             return Dependabot.logger.info(
               "Pull request already exists for #{checker.dependency.name} " \
               "with latest version #{checker.latest_version}"
@@ -120,8 +91,6 @@ module Dependabot
           log_requirements_for_update(requirements_to_unlock, checker)
 
           if requirements_to_unlock == :update_not_possible
-            return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
-
             return Dependabot.logger.info(
               "No update possible for #{dependency.name} #{dependency.version}"
             )
@@ -131,23 +100,7 @@ module Dependabot
             requirements_to_unlock: requirements_to_unlock
           )
 
-          # Prevent updates that don't end up fixing any security advisories,
-          # blocking any updates where dependabot-core updates to a vulnerable
-          # version. This happens for npm/yarn subdendencies where Dependabot has no
-          # control over the target version. Related issue:
-          # https://github.com/github/dependabot-api/issues/905
-          if job.security_updates_only? &&
-             updated_deps.none? { |d| job.security_fix?(d) }
-            return record_security_update_not_possible_error(checker)
-          end
-
           if (existing_pr = existing_pull_request(updated_deps))
-            # Create a update job error to prevent dependabot-api from creating a
-            # update_not_possible error, this is likely caused by a update job retry
-            # so should be invisible to users (as the first job completed with a pull
-            # request)
-            record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
-
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)
                 "#{dep.fetch('dependency-name')}@removed"
@@ -179,7 +132,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def log_up_to_date(dependency)
@@ -189,7 +141,7 @@ module Dependabot
         end
 
         def raise_on_ignored?(dependency)
-          job.security_updates_only? || ignore_conditions_for(dependency).any?
+          ignore_conditions_for(dependency).any?
         end
 
         def ignore_conditions_for(dep)
@@ -206,7 +158,7 @@ module Dependabot
           end
           Dependabot::Config::UpdateConfig.
             new(ignore_conditions: ignore_conditions).
-            ignored_versions_for(dep, security_updates_only: job.security_updates_only?)
+            ignored_versions_for(dep, security_updates_only: false)
         end
 
         def update_checker_for(dependency, raise_on_ignored:)
@@ -272,7 +224,6 @@ module Dependabot
 
             ic["update-types"]&.each do |update_type|
               msg = "  #{update_type} - from #{ic['source']}"
-              msg += " (doesn't apply to security update)" if job.security_updates_only?
               Dependabot.logger.info(msg)
             end
           end
@@ -290,10 +241,6 @@ module Dependabot
           false
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")
-
-          # Report this error to the backend to create an update job error
-          raise if job.security_updates_only?
-
           true
         end
 
@@ -349,10 +296,6 @@ module Dependabot
         # If a version update for a peer dependency is possible we should
         # defer to the PR that will be created for it to avoid duplicate PRs.
         def peer_dependency_should_update_instead?(dependency_name, updated_deps)
-          # This doesn't apply to security updates as we can't rely on the
-          # peer dependency getting updated.
-          return false if job.security_updates_only?
-
           updated_deps.
             reject { |dep| dep.name == dependency_name }.
             any? do |dep|
