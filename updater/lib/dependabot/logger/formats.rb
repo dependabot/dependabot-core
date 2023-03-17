@@ -6,10 +6,11 @@ require "logger"
 # the global log helper defined in common/lib/dependabot/logger.rb
 module Dependabot
   module Logger
+    TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
+
     class BasicFormatter < ::Logger::Formatter
-      # Strip out timestamps as these are included in the runner's logger
       def call(severity, _datetime, _progname, msg)
-        "#{severity} #{msg2str(msg)}\n"
+        "#{Time.now.strftime(TIME_FORMAT)} #{severity} #{msg2str(msg)}\n"
       end
     end
 
@@ -23,6 +24,7 @@ module Dependabot
 
       def call(severity, _datetime, _progname, msg)
         [
+          Time.now.strftime(TIME_FORMAT),
           severity,
           job_prefix,
           msg2str(msg)
