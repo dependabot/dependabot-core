@@ -68,9 +68,7 @@ jobs:
               - 'cargo/**'
             common:
               - Dockerfile.updater-core
-              - 'common/**'
-              - 'updater/Gemfil*'
-              - 'omnibus/**'
+              - '**/**'
               - '.github/workflows/ci.yml'
             composer:
               - Dockerfile.updater-core
