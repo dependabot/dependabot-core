@@ -71,36 +71,8 @@ RSpec.describe Dependabot::Updater do
       service = build_service
       updater = build_updater(service: service, job: job)
 
-      dependencies = [
-        {
-          name: "dummy-pkg-a",
-          version: "2.0.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 2.0.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        },
-        {
-          name: "dummy-pkg-b",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        }
-      ]
-      dependency_files = ["/Gemfile", "/Gemfile.lock"]
-
-      expect(service).
-        to receive(:update_dependency_list).with(dependencies, dependency_files)
+      expect(service).to receive(:update_dependency_list).
+        with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       updater.run
     end

@@ -608,7 +608,7 @@ module Dependabot
       all_deps = dependency_snapshot.dependencies
 
       # Tell the backend about the current dependencies on the target branch
-      update_dependency_list(all_deps)
+      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 
       # Rebases and security updates have dependencies, version updates don't
       if job.dependencies
@@ -964,19 +964,6 @@ module Dependabot
       )
     end
     # rubocop:enable Metrics/MethodLength
-
-    def update_dependency_list(dependencies)
-      service.update_dependency_list(
-        dependencies.map do |dep|
-          {
-            name: dep.name,
-            version: dep.version,
-            requirements: dep.requirements
-          }
-        end,
-        dependency_snapshot.dependency_files.reject(&:support_file).map(&:path)
-      )
-    end
   end
 end
 # rubocop:enable Metrics/ClassLength
