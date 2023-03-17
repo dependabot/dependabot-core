@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/update_all_versions"
+
 # This module is responsible for determining which Operation a Job is requesting
 # the Updater to perform.
 #
@@ -21,8 +23,17 @@
 module Dependabot
   class Updater
     module Operations
-      def self.operation_for(_job:)
-        nil
+      # We check if each operation ::applies_to? a given job, returning the first
+      # that does, so these Operations should be ordered so that those with most
+      # specific preconditions go before those with more permissive checks.
+      OPERATIONS = [
+        UpdateAllVersions
+      ]
+
+      def self.operation_for(job:)
+        raise ArgumentError, "Expected Dependabot::Job, got #{job.class}" unless job.is_a?(Dependabot::Job)
+
+        OPERATIONS.first { |op| op.applies_to?(job: job) }
       end
     end
   end
