@@ -1,6 +1,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ENV DEPENDABOT_HOME /home/dependabot
 ### JAVASCRIPT
+ARG PNPM_VERSION=8.3.1
 ARG YARN_VERSION=3.5.0
 
 # Install Node and npm
@@ -15,6 +16,9 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
 RUN corepack enable
 
 USER dependabot
+
+# Install pnpm and set it to a stable version
+RUN corepack prepare pnpm@$PNPM_VERSION --activate
 
 # Install yarn berry and set it to a stable version
 RUN corepack prepare yarn@$YARN_VERSION --activate
