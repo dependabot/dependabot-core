@@ -3,6 +3,7 @@
 require "spec_helper"
 require "dependabot/api_client"
 require "dependabot/dependency_change"
+require "dependabot/dependency_snapshot"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
@@ -158,7 +159,6 @@ RSpec.describe Dependabot::Service do
   describe "Instance methods delegated to @client" do
     {
       mark_job_as_processed: %w(mock_sha),
-      update_dependency_list: %w(mock_dependencies mock_dependency_file),
       record_package_manager_version: %w(mock_ecosystem mock_package_managers)
     }.each do |method, arguments|
       before { allow(mock_client).to receive(method) }
@@ -225,6 +225,80 @@ RSpec.describe Dependabot::Service do
 
     it "memoizes a shorthand summary of the error" do
       expect(service.errors).to eql([["epoch_error", nil]])
+    end
+  end
+
+  describe "#update_dependency_list" do
+    let(:dependency_snapshot) do
+      instance_double(Dependabot::DependencySnapshot,
+                      dependencies: [
+                        Dependabot::Dependency.new(
+                          name: "dummy-pkg-a",
+                          package_manager: "bundler",
+                          version: "2.0.0",
+                          requirements: [
+                            { file: "Gemfile", requirement: "~> 2.0.0", groups: [:default], source: nil }
+                          ]
+                        ),
+                        Dependabot::Dependency.new(
+                          name: "dummy-pkg-b",
+                          package_manager: "bundler",
+                          version: "1.1.0",
+                          requirements: [
+                            { file: "Gemfile", requirement: "~> 1.1.0", groups: [:default], source: nil }
+                          ]
+                        )
+                      ],
+                      dependency_files: [
+                        Dependabot::DependencyFile.new(
+                          name: "Gemfile",
+                          content: fixture("bundler/original/Gemfile"),
+                          directory: "/"
+                        ),
+                        Dependabot::DependencyFile.new(
+                          name: "Gemfile.lock",
+                          content: fixture("bundler/original/Gemfile.lock"),
+                          directory: "/"
+                        )
+                      ])
+    end
+
+    let(:expected_dependency_payload) do
+      [
+        {
+          name: "dummy-pkg-a",
+          version: "2.0.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 2.0.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        },
+        {
+          name: "dummy-pkg-b",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: [:default],
+              source: nil
+            }
+          ]
+        }
+      ]
+    end
+    let(:expected_file_paths) do
+      ["/Gemfile", "/Gemfile.lock"]
+    end
+
+    it "extracts a payload from the DependencySnapshot and delegates to the client" do
+      expect(mock_client).to receive(:update_dependency_list).with(expected_dependency_payload, expected_file_paths)
+
+      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
     end
   end
 

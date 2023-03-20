@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require "raven"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
 require "dependabot/dependency_change"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
-require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/logger"
 require "dependabot/python"
@@ -55,11 +53,14 @@ module Dependabot
       Octokit::Unauthorized => "octokit_unauthorized"
     }.freeze
 
-    def initialize(service:, job:, dependency_files:, base_commit_sha:)
+    # To do work, this class needs three arguments:
+    # - The Dependabot::Service to send events and outcomes to
+    # - The Dependabot::Job that describes the work to be done
+    # - The Dependabot::DependencySnapshot which encapsulates the starting state of the project
+    def initialize(service:, job:, dependency_snapshot:)
       @service = service
       @job = job
-      @dependency_files = dependency_files
-      @base_commit_sha = base_commit_sha
+      @dependency_snapshot = dependency_snapshot
       # TODO: Collect @created_pull_requests on the Job object?
       @created_pull_requests = []
     end
@@ -94,7 +95,7 @@ module Dependabot
     private
 
     attr_accessor :created_pull_requests
-    attr_reader :service, :job, :dependency_files, :base_commit_sha
+    attr_reader :service, :job, :dependency_snapshot
 
     def check_and_create_pr_with_error_handling(dependency)
       check_and_create_pull_request(dependency)
@@ -604,10 +605,10 @@ module Dependabot
 
     # rubocop:disable Metrics/PerceivedComplexity
     def dependencies
-      all_deps = dependency_file_parser.parse
+      all_deps = dependency_snapshot.dependencies
 
       # Tell the backend about the current dependencies on the target branch
-      update_dependency_list(all_deps)
+      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 
       # Rebases and security updates have dependencies, version updates don't
       if job.dependencies
@@ -648,21 +649,10 @@ module Dependabot
     end
     # rubocop:enable Metrics/PerceivedComplexity
 
-    def dependency_file_parser
-      Dependabot::FileParsers.for_package_manager(job.package_manager).new(
-        dependency_files: dependency_files,
-        repo_contents_path: job.repo_contents_path,
-        source: job.source,
-        credentials: job.credentials,
-        reject_external_code: job.reject_external_code?,
-        options: job.experiments
-      )
-    end
-
     def update_checker_for(dependency, raise_on_ignored:)
       Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
         dependency: dependency,
-        dependency_files: dependency_files,
+        dependency_files: dependency_snapshot.dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         ignored_versions: ignore_conditions_for(dependency),
@@ -676,7 +666,7 @@ module Dependabot
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
-        dependency_files: dependency_files,
+        dependency_files: dependency_snapshot.dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         options: job.experiments
@@ -755,7 +745,7 @@ module Dependabot
         updated_dependency_files: updated_dependency_files
       )
 
-      service.create_pull_request(dependency_change, base_commit_sha)
+      service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
       created_pull_requests << dependencies.map do |dep|
         {
@@ -776,7 +766,7 @@ module Dependabot
         updated_dependency_files: updated_dependency_files
       )
 
-      service.update_pull_request(dependency_change, base_commit_sha)
+      service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
     end
 
     def close_pull_request(reason:)
@@ -974,19 +964,6 @@ module Dependabot
       )
     end
     # rubocop:enable Metrics/MethodLength
-
-    def update_dependency_list(dependencies)
-      service.update_dependency_list(
-        dependencies.map do |dep|
-          {
-            name: dep.name,
-            version: dep.version,
-            requirements: dep.requirements
-          }
-        end,
-        dependency_files.reject(&:support_file).map(&:path)
-      )
-    end
   end
 end
 # rubocop:enable Metrics/ClassLength
