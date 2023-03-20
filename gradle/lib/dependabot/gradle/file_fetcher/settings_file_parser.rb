@@ -6,11 +6,17 @@ module Dependabot
   module Gradle
     class FileFetcher
       class SettingsFileParser
-        INCLUDE_ARGS_REGEX =
-          /(?:^|\s)include(?:\(|\s)(\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)/.freeze
-
         def initialize(settings_file:)
           @settings_file = settings_file
+        end
+
+        def included_build_paths
+          paths = []
+          comment_free_content.scan(function_regex("includeBuild")) do
+            arg = Regexp.last_match.named_captures.fetch("args")
+            paths << arg.gsub(/["']/, "").strip
+          end
+          paths.uniq
         end
 
         def subproject_paths
@@ -19,7 +25,7 @@ module Dependabot
           comment_free_content.scan(function_regex("include")) do
             args = Regexp.last_match.named_captures.fetch("args")
             args = args.split(",")
-            args = args.map { |p| p.gsub(/["']/, "").strip }.compact
+            args = args.filter_map { |p| p.gsub(/["']/, "").strip }
             subprojects += args
           end
 
@@ -49,7 +55,7 @@ module Dependabot
 
         def function_regex(function_name)
           /
-            (?:^|\s)#{Regexp.quote(function_name)}(?:\(|\s)
+            (?:^|\s)#{Regexp.quote(function_name)}(?:\s*\(|\s)
             (?<args>\s*[^\s,\)]+(?:,\s*[^\s,\)]+)*)
           /mx
         end

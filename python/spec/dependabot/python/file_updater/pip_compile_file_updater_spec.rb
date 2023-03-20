@@ -66,9 +66,9 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       "password" => "token"
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
@@ -77,7 +77,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       expect(updated_files.count).to eq(1)
       expect(updated_files.first.content).to include("attrs==18.1.0")
       expect(updated_files.first.content).
-        to include("pbr==4.0.2                # via mock")
+        to include("pbr==4.0.2\n    # via mock")
       expect(updated_files.first.content).to include("# This file is autogen")
       expect(updated_files.first.content).to_not include("--hash=sha")
     end
@@ -95,7 +95,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2                # via mock")
+          to include("pbr==4.0.2\n    # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
@@ -175,17 +175,6 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
-    context "with a met marker that forces a difference Python version" do
-      let(:manifest_fixture_name) { "met_marker.in" }
-      let(:generated_fixture_name) { "pip_compile_met_marker.txt" }
-
-      it "updates the requirements.txt, keeping the unmet dep in it" do
-        expect(updated_files.count).to eq(1)
-        expect(updated_files.first.content).to include("attrs==18.1.0")
-        expect(updated_files.first.content).to include("flaky")
-      end
-    end
-
     context "with an unsafe dependency" do
       let(:manifest_fixture_name) { "unsafe.in" }
       let(:dependency_name) { "flake8" }
@@ -234,19 +223,19 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       let(:generated_fixture_name) { "pip_compile_imports_setup.txt" }
       let(:setup_fixture_name) { "small.py" }
 
-      it "updates the requirements.txt" do
+      it "updates the requirements.txt", :slow do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==18.1.0")
         expect(updated_files.first.content).
           to include("-e file:///Users/greysteil/code/python-test")
         expect(updated_files.first.content).to_not include("tmp/dependabot")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2                # via mock")
+          to include("pbr==4.0.2\n    # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
 
-      context "that needs sanitizing" do
+      context "that needs sanitizing", :slow do
         let(:setup_fixture_name) { "small_needs_sanitizing.py" }
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(1)
@@ -279,7 +268,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       it "updates the requirements.txt" do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).
-          to include("pbr==4.2.0                # via mock")
+          to include("pbr==4.2.0\n    # via mock")
       end
 
       context "with an uncompiled requirement file, too" do
@@ -312,7 +301,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         it "updates the requirements.txt" do
           expect(updated_files.count).to eq(2)
           expect(updated_files.first.content).
-            to include("pbr==4.2.0                # via mock")
+            to include("pbr==4.2.0\n    # via mock")
           expect(updated_files.last.content).to include("pbr==4.2.0")
         end
       end
@@ -325,7 +314,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
         expect(updated_files.count).to eq(1)
         expect(updated_files.first.content).to include("attrs==17.4.0")
         expect(updated_files.first.content).
-          to include("pbr==4.0.2                # via mock")
+          to include("pbr==4.0.2\n    # via mock")
         expect(updated_files.first.content).to include("# This file is autogen")
         expect(updated_files.first.content).to_not include("--hash=sha")
       end
@@ -499,89 +488,37 @@ RSpec.describe Dependabot::Python::FileUpdater::PipCompileFileUpdater do
       end
     end
 
-    context "when the upgrade requires Python 2.7" do
-      let(:manifest_fixture_name) { "legacy_python.in" }
-      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
+    context "with incompatible versions" do
+      let(:manifest_fixture_name) { "incompatible_versions.in" }
+      let(:generated_fixture_name) { "incompatible_versions.txt" }
+      let(:dependency_name) { "pyyaml" }
+      let(:dependency_version) { "5.4" }
+      let(:dependency_previous_version) { "5.3.1" }
+      let(:dependency_requirements) { [] }
+      let(:dependency_previous_requirements) { [] }
 
-      let(:dependency_name) { "wsgiref" }
-      let(:dependency_version) { "0.1.2" }
-      let(:dependency_previous_version) { "0.1.1" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "<=0.1.2",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:dependency_previous_requirements) { dependency_requirements }
-
-      it "updates the requirements.txt" do
-        expect(updated_files.count).to eq(1)
-        expect(updated_files.last.content).to include("wsgiref==0.1.2")
-      end
-
-      context "for a dependency that uses markers correctly" do
-        let(:manifest_fixture_name) { "legacy_python_2.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
-
-        let(:dependency_name) { "astroid" }
-        let(:dependency_version) { "1.6.5" }
-        let(:dependency_previous_version) { "1.6.4" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "<2",
-            groups: [],
-            source: nil
-          }]
-        end
-        let(:dependency_previous_requirements) { dependency_requirements }
-
-        it "updates the requirements.txt" do
-          expect(updated_files.count).to eq(1)
-          expect(updated_files.last.content).to include("astroid==1.6.5")
+      it "raises an error indicating the dependencies are not resolvable", :slow do
+        expect { updated_files }.to raise_error(Dependabot::DependencyFileNotResolvable) do |err|
+          expect(err.message).to include(
+            "There are incompatible versions in the resolved dependencies:\n  pyyaml==5.4"
+          )
         end
       end
     end
 
-    context "when the upgrade would resolve differently on Python 3" do
-      let(:dependency_files) { [manifest_file, generated_file, python_file] }
-      let(:manifest_fixture_name) { "resolves_differently_by_python.in" }
-      let(:generated_fixture_name) do
-        "pip_compile_resolves_differently_by_python.txt"
-      end
-      let(:python_file) do
-        Dependabot::DependencyFile.new(
-          name: ".python-version",
-          content: "2.7.17"
-        )
-      end
+    context "with stripped extras" do
+      let(:manifest_fixture_name) { "strip_extras.in" }
+      let(:generated_fixture_name) { "pip_compile_strip_extras.txt" }
+      let(:dependency_name) { "cachecontrol" }
+      let(:dependency_version) { "0.12.10" }
+      let(:dependency_previous_version) { "0.12.9" }
 
-      let(:dependency_name) { "tornado" }
-      let(:dependency_version) { "5.1.1" }
-      let(:dependency_previous_version) { "5.1.0" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "==5.1.1",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:dependency_previous_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "==5.1.0",
-          groups: [],
-          source: nil
-        }]
-      end
-
-      it "updates the requirements.txt using Python 2.7" do
-        expect(updated_files.count).to eq(2)
-        expect(updated_files.last.content).to include("tornado==5.1.1")
-        expect(updated_files.last.content).to include("futures")
+      it "doesn't add an extras annotation on cachecontrol" do
+        expect(updated_files.count).to eq(1)
+        expect(updated_files.first.content).to include("--strip-extras")
+        expect(updated_files.first.content).to include("cachecontrol==0.12.10")
+        expect(updated_files.first.content).
+          to_not include("cachecontrol[filecache]==")
       end
     end
   end

@@ -68,6 +68,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
       its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
       its(:content) { is_expected.to include "luigi==2.2.0\n" }
+      # extras are preserved
+      its(:content) { is_expected.to include "aiocache[redis]==0.10.0\n" }
 
       context "when only the minor version is specified" do
         let(:requirements_fixture_name) { "minor_version_specified.txt" }
@@ -161,10 +163,10 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
         its(:content) do
           is_expected.to eq(
-            "pytest==3.3.1 "\
-            "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc42ad7"\
-            "331c9ad06d0efe4962  "\
-            "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d64096"\
+            "pytest==3.3.1 " \
+            "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc42ad7" \
+            "331c9ad06d0efe4962  " \
+            "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d64096" \
             "cebe79fb51ecb2eb93\n"
           )
         end
@@ -174,13 +176,13 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
           its(:content) do
             is_expected.to include(
-              "pytest==3.3.1 "\
-              "--hash=sha512:f3d73e475dbfbcd9f218268caefeab86038dde4380fcf727"\
-              "b3436847849e57309c14f6f9769e85502c6121dab354d20a1316e2e30249c0"\
-              "a2b28e87d90f71e65e  "\
-              "--hash=sha512:f190f9a8a8f55e9dbf311429eb86e023e096d5388e1c4216"\
-              "fc8d833fbdec8fa67f67b89a174dfead663b34e5f5df124085825446297cf7"\
-              "d9500527d9e8ddb15d\n"
+              "pytest==3.3.1 " \
+              "--hash=sha512:f190f9a8a8f55e9dbf311429eb86e023e096d5388e1c4216" \
+              "fc8d833fbdec8fa67f67b89a174dfead663b34e5f5df124085825446297cf7" \
+              "d9500527d9e8ddb15d  " \
+              "--hash=sha512:f3d73e475dbfbcd9f218268caefeab86038dde4380fcf727" \
+              "b3436847849e57309c14f6f9769e85502c6121dab354d20a1316e2e30249c0" \
+              "a2b28e87d90f71e65e\n"
             )
           end
         end
@@ -190,10 +192,38 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
           its(:content) do
             is_expected.to eq(
-              "pytest==3.3.1 \\\n"\
-              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4"\
-              "2ad7331c9ad06d0efe4962 \\\n"\
-              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6"\
+              "pytest==3.3.1 \\\n" \
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4" \
+              "2ad7331c9ad06d0efe4962 \\\n" \
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6" \
+              "4096cebe79fb51ecb2eb93\n"
+            )
+          end
+        end
+
+        context "with linebreaks and no space after each hash" do
+          let(:requirements_fixture_name) { "hashes_multiline_no_space.txt" }
+
+          its(:content) do
+            is_expected.to eq(
+              "pytest==3.3.1 \\\n" \
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4" \
+              "2ad7331c9ad06d0efe4962\\\n" \
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6" \
+              "4096cebe79fb51ecb2eb93\n"
+            )
+          end
+        end
+
+        context "with markers and linebreaks" do
+          let(:requirements_fixture_name) { "markers_and_hashes_multiline.txt" }
+
+          its(:content) do
+            is_expected.to eq(
+              "pytest==3.3.1 ; python_version=='2.7' \\\n" \
+              "    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4" \
+              "2ad7331c9ad06d0efe4962 \\\n" \
+              "    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6" \
               "4096cebe79fb51ecb2eb93\n"
             )
           end
@@ -224,8 +254,8 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
           its(:content) do
             is_expected.to eq(
-              "flask-featureflags==0.6 \\\n"\
-              "    --hash=sha256:fc8490e4e4c1eac03e306fade8ef4be3cddff6229"\
+              "flask-featureflags==0.6 \\\n" \
+              "    --hash=sha256:fc8490e4e4c1eac03e306fade8ef4be3cddff6229" \
               "aaa3bb96466ede7d107b241\n"
             )
           end
@@ -255,10 +285,10 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
 
             its(:content) do
               is_expected.to eq(
-                "pytest==3.3.1 "\
-                "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4"\
-                "2ad7331c9ad06d0efe4962 "\
-                "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6"\
+                "pytest==3.3.1 " \
+                "--hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc4" \
+                "2ad7331c9ad06d0efe4962 " \
+                "--hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d6" \
                 "4096cebe79fb51ecb2eb93\n"
               )
             end
@@ -415,6 +445,113 @@ RSpec.describe Dependabot::Python::FileUpdater::RequirementFileUpdater do
         end
 
         its(:content) { is_expected.to include "'flake8 > 2.5.4, < 3.4.0',\n" }
+      end
+    end
+
+    context "with only a setup.cfg" do
+      subject(:updated_setup_cfg_file) do
+        updated_files.find { |f| f.name == "setup.cfg" }
+      end
+      let(:dependency_files) { [setup_cfg] }
+      let(:setup_cfg) do
+        Dependabot::DependencyFile.new(
+          content: fixture("setup_files", "setup_with_requires.cfg"),
+          name: "setup.cfg"
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "psycopg2",
+          version: "2.8.1",
+          requirements: [{
+            file: "setup.cfg",
+            requirement: "==2.8.1",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "setup.cfg",
+            requirement: "==2.6.1",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      its(:content) { is_expected.to include "psycopg2==2.8.1\n" }
+      its(:content) { is_expected.to include "pep8==1.7.0" }
+
+      context "with non-standard formatting" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "raven",
+            version: "5.34.0",
+            requirements: [{
+              file: "setup.cfg",
+              requirement: "==5.34.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "==5.32.0",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "raven == 5.34.0\n" }
+      end
+
+      context "with a prefix-matcher" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "requests",
+            version: nil,
+            requirements: [{
+              file: "setup.cfg",
+              requirement: "==2.13.*",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "==2.12.*",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "requests==2.13.*\n" }
+      end
+
+      context "with a range requirement" do
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "flake8",
+            version: nil,
+            requirements: [{
+              file: "setup.cfg",
+              requirement: ">2.5.4,<3.4.0",
+              groups: [],
+              source: nil
+            }],
+            previous_requirements: [{
+              file: "setup.cfg",
+              requirement: "<3.0.0,>2.5.4",
+              groups: [],
+              source: nil
+            }],
+            package_manager: "pip"
+          )
+        end
+
+        its(:content) { is_expected.to include "flake8 > 2.5.4, < 3.4.0\n" }
       end
     end
 

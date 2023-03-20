@@ -1,129 +1,33 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/ubuntu
 {
-  "name": "Ruby",
-  "dockerFile": "../Dockerfile.development",
-
-  "workspaceFolder": "/home/dependabot/dependabot-core",
-
-  "runArgs": [
-    "-u", "dependabot",
-    "-e", "LOCAL_GITHUB_ACCESS_TOKEN=${env:LOCAL_GITHUB_ACCESS_TOKEN}",
-    "-e", "LOCAL_CONFIG_VARIABLES=${env:LOCAL_CONFIG_VARIABLES}",
-
-    "-v", "${localWorkspaceFolder}/.vscode:/home/dependabot/dependabot-core/.vscode",
-    "-v", "${localWorkspaceFolder}/.gitignore:/home/dependabot/dependabot-core/.gitignore",
-    "-v", "${localWorkspaceFolder}/.rubocop.yml:/home/dependabot/dependabot-core/.rubocop.yml",
-    "-v", "${localWorkspaceFolder}/bin:/home/dependabot/dependabot-core/bin",
-    "-v", "${localWorkspaceFolder}/common/Gemfile:/home/dependabot/dependabot-core/common/Gemfile",
-    "-v", "${localWorkspaceFolder}/common/dependabot-common.gemspec:/home/dependabot/dependabot-core/common/dependabot-common.gemspec",
-    "-v", "${localWorkspaceFolder}/common/bin:/home/dependabot/dependabot-core/common/bin",
-    "-v", "${localWorkspaceFolder}/common/lib:/home/dependabot/dependabot-core/common/lib",
-    "-v", "${localWorkspaceFolder}/common/spec:/home/dependabot/dependabot-core/common/spec",
-    "-v", "${localWorkspaceFolder}/bundler/dependabot-bundler.gemspec:/home/dependabot/dependabot-core/bundler/dependabot-bundler.gemspec",
-    "-v", "${localWorkspaceFolder}/bundler/Gemfile:/home/dependabot/dependabot-core/bundler/Gemfile",
-    "-v", "${localWorkspaceFolder}/bundler/lib:/home/dependabot/dependabot-core/bundler/lib",
-    "-v", "${localWorkspaceFolder}/bundler/spec:/home/dependabot/dependabot-core/bundler/spec",
-    "-v", "${localWorkspaceFolder}/cargo/dependabot-cargo.gemspec:/home/dependabot/dependabot-core/cargo/dependabot-core.gemspec",
-    "-v", "${localWorkspaceFolder}/cargo/Gemfile:/home/dependabot/dependabot-core/cargo/Gemfile",
-    "-v", "${localWorkspaceFolder}/cargo/lib:/home/dependabot/dependabot-core/cargo/lib",
-    "-v", "${localWorkspaceFolder}/cargo/spec:/home/dependabot/dependabot-core/cargo/spec",
-    "-v", "${localWorkspaceFolder}/composer/dependabot-composer.gemspec:/home/dependabot/dependabot-core/composer/dependabot-composer.gemspec",
-    "-v", "${localWorkspaceFolder}/composer/Gemfile:/home/dependabot/dependabot-core/composer/Gemfile",
-    "-v", "${localWorkspaceFolder}/composer/lib:/home/dependabot/dependabot-core/composer/lib",
-    "-v", "${localWorkspaceFolder}/composer/spec:/home/dependabot/dependabot-core/composer/spec",
-    "-v", "${localWorkspaceFolder}/dep/dependabot-dep.gemspec:/home/dependabot/dependabot-core/dep/dependabot-dep.gemspec",
-    "-v", "${localWorkspaceFolder}/dep/Gemfile:/home/dependabot/dependabot-core/dep/Gemfile",
-    "-v", "${localWorkspaceFolder}/dep/lib:/home/dependabot/dependabot-core/dep/lib",
-    "-v", "${localWorkspaceFolder}/dep/spec:/home/dependabot/dependabot-core/dep/spec",
-    "-v", "${localWorkspaceFolder}/docker/dependabot-docker.gemspec:/home/dependabot/dependabot-core/docker/dependabot-docker.gemspec",
-    "-v", "${localWorkspaceFolder}/docker/Gemfile:/home/dependabot/dependabot-core/docker/Gemfile",
-    "-v", "${localWorkspaceFolder}/docker/lib:/home/dependabot/dependabot-core/docker/lib",
-    "-v", "${localWorkspaceFolder}/docker/spec:/home/dependabot/dependabot-core/docker/spec",
-    "-v", "${localWorkspaceFolder}/elm/dependabot-elm.gemspec:/home/dependabot/dependabot-core/elm/dependabot-elm.gemspec",
-    "-v", "${localWorkspaceFolder}/elm/Gemfile:/home/dependabot/dependabot-core/elm/Gemfile",
-    "-v", "${localWorkspaceFolder}/elm/lib:/home/dependabot/dependabot-core/elm/lib",
-    "-v", "${localWorkspaceFolder}/elm/spec:/home/dependabot/dependabot-core/elm/spec",
-    "-v", "${localWorkspaceFolder}/git_submodules/dependabot-git_submodules.gemspec:/home/dependabot/dependabot-core/git_submodules/dependabot-core.gemspec",
-    "-v", "${localWorkspaceFolder}/git_submodules/Gemfile:/home/dependabot/dependabot-core/git_submodules/Gemfile",
-    "-v", "${localWorkspaceFolder}/git_submodules/lib:/home/dependabot/dependabot-core/git_submodules/lib",
-    "-v", "${localWorkspaceFolder}/git_submodules/spec:/home/dependabot/dependabot-core/git_submodules/spec",
-    "-v", "${localWorkspaceFolder}/github_actions/dependabot-github_actions.gemspec:/home/dependabot/dependabot-core/github_actions/dependabot-core.gemspec",
-    "-v", "${localWorkspaceFolder}/github_actions/Gemfile:/home/dependabot/dependabot-core/github_actions/Gemfile",
-    "-v", "${localWorkspaceFolder}/github_actions/lib:/home/dependabot/dependabot-core/github_actions/lib",
-    "-v", "${localWorkspaceFolder}/github_actions/spec:/home/dependabot/dependabot-core/github_actions/spec",
-    "-v", "${localWorkspaceFolder}/go_modules/dependabot-go_modules.gemspec:/home/dependabot/dependabot-core/go_modules/dependabot-go_modules.gemspec",
-    "-v", "${localWorkspaceFolder}/go_modules/Gemfile:/home/dependabot/dependabot-core/go_modules/Gemfile",
-    "-v", "${localWorkspaceFolder}/go_modules/lib:/home/dependabot/dependabot-core/go_modules/lib",
-    "-v", "${localWorkspaceFolder}/go_modules/spec:/home/dependabot/dependabot-core/go_modules/spec",
-    "-v", "${localWorkspaceFolder}/gradle/dependabot-gradle.gemspec:/home/dependabot/dependabot-core/gradle/dependabot-gradle.gemspec",
-    "-v", "${localWorkspaceFolder}/gradle/Gemfile:/home/dependabot/dependabot-core/gradle/Gemfile",
-    "-v", "${localWorkspaceFolder}/gradle/lib:/home/dependabot/dependabot-core/gradle/lib",
-    "-v", "${localWorkspaceFolder}/gradle/spec:/home/dependabot/dependabot-core/gradle/spec",
-    "-v", "${localWorkspaceFolder}/hex/dependabot-hex.gemspec:/home/dependabot/dependabot-core/hex/dependabot-hex.gemspec",
-    "-v", "${localWorkspaceFolder}/hex/Gemfile:/home/dependabot/dependabot-core/hex/Gemfile",
-    "-v", "${localWorkspaceFolder}/hex/lib:/home/dependabot/dependabot-core/hex/lib",
-    "-v", "${localWorkspaceFolder}/hex/spec:/home/dependabot/dependabot-core/hex/spec",
-    "-v", "${localWorkspaceFolder}/maven/dependabot-maven.gemspec:/home/dependabot/dependabot-core/maven/dependabot-core.gemspec",
-    "-v", "${localWorkspaceFolder}/maven/Gemfile:/home/dependabot/dependabot-core/maven/Gemfile",
-    "-v", "${localWorkspaceFolder}/maven/lib:/home/dependabot/dependabot-core/maven/lib",
-    "-v", "${localWorkspaceFolder}/maven/spec:/home/dependabot/dependabot-core/maven/spec",
-    "-v", "${localWorkspaceFolder}/npm_and_yarn/dependabot-npm_and_yarn.gemspec:/home/dependabot/dependabot-core/npm_and_yarn/dependabot-npm_and_yarn.gemspec",
-    "-v", "${localWorkspaceFolder}/npm_and_yarn/Gemfile:/home/dependabot/dependabot-core/npm_and_yarn/Gemfile",
-    "-v", "${localWorkspaceFolder}/npm_and_yarn/lib:/home/dependabot/dependabot-core/npm_and_yarn/lib",
-    "-v", "${localWorkspaceFolder}/npm_and_yarn/spec:/home/dependabot/dependabot-core/npm_and_yarn/spec",
-    "-v", "${localWorkspaceFolder}/nuget/dependabot-nuget.gemspec:/home/dependabot/dependabot-core/nuget/dependabot-core.gemspec",
-    "-v", "${localWorkspaceFolder}/nuget/Gemfile:/home/dependabot/dependabot-core/nuget/Gemfile",
-    "-v", "${localWorkspaceFolder}/nuget/lib:/home/dependabot/dependabot-core/nuget/lib",
-    "-v", "${localWorkspaceFolder}/nuget/spec:/home/dependabot/dependabot-core/nuget/spec",
-    "-v", "${localWorkspaceFolder}/python/dependabot-python.gemspec:/home/dependabot/dependabot-core/python/dependabot-python.gemspec",
-    "-v", "${localWorkspaceFolder}/python/Gemfile:/home/dependabot/dependabot-core/python/Gemfile",
-    "-v", "${localWorkspaceFolder}/python/lib:/home/dependabot/dependabot-core/python/lib",
-    "-v", "${localWorkspaceFolder}/python/spec:/home/dependabot/dependabot-core/python/spec",
-    "-v", "${localWorkspaceFolder}/terraform/dependabot-terraform.gemspec:/home/dependabot/dependabot-core/terraform/dependabot-terraform.gemspec",
-    "-v", "${localWorkspaceFolder}/terraform/Gemfile:/home/dependabot/dependabot-core/terraform/Gemfile",
-    "-v", "${localWorkspaceFolder}/terraform/lib:/home/dependabot/dependabot-core/terraform/lib",
-    "-v", "${localWorkspaceFolder}/terraform/spec:/home/dependabot/dependabot-core/terraform/spec",
-    "-v", "${localWorkspaceFolder}/omnibus/Gemfile:/home/dependabot/dependabot-core/omnibus/Gemfile",
-    "-v", "${localWorkspaceFolder}/omnibus/dependabot-omnibus.gemspec:/home/dependabot/dependabot-core/omnibus/dependabot-omnibus.gemspec",
-    "-v", "${localWorkspaceFolder}/omnibus/lib:/home/dependabot/dependabot-core/omnibus/lib",
-    "-v", "${localWorkspaceFolder}/omnibus/spec:/home/dependabot/dependabot-core/omnibus/spec",
-
-    "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"
-  ],
-
-  // Use 'settings' to set *default* container specific settings.json values on container create.
-  // You can edit these settings after create using File > Preferences > Settings > Remote.
-  "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash",
-    "solargraph.useBundler": true,
-    "ruby.useBundler": true,
-    "ruby.useLanguageServer": true,
-    "ruby.lint": {
-      "rubocop": {
-        "useBundler": true,
-        "lint": true
-      },
-      "reek": {
-        "useBundler": true
-      }
-    },
-    "ruby.format": "rubocop",
-    "[ruby]": {
-      "editor.defaultFormatter": "misogi.ruby-rubocop"
+  "name": "Ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile",
+    // Update 'VARIANT' to pick an Ubuntu version: jammy / ubuntu-22.04, focal / ubuntu-20.04, bionic /ubuntu-18.04
+    // Use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon.
+    "args": {
+      "VARIANT": "ubuntu-22.04"
     }
   },
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
 
-  // Uncomment the next line if you want to publish any ports.
-  // "appPort": [],
-
-  // Uncomment the next line to run commands after the container is created.
-  // "postCreateCommand": "ruby --version"
-
-  "extensions": [
-		"rebornix.ruby",
-		"castwide.solargraph",
-		"misogi.ruby-rubocop",
-		"groksrc.ruby",
-		"hoovercj.ruby-linter",
-		"miguel-savignano.ruby-symbols"
-  ]
+  "onCreateCommand": "bash .devcontainer/on-create.sh",
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode",
+  "features": {
+    "docker-from-docker": "latest",
+    "github-cli": "latest",
+    "node": "lts",
+    "golang": "latest",
+    "ruby": "3.1.3",
+    "rust": "latest",
+    "dotnet": "latest",
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
+  }
 }

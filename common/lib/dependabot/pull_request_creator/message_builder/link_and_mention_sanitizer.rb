@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "commonmarker"
 require "strscan"
 require "dependabot/pull_request_creator/message_builder"
 
@@ -7,27 +8,25 @@ module Dependabot
   class PullRequestCreator
     class MessageBuilder
       class LinkAndMentionSanitizer
-        GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i.freeze
+        GITHUB_USERNAME = /[a-z0-9]+(-[a-z0-9]+)*/i
         GITHUB_REF_REGEX = %r{
           (?:https?://)?
           github\.com/(?<repo>#{GITHUB_USERNAME}/[^/\s]+)/
           (?:issue|pull)s?/(?<number>\d+)
-        }x.freeze
-        # rubocop:disable Metrics/LineLength
-        # Context:
-        # - https://github.github.com/gfm/#fenced-code-block (``` or ~~~)
-        #   (?<=\n|^)         Positive look-behind to ensure we start at a line start
-        #   (?>`{3,}|~{3,})   Atomic group marking the beginning of the block (3 or more chars)
-        #   (?>\k<fenceopen>) Atomic group marking the end of the code block (same length as opening)
-        # - https://github.github.com/gfm/#code-span
-        #   (?<codespanopen>`+)  Capturing group marking the beginning of the span (1 or more chars)
-        #   (?![^`]*?\n{2,})     Negative look-ahead to avoid empty lines inside code span
-        #   (?:.|\n)*?           Non-capturing group to consume code span content (non-eager)
-        #   (?>\k<codespanopen>) Atomic group marking the end of the code span (same length as opening)
-        # rubocop:enable Metrics/LineLength
-        CODEBLOCK_REGEX = /```|~~~/.freeze
+        }x
+        # [^/\s#]+ means one or more characters not matching (^) the class /, whitespace (\s), or #
+        GITHUB_NWO_REGEX = %r{(?<repo>#{GITHUB_USERNAME}/[^/\s#]+)#(?<number>\d+)}
+        MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}
+        # regex to match a team mention on github
+        TEAM_MENTION_REGEX = %r{(?<![A-Za-z0-9`~])@(?<org>#{GITHUB_USERNAME})/(?<team>#{GITHUB_USERNAME})/?}
         # End of string
-        EOS_REGEX = /\z/.freeze
+        EOS_REGEX = /\z/
+        COMMONMARKER_OPTIONS = %i(
+          GITHUB_PRE_LANG FULL_INFO_STRING
+        ).freeze
+        COMMONMARKER_EXTENSIONS = %i(
+          table tasklist strikethrough autolink tagfilter
+        ).freeze
 
         attr_reader :github_redirection_service
 
@@ -35,61 +34,192 @@ module Dependabot
           @github_redirection_service = github_redirection_service
         end
 
-        def sanitize_links_and_mentions(text:)
-          # We don't want to sanitize any links or mentions that are contained
-          # within code blocks, so we split the text on "```" or "~~~"
-          lines = []
-          scan = StringScanner.new(text)
-          until scan.eos?
-            line = scan.scan_until(CODEBLOCK_REGEX) ||
-                   scan.scan_until(EOS_REGEX)
-            delimiter = line.match(CODEBLOCK_REGEX)&.to_s
-            unless delimiter && lines.count { |l| l.include?(delimiter) }.odd?
-              line = sanitize_mentions(line)
-              line = sanitize_links(line)
-            end
-            lines << line
-          end
-          lines.join
+        def sanitize_links_and_mentions(text:, unsafe: false, format_html: true)
+          doc = CommonMarker.render_doc(
+            text, :LIBERAL_HTML_TAG, COMMONMARKER_EXTENSIONS
+          )
+
+          sanitize_team_mentions(doc)
+          sanitize_mentions(doc)
+          sanitize_links(doc)
+          sanitize_nwo_text(doc)
+
+          mode = unsafe ? :UNSAFE : :DEFAULT
+          return doc.to_commonmark([mode] + COMMONMARKER_OPTIONS) unless format_html
+
+          doc.to_html(([mode] + COMMONMARKER_OPTIONS), COMMONMARKER_EXTENSIONS)
         end
 
         private
 
-        def sanitize_mentions(text)
-          text.gsub(%r{(?<![A-Za-z0-9`~])@#{GITHUB_USERNAME}/?}) do |mention|
-            next mention if mention.end_with?("/")
+        def sanitize_mentions(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(MENTION_REGEX)
+              nodes = if parent_node_link?(node)
+                        build_mention_link_text_nodes(node.string_content)
+                      else
+                        build_mention_nodes(node.string_content)
+                      end
 
-            last_match = Regexp.last_match
+              nodes.each do |n|
+                node.insert_before(n)
+              end
 
-            sanitized_mention = mention.gsub("@", "@&#8203;")
-            if last_match.pre_match.chars.last == "[" &&
-               last_match.post_match.chars.first == "]"
-              sanitized_mention
-            else
-              "[#{sanitized_mention}]"\
-              "(https://github.com/#{mention.tr('@', '')})"
+              node.delete
             end
           end
         end
 
-        def sanitize_links(text)
-          text.gsub(GITHUB_REF_REGEX) do |ref|
-            last_match = Regexp.last_match
-            previous_char = last_match.pre_match.chars.last
-            next_char = last_match.post_match.chars.first
+        # When we come across something that looks like a team mention (e.g. @dependabot/reviewers),
+        # we replace it with a text node.
+        # This is because there are ecosystems that have packages that follow the same pattern
+        # (e.g. @angular/angular-cli), and we don't want to create an invalid link, since
+        # team mentions link to `https://github.com/org/:organization_name/teams/:team_name`.
+        def sanitize_team_mentions(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(TEAM_MENTION_REGEX)
 
-            sanitized_url =
-              ref.gsub("github.com", github_redirection_service || "github.com")
-            if (previous_char.nil? || previous_char.match?(/\s/)) &&
-               (next_char.nil? || next_char.match?(/\s/))
-              number = last_match.named_captures.fetch("number")
-              repo = last_match.named_captures.fetch("repo")
-              "[#{repo}##{number}]"\
-              "(#{sanitized_url})"
-            else
-              sanitized_url
+              nodes = build_team_mention_nodes(node.string_content)
+
+              nodes.each do |n|
+                node.insert_before(n)
+              end
+              node.delete
             end
           end
+        end
+
+        def sanitize_links(doc)
+          doc.walk do |node|
+            if node.type == :link && node.url.match?(GITHUB_REF_REGEX)
+              node.each do |subnode|
+                unless subnode.type == :text &&
+                       subnode.string_content.match?(GITHUB_REF_REGEX)
+                  next
+                end
+
+                last_match = subnode.string_content.match(GITHUB_REF_REGEX)
+                number = last_match.named_captures.fetch("number")
+                repo = last_match.named_captures.fetch("repo")
+                subnode.string_content = "#{repo}##{number}"
+              end
+
+              node.url = replace_github_host(node.url)
+            elsif node.type == :text &&
+                  node.string_content.match?(GITHUB_REF_REGEX)
+              node.string_content = replace_github_host(node.string_content)
+            end
+          end
+        end
+
+        def sanitize_nwo_text(doc)
+          doc.walk do |node|
+            if node.type == :text &&
+               node.string_content.match?(GITHUB_NWO_REGEX) &&
+               !parent_node_link?(node)
+              replace_nwo_node(node)
+            end
+          end
+        end
+
+        def replace_nwo_node(node)
+          match = node.string_content.match(GITHUB_NWO_REGEX)
+          repo = match.named_captures.fetch("repo")
+          number = match.named_captures.fetch("number")
+          new_node = build_nwo_text_node("#{repo}##{number}")
+          node.insert_before(new_node)
+          node.delete
+        end
+
+        def replace_github_host(text)
+          text.gsub(
+            /(www\.)?github.com/, github_redirection_service || "github.com"
+          )
+        end
+
+        def build_mention_nodes(text)
+          nodes = []
+          scan = StringScanner.new(text)
+
+          until scan.eos?
+            line = scan.scan_until(MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention && !mention.end_with?("/")
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes << create_link_node(
+                "https://github.com/#{mention.tr('@', '')}", mention.to_s
+              )
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def build_team_mention_nodes(text)
+          nodes = []
+
+          scan = StringScanner.new(text)
+          until scan.eos?
+            line = scan.scan_until(TEAM_MENTION_REGEX) ||
+                   scan.scan_until(EOS_REGEX)
+            line_match = line.match(TEAM_MENTION_REGEX)
+            mention = line_match&.to_s
+            text_node = CommonMarker::Node.new(:text)
+
+            if mention
+              text_node.string_content = line_match.pre_match
+              nodes << text_node
+              nodes += build_mention_link_text_nodes(mention.to_s)
+            else
+              text_node.string_content = line
+              nodes << text_node
+            end
+          end
+
+          nodes
+        end
+
+        def build_mention_link_text_nodes(text)
+          code_node = CommonMarker::Node.new(:code)
+          code_node.string_content = insert_zero_width_space_in_mention(text)
+          [code_node]
+        end
+
+        def build_nwo_text_node(text)
+          code_node = CommonMarker::Node.new(:code)
+          code_node.string_content = text
+          code_node
+        end
+
+        def create_link_node(url, text)
+          link_node = CommonMarker::Node.new(:link)
+          code_node = CommonMarker::Node.new(:code)
+          link_node.url = url
+          code_node.string_content = insert_zero_width_space_in_mention(text)
+          link_node.append_child(code_node)
+          link_node
+        end
+
+        # NOTE: Add a zero-width space between the @ and the username to prevent
+        # email replies on dependabot pull requests triggering notifications to
+        # users who've been mentioned in changelogs etc. PR email replies parse
+        # the content of the pull request body in plain text.
+        def insert_zero_width_space_in_mention(mention)
+          mention.sub("@", "@\u200B").encode("utf-8")
+        end
+
+        def parent_node_link?(node)
+          node.type == :link || (node.parent && parent_node_link?(node.parent))
         end
       end
     end

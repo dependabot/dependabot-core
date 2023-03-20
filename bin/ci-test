@@ -1,0 +1,66 @@
+#!/bin/bash -e
+#/ usage: ci-test SUITE_NAME
+#/ simulate the process followed by ~/.github/workflows/ci.yml
+
+function print_usage() {
+  grep ^#/ "$0" | cut -c4-
+}
+
+function handle_args() {
+  export SUITE_NAME=$1
+  case $SUITE_NAME in
+    bundler1 | bundler2)
+      export MODULE=bundler
+      ;;
+    "")
+      print_usage
+      exit 1
+      ;;
+    *)
+      export MODULE=$SUITE_NAME
+  esac
+
+  if ! [ -d "$MODULE" ]; then
+    print_usage
+    echo "module not found, try:"
+    for m in */*.gemspec; do
+      [[ "$m" == "omnibus" ]] && continue
+      echo -n "  "; dirname "$m"
+    done
+    exit 1
+  fi
+}
+
+function build() {
+  export DOCKER_BUILDKIT=1
+  export DOCKER_SCAN_SUGGEST=false
+  export CORE=dependabot/dependabot-core
+  export UPDATER=dependabot/dependabot-updater
+
+  set -x
+  docker build \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from ghcr.io/dependabot/dependabot-updater-core \
+    -f Dockerfile.updater-core \
+    -t "ghcr.io/dependabot/dependabot-updater-core" .
+  docker build \
+    --build-arg OMNIBUS_VERSION=latest \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    -f "$MODULE/Dockerfile" \
+    -t $UPDATER .
+  docker run --rm \
+    -e "CI=true" \
+    -e SUITE_NAME \
+    -e "DEPENDABOT_TEST_ACCESS_TOKEN=${LOCAL_GITHUB_ACCESS_TOKEN}" \
+    -e "RAISE_ON_WARNINGS=true" \
+    -it $UPDATER \
+    bash -c \
+    "cd /home/dependabot/$MODULE && ./script/ci-test"
+}
+
+function main() {
+  handle_args "$@"
+  build
+}
+
+main "$@"

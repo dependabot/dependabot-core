@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 require "dependabot/clients/azure"
+require "dependabot/clients/bitbucket"
 require "dependabot/clients/codecommit"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/pull_request_creator"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
     class PrNamePrefixer
@@ -44,15 +43,12 @@ module Dependabot
       end
 
       def capitalize_first_word?
-        if commit_message_options.key?(:prefix)
-          return !commit_message_options[:prefix]&.strip&.match?(/\A[a-z]/)
-        end
-
-        if last_dependabot_commit_style
-          return capitalise_first_word_from_last_dependabot_commit_style
-        end
+        return capitalise_first_word_from_last_dependabot_commit_style if last_dependabot_commit_style
 
         capitalise_first_word_from_previous_commits
+      rescue StandardError
+        # ignoring failure due to network call to find out if the PR should be capitalized
+        false
       end
 
       private
@@ -65,15 +61,11 @@ module Dependabot
 
       def commit_prefix
         # If a preferred prefix has been explicitly provided, use it
-        if commit_message_options.key?(:prefix)
-          return prefix_from_explicitly_provided_details
-        end
+        return prefix_from_explicitly_provided_details if commit_message_options.key?(:prefix)
 
         # Otherwise, if there is a previous Dependabot commit and it used a
         # known style, use that as our model for subsequent commits
-        if last_dependabot_commit_style
-          return prefix_for_last_dependabot_commit_style
-        end
+        return prefix_for_last_dependabot_commit_style if last_dependabot_commit_style
 
         # Otherwise we need to detect the user's preferred style from the
         # existing commits on their repo
@@ -91,9 +83,7 @@ module Dependabot
       end
 
       def explicitly_provided_prefix_string
-        unless commit_message_options.key?(:prefix)
-          raise "No explicitly provided prefix!"
-        end
+        raise "No explicitly provided prefix!" unless commit_message_options.key?(:prefix)
 
         if dependencies.any?(&:production?)
           commit_message_options[:prefix].to_s
@@ -174,6 +164,7 @@ module Dependabot
         last_dependabot_commit_message&.split(/[:(]/)&.first
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def using_angular_commit_messages?
         return false if recent_commit_messages.none?
 
@@ -182,9 +173,7 @@ module Dependabot
         end
 
         # Definitely not using Angular commits if < 30% match angular commits
-        if angular_messages.count.to_f / recent_commit_messages.count < 0.3
-          return false
-        end
+        return false if angular_messages.count.to_f / recent_commit_messages.count < 0.3
 
         eslint_only_pres = ESLINT_PREFIXES.map(&:downcase) - ANGULAR_PREFIXES
         angular_only_pres = ANGULAR_PREFIXES - ESLINT_PREFIXES.map(&:downcase)
@@ -204,6 +193,7 @@ module Dependabot
 
         true
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def using_eslint_commit_messages?
         return false if recent_commit_messages.none?
@@ -244,9 +234,7 @@ module Dependabot
             "build"
           end
 
-        if capitalize_angular_commit_prefix?
-          commit_prefix = commit_prefix.capitalize
-        end
+        commit_prefix = commit_prefix.capitalize if capitalize_angular_commit_prefix?
 
         commit_prefix
       end
@@ -256,9 +244,7 @@ module Dependabot
           ANGULAR_PREFIXES.any? { |pre| message.match?(/#{pre}[:(]/i) }
         end
 
-        if semantic_messages.none?
-          return last_dependabot_commit_message&.start_with?(/[A-Z]/)
-        end
+        return last_dependabot_commit_message&.start_with?(/[A-Z]/) if semantic_messages.none?
 
         capitalized_msgs = semantic_messages.
                            select { |m| m.start_with?(/[A-Z]/) }
@@ -280,6 +266,7 @@ module Dependabot
         when "github" then recent_github_commit_messages
         when "gitlab" then recent_gitlab_commit_messages
         when "azure" then recent_azure_commit_messages
+        when "bitbucket" then recent_bitbucket_commit_messages
         when "codecommit" then recent_codecommit_commit_messages
         else raise "Unsupported provider: #{source.provider}"
         end
@@ -294,8 +281,7 @@ module Dependabot
           reject { |c| c.author&.type == "Bot" }.
           reject { |c| c.commit&.message&.start_with?("Merge") }.
           map(&:commit).
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 
@@ -306,8 +292,7 @@ module Dependabot
         @recent_gitlab_commit_messages.
           reject { |c| c.author_email == dependabot_email }.
           reject { |c| c.message&.start_with?("merge !") }.
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 
@@ -316,10 +301,20 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          reject { |c| c.fetch("author").fetch("email") == dependabot_email }.
+          reject { |c| azure_commit_author_email(c) == dependabot_email }.
           reject { |c| c.fetch("comment")&.start_with?("Merge") }.
-          map { |c| c.fetch("comment") }.
-          compact.
+          filter_map { |c| c.fetch("comment") }.
+          map(&:strip)
+      end
+
+      def recent_bitbucket_commit_messages
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits(source.repo)
+
+        @recent_bitbucket_commit_messages.
+          reject { |c| bitbucket_commit_author_email(c) == dependabot_email }.
+          filter_map { |c| c.fetch("message", nil) }.
+          reject { |m| m.start_with?("Merge") }.
           map(&:strip)
       end
 
@@ -329,8 +324,7 @@ module Dependabot
         @recent_codecommit_commit_messages.commits.
           reject { |c| c.author.email == dependabot_email }.
           reject { |c| c.message&.start_with?("Merge") }.
-          map(&:message).
-          compact.
+          filter_map(&:message).
           map(&:strip)
       end
 
@@ -340,6 +334,7 @@ module Dependabot
           when "github" then last_github_dependabot_commit_message
           when "gitlab" then last_gitlab_dependabot_commit_message
           when "azure" then last_azure_dependabot_commit_message
+          when "bitbucket" then last_bitbucket_dependabot_commit_message
           when "codecommit" then last_codecommit_dependabot_commit_message
           else raise "Unsupported provider: #{source.provider}"
           end
@@ -357,7 +352,7 @@ module Dependabot
       def recent_github_commits
         @recent_github_commits ||=
           github_client_for_source.commits(source.repo, per_page: 100)
-      rescue Octokit::Conflict
+      rescue Octokit::Conflict, Octokit::NotFound
         @recent_github_commits ||= []
       end
 
@@ -376,8 +371,18 @@ module Dependabot
           azure_client_for_source.commits
 
         @recent_azure_commit_messages.
-          find { |c| c.fetch("author").fetch("email") == dependabot_email }&.
+          find { |c| azure_commit_author_email(c) == dependabot_email }&.
           message&.
+          strip
+      end
+
+      def last_bitbucket_dependabot_commit_message
+        @recent_bitbucket_commit_messages ||=
+          bitbucket_client_for_source.commits(source.repo)
+
+        @recent_bitbucket_commit_messages.
+          find { |c| bitbucket_commit_author_email(c) == dependabot_email }&.
+          fetch("message", nil)&.
           strip
       end
 
@@ -389,6 +394,15 @@ module Dependabot
           find { |c| c.author.email == dependabot_email }&.
           message&.
           strip
+      end
+
+      def azure_commit_author_email(commit)
+        commit.fetch("author").fetch("email", "")
+      end
+
+      def bitbucket_commit_author_email(commit)
+        matches = commit.fetch("author").fetch("raw").match(/<(.*)>/)
+        matches ? matches[1] : ""
       end
 
       def github_client_for_source
@@ -415,6 +429,14 @@ module Dependabot
           )
       end
 
+      def bitbucket_client_for_source
+        @bitbucket_client_for_source ||=
+          Dependabot::Clients::Bitbucket.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
       def codecommit_client_for_source
         @codecommit_client_for_source ||=
           Dependabot::Clients::CodeCommit.for_source(
@@ -429,4 +451,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

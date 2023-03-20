@@ -5,7 +5,7 @@ require "dependabot/dependency"
 
 RSpec.describe Dependabot::Dependency do
   describe ".new" do
-    subject(:dependency) { described_class.new(args) }
+    subject(:dependency) { described_class.new(**args) }
 
     let(:args) do
       {
@@ -90,22 +90,22 @@ RSpec.describe Dependabot::Dependency do
     end
 
     context "when two dependencies are equal" do
-      let(:dependency1) { described_class.new(args) }
-      let(:dependency2) { described_class.new(args) }
+      let(:dependency1) { described_class.new(**args) }
+      let(:dependency2) { described_class.new(**args) }
 
       specify { expect(dependency1).to eq(dependency2) }
     end
 
     context "when two dependencies are not equal" do
-      let(:dependency1) { described_class.new(args) }
-      let(:dependency2) { described_class.new(args.merge(name: "dep2")) }
+      let(:dependency1) { described_class.new(**args) }
+      let(:dependency2) { described_class.new(**args.merge(name: "dep2")) }
 
       specify { expect(dependency1).to_not eq(dependency2) }
     end
   end
 
   describe "#production?" do
-    subject(:production?) { described_class.new(dependency_args).production? }
+    subject(:production?) { described_class.new(**dependency_args).production? }
 
     let(:dependency_args) do
       {
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Dependency do
   end
 
   describe "#display_name" do
-    subject(:display_name) { described_class.new(dependency_args).display_name }
+    subject(:display_name) { described_class.new(**dependency_args).display_name }
 
     let(:dependency_args) do
       {
@@ -155,7 +155,7 @@ RSpec.describe Dependabot::Dependency do
   end
 
   describe "#to_h" do
-    subject(:to_h) { described_class.new(dependency_args).to_h }
+    subject(:to_h) { described_class.new(**dependency_args).to_h }
 
     context "with requirements" do
       let(:dependency_args) do
@@ -217,11 +217,32 @@ RSpec.describe Dependabot::Dependency do
         is_expected.to eq(expected)
       end
     end
+
+    context "when removed" do
+      let(:dependency_args) do
+        {
+          name: "dep",
+          requirements: [],
+          package_manager: "dummy",
+          removed: true
+        }
+      end
+
+      it do
+        expected = {
+          "name" => "dep",
+          "package_manager" => "dummy",
+          "requirements" => [],
+          "removed" => true
+        }
+        is_expected.to eq(expected)
+      end
+    end
   end
 
   describe "#subdependency_metadata" do
     subject(:subdependency_metadata) do
-      described_class.new(dependency_args).subdependency_metadata
+      described_class.new(**dependency_args).subdependency_metadata
     end
 
     let(:dependency_args) do
@@ -247,6 +268,106 @@ RSpec.describe Dependabot::Dependency do
       end
 
       it { is_expected.to eq(nil) }
+    end
+  end
+
+  describe "#metadata" do
+    it "stores metadata given to initialize" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      expect(dependency.metadata).to eq(foo: 42)
+    end
+
+    it "is mutable" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+
+      dependency.metadata[:all_versions] = []
+      expect(dependency.metadata).to eq(foo: 42, all_versions: [])
+    end
+
+    it "is not serialized" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      expect(dependency.to_h.keys).not_to include("metadata")
+    end
+
+    it "isn't utilized by the equality operator" do
+      dependency1 = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 42 }
+      )
+      dependency2 = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        metadata: { foo: 43 }
+      )
+      expect(dependency1).to eq(dependency2)
+    end
+  end
+
+  describe "#all_versions" do
+    it "returns an empty array by default" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy"
+      )
+
+      expect(dependency.all_versions).to eq([])
+    end
+
+    it "returns the dependency version if all_version metadata isn't present" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        version: "1.0.0"
+      )
+
+      expect(dependency.all_versions).to eq(["1.0.0"])
+    end
+
+    it "returns all_version metadata if present" do
+      dependency = described_class.new(
+        name: "dep",
+        requirements: [],
+        package_manager: "dummy",
+        version: "1.0.0",
+        metadata: {
+          all_versions: [
+            described_class.new(
+              name: "dep",
+              requirements: [],
+              package_manager: "dummy",
+              version: "1.0.0"
+            ),
+            described_class.new(
+              name: "dep",
+              requirements: [],
+              package_manager: "dummy",
+              version: "2.0.0"
+            )
+          ]
+        }
+      )
+
+      expect(dependency.all_versions).to eq(["1.0.0", "2.0.0"])
     end
   end
 end

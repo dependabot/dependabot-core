@@ -41,6 +41,12 @@ RSpec.describe Dependabot::Hex::MetadataFinder do
 
     before do
       stub_request(:get, hex_url).to_return(status: 200, body: hex_response)
+
+      stub_request(:get, "https://example.com/status").to_return(
+        status: 200,
+        body: "Not GHES",
+        headers: {}
+      )
     end
 
     context "when there is a github link in the hex.pm response" do

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="FakeItEasy" Version="4.7.1" />
+  </ItemGroup>
+</Project>

@@ -40,6 +40,11 @@ RSpec.describe Dependabot::Composer::Requirement do
       it { is_expected.to eq(described_class.new(">= 1.0.0", "< 2.0.0")) }
     end
 
+    context "with a caret version and dev postfix" do
+      let(:requirement_string) { "^7.x-dev" }
+      it { is_expected.to eq(described_class.new(">= 7.0", "< 8.0")) }
+    end
+
     context "with a ~ version specified" do
       let(:requirement_string) { "~1.5.1" }
       it { is_expected.to eq(described_class.new("~> 1.5.1")) }

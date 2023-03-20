@@ -9,8 +9,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class RequirementsUpdater
-        PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
-        PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/.freeze
+        PYPROJECT_OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/
+        PYPROJECT_SEPARATOR = /#{PYPROJECT_OR_SEPARATOR}|,/
 
         class UnfixableRequirement < StandardError; end
 
@@ -32,7 +32,7 @@ module Dependabot
         def updated_requirements
           requirements.map do |req|
             case req[:file]
-            when "setup.py" then updated_setup_requirement(req)
+            when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)
             when "pyproject.toml" then updated_pyproject_requirement(req)
             when "Pipfile" then updated_pipfile_requirement(req)
             when /\.txt$|\.in$/ then updated_requirement(req)
@@ -73,34 +73,33 @@ module Dependabot
           updated_requirement(req)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/PerceivedComplexity
         def updated_pyproject_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
           return req if new_version_satisfies?(req) && !has_lockfile
 
           # If the requirement uses || syntax then we always want to widen it
-          if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
-            return widen_pyproject_requirement(req)
-          end
+          return widen_pyproject_requirement(req) if req.fetch(:requirement).match?(PYPROJECT_OR_SEPARATOR)
 
           # If the requirement is a development dependency we always want to
           # bump it
-          if req.fetch(:groups).include?("dev-dependencies")
-            return update_pyproject_version(req)
-          end
+          return update_pyproject_version(req) if req.fetch(:groups).include?("dev-dependencies")
 
           case update_strategy
           when :widen_ranges then widen_pyproject_requirement(req)
           when :bump_versions then update_pyproject_version(req)
+          when :bump_versions_if_necessary then update_pyproject_version_if_needed(req)
           else raise "Unexpected update strategy: #{update_strategy}"
           end
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        def update_pyproject_version_if_needed(req)
+          return req if new_version_satisfies?(req)
+
+          update_pyproject_version(req)
+        end
 
         def update_pyproject_version(req)
           requirement_strings = req[:requirement].split(",").map(&:strip)
@@ -161,6 +160,7 @@ module Dependabot
           "#{req_string.strip} || #{new_option.strip}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def widen_requirement_range(req_string)
           requirement_strings = req_string.split(",").map(&:strip)
 
@@ -180,12 +180,31 @@ module Dependabot
             update_requirements_range(requirement_strings)
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
-        # rubocop:disable Metrics/PerceivedComplexity
         def updated_requirement(req)
           return req unless latest_resolvable_version
           return req unless req.fetch(:requirement)
 
+          case update_strategy
+          when :widen_ranges
+            widen_requirement(req)
+          when :bump_versions
+            update_requirement(req)
+          when :bump_versions_if_necessary
+            update_requirement_if_needed(req)
+          else
+            raise "Unexpected update strategy: #{update_strategy}"
+          end
+        end
+
+        def update_requirement_if_needed(req)
+          return req if new_version_satisfies?(req)
+
+          update_requirement(req)
+        end
+
+        def update_requirement(req)
           requirement_strings = req[:requirement].split(",").map(&:strip)
 
           new_requirement =
@@ -203,7 +222,14 @@ module Dependabot
         rescue UnfixableRequirement
           req.merge(requirement: :unfixable)
         end
-        # rubocop:enable Metrics/PerceivedComplexity
+
+        def widen_requirement(req)
+          return req if new_version_satisfies?(req)
+
+          new_requirement = widen_requirement_range(req[:requirement])
+
+          req.merge(requirement: new_requirement)
+        end
 
         def new_version_satisfies?(req)
           requirement_class.
@@ -249,8 +275,10 @@ module Dependabot
             next r.to_s if r.satisfied_by?(latest_resolvable_version)
 
             case op = r.requirements.first.first
-            when "<", "<="
-              "<" + update_greatest_version(r.to_s, latest_resolvable_version)
+            when "<"
+              "<" + update_greatest_version(r.requirements.first.last, latest_resolvable_version)
+            when "<="
+              "<=" + latest_resolvable_version.to_s
             when "!=", ">", ">="
               raise UnfixableRequirement
             else
@@ -266,7 +294,7 @@ module Dependabot
         # Updates the version in a constraint to be the given version
         def bump_version(req_string, version_to_be_permitted)
           old_version = req_string.
-                        match(/(#{RequirementParser::VERSION})/).
+                        match(/(#{RequirementParser::VERSION})/o).
                         captures.first
 
           req_string.sub(
@@ -317,18 +345,17 @@ module Dependabot
             version.segments.count - 2
           elsif req_string.strip.start_with?("~")
             req_string.split(".").count == 1 ? 0 : 1
-          else raise "Don't know how to convert #{req_string} to range"
+          else
+            raise "Don't know how to convert #{req_string} to range"
           end
         end
 
-        # Updates the version in a "<" or "<=" constraint to allow the given
-        # version
-        def update_greatest_version(req_string, version_to_be_permitted)
+        # Updates the version in a "<" constraint to allow the given version
+        def update_greatest_version(version, version_to_be_permitted)
           if version_to_be_permitted.is_a?(String)
             version_to_be_permitted =
               Python::Version.new(version_to_be_permitted)
           end
-          version = Python::Version.new(req_string.gsub(/<=?/, ""))
           version = version.release if version.prerelease?
 
           index_to_update = [
@@ -341,7 +368,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end
 

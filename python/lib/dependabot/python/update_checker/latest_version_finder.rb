@@ -6,7 +6,8 @@ require "nokogiri"
 
 require "dependabot/dependency"
 require "dependabot/python/update_checker"
-require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
+require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
 require "dependabot/python/name_normaliser"
 
@@ -17,11 +18,13 @@ module Dependabot
         require_relative "index_finder"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -69,9 +72,11 @@ module Dependabot
           versions = filter_yanked_versions(versions)
           versions = filter_unsupported_versions(versions, python_version)
           versions = filter_prerelease_versions(versions)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+                                                                                           security_advisories)
           versions = filter_ignored_versions(versions)
-          versions = filter_vulnerable_versions(versions)
           versions = filter_lower_versions(versions)
+
           versions.min
         end
 
@@ -80,14 +85,14 @@ module Dependabot
         end
 
         def filter_unsupported_versions(versions_array, python_version)
-          versions_array.map do |details|
+          versions_array.filter_map do |details|
             python_requirement = details.fetch(:python_requirement)
             next details.fetch(:version) unless python_version
             next details.fetch(:version) unless python_requirement
             next unless python_requirement.satisfied_by?(python_version)
 
             details.fetch(:version)
-          end.compact
+          end
         end
 
         def filter_prerelease_versions(versions_array)
@@ -97,24 +102,25 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-        end
+          filtered = versions_array.
+                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
+            raise Dependabot::AllVersionsIgnored
+          end
 
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
+          filtered
         end
 
         def filter_lower_versions(versions_array)
-          versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+          return versions_array unless dependency.numeric_version
+
+          versions_array.select { |version| version > dependency.numeric_version }
         end
 
         def filter_out_of_range_versions(versions_array)
-          reqs = dependency.requirements.map do |r|
+          reqs = dependency.requirements.filter_map do |r|
             requirement_class.requirements_array(r.fetch(:requirement))
-          end.compact
+          end
 
           versions_array.
             select { |v| reqs.all? { |r| r.any? { |o| o.satisfied_by?(v) } } }
@@ -138,11 +144,14 @@ module Dependabot
           @available_versions ||=
             index_urls.flat_map do |index_url|
               sanitized_url = index_url.gsub(%r{(?<=//).*(?=@)}, "redacted")
-              index_response = registry_response_for_dependency(index_url)
 
-              if [401, 403].include?(index_response.status) &&
-                 [401, 403].include?(registry_index_response(index_url).status)
-                raise PrivateSourceAuthenticationFailure, sanitized_url
+              index_response = registry_response_for_dependency(index_url)
+              if index_response.status == 401 || index_response.status == 403
+                registry_index_response = registry_index_response(index_url)
+
+                if registry_index_response.status == 401 || registry_index_response.status == 403
+                  raise PrivateSourceAuthenticationFailure, sanitized_url
+                end
               end
 
               version_links = []
@@ -156,9 +165,12 @@ module Dependabot
               raise if MAIN_PYPI_INDEXES.include?(index_url)
 
               raise PrivateSourceTimedOut, sanitized_url
+            rescue URI::InvalidURIError
+              raise DependencyFileNotResolvable, "Invalid URL: #{sanitized_url}"
             end
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def version_details_from_link(link)
           doc = Nokogiri::XML(link)
           filename = doc.at_css("a")&.content
@@ -174,6 +186,7 @@ module Dependabot
             yanked: link&.include?("data-yanked")
           }
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def get_version_from_filename(filename)
           filename.
@@ -204,25 +217,21 @@ module Dependabot
         end
 
         def registry_response_for_dependency(index_url)
-          Excon.get(
-            index_url + normalised_name + "/",
-            idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: index_url + normalised_name + "/",
+            headers: { "Accept" => "text/html" }
           )
         end
 
         def registry_index_response(index_url)
-          Excon.get(
-            index_url,
-            idempotent: true,
-            headers: { "Accept" => "text/html" },
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: index_url,
+            headers: { "Accept" => "text/html" }
           )
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+        def ignore_requirements
+          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
         def normalised_name
@@ -230,7 +239,7 @@ module Dependabot
         end
 
         def name_regex
-          parts = dependency.name.split(/[\s_.-]/).map { |n| Regexp.quote(n) }
+          parts = normalised_name.split(/[\s_.-]/).map { |n| Regexp.quote(n) }
           /#{parts.join("[\s_.-]")}/i
         end
 

@@ -5,14 +5,15 @@ require "toml-rb"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/python/requirement_parser"
+require "dependabot/python/file_parser/pyproject_files_parser"
 require "dependabot/errors"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Python
     class FileFetcher < Dependabot::FileFetchers::Base
-      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/.freeze
-      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/.freeze
+      CHILD_REQUIREMENT_REGEX = /^-r\s?(?<path>.*\.(?:txt|in))/
+      CONSTRAINT_REGEX = /^-c\s?(?<path>.*\.(?:txt|in))/
+      DEPENDENCY_TYPES = %w(packages dev-packages)
 
       def self.required_files_in?(filenames)
         return true if filenames.any? { |name| name.end_with?(".txt", ".in") }
@@ -23,15 +24,17 @@ module Dependabot
         # If this repo is using a Pipfile return true
         return true if filenames.include?("Pipfile")
 
-        # If this repo is using Poetry return true
+        # If this repo is using pyproject.toml return true
         return true if filenames.include?("pyproject.toml")
 
-        filenames.include?("setup.py")
+        return true if filenames.include?("setup.py")
+
+        filenames.include?("setup.cfg")
       end
 
       def self.required_files_message
-        "Repo must contain a requirements.txt, setup.py, pyproject.toml, "\
-        "or a Pipfile."
+        "Repo must contain a requirements.txt, setup.py, setup.cfg, pyproject.toml, " \
+          "or a Pipfile."
       end
 
       private
@@ -46,7 +49,7 @@ module Dependabot
         fetched_files += requirement_files if requirements_txt_files.any?
 
         fetched_files << setup_file if setup_file
-        fetched_files << setup_cfg if setup_cfg
+        fetched_files << setup_cfg_file if setup_cfg_file
         fetched_files += path_setup_files
         fetched_files << pip_conf if pip_conf
         fetched_files << python_version if python_version
@@ -66,7 +69,7 @@ module Dependabot
       end
 
       def pyproject_files
-        [pyproject, pyproject_lock, poetry_lock].compact
+        [pyproject, pyproject_lock, poetry_lock, pdm_lock].compact
       end
 
       def requirement_files
@@ -78,9 +81,12 @@ module Dependabot
       end
 
       def check_required_files_present
-        if requirements_txt_files.any? || setup_file || pipfile || pyproject
-          return
-        end
+        return if requirements_txt_files.any? ||
+                  requirements_in_files.any? ||
+                  setup_file ||
+                  setup_cfg_file ||
+                  pipfile ||
+                  pyproject
 
         path = Pathname.new(File.join(directory, "requirements.txt")).
                cleanpath.to_path
@@ -91,8 +97,8 @@ module Dependabot
         @setup_file ||= fetch_file_if_present("setup.py")
       end
 
-      def setup_cfg
-        @setup_cfg ||= fetch_file_if_present("setup.cfg")
+      def setup_cfg_file
+        @setup_cfg_file ||= fetch_file_if_present("setup.cfg")
       end
 
       def pip_conf
@@ -135,6 +141,10 @@ module Dependabot
         @poetry_lock ||= fetch_file_if_present("poetry.lock")
       end
 
+      def pdm_lock
+        @pdm_lock ||= fetch_file_if_present("pdm.lock")
+      end
+
       def requirements_txt_files
         req_txt_and_in_files.select { |f| f.name.end_with?(".txt") }
       end
@@ -168,7 +178,7 @@ module Dependabot
         repo_contents.
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 500_000 }.
           map { |f| fetch_file_from_host(f.name) }.
           select { |f| requirements_file?(f) }.
           each { |f| @req_txt_and_in_files << f }
@@ -188,7 +198,7 @@ module Dependabot
         repo_contents(dir: relative_reqs_dir).
           select { |f| f.type == "file" }.
           select { |f| f.name.end_with?(".txt", ".in") }.
-          reject { |f| f.size > 100_000 }.
+          reject { |f| f.size > 500_000 }.
           map { |f| fetch_file_from_host("#{relative_reqs_dir}/#{f.name}") }.
           select { |f| requirements_file?(f) }
       end
@@ -270,9 +280,7 @@ module Dependabot
           unfetchable_files << e.file_path.gsub(%r{^/}, "")
         end
 
-        if unfetchable_files.any?
-          raise Dependabot::PathDependenciesNotReachable, unfetchable_files
-        end
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_files if unfetchable_files.any?
 
         path_setup_files
       end
@@ -292,7 +300,10 @@ module Dependabot
               fetch_submodules: true
             ).tap { |f| f.support_file = true }
           rescue Dependabot::DependencyFileNotFound
-            raise unless allow_pyproject
+            # For projects with pyproject.toml attempt to fetch a pyproject.toml
+            # at the given path instead of a setup.py. We do not require a
+            # setup.py to be present, so if none can be found, simply return
+            return [] unless allow_pyproject
 
             fetch_file_from_host(
               path.gsub("setup.py", "pyproject.toml"),
@@ -352,14 +363,14 @@ module Dependabot
       def parse_path_setup_paths(req_file)
         uneditable_reqs =
           req_file.content.
-          scan(/^['"]?(?<path>\..*?)(?=\[|#|'|"|$)/).
+          scan(/^['"]?(?:file:)?(?<path>\..*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") }
 
         editable_reqs =
           req_file.content.
-          scan(/^(?:-e)\s+['"]?(?<path>.*?)(?=\[|#|'|"|$)/).
+          scan(/^(?:-e)\s+['"]?(?:file:)?(?<path>.*?)(?=\[|#|'|"|$)/).
           flatten.
           map(&:strip).
           reject { |p| p.include?("://") || p.include?("git@") }
@@ -371,7 +382,7 @@ module Dependabot
         return [] unless pipfile
 
         paths = []
-        %w(packages dev-packages).each do |dep_type|
+        DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pipfile[dep_type]
 
           parsed_pipfile[dep_type].each do |_, req|
@@ -388,7 +399,7 @@ module Dependabot
         return [] unless pyproject
 
         paths = []
-        %w(dependencies dev-dependencies).each do |dep_type|
+        Dependabot::Python::FileParser::PyprojectFilesParser::POETRY_DEPENDENCY_TYPES.each do |dep_type|
           next unless parsed_pyproject.dig("tool", "poetry", dep_type)
 
           parsed_pyproject.dig("tool", "poetry", dep_type).each do |_, req|
@@ -403,6 +414,5 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength
 
 Dependabot::FileFetchers.register("pip", Dependabot::Python::FileFetcher)

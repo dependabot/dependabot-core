@@ -12,10 +12,10 @@ module Dependabot
   module Python
     class FileParser
       class SetupFileParser
-        INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m.freeze
-        SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m.freeze
-        TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m.freeze
-        EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m.freeze
+        INSTALL_REQUIRES_REGEX = /install_requires\s*=\s*\[/m
+        SETUP_REQUIRES_REGEX = /setup_requires\s*=\s*\[/m
+        TESTS_REQUIRE_REGEX = /tests_require\s*=\s*\[/m
+        EXTRAS_REQUIRE_REGEX = /extras_require\s*=\s*\{/m
 
         CLOSING_BRACKET = { "[" => "]", "{" => "}" }.freeze
 
@@ -37,7 +37,7 @@ module Dependabot
 
             dependencies <<
               Dependency.new(
-                name: normalised_name(dep["name"]),
+                name: normalised_name(dep["name"], dep["extras"]),
                 version: dep["version"]&.include?("*") ? nil : dep["version"],
                 requirements: [{
                   requirement: dep["requirement"],
@@ -69,9 +69,9 @@ module Dependabot
             requirements
           end
         rescue SharedHelpers::HelperSubprocessFailed => e
-          if e.message.start_with?("InstallationError")
-            raise Dependabot::DependencyFileNotEvaluatable, e.message
-          end
+          raise Dependabot::DependencyFileNotEvaluatable, e.message if e.message.start_with?("InstallationError")
+
+          return [] unless setup_file
 
           parsed_sanitized_setup_file
         end
@@ -128,7 +128,7 @@ module Dependabot
           tests_require = get_regexed_req_array(TESTS_REQUIRE_REGEX)
           extras_require = get_regexed_req_dict(EXTRAS_REQUIRE_REGEX)
 
-          tmp = "from setuptools import setup\n\n"\
+          tmp = "from setuptools import setup\n\n" \
                 "setup(name=\"sanitized-package\",version=\"0.0.1\","
 
           tmp += "install_requires=#{install_requires}," if install_requires
@@ -164,8 +164,8 @@ module Dependabot
           0
         end
 
-        def normalised_name(name)
-          NameNormaliser.normalise(name)
+        def normalised_name(name, extras)
+          NameNormaliser.normalise_including_extras(name, extras)
         end
 
         def setup_file

@@ -1,0 +1,21 @@
+name: Release gems
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+permissions:
+  contents: read
+jobs:
+  release-gems:
+    name: Release gems to rubygems.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1
+      - run: |
+          [ -d ~/.gem ] || mkdir ~/.gem
+          echo "---" > ~/.gem/credentials
+          echo ":rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem install rake && rake gems:release

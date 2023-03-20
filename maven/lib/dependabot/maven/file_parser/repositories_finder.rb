@@ -4,7 +4,7 @@ require "nokogiri"
 
 require "dependabot/dependency_file"
 require "dependabot/maven/file_parser"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/errors"
 
 # For documentation, see:
@@ -15,52 +15,83 @@ module Dependabot
     class FileParser
       class RepositoriesFinder
         require_relative "property_value_finder"
+        require_relative "pom_fetcher"
         # In theory we should check the artifact type and either look in
         # <repositories> or <pluginRepositories>. In practice it's unlikely
         # anyone makes this distinction.
-        REPOSITORY_SELECTOR = "repositories > repository, "\
+        REPOSITORY_SELECTOR = "repositories > repository, " \
                               "pluginRepositories > pluginRepository"
 
-        # The Central Repository is included in the Super POM, which is
-        # always inherited from.
-        CENTRAL_REPO_URL = "https://repo.maven.apache.org/maven2"
-
-        def initialize(dependency_files:, evaluate_properties: true)
+        def initialize(pom_fetcher:, dependency_files: [], credentials: [], evaluate_properties: true)
+          @pom_fetcher = pom_fetcher
           @dependency_files = dependency_files
+          @credentials = credentials
 
           # We need the option not to evaluate properties so as not to have a
           # circular dependency between this class and the PropertyValueFinder
           # class
           @evaluate_properties = evaluate_properties
+          # Aggregates URLs seen in POMs to avoid short term memory loss.
+          # For instance a repository in a child POM might apply to the parent too.
+          @known_urls = []
+        end
+
+        def central_repo_url
+          base = @credentials.find { |cred| cred["type"] == "maven_repository" && cred["replaces-base"] == true }
+          base ? base["url"] : "https://repo.maven.apache.org/maven2"
         end
 
         # Collect all repository URLs from this POM and its parents
         def repository_urls(pom:, exclude_inherited: false)
-          repo_urls_in_pom =
-            Nokogiri::XML(pom.content).
-            css(REPOSITORY_SELECTOR).
-            map { |node| node.at_css("url").content.strip.gsub(%r{/$}, "") }.
-            reject { |url| contains_property?(url) && !evaluate_properties? }.
-            select { |url| url.start_with?("http") }.
-            map { |url| evaluated_value(url, pom) }
+          entries = gather_repository_urls(pom: pom, exclude_inherited: exclude_inherited)
+          ids = Set.new
+          @known_urls += entries.map do |entry|
+            next if entry[:id] && ids.include?(entry[:id])
 
-          return repo_urls_in_pom + [CENTRAL_REPO_URL] if exclude_inherited
-
-          unless (parent = parent_pom(pom, repo_urls_in_pom))
-            return repo_urls_in_pom + [CENTRAL_REPO_URL]
+            ids.add(entry[:id]) unless entry[:id].nil?
+            entry
           end
+          @known_urls = @known_urls.uniq.compact
 
-          repo_urls_in_pom + repository_urls(pom: parent)
+          urls = urls_from_credentials + @known_urls.map { |entry| entry[:url] }
+          urls += [central_repo_url] unless @known_urls.any? { |entry| entry[:id] == super_pom[:id] }
+          urls.uniq
         end
 
         private
 
         attr_reader :dependency_files
 
+        # The Central Repository is included in the Super POM, which is
+        # always inherited from.
+        def super_pom
+          { url: central_repo_url, id: "central" }
+        end
+
+        def gather_repository_urls(pom:, exclude_inherited: false)
+          repos_in_pom =
+            Nokogiri::XML(pom.content).
+            css(REPOSITORY_SELECTOR).
+            map { |node| { url: node.at_css("url").content.strip, id: node.at_css("id").content.strip } }.
+            reject { |entry| contains_property?(entry[:url]) && !evaluate_properties? }.
+            select { |entry| entry[:url].start_with?("http") }.
+            map { |entry| { url: evaluated_value(entry[:url], pom).gsub(%r{/$}, ""), id: entry[:id] } }
+
+          return repos_in_pom if exclude_inherited
+
+          urls_in_pom = repos_in_pom.map { |repo| repo[:url] }
+          unless (parent = parent_pom(pom, urls_in_pom))
+            return repos_in_pom
+          end
+
+          repos_in_pom + gather_repository_urls(pom: parent)
+        end
+
         def evaluate_properties?
           @evaluate_properties
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def parent_pom(pom, repo_urls)
           doc = Nokogiri::XML(pom.content)
           doc.remove_namespaces!
@@ -73,70 +104,19 @@ module Dependabot
 
           name = [group_id, artifact_id].join(":")
 
-          if internal_dependency_poms[name]
-            return internal_dependency_poms[name]
-          end
+          return @pom_fetcher.internal_dependency_poms[name] if @pom_fetcher.internal_dependency_poms[name]
 
           return unless version && !version.include?(",")
 
-          fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
+          urls = urls_from_credentials + repo_urls + [central_repo_url]
+          @pom_fetcher.fetch_remote_parent_pom(group_id, artifact_id, version, urls)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
-        def internal_dependency_poms
-          return @internal_dependency_poms if @internal_dependency_poms
-
-          @internal_dependency_poms = {}
-          dependency_files.each do |pom|
-            doc = Nokogiri::XML(pom.content)
-            group_id = doc.at_css("project > groupId") ||
-                       doc.at_css("project > parent > groupId")
-            artifact_id = doc.at_css("project > artifactId")
-
-            next unless group_id && artifact_id
-
-            dependency_name = [
-              group_id.content.strip,
-              artifact_id.content.strip
-            ].join(":")
-
-            @internal_dependency_poms[dependency_name] = pom
-          end
-
-          @internal_dependency_poms
-        end
-
-        def fetch_remote_parent_pom(group_id, artifact_id, version, repo_urls)
-          (repo_urls + [CENTRAL_REPO_URL]).uniq.each do |base_url|
-            url = remote_pom_url(group_id, artifact_id, version, base_url)
-
-            @maven_responses ||= {}
-            @maven_responses[url] ||= Excon.get(
-              url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
-            next unless @maven_responses[url].status == 200
-            next unless pom?(@maven_responses[url].body)
-
-            dependency_file = DependencyFile.new(
-              name: "remote_pom.xml",
-              content: @maven_responses[url].body
-            )
-
-            return dependency_file
-          rescue Excon::Error::Socket, Excon::Error::Timeout,
-                 Excon::Error::TooManyRedirects, URI::InvalidURIError
-            nil
-          end
-
-          # If a parent POM couldn't be found, return `nil`
-          nil
-        end
-
-        def remote_pom_url(group_id, artifact_id, version, base_repo_url)
-          "#{base_repo_url}/"\
-          "#{group_id.tr('.', '/')}/#{artifact_id}/#{version}/"\
-          "#{artifact_id}-#{version}.pom"
+        def urls_from_credentials
+          @credentials.
+            select { |cred| cred["type"] == "maven_repository" }.
+            filter_map { |cred| cred["url"]&.strip&.gsub(%r{/$}, "") }
         end
 
         def contains_property?(value)
@@ -171,15 +151,11 @@ module Dependabot
         # values from parent POMs)
         def property_value_finder
           @property_value_finder ||=
-            PropertyValueFinder.new(dependency_files: dependency_files)
+            PropertyValueFinder.new(dependency_files: dependency_files, credentials: @credentials)
         end
 
         def property_regex
           Maven::FileParser::PROPERTY_REGEX
-        end
-
-        def pom?(content)
-          !Nokogiri::XML(content).at_css("project > artifactId").nil?
         end
       end
     end

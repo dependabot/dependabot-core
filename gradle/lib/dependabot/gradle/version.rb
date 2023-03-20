@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/version"
 require "dependabot/utils"
-require "rubygems_version_patch"
 
 # Java versions use dots and dashes when tokenising their versions.
 # Gem::Version converts a "-" to ".pre.", so we override the `to_s` method.
@@ -10,26 +10,27 @@ require "rubygems_version_patch"
 
 module Dependabot
   module Gradle
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       NULL_VALUES = %w(0 final ga).freeze
       PREFIXED_TOKEN_HIERARCHY = {
         "." => { qualifier: 1, number: 4 },
-        "-" => { qualifier: 2, number: 3 }
+        "-" => { qualifier: 2, number: 3 },
+        "_" => { qualifier: 2, number: 3 }
       }.freeze
       NAMED_QUALIFIERS_HIERARCHY = {
         "a" => 1, "alpha"     => 1,
         "b" => 2, "beta"      => 2,
         "m" => 3, "milestone" => 3,
         "rc" => 4, "cr" => 4, "pr" => 4,
-        "snapshot" => 5,
+        "snapshot" => 5, "dev" => 5,
         "ga" => 6, "" => 6, "final" => 6,
         "sp" => 7
       }.freeze
       VERSION_PATTERN =
-        "[0-9a-zA-Z]+"\
-        '(?>\.[0-9a-zA-Z]*)*'\
-        '([_-][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+        "[0-9a-zA-Z]+" \
+        '(?>\.[0-9a-zA-Z]*)*' \
+        '([_\-\+][0-9A-Za-z_-]*(\.[0-9A-Za-z_-]*)*)?'
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       def self.correct?(version)
         return false if version.nil?
@@ -116,11 +117,11 @@ module Dependabot
       end
 
       def trim_version(version)
-        version.split("-").map do |v|
+        version.split("-").filter_map do |v|
           parts = v.split(".")
           parts = parts[0..-2] while NULL_VALUES.include?(parts&.last)
           parts&.join(".")
-        end.compact.reject(&:empty?).join("-")
+        end.reject(&:empty?).join("-")
       end
 
       def convert_dates(version, other_version)
@@ -132,7 +133,7 @@ module Dependabot
       end
 
       def split_into_prefixed_tokens(version)
-        ".#{version}".split(/(?=[\-\.])/)
+        ".#{version}".split(/(?=[_\-\.])/)
       end
 
       def pad_for_comparison(prefixed_tokens, other_prefixed_tokens)

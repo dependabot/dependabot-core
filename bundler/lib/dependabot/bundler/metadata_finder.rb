@@ -3,6 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/registry_client"
 
 module Dependabot
   module Bundler
@@ -75,7 +76,7 @@ module Dependabot
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
@@ -105,8 +106,8 @@ module Dependabot
 
         rubygems_marshalled_gemspec_response.gsub("\x06;", "\n").
           scan(Dependabot::Source::SOURCE_REGEX) do
-            github_urls << Regexp.last_match.to_s +
-                           Regexp.last_match.post_match.split("\n").first
+            github_urls << (Regexp.last_match.to_s +
+                           Regexp.last_match.post_match.split("\n").first)
           end
 
         github_urls.find do |url|
@@ -117,28 +118,22 @@ module Dependabot
         end
       end
 
-      # Note: This response MUST NOT be unmarshalled
+      # NOTE: This response MUST NOT be unmarshalled
       # (as calling Marshal.load is unsafe)
       def rubygems_marshalled_gemspec_response
-        if defined?(@rubygems_marshalled_gemspec_response)
-          return @rubygems_marshalled_gemspec_response
-        end
+        return @rubygems_marshalled_gemspec_response if defined?(@rubygems_marshalled_gemspec_response)
 
         gemspec_uri =
-          "#{registry_url}quick/Marshal.4.8/"\
+          "#{registry_url}quick/Marshal.4.8/" \
           "#{dependency.name}-#{dependency.version}.gemspec.rz"
 
         response =
-          Excon.get(
-            gemspec_uri,
-            headers: registry_auth_headers,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: gemspec_uri,
+            headers: registry_auth_headers
           )
 
-        if response.status >= 400
-          return @rubygems_marshalled_gemspec_response = nil
-        end
+        return @rubygems_marshalled_gemspec_response = nil if response.status >= 400
 
         @rubygems_marshalled_gemspec_response =
           Zlib::Inflate.inflate(response.body)
@@ -150,11 +145,9 @@ module Dependabot
         return @rubygems_api_response if defined?(@rubygems_api_response)
 
         response =
-          Excon.get(
-            "#{registry_url}api/v1/gems/#{dependency.name}.json",
-            headers: registry_auth_headers,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: "#{registry_url}api/v1/gems/#{dependency.name}.json",
+            headers: registry_auth_headers
           )
         return @rubygems_api_response = {} if response.status >= 400
 
@@ -192,11 +185,7 @@ module Dependabot
         return response_body if source_url
 
         rubygems_response =
-          Excon.get(
-            "https://rubygems.org/api/v1/gems/#{dependency.name}.json",
-            idempotent: true,
-            **SharedHelpers.excon_defaults
-          )
+          Dependabot::RegistryClient.get(url: "https://rubygems.org/api/v1/gems/#{dependency.name}.json")
         parsed_rubygems_body = JSON.parse(rubygems_response.body)
         rubygems_digest =
           parsed_rubygems_body.values_at("version", "authors", "info").hash
@@ -207,19 +196,31 @@ module Dependabot
       end
 
       def registry_url
-        return "https://rubygems.org/" if new_source_type == "default"
+        return base_url if new_source_type == "default"
 
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
         info[:url] || info.fetch("url")
+      end
+
+      def base_url
+        return @base_url if defined?(@base_url)
+
+        credential = credentials.find do |cred|
+          cred["type"] == "rubygems_server" && cred["replaces-base"] == true
+        end
+        host = credential ? credential["host"] : "rubygems.org"
+        @base_url = "https://#{host}" + ("/" unless host.end_with?("/"))
       end
 
       def registry_auth_headers
         return {} unless new_source_type == "rubygems"
 
+        registry_host = URI(registry_url).host
+
         token =
           credentials.
           select { |cred| cred["type"] == "rubygems_server" }.
-          find { |cred| registry_url.include?(cred["host"]) }&.
+          find { |cred| registry_host == cred["host"] }&.
           fetch("token", nil)
 
         return {} unless token

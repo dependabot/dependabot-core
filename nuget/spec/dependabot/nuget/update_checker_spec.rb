@@ -28,7 +28,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     )
   end
   let(:dependency_requirements) do
-    [{ file: "my.csproj", requirement: "1.1.1", groups: [], source: nil }]
+    [{ file: "my.csproj", requirement: "1.1.1", groups: ["dependencies"], source: nil }]
   end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:dependency_version) { "1.1.1" }
@@ -51,12 +51,12 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
   let(:security_advisories) { [] }
 
   let(:nuget_versions_url) do
-    "https://api.nuget.org/v3-flatcontainer/"\
-    "microsoft.extensions.dependencymodel/index.json"
+    "https://api.nuget.org/v3-flatcontainer/" \
+      "microsoft.extensions.dependencymodel/index.json"
   end
   let(:nuget_search_url) do
-    "https://api-v2v3search-0.nuget.org/query"\
-    "?q=microsoft.extensions.dependencymodel&prerelease=true"
+    "https://azuresearch-usnc.nuget.org/query" \
+      "?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
   end
   let(:version_class) { Dependabot::Nuget::Version }
   let(:nuget_versions) do
@@ -83,7 +83,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             requirement: "$(NukeVersion)",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -113,6 +113,30 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     end
   end
 
+  describe "#lowest_security_fix_version" do
+    subject { checker.lowest_security_fix_version }
+
+    it "finds the lowest available non-vulnerable version" do
+      is_expected.to eq(version_class.new("1.1.2"))
+    end
+
+    context "with a security vulnerability" do
+      let(:security_advisories) do
+        [
+          Dependabot::SecurityAdvisory.new(
+            dependency_name: dependency_name,
+            package_manager: "nuget",
+            vulnerable_versions: ["< 1.2.0"]
+          )
+        ]
+      end
+
+      it "finds the lowest available non-vulnerable version" do
+        is_expected.to eq(version_class.new("2.0.0"))
+      end
+    end
+  end
+
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
 
@@ -126,7 +150,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -192,7 +216,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -200,8 +224,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
-        "https://api-v2v3search-0.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "https://azuresearch-usnc.nuget.org/query" \
+          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -215,8 +239,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query" \
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -233,8 +257,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where not all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query" \
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -260,8 +284,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         latest_version: "2.1.0",
         source_details: {
           source_url: nil,
-          nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                      "microsoft.extensions.dependencymodel/2.1.0/"\
+          nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                      "microsoft.extensions.dependencymodel/2.1.0/" \
                       "microsoft.extensions.dependencymodel.nuspec",
           repo_url: "https://api.nuget.org/v3/index.json"
         }
@@ -270,13 +294,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           file: "my.csproj",
           requirement: "2.1.0",
-          groups: [],
+          groups: ["dependencies"],
           source: {
             type: "nuget_repo",
             url: "https://api.nuget.org/v3/index.json",
             source_url: nil,
-            nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                        "microsoft.extensions.dependencymodel/2.1.0/"\
+            nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                        "microsoft.extensions.dependencymodel/2.1.0/" \
                         "microsoft.extensions.dependencymodel.nuspec"
           }
         }]
@@ -301,8 +325,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           latest_version: "2.0.0",
           source_details: {
             source_url: nil,
-            nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                        "microsoft.extensions.dependencymodel/2.0.0/"\
+            nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                        "microsoft.extensions.dependencymodel/2.0.0/" \
                         "microsoft.extensions.dependencymodel.nuspec",
             repo_url: "https://api.nuget.org/v3/index.json"
           }
@@ -311,13 +335,13 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             file: "my.csproj",
             requirement: "2.0.0",
-            groups: [],
+            groups: ["dependencies"],
             source: {
               type: "nuget_repo",
               url: "https://api.nuget.org/v3/index.json",
               source_url: nil,
-              nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
-                          "microsoft.extensions.dependencymodel/2.0.0/"\
+              nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
+                          "microsoft.extensions.dependencymodel/2.0.0/" \
                           "microsoft.extensions.dependencymodel.nuspec"
             }
           }]
@@ -367,18 +391,18 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             )
 
           custom_v3_nuget_versions_url =
-            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/"\
+            "https://www.myget.org/F/exceptionless/api/v3/flatcontainer/" \
             "microsoft.extensions.dependencymodel/index.json"
           stub_request(:get, custom_v3_nuget_versions_url).
             to_return(status: 404)
           custom_v3_nuget_search_url =
-            "https://www.myget.org/F/exceptionless/api/v3/"\
-            "query?q=microsoft.extensions.dependencymodel&prerelease=true"
+            "https://www.myget.org/F/exceptionless/api/v3/" \
+            "query?q=microsoft.extensions.dependencymodel&prerelease=true&semVerLevel=2.0.0"
           stub_request(:get, custom_v3_nuget_search_url).
             to_return(status: 404)
 
           custom_v2_nuget_versions_url =
-            "https://www.nuget.org/api/v2/FindPackagesById()?id="\
+            "https://www.nuget.org/api/v2/FindPackagesById()?id=" \
             "'Microsoft.Extensions.DependencyModel'"
           stub_request(:get, custom_v2_nuget_versions_url).
             to_return(
@@ -401,7 +425,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
             [{
               file: "my.csproj",
               requirement: "4.8.1",
-              groups: [],
+              groups: ["dependencies"],
               source: {
                 type: "nuget_repo",
                 url: "https://www.nuget.org/api/v2",
@@ -425,7 +449,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -440,7 +464,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
           [{
             requirement: "$(NukeVersion)",
             file: "my.csproj",
-            groups: [],
+            groups: ["dependencies"],
             source: nil,
             metadata: { property_name: "NukeVersion" }
           }]
@@ -462,7 +486,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         [{
           requirement: "0.1.434",
           file: "my.csproj",
-          groups: [],
+          groups: ["dependencies"],
           source: nil,
           metadata: { property_name: "NukeVersion" }
         }]
@@ -470,8 +494,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
       let(:dependency_name) { "Nuke.Common" }
       let(:dependency_version) { "0.1.434" }
       let(:nuget_search_url) do
-        "https://api-v2v3search-0.nuget.org/query"\
-        "?q=nuke.common&prerelease=true"
+        "https://azuresearch-usnc.nuget.org/query" \
+          "?q=nuke.common&prerelease=true&semVerLevel=2.0.0"
       end
       let(:nuget_search_results) do
         fixture("nuget_responses", "search_result_nuke_common.json")
@@ -485,8 +509,8 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
         context "where all dependencies can update to the latest version" do
           before do
             codegeneration_search_url =
-              "https://api-v2v3search-0.nuget.org/query"\
-              "?q=nuke.codegeneration&prerelease=true"
+              "https://azuresearch-usnc.nuget.org/query" \
+              "?q=nuke.codegeneration&prerelease=true&semVerLevel=2.0.0"
 
             codegeneration_search_result =
               fixture(
@@ -507,11 +531,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   requirements: [{
                     requirement: "0.9.0",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: {
                       type: "nuget_repo",
                       url: "https://api.nuget.org/v3/index.json",
-                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
                                   "nuke.common/0.9.0/nuke.common.nuspec",
                       source_url: nil
                     },
@@ -520,7 +544,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   previous_requirements: [{
                     requirement: "0.1.434",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: nil,
                     metadata: { property_name: "NukeVersion" }
                   }],
@@ -533,11 +557,11 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   requirements: [{
                     requirement: "0.9.0",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: {
                       type: "nuget_repo",
                       url: "https://api.nuget.org/v3/index.json",
-                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/"\
+                      nuspec_url: "https://api.nuget.org/v3-flatcontainer/" \
                                   "nuke.common/0.9.0/nuke.common.nuspec",
                       source_url: nil
                     },
@@ -546,7 +570,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
                   previous_requirements: [{
                     requirement: "0.1.434",
                     file: "my.csproj",
-                    groups: [],
+                    groups: ["dependencies"],
                     source: nil,
                     metadata: { property_name: "NukeVersion" }
                   }],

@@ -1,0 +1,21 @@
+GIT
+  remote: git@github.com:dependabot-fixtures/ruby-dummy-git-dependency.git
+  revision: c0e25c2eb332122873f73acb3b61fb2e261cfd8f
+  ref: v1.1.0
+  specs:
+    dummy-git-dependency (1.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  aarch64-linux
+  x86_64-darwin-19
+  x86_64-linux
+
+DEPENDENCIES
+  dummy-git-dependency!
+
+BUNDLED WITH
+   2.2.11

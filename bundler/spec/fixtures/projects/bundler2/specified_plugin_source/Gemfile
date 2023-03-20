@@ -1,0 +1,7 @@
+source 'https://rubygems.org'
+
+gem 'statesman'
+
+source 's3://my-gems', type: 'aws-s3' do
+  gem 'business'
+end

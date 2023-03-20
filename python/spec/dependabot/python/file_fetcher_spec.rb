@@ -10,6 +10,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
   describe ".required_files_in?" do
     subject { described_class.required_files_in?(filenames) }
 
+    context "with only a requirements.in" do
+      let(:filenames) { %w(requirements.in) }
+      it { is_expected.to eq(true) }
+    end
+
     context "with only a requirements.txt" do
       let(:filenames) { %w(requirements.txt) }
       it { is_expected.to eq(true) }
@@ -17,6 +22,11 @@ RSpec.describe Dependabot::Python::FileFetcher do
 
     context "with only a setup.py" do
       let(:filenames) { %w(setup.py) }
+      it { is_expected.to eq(true) }
+    end
+
+    context "with only a setup.cfg" do
+      let(:filenames) { %w(setup.cfg) }
       it { is_expected.to eq(true) }
     end
 
@@ -98,6 +108,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
           body: fixture("github", "contents_todo_txt.json"),
           headers: json_header
         )
+    end
+
+    context "with only a requirements.in" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_requirements_in.json")
+      end
+      before do
+        stub_request(:get, url + "requirements.in?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_in_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the requirements.in file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["requirements.in"])
+      end
     end
 
     context "with only a requirements.txt" do
@@ -211,6 +242,27 @@ RSpec.describe Dependabot::Python::FileFetcher do
       end
     end
 
+    context "with only a setup.cfg file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_only_setup_cfg.json")
+      end
+      before do
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_cfg_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the setup.cfg file" do
+        expect(file_fetcher_instance.files.count).to eq(1)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to eq(["setup.cfg"])
+      end
+    end
+
     context "with only a Pipfile and Pipfile.lock" do
       let(:repo_contents) do
         fixture("github", "contents_python_only_pipfile_and_lockfile.json")
@@ -317,6 +369,36 @@ RSpec.describe Dependabot::Python::FileFetcher do
           expect(file_fetcher_instance.files.map(&:name)).
             to match_array(%w(pyproject.toml path_dep/pyproject.toml))
         end
+      end
+    end
+
+    context "with a pyproject.toml and pdm.lock files" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_and_pdm_lock.json")
+      end
+
+      before do
+        stub_request(:get, url + "pyproject.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, url + "pdm.lock?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pdm_lock.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the pyproject.toml and pdm.lock files" do
+        expect(file_fetcher_instance.files.count).to eq(2)
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(pyproject.toml pdm.lock))
       end
     end
 
@@ -814,6 +896,9 @@ RSpec.describe Dependabot::Python::FileFetcher do
                 body: fixture("github", "setup_content.json"),
                 headers: { "content-type" => "application/json" }
               )
+            stub_request(:get, url + "file:./setup.py?ref=sha").
+              with(headers: { "Authorization" => "token token" }).
+              to_return(status: 404)
           end
 
           it "fetches the path dependencies" do
@@ -1008,25 +1093,44 @@ RSpec.describe Dependabot::Python::FileFetcher do
           end
         end
       end
+    end
 
-      context "that has an unfetchable path" do
-        before do
-          stub_request(:get, url + "setup.py?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
-          stub_request(:get, url + "setup.cfg?ref=sha").
-            with(headers: { "Authorization" => "token token" }).
-            to_return(status: 404)
-        end
+    context "with a pyproject.toml and a requirements.txt file that does not use setup.py" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_pyproject_and_requirements_without_setup_py.json")
+      end
+      before do
+        stub_request(:get, url + "requirements-test.txt?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "requirements_with_self_reference.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "pyproject.toml?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_python_pyproject.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.cfg?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "setup_cfg_content.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "setup.py?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(status: 404)
+      end
 
-        it "raises a PathDependenciesNotReachable error with details" do
-          expect { file_fetcher_instance.files }.
-            to raise_error(
-              Dependabot::PathDependenciesNotReachable,
-              "The following path based dependencies could not be retrieved: " \
-              "setup.py"
-            )
-        end
+      it "doesn't raise a path dependency error" do
+        expect(file_fetcher_instance.files.count).to eq(3)
+        expect(file_fetcher_instance.files.map(&:name)).to match_array(
+          ["requirements-test.txt", "pyproject.toml", "setup.cfg"]
+        )
       end
     end
 
@@ -1063,6 +1167,19 @@ RSpec.describe Dependabot::Python::FileFetcher do
           expect(file_fetcher_instance.files.first.name).
             to eq("requirements.txt")
         end
+      end
+    end
+
+    context "with a very large requirements.txt file" do
+      let(:repo_contents) do
+        fixture("github", "contents_python_large_requirements_txt.json")
+      end
+
+      it "raises a Dependabot::DependencyFileNotFound error" do
+        expect { file_fetcher_instance.files }.
+          to raise_error(Dependabot::DependencyFileNotFound) do |error|
+            expect(error.file_name).to eq("requirements.txt")
+          end
       end
     end
   end

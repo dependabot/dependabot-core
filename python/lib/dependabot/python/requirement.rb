@@ -6,7 +6,7 @@ require "dependabot/python/version"
 module Dependabot
   module Python
     class Requirement < Gem::Requirement
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|+/.freeze
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9)*])\s*\|+/
 
       # Add equality and arbitrary-equality matchers
       OPS = OPS.merge(
@@ -19,12 +19,18 @@ module Dependabot
       version_pattern = Python::Version::VERSION_PATTERN
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
+      PARENS_PATTERN = /\A\(([^)]+)\)\z/
 
       def self.parse(obj)
         return ["=", Python::Version.new(obj.to_s)] if obj.is_a?(Gem::Version)
 
-        unless (matches = PATTERN.match(obj.to_s))
+        line = obj.to_s
+        if (matches = PARENS_PATTERN.match(line))
+          line = matches[1]
+        end
+
+        unless (matches = PATTERN.match(line))
           msg = "Illformed requirement [#{obj.inspect}]"
           raise BadRequirementError, msg
         end
@@ -41,6 +47,10 @@ module Dependabot
       def self.requirements_array(requirement_string)
         return [new(nil)] if requirement_string.nil?
 
+        if (matches = PARENS_PATTERN.match(requirement_string))
+          requirement_string = matches[1]
+        end
+
         requirement_string.strip.split(OR_SEPARATOR).map do |req_string|
           new(req_string.strip)
         end
@@ -50,7 +60,10 @@ module Dependabot
         requirements = requirements.flatten.flat_map do |req_string|
           next if req_string.nil?
 
-          req_string.split(",").map do |r|
+          # Standard python doesn't support whitespace in requirements, but Poetry does.
+          req_string = req_string.gsub(/(\d +)([<=>])/, '\1,\2')
+
+          req_string.split(",").map(&:strip).map do |r|
             convert_python_constraint_to_ruby_constraint(r)
           end
         end
@@ -77,12 +90,13 @@ module Dependabot
         return nil if req_string == "*"
 
         req_string = req_string.gsub("~=", "~>")
-        req_string = req_string.gsub(/(?<=\d)[<=>].*/, "")
+        req_string = req_string.gsub(/(?<=\d)[<=>].*\Z/, "")
 
         if req_string.match?(/~[^>]/) then convert_tilde_req(req_string)
         elsif req_string.start_with?("^") then convert_caret_req(req_string)
         elsif req_string.include?(".*") then convert_wildcard(req_string)
-        else req_string
+        else
+          req_string
         end
       end
 
@@ -100,7 +114,7 @@ module Dependabot
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^/, "")
         parts = version.split(".")
-        parts = parts.fill(0, parts.length...3)
+        parts.fill(0, parts.length...3)
         first_non_zero = parts.find { |d| d != "0" }
         first_non_zero_index =
           first_non_zero ? parts.index(first_non_zero) : parts.count - 1
@@ -108,7 +122,8 @@ module Dependabot
           if i < first_non_zero_index then part
           elsif i == first_non_zero_index then (part.to_i + 1).to_s
           elsif i > first_non_zero_index && i == 2 then "0.a"
-          else 0
+          else
+            0
           end
         end.join(".")
 
@@ -116,7 +131,7 @@ module Dependabot
       end
 
       def convert_wildcard(req_string)
-        # Note: This isn't perfect. It replaces the "!= 1.0.*" case with
+        # NOTE: This isn't perfect. It replaces the "!= 1.0.*" case with
         # "!= 1.0.0". There's no way to model this correctly in Ruby :'(
         quoted_ops = OPS.keys.sort_by(&:length).reverse.
                      map { |k| Regexp.quote(k) }.join("|")

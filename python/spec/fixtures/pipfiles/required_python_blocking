@@ -1,9 +1,0 @@
-[[source]]
-url = "https://pypi.python.org/simple"
-verify_ssl = true
-
-[requires]
-python_version = "2.7"
-
-[packages]
-Django = "==1.1.14"

@@ -36,6 +36,12 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         its([:value]) { is_expected.to eq("0.0.2-RELEASE") }
       end
 
+      context "and the property name starts with 'project' but not an attribute of the project" do
+        let(:base_pom_fixture_name) { "property_name_starts_with_project_pom.xml" }
+        let(:property_name) { "project.dependency.spring-boot.version" }
+        its([:value]) { is_expected.to eq("2.2.1.RELEASE") }
+      end
+
       context "and the property is within a profile" do
         let(:base_pom_fixture_name) { "profile_property_pom.xml" }
         its([:value]) { is_expected.to eq("4.3.12.RELEASE") }
@@ -84,12 +90,12 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
       let(:callsite_pom) { base_pom }
 
       let(:struts_apps_maven_url) do
-        "https://repo.maven.apache.org/maven2/"\
-        "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/struts/struts2-apps/2.5.10/struts2-apps-2.5.10.pom"
       end
       let(:struts_parent_maven_url) do
-        "https://repo.maven.apache.org/maven2/"\
-        "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
+        "https://repo.maven.apache.org/maven2/" \
+          "org/apache/struts/struts2-parent/2.5.10/struts2-parent-2.5.10.pom"
       end
       let(:struts_apps_maven_response) do
         fixture("poms", "struts2-apps-2.5.10.pom")
@@ -129,14 +135,14 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         let(:base_pom_fixture_name) { "custom_repositories_child_pom.xml" }
 
         let(:scala_plugins_maven_url) do
-          "https://repo.maven.apache.org/maven2/"\
-          "org/scala-tools/maven-scala-plugin/2.15.2/"\
-          "maven-scala-plugin-2.15.2.pom"
+          "https://repo.maven.apache.org/maven2/" \
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
+            "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_url) do
-          "http://child-repository.jboss.org/maven2/"\
-          "org/scala-tools/maven-scala-plugin/2.15.2/"\
-          "maven-scala-plugin-2.15.2.pom"
+          "http://child-repository.jboss.org/maven2/" \
+            "org/scala-tools/maven-scala-plugin/2.15.2/" \
+            "maven-scala-plugin-2.15.2.pom"
         end
         let(:scala_plugins_jboss_response) do
           fixture("poms", "struts2-parent-2.5.10.pom")
@@ -150,6 +156,18 @@ RSpec.describe Dependabot::Maven::FileParser::PropertyValueFinder do
         end
 
         its([:value]) { is_expected.to eq("2.7") }
+      end
+    end
+
+    context "with a pom that contains invalid xml" do
+      let(:dependency_files) { project_dependency_files("invalid_version_ref") }
+      let(:property_name) { "guava.version`" }
+      let(:callsite_pom) { dependency_files.find { |f| f.name == "pom.xml" } }
+
+      it "raises a helpful error" do
+        expect { subject }.to raise_error(Dependabot::DependencyFileNotEvaluatable) do |error|
+          expect(error.message).to eq("ERROR: Invalid expression: /project/guava.version`")
+        end
       end
     end
   end

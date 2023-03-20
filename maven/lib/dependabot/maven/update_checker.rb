@@ -26,10 +26,12 @@ module Dependabot
         latest_version
       end
 
-      def lowest_resolvable_security_fix_version
-        return nil if version_comes_from_multi_dependency_property?
-
+      def lowest_security_fix_version
         lowest_security_fix_version_details&.fetch(:version)
+      end
+
+      def lowest_resolvable_security_fix_version
+        lowest_security_fix_version
       end
 
       def latest_resolvable_version_with_no_unlock
@@ -66,8 +68,7 @@ module Dependabot
             property_details(property_name: prop_name, callsite_pom: pom)&.
             fetch(:file)
 
-          declaration_pom_name == "remote_pom.xml" ||
-            declaration_pom_name&.end_with?("pom_parent.xml")
+          declaration_pom_name == "remote_pom.xml"
         end
       end
 
@@ -117,6 +118,7 @@ module Dependabot
             dependency_files: dependency_files,
             credentials: credentials,
             ignored_versions: ignored_versions,
+            raise_on_ignored: raise_on_ignored,
             security_advisories: security_advisories
           )
       end
@@ -135,7 +137,7 @@ module Dependabot
       def property_value_finder
         @property_value_finder ||=
           Maven::FileParser::PropertyValueFinder.
-          new(dependency_files: dependency_files)
+          new(dependency_files: dependency_files, credentials: credentials)
       end
 
       def version_comes_from_multi_dependency_property?

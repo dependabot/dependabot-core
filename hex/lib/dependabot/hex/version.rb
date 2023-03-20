@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems_version_patch"
+require "dependabot/version"
 require "dependabot/utils"
 
 # Elixir versions can include build information, which Ruby can't parse.
@@ -9,11 +9,11 @@ require "dependabot/utils"
 
 module Dependabot
   module Hex
-    class Version < Gem::Version
+    class Version < Dependabot::Version
       attr_reader :build_info
 
       VERSION_PATTERN = Gem::Version::VERSION_PATTERN + '(\+[0-9a-zA-Z\-.]+)?'
-      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/.freeze
+      ANCHORED_VERSION_PATTERN = /\A\s*(#{VERSION_PATTERN})?\s*\z/
 
       def self.correct?(version)
         return false if version.nil?
@@ -24,9 +24,7 @@ module Dependabot
       def initialize(version)
         @version_string = version.to_s
 
-        if version.to_s.include?("+")
-          version, @build_info = version.to_s.split("+")
-        end
+        version, @build_info = version.to_s.split("+") if version.to_s.include?("+")
 
         super
       end

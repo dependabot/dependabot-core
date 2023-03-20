@@ -1,4 +1,4 @@
--i https://pypi.python.org/simple
+-i https://pypi.org/simple
 aiohttp==1.0.5
 async-timeout==3.0.0; python_version >= '3.5.3'
 certifi==2018.1.8

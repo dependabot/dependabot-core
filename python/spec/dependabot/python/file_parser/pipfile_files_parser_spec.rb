@@ -192,7 +192,7 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           parser.dependency_set.dependencies.select(&:top_level?)
         end
 
-        # Note: This is a bug in Pipenv! The name `discord.py` is not being
+        # NOTE: This is a bug in Pipenv! The name `discord.py` is not being
         # properly normalised in the `Pipfile.lock`. Should be 4 once fixed.
         its(:length) { is_expected.to eq(3) }
 
@@ -421,6 +421,29 @@ RSpec.describe Dependabot::Python::FileParser::PipfileFilesParser do
           end
         end
       end
+    end
+
+    context "with an empty requirement string" do
+      let(:pipfile_fixture_name) { "empty_requirement" }
+      let(:files) { [pipfile] }
+      let(:dependencies) do
+        parser.dependency_set.dependencies.select(&:top_level?)
+      end
+
+      subject { dependencies.find { |d| d.name == "tensorflow-gpu" } }
+
+      let(:expected_requirements) do
+        [{
+          requirement: "*",
+          file: "Pipfile",
+          source: nil,
+          groups: ["develop"]
+        }]
+      end
+
+      it { is_expected.to be_a(Dependabot::Dependency) }
+      its(:name) { is_expected.to eq("tensorflow-gpu") }
+      its(:requirements) { is_expected.to eq(expected_requirements) }
     end
   end
 end

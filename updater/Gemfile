@@ -1,0 +1,51 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "dependabot-bundler", path: "../bundler"
+gem "dependabot-cargo", path: "../cargo"
+gem "dependabot-common", path: "../common"
+gem "dependabot-composer", path: "../composer"
+gem "dependabot-docker", path: "../docker"
+gem "dependabot-elm", path: "../elm"
+gem "dependabot-github_actions", path: "../github_actions"
+gem "dependabot-git_submodules", path: "../git_submodules"
+gem "dependabot-go_modules", path: "../go_modules"
+gem "dependabot-gradle", path: "../gradle"
+gem "dependabot-hex", path: "../hex"
+gem "dependabot-maven", path: "../maven"
+gem "dependabot-npm_and_yarn", path: "../npm_and_yarn"
+gem "dependabot-nuget", path: "../nuget"
+gem "dependabot-pub", path: "../pub"
+gem "dependabot-python", path: "../python"
+gem "dependabot-terraform", path: "../terraform"
+
+gem "http", "~> 5.1"
+gem "octokit", "6.1.0"
+gem "sentry-raven", "~> 3.1"
+gem "terminal-table", "~> 3.0.2"
+
+group :test do
+  common_gemspec = File.expand_path("../common/dependabot-common.gemspec", __dir__)
+
+  deps_shared_with_core = %w(
+    debug
+    rspec
+    rubocop
+    rubocop-performance
+    vcr
+    webmock
+  )
+
+  Dir.chdir(File.dirname(common_gemspec)) do
+    Gem::Specification.load(common_gemspec).development_dependencies.each do |dep|
+      next unless deps_shared_with_core.include?(dep.name)
+
+      gem dep.name, *dep.requirement.as_list
+    end
+  end
+end
+
+group :development do
+  gem "licensed", "~> 4.2", require: false
+end

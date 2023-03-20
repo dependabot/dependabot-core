@@ -13,13 +13,11 @@ module Dependabot
   module Composer
     class UpdateChecker
       class RequirementsUpdater
-        ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/.freeze
-        VERSION_REGEX =
-          /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/.freeze
-        AND_SEPARATOR =
-          /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/.freeze
-        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/.freeze
-        SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/.freeze
+        ALIAS_REGEX = /[a-z0-9\-_\.]*\sas\s+/
+        VERSION_REGEX = /(?:#{ALIAS_REGEX})?[0-9]+(?:\.[a-zA-Z0-9*\-]+)*/
+        AND_SEPARATOR = /(?<=[a-zA-Z0-9*])(?<!\sas)[\s,]+(?![\s,]*[|-]|as)/
+        OR_SEPARATOR = /(?<=[a-zA-Z0-9*])[\s,]*\|\|?\s*/
+        SEPARATOR = /(?:#{AND_SEPARATOR})|(?:#{OR_SEPARATOR})/
         ALLOWED_UPDATE_STRATEGIES =
           %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 
@@ -54,7 +52,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def updated_requirement(req)
           req_string = req[:requirement].strip
           or_string_reqs = req_string.split(OR_SEPARATOR)
@@ -83,7 +80,6 @@ module Dependabot
           new_req.merge(requirement: new_req_string)
         end
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def updated_alias(req)
           req_string = req[:requirement]
@@ -98,6 +94,7 @@ module Dependabot
           req.merge(requirement: new_req)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def widen_requirement(req, or_separator)
           current_requirement = req[:requirement]
           reqs = current_requirement.strip.split(SEPARATOR).map(&:strip)
@@ -117,6 +114,7 @@ module Dependabot
 
           req.merge(requirement: updated_requirement)
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def update_requirement_version(req, or_separator)
           current_requirement = req[:requirement]
@@ -144,9 +142,7 @@ module Dependabot
         def update_version_string(req_string)
           req_string.
             sub(VERSION_REGEX) do |old_version|
-              unless req_string.match?(/[~*\^]/)
-                next latest_resolvable_version.to_s
-              end
+              next latest_resolvable_version.to_s unless req_string.match?(/[~*\^]/)
 
               old_parts = old_version.split(".")
               new_parts = latest_resolvable_version.to_s.split(".").
@@ -238,7 +234,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end.join(".")
         end

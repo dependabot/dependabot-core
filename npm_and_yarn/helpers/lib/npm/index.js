@@ -1,9 +1,9 @@
-const updater = require("./updater");
-const peerDependencyChecker = require("./peer-dependency-checker");
-const subdependencyUpdater = require("./subdependency-updater");
+const conflictingDependencyParser = require("./conflicting-dependency-parser");
+const vulnerabilityAuditor = require("./vulnerability-auditor");
 
 module.exports = {
-  update: updater.updateDependencyFiles,
-  updateSubdependency: subdependencyUpdater.updateDependencyFile,
-  checkPeerDependencies: peerDependencyChecker.checkPeerDependencies
+  findConflictingDependencies:
+    conflictingDependencyParser.findConflictingDependencies,
+  vulnerabilityAuditor:
+    vulnerabilityAuditor.findVulnerableDependencies,
 };

@@ -41,6 +41,12 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         to_return(status: 200, body: npm_latest_version_response)
       stub_request(:get, npm_url).
         to_return(status: 200, body: npm_all_versions_response)
+      stub_request(:get, "https://example.come/status").to_return(
+        status: 200,
+        body: "Not GHES",
+        headers: {}
+      )
+      stub_request(:get, "https://jshttp/status").to_return(status: 404)
     end
 
     context "for a git dependency" do
@@ -110,7 +116,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there is a bitbucket link in the npm response" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_bitbucket.json")
+        fixture("npm_responses", "npm_response_bitbucket.json")
       end
 
       it { is_expected.to eq("https://bitbucket.org/jshttp/etag") }
@@ -127,7 +133,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there's a link without the expected structure" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_string_link.json")
+        fixture("npm_responses", "npm_response_string_link.json")
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -141,7 +147,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there's a link using GitHub shorthand" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_string_shorthand.json")
+        fixture("npm_responses", "npm_response_string_shorthand.json")
       end
 
       it { is_expected.to eq("https://github.com/jshttp/etag") }
@@ -155,7 +161,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
     context "when there isn't a source link in the npm response" do
       let(:npm_latest_version_response) { nil }
       let(:npm_all_versions_response) do
-        fixture("npm_response_no_source.json")
+        fixture("npm_responses", "npm_response_no_source.json")
       end
 
       it { is_expected.to be_nil }
@@ -213,7 +219,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
       context "that is private" do
         before do
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://registry.npmjs.org/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: npm_all_versions_response)
@@ -252,15 +258,15 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       context "that is hosted on gemfury" do
         before do
-          body = fixture("gemfury_response_etag.json")
+          body = fixture("gemfury_responses", "gemfury_response_etag.json")
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
-            to_return(status: 404, body: "{\"error\":\"Not found\"}")
+            to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
-          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          ).to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(
             :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
-          ).to_return(status: 404, body: "{\"error\":\"Not found\"}")
+          ).to_return(status: 404, body: '{"error":"Not found"}')
           stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
             with(headers: { "Authorization" => "Bearer secret_token" }).
             to_return(status: 200, body: body)
@@ -275,7 +281,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
               requirement: "^1.0",
               groups: [],
               source: {
-                type: "private_registry",
+                type: "registry",
                 url: "https://npm.fury.io/dependabot"
               }
             }],
@@ -322,6 +328,73 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
         end
       end
     end
+
+    context "when multiple sources are detected" do
+      let(:npm_latest_version_response) { nil }
+      let(:npm_all_versions_response) { nil }
+      let(:dependency_name) { "@etag/etag" }
+
+      let(:credentials) do
+        [
+          {
+            "type" => "git_source",
+            "host" => "github.com",
+            "username" => "x-access-token",
+            "password" => "token"
+          },
+          {
+            "type" => "npm_registry",
+            "registry" => "npm.fury.io/dependabot",
+            "token" => "secret_token"
+          }
+        ]
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: dependency_name,
+          version: "1.0",
+          requirements: [
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://registry.npmjs.org"
+              }
+            },
+            {
+              file: "package.json",
+              requirement: "^1.0",
+              groups: [],
+              source: {
+                type: "registry",
+                url: "https://npm.fury.io/dependabot"
+              }
+            }
+          ],
+          package_manager: "npm_and_yarn"
+        )
+      end
+
+      before do
+        stub_request(
+          :get, "https://npm.fury.io/dependabot/@etag%2Fetag/latest"
+        ).to_return(status: 404, body: '{"error":"Not found"}').times(2)
+
+        stub_request(:get, "https://npm.fury.io/dependabot/@etag%2Fetag").
+          with(headers: { "Authorization" => "Bearer secret_token" }).
+          to_return(
+            status: 200,
+            body: fixture("gemfury_responses", "gemfury_response_etag.json")
+          )
+      end
+
+      it "prefers to fetch metadata from the private registry" do
+        expect(subject).to eq("https://github.com/jshttp/etag")
+      end
+    end
   end
 
   describe "#homepage_url" do
@@ -337,7 +410,7 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
     context "when there is a homepage link in the npm response" do
       let(:npm_all_versions_response) do
-        fixture("npm_response_no_source.json")
+        fixture("npm_responses", "npm_response_no_source.json")
       end
       let(:npm_latest_version_response) { nil }
 
@@ -381,8 +454,8 @@ RSpec.describe Dependabot::NpmAndYarn::MetadataFinder do
 
       it "gives details of the new releaser" do
         expect(maintainer_changes).to eq(
-          "This version was pushed to npm by "\
-          "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser "\
+          "This version was pushed to npm by " \
+          "[dougwilson](https://www.npmjs.com/~dougwilson), a new releaser " \
           "for etag since your current version."
         )
       end

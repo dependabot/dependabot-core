@@ -4,7 +4,7 @@ require "spec_helper"
 require "dependabot/go_modules/file_fetcher"
 require_common_spec "file_fetchers/shared_examples_for_file_fetchers"
 
-RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
+RSpec.describe Dependabot::GoModules::FileFetcher do
   it_behaves_like "a dependency file fetcher"
 
   let(:repo) { "dependabot-fixtures/go-modules-lib" }
@@ -17,14 +17,28 @@ RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
       branch: branch
     )
   end
+  let(:repo_contents_path) { Dir.mktmpdir }
+  after { FileUtils.rm_rf(repo_contents_path) }
   let(:file_fetcher_instance) do
-    described_class.new(source: source, credentials: github_credentials)
+    described_class.new(source: source, credentials: github_credentials,
+                        repo_contents_path: repo_contents_path)
   end
   let(:directory) { "/" }
+
+  after do
+    FileUtils.rm_rf(repo_contents_path)
+  end
 
   it "fetches the go.mod and go.sum" do
     expect(file_fetcher_instance.files.map(&:name)).
       to include("go.mod", "go.sum")
+  end
+
+  it "provides the Go modules version" do
+    expect(file_fetcher_instance.package_manager_version).to eq({
+      ecosystem: "gomod",
+      package_managers: { "gomod" => "unknown" }
+    })
   end
 
   context "without a go.mod" do
@@ -44,14 +58,30 @@ RSpec.describe Dependabot::GoModules::FileFetcher, :vcr do
     end
   end
 
-  context "for an application" do
-    let(:repo) { "dependabot-fixtures/go-modules-app" }
+  context "when directory is missing" do
+    let(:directory) { "/missing" }
 
-    it "fetches the main.go, too" do
-      expect(file_fetcher_instance.files.map(&:name)).
-        to include("main.go")
-      expect(file_fetcher_instance.files.
-        find { |f| f.name == "main.go" }.type).to eq("package_main")
+    it "raises a helpful error" do
+      expect { file_fetcher_instance.files }.
+        to raise_error(Dependabot::DependencyFileNotFound)
+    end
+  end
+
+  context "when dependencies are git submodules" do
+    let(:repo) { "dependabot-fixtures/go-modules-app-with-git-submodules" }
+    let(:branch) { "main" }
+    let(:submodule_contents_path) { File.join(repo_contents_path, "examplelib") }
+
+    it "clones them" do
+      expect { file_fetcher_instance.files }.to_not raise_error
+      expect(`ls -1 #{submodule_contents_path}`.split).to include("go.mod")
+    end
+
+    it "provides the Go modules version" do
+      expect(file_fetcher_instance.package_manager_version).to eq({
+        ecosystem: "gomod",
+        package_managers: { "gomod" => "1.19" }
+      })
     end
   end
 end

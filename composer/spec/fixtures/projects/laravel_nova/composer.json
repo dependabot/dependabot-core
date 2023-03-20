@@ -1,0 +1,11 @@
+{
+  "repositories": [
+      {
+          "type": "composer",
+          "url": "https://nova.laravel.com"
+      }
+  ],
+  "require": {
+      "laravel/nova": "*"
+  }
+}

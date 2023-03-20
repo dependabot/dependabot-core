@@ -14,26 +14,39 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
+      def package_manager_version
+        return nil unless go_mod
+
+        {
+          ecosystem: "gomod",
+          package_managers: {
+            "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
+          }
+        }
+      end
+
       private
 
       def fetch_files
-        unless go_mod
-          raise(
-            Dependabot::DependencyFileNotFound,
-            File.join(directory, "go.mod")
-          )
+        # Ensure we always check out the full repo contents for go_module
+        # updates.
+        SharedHelpers.in_a_temporary_repo_directory(
+          directory,
+          clone_repo_contents
+        ) do
+          unless go_mod
+            raise(
+              Dependabot::DependencyFileNotFound,
+              Pathname.new(File.join(directory, "go.mod")).
+              cleanpath.to_path
+            )
+          end
+
+          fetched_files = [go_mod]
+          # Fetch the (optional) go.sum
+          fetched_files << go_sum if go_sum
+          fetched_files
         end
-
-        fetched_files = [go_mod]
-
-        # Fetch the (optional) go.sum
-        fetched_files << go_sum if go_sum
-
-        # Fetch the main.go file if present, as this will later identify
-        # this repo as an app.
-        fetched_files << main if main
-
-        fetched_files
       end
 
       def go_mod
@@ -44,19 +57,8 @@ module Dependabot
         @go_sum ||= fetch_file_if_present("go.sum")
       end
 
-      def main
-        return @main if @main
-
-        go_files = repo_contents.select { |f| f.name.end_with?(".go") }
-
-        go_files.each do |go_file|
-          file = fetch_file_from_host(go_file.name, type: "package_main")
-          next unless file.content.match?(/\s*package\s+main/)
-
-          return @main = file.tap { |f| f.support_file = true }
-        end
-
-        nil
+      def recurse_submodules_when_cloning?
+        true
       end
     end
   end

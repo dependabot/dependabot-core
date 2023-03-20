@@ -1,0 +1,33 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://registry.terraform.io/.well-known/terraform.json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+    body:
+      encoding: UTF-8
+      string: '{"modules.v1":"/v1/modules/","providers.v1":"/v1/providers/"}'
+  recorded_at: Fri, 28 May 2021 22:50:26 GMT
+- request:
+    method: get
+    uri: https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.9.3/download
+  response:
+    status:
+      code: 204
+      message: OK
+    headers:
+      Content-Type:
+      - application/json
+      X-Terraform-Get:
+      - git://https://github.com/hashicorp/terraform-aws-consul?ref=0.9.3
+    body:
+      encoding: UTF-8
+      string: ''
+  recorded_at: Fri, 28 May 2021 22:50:26 GMT
+recorded_with: VCR 6.0.0

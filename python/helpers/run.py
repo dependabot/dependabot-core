@@ -8,8 +8,10 @@ if __name__ == "__main__":
 
     if args["function"] == "parse_requirements":
         print(parser.parse_requirements(args["args"][0]))
-    if args["function"] == "parse_setup":
+    elif args["function"] == "parse_setup":
         print(parser.parse_setup(args["args"][0]))
+    elif args["function"] == "parse_pep621_dependencies":
+        print(parser.parse_pep621_dependencies(args["args"][0]))
     elif args["function"] == "get_dependency_hash":
         print(hasher.get_dependency_hash(*args["args"]))
     elif args["function"] == "get_pipfile_hash":

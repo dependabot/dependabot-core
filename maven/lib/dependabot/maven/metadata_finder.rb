@@ -6,11 +6,13 @@ require "dependabot/metadata_finders/base"
 require "dependabot/file_fetchers/base"
 require "dependabot/maven/file_parser"
 require "dependabot/maven/file_parser/repositories_finder"
+require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/registry_client"
 
 module Dependabot
   module Maven
     class MetadataFinder < Dependabot::MetadataFinders::Base
-      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}.freeze
+      DOT_SEPARATOR_REGEX = %r{\.(?!\d+([.\/_\-]|$)+)}
 
       private
 
@@ -23,28 +25,28 @@ module Dependabot
         tmp_source = look_up_source_in_pom(parent)
         return unless tmp_source
 
-        artifact = dependency.name.split(":").last
-        return tmp_source if tmp_source.repo.end_with?(artifact)
+        return tmp_source if tmp_source.repo.end_with?(dependency_artifact_id)
         return tmp_source if repo_has_subdir_for_dep?(tmp_source)
       end
 
       def repo_has_subdir_for_dep?(tmp_source)
         @repo_has_subdir_for_dep ||= {}
-        if @repo_has_subdir_for_dep.key?(tmp_source)
-          return @repo_has_subdir_for_dep[tmp_source]
-        end
+        return @repo_has_subdir_for_dep[tmp_source] if @repo_has_subdir_for_dep.key?(tmp_source)
 
-        artifact = dependency.name.split(":").last
         fetcher =
           FileFetchers::Base.new(source: tmp_source, credentials: credentials)
 
         @repo_has_subdir_for_dep[tmp_source] =
           fetcher.send(:repo_contents, raise_errors: false).
           select { |f| f.type == "dir" }.
-          any? { |f| artifact.end_with?(f.name) }
+          any? { |f| dependency_artifact_id.end_with?(f.name) }
       rescue Dependabot::BranchNotFound
-        tmp_source.branch = nil
-        retry
+        # If we are attempting to find a branch, we should fail over to the default branch and retry once only
+        unless tmp_source.branch.to_s.empty?
+          tmp_source.branch = nil
+          retry
+        end
+        @repo_has_subdir_for_dep[tmp_source] = false
       rescue Dependabot::RepoNotFound
         @repo_has_subdir_for_dep[tmp_source] = false
       end
@@ -96,26 +98,27 @@ module Dependabot
 
         github_urls.find do |url|
           repo = Source.from_url(url).repo
-          repo.end_with?(dependency.name.split(":").last)
+          repo.end_with?(dependency_artifact_id)
         end
       end
 
       def dependency_pom_file
         return @dependency_pom_file unless @dependency_pom_file.nil?
 
-        artifact_id = dependency.name.split(":").last
-        response = Excon.get(
-          "#{maven_repo_dependency_url}/"\
-          "#{dependency.version}/"\
-          "#{artifact_id}-#{dependency.version}.pom",
-          headers: auth_details,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
+        response = Dependabot::RegistryClient.get(
+          url: "#{maven_repo_dependency_url}/#{dependency.version}/#{dependency_artifact_id}-#{dependency.version}.pom",
+          headers: auth_headers
         )
 
         @dependency_pom_file = Nokogiri::XML(response.body)
       rescue Excon::Error::Timeout
         @dependency_pom_file = Nokogiri::XML("")
+      end
+
+      def dependency_artifact_id
+        _group_id, artifact_id, _classifier = dependency.name.split(":")
+
+        artifact_id
       end
 
       def parent_pom_file(pom)
@@ -128,15 +131,13 @@ module Dependabot
 
         return unless artifact_id && group_id && version
 
-        url = "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/"\
-              "#{version}/"\
+        url = "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}/" \
+              "#{version}/" \
               "#{artifact_id}-#{version}.pom"
 
-        response = Excon.get(
-          substitute_properties_in_source_url(url, pom),
-          headers: auth_details,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
+        response = Dependabot::RegistryClient.get(
+          url: substitute_properties_in_source_url(url, pom),
+          headers: auth_headers
         )
 
         Nokogiri::XML(response.body)
@@ -148,7 +149,7 @@ module Dependabot
 
         source&.fetch(:url, nil) ||
           source&.fetch("url") ||
-          Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL
+          Maven::FileParser::RepositoriesFinder.new(credentials: credentials).central_repo_url
       end
 
       def maven_repo_dependency_url
@@ -157,21 +158,8 @@ module Dependabot
         "#{maven_repo_url}/#{group_id.tr('.', '/')}/#{artifact_id}"
       end
 
-      def auth_details
-        cred =
-          credentials.select { |c| c["type"] == "maven_repository" }.
-          find do |c|
-            cred_url = c.fetch("url").gsub(%r{/+$}, "")
-            next false unless cred_url == maven_repo_url
-
-            c.fetch("username", nil)
-          end
-
-        return {} unless cred
-
-        token = cred.fetch("username") + ":" + cred.fetch("password")
-        encoded_token = Base64.encode64(token).delete("\n")
-        { "Authorization" => "Basic #{encoded_token}" }
+      def auth_headers
+        @auth_headers ||= Utils::AuthHeadersFinder.new(credentials).auth_headers(maven_repo_url)
       end
     end
   end

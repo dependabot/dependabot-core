@@ -14,15 +14,22 @@ module Dependabot
       require "dependabot/bundler/file_fetcher/require_relative_finder"
 
       def self.required_files_in?(filenames)
-        if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
-          return true
-        end
+        return true if filenames.any? { |name| name.match?(%r{^[^/]*\.gemspec$}) }
 
         filenames.include?("Gemfile") || filenames.include?("gems.rb")
       end
 
       def self.required_files_message
         "Repo must contain either a Gemfile, a gemspec, or a gems.rb."
+      end
+
+      def package_manager_version
+        {
+          ecosystem: "bundler",
+          package_managers: {
+            "bundler" => Helpers.detected_bundler_version(lockfile)
+          }
+        }
       end
 
       private
@@ -133,9 +140,7 @@ module Dependabot
           unfetchable_gems << path.basename.to_s
         end
 
-        if unfetchable_gems.any?
-          raise Dependabot::PathDependenciesNotReachable, unfetchable_gems
-        end
+        raise Dependabot::PathDependenciesNotReachable, unfetchable_gems if unfetchable_gems.any?
 
         gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
       end
@@ -192,6 +197,7 @@ module Dependabot
           fetch_child_gemfiles(file: gemfile, previously_fetched_files: [])
       end
 
+      # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
       def sanitized_lockfile_content
         regex = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
         lockfile.content.gsub(regex, "")

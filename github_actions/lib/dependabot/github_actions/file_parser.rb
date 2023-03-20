@@ -6,6 +6,7 @@ require "dependabot/dependency"
 require "dependabot/file_parsers"
 require "dependabot/file_parsers/base"
 require "dependabot/errors"
+require "dependabot/github_actions/version"
 
 # For docs, see
 # https://help.github.com/en/articles/configuring-a-workflow#referencing-actions-in-your-workflow
@@ -16,11 +17,11 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       GITHUB_REPO_REFERENCE = %r{
-        (?<owner>[\w.-]+)/
+        ^(?<owner>[\w.-]+)/
         (?<repo>[\w.-]+)
         (?<path>/[^\@]+)?
         @(?<ref>.+)
-      }x.freeze
+      }x
 
       def parse
         dependency_set = DependencySet.new
@@ -29,6 +30,7 @@ module Dependabot
           dependency_set += workfile_file_dependencies(file)
         end
 
+        resolve_git_tags(dependency_set)
         dependency_set.dependencies
       end
 
@@ -38,13 +40,19 @@ module Dependabot
         dependency_set = DependencySet.new
 
         json = YAML.safe_load(file.content, aliases: true)
-        uses_strings = deep_fetch_uses(json).uniq
+        return dependency_set if json.nil?
+
+        uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
 
         uses_strings.each do |string|
           # TODO: Support Docker references and path references
-          if string.match?(GITHUB_REPO_REFERENCE)
-            dependency_set << build_github_dependency(file, string)
-          end
+          next unless string.match?(GITHUB_REPO_REFERENCE)
+
+          dep = build_github_dependency(file, string)
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          next unless git_checker.pinned?
+
+          dependency_set << dep
         end
 
         dependency_set
@@ -53,20 +61,30 @@ module Dependabot
       end
 
       def build_github_dependency(file, string)
+        unless source.hostname == "github.com"
+          dep = github_dependency(file, string, source.hostname)
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          return dep if git_checker.git_repo_reachable?
+        end
+
+        github_dependency(file, string, "github.com")
+      end
+
+      def github_dependency(file, string, hostname)
         details = string.match(GITHUB_REPO_REFERENCE).named_captures
         name = "#{details.fetch('owner')}/#{details.fetch('repo')}"
-        url = "https://github.com/#{name}"
-
+        ref = details.fetch("ref")
+        version = version_class.new(ref).to_s if version_class.correct?(ref)
         Dependency.new(
           name: name,
-          version: nil,
+          version: version,
           requirements: [{
             requirement: nil,
             groups: [],
             source: {
               type: "git",
-              url: url,
-              ref: details.fetch("ref"),
+              url: "https://#{hostname}/#{name}",
+              ref: ref,
               branch: nil
             },
             file: file.name,
@@ -76,28 +94,42 @@ module Dependabot
         )
       end
 
-      def deep_fetch_uses(json_obj)
+      def deep_fetch_uses(json_obj, found_uses = [])
         case json_obj
-        when Hash then deep_fetch_uses_from_hash(json_obj)
-        when Array then json_obj.flat_map { |o| deep_fetch_uses(o) }
+        when Hash then deep_fetch_uses_from_hash(json_obj, found_uses)
+        when Array then json_obj.flat_map { |o| deep_fetch_uses(o, found_uses) }
         else []
         end
       end
 
-      def deep_fetch_uses_from_hash(json_object)
-        steps = json_object.fetch("steps", [])
+      def resolve_git_tags(dependency_set)
+        # Find deps that do not have an assigned (semver) version, but pin a commit that references a semver tag
+        resolved = dependency_set.dependencies.map do |dep|
+          next unless dep.version.nil?
 
-        uses_strings =
-          if steps.is_a?(Array) && steps.all? { |s| s.is_a?(Hash) }
-            steps.
-              map { |step| step.fetch("uses", nil) }.
-              select { |use| use.is_a?(String) }
-          else
-            []
-          end
+          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          resolved = git_checker.local_tag_for_pinned_sha
+          next if resolved.nil? || !version_class.correct?(resolved)
 
-        uses_strings +
-          json_object.values.flat_map { |obj| deep_fetch_uses(obj) }
+          # Build a Dependency with the resolved version, and rely on DependencySet's merge
+          Dependency.new(name: dep.name, version: version_class.new(resolved).to_s,
+                         package_manager: dep.package_manager, requirements: [])
+        end
+
+        resolved.compact.each { |dep| dependency_set << dep }
+      end
+
+      def deep_fetch_uses_from_hash(json_object, found_uses)
+        if json_object.key?("uses")
+          found_uses << json_object["uses"]
+        elsif json_object.key?("steps")
+          # Bypass other fields as uses are under steps if they exist
+          deep_fetch_uses(json_object["steps"], found_uses)
+        else
+          json_object.values.flat_map { |obj| deep_fetch_uses(obj, found_uses) }
+        end
+
+        found_uses
       end
 
       def workflow_files
@@ -111,6 +143,10 @@ module Dependabot
         return if dependency_files.any?
 
         raise "No workflow files!"
+      end
+
+      def version_class
+        GithubActions::Version
       end
     end
   end

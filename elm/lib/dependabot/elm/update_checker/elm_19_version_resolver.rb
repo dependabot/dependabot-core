@@ -22,23 +22,21 @@ module Dependabot
         end
 
         def latest_resolvable_version(unlock_requirement:)
-          unless %i(none own all).include?(unlock_requirement)
-            raise "Invalid unlock setting: #{unlock_requirement}"
-          end
+          raise "Invalid unlock setting: #{unlock_requirement}" unless %i(none own all).include?(unlock_requirement)
 
           # Elm has no lockfile, so we will never create an update PR if
           # unlock requirements are `none`. Just return the current version.
           return current_version if unlock_requirement == :none
 
           # Otherwise, we gotta check a few conditions to see if bumping
-          # wouldn't also bump other deps in elm-package.json
+          # wouldn't also bump other deps in elm.json
           fetch_latest_resolvable_version(unlock_requirement)
         end
 
         def updated_dependencies_after_full_unlock
           changed_deps = install_metadata
 
-          original_dependency_details.map do |original_dep|
+          original_dependency_details.filter_map do |original_dep|
             new_version = changed_deps.fetch(original_dep.name, nil)
             next unless new_version
 
@@ -62,7 +60,7 @@ module Dependabot
               previous_requirements: original_dep.requirements,
               package_manager: original_dep.package_manager
             )
-          end.compact
+          end
         end
 
         private
@@ -159,15 +157,9 @@ module Dependabot
           # Delete the dependency from the elm.json, so that we can use
           # `elm install <dependency_name>` to generate the install plan
           %w(dependencies test-dependencies).each do |type|
-            if json.dig(type, dependency.name)
-              json[type].delete(dependency.name)
-            end
-
-            %w(direct indirect).each do |category|
-              if json.dig(type, category, dependency.name)
-                json[type][category].delete(dependency.name)
-              end
-            end
+            json[type].delete(dependency.name) if json.dig(type, dependency.name)
+            json[type]["direct"].delete(dependency.name) if json.dig(type, "direct", dependency.name)
+            json[type]["indirect"].delete(dependency.name) if json.dig(type, "indirect", dependency.name)
           end
 
           json["source-directories"] = []

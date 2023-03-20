@@ -211,6 +211,12 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::RequirementsUpdater do
             )
           end
         end
+
+        context "and the target version has a build annotation" do
+          let(:req_string) { "1.2.3" }
+          let(:target_version) { "1.5.0+build.1" }
+          its([:requirement]) { is_expected.to eq("1.5.0") }
+        end
       end
     end
 

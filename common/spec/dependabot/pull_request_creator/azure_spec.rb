@@ -17,7 +17,10 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       pr_description: pr_description,
       pr_name: pr_name,
       author_details: author_details,
-      labeler: labeler
+      labeler: labeler,
+      reviewers: reviewers,
+      assignees: assignees,
+      work_item: work_item
     )
   end
 
@@ -39,8 +42,8 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
   let(:pr_description) { "PR msg" }
   let(:pr_name) { "PR name" }
   let(:author_details) { nil }
-  let(:approvers) { nil }
-  let(:assignee) { nil }
+  let(:reviewers) { nil }
+  let(:assignees) { nil }
   let(:milestone) { nil }
   let(:labeler) do
     Dependabot::PullRequestCreator::Labeler.new(
@@ -53,6 +56,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
       automerge_candidate: false
     )
   end
+  let(:work_item) { 123 }
   let(:custom_labels) { nil }
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -122,6 +126,65 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
         to have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0")
     end
 
+    context "with reviewers" do
+      let(:reviewers) { ["0013-0006-1980"] }
+      it "pushes a commit to Azure and creates a pull request with assigned reviewers" do
+        creator.create
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
+            with do |req|
+              reviewers = JSON.parse(req.body).fetch("reviewers")
+              expect(reviewers.count).to eq(1)
+              first_participant = reviewers.first
+              expect(first_participant.fetch("id")).
+                 to eq("0013-0006-1980")
+              expect(first_participant.fetch("isRequired")).
+                 to eq(true)
+            end
+          )
+      end
+    end
+
+    context "with assignees" do
+      let(:assignees) { ["0013-0006-1980"] }
+      it "pushes a commit to Azure and creates a pull request with assigned optional reviewers" do
+        creator.create
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
+            with do |req|
+              reviewers = JSON.parse(req.body).fetch("reviewers")
+              expect(reviewers.count).to eq(1)
+              first_participant = reviewers.first
+              expect(first_participant.fetch("id")).
+                to eq("0013-0006-1980")
+              expect(first_participant.fetch("isRequired")).
+                to eq(false)
+            end
+          )
+      end
+    end
+
+    context "with e very long pr description" do
+      let(:pr_description) { ("a" * 3997) + "💣 kaboom" }
+      it "truncates the description respecting azures encoding" do
+        creator.create
+
+        expect(WebMock).
+          to(
+            have_requested(:post, "#{repo_api_url}/pullrequests?api-version=5.0").
+            with do |req|
+              description = JSON.parse(req.body).fetch("description")
+              expect(description.length).to eq 4000
+              expect(description).to end_with("\n\n_Description has been truncated_")
+            end
+          )
+      end
+    end
+
     context "with author details provided" do
       let(:author_details) do
         { email: "support@dependabot.com", name: "dependabot" }
@@ -179,7 +242,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           stub_request(
             :get,
             "#{repo_api_url}/pullrequests?" \
-              "searchCriteria.sourceRefName=refs/heads/" + branch_name +
+            "searchCriteria.sourceRefName=refs/heads/" + branch_name +
               "&searchCriteria.status=all" \
               "&searchCriteria.targetRefName=refs/heads/master"
           ).to_return(
@@ -210,7 +273,7 @@ RSpec.describe Dependabot::PullRequestCreator::Azure do
           stub_request(
             :get,
             "#{repo_api_url}/pullrequests?searchCriteria.status=all" \
-              "&searchCriteria.sourceRefName=refs/heads/" + branch_name +
+            "&searchCriteria.sourceRefName=refs/heads/" + branch_name +
               "&searchCriteria.targetRefName=refs/heads/master"
           ).to_return(
             status: 200,

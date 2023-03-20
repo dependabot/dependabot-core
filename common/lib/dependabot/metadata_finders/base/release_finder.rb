@@ -22,9 +22,8 @@ module Dependabot
 
           case source.provider
           when "github" then "#{source.url}/releases"
-          when "gitlab" then "#{source.url}/tags"
-          when "bitbucket" then nil
-          when "azure" then "#{source.url}/tags"
+          when "gitlab", "azure" then "#{source.url}/tags"
+          when "bitbucket", "codecommit" then nil
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
@@ -167,7 +166,7 @@ module Dependabot
 
         def serialize_release(release)
           rel = release
-          title = "## #{rel.name.to_s != '' ? rel.name : rel.tag_name}\n"
+          title = "## #{rel.name.to_s == '' ? rel.tag_name : rel.name}\n"
           body = if rel.body.to_s.gsub(/\n*\z/m, "") == ""
                    "No release notes provided."
                  else
@@ -178,7 +177,7 @@ module Dependabot
         end
 
         def release_body_includes_title?(release)
-          title = release.name.to_s != "" ? release.name : release.tag_name
+          title = release.name.to_s == "" ? release.tag_name : release.name
           release.body.to_s.match?(/\A\s*\#*\s*#{Regexp.quote(title)}/m)
         end
 
@@ -195,9 +194,10 @@ module Dependabot
 
           case source.provider
           when "github" then fetch_github_releases
-          when "bitbucket" then [] # Bitbucket doesn't support releases
+          # Bitbucket and CodeCommit don't support releases and
+          # Azure can't list API for annotated tags
+          when "bitbucket", "azure", "codecommit" then []
           when "gitlab" then fetch_gitlab_releases
-          when "azure" then [] # Azure can't list API for annotated tags
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
@@ -251,8 +251,11 @@ module Dependabot
             return ref_changed? ? previous_ref : nil
           end
 
+          # Previous version looks like a git SHA and there's a previous ref, we
+          # could be changing to a nil previous ref in which case we want to
+          # fall back to tge sha version
           if dependency.previous_version.match?(/^[0-9a-f]{40}$/) &&
-             ref_changed?
+             ref_changed? && previous_ref
             previous_ref
           else
             dependency.previous_version
@@ -260,7 +263,11 @@ module Dependabot
         end
 
         def new_version
-          if dependency.version.match?(/^[0-9a-f]{40}$/) && ref_changed?
+          # New version looks like a git SHA and there's a new ref, guarding
+          # against changes to a nil new_ref (not certain this can actually
+          # happen atm)
+          if dependency.version.match?(/^[0-9a-f]{40}$/) && ref_changed? &&
+             new_ref
             return new_ref
           end
 
@@ -268,20 +275,21 @@ module Dependabot
         end
 
         def previous_ref
-          dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
-          dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return new_refs.first if new_refs.count == 1
         end
 
         def ref_changed?
-          return false unless previous_ref
-
+          # We could go from multiple previous refs (nil) to a single new ref
           previous_ref != new_ref
         end
 
@@ -292,7 +300,7 @@ module Dependabot
 
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_github_dot_com(credentials: credentials)
+                             for_source(source: source, credentials: credentials)
         end
       end
     end

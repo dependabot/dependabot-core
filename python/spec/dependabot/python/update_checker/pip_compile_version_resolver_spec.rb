@@ -140,41 +140,6 @@ RSpec.describe namespace::PipCompileVersionResolver do
         end
       end
 
-      context "when unlocking causes a conflict (in the sub-dependencies)" do
-        let(:manifest_fixture_name) { "unresolvable_if_unpinned.in" }
-        let(:generated_fixture_name) do
-          "pip_compile_unresolvable_if_unpinned.txt"
-        end
-        let(:dependency_name) { "boto3" }
-        let(:dependency_version) { "1.7.84" }
-        let(:updated_requirement) { ">= 1.7.84, <= 1.9.28" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: ">=1.7,<1.8",
-            groups: [],
-            source: nil
-          }]
-        end
-        it { is_expected.to be nil }
-
-        context "and updating would cause a conflict" do
-          let(:dependency_name) { "moto" }
-          let(:dependency_version) { "1.3.6" }
-          let(:updated_requirement) { ">= 1.3.6, <= 1.3.7" }
-
-          let(:dependency_requirements) do
-            [{
-              file: "requirements/test.in",
-              requirement: nil,
-              groups: [],
-              source: nil
-            }]
-          end
-          it { is_expected.to be nil }
-        end
-      end
-
       context "with multiple requirement.in files" do
         let(:dependency_files) do
           [manifest_file, manifest_file2, generated_file, generated_file2]
@@ -219,33 +184,39 @@ RSpec.describe namespace::PipCompileVersionResolver do
             expect { subject }.
               to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
                 expect(error.message).
-                  to start_with("Could not find a version that matches boto3")
+                  to include("Cannot install -r requirements/dev.in (line 1) and botocore==1.10.84 because these " \
+                             "package versions have conflicting dependencies.")
               end
           end
         end
       end
     end
 
-    context "with an unresolvable requirement" do
-      let(:manifest_fixture_name) { "unresolvable.in" }
-      let(:dependency_files) { [manifest_file] }
-      let(:dependency_name) { "boto3" }
-      let(:dependency_version) { nil }
-      let(:updated_requirement) { ">= 0, <= 1.9.28" }
+    context "with an unresolvable project" do
+      let(:dependency_files) { project_dependency_files("unresolvable") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jupyter-server",
+          version: "0.1.1",
+          requirements: dependency_requirements,
+          package_manager: "pip"
+        )
+      end
       let(:dependency_requirements) do
         [{
-          file: "requirements/test.in",
-          requirement: "==1.9.27",
+          file: "requirements.in",
+          requirement: nil,
           groups: [],
           source: nil
         }]
       end
 
-      it "raises a helpful error" do
+      it "raises a helpful error", :slow do
         expect { subject }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
             expect(error.message).
-              to start_with("Could not find a version that matches boto3")
+              to include("Cannot install jupyter-server<=18.1.0 and >=17.3.0 because these package versions have " \
+                         "conflicting dependencies.")
           end
       end
     end
@@ -309,7 +280,7 @@ RSpec.describe namespace::PipCompileVersionResolver do
       it { is_expected.to be >= Gem::Version.new("40.6.2") }
     end
 
-    context "with an import of the setup.py" do
+    context "with an import of the setup.py", :slow do
       let(:dependency_files) do
         [manifest_file, generated_file, setup_file, pyproject]
       end
@@ -347,84 +318,14 @@ RSpec.describe namespace::PipCompileVersionResolver do
       end
     end
 
-    context "with a Python 2.7 library" do
-      let(:manifest_fixture_name) { "legacy_python.in" }
-      let(:generated_fixture_name) { "pip_compile_legacy_python.txt" }
+    context "with native dependencies that are not pre-built", :slow do
+      let(:manifest_fixture_name) { "native_dependencies.in" }
+      let(:generated_fixture_name) { "pip_compile_native_dependencies.txt" }
+      let(:dependency_name) { "cryptography" }
+      let(:dependency_version) { "2.2.2" }
+      let(:updated_requirement) { "> 3.0.0, < 3.3" }
 
-      let(:dependency_name) { "wsgiref" }
-      let(:dependency_version) { "0.1.1" }
-      let(:dependency_requirements) do
-        [{
-          file: "requirements/test.in",
-          requirement: "<=0.1.2",
-          groups: [],
-          source: nil
-        }]
-      end
-      let(:updated_requirement) { ">= 0.1.1, <= 2.0.0" }
-
-      it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-
-      context "that uses markers correctly (so raises a different error)" do
-        let(:manifest_fixture_name) { "legacy_python_2.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_2.txt" }
-
-        let(:dependency_name) { "astroid" }
-        let(:dependency_version) { "1.6.4" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "<2",
-            groups: [],
-            source: nil
-          }]
-        end
-
-        it { is_expected.to eq(Gem::Version.new("1.6.6")) }
-      end
-
-      context "that has swapped syntax in the latest setup.py" do
-        let(:manifest_fixture_name) { "legacy_python_3.in" }
-        let(:generated_fixture_name) { "pip_compile_legacy_python_3.txt" }
-
-        let(:dependency_name) { "django-adv-cache-tag" }
-        let(:dependency_version) { "0.2.1" }
-        let(:dependency_requirements) do
-          [{
-            file: "requirements/test.in",
-            requirement: "==0.2.1",
-            groups: [],
-            source: nil
-          }]
-        end
-
-        it { is_expected.to be_nil }
-      end
-
-      context "that has a .python-version file" do
-        let(:dependency_files) do
-          [manifest_file, generated_file, python_version_file]
-        end
-        let(:python_version_file) do
-          Dependabot::DependencyFile.new(
-            name: ".python-version",
-            content: "2.7.17\n"
-          )
-        end
-
-        it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-
-        context "that has a bad version in it" do
-          let(:python_version_file) do
-            Dependabot::DependencyFile.new(
-              name: ".python-version",
-              content: "rubbish\n"
-            )
-          end
-
-          it { is_expected.to eq(Gem::Version.new("0.1.2")) }
-        end
-      end
+      it { is_expected.to eq(Gem::Version.new("3.2.1")) }
     end
   end
 
@@ -480,8 +381,47 @@ RSpec.describe namespace::PipCompileVersionResolver do
           expect { subject }.
             to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
               expect(error.message).
-                to start_with("Could not find a version that matches boto3")
+                to include("Cannot install -r requirements/test.in (line 1) and botocore==1.10.84 because these " \
+                           "package versions have conflicting dependencies.")
             end
+        end
+      end
+    end
+
+    context "that fails to resolve due to resource limits" do
+      context "because it ran out of disk space" do
+        before do
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_shell_command).
+            and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "OSError: [Errno 28] No space left on device",
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::OutOfDisk)
+        end
+      end
+
+      context "because it ran out of memory" do
+        before do
+          allow(Dependabot::SharedHelpers).
+            to receive(:run_shell_command).
+            and_raise(
+              Dependabot::SharedHelpers::HelperSubprocessFailed.new(
+                message: "MemoryError",
+                error_context: {}
+              )
+            )
+        end
+
+        it "raises a helpful error" do
+          expect { subject }.
+            to raise_error(Dependabot::OutOfMemory)
         end
       end
     end

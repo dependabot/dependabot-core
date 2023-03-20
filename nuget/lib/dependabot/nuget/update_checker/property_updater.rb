@@ -11,11 +11,13 @@ module Dependabot
         require_relative "requirements_updater"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       target_version_details:, ignored_versions:)
+                       target_version_details:, ignored_versions:,
+                       raise_on_ignored: false)
           @dependency       = dependency
           @dependency_files = dependency_files
           @credentials      = credentials
           @ignored_versions = ignored_versions
+          @raise_on_ignored = raise_on_ignored
           @target_version   = target_version_details&.fetch(:version)
           @source_details   = target_version_details&.
                               slice(:nuspec_url, :repo_url, :source_url)
@@ -31,6 +33,7 @@ module Dependabot
                 dependency_files: dependency_files,
                 credentials: credentials,
                 ignored_versions: ignored_versions,
+                raise_on_ignored: @raise_on_ignored,
                 security_advisories: []
               ).versions.map { |v| v.fetch(:version) }
 

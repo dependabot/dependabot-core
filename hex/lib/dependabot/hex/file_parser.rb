@@ -15,6 +15,9 @@ module Dependabot
       require "dependabot/file_parsers/base/dependency_set"
 
       def parse
+        # TODO: git sourced dependency's mixfiles are evaluated. Provide guards before removing this.
+        raise ::Dependabot::UnexpectedExternalCode if @reject_external_code
+
         dependency_set = DependencySet.new
 
         dependency_details.each do |dep|
@@ -42,7 +45,7 @@ module Dependabot
       def dependency_details
         SharedHelpers.in_a_temporary_directory do
           write_sanitized_mixfiles
-          write_supporting_files
+          write_sanitized_supporting_files
           File.write("mix.lock", lockfile.content) if lockfile
           FileUtils.cp(elixir_helper_parse_deps_path, "parse_deps.exs")
 
@@ -73,11 +76,11 @@ module Dependabot
         end
       end
 
-      def write_supporting_files
+      def write_sanitized_supporting_files
         dependency_files.select(&:support_file).each do |file|
           path = file.name
           FileUtils.mkdir_p(Pathname.new(path).dirname)
-          File.write(path, file.content)
+          File.write(path, sanitize_mixfile(file.content))
         end
       end
 
@@ -109,7 +112,7 @@ module Dependabot
       end
 
       def symbolize_keys(hash)
-        Hash[hash.keys.map { |k| [k.to_sym, hash[k]] }]
+        hash.keys.to_h { |k| [k.to_sym, hash[k]] }
       end
 
       def mixfiles

@@ -22,20 +22,20 @@ module Dependabot
 
         def commits_url
           return unless source
-          return if source.provider == "azure" # TODO: Fetch Azure commits
+          return if source.provider == "codecommit" # TODO: Fetch Codecommit commits
 
           path =
             case source.provider
             when "github" then github_compare_path(new_tag, previous_tag)
             when "bitbucket" then bitbucket_compare_path(new_tag, previous_tag)
             when "gitlab" then gitlab_compare_path(new_tag, previous_tag)
+            when "azure" then azure_compare_path(new_tag, previous_tag)
             else raise "Unexpected source provider '#{source.provider}'"
             end
 
           "#{source.url}/#{path}"
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         def commits
           return [] unless source
           return [] unless new_tag && previous_tag
@@ -44,20 +44,18 @@ module Dependabot
           when "github" then fetch_github_commits
           when "bitbucket" then fetch_bitbucket_commits
           when "gitlab" then fetch_gitlab_commits
-          when "azure" then [] # TODO: Fetch Azure commits
+          when "azure" then fetch_azure_commits
+          when "codecommit" then [] # TODO: Fetch Codecommit commits
           else raise "Unexpected source provider '#{source.provider}'"
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         def new_tag
           new_version = dependency.version
 
-          if git_source?(dependency.requirements) && git_sha?(new_version)
-            return new_version
-          end
+          return new_version if git_source?(dependency.requirements) && git_sha?(new_version)
 
-          return new_ref if git_source?(dependency.requirements) && ref_changed?
+          return new_ref if new_ref && ref_changed?
 
           tags = dependency_tags.
                  select { |tag| tag_matches_version?(tag, new_version) }.
@@ -68,7 +66,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def previous_tag
           previous_version = dependency.previous_version
@@ -76,7 +73,7 @@ module Dependabot
           if git_source?(dependency.previous_requirements) &&
              git_sha?(previous_version)
             previous_version
-          elsif git_source?(dependency.previous_requirements) && ref_changed?
+          elsif previous_ref && ref_changed?
             previous_ref
           elsif previous_version
             tags = dependency_tags.
@@ -88,7 +85,7 @@ module Dependabot
             lowest_tag_satisfying_previous_requirements
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def lowest_tag_satisfying_previous_requirements
@@ -101,9 +98,7 @@ module Dependabot
         end
 
         def version_from_tag(tag)
-          if version_class.correct?(tag.gsub(/^v/, ""))
-            version_class.new(tag.gsub(/^v/, ""))
-          end
+          version_class.new(tag.gsub(/^v/, "")) if version_class.correct?(tag.gsub(/^v/, ""))
 
           return unless tag.gsub(/^[^\d]*/, "").length > 1
           return unless version_class.correct?(tag.gsub(/^[^\d]*/, ""))
@@ -129,40 +124,37 @@ module Dependabot
 
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
-          source_type = sources.first[:type] || sources.first.fetch("type")
-          source_type == "git"
+          sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
         end
 
         def ref_changed?
-          return false unless previous_ref && new_ref
-
+          # We could go from multiple previous refs (nil) to a single new ref
           previous_ref != new_ref
         end
 
         def previous_ref
           return unless git_source?(dependency.previous_requirements)
 
-          dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
           return unless git_source?(dependency.previous_requirements)
 
-          dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return new_refs.first if new_refs.count == 1
         end
 
         def tag_matches_version?(tag, version)
           return false unless version
 
-          unless version_class.correct?(version)
-            return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/)
-          end
+          return tag.match?(/(?:[^0-9\.]|\A)#{Regexp.escape(version)}\z/) unless version_class.correct?(version)
 
           version_regex = GitCommitChecker::VERSION_REGEX
           return false unless tag.match?(version_regex)
@@ -220,7 +212,19 @@ module Dependabot
           elsif new_tag
             "commits/#{new_tag}"
           else
-            "commits/master"
+            "commits/#{default_gitlab_branch}"
+          end
+        end
+
+        def azure_compare_path(new_tag, previous_tag)
+          # GC for commits, GT for tags, and GB for branches
+          type = git_sha?(new_tag) ? "GC" : "GT"
+          if new_tag && previous_tag
+            "branchCompare?baseVersion=#{type}#{previous_tag}&targetVersion=#{type}#{new_tag}"
+          elsif new_tag
+            "commits?itemVersion=#{type}#{new_tag}"
+          else
+            "commits"
           end
         end
 
@@ -236,7 +240,7 @@ module Dependabot
               previous_commit_shas =
                 github_client.commits(repo, **args).map(&:sha)
 
-              # Note: We reverse this so it's consistent with the array we get
+              # NOTE: We reverse this so it's consistent with the array we get
               # from `github_client.compare(...)`
               args = { sha: new_tag, path: path }.compact
               github_client.
@@ -290,6 +294,26 @@ module Dependabot
           []
         end
 
+        def fetch_azure_commits
+          type = git_sha?(new_tag) ? "commit" : "tag"
+          azure_client.
+            compare(previous_tag, new_tag, type).
+            map do |commit|
+            {
+              message: commit["comment"],
+              sha: commit["commitId"],
+              html_url: commit["remoteUrl"]
+            }
+          end
+        rescue Dependabot::Clients::Azure::NotFound,
+               Dependabot::Clients::Azure::Unauthorized,
+               Dependabot::Clients::Azure::Forbidden,
+               Excon::Error::Server,
+               Excon::Error::Socket,
+               Excon::Error::Timeout
+          []
+        end
+
         def gitlab_client
           @gitlab_client ||= Dependabot::Clients::GitlabWithRetries.
                              for_source(source: source, credentials: credentials)
@@ -297,7 +321,12 @@ module Dependabot
 
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_github_dot_com(credentials: credentials)
+                             for_source(source: source, credentials: credentials)
+        end
+
+        def azure_client
+          @azure_client ||= Dependabot::Clients::Azure.
+                            for_source(source: source, credentials: credentials)
         end
 
         def bitbucket_client
@@ -330,6 +359,11 @@ module Dependabot
         def reliable_source_directory?
           MetadataFinders::Base::PACKAGE_MANAGERS_WITH_RELIABLE_DIRECTORIES.
             include?(dependency.package_manager)
+        end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
         end
       end
     end

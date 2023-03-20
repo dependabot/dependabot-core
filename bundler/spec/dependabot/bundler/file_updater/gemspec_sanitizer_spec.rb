@@ -13,7 +13,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
   describe "#rewrite" do
     subject(:rewrite) { sanitizer.rewrite(content) }
-    let(:content) { fixture("ruby", "gemspecs", "with_require") }
+    let(:content) do
+      bundler_project_dependency_file("gemfile_with_require", filename: "example.gemspec").content
+    end
 
     context "with a requirement line" do
       let(:content) do
@@ -22,10 +24,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       it do
         is_expected.to eq(
-          "begin\n"\
-          "require 'example/version'\n"\
-          "rescue LoadError\n"\
-          "end\n"\
+          "begin\n" \
+          "require 'example/version'\n" \
+          "rescue LoadError\n" \
+          "end\n" \
           'add_dependency "require"'
         )
       end
@@ -38,10 +40,10 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       it do
         is_expected.to eq(
-          "begin\n"\
-          "require_relative 'example/version'\n"\
-          "rescue LoadError\n"\
-          "end\n"\
+          "begin\n" \
+          "require_relative 'example/version'\n" \
+          "rescue LoadError\n" \
+          "end\n" \
           'add_dependency "require"'
         )
       end
@@ -98,8 +100,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "that uses a conditional" do
         let(:content) do
-          "Spec.new { |s| s.version = '0.1.0'\n "\
-          "s.post_install_message = \"a\" if true }"
+          "Spec.new { |s| s.version = '0.1.0'\n " \
+            "s.post_install_message = \"a\" if true }"
         end
         it "maintains a valid conditional" do
           expect(rewrite).to eq(
@@ -110,8 +112,8 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
 
       context "that assigns to the metadata hash" do
         let(:content) do
-          "Spec.new { |s| s.version = '0.1.0'\n "\
-          "s.metadata['homepage'] = \"a\" }"
+          "Spec.new { |s| s.version = '0.1.0'\n " \
+            "s.metadata['homepage'] = \"a\" }"
         end
         it "removes the assignment" do
           expect(rewrite).to eq(
@@ -131,7 +133,24 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         end
         it "removes the whole heredoc" do
           expect(rewrite).to eq(
-            "Spec.new do |s|\n              s.version = \"0.1.0\""\
+            "Spec.new do |s|\n              s.version = \"0.1.0\"" \
+            "\n              \"sanitized\"\n            end"
+          )
+        end
+      end
+
+      context "that uses a heredoc with methods chained onto it" do
+        let(:content) do
+          %(Spec.new do |s|
+              s.version = "0.1.0"
+              s.post_install_message = <<~DESCRIPTION.strip.downcase
+                My description
+              DESCRIPTION
+            end)
+        end
+        it "removes the whole heredoc" do
+          expect(rewrite).to eq(
+            "Spec.new do |s|\n              s.version = \"0.1.0\"" \
             "\n              \"sanitized\"\n            end"
           )
         end
@@ -210,7 +229,12 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       # rubocop:disable Lint/InterpolationCheck
       context "with an assignment to a string-interpolated constant" do
         let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}" }' }
-        it { is_expected.to eq('Spec.new { |s| s.version = "#{"1.5.0"}" }') }
+        it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
+      end
+
+      context "with an assignment to a string-interpolated constant with multiple values" do
+        let(:content) { 'Spec.new { |s| s.version = "#{Example::Version}-#{git_commit}" }' }
+        it { is_expected.to eq('Spec.new { |s| s.version = "1.5.0" }') }
       end
 
       context "with a version constant used elsewhere in the file" do
@@ -230,7 +254,9 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
       end
 
       context "with a block" do
-        let(:content) { fixture("ruby", "gemspecs", "with_nested_block") }
+        let(:content) do
+          bundler_project_dependency_file("gemfile_with_nested_block", filename: "example.gemspec").content
+        end
         specify { expect { sanitizer.rewrite(content) }.to_not raise_error }
       end
     end
@@ -241,8 +267,17 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemspecSanitizer do
         it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
       end
 
+      context "with an assignment to a method call with a block (Dir.chdir)" do
+        let(:content) do
+          'Spec.new { |s| s.files = Dir.chdir("path") { `ls`.split("\n") } }'
+        end
+        it { is_expected.to eq("Spec.new { |s| s.files = [] }") }
+      end
+
       context "with an assignment to Dir[..]" do
-        let(:content) { fixture("ruby", "gemspecs", "example") }
+        let(:content) do
+          bundler_project_dependency_file("gemfile_example", filename: "example.gemspec").content
+        end
         it { is_expected.to include("spec.files        = []") }
       end
     end

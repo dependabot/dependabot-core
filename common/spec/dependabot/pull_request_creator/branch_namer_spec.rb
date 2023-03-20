@@ -5,6 +5,8 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/branch_namer"
+require "dependabot/pull_request_creator/branch_namer/solo_strategy"
+require "dependabot/pull_request_creator/branch_namer/group_rule_strategy"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do
@@ -18,14 +20,16 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   let(:dependencies) { [dependency] }
   let(:dependency) do
     Dependabot::Dependency.new(
-      name: "business",
-      version: "1.5.0",
+      name: dependency_name,
+      version: dependency_version,
       previous_version: previous_version,
       package_manager: "dummy",
       requirements: requirements,
       previous_requirements: previous_requirements
     )
   end
+  let(:dependency_name) { "business" }
+  let(:dependency_version) { "1.5.0" }
   let(:requirements) do
     [{ file: "Gemfile", requirement: "~> 1.5.0", groups: [], source: nil }]
   end
@@ -100,6 +104,49 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
 
       it { is_expected.to eq("dependabot-dummy-business-1.5.0") }
+    end
+
+    context "with a maximum length" do
+      let(:namer) do
+        described_class.new(
+          dependencies: dependencies,
+          files: files,
+          target_branch: target_branch,
+          max_length: max_length
+        )
+      end
+
+      context "with a maximum length longer than branch name" do
+        let(:max_length) { 35 }
+
+        it { is_expected.to eq("dependabot/dummy/business-1.5.0") }
+        its(:length) { is_expected.to eq(31) }
+      end
+
+      context "with a maximum length shorter than branch name" do
+        let(:dependency_name) { "business-and-work-and-desks-and-tables-and-chairs-and-lunch" }
+
+        context "with a maximum length longer than sha1 length" do
+          let(:max_length) { 50 }
+
+          it { is_expected.to eq("dependabot#{Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")}") }
+          its(:length) { is_expected.to eq(50) }
+        end
+
+        context "with a maximum length equal than sha1 length" do
+          let(:max_length) { 40 }
+
+          it { is_expected.to eq(Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")) }
+          its(:length) { is_expected.to eq(40) }
+        end
+
+        context "with a maximum length shorter than sha1 length" do
+          let(:max_length) { 20 }
+
+          it { is_expected.to eq(Digest::SHA1.hexdigest("dependabot/dummy/#{dependency_name}-1.5.0")[0...20]) }
+          its(:length) { is_expected.to eq(20) }
+        end
+      end
     end
 
     context "with multiple dependencies" do
@@ -245,6 +292,43 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
+    context "with a removed transitive dependency" do
+      let(:dependencies) { [removed_dep, parent_dep] }
+      let(:removed_dep) do
+        Dependabot::Dependency.new(
+          name: "business",
+          version: nil,
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [],
+          previous_requirements: [],
+          removed: true
+        )
+      end
+      let(:parent_dep) do
+        Dependabot::Dependency.new(
+          name: "statesman",
+          version: "1.5.0",
+          previous_version: "1.4.0",
+          package_manager: "dummy",
+          requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.5.0",
+            groups: [],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "Gemfile",
+            requirement: "~> 1.4.0",
+            groups: [],
+            source: nil
+          }]
+        )
+      end
+
+      it { is_expected.to eq("dependabot/dummy/business-and-statesman--removed") }
+    end
+
     context "with a : in the name" do
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -287,6 +371,40 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       it "strips @ character" do
         expect(new_branch_name).
           to eq("dependabot/npm_and_yarn/storybook/addon-knobs-5.1.9")
+      end
+    end
+
+    context "with square brackets in the name" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "werkzeug[watchdog]",
+          version: "0.16.0",
+          previous_version: "0.15.0",
+          package_manager: "pip",
+          requirements: []
+        )
+      end
+
+      it "replaces the brackets with hyphens" do
+        expect(new_branch_name).
+          to eq("dependabot/pip/werkzeug-watchdog--0.16.0")
+      end
+    end
+
+    context "with an invalid control character name" do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "werk\1zeug",
+          version: "0.16.0",
+          previous_version: "0.15.0",
+          package_manager: "pip",
+          requirements: []
+        )
+      end
+
+      it "strips the invalid character" do
+        expect(new_branch_name).
+          to eq("dependabot/pip/werkzeug-0.16.0")
       end
     end
 
@@ -380,7 +498,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             groups: [],
             source: {
               type: "digest",
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d"\
+              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                       "fc38288cf73aa07485005"
             }
           }],
@@ -390,7 +508,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             groups: [],
             source: {
               type: "digest",
-              digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"\
+              digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                       "aaaaaaaaaaaaaaaaaaaaa"
             }
           }]
@@ -408,6 +526,173 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
         it "includes the tag rather than the SHA" do
           expect(new_branch_name).to eq("dependabot/docker/ubuntu-17.10")
         end
+      end
+    end
+
+    context "with multiple previous source refs" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+      let(:previous_version) { nil }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@v2.1.0" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "v2.1.0",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@master" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "master",
+            branch: nil
+          }
+        }]
+      end
+
+      it "includes the new ref" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/actions/checkout-v2.2.0"
+        )
+      end
+    end
+
+    context "when going from a git ref to a version requirement" do
+      let(:dependency_name) { "business" }
+      let(:dependency_version) { "v2.0.0" }
+      let(:previous_version) { nil }
+      let(:requirements) do
+        [{
+          requirement: "~> 2.0.0",
+          groups: [],
+          file: "Gemfile",
+          source: nil
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "Gemfile",
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            ref: "v1.2.0",
+            branch: nil
+          }
+        }]
+      end
+
+      it "includes the new version" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/business-tw-2.0.0"
+        )
+      end
+    end
+
+    context "when going from a version requirement to a git ref" do
+      let(:dependency_name) { "business" }
+      let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+      let(:previous_version) { "v2.0.0" }
+      let(:requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: "Gemfile",
+          source: {
+            type: "git",
+            url: "https://github.com/gocardless/business",
+            ref: "v2.2.0",
+            branch: nil
+          }
+        }]
+      end
+      let(:previous_requirements) do
+        [{
+          requirement: "~> 2.0.0",
+          groups: [],
+          file: "Gemfile",
+          source: nil
+        }]
+      end
+
+      it "includes the new ref" do
+        expect(new_branch_name).to eq(
+          "dependabot/dummy/business-v2.2.0"
+        )
+      end
+    end
+
+    context "when no group rule is present" do
+      it "delegates to a solo strategy" do
+        strategy = instance_double(described_class::SoloStrategy)
+        allow(described_class::SoloStrategy).to receive(:new).and_return(strategy)
+
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            group_rule: nil
+          )
+
+        expect(strategy).to receive(:new_branch_name)
+
+        branch_namer.new_branch_name
+      end
+    end
+
+    context "when a group rule is present" do
+      it "delegates to a group rule strategy" do
+        strategy = instance_double(described_class::GroupRuleStrategy)
+        allow(described_class::GroupRuleStrategy).to receive(:new).and_return(strategy)
+
+        group_rule = double("GroupRule", name: "my_group_rule")
+        branch_namer =
+          described_class.new(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            group_rule: group_rule
+          )
+
+        expect(strategy).to receive(:new_branch_name)
+
+        branch_namer.new_branch_name
       end
     end
   end

@@ -34,6 +34,9 @@
     <Dependency Include="nanoFramework.CoreLibrary">
       <Version>[1.0.0-preview062]</Version>
     </Dependency>
+    <DevelopmentDependency Include="nanoFramework.CoreExtra">
+      <Version>[1.0.0-preview061]</Version>
+    </DevelopmentDependency>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>43cd93bb-c6c4-4f8e-b1ed-406469d9db42</ProjectGuid>

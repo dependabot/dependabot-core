@@ -9,32 +9,27 @@ require_common_spec "file_parsers/shared_examples_for_file_parsers"
 RSpec.describe Dependabot::Bundler::FileParser do
   it_behaves_like "a dependency file parser"
 
-  let(:files) { [gemfile, lockfile] }
-  let(:gemfile) do
-    Dependabot::DependencyFile.new(name: "Gemfile", content: gemfile_body)
+  let(:parser) do
+    described_class.new(
+      dependency_files: dependency_files,
+      source: source,
+      reject_external_code: reject_external_code
+    )
   end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(name: "Gemfile.lock", content: lockfile_body)
-  end
-  let(:parser) { described_class.new(dependency_files: files, source: source) }
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
-      repo: "gocardless/bump",
+      repo: "dependabot-fixtures/bump",
       directory: "/"
     )
   end
-  let(:gemfile_body) { fixture("ruby", "gemfiles", gemfile_fixture_name) }
-  let(:lockfile_body) { fixture("ruby", "lockfiles", lockfile_fixture_name) }
-  let(:gemfile_fixture_name) { "version_specified" }
-  let(:lockfile_fixture_name) { "Gemfile.lock" }
+  let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
+  let(:reject_external_code) { false }
 
   describe "parse" do
     subject(:dependencies) { parser.parse }
 
     context "with a version specified" do
-      let(:gemfile_fixture_name) { "version_specified" }
-
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -55,7 +50,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "that is a pre-release with a dash" do
-        let(:gemfile_fixture_name) { "prerelease_with_dash" }
+        let(:dependency_files) { bundler_project_dependency_files("prerelease_with_dash_gemfile") }
 
         its(:length) { is_expected.to eq(2) }
 
@@ -79,10 +74,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with no version specified" do
-      let(:gemfile_fixture_name) { "version_not_specified" }
-      let(:lockfile_fixture_name) { "version_not_specified.lock" }
-
       describe "the first dependency" do
+        let(:dependency_files) { bundler_project_dependency_files("version_not_specified") }
         subject { dependencies.first }
         let(:expected_requirements) do
           [{
@@ -101,8 +94,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a version specified as between two constraints" do
-      let(:gemfile_fixture_name) { "version_between_bounds" }
-      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("version_between_bounds_gemfile") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -122,9 +114,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with development dependencies" do
-      let(:gemfile_fixture_name) { "development_dependencies" }
-      let(:lockfile_fixture_name) { "development_dependencies.lock" }
-
+      let(:dependency_files) { bundler_project_dependency_files("development_dependencies") }
       its(:length) { is_expected.to eq(2) }
 
       describe "the last dependency" do
@@ -146,17 +136,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "from a gems.rb and gems.locked" do
-      let(:gemfile) do
-        Dependabot::DependencyFile.new(name: "gems.rb", content: gemfile_body)
-      end
-      let(:lockfile) do
-        Dependabot::DependencyFile.new(
-          name: "gems.locked",
-          content: lockfile_body
-        )
-      end
-      let(:gemfile_fixture_name) { "version_specified" }
-      let(:lockfile_fixture_name) { "bundler_2.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("version_specified_gems_rb") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -179,12 +159,11 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a git dependency" do
-      let(:gemfile_fixture_name) { "git_source" }
-      let(:lockfile_fixture_name) { "git_source.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("git_source") }
 
       its(:length) { is_expected.to eq(5) }
 
-      describe "an untagged dependency" do
+      describe "an untagged dependency", :bundler_v1_only do
         subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
         let(:expected_requirements) do
           [{
@@ -192,9 +171,32 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "http://github.com/gocardless/uk_phone_numbers",
-              branch: "master",
+              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              branch: nil,
               ref: "master"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("1530024bd6a68d36ac18e04836ce110e0d433c36")
+        end
+      end
+
+      describe "an untagged dependency", :bundler_v2_only do
+        subject { dependencies.find { |d| d.name == "uk_phone_numbers" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "http://github.com/dependabot-fixtures/uk_phone_numbers",
+              branch: nil,
+              ref: nil
             },
             groups: [:default]
           }]
@@ -215,8 +217,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "git@github.com:chanks/que",
-              branch: "master",
+              url: "git@github.com:dependabot-fixtures/que",
+              branch: nil,
               ref: "v0.11.6"
             },
             groups: [:default]
@@ -230,9 +232,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      describe "a github dependency" do
-        let(:gemfile_fixture_name) { "github_source" }
-        let(:lockfile_fixture_name) { "github_source.lock" }
+      describe "a github dependency", :bundler_v1_only do
+        let(:dependency_files) { bundler_project_dependency_files("github_source") }
 
         subject { dependencies.find { |d| d.name == "business" } }
         let(:expected_requirements) do
@@ -241,8 +242,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "git://github.com/gocardless/business.git",
-              branch: "master",
+              url: "https://github.com/dependabot-fixtures/business.git",
+              branch: nil,
               ref: "master"
             },
             groups: [:default]
@@ -256,9 +257,33 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      context "with a subdependency of a git source" do
-        let(:lockfile_fixture_name) { "git_source_undeclared.lock" }
-        let(:gemfile_fixture_name) { "git_source_undeclared" }
+      describe "a github dependency", :bundler_v2_only do
+        let(:dependency_files) { bundler_project_dependency_files("github_source") }
+
+        subject { dependencies.find { |d| d.name == "business" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/business.git",
+              branch: nil,
+              ref: nil
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+        its(:version) do
+          is_expected.to eq("d31e445215b5af70c1604715d97dd953e868380e")
+        end
+      end
+
+      context "with a subdependency of a git source", :bundler_v1_only do
+        let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
 
         subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
         let(:expected_requirements) do
@@ -267,9 +292,32 @@ RSpec.describe Dependabot::Bundler::FileParser do
             file: "Gemfile",
             source: {
               type: "git",
-              url: "https://github.com/kaminari/kaminari",
-              branch: "master",
+              url: "https://github.com/dependabot-fixtures/kaminari",
+              branch: nil,
               ref: "master"
+            },
+            groups: [:default]
+          }]
+        end
+
+        it { is_expected.to be_a(Dependabot::Dependency) }
+        its(:name) { is_expected.to eq("kaminari-actionview") }
+        its(:requirements) { is_expected.to eq(expected_requirements) }
+      end
+
+      context "with a subdependency of a git source", :bundler_v2_only do
+        let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
+
+        subject { dependencies.find { |d| d.name == "kaminari-actionview" } }
+        let(:expected_requirements) do
+          [{
+            requirement: ">= 0",
+            file: "Gemfile",
+            source: {
+              type: "git",
+              url: "https://github.com/dependabot-fixtures/kaminari",
+              branch: nil,
+              ref: nil
             },
             groups: [:default]
           }]
@@ -281,9 +329,36 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
+    context "rejecting external code" do
+      let(:reject_external_code) { true }
+
+      context "with no git sources" do
+        let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile") }
+
+        it "does not raise exception" do
+          expect { parser.parse }.not_to raise_error
+        end
+      end
+
+      context "with a git source" do
+        let(:dependency_files) { bundler_project_dependency_files("git_source") }
+
+        it "raises exception" do
+          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+        end
+      end
+
+      context "with a subdependency of a git source" do
+        let(:dependency_files) { bundler_project_dependency_files("git_source_undeclared") }
+
+        it "raises exception" do
+          expect { parser.parse }.to raise_error(::Dependabot::UnexpectedExternalCode)
+        end
+      end
+    end
+
     context "with a dependency that only appears in the lockfile" do
-      let(:gemfile_fixture_name) { "subdependency" }
-      let(:lockfile_fixture_name) { "subdependency.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("subdependency") }
 
       its(:length) { is_expected.to eq(2) }
       it "is included" do
@@ -292,8 +367,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a dependency that doesn't appear in the lockfile" do
-      let(:gemfile_fixture_name) { "platform_windows" }
-      let(:lockfile_fixture_name) { "platform_windows.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("platform_windows") }
 
       its(:length) { is_expected.to eq(1) }
       it "is not included" do
@@ -302,15 +376,11 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a path-based dependency" do
-      let(:files) { [gemfile, lockfile, gemspec] }
-      let(:gemfile_fixture_name) { "path_source" }
-      let(:lockfile_fixture_name) { "path_source.lock" }
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          name: "plugins/example/example.gemspec",
-          content: fixture("ruby", "gemspecs", "example"),
-          support_file: true
-        )
+      let(:dependency_files) do
+        bundler_project_dependency_files("path_source").tap do |files|
+          gemspec = files.find { |f| f.name == "plugins/example/example.gemspec" }
+          gemspec.support_file = true
+        end
       end
 
       let(:expected_requirements) do
@@ -322,11 +392,10 @@ RSpec.describe Dependabot::Bundler::FileParser do
         }]
       end
 
-      its(:length) { is_expected.to eq(5) }
+      its(:length) { is_expected.to eq(4) }
 
-      it "includes the path dependency" do
-        path_dep = dependencies.find { |dep| dep.name == "example" }
-        expect(path_dep.requirements).to eq(expected_requirements)
+      it "does not include the path dependency" do
+        expect(dependencies.map(&:name)).to_not include("example")
       end
 
       it "includes the path dependency's sub-dependency" do
@@ -336,26 +405,16 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "that comes from a .specification file" do
-        let(:files) { [gemfile, lockfile, specification] }
-        let(:specification) do
-          Dependabot::DependencyFile.new(
-            name: "plugins/example/.specification",
-            content: fixture("ruby", "specifications", "statesman"),
-            support_file: true
-          )
-        end
+        let(:dependency_files) { bundler_project_dependency_files("version_specified_gemfile_specification") }
 
         it "includes the path dependency" do
-          path_dep = dependencies.find { |dep| dep.name == "example" }
-          expect(path_dep.requirements).to eq(expected_requirements)
+          expect(dependencies.map(&:name)).to_not include("example")
         end
       end
     end
 
     context "with a gem from a private gem source" do
-      let(:lockfile_fixture_name) { "specified_source.lock" }
-      let(:gemfile_fixture_name) { "specified_source" }
-
+      let(:dependency_files) { bundler_project_dependency_files("specified_source") }
       its(:length) { is_expected.to eq(2) }
 
       describe "the private dependency" do
@@ -380,23 +439,20 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a gem from a plugin gem source" do
-      let(:lockfile_fixture_name) { "specified_plugin_source.lock" }
-      let(:gemfile_fixture_name) { "specified_plugin_source" }
+      let(:dependency_files) { bundler_project_dependency_files("specified_plugin_source") }
 
       it "raises a helpful error" do
         expect { parser.parse }.
           to raise_error do |error|
-            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-            expect(error.message).
-              to include("No plugin sources available for aws-s3")
-          end
+          expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+          expect(error.message).
+            to include("No plugin sources available for aws-s3")
+        end
       end
     end
 
     context "with a gem from the default source, specified as a block" do
-      let(:lockfile_fixture_name) { "block_source_rubygems.lock" }
-      let(:gemfile_fixture_name) { "block_source_rubygems" }
-
+      let(:dependency_files) { bundler_project_dependency_files("block_source_rubygems") }
       its(:length) { is_expected.to eq(2) }
 
       describe "the first dependency" do
@@ -418,48 +474,39 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "when the Gemfile can't be evaluated" do
-      let(:gemfile_fixture_name) { "unevaluatable_japanese" }
-      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("unevaluatable_japanese_gemfile") }
 
       it "raises a helpful error" do
         expect { parser.parse }.
           to raise_error do |error|
-            expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
-            expect(error.message.encoding.to_s).to eq("UTF-8")
-          end
+          expect(error.class).to eq(Dependabot::DependencyFileNotEvaluatable)
+          expect(error.message.encoding.to_s).to eq("UTF-8")
+        end
       end
 
       context "because it contains an exec command" do
-        let(:gemfile_fixture_name) { "exec_error" }
-        let(:lockfile_fixture_name) { "Gemfile.lock" }
+        let(:dependency_files) { bundler_project_dependency_files("exec_error_gemfile") }
 
         it "raises a helpful error" do
           expect { parser.parse }.
             to raise_error do |error|
-              expect(error.class).
-                to eq(Dependabot::DependencyFileNotEvaluatable)
-            end
+            expect(error.message).
+              to start_with("Error evaluating your dependency files")
+            expect(error.class).
+              to eq(Dependabot::DependencyFileNotEvaluatable)
+          end
         end
       end
     end
 
     context "with a Gemfile that uses eval_gemfile" do
-      let(:files) { [gemfile, lockfile, evaled_gemfile] }
-      let(:gemfile_fixture_name) { "eval_gemfile" }
-      let(:evaled_gemfile) do
-        Dependabot::DependencyFile.new(
-          name: "backend/Gemfile",
-          content: fixture("ruby", "gemfiles", "only_statesman")
-        )
-      end
-      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("eval_gemfile_gemfile") }
 
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with a Gemfile that includes a require" do
-      let(:gemfile_fixture_name) { "includes_requires" }
-      let(:lockfile_fixture_name) { "Gemfile.lock" }
+      let(:dependency_files) { bundler_project_dependency_files("includes_requires_gemfile") }
 
       it "blows up with a useful error" do
         expect { parser.parse }.
@@ -468,44 +515,29 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with a Gemfile that includes a file with require_relative" do
-      let(:files) { [gemfile, lockfile, required_file] }
-      let(:gemfile_fixture_name) { "includes_require_relative" }
-      let(:lockfile_fixture_name) { "Gemfile.lock" }
-      let(:required_file) do
-        Dependabot::DependencyFile.new(
-          name: "../some_other_file.rb",
-          content: "SOME_CONSTANT = 5"
-        )
+      let(:dependency_files) do
+        bundler_project_dependency_files("includes_require_relative_gemfile").map do |file|
+          path = Pathname.new(file.name)
+          file.name = File.basename(path)
+          dir = File.dirname(path)
+          file.directory = dir
+          file.name = "../#{file.name}" if dir != "nested"
+          file
+        end
       end
 
       its(:length) { is_expected.to eq(2) }
     end
 
     context "with a Gemfile that imports a gemspec" do
-      let(:files) { [gemfile, lockfile, gemspec] }
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          name: "example.gemspec",
-          content: gemspec_content
-        )
-      end
-      let(:gemfile_fixture_name) { "imports_gemspec" }
-      let(:lockfile_fixture_name) { "imports_gemspec.lock" }
-      let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+      let(:dependency_files) { bundler_project_dependency_files("imports_gemspec") }
 
       it "doesn't include the gemspec dependency (i.e., itself)" do
         expect(dependencies.map(&:name)).to match_array(%w(business statesman))
       end
 
       context "with a gemspec from a specific path" do
-        let(:gemfile_fixture_name) { "imports_gemspec_from_path" }
-        let(:lockfile_fixture_name) { "imports_gemspec_from_path.lock" }
-        let(:gemspec) do
-          Dependabot::DependencyFile.new(
-            name: "subdir/example.gemspec",
-            content: fixture("ruby", "gemspecs", "small_example")
-          )
-        end
+        let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_from_path") }
 
         it "fetches details from the gemspec" do
           expect(dependencies.map(&:name)).
@@ -528,18 +560,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         context "with a gemspec with a float version number" do
-          let(:files) { [gemspec, gemfile] }
-
-          let(:gemspec) do
-            Dependabot::DependencyFile.new(
-              name: "version_as_float.gemspec",
-              content: gemspec_content
-            )
-          end
-          let(:gemspec_content) do
-            fixture("ruby", "gemspecs", "version_as_float")
-          end
-          let(:gemfile_fixture_name) { "imports_gemspec" }
+          let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_version_as_float") }
 
           it "includes the gemspec dependency" do
             expect(dependencies.map(&:name)).
@@ -548,10 +569,8 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
 
-      context "with an unparseable git dep that also appears in the gemspec" do
-        let(:gemfile_fixture_name) { "git_source_unparseable" }
-        let(:lockfile_fixture_name) { "git_source_unparseable.lock" }
-        let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+      context "with an unparseable git dep that also appears in the gemspec", :bundler_v1_only do
+        let(:dependency_files) { bundler_project_dependency_files("git_source_unparseable") }
 
         it "includes source details on the gemspec requirement" do
           expect(dependencies.map(&:name)).to match_array(%w(business))
@@ -566,9 +585,30 @@ RSpec.describe Dependabot::Bundler::FileParser do
                 groups: ["runtime"],
                 source: {
                   type: "git",
-                  url: "git@github.com:gocardless/business",
-                  branch: "master",
+                  url: "git@github.com:dependabot-fixtures/business",
+                  branch: nil,
                   ref: "master"
+                }
+              }]
+            )
+        end
+
+        it "includes source details on the gemspec requirement", :bundler_v2_only do
+          expect(dependencies.map(&:name)).to match_array(%w(business))
+          expect(dependencies.first.name).to eq("business")
+          expect(dependencies.first.version).
+            to eq("1378a2b0b446d991b7567efbc7eeeed2720e4d8f")
+          expect(dependencies.first.requirements).
+            to match_array(
+              [{
+                file: "example.gemspec",
+                requirement: "~> 1.0",
+                groups: ["runtime"],
+                source: {
+                  type: "git",
+                  url: "git@github.com:dependabot-fixtures/business",
+                  branch: nil,
+                  ref: nil
                 }
               }]
             )
@@ -576,15 +616,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "with two gemspecs" do
-        let(:gemfile_fixture_name) { "imports_two_gemspecs" }
-        let(:lockfile_fixture_name) { "imports_two_gemspecs.lock" }
-        let(:gemspec2) do
-          Dependabot::DependencyFile.new(
-            name: "example2.gemspec",
-            content: fixture("ruby", "gemspecs", "small_example2")
-          )
-        end
-        let(:files) { [gemfile, lockfile, gemspec, gemspec2] }
+        let(:dependency_files) { bundler_project_dependency_files("imports_two_gemspecs") }
 
         it "fetches details from both gemspecs" do
           expect(dependencies.map(&:name)).
@@ -610,15 +642,14 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "with a large gemspec" do
-        let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
-        let(:lockfile_fixture_name) { "imports_gemspec_large.lock" }
+        let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_imports_gemspec_large") }
 
         it "includes details of each declaration" do
-          expect(dependencies.select(&:top_level?).count).to eq(13)
+          expect(dependencies.count(&:top_level?)).to eq(13)
         end
 
         it "includes details of each sub-dependency" do
-          expect(dependencies.reject(&:top_level?).count).to eq(23)
+          expect(dependencies.count { |dep| !dep.top_level? }).to eq(23)
 
           diff_lcs = dependencies.find { |d| d.name == "diff-lcs" }
           expect(diff_lcs.subdependency_metadata).to eq([{ production: false }])
@@ -663,14 +694,15 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
 
         context "that needs to be sanitized" do
-          let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
+          let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_with_require") }
+
           it "includes details of each declaration" do
-            expect(dependencies.select(&:top_level?).count).to eq(13)
+            expect(dependencies.count(&:top_level?)).to eq(13)
           end
         end
 
         context "that can't be evaluated" do
-          let(:gemspec_content) { fixture("ruby", "gemspecs", "unevaluatable") }
+          let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_unevaluatable") }
 
           it "raises a helpful error" do
             expect { parser.parse }.
@@ -680,23 +712,26 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
     end
 
-    context "with a gemspec and Gemfile (no lockfile)" do
-      let(:files) { [gemspec, gemfile] }
+    context "with a gemspec that loads dependencies from another gemspec dynamically" do
+      let(:dependency_files) { bundler_project_dependency_files("gemspec_loads_another") }
 
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          name: "example.gemspec",
-          content: gemspec_content
-        )
+      describe "a development dependency loaded from an external gemspec" do
+        subject { dependencies.find { |d| d.name == "rake" } }
+
+        it "is only loaded with its own gemspec as requirement" do
+          expect(subject.name).to eq("rake")
+          expect(subject.requirements.size).to eq(1)
+          expect(subject.requirements.first[:file]).to eq("another.gemspec")
+        end
       end
-      let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
-      let(:gemfile_fixture_name) { "imports_gemspec" }
+    end
 
+    context "with a gemspec and Gemfile (no lockfile)" do
+      let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_no_lockfile") }
       its(:length) { is_expected.to eq(13) }
 
       context "when a dependency appears in both" do
-        let(:gemfile_fixture_name) { "imports_gemspec_git_override" }
-        let(:gemspec_content) { fixture("ruby", "gemspecs", "small_example") }
+        let(:dependency_files) { bundler_project_dependency_files("imports_gemspec_git_override_no_lockfile") }
 
         its(:length) { is_expected.to eq(1) }
 
@@ -715,9 +750,9 @@ RSpec.describe Dependabot::Bundler::FileParser do
                 file: "Gemfile",
                 source: {
                   type: "git",
-                  url: "https://github.com/gocardless/business",
-                  branch: "master",
-                  ref: "master"
+                  url: "https://github.com/dependabot-fixtures/business",
+                  branch: nil,
+                  ref: nil
                 },
                 groups: [:default]
               }
@@ -735,15 +770,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
     end
 
     context "with only a gemspec" do
-      let(:files) { [gemspec] }
-
-      let(:gemspec) do
-        Dependabot::DependencyFile.new(
-          name: "example.gemspec",
-          content: gemspec_content
-        )
-      end
-      let(:gemspec_content) { fixture("ruby", "gemspecs", "example") }
+      let(:dependency_files) { bundler_project_dependency_files("gemspec_no_lockfile") }
 
       its(:length) { is_expected.to eq(11) }
 
@@ -765,14 +792,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "that needs to be sanitized" do
-        let(:gemspec_content) { fixture("ruby", "gemspecs", "with_require") }
+        let(:dependency_files) { bundler_project_dependency_files("gemspec_with_require_no_lockfile") }
         its(:length) { is_expected.to eq(11) }
       end
     end
 
     context "with only a gemfile" do
-      let(:files) { [gemfile] }
-      let(:gemfile_fixture_name) { "version_specified" }
+      let(:dependency_files) { bundler_project_dependency_files("version_specified_no_lockfile") }
 
       its(:length) { is_expected.to eq(2) }
 
@@ -794,7 +820,7 @@ RSpec.describe Dependabot::Bundler::FileParser do
       end
 
       context "with a dependency for an alternative platform" do
-        let(:gemfile_fixture_name) { "platform_windows" }
+        let(:dependency_files) { bundler_project_dependency_files("platform_windows_no_lockfile") }
 
         its(:length) { is_expected.to eq(1) }
         it "is not included" do

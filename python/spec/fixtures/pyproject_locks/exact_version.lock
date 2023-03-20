@@ -52,7 +52,7 @@ version = "1.21.1"
 [metadata]
 content-hash = "a8d5762e953227a34625a209e9cc67a1c6fb2d7a971845829cf2f9cf61a5bd7c"
 platform = "*"
-python-versions = "^3.7"
+python-versions = "*"
 
 [metadata.hashes]
 certifi = ["13e698f54293db9f89122b0581843a782ad0934a4fe0172d2a980ba77fc61bb7", "9fa520c1bacfb634fa7af20a76bcbd3d5fb390481724c597da32c719a7dca4b0"]

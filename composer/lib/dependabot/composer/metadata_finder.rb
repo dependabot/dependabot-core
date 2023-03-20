@@ -3,7 +3,7 @@
 require "excon"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/composer/version"
 
 module Dependabot
@@ -18,7 +18,7 @@ module Dependabot
       def source_from_dependency
         source_url =
           dependency.requirements.
-          map { |r| r.fetch(:source) }.compact.
+          filter_map { |r| r.fetch(:source) }.
           first&.fetch(:url, nil)
 
         Source.from_url(source_url)
@@ -26,35 +26,28 @@ module Dependabot
 
       def look_up_source_from_packagist
         return nil if packagist_listing&.fetch("packages", nil) == []
-        unless packagist_listing&.dig("packages", dependency.name.downcase)
-          return nil
+        return nil unless packagist_listing&.dig("packages", dependency.name.downcase)
+
+        version_listings = packagist_listing["packages"][dependency.name.downcase]
+        # Packagist returns an array of version listings sorted newest to oldest.
+        # So iterate until we find the first URL that appears to be a source URL.
+        #
+        # NOTE: Each listing may not have all fields because they are minified to remove duplicate elements:
+        # * https://github.com/composer/composer/blob/main/UPGRADE-2.0.md#for-composer-repository-implementors
+        # * https://github.com/composer/metadata-minifier
+        version_listings.each do |i|
+          [i["homepage"], i.dig("source", "url")].each do |url|
+            source_url = Source.from_url(url)
+            return source_url unless source_url.nil?
+          end
         end
-
-        version_listings =
-          packagist_listing["packages"][dependency.name.downcase].
-          select { |version, _| Composer::Version.correct?(version) }.
-          sort_by { |version, _| Composer::Version.new(version) }.
-          map { |_, listing| listing }.
-          reverse
-
-        potential_source_urls =
-          version_listings.
-          flat_map { |info| [info["homepage"], info.dig("source", "url")] }.
-          compact
-
-        source_url = potential_source_urls.find { |url| Source.from_url(url) }
-
-        Source.from_url(source_url)
+        nil
       end
 
       def packagist_listing
         return @packagist_listing unless @packagist_listing.nil?
 
-        response = Excon.get(
-          "https://packagist.org/p/#{dependency.name.downcase}.json",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: "https://repo.packagist.org/p2/#{dependency.name.downcase}.json")
 
         return nil unless response.status == 200
 

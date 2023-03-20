@@ -7,10 +7,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
 
     - name: Use Node.js 10.x
-      uses: actions/setup-node@master
+      uses: actions/setup-node@v1
       with:
         version: 10.x
 
@@ -85,3 +85,30 @@ jobs:
     - name: Run the unit tests
       run: |
         node ./scripts/run-yarn.js test:unit
+
+  set-up-node-with-double-quotes:
+    name: "Set up node with double quotes"
+
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: "Set up node with double quotes"
+        uses: "actions/setup-node@master"
+
+  set-up-node-with-single-quotes:
+    name: 'Set up node with single quotes'
+
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - name: 'Set up node with single quotes'
+        uses: 'actions/setup-node@master'
+
+  set-up-node-without-quotes:
+    name: Set up node without quotes
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up node without quotes
+        uses: actions/setup-node@master

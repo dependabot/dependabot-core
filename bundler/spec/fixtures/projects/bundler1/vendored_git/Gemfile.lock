@@ -1,0 +1,18 @@
+GIT
+  remote: https://github.com/dependabot-fixtures/dependabot-test-ruby-package
+  revision: 81073f9462f228c6894e3e384d0718def310d99f
+  specs:
+    business (1.0.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  dependabot-test-ruby-package (~> 1.0.0)!
+
+BUNDLED WITH
+   1.16.0.pre.2

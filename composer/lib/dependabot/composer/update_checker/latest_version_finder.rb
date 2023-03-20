@@ -4,6 +4,7 @@ require "excon"
 require "json"
 
 require "dependabot/composer/update_checker"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/shared_helpers"
 require "dependabot/errors"
 
@@ -12,11 +13,13 @@ module Dependabot
     class UpdateChecker
       class LatestVersionFinder
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -43,9 +46,11 @@ module Dependabot
         def fetch_lowest_security_fix_version
           versions = available_versions
           versions = filter_prerelease_versions(versions)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+                                                                                           security_advisories)
           versions = filter_ignored_versions(versions)
-          versions = filter_vulnerable_versions(versions)
           versions = filter_lower_versions(versions)
+
           versions.min
         end
 
@@ -56,25 +61,27 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-        end
+          filtered =
+            versions_array.
+            reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
 
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
+            raise AllVersionsIgnored
+          end
+
+          filtered
         end
 
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.numeric_version
+
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version| version > dependency.numeric_version }
         end
 
         def wants_prerelease?
-          current_version = dependency.version
-          if current_version && version_class.new(current_version).prerelease?
-            return true
-          end
+          current_version = dependency.numeric_version
+          return true if current_version&.prerelease?
 
           dependency.requirements.any? do |req|
             req[:requirement].match?(/\d-[A-Za-z]/)
@@ -97,11 +104,11 @@ module Dependabot
 
           urls = repositories.
                  select { |h| h["type"] == "composer" }.
-                 map { |h| h["url"] }.compact.
+                 filter_map { |h| h["url"] }.
                  map { |url| url.gsub(%r{\/$}, "") + "/packages.json" }
 
           unless repositories.any? { |rep| rep["packagist.org"] == false }
-            urls << "https://packagist.org/p/#{dependency.name.downcase}.json"
+            urls << "https://repo.packagist.org/p2/#{dependency.name.downcase}.json"
           end
 
           @registry_version_details = []
@@ -112,14 +119,15 @@ module Dependabot
         end
 
         def fetch_registry_versions_from_url(url)
-          cred = registry_credentials.find { |c| url.include?(c["registry"]) }
+          url_host = URI(url).host
+          cred = registry_credentials.find { |c| url_host == c["registry"] || url_host == URI(c["registry"]).host }
 
-          response = Excon.get(
-            url,
-            idempotent: true,
-            user: cred&.fetch("username", nil),
-            password: cred&.fetch("password", nil),
-            **SharedHelpers.excon_defaults
+          response = Dependabot::RegistryClient.get(
+            url: url,
+            options: {
+              user: cred&.fetch("username", nil),
+              password: cred&.fetch("password", nil)
+            }
           )
 
           parse_registry_response(response, url)
@@ -135,7 +143,23 @@ module Dependabot
           return [] if listing.fetch("packages", []) == []
           return [] unless listing.dig("packages", dependency.name.downcase)
 
-          listing.dig("packages", dependency.name.downcase).keys
+          # Packagist's Metadata API format:
+          # v1: "packages": {<package name>: {<version_number>: {hash of metadata for a particular release version}}}
+          # v2: "packages": {<package name>: [{hash of metadata for a particular release version}]}
+          version_listings = listing.dig("packages", dependency.name.downcase)
+
+          if version_listings.is_a?(Hash) # some private registries are still using the v1 format
+            # Regardless of API version, composer always reads the version from the metadata hash. So for the v1 API,
+            # ignore the keys as repositories other than packagist.org could be using different keys. Instead, coerce
+            # to an array of metadata hashes to match v2 format.
+            version_listings = version_listings.values
+          end
+
+          if version_listings.is_a?(Array)
+            version_listings.map { |i| i.fetch("version") }
+          else
+            []
+          end
         rescue JSON::ParserError
           msg = "'#{url}' does not contain valid JSON"
           raise DependencyFileNotResolvable, msg
@@ -173,7 +197,7 @@ module Dependabot
           dependency_files.find { |f| f.name == "auth.json" }
         end
 
-        def ignore_reqs
+        def ignore_requirements
           ignored_versions.map { |req| requirement_class.new(req.split(",")) }
         end
 

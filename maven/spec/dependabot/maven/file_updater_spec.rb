@@ -48,6 +48,27 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       package_manager: "maven"
     )
   end
+  let(:mockk_dependency) do
+    Dependabot::Dependency.new(
+      name: "io.mockk:mockk:sources",
+      version: "1.10.0",
+      requirements: [{
+        file: "pom.xml",
+        requirement: "1.10.0",
+        groups: [],
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      previous_requirements: [{
+        file: "pom.xml",
+        requirement: "1.0.0",
+        groups: [],
+        source: nil,
+        metadata: { packaging_type: "jar" }
+      }],
+      package_manager: "maven"
+    )
+  end
   let(:dependency_groups) { ["test"] }
 
   describe "#updated_dependency_files" do
@@ -70,6 +91,11 @@ RSpec.describe Dependabot::Maven::FileUpdater do
       it "doesn't update the formatting of the POM" do
         expect(updated_pom_file.content).
           to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
+      end
+
+      context "handles dependencies with classifiers" do
+        let(:dependencies) { [dependency, mockk_dependency] }
+        its(:content) { is_expected.to include("<version>1.10.0</version>") }
       end
 
       context "with rogue whitespace" do
@@ -421,6 +447,48 @@ RSpec.describe Dependabot::Maven::FileUpdater do
             to include(%(<project xmlns="http://maven.apache.org/POM/4.0.0"\n))
         end
 
+        context "with an attribute" do
+          let(:pom_body) do
+            fixture("poms", "property_pom_single_attribute.xml")
+          end
+          let(:dependencies) do
+            [
+              Dependabot::Dependency.new(
+                name: "org.springframework:spring-beans",
+                version: "5.0.0.RELEASE",
+                requirements: [{
+                  file: "pom.xml",
+                  requirement: "5.0.0.RELEASE",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
+                }],
+                previous_requirements: [{
+                  file: "pom.xml",
+                  requirement: "4.3.12.RELEASE.1",
+                  groups: [],
+                  source: nil,
+                  metadata: {
+                    property_name: "springframework.version",
+                    packaging_type: "jar"
+                  }
+                }],
+                package_manager: "maven"
+              )
+            ]
+          end
+
+          it "updates the version in the POM" do
+            expect(updated_pom_file.content).
+              to include("<springframework.version attribute=\"value\">5.0.0.")
+            expect(updated_pom_file.content).
+              to include("<version>${springframework.version}</version>")
+          end
+        end
+
         context "with a suffix" do
           let(:pom_body) do
             fixture("poms", "property_pom_single_suffix.xml")
@@ -524,13 +592,118 @@ RSpec.describe Dependabot::Maven::FileUpdater do
 
           it "updates the version in the POM" do
             expect(updated_pom_file.content).
-              to include("<artifactId>basic-pom</artifactId>\n  "\
+              to include("<artifactId>basic-pom</artifactId>\n  " \
                          "<version>5.0.0.RELEASE</version>")
             expect(updated_pom_file.content).
               to include("<version>4.5.3</version>")
           end
         end
       end
+
+      context "with double backslashes in plugin" do
+        let(:pom_body) { fixture("poms", "plugin_with_double_backslashes.xml") }
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "com.diffplug.spotless:spotless-maven-plugin",
+              version: "2.27.1",
+              requirements: [{
+                file: "pom.xml",
+                requirement: "2.27.1",
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }],
+              previous_requirements: [{
+                file: "pom.xml",
+                requirement: "2.27.0",
+                groups: [],
+                source: nil,
+                metadata: { packaging_type: "jar" }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        its(:content) do
+          is_expected.to include("<order>java,javax,org,com,,\\\\#</order>")
+        end
+      end
+    end
+
+    context "the updated extensions.xml file" do
+      let(:dependency_files) { [pom, extensions] }
+      let(:extensions) do
+        Dependabot::DependencyFile.new(
+          name: "extensions.xml",
+          content: fixture("extensions", "extensions.xml")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "io.takari.polyglot:polyglot-yaml",
+          version: "0.4.7",
+          requirements: [{
+            file: "extensions.xml",
+            requirement: "0.4.7",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "extensions.xml",
+            requirement: "0.4.6",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "extensions.xml" }
+      end
+
+      its(:content) { is_expected.to include("<version>0.4.7</version>") }
+    end
+
+    context "when updating an annotationProcessorPaths dependency" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "annotation_processor_paths_dependencies.xml")
+        )
+      end
+      let(:dependency_files) { [pom] }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "com.google.errorprone:error_prone_core",
+          version: "2.18.0",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "2.18.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "2.9.0",
+            groups: [],
+            source: nil,
+            metadata: { packaging_type: "jar" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      subject(:updated_extensions_file) do
+        updated_files.find { |f| f.name == "pom.xml" }
+      end
+
+      its(:content) { is_expected.to include("<version>2.18.0</version>") }
     end
 
     context "with a multimodule pom" do
@@ -688,6 +861,230 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           expect(updated_files.map(&:name)).to eq(["business-app/pom.xml"])
           expect(updated_files.first.content).
             to include("<version>4.11</version>")
+        end
+      end
+    end
+
+    context "with a multimodule custom named child poms" do
+      let(:dependency_files) do
+        [
+          multimodule_custom_pom, submodule_one_pom, submodule_two_pom, submodule_three_pom
+        ]
+      end
+      let(:multimodule_custom_pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "multimodule_custom_modules.xml")
+        )
+      end
+      let(:submodule_one_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-one/pom.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_one_pom.xml")
+        )
+      end
+      let(:submodule_two_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-two/notpom.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_two_pom.xml")
+        )
+      end
+      let(:submodule_three_pom) do
+        Dependabot::DependencyFile.new(
+          name: "submodule-three/some-other-name.xml",
+          content: fixture("poms", "multimodule_custom_modules_submodule_three_pom.xml")
+        )
+      end
+
+      context "for a dependency in a normal and custom named pom" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.apache.httpcomponents:httpclient",
+              version: "4.0",
+              requirements: [{
+                requirement: "4.5.13",
+                file: "submodule-one/pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "4.0",
+                file: "submodule-one/pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              package_manager: "maven"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-core",
+              version: "4.3.11.RELEASE",
+              requirements: [{
+                requirement: "5.0.0.RELEASE",
+                file: "submodule-three/some-other-name.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "4.3.11.RELEASE",
+                file: "submodule-three/some-other-name.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        it "updates the version in both pom-s" do
+          expect(updated_files.map(&:name)).to eq(%w(submodule-one/pom.xml submodule-three/some-other-name.xml))
+          expect(updated_files.first.content).
+            to include("<version>4.5.13</version>")
+          expect(updated_files.last.content).
+            to include("<version>5.0.0.RELEASE</version>")
+        end
+      end
+    end
+
+    context "with a remote parent" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "pom_with_parent.xml")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "org.springframework.boot:spring-boot-starter-parent",
+          version: "2.6.1",
+          requirements: [{
+            file: "pom.xml",
+            requirement: "2.6.1",
+            groups: [],
+            source: { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" },
+            metadata: { packaging_type: "pom" }
+          }],
+          previous_requirements: [{
+            file: "pom.xml",
+            requirement: "1.5.9.RELEASE",
+            groups: [],
+            source: { type: "maven_repo", url: "https://repo.maven.apache.org/maven2" },
+            metadata: { packaging_type: "pom" }
+          }],
+          package_manager: "maven"
+        )
+      end
+
+      it "updates the version of the parent in the POM" do
+        expect(updated_files.first.content).
+          to include("<version>2.6.1</version>")
+      end
+
+      context "with insignificant whitespace" do
+        let(:pom) do
+          Dependabot::DependencyFile.new(
+            name: "pom.xml",
+            content: fixture("poms", "pom_with_parent_and_insignificant_whitespace.xml")
+          )
+        end
+
+        it "updates the version of the parent in the POM" do
+          expect(updated_files.first.content).
+            to include("<version>2.6.1</version>")
+        end
+      end
+    end
+
+    context "with a parent pom having own dependencies" do
+      let(:dependency_files) do
+        [
+          pom, parent_pom
+        ]
+      end
+      let(:pom) do
+        Dependabot::DependencyFile.new(
+          name: "pom.xml",
+          content: fixture("poms", "inheritance_custom_named_pom.xml")
+        )
+      end
+      let(:parent_pom) do
+        Dependabot::DependencyFile.new(
+          name: "parentpom.xml",
+          content: fixture("poms", "inheritance_custom_named_parent_pom.xml")
+        )
+      end
+
+      context "for a dependencies in a pom and its parent do" do
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.apache.httpcomponents:httpclient",
+              version: "4.0",
+              requirements: [{
+                requirement: "4.5.13",
+                file: "pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "4.0",
+                file: "pom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              package_manager: "maven"
+            ),
+            Dependabot::Dependency.new(
+              name: "org.springframework:spring-aop",
+              version: "4.0.5.RELEASE",
+              requirements: [{
+                requirement: "5.0.0.RELEASE",
+                file: "parentpom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              previous_requirements: [{
+                requirement: "4.0.5.RELEASE",
+                file: "parentpom.xml",
+                groups: [],
+                source: nil,
+                metadata: {
+                  packaging_type: "jar"
+                }
+              }],
+              package_manager: "maven"
+            )
+          ]
+        end
+
+        it "updates the version in both pom and its parent" do
+          expect(updated_files.map(&:name)).to eq(%w(pom.xml parentpom.xml))
+          expect(updated_files.first.content).
+            to include("<version>4.5.13</version>")
+          expect(updated_files.last.content).
+            to include("<version>5.0.0.RELEASE</version>")
         end
       end
     end

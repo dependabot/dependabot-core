@@ -17,7 +17,7 @@ const path = require("path");
 const { Add } = require("@dependabot/yarn-lib/lib/cli/commands/add");
 const { Install } = require("@dependabot/yarn-lib/lib/cli/commands/install");
 const {
-  cleanLockfile
+  cleanLockfile,
 } = require("@dependabot/yarn-lib/lib/cli/commands/upgrade");
 const Config = require("@dependabot/yarn-lib/lib/config").default;
 const { EventReporter } = require("@dependabot/yarn-lib/lib/reporters");
@@ -42,10 +42,10 @@ function flattenAllDependencies(manifest) {
 function recoverVersionComments(oldLockfile, newLockfile) {
   const yarnRegex = /^# yarn v(\S+)\n/gm;
   const nodeRegex = /^# node v(\S+)\n/gm;
-  const oldMatch = regex => [].concat(oldLockfile.match(regex))[0];
+  const oldMatch = (regex) => [].concat(oldLockfile.match(regex))[0];
   return newLockfile
-    .replace(yarnRegex, match => oldMatch(yarnRegex) || "")
-    .replace(nodeRegex, match => oldMatch(nodeRegex) || "");
+    .replace(yarnRegex, (match) => oldMatch(yarnRegex) || "")
+    .replace(nodeRegex, (match) => oldMatch(nodeRegex) || "");
 }
 
 function devRequirement(requirements) {
@@ -92,7 +92,7 @@ function installArgsWithVersion(
         `${depName}@${existingVersionRequirement.replace(
           /#.*/,
           ""
-        )}#${desiredVersion}`
+        )}#${desiredVersion}`,
       ];
     }
   } else {
@@ -101,19 +101,22 @@ function installArgsWithVersion(
 }
 
 async function updateDependencyFiles(directory, dependencies) {
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   let updateRunResults = { "yarn.lock": readFile("yarn.lock") };
-
+  let requiredVersions = [];
   for (let dep of dependencies) {
     for (let reqs of dep.requirements) {
+      if (requiredVersions.indexOf(reqs.requirement) > -1) {
+          continue;
+      }
       updateRunResults = Object.assign(
         updateRunResults,
         await updateDependencyFile(directory, dep.name, dep.version, reqs)
       );
+      requiredVersions.push(reqs.requirement);
     }
   }
-
   return updateRunResults;
 }
 
@@ -123,7 +126,7 @@ async function updateDependencyFile(
   desiredVersion,
   requirements
 ) {
-  const readFile = fileName =>
+  const readFile = (fileName) =>
     fs.readFileSync(path.join(directory, fileName)).toString();
   const originalYarnLock = readFile("yarn.lock");
   const originalPackageJson = readFile(requirements.file);
@@ -134,14 +137,15 @@ async function updateDependencyFile(
     ignoreEngines: true,
     ignorePlatform: true,
     dev: devRequirement(requirements),
-    optional: optionalRequirement(requirements)
+    optional: optionalRequirement(requirements),
   };
   const reporter = new EventReporter();
   const config = new Config(reporter);
   await config.init({
     cwd: path.join(directory, path.dirname(requirements.file)),
     nonInteractive: true,
-    enableDefaultRc: true
+    enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
   config.enableLockfileVersions = Boolean(originalYarnLock.match(/^# yarn v/m));
 
@@ -198,7 +202,7 @@ async function updateDependencyFile(
   updatedYarnLock = recoverVersionComments(originalYarnLock, updatedYarnLock);
 
   return {
-    "yarn.lock": updatedYarnLock
+    "yarn.lock": updatedYarnLock,
   };
 }
 

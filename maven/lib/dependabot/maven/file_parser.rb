@@ -21,17 +21,20 @@ module Dependabot
       # - Any dependencies (incl. those in dependencyManagement or plugins)
       # - Any plugins (incl. those in pluginManagement)
       # - Any extensions
-      DEPENDENCY_SELECTOR = "project > parent, "\
-                            "dependencies > dependency, "\
-                            "extensions > extension"
+      DEPENDENCY_SELECTOR = "project > parent, " \
+                            "dependencies > dependency, " \
+                            "extensions > extension, " \
+                            "annotationProcessorPaths > path"
       PLUGIN_SELECTOR     = "plugins > plugin"
+      EXTENSION_SELECTOR  = "extensions > extension"
 
       # Regex to get the property name from a declaration that uses a property
-      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/.freeze
+      PROPERTY_REGEX      = /\$\{(?<property>.*?)\}/
 
       def parse
         dependency_set = DependencySet.new
         pomfiles.each { |pom| dependency_set += pomfile_dependencies(pom) }
+        extensionfiles.each { |extension| dependency_set += extensionfile_dependencies(extension) }
         dependency_set.dependencies
       end
 
@@ -63,9 +66,31 @@ module Dependabot
         dependency_set
       end
 
+      def extensionfile_dependencies(extension)
+        dependency_set = DependencySet.new
+
+        errors = []
+        doc = Nokogiri::XML(extension.content)
+        doc.remove_namespaces!
+
+        doc.css(EXTENSION_SELECTOR).each do |dependency_node|
+          dep = dependency_from_dependency_node(extension, dependency_node)
+          dependency_set << dep if dep
+        rescue DependencyFileNotEvaluatable => e
+          errors << e
+        end
+
+        raise errors.first if errors.any? && dependency_set.dependencies.none?
+
+        dependency_set
+      end
+
       def dependency_from_dependency_node(pom, dependency_node)
         return unless (name = dependency_name(dependency_node, pom))
         return if internal_dependency_names.include?(name)
+
+        classifier = dependency_classifier(dependency_node, pom)
+        name = classifier ? "#{name}:#{classifier}" : name
 
         build_dependency(pom, dependency_node, name)
       end
@@ -114,6 +139,15 @@ module Dependabot
             pom
           )
         ].join(":")
+      end
+
+      def dependency_classifier(dependency_node, pom)
+        return unless dependency_node.at_xpath("./classifier")
+
+        evaluated_value(
+          dependency_node.at_xpath("./classifier").content.strip,
+          pom
+        )
       end
 
       def plugin_name(dependency_node, pom)
@@ -185,7 +219,6 @@ module Dependabot
         return unless dependency_node.at_xpath("./version")
 
         version_content = dependency_node.at_xpath("./version").content.strip
-
         return unless version_content.match?(PROPERTY_REGEX)
 
         version_content.
@@ -235,18 +268,24 @@ module Dependabot
       # values from parent POMs)
       def property_value_finder
         @property_value_finder ||=
-          PropertyValueFinder.new(dependency_files: dependency_files)
+          PropertyValueFinder.new(dependency_files: dependency_files, credentials: credentials)
       end
 
       def pomfiles
-        # Note: this (correctly) excludes any parent POMs that were downloaded
         @pomfiles ||=
-          dependency_files.select { |f| f.name.end_with?("pom.xml") }
+          dependency_files.select do |f|
+            f.name.end_with?(".xml") && !f.name.end_with?("extensions.xml")
+          end
+      end
+
+      def extensionfiles
+        @extensionfiles ||=
+          dependency_files.select { |f| f.name.end_with?("extensions.xml") }
       end
 
       def internal_dependency_names
         @internal_dependency_names ||=
-          dependency_files.map do |pom|
+          dependency_files.filter_map do |pom|
             doc = Nokogiri::XML(pom.content)
             group_id = doc.at_css("project > groupId") ||
                        doc.at_css("project > parent > groupId")
@@ -255,7 +294,7 @@ module Dependabot
             next unless group_id && artifact_id
 
             [group_id.content.strip, artifact_id.content.strip].join(":")
-          end.compact
+          end
       end
 
       def check_required_files

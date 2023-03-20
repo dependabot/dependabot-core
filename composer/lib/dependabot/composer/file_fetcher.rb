@@ -39,7 +39,7 @@ module Dependabot
         @composer_lock ||= fetch_file_if_present("composer.lock")
       end
 
-      # Note: This is fetched but currently unused
+      # NOTE: This is fetched but currently unused
       def auth_json
         @auth_json ||= fetch_file_if_present("auth.json")&.
                        tap { |f| f.support_file = true }
@@ -79,31 +79,49 @@ module Dependabot
         @path_sources ||=
           begin
             repos = parsed_composer_json.fetch("repositories", [])
-            return [] unless repos.is_a?(Hash) || repos.is_a?(Array)
+            if repos.is_a?(Hash) || repos.is_a?(Array)
+              repos = repos.values if repos.is_a?(Hash)
+              repos = repos.select { |r| r.is_a?(Hash) }
 
-            repos = repos.values if repos.is_a?(Hash)
-            repos = repos.select { |r| r.is_a?(Hash) }
-
-            repos.
-              select { |details| details["type"] == "path" }.
-              map { |details| details["url"] }
+              repos.
+                select { |details| details["type"] == "path" }.
+                map { |details| details["url"] }
+            else
+              []
+            end
           end
       end
 
       def build_unfetchable_deps(unfetchable_deps)
-        unfetchable_deps.map do |path|
+        unfetchable_deps.filter_map do |path|
           PathDependencyBuilder.new(
             path: path,
             directory: directory,
             lockfile: composer_lock
           ).dependency_file
-        end.compact
+        end
       end
 
       def expand_path(path)
-        repo_contents(dir: path.gsub(/\*$/, "")).
-          select { |file| file.type == "dir" }.
-          map { |f| path.gsub(/\*$/, f.name) }
+        wildcard_depth = 0
+        path = path.gsub(/\*$/, "")
+        while path.end_with?("*/")
+          path = path.gsub(%r{\*/$}, "")
+          wildcard_depth += 1
+        end
+        directories = repo_contents(dir: path).
+                      select { |file| file.type == "dir" }.
+                      map { |f| File.join(path, f.name) }
+
+        while wildcard_depth.positive?
+          directories.each do |dir|
+            directories += repo_contents(dir: dir).
+                           select { |file| file.type == "dir" }.
+                           map { |f| File.join(dir, f.name) }
+          end
+          wildcard_depth -= 1
+        end
+        directories
       rescue Octokit::NotFound, Gitlab::Error::NotFound
         lockfile_path_dependency_paths.
           select { |p| p.to_s.start_with?(path.gsub(/\*$/, "")) }

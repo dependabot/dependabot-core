@@ -1,0 +1,34 @@
+name: Updater-Core image
+env:
+  UPDATER_CORE_IMAGE: "ghcr.io/dependabot/dependabot-updater-core"
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+jobs:
+  push-updater-core-image:
+    name: Push dependabot-updater-core image to docker hub
+    runs-on: ubuntu-latest
+    if: github.repository == 'dependabot/dependabot-core'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build dependabot-updater-core image
+        run: script/build common
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Push latest image
+        run: |
+          docker push "$UPDATER_CORE_IMAGE:latest"
+      - name: Push tagged image
+        if: contains(github.ref, 'refs/tags')
+        run: |
+          VERSION="$(grep -Eo "[0-9]+\.[0-9]+\.[0-9]+" common/lib/dependabot.rb)"
+          docker tag "$UPDATER_CORE_IMAGE:latest" "$UPDATER_CORE_IMAGE:$VERSION"
+          docker push "$UPDATER_CORE_IMAGE:$VERSION"

@@ -12,15 +12,15 @@ require "dependabot/go_modules/version"
 module Dependabot
   module GoModules
     class Requirement < Gem::Requirement
-      WILDCARD_REGEX = /(?:\.|^)[xX*]/.freeze
-      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/.freeze
+      WILDCARD_REGEX = /(?:\.|^)[xX*]/
+      OR_SEPARATOR = /(?<=[a-zA-Z0-9*])\s*\|{2}/
 
       # Override the version pattern to allow a 'v' prefix
       quoted = OPS.keys.map { |k| Regexp.quote(k) }.join("|")
       version_pattern = "v?#{Version::VERSION_PATTERN}"
 
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{version_pattern})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Use GoModules::Version rather than Gem::Version to ensure that
       # pre-release versions aren't transformed.
@@ -49,7 +49,7 @@ module Dependabot
 
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",").map do |r|
+          req_string.split(",").map(&:strip).map do |r|
             convert_go_constraint_to_ruby_constraint(r.strip)
           end
         end
@@ -60,7 +60,6 @@ module Dependabot
       private
 
       def convert_go_constraint_to_ruby_constraint(req_string)
-        req_string = req_string
         req_string = convert_wildcard_characters(req_string)
 
         if req_string.match?(WILDCARD_REGEX)
@@ -69,7 +68,8 @@ module Dependabot
         elsif req_string.include?(" - ") then convert_hyphen_req(req_string)
         elsif req_string.match?(/^[\dv^]/) then convert_caret_req(req_string)
         elsif req_string.match?(/[<=>]/) then req_string
-        else ruby_range(req_string)
+        else
+          ruby_range(req_string)
         end
       end
 
@@ -92,9 +92,7 @@ module Dependabot
       def replace_wildcard_in_lower_bound(req_string)
         after_wildcard = false
 
-        if req_string.start_with?("~")
-          req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "")
-        end
+        req_string = req_string.gsub(/(?:(?:\.|^)[xX*])(\.[xX*])+/, "") if req_string.start_with?("~")
 
         req_string.split(".").
           map do |part|
@@ -135,7 +133,7 @@ module Dependabot
         "~> #{parts.join('.')}"
       end
 
-      # Note: Dep's caret notation implementation doesn't distinguish between
+      # NOTE: Dep's caret notation implementation doesn't distinguish between
       # pre and post-1.0.0 requirements (unlike in JS)
       def convert_caret_req(req_string)
         version = req_string.gsub(/^\^?v?/, "")

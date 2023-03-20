@@ -37,9 +37,7 @@ module Dependabot
         fetched_files = fetched_files.uniq
 
         if project_files.none? && packages_config_files.none?
-          if @missing_sln_project_file_errors&.any?
-            raise @missing_sln_project_file_errors.first
-          end
+          raise @missing_sln_project_file_errors.first if @missing_sln_project_file_errors&.any?
 
           raise(
             Dependabot::DependencyFileNotFound,
@@ -75,13 +73,14 @@ module Dependabot
           [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
 
         @packages_config_files ||=
-          candidate_paths.map do |dir|
+          candidate_paths.filter_map do |dir|
             file = repo_contents(dir: dir).
                    find { |f| f.name.casecmp("packages.config").zero? }
             fetch_file_from_host(File.join(dir, file.name)) if file
-          end.compact
+          end
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def sln_file_names
         sln_files = repo_contents.select { |f| f.name.end_with?(".sln") }
         src_dir = repo_contents.any? { |f| f.name == "src" && f.type == "dir" }
@@ -98,6 +97,7 @@ module Dependabot
 
         sln_files.map(&:name)
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def directory_build_files
         return @directory_build_files if @directory_build_files_checked
@@ -117,6 +117,8 @@ module Dependabot
           possible_paths += [
             "Directory.Build.props",
             "Directory.build.props",
+            "Directory.Packages.props",
+            "Directory.packages.props",
             "Directory.Build.targets",
             "Directory.build.targets"
           ]
@@ -137,6 +139,8 @@ module Dependabot
         [
           Pathname.new(base + "/Directory.Build.props").cleanpath.to_path,
           Pathname.new(base + "/Directory.build.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.Packages.props").cleanpath.to_path,
+          Pathname.new(base + "/Directory.packages.props").cleanpath.to_path,
           Pathname.new(base + "/Directory.Build.targets").cleanpath.to_path,
           Pathname.new(base + "/Directory.build.targets").cleanpath.to_path
         ]
@@ -153,7 +157,7 @@ module Dependabot
                 project_paths
             end
 
-            paths.map do |path|
+            paths.filter_map do |path|
               fetch_file_from_host(path)
             rescue Dependabot::DependencyFileNotFound => e
               @missing_sln_project_file_errors ||= []
@@ -161,7 +165,7 @@ module Dependabot
               # Don't worry about missing files too much for now (at least
               # until we start resolving properties)
               nil
-            end.compact
+            end
           end
       end
 
@@ -205,12 +209,12 @@ module Dependabot
           [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
 
         @nuget_config_files ||=
-          candidate_paths.map do |dir|
+          candidate_paths.filter_map do |dir|
             file = repo_contents(dir: dir).
                    find { |f| f.name.casecmp("nuget.config").zero? }
             file = fetch_file_from_host(File.join(dir, file.name)) if file
             file&.tap { |f| f.support_file = true }
-          end.compact
+          end
       end
 
       def global_json

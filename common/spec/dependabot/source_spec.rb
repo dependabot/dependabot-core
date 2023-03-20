@@ -5,7 +5,7 @@ require "dependabot/source"
 
 RSpec.describe Dependabot::Source do
   describe ".new" do
-    subject { described_class.new(attrs) }
+    subject { described_class.new(**attrs) }
 
     context "without a hostname or api_endpoint" do
       let(:attrs) { { provider: "github", repo: "my/repo" } }
@@ -133,6 +133,113 @@ RSpec.describe Dependabot::Source do
       end
     end
 
+    context "with a GitHub Enterprise URL" do
+      before do
+        stub_request(:get, "https://ghes.mycorp.com/status").to_return(
+          status: 200,
+          body: "GitHub lives!",
+          headers: {
+            Server: "GitHub.com",
+            "X-GitHub-Request-Id": "24e4e058-fdab-5ff4-8d79-be3493b7fa8e"
+          }
+        )
+      end
+      let(:url) { "https://ghes.mycorp.com/org/abc" }
+      its(:provider) { is_expected.to eq("github") }
+      its(:repo) { is_expected.to eq("org/abc") }
+      its(:directory) { is_expected.to be_nil }
+      its(:branch) { is_expected.to be_nil }
+
+      context "with a git protocol" do
+        let(:url) { "ssh://git@ghes.mycorp.com:org/abc" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing .git" do
+        let(:url) { "https://ghes.mycorp.com/org/abc.git" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing ." do
+        let(:url) { "https://ghes.mycorp.com/org/abc. " }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing space" do
+        let(:url) { "https://ghes.mycorp.com/org/abc " }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing /" do
+        let(:url) { "https://ghes.mycorp.com/org/abc/" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a trailing quote" do
+        let(:url) { "<a href=\"https://ghes.mycorp.com/org/abc\">" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with no directory" do
+        let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/readme.md" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to be_nil }
+      end
+
+      context "with a directory" do
+        let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/dir/readme.md" }
+        its(:provider) { is_expected.to eq("github") }
+        its(:repo) { is_expected.to eq("org/abc") }
+        its(:directory) { is_expected.to eq("dir") }
+        its(:branch) { is_expected.to eq("master") }
+
+        context "with the filename specified by a #" do
+          let(:url) { "https://ghes.mycorp.com/org/abc/tree/master/dir#readme.md" }
+          its(:provider) { is_expected.to eq("github") }
+          its(:repo) { is_expected.to eq("org/abc") }
+          its(:directory) { is_expected.to eq("dir") }
+        end
+
+        context "when not looking at the master branch" do
+          let(:url) { "https://ghes.mycorp.com/org/abc/tree/custom/dir/readme.md" }
+          its(:provider) { is_expected.to eq("github") }
+          its(:repo) { is_expected.to eq("org/abc") }
+          its(:directory) { is_expected.to eq("dir") }
+          its(:branch) { is_expected.to eq("custom") }
+        end
+      end
+
+      context "when the source is not GHES" do
+        before do
+          stub_request(:get, "https://not-ghes.mycorp.com/status").to_return(
+            status: 200,
+            body: "This is not GHES!",
+            headers: { Server: "nginx" }
+          )
+        end
+        let(:url) { "https://not-ghes.mycorp.com/org/abc" }
+        it { is_expected.to be_nil }
+      end
+    end
+
+    context "with an explicitly ignored URL" do
+      let(:url) { "https://gitbox.apache.org/repos/asf?p=commons-lang.git" }
+      it { is_expected.to be_nil }
+    end
+
     context "with a Bitbucket URL" do
       let(:url) do
         "https://bitbucket.org/org/abc/src/master/dir/readme.md?at=default"
@@ -146,6 +253,20 @@ RSpec.describe Dependabot::Source do
       let(:url) { "https://gitlab.com/org/abc/blob/master/dir/readme.md" }
       its(:provider) { is_expected.to eq("gitlab") }
       its(:repo) { is_expected.to eq("org/abc") }
+      its(:directory) { is_expected.to eq("dir") }
+    end
+
+    context "with a GitLab changelog link" do
+      let(:url) { "https://gitlab.com/oauth-xx/oauth2/-/tree/v2.0.9/CHANGELOG.md" }
+      its(:provider) { is_expected.to eq("gitlab") }
+      its(:repo) { is_expected.to eq("oauth-xx/oauth2") }
+      its(:directory) { is_expected.to be_nil }
+    end
+
+    context "with a GitLab subgroup URL" do
+      let(:url) { "https://gitlab.com/org/group/abc/blob/master/dir/readme.md" }
+      its(:provider) { is_expected.to eq("gitlab") }
+      its(:repo) { is_expected.to eq("org/group/abc") }
       its(:directory) { is_expected.to eq("dir") }
     end
 
@@ -171,7 +292,7 @@ RSpec.describe Dependabot::Source do
   end
 
   describe "#url_with_directory" do
-    let(:source) { described_class.new(attrs) }
+    let(:source) { described_class.new(**attrs) }
     subject { source.url_with_directory }
 
     let(:attrs) do

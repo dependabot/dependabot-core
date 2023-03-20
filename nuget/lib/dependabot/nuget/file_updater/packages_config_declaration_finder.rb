@@ -8,8 +8,8 @@ module Dependabot
     class FileUpdater
       class PackagesConfigDeclarationFinder
         DECLARATION_REGEX =
-          %r{<package [^>]*?/>|
-             <package [^>]*?[^/]>.*?</package>}mx.freeze
+          %r{<package\s[^>]*?/>|
+             <package\s[^>]*?[^/]>.*?</package>}mx
 
         attr_reader :dependency_name, :declaring_requirement,
                     :packages_config
@@ -40,6 +40,7 @@ module Dependabot
 
         private
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def fetch_declaration_strings
           deep_find_declarations(packages_config.content).select do |nd|
             node = Nokogiri::XML(nd)
@@ -55,6 +56,7 @@ module Dependabot
             node_requirement == declaring_requirement.fetch(:requirement)
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def deep_find_declarations(string)
           string.scan(DECLARATION_REGEX).flat_map do |matching_node|

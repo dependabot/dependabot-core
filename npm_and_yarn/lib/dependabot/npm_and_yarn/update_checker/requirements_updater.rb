@@ -13,10 +13,9 @@ module Dependabot
   module NpmAndYarn
     class UpdateChecker
       class RequirementsUpdater
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
-        SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/.freeze
-        ALLOWED_UPDATE_STRATEGIES =
-          %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
+        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
+        SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
+        ALLOWED_UPDATE_STRATEGIES = %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        latest_resolvable_version:)
@@ -63,7 +62,7 @@ module Dependabot
         def updating_from_git_to_npm?
           return false unless updated_source.nil?
 
-          original_source = requirements.map { |r| r[:source] }.compact.first
+          original_source = requirements.filter_map { |r| r[:source] }.first
           original_source&.fetch(:type) == "git"
         end
 
@@ -178,7 +177,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end.join(".")
         end

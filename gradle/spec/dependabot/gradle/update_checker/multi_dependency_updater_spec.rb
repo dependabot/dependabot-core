@@ -10,12 +10,14 @@ RSpec.describe namespace::MultiDependencyUpdater do
     described_class.new(
       dependency: dependency,
       dependency_files: dependency_files,
+      credentials: credentials,
       target_version_details: target_version_details,
       ignored_versions: ignored_versions
     )
   end
 
   let(:version_class) { Dependabot::Gradle::Version }
+  let(:credentials) { [] }
   let(:ignored_versions) { [] }
   let(:target_version_details) do
     {
@@ -58,13 +60,13 @@ RSpec.describe namespace::MultiDependencyUpdater do
   #############################
 
   let(:maven_central_metadata_url_gradle_plugin) do
-    "https://repo.maven.apache.org/maven2/"\
-    "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
+    "https://repo.maven.apache.org/maven2/" \
+      "org/jetbrains/kotlin/kotlin-gradle-plugin/maven-metadata.xml"
   end
 
   let(:maven_central_metadata_url_stdlib) do
-    "https://repo.maven.apache.org/maven2/"\
-    "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
+    "https://repo.maven.apache.org/maven2/" \
+      "org/jetbrains/kotlin/kotlin-stdlib-jre8/maven-metadata.xml"
   end
 
   before do
@@ -85,16 +87,16 @@ RSpec.describe namespace::MultiDependencyUpdater do
   ########################
 
   let(:jcenter_metadata_url_protoc) do
-    "https://jcenter.bintray.com/"\
-    "com/google/protobuf/protoc/maven-metadata.xml"
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protoc/maven-metadata.xml"
   end
   let(:jcenter_metadata_url_protobuf_java) do
-    "https://jcenter.bintray.com/"\
-    "com/google/protobuf/protobuf-java/maven-metadata.xml"
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java/maven-metadata.xml"
   end
   let(:jcenter_metadata_url_protobuf_java_util) do
-    "https://jcenter.bintray.com/"\
-    "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
+    "https://jcenter.bintray.com/" \
+      "com/google/protobuf/protobuf-java-util/maven-metadata.xml"
   end
 
   before do

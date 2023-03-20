@@ -2,6 +2,8 @@
 
 require "excon"
 require "dependabot/cargo/update_checker"
+require "dependabot/update_checkers/version_filters"
+require "dependabot/registry_client"
 
 module Dependabot
   module Cargo
@@ -10,11 +12,13 @@ module Dependabot
         CRATES_IO_DL = "https://crates.io/api/v1/crates"
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, raise_on_ignored: false,
+                       security_advisories:)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
         end
 
@@ -41,9 +45,11 @@ module Dependabot
         def fetch_lowest_security_fix_version
           versions = available_versions
           versions = filter_prerelease_versions(versions)
+          versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(versions,
+                                                                                           security_advisories)
           versions = filter_ignored_versions(versions)
-          versions = filter_vulnerable_versions(versions)
           versions = filter_lower_versions(versions)
+
           versions.min
         end
 
@@ -54,18 +60,20 @@ module Dependabot
         end
 
         def filter_ignored_versions(versions_array)
-          versions_array.
-            reject { |v| ignore_reqs.any? { |r| r.satisfied_by?(v) } }
-        end
+          filtered = versions_array.
+                     reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v) } }
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? && filter_lower_versions(versions_array).any?
+            raise Dependabot::AllVersionsIgnored
+          end
 
-        def filter_vulnerable_versions(versions_array)
-          versions_array.
-            reject { |v| security_advisories.any? { |a| a.vulnerable?(v) } }
+          filtered
         end
 
         def filter_lower_versions(versions_array)
+          return versions_array unless dependency.numeric_version
+
           versions_array.
-            select { |version| version > version_class.new(dependency.version) }
+            select { |version| version > dependency.numeric_version }
         end
 
         def available_versions
@@ -98,19 +106,10 @@ module Dependabot
           )
 
           @crates_listing = JSON.parse(response.body)
-        rescue Excon::Error::Timeout
-          retrying ||= false
-          raise if retrying
-
-          retrying = true
-          sleep(rand(1.0..5.0)) && retry
         end
 
         def wants_prerelease?
-          if dependency.version &&
-             version_class.new(dependency.version).prerelease?
-            return true
-          end
+          return true if dependency.numeric_version&.prerelease?
 
           dependency.requirements.any? do |req|
             reqs = (req.fetch(:requirement) || "").split(",").map(&:strip)
@@ -118,8 +117,8 @@ module Dependabot
           end
         end
 
-        def ignore_reqs
-          ignored_versions.map { |req| requirement_class.new(req.split(",")) }
+        def ignore_requirements
+          ignored_versions.flat_map { |req| requirement_class.requirements_array(req) }
         end
 
         def version_class

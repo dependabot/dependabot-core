@@ -54,6 +54,8 @@ module Dependabot
                when "gitlab"
                  tmp_path = path.gsub(%r{^/*}, "")
                  gitlab_client.get_file(repo, tmp_path, commit).blob_id
+               when "azure"
+                 azure_client.fetch_file_contents(commit, path)
                else raise "Unsupported provider '#{source.provider}'."
                end
 
@@ -63,7 +65,9 @@ module Dependabot
           directory: directory,
           type: "submodule"
         )
-      rescue Octokit::NotFound, Gitlab::Error::NotFound
+      rescue Octokit::NotFound,
+             Gitlab::Error::NotFound,
+             Dependabot::Clients::Azure::NotFound
         raise Dependabot::DependencyFileNotFound, path
       end
 
@@ -73,9 +77,7 @@ module Dependabot
           path: path,
           ref: commit
         )
-        if content.is_a?(Array) || content.type != "submodule"
-          raise Dependabot::DependencyFileNotFound, path
-        end
+        raise Dependabot::DependencyFileNotFound, path if content.is_a?(Array) || content.type != "submodule"
 
         content.sha
       end

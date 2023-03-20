@@ -87,18 +87,58 @@ RSpec.describe Dependabot::Terraform::MetadataFinder do
       end
 
       let(:registry_url) do
-        "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8"
-      end
-      let(:registry_response) do
-        fixture("registry_responses", "hashicorp_consul_aws_0.3.8.json")
+        "https://registry.terraform.io/v1/modules/hashicorp/consul/aws/0.3.8/download"
       end
       before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          to_return(status: 200, body: { "modules.v1": "/v1/modules/" }.to_json)
         stub_request(:get, registry_url).
-          to_return(status: 200, body: registry_response)
+          to_return(status: 204, body: "",
+                    headers: { "X-Terraform-Get": "git::https://github.com/hashicorp/terraform-aws-consul" })
       end
 
       it do
         is_expected.to eq("https://github.com/hashicorp/terraform-aws-consul")
+      end
+    end
+
+    context "with a provider", :vcr do
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "hashicorp/aws",
+          version: "3.40.0",
+          previous_version: "0.1.0",
+          requirements: [{
+            requirement: "3.40.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/aws"
+            }
+          }],
+          previous_requirements: [{
+            requirement: "0.1.0",
+            groups: [],
+            file: "main.tf",
+            source: {
+              type: "provider",
+              registry_hostname: "registry.terraform.io",
+              module_identifier: "hashicorp/aws"
+            }
+          }],
+          package_manager: "terraform"
+        )
+      end
+
+      before do
+        stub_request(:get, "https://registry.terraform.io/.well-known/terraform.json").
+          to_return(status: 200, body: { "providers.v1": "/v1/providers/" }.to_json)
+      end
+
+      it do
+        is_expected.to eq("https://github.com/hashicorp/terraform-provider-aws")
       end
     end
   end

@@ -6,7 +6,8 @@ Elixir support for [`dependabot-core`][core-repo].
 
 1. Install native helpers
    ```
-   $ helpers/build helpers/install-dir/hex
+   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
+   $ helpers/build
    ```
 
 2. Install Ruby dependencies

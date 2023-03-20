@@ -1,0 +1,17 @@
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../foo",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "packagist.org": false
+        }
+    ],
+    "require": {
+        "dependabot/dummy-pkg-a": "*"
+    }
+}

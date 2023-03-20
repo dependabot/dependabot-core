@@ -1,0 +1,6 @@
+on:
+  pull_request:
+
+jobs:
+  test:
+    uses: actions/checkout/.github/workflows/test.yml@01aecccf739ca6ff86c0539fbc67a7a5007bbc81

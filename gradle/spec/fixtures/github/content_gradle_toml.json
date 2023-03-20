@@ -1,0 +1,18 @@
+[
+    {
+      "name": "libs.versions.toml",
+      "path": "gradle/libs.versions.toml",
+      "sha": "61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+      "size": 1470,
+      "url": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/libs.versions.toml?ref=main",
+      "html_url": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/libs.versions.toml",
+      "git_url": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+      "download_url": "https://raw.githubusercontent.com/bigandroidenergies/version_catalog/main/gradle/libs.versions.toml",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/bigandroidenergies/version_catalog/contents/gradle/libs.versions.toml?ref=main",
+        "git": "https://api.github.com/repos/bigandroidenergies/version_catalog/git/blobs/61e2017c7cfb111d2c1ada6dc9508711ae02b5c1",
+        "html": "https://github.com/bigandroidenergies/version_catalog/blob/main/gradle/libs.versions.toml"
+      }
+    }
+  ]

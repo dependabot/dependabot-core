@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -e
+
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  install_dir="$helpers_dir"
+else
+  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v1"
+  mkdir -p "$install_dir"
+
+  cp -r \
+    "$helpers_dir/lib" \
+    "$helpers_dir/monkey_patches" \
+    "$helpers_dir/run.rb" \
+    "$install_dir"
+fi
+
+cd "$install_dir"
+
+export GEM_HOME=$install_dir/.bundle
+
+gem install bundler -v 1.17.3 --no-document
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  # NOTE: For native helper specs, Bundler 2 happily reuses test gems installed
+  # by the main spec suite, because Bundler automatically searches for Gemfiles
+  # in parent directories, so we don't need any extra install for native helper
+  # specs.
+  #
+  # However, Bundler 1 installs gems to a slightly different folder structure by
+  # default, so we need to make sure to explicit install test gems with Bundler
+  # 1 so that they can be found by Bundler 1. In addition to that, Bundler 1 is
+  # very picky about the `BUNDLED WITH` section in the lockfile, which has been
+  # generated with Bundler 2 for the main spec suite. So we also need to delete
+  # the previously generated lockfile first, so that it has the format Bundler 1
+  # likes.
+  rm -f ../../Gemfile.lock
+  BUNDLER_VERSION=1.17.3 bundle install
+fi

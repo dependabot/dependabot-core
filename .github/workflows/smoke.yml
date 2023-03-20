@@ -1,0 +1,250 @@
+# Runs all ecosystems cached and concurrently.
+name: Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    paths-ignore:
+      - docs/**
+      - README.md
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { path: bundler, name: bundler, ecosystem: bundler }
+          - { path: cargo, name: cargo, ecosystem: cargo }
+          - { path: composer, name: composer, ecosystem: composer }
+          - { path: docker, name: docker, ecosystem: docker }
+          - { path: elm, name: elm, ecosystem: elm }
+          - { path: git_submodules, name: submodules, ecosystem: gitsubmodule }
+          - { path: github_actions, name: actions, ecosystem: github-actions }
+          - { path: go_modules, name: go, ecosystem: gomod }
+          - { path: go_modules, name: go-close-pr, ecosystem: gomod }
+          - { path: go_modules, name: go-security, ecosystem: gomod }
+          - { path: go_modules, name: go-update-pr, ecosystem: gomod }
+          - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: hex, name: hex, ecosystem: mix }
+          - { path: maven, name: maven, ecosystem: maven }
+          - { path: npm_and_yarn, name: npm, ecosystem: npm}
+          - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
+          - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
+          - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm}
+          - { path: nuget, name: nuget, ecosystem: nuget }
+          - { path: pub, name: pub, ecosystem: pub }
+          - { path: python, name: pip, ecosystem: pip }
+          - { path: python, name: pipenv, ecosystem: pip}
+          - { path: python, name: pip-compile, ecosystem: pip }
+          - { path: python, name: poetry, ecosystem: pip }
+          - { path: terraform, name: terraform, ecosystem: terraform }
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dorny/paths-filter@v2
+      if: github.event_name != 'workflow_dispatch'
+      id: changes
+      with:
+        filters: |
+          actions:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'github_actions/**'
+          bundler:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'bundler/**'
+          cargo:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'cargo/**'
+          composer:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'composer/**'
+          docker:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'docker/**'
+          elm:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'elm/**'
+          go:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-close-pr':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-security':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          'go-update-pr':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'go_modules/**'
+          gradle:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'gradle/**'
+          hex:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'hex/**'
+          maven:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'maven/**'
+          npm:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          'npm-remove-transitive':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          nuget:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'nuget/**'
+          pip:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          'pip-compile':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          pipenv:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          poetry:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'python/**'
+          pub:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'pub/**'
+          submodules:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'git_submodules/**'
+          terraform:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'terraform/**'
+          'yarn-berry':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+          'yarn-berry-workspaces':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
+
+    - name: Download CLI and test
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      run: |
+        gh release download --repo dependabot/cli -p "*linux-amd64.tar.gz"
+        tar xzvf *.tar.gz >/dev/null 2>&1
+        ./dependabot --version
+        URL=https://api.github.com/repos/dependabot/smoke-tests/contents/tests/smoke-${{ matrix.suite.name }}.yaml
+        curl $(gh api $URL --jq .download_url) -o smoke.yaml
+
+    # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
+    - name: Download cache
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      run: |
+        mkdir cache
+        cd cache
+        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
+
+    - name: Build ecosystem image
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      run: script/build ${{ matrix.suite.path }}
+
+    - name: ${{ matrix.suite.name }}
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      env:
+        LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -o pipefail
+        ./dependabot test \
+          -f=smoke.yaml \
+          -o=result.yaml \
+          --cache=cache \
+          --timeout=20m \
+          --updater-image=ghcr.io/dependabot/dependabot-updater-${{ matrix.suite.ecosystem }}:latest \
+          2>&1 | tee -a log.txt
+
+    - name: Diff
+      if: always()
+      continue-on-error: true
+      run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
+
+    - name: Create summary
+      if: steps.changes.outputs[matrix.suite.name] == 'true'
+      run: tail -n100 log.txt | grep -P '\d+/\d+ calls cached \(\d+%\)' >> $GITHUB_STEP_SUMMARY
+
+    # No upload at the end:
+    # - If a test is uncachable in some regard, the cache would grow unbound.
+    # - We might want to consider erroring if the cache is changed.

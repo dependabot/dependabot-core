@@ -1,0 +1,106 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://registry.npmjs.org/@dependabot-fixtures%2Fnpm-transitive-dependency-with-more-versions
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.212.0 excon/0.92.5 ruby/2.7.6 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 27 Sep 2022 23:38:29 GMT
+      content-type:
+      - application/json
+      connection:
+      - keep-alive
+      cf-ray:
+      - 751812baac38aaa5-SJC
+      access-control-allow-origin:
+      - "*"
+      cache-control:
+      - public, max-age=300
+      etag:
+      - W/"eabf85b6d0cf5099b72988926205e5aa"
+      last-modified:
+      - Tue, 27 Sep 2022 22:39:57 GMT
+      vary:
+      - accept-encoding, accept
+      cf-cache-status:
+      - REVALIDATED
+      x-amz-replication-status:
+      - PENDING
+      server:
+      - cloudflare
+      content-encoding:
+      - ''
+    body:
+      encoding: UTF-8
+      string: '{"_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","_rev":"3-3e7d9f501413cd8d81fbdfb8e2e31d3b","name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","dist-tags":{"latest":"2.0.0"},"versions":{"1.0.0":{"name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","version":"1.0.0","description":"a
+        test fixture for testing transitive dependency updates","main":"index.js","scripts":{"test":"echo
+        \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"author":"","license":"ISC","bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","gitHead":"fe7a83611cf431bfe52f4b4fd8647eb4e4b91034","_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions@1.0.0","_nodeVersion":"16.15.0","_npmVersion":"8.5.5","dist":{"integrity":"sha512-IHtKNrRBm6bDrL2Jf1w+ZMg/4MmAb6MMHmP8CVebKnfn6Za7h39L7hG/ozA0vKI1ZZpGSfkRshvCd9EFFAc8IA==","shasum":"949d95cb902f62767f4cf2cd6742345aaa0bc2ec","tarball":"https://registry.npmjs.org/@dependabot-fixtures/npm-transitive-dependency-with-more-versions/-/npm-transitive-dependency-with-more-versions-1.0.0.tgz","fileCount":2,"unpackedSize":843,"signatures":[{"keyid":"SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA","sig":"MEYCIQDUB4vZqovCDwLG2Z8cwOI2FBztslF11gzYR1K9VTzX9gIhAKAXG4blZ4bVo/VbpF5Nord8qcPIFojJ5BVs0SS4a9dN"}],"npm-signature":"-----BEGIN
+        PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJjM3r+ACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2Vmrggg/9E/WcdcC4csJRbRorrHcBEjJqw1HXn1ji8nU+9CXFtq0ayXKd\r\n5PTBEkm/Ga/4YFfBP/4h6lDjGh4EGR9viwo2C9V9s27YZFsLuwApdzuY5WNt\r\nY08oaRfbemKxYEqVMIYCE+eFasfiKscty7c1yKVcUc5hxU21bpciOWPlCLb2\r\n2iF4n/iVJm/pTRdjynBBwWSVlJ4PM+FI88p8HJr0E6kfwGoY5a7DEdGZpAjX\r\nKLelgueIAiv4o85VdSoowhvxe/9yM8TU/uw1fYMNc1zfgyRBrlgRBidmK7E2\r\nKJMl7u90VjQybrScCutj7WjJdxYeacVvp8CSWfVWS/VZXxI+ocgP6ldCEU1F\r\n3StMuFoJU1bLkG4rta7f1pRGLzHYDIl+oOvZrtWNcu1apvzPVAKn34I0J2Xi\r\nOS5IdLdU0VqKnbWKfJEZZM3VhlLXS6Kaj5TSTzWiFyIzWjIXIodCWyb5xwF2\r\n6gdCxdUgAhW20b5Bfeke36LryUBr6LO3sGUqlNrrdhYUN4Y69CUV0u9NsCGx\r\ndtLxDXnqZy4QCo96cHEM4nCC31cR9dgtkX/zaJNOYODEIYNyAFNmzPXaFtEC\r\nLK8j1SnnhS02xQyRJopla40CcqWr+LCSqt8IDpKPT7YDBt6gA2nb71l6An2H\r\nHs1qq+W+jnNGEI3YifcpXprtx2jm5WOcfxg=\r\n=A0j8\r\n-----END
+        PGP SIGNATURE-----\r\n"},"_npmUser":{"name":"mctofu","email":"mctofu@github.com"},"directories":{},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/npm-transitive-dependency-with-more-versions_1.0.0_1664318206061_0.775926350146851"},"_hasShrinkwrap":false},"1.0.1":{"name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","version":"1.0.1","description":"a
+        test fixture for testing transitive dependency updates","main":"index.js","scripts":{"test":"echo
+        \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"author":"","license":"ISC","bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","gitHead":"047df523564034e9748db237049edcb4d4b5db03","_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions@1.0.1","_nodeVersion":"16.15.0","_npmVersion":"8.5.5","dist":{"integrity":"sha512-L25+LUfJNPO3T+/RdhG62Hv2gIwiZLWR05qqqV1mzqD9goLy31/oc5rcF8/0pjOF45Zv/JqZm2whi4qhXa9plw==","shasum":"554dd28a17e4d8696049a2e9eb5c6a12bab3bcab","tarball":"https://registry.npmjs.org/@dependabot-fixtures/npm-transitive-dependency-with-more-versions/-/npm-transitive-dependency-with-more-versions-1.0.1.tgz","fileCount":2,"unpackedSize":843,"signatures":[{"keyid":"SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA","sig":"MEYCIQDouG+40jI6ZgvPdtDm0HztzNq67PCWya7m7Fk+LbkJ9wIhANYpxK1v2iNHglS0yYcmHXu9Wc4i3HOEr90R8UCLdG4n"}],"npm-signature":"-----BEGIN
+        PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJjM3tDACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmqKlg//cIXeXVY6cwQYVNJfSSNZAsZe0WRcfWCyvxKr7Zb2b9JXwz0/\r\nmcwWXA9xXwHJ+/8aX8ejSswqJS9VzCuIl5wnGAIrWH7ymb9fd+LenECqbxYo\r\nvtCTHn2E80X17AxD+5PhUUPe64KzfEiigWLGqI0BxZ+vzzowJnuYsESrcpH9\r\ntll1qdJdv4/q7qL/GYszLJTcc3LDLSOkxg14OLWRXpapj0nNKjfM6nptIiyt\r\nloQNBNICHkUicts2KykD7DoDVxQEdouwJul9GoxhKPI7JRB6JHVp7pjQzU6M\r\nTQ6PNQMwbkcXqhdkwQuBkvGgd0YYtmLWNa9RvIeuMVzF0oBCpIT+mSoeEOrB\r\nPO9QpTO7ZG5fZ/7OGRmV+lu92s9QJ+n2j1AaO6kVrxQekYVERWKZFobIfIv0\r\nSwVIidOJ0w7GBUi6uPzolzLv3vsb42yk60Oda+5q7GUWLNcLPvktlAZH7fCh\r\nkG1g4odIO9TfPrnNbbTtZxNUdcsWjxp5uJQndu1c89iwUvXb13axMcvw7FuE\r\nrQJ01sNdOJ/iMbrr9ZxuNA488UV5eFLk5Eyzl/5x49WykGPc8i7CbZ50m6lM\r\nmW2tx0DNqNppjXgxlCiRHrgDyjxYewQ3/jtoOSdUl++CjQLNawv8RIEHEgbZ\r\n7VX8pYfRjSTRBJfPs4cbtrxaBTNjnyIBXJs=\r\n=mO52\r\n-----END
+        PGP SIGNATURE-----\r\n"},"_npmUser":{"name":"mctofu","email":"mctofu@github.com"},"directories":{},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/npm-transitive-dependency-with-more-versions_1.0.1_1664318275589_0.30553854752475185"},"_hasShrinkwrap":false},"1.0.2":{"name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","version":"1.0.2","description":"a
+        test fixture for testing transitive dependency updates","main":"index.js","scripts":{"test":"echo
+        \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"author":"","license":"ISC","bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","gitHead":"0bc35ed208f386ee9e188efcc34ccdf3b30f1727","_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions@1.0.2","_nodeVersion":"16.15.0","_npmVersion":"8.5.5","dist":{"integrity":"sha512-0ry5KGT5bnviMKrIv8PufqHsSIStz6JEuSDcM0aETtD+hWKpk1vHQPn8MFWerZb8kb7Iq0z1G+66z/i0ibSGYA==","shasum":"3ec5979143ce6c619ff3d1ae6f0599adbfc70baf","tarball":"https://registry.npmjs.org/@dependabot-fixtures/npm-transitive-dependency-with-more-versions/-/npm-transitive-dependency-with-more-versions-1.0.2.tgz","fileCount":2,"unpackedSize":843,"signatures":[{"keyid":"SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA","sig":"MEUCIQDOjxQ4cgbQSPWEE4IT32y/YTpTT4yTZUYi0AFtqnhI8AIgBDYLISLRbyD1Im0NWV8LSbZtb8l6QdwVfXxkwwGjSx0="}],"npm-signature":"-----BEGIN
+        PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJjM3uUACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmpILQ/+KJiGPtUG4/BCepcdmfXR3GCBP/Lb7FjN6Fu3jXYxx6K6uRyq\r\n/5Nl27dHSYGZissvP+TU41RbdL7KPG5DuapPeEhk4QcVeilcGD9J77M/jt7R\r\nethWfxJvhju5lZbvm2BO55A48G/L/xUCDoM8fgHNPITLNPYEQiFdcSZH2CEg\r\nNRXO4onJ9BnenA/EYfvFvjSOnZkyKiRlevMBDKmw2dmU2jQt6VrmicvcBYq9\r\nuLXvhmuWepKdfUFac+jb70OioPf6lFPrdoRxk6r6vDlsA/90pCe5zSLXaCRb\r\nYthWDaXVvuHypJ8Mx7lx82A9jiDWfDJAMOgjAcSojNsMR/9NaUFyTpr3OSg3\r\nFlvOC4Xv/z64JbRGHNb9inu64j+PDctWEZpoNGu0apLLHL4gT3kLwvOX0quG\r\nww3c1b4MZyMGefU7gU+ooksl4beO7Dm+EF+kgfYlEIjoKLrwfIyx+93l/yqA\r\nshQzO7wl34Vagn8j3FkBcwaHH/cP9JztCayzOojnE3k8C2dW/amtagPNEDtU\r\nl1c4lURI5r7x5Z5j6rbxRanq0iz64R2Nk05vYcdn41e0Y9WZC5xh6TV0O/Qa\r\nold4L9Vtb16q4hiWxriAP25j+MGhMEABJKcM/oPlOWQevodCl3myBXwnBWSE\r\nsiGBG7ypv2fNCcF+l1SnMwJ3ymT4muf3RDQ=\r\n=k+wG\r\n-----END
+        PGP SIGNATURE-----\r\n"},"_npmUser":{"name":"mctofu","email":"mctofu@github.com"},"directories":{},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/npm-transitive-dependency-with-more-versions_1.0.2_1664318356442_0.16582391467710034"},"_hasShrinkwrap":false},"2.0.0":{"name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","version":"2.0.0","description":"a
+        test fixture for testing transitive dependency updates","main":"index.js","scripts":{"test":"echo
+        \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"author":"","license":"ISC","bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","gitHead":"cbaf6e79e499232970fba2b0935fb1f4a7f49168","_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions@2.0.0","_nodeVersion":"16.15.0","_npmVersion":"8.5.5","dist":{"integrity":"sha512-G/dUqRlfHH0uBvWl+co7EgGYKkKeybDAc7PeWB9EM6GRiuJE8hS2kukhFb+eNyESYOFtWJFhInSN7lUIECP4tA==","shasum":"6da4aaf0cee30db67af0b68fa3f5df2d951d3c4e","tarball":"https://registry.npmjs.org/@dependabot-fixtures/npm-transitive-dependency-with-more-versions/-/npm-transitive-dependency-with-more-versions-2.0.0.tgz","fileCount":2,"unpackedSize":843,"signatures":[{"keyid":"SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA","sig":"MEYCIQD+G91VTZ7mHX7VkfUuBxwI650D0YH5OwHz6N0YRlUD+gIhAO+2/lEb0hD/85ok9s8vZu1i9W//fCmexhemGV48yrdF"}],"npm-signature":"-----BEGIN
+        PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJjM3u8ACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmpVZBAAlJLmFtdlWwIVZmetRspk9ElMveOfe7Od9OAmWCNTueV39dn8\r\nkYQq+YGAGUyZIFxvhLPdSpTZ2iYN3NkuConhXlY4OWERzU4seKyEuzrQSfEI\r\nXDA8sVKNXOTCoqIGJRxhd6iMEjxuvkWUWc60IP0uL59DlqqjhsZRKLoavakT\r\nRps4KtIkLPiGpUNyMz1lSCe1acPtE4fr8S1CwNdIO8IsoFBSkt1WJk/pTRpA\r\nTma5/tHcIekMg6NigF97hejQxdHqgGOgf3hT7NFUr09NJpN2/1FymuGcpCIU\r\ni1CmBJPia3gjGhGFIgCvt51CuXPOvJCVyolnsEhqLoXKw5qR3HZXpLTsbaih\r\nN4BBwlp262jMSFovpjHMbKGUmyt1nLaO7uoJcCyZNTGjio2966VlpzevBKeC\r\n/Hpp7H6DA7xiI9jheN8Tz73CM1iQrlv037ued14iahdZ23EGwIRFre3Kn0Ts\r\np3pAceKwP1d2DUYeYMHjBej5GH+/0XslH1k/Nw5blg2nwePxfUze5DTsw0ht\r\nMHoovVTPbeJOOewLob8XOI9Hkz87F/6ItPWWt7jE/uqMP+DthDjYMlLUZnSS\r\nU6WuhCU6KF1W6ZAnJoZbKTfCoGjELJeX3T8xJQNbTjBYGWLqxUtzDn7fubwq\r\ns4YYKs684P3h2PkRHeuxnA4Ol/WhdYKZuw4=\r\n=gfZD\r\n-----END
+        PGP SIGNATURE-----\r\n"},"_npmUser":{"name":"mctofu","email":"mctofu@github.com"},"directories":{},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/npm-transitive-dependency-with-more-versions_2.0.0_1664318396192_0.4845108562072311"},"_hasShrinkwrap":false}},"time":{"created":"2022-09-27T22:36:45.971Z","1.0.0":"2022-09-27T22:36:46.267Z","modified":"2022-09-27T22:39:56.482Z","1.0.1":"2022-09-27T22:37:55.798Z","1.0.2":"2022-09-27T22:39:16.621Z","2.0.0":"2022-09-27T22:39:56.371Z"},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"description":"a
+        test fixture for testing transitive dependency updates","homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"license":"ISC","readme":"#
+        npm-transitive-dependency-with-more-versions\nLike https://github.com/dependabot-fixtures/npm-transitive-dependency
+        but with more versions available\n","readmeFilename":"README.md"}'
+  recorded_at: Tue, 27 Sep 2022 23:38:29 GMT
+- request:
+    method: get
+    uri: https://registry.npmjs.org/@dependabot-fixtures%2Fnpm-transitive-dependency-with-more-versions/2.0.0
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      user-agent:
+      - dependabot-core/0.212.0 excon/0.92.5 ruby/2.7.6 (x86_64-linux) (+https://github.com/dependabot/dependabot-core)
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      date:
+      - Tue, 27 Sep 2022 23:38:29 GMT
+      content-type:
+      - application/json
+      connection:
+      - keep-alive
+      cf-ray:
+      - 751812be498b965d-SJC
+      access-control-allow-origin:
+      - "*"
+      content-encoding:
+      - ''
+      vary:
+      - Accept-Encoding
+      cf-cache-status:
+      - DYNAMIC
+      server:
+      - cloudflare
+    body:
+      encoding: UTF-8
+      string: '{"name":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions","version":"2.0.0","description":"a
+        test fixture for testing transitive dependency updates","main":"index.js","scripts":{"test":"echo
+        \"Error: no test specified\" && exit 1"},"repository":{"type":"git","url":"git+https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions.git"},"author":"","license":"ISC","bugs":{"url":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions/issues"},"homepage":"https://github.com/dependabot-fixtures/npm-transitive-dependency-with-more-versions#readme","gitHead":"cbaf6e79e499232970fba2b0935fb1f4a7f49168","_id":"@dependabot-fixtures/npm-transitive-dependency-with-more-versions@2.0.0","_nodeVersion":"16.15.0","_npmVersion":"8.5.5","dist":{"integrity":"sha512-G/dUqRlfHH0uBvWl+co7EgGYKkKeybDAc7PeWB9EM6GRiuJE8hS2kukhFb+eNyESYOFtWJFhInSN7lUIECP4tA==","shasum":"6da4aaf0cee30db67af0b68fa3f5df2d951d3c4e","tarball":"https://registry.npmjs.org/@dependabot-fixtures/npm-transitive-dependency-with-more-versions/-/npm-transitive-dependency-with-more-versions-2.0.0.tgz","fileCount":2,"unpackedSize":843,"signatures":[{"keyid":"SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA","sig":"MEYCIQD+G91VTZ7mHX7VkfUuBxwI650D0YH5OwHz6N0YRlUD+gIhAO+2/lEb0hD/85ok9s8vZu1i9W//fCmexhemGV48yrdF"}],"npm-signature":"-----BEGIN
+        PGP SIGNATURE-----\r\nVersion: OpenPGP.js v4.10.10\r\nComment: https://openpgpjs.org\r\n\r\nwsFzBAEBCAAGBQJjM3u8ACEJED1NWxICdlZqFiEECWMYAoorWMhJKdjhPU1b\r\nEgJ2VmpVZBAAlJLmFtdlWwIVZmetRspk9ElMveOfe7Od9OAmWCNTueV39dn8\r\nkYQq+YGAGUyZIFxvhLPdSpTZ2iYN3NkuConhXlY4OWERzU4seKyEuzrQSfEI\r\nXDA8sVKNXOTCoqIGJRxhd6iMEjxuvkWUWc60IP0uL59DlqqjhsZRKLoavakT\r\nRps4KtIkLPiGpUNyMz1lSCe1acPtE4fr8S1CwNdIO8IsoFBSkt1WJk/pTRpA\r\nTma5/tHcIekMg6NigF97hejQxdHqgGOgf3hT7NFUr09NJpN2/1FymuGcpCIU\r\ni1CmBJPia3gjGhGFIgCvt51CuXPOvJCVyolnsEhqLoXKw5qR3HZXpLTsbaih\r\nN4BBwlp262jMSFovpjHMbKGUmyt1nLaO7uoJcCyZNTGjio2966VlpzevBKeC\r\n/Hpp7H6DA7xiI9jheN8Tz73CM1iQrlv037ued14iahdZ23EGwIRFre3Kn0Ts\r\np3pAceKwP1d2DUYeYMHjBej5GH+/0XslH1k/Nw5blg2nwePxfUze5DTsw0ht\r\nMHoovVTPbeJOOewLob8XOI9Hkz87F/6ItPWWt7jE/uqMP+DthDjYMlLUZnSS\r\nU6WuhCU6KF1W6ZAnJoZbKTfCoGjELJeX3T8xJQNbTjBYGWLqxUtzDn7fubwq\r\ns4YYKs684P3h2PkRHeuxnA4Ol/WhdYKZuw4=\r\n=gfZD\r\n-----END
+        PGP SIGNATURE-----\r\n"},"_npmUser":{"name":"mctofu","email":"mctofu@github.com"},"directories":{},"maintainers":[{"name":"bryandragon","email":"bdragon@github.com"},{"name":"nishnha","email":"nishnha@gmail.com"},{"name":"mctofu","email":"mctofu@github.com"}],"_npmOperationalInternal":{"host":"s3://npm-registry-packages","tmp":"tmp/npm-transitive-dependency-with-more-versions_2.0.0_1664318396192_0.4845108562072311"},"_hasShrinkwrap":false}'
+  recorded_at: Tue, 27 Sep 2022 23:38:29 GMT
+recorded_with: VCR 6.1.0

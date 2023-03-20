@@ -1,0 +1,7 @@
+{
+  "name": "valid/name",
+  "version": "3.1.7",
+  "require": {
+    "monolog/monolog" : "^3.0|feature-branch as 3.0.0"
+  }
+}

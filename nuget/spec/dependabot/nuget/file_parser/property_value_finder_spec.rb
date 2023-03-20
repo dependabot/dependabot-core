@@ -157,5 +157,43 @@ RSpec.describe Dependabot::Nuget::FileParser::PropertyValueFinder do
         is_expected.to eq("SystemSearchEngineVersion")
       end
     end
+
+    context "from a directory.packages.props file" do
+      let(:files) { [file, build_file, imported_file] }
+
+      let(:file) do
+        Dependabot::DependencyFile.new(
+          name: "nested/my.csproj",
+          content: file_body
+        )
+      end
+      let(:file_body) { fixture("csproj", "property_version.csproj") }
+      let(:build_file) do
+        Dependabot::DependencyFile.new(
+          name: "Directory.Packages.props",
+          content: build_file_body
+        )
+      end
+      let(:build_file_body) do
+        fixture("property_files", "directory.packages.props")
+      end
+      let(:imported_file) do
+        Dependabot::DependencyFile.new(
+          name: "build/dependencies.props",
+          content: imported_file_body
+        )
+      end
+      let(:imported_file_body) do
+        fixture("property_files", "dependency.props")
+      end
+
+      let(:property_name) { "SystemSearchEngineVersion" }
+
+      its([:value]) { is_expected.to eq("3.0.0-alpha1-10221") }
+      its([:file]) { is_expected.to eq("Directory.Packages.props") }
+      its([:root_property_name]) do
+        is_expected.to eq("SystemSearchEngineVersion")
+      end
+    end
   end
 end

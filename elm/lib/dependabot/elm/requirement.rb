@@ -9,8 +9,8 @@ module Dependabot
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
         "(#{Elm::Version::VERSION_PATTERN})"
-      ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/.freeze
-      ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/.freeze
+      ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/
+      ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
@@ -20,11 +20,9 @@ module Dependabot
 
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          if req_string.nil?
-            raise BadRequirementError, "Nil requirement not supported in Elm"
-          end
+          raise BadRequirementError, "Nil requirement not supported in Elm" if req_string.nil?
 
-          req_string.split(",").map do |r|
+          req_string.split(",").map(&:strip).map do |r|
             convert_elm_constraint_to_ruby_constraint(r)
           end
         end

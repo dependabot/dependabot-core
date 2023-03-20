@@ -13,7 +13,7 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
       name: dependency_name,
       version: "2.1.0",
       requirements: requirements,
-      package_manager: "dep"
+      package_manager: "go_modules"
     )
   end
   let(:requirements) do
@@ -37,6 +37,14 @@ RSpec.describe Dependabot::GoModules::MetadataFinder do
   end
   let(:dependency_name) { "github.com/satori/go.uuid" }
   let(:source) { nil }
+
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
 
   describe "#source_url" do
     subject(:source_url) { finder.source_url }

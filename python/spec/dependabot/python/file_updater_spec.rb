@@ -52,12 +52,39 @@ RSpec.describe Dependabot::Python::FileUpdater do
       "password" => "token"
     }]
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_dependency_files" do
     subject(:updated_files) { updater.updated_dependency_files }
+
+    context "with a relative project path" do
+      let(:dependency_files) { project_dependency_files("poetry/relative_path") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "mypy",
+          version: "0.910",
+          previous_version: "0.812",
+          requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.910",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "pyproject.toml",
+            requirement: "^0.812",
+            groups: ["dev-dependencies"],
+            source: nil
+          }],
+          package_manager: "pip"
+        )
+      end
+
+      specify { expect(updated_files.count).to eq(2) }
+    end
 
     context "with a Pipfile and Pipfile.lock" do
       let(:dependency_files) { [pipfile, lockfile] }
@@ -135,6 +162,94 @@ RSpec.describe Dependabot::Python::FileUpdater do
 
       it "delegates to PipfileFileUpdater" do
         expect(described_class::PipfileFileUpdater).
+          to receive(:new).and_call_original
+        expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
+        updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
+      end
+    end
+
+    context "with multiple manifests declaring the same dependency" do
+      let(:dependency_files) { [pyproject, requirements] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content: fixture("pyproject_files", "pytest.toml")
+        )
+      end
+      let(:requirements_fixture_name) { "version_specified.txt" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "pytest",
+          version: "3.5.0",
+          previous_version: "3.4.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "3.5.0",
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "==3.5.0",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            requirement: "3.4.0",
+            file: "pyproject.toml",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            requirement: "==3.4.0",
+            file: "requirements.txt",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        )
+      end
+
+      # Perhaps ideally we'd replace both, but this is where we're at right now.
+      # See https://github.com/dependabot/dependabot-core/pull/4969
+      it "replaces one of the outdated dependencies" do
+        expect(updated_files.length).to eq(1)
+        expect(updated_files[0].content).to include('pytest = "3.5.0"')
+      end
+    end
+
+    context "with a pyproject.toml with pep621 dependencies" do
+      let(:dependency_files) { [pyproject] }
+      let(:pyproject) do
+        Dependabot::DependencyFile.new(
+          name: "pyproject.toml",
+          content:
+            fixture("pyproject_files", "standard_python.toml")
+        )
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "ansys-templates",
+          version: "0.5.0",
+          previous_version: "0.3.0",
+          package_manager: "pip",
+          requirements: [{
+            requirement: "==0.5.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }],
+          previous_requirements: [{
+            requirement: "==0.3.0",
+            file: "pyproject.toml",
+            source: nil,
+            groups: ["default"]
+          }]
+        )
+      end
+
+      it "delegates to RequirementFileUpdater" do
+        expect(described_class::RequirementFileUpdater).
           to receive(:new).and_call_original
         expect { updated_files }.to_not(change { Dir.entries(tmp_path) })
         updated_files.each { |f| expect(f).to be_a(Dependabot::DependencyFile) }
@@ -238,7 +353,7 @@ RSpec.describe Dependabot::Python::FileUpdater do
         let(:manifest_fixture_name) { "requests.in" }
         let(:generated_fixture_name) { "pip_compile_requests.txt" }
         let(:requirements_fixture_name) { "urllib.txt" }
-        let(:pypi_url) { "https://pypi.python.org/simple/urllib/" }
+        let(:pypi_url) { "https://pypi.org/simple/urllib/" }
 
         let(:dependency_name) { "urllib" }
         let(:dependency_version) { "1.22" }

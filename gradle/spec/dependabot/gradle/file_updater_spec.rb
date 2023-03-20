@@ -63,16 +63,29 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
     describe "the updated build.gradle file" do
       subject(:updated_buildfile) do
-        updated_files.find { |f| f.name == "build.gradle" }
+        updated_files.find do |f|
+          Dependabot::Gradle::FileUpdater::SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
+        end
       end
 
       its(:content) do
         is_expected.to include(
-          "compile group: 'co.aikar', name: 'acf-paper', version: "\
+          "compile group: 'co.aikar', name: 'acf-paper', version: " \
           "'0.6.0-SNAPSHOT', changing: true"
         )
       end
       its(:content) { is_expected.to include "version: '4.2.0'" }
+
+      context "with kotlin" do
+        let(:buildfile_fixture_name) { "build.gradle.kts" }
+
+        its(:content) do
+          is_expected.to include(
+            'implementation(group = "co.aikar", name = "acf-paper", version = "0.6.0-SNAPSHOT", changing: true)'
+          )
+        end
+        its(:content) { is_expected.to include 'version = "4.2.0"' }
+      end
 
       context "with a plugin" do
         let(:buildfile_fixture_name) { "dependency_set.gradle" }
@@ -102,6 +115,118 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           is_expected.to include(
             'id "org.springframework.boot" version "2.1.4.RELEASE" apply false'
           )
+        end
+
+        context "with kotlin" do
+          let(:buildfile_fixture_name) { "root_build.gradle.kts" }
+
+          its(:content) do
+            is_expected.to include(
+              'id("org.springframework.boot") version "2.1.4.RELEASE" apply false'
+            )
+          end
+
+          context "with a dependency version defined by a property" do
+            let(:buildfile) do
+              Dependabot::DependencyFile.new(
+                name: "build.gradle.kts",
+                content: fixture("buildfiles", buildfile_fixture_name)
+              )
+            end
+            let(:dependencies) do
+              [
+                Dependabot::Dependency.new(
+                  name: "org.jetbrains.kotlin:kotlin-gradle-plugin",
+                  version: "23.6-jre",
+                  previous_version: "1.2.61",
+                  requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "23.6-jre",
+                    groups: [],
+                    source: {
+                      type: "maven_repo",
+                      url: "https://repo.maven.apache.org/maven2"
+                    },
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  previous_requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "1.2.61",
+                    groups: [],
+                    source: nil,
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  package_manager: "gradle"
+                ),
+                Dependabot::Dependency.new(
+                  name: "org.jetbrains.kotlin:kotlin-stdlib-jre8",
+                  version: "23.6-jre",
+                  previous_version: "1.2.61",
+                  requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "23.6-jre",
+                    groups: [],
+                    source: {
+                      type: "maven_repo",
+                      url: "https://repo.maven.apache.org/maven2"
+                    },
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  previous_requirements: [{
+                    file: "build.gradle.kts",
+                    requirement: "1.2.61",
+                    groups: [],
+                    source: nil,
+                    metadata: { property_name: "kotlinVersion" }
+                  }],
+                  package_manager: "gradle"
+                )
+              ]
+            end
+
+            it "updates the version in the build.gradle.kts" do
+              expect(updated_files.map(&:name)).to eq(["build.gradle.kts"])
+              expect(updated_files.first.content).
+                to include('extra["kotlinVersion"] = "23.6-jre"')
+            end
+          end
+        end
+
+        context "with a kotlin plugin" do
+          let(:buildfile_fixture_name) { "root_build.gradle.kts" }
+          let(:buildfile) do
+            Dependabot::DependencyFile.new(
+              name: "build.gradle.kts",
+              content: fixture("buildfiles", buildfile_fixture_name)
+            )
+          end
+          let(:dependency) do
+            Dependabot::Dependency.new(
+              name: "jvm",
+              version: "1.4.21-2",
+              requirements: [{
+                file: "build.gradle.kts",
+                requirement: "1.4.21-2",
+                groups: %w(plugins kotlin),
+                source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "build.gradle.kts",
+                requirement: "1.3.72",
+                groups: %w(plugins kotlin),
+                source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+                metadata: nil
+              }],
+              package_manager: "gradle"
+            )
+          end
+
+          its(:content) do
+            is_expected.to include(
+              'kotlin("jvm") version "1.4.21-2"'
+            )
+          end
         end
       end
 
@@ -156,7 +281,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           describe "the build.gradle file" do
             its(:content) do
               is_expected.to include(
-                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "compile group: 'co.aikar', name: 'acf-paper', version: " \
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
@@ -170,7 +295,7 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
 
             its(:content) do
               is_expected.to include(
-                "compile group: 'co.aikar', name: 'acf-paper', version: "\
+                "compile group: 'co.aikar', name: 'acf-paper', version: " \
                 "'0.6.0-SNAPSHOT', changing: true"
               )
             end
@@ -211,6 +336,42 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         it "updates the version in the build.gradle" do
           expect(updated_buildfile.content).
             to include('compile "org.jetbrains.kotlin:$name_prop:23.6-jre"')
+        end
+      end
+
+      context "with multiple configurations using the same dependency" do
+        let(:buildfile_fixture_name) { "multiple_configurations.gradle" }
+
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "org.projectlombok:lombok",
+              version: "1.18.26",
+              previous_version: "1.18.24",
+              requirements: [{
+                file: "build.gradle",
+                requirement: "1.18.26",
+                groups: [],
+                source: {
+                  type: "maven_repo",
+                  url: "https://repo.maven.apache.org/maven2"
+                }
+              }],
+              previous_requirements: [{
+                file: "build.gradle",
+                requirement: "1.18.24",
+                groups: [],
+                source: nil
+              }],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        it "updates the version in all configurations" do
+          expect(updated_buildfile.content).
+            to include("compileOnly 'org.projectlombok:lombok:1.18.26'").
+            and include("annotationProcessor 'org.projectlombok:lombok:1.18.26'")
         end
       end
 
@@ -405,6 +566,140 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
         its(:content) do
           is_expected.
             to include("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1")
+        end
+      end
+
+      context "with a version catalog" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.jmailen.kotlinter",
+            version: "3.12.0",
+            previous_version: "3.10.0",
+            requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "3.12.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "3.10.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+        its(:content) do
+          is_expected.to include(
+            'kotlinter = { id = "org.jmailen.kotlinter", version = "3.12.0" }'
+          )
+        end
+      end
+      context "with a version catalog with ref" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.jlleitschuh.gradle.ktlint",
+            version: "11.0.0",
+            previous_version: "10.0.0",
+            requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "11.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: { property_name: "ktlint" }
+            }],
+            previous_requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "10.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: { property_name: "ktlint" }
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+        its(:content) do
+          is_expected.to include(
+            'ktlint = "11.0.0"'
+          )
+        end
+      end
+
+      context "with a version catalog with ref and non-ref mixed" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "gradle/libs.versions.toml",
+            content: fixture("version_catalog_file", "libs.versions.toml")
+          )
+        end
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "org.jlleitschuh.gradle.ktlint",
+            version: "11.0.0",
+            previous_version: "9.0.0",
+            requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "11.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: { property_name: "ktlint" }
+            }, {
+              file: "gradle/libs.versions.toml",
+              requirement: "11.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: nil
+            }],
+            previous_requirements: [{
+              file: "gradle/libs.versions.toml",
+              requirement: "10.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: { property_name: "ktlint" }
+            }, {
+              file: "gradle/libs.versions.toml",
+              requirement: "9.0.0",
+              groups: ["plugins"],
+              source: { type: "maven_repo", url: "https://plugins.gradle.org/m2" },
+              metadata: nil
+            }],
+            package_manager: "gradle"
+          )
+        end
+
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "gradle/libs.versions.toml" }
+        end
+        its(:content) do
+          is_expected.to include(
+            'ktlint = "11.0.0"'
+          )
+          is_expected.to include(
+            'ktlintUpdated = { id = "org.jlleitschuh.gradle.ktlint", version = "11.0.0" }'
+          )
         end
       end
     end

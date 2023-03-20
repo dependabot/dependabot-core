@@ -36,6 +36,16 @@ RSpec.describe Dependabot::Python::MetadataFinder do
   let(:dependency_name) { "luigi" }
   let(:version) { "1.0" }
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+    stub_request(:get, "https://initd.org/status").to_return(status: 404)
+    stub_request(:get, "https://pypi.org/status").to_return(status: 404)
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:pypi_url) { "https://pypi.org/pypi/#{dependency_name}/json" }
@@ -45,7 +55,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
 
     context "when there is a github link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
@@ -74,7 +84,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
           with(basic_auth: %w(username password)).
           to_return(status: 200, body: pypi_response)
       end
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
 
@@ -141,7 +151,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
 
     context "when the dependency came from a local repository" do
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
       let(:version) { "1.0+gc.1" }
 
       it { is_expected.to be_nil }
@@ -153,7 +163,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
 
     context "when there is a bitbucket link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response_bitbucket.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response_bitbucket.json") }
 
       it { is_expected.to eq("https://bitbucket.org/spotify/luigi") }
 
@@ -165,7 +175,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "when there is a source link in the pypi description" do
       let(:pypi_response) do
-        fixture("pypi_response_description_source.json")
+        fixture("pypi", "pypi_response_description_source.json")
       end
 
       context "for a different dependency" do
@@ -205,7 +215,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
 
     context "when there is not a recognised source link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response_no_source.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response_no_source.json") }
 
       before do
         stub_request(:get, "http://initd.org/psycopg/").
@@ -279,7 +289,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
 
     context "when the pypi link resolves to a redirect" do
       let(:redirect_url) { "https://pypi.org/pypi/LuiGi/json" }
-      let(:pypi_response) { fixture("pypi_response.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response.json") }
 
       before do
         stub_request(:get, pypi_url).
@@ -289,6 +299,15 @@ RSpec.describe Dependabot::Python::MetadataFinder do
       end
 
       it { is_expected.to eq("https://github.com/spotify/luigi") }
+    end
+
+    context "when the dependency has extras" do
+      let(:dependency_name) { "celery[redis]" }
+      let(:version) { "4.3" }
+      let(:pypi_url) { "https://pypi.org/pypi/celery/json" }
+      let(:pypi_response) { fixture("pypi", "pypi_response_extras.json") }
+
+      it { is_expected.to eq("https://github.com/celery/celery") }
     end
   end
 
@@ -301,7 +320,7 @@ RSpec.describe Dependabot::Python::MetadataFinder do
     end
 
     context "when there is a homepage link in the pypi response" do
-      let(:pypi_response) { fixture("pypi_response_no_source.json") }
+      let(:pypi_response) { fixture("pypi", "pypi_response_no_source.json") }
 
       it "returns the specified homepage" do
         expect(homepage_url).to eq("http://initd.org/psycopg/")

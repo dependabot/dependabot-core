@@ -21,8 +21,6 @@ module Dependabot
           !old_version_changelog_line.nil?
         end
 
-        # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/CyclomaticComplexity
         def pruned_text
           changelog_lines = changelog_text.split("\n")
 
@@ -52,8 +50,6 @@ module Dependabot
 
           changelog_lines.slice(slice_range).join("\n").sub(/\n*\z/, "")
         end
-        # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/CyclomaticComplexity
 
         private
 
@@ -70,7 +66,6 @@ module Dependabot
           changelog_line_for_version(new_version)
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog_line_for_version(version)
           raise "No changelog text" unless changelog_text
@@ -93,7 +88,7 @@ module Dependabot
             false
           end
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
+
         # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_contains_relevant_versions?
@@ -142,19 +137,17 @@ module Dependabot
         end
 
         def previous_ref
-          dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
-          dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
-        end
-
-        def ref_changed?
-          previous_ref && new_ref && previous_ref != new_ref
+          end.uniq
+          return new_refs.first if new_refs.count == 1
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
@@ -166,10 +159,8 @@ module Dependabot
           requirements = dependency.requirements
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
-          source_type = sources.first[:type] || sources.first.fetch("type")
-          source_type == "git"
+          sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
         end
 
         def version_class

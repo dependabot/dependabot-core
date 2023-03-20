@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "rubygems_version_patch"
+require "dependabot/version"
 
 module Dependabot
   class Dependency
@@ -37,11 +37,11 @@ module Dependabot
 
     attr_reader :name, :version, :requirements, :package_manager,
                 :previous_version, :previous_requirements,
-                :subdependency_metadata
+                :subdependency_metadata, :metadata
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: [])
+                   subdependency_metadata: [], removed: false, metadata: {})
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -53,12 +53,22 @@ module Dependabot
         @subdependency_metadata = subdependency_metadata&.
                                   map { |h| symbolize_keys(h) }
       end
+      @removed = removed
+      @metadata = symbolize_keys(metadata || {})
 
       check_values
     end
 
     def top_level?
       requirements.any?
+    end
+
+    def removed?
+      @removed
+    end
+
+    def numeric_version
+      @numeric_version ||= version_class.new(version) if version && version_class.correct?(version)
     end
 
     def to_h
@@ -69,7 +79,8 @@ module Dependabot
         "previous_version" => previous_version,
         "previous_requirements" => previous_requirements,
         "package_manager" => package_manager,
-        "subdependency_metadata" => subdependency_metadata
+        "subdependency_metadata" => subdependency_metadata,
+        "removed" => removed? ? true : nil
       }.compact
     end
 
@@ -99,6 +110,22 @@ module Dependabot
       display_name_builder.call(name)
     end
 
+    # Returns all detected versions of the dependency. Only ecosystems that
+    # support this feature will return more than the current version.
+    def all_versions
+      all_versions = metadata[:all_versions]
+      return [version].compact unless all_versions
+
+      all_versions.filter_map(&:version)
+    end
+
+    # This dependency is being indirectly updated by an update to another
+    # dependency. We don't need to try and update it ourselves but want to
+    # surface it to the user in the PR.
+    def informational_only?
+      metadata[:information_only]
+    end
+
     def ==(other)
       other.instance_of?(self.class) && to_h == other.to_h
     end
@@ -108,15 +135,17 @@ module Dependabot
     end
 
     def eql?(other)
-      self.==(other)
+      self == other
     end
 
     private
 
+    def version_class
+      Utils.version_class_for_package_manager(package_manager)
+    end
+
     def check_values
-      if [version, previous_version].any? { |v| v == "" }
-        raise ArgumentError, "blank strings must not be provided as versions"
-      end
+      raise ArgumentError, "blank strings must not be provided as versions" if [version, previous_version].any?("")
 
       check_requirement_fields
       check_subdependency_metadata
@@ -124,8 +153,8 @@ module Dependabot
 
     def check_requirement_fields
       requirement_fields = [requirements, previous_requirements].compact
-      unless requirement_fields.all? { |r| r.is_a?(Array) } &&
-             requirement_fields.flatten.all? { |r| r.is_a?(Hash) }
+      unless requirement_fields.all?(Array) &&
+             requirement_fields.flatten.all?(Hash)
         raise ArgumentError, "requirements must be an array of hashes"
       end
 
@@ -133,9 +162,9 @@ module Dependabot
       optional_keys = %i(metadata)
       unless requirement_fields.flatten.
              all? { |r| required_keys.sort == (r.keys - optional_keys).sort }
-        raise ArgumentError, "each requirement must have the following "\
-                             "required keys: #{required_keys.join(', ')}."\
-                             "Optionally, it may have the following keys: "\
+        raise ArgumentError, "each requirement must have the following " \
+                             "required keys: #{required_keys.join(', ')}." \
+                             "Optionally, it may have the following keys: " \
                              "#{optional_keys.join(', ')}."
       end
 
@@ -148,13 +177,13 @@ module Dependabot
       return unless subdependency_metadata
 
       unless subdependency_metadata.is_a?(Array) &&
-             subdependency_metadata.all? { |r| r.is_a?(Hash) }
+             subdependency_metadata.all?(Hash)
         raise ArgumentError, "subdependency_metadata must be an array of hashes"
       end
     end
 
     def symbolize_keys(hash)
-      Hash[hash.keys.map { |k| [k.to_sym, hash[k]] }]
+      hash.keys.to_h { |k| [k.to_sym, hash[k]] }
     end
   end
 end

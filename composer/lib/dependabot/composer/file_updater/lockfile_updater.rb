@@ -7,6 +7,8 @@ require "dependabot/composer/file_updater"
 require "dependabot/composer/version"
 require "dependabot/composer/requirement"
 require "dependabot/composer/native_helpers"
+require "dependabot/composer/helpers"
+require "dependabot/composer/update_checker/version_resolver"
 
 # rubocop:disable Metrics/ClassLength
 module Dependabot
@@ -28,12 +30,13 @@ module Dependabot
           %r{
             (?<=PHP\sextension\s)ext\-[^\s/]+\s.*?\s(?=is|but)|
             (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=but)
-          }x.freeze
+          }x
         MISSING_IMPLICIT_PLATFORM_REQ_REGEX =
           %r{
             (?<!with|for|by)\sext\-[^\s/]+\s.*?\s(?=->)|
             (?<=requires\s)php(?:\-[^\s/]+)?\s.*?\s(?=->)
-          }x.freeze
+          }x
+        MISSING_ENV_VAR_REGEX = /Environment variable '(?<env_var>.[^']+)' is not set/
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -65,9 +68,7 @@ module Dependabot
             updated_content = run_update_helper.fetch("composer.lock")
 
             updated_content = post_process_lockfile(updated_content)
-            if lockfile.content == updated_content
-              raise "Expected content to change!"
-            end
+            raise "Expected content to change!" if lockfile.content == updated_content
 
             updated_content
           end
@@ -92,7 +93,7 @@ module Dependabot
           SharedHelpers.with_git_configured(credentials: credentials) do
             SharedHelpers.run_helper_subprocess(
               command: "php -d memory_limit=-1 #{php_helper_path}",
-              escape_command_str: false,
+              allow_unsafe_shell_command: true,
               function: "update",
               env: credentials_env,
               args: [
@@ -125,6 +126,8 @@ module Dependabot
           error.message.start_with?("Could not authenticate against")
         end
 
+        # TODO: Extract error handling and share between the version resolver
+        #
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/MethodLength
@@ -159,9 +162,7 @@ module Dependabot
             raise MissingExtensions, [missing_extension]
           end
 
-          if error.message.start_with?("Failed to execute git checkout")
-            raise git_dependency_reference_error(error)
-          end
+          raise git_dependency_reference_error(error) if error.message.start_with?("Failed to execute git checkout")
 
           # Special case for Laravel Nova, which will fall back to attempting
           # to close a private repo if given invalid (or no) credentials
@@ -169,22 +170,30 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, "nova.laravel.com"
           end
 
-          if error.message.start_with?("Failed to execute git clone")
-            dependency_url =
-              error.message.match(/(?:mirror|checkout) '(?<url>.*?)'/).
-              named_captures.fetch("url")
-            raise GitDependenciesNotReachable, dependency_url
+          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR)
+            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE_WITH_MIRROR).
+                             named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("Failed to clone")
-            dependency_url =
-              error.message.match(/Failed to clone (?<url>.*?) via/).
-              named_captures.fetch("url")
-            raise GitDependenciesNotReachable, dependency_url
+          if error.message.match?(UpdateChecker::VersionResolver::FAILED_GIT_CLONE)
+            dependency_url = error.message.match(UpdateChecker::VersionResolver::FAILED_GIT_CLONE).
+                             named_captures.fetch("url")
+            raise Dependabot::GitDependenciesNotReachable, dependency_url
           end
 
-          if error.message.start_with?("Could not find a key for ACF PRO")
+          # NOTE: This matches an error message from composer plugins used to install ACF PRO
+          # https://github.com/PhilippBaschke/acf-pro-installer/blob/772cec99c6ef8bc67ba6768419014cc60d141b27/src/ACFProInstaller/Exceptions/MissingKeyException.php#L14
+          # https://github.com/pivvenit/acf-pro-installer/blob/f2d4812839ee2c333709b0ad4c6c134e4c25fd6d/src/Exceptions/MissingKeyException.php#L25
+          if error.message.start_with?("Could not find a key for ACF PRO", "Could not find a license key for ACF PRO")
             raise MissingEnvironmentVariable, "ACF_PRO_KEY"
+          end
+
+          # NOTE: This matches error output from a composer plugin (private-composer-installer):
+          # https://github.com/ffraenz/private-composer-installer/blob/8655e3da4e8f99203f13ccca33b9ab953ad30a31/src/Exception/MissingEnvException.php#L22
+          if error.message.match?(MISSING_ENV_VAR_REGEX)
+            env_var = error.message.match(MISSING_ENV_VAR_REGEX).named_captures.fetch("env_var")
+            raise MissingEnvironmentVariable, env_var
           end
 
           if error.message.start_with?("Unknown downloader type: npm-sign") ||
@@ -193,9 +202,7 @@ module Dependabot
             raise DependencyFileNotResolvable, error.message
           end
 
-          if error.message.start_with?("Allowed memory size")
-            raise Dependabot::OutOfMemory
-          end
+          raise Dependabot::OutOfMemory if error.message.start_with?("Allowed memory size")
 
           if error.message.include?("403 Forbidden")
             source = error.message.match(%r{https?://(?<source>[^/]+)/}).
@@ -203,11 +210,18 @@ module Dependabot
             raise PrivateSourceAuthenticationFailure, source
           end
 
+          # NOTE: This error is raised by composer v1
           if error.message.include?("Argument 1 passed to Composer")
-            msg = "One of your Composer plugins is not compatible with the "\
-                  "latest version of Composer. Please update Composer and "\
+            msg = "One of your Composer plugins is not compatible with the " \
+                  "latest version of Composer. Please update Composer and " \
                   "try running `composer update` to debug further."
             raise DependencyFileNotResolvable, msg
+          end
+
+          # NOTE: This error is raised by composer v2 and includes helpful
+          # information about which plugins or dependencies are not compatible
+          if error.message.include?("Your requirements could not be resolved")
+            raise DependencyFileNotResolvable, error.message
           end
 
           raise error
@@ -306,7 +320,7 @@ module Dependabot
                            fetch(keys[:lockfile], []).
                            find { |d| d["name"] == name }&.
                            dig("source", "reference")
-              updated_req_parts = req.split(" ")
+              updated_req_parts = req.split
               updated_req_parts[0] = updated_req_parts[0] + "##{commit_sha}"
               json[keys[:manifest]][name] = updated_req_parts.join(" ")
             end
@@ -431,14 +445,17 @@ module Dependabot
         end
 
         def php_helper_path
-          NativeHelpers.composer_helper_path
+          NativeHelpers.composer_helper_path(composer_version: composer_version)
+        end
+
+        def composer_version
+          @composer_version ||= Helpers.composer_version(parsed_composer_json, parsed_lockfile)
         end
 
         def credentials_env
           credentials.
             select { |c| c.fetch("type") == "php_environment_variable" }.
-            map { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }.
-            to_h
+            to_h { |cred| [cred["env-key"], cred.fetch("env-value", "-")] }
         end
 
         def git_credentials
@@ -457,11 +474,9 @@ module Dependabot
           platform_php = parsed_composer_json.dig("config", "platform", "php")
 
           platform = {}
-          if platform_php.is_a?(String) && requirement_valid?(platform_php)
-            platform["php"] = [platform_php]
-          end
+          platform["php"] = [platform_php] if platform_php.is_a?(String) && requirement_valid?(platform_php)
 
-          # Note: We *don't* include the require-dev PHP version in our initial
+          # NOTE: We *don't* include the require-dev PHP version in our initial
           # platform. If we fail to resolve with the PHP version specified in
           # `require` then it will be picked up in a subsequent iteration.
           requirement_php = parsed_composer_json.dig("require", "php")

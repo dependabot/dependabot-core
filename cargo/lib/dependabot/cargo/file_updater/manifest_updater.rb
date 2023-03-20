@@ -100,8 +100,9 @@ module Dependabot
           if simple_declaration
             simple_declaration_regex =
               /(?:^|["'])#{Regexp.escape(simple_declaration)}/
+            old_req_escaped = Regexp.escape(old_req)
             content.gsub(simple_declaration_regex) do |line|
-              line.gsub(old_req, new_req)
+              line.gsub(/.+=.*\K(#{old_req_escaped})/, new_req)
             end
           elsif content.match?(feature_declaration_version_regex(dep))
             content.gsub(feature_declaration_version_regex(dep)) do |part|
@@ -138,7 +139,7 @@ module Dependabot
         end
 
         def declaration_regex(dep)
-          /(?:^|["'])#{Regexp.escape(dep.name)}["']?\s*=.*$/i
+          /(?:^|^\s*|["'])#{Regexp.escape(dep.name)}["']?(?:\s*\.version)?\s*=.*$/i
         end
 
         def feature_declaration_version_regex(dep)

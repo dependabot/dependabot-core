@@ -2,20 +2,31 @@
 
 set -e
 
-install_dir=$1
-if [ -z "$install_dir" ]; then
-  echo "usage: $0 INSTALL_DIR"
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
   exit 1
 fi
 
-mix local.hex --force
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/hex"
+mkdir -p "$install_dir"
+
+mix local.hex "$HEX_VERSION" --force --if-missing
+
+# Install deps necessary for Elixir projects using Nerves extensions
+# The `hex` arg isn't re-installing hex, but rather telling
+# mix that nerves_bootstrap is a hex package.
+mix archive.install hex nerves_bootstrap --force
 
 helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
-cp -r \
-  "$helpers_dir/lib" \
-  "$helpers_dir/mix.exs" \
-  "$helpers_dir/mix.lock" \
-  "$install_dir"
+
+case $(uname) in
+  'Darwin') CP_OPTS='-R' ;;
+  *) CP_OPTS='-r' ;;
+esac
+
+cp $CP_OPTS "$helpers_dir/lib" "$install_dir"
+cp $CP_OPTS "$helpers_dir/mix.exs" "$install_dir"
+cp $CP_OPTS "$helpers_dir/mix.lock" "$install_dir"
 
 cd "$install_dir"
 mix deps.get

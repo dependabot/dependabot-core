@@ -7,8 +7,6 @@ require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
 require "dependabot/shared_helpers"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module Cargo
     class FileUpdater
@@ -16,9 +14,9 @@ module Dependabot
         LOCKFILE_ENTRY_REGEX = /
           \[\[package\]\]\n
           (?:(?!^\[(\[package|metadata)).)+
-        /mx.freeze
+        /mx
 
-        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/.freeze
+        LOCKFILE_CHECKSUM_REGEX = /^"checksum .*$/
 
         def initialize(dependencies:, dependency_files:, credentials:)
           @dependencies = dependencies
@@ -34,15 +32,13 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo update -p #{dependency_spec}")
+              run_shell_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")
             updated_lockfile = post_process_lockfile(updated_lockfile)
 
-            if updated_lockfile.include?(desired_lockfile_content)
-              next updated_lockfile
-            end
+            next updated_lockfile if updated_lockfile.include?(desired_lockfile_content)
 
             raise "Failed to update #{dependency.name}!"
           end
@@ -62,15 +58,16 @@ module Dependabot
 
         def handle_cargo_error(error)
           raise unless error.message.include?("failed to select a version") ||
-                       error.message.include?("no matching version")
+                       error.message.include?("no matching version") ||
+                       error.message.include?("unexpected end of input while parsing major version number")
           raise if error.message.include?("`#{dependency.name} ")
 
           raise Dependabot::DependencyFileNotResolvable, error.message
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
+        # rubocop:disable Metrics/AbcSize
         def better_specification_needed?(error)
           return false if @custom_specification
           return false unless error.message.match?(/specification .* is ambigu/)
@@ -137,7 +134,7 @@ module Dependabot
           %(name = "#{dependency.name}"\nversion = "#{dependency.version}")
         end
 
-        def run_shell_command(command)
+        def run_shell_command(command, fingerprint:)
           start = Time.now
           command = SharedHelpers.escape_command(command)
           stdout, process = Open3.capture2e(command)
@@ -151,6 +148,7 @@ module Dependabot
             message: stdout,
             error_context: {
               command: command,
+              fingerprint: fingerprint,
               time_taken: time_taken,
               process_exit_value: process.to_s
             }
@@ -171,6 +169,10 @@ module Dependabot
             dir = Pathname.new(path).dirname
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(file.name, prepared_manifest_content(file))
+
+            next if virtual_manifest?(file)
+
+            File.write(File.join(dir, "build.rs"), dummy_app_content)
 
             FileUtils.mkdir_p(File.join(dir, "src"))
             File.write(File.join(dir, "src/lib.rs"), dummy_app_content)
@@ -267,9 +269,7 @@ module Dependabot
 
         def remove_default_run_specification(content)
           parsed_manifest = TomlRB.parse(content)
-          if parsed_manifest.dig("package", "default-run")
-            parsed_manifest["package"].delete("default-run")
-          end
+          parsed_manifest["package"].delete("default-run") if parsed_manifest.dig("package", "default-run")
           TomlRB.dump(parsed_manifest)
         end
 
@@ -367,8 +367,11 @@ module Dependabot
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
         end
+
+        def virtual_manifest?(file)
+          !file.content.include?("[package]")
+        end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

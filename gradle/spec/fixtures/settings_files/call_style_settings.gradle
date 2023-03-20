@@ -1,0 +1,10 @@
+include(':function_without_space')
+include (':function_with_space')
+include ':implicit'
+include   ":implicit_with_many_spaces"
+
+includeBuild('without_space')
+includeBuild ('with_space')
+includeBuild 'implicit'
+includeBuild   "implicit_with_many_spaces"
+includeBuild './standard-path'

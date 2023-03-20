@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "toml-rb"
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/shared_helpers"
@@ -19,6 +20,7 @@ module Dependabot
           /.*\.txt$/,
           /.*\.in$/,
           /^setup\.py$/,
+          /^setup\.cfg$/,
           /^pyproject\.toml$/,
           /^pyproject\.lock$/
         ]
@@ -44,6 +46,7 @@ module Dependabot
 
       private
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def resolver_type
         reqs = dependencies.flat_map(&:requirements)
         changed_reqs = reqs.zip(dependencies.flat_map(&:previous_requirements)).
@@ -58,12 +61,19 @@ module Dependabot
 
         # Otherwise, this is a top-level dependency, and we can figure out
         # which resolver to use based on the filename of its requirements
-        return :pipfile if changed_req_files.any? { |f| f == "Pipfile" }
-        return :poetry if changed_req_files.any? { |f| f == "pyproject.toml" }
+        return :pipfile if changed_req_files.any?("Pipfile")
+
+        if changed_req_files.any?("pyproject.toml")
+          return :poetry if poetry_based?
+
+          return :requirements
+        end
+
         return :pip_compile if changed_req_files.any? { |f| f.end_with?(".in") }
 
         :requirements
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def subdependency_resolver
         return :pipfile if pipfile_lock
@@ -111,8 +121,15 @@ module Dependabot
         return if pipfile
         return if pyproject
         return if get_original_file("setup.py")
+        return if get_original_file("setup.cfg")
 
-        raise "No requirements.txt or setup.py!"
+        raise "Missing required files!"
+      end
+
+      def poetry_based?
+        return false unless pyproject
+
+        !TomlRB.parse(pyproject.content).dig("tool", "poetry").nil?
       end
 
       def pipfile

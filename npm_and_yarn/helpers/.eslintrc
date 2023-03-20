@@ -1,14 +1,11 @@
 {
-  "plugins": [
+  "extends": [
     "prettier"
   ],
-  "rules": {
-    "prettier/prettier": "error"
-  },
   "env": {
     "node": true
   },
   "parserOptions": {
-    "ecmaVersion": 9
+    "ecmaVersion": "latest"
   }
 }

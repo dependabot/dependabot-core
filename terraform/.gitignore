@@ -3,3 +3,4 @@
 /tmp
 /dependabot-*.gem
 Gemfile.lock
+.terraform

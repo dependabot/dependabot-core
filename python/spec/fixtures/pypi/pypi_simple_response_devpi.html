@@ -1,0 +1,378 @@
+<!doctype html>
+<html>
+    <head>
+        <title>root/edge/: luigi versions</title>
+
+        <link rel="stylesheet" type="text/css" href="https://devpi.dependabot.com/+static/style.css" />
+        <script src="https://devpi.dependabot.com/+static/jquery-1.11.1.min.js"></script>
+        <script src="https://devpi.dependabot.com/+static/moment-2.8.2.min.js"></script>
+        <script src="https://devpi.dependabot.com/+static/common.js"></script>
+    </head>
+    <body>
+        <div class="header">
+            <form method="get" id="search" action="https://devpi.dependabot.com/+search">
+
+                <h1><a href="https://devpi.dependabot.com/">devpi</a></h1>
+
+                <input type="text" size="60" name="query" autofocus />
+                <input type="submit" value="Search" />
+                <span class="help">
+                    <a href="https://devpi.dependabot.com/+searchhelp">How to<br /> search?</a>
+                </span>
+                <div class="query_doc inline" style="display: none">
+                    <span class="help">
+                        <a href="#">Close help</a>
+                    </span>
+
+                    <p>
+                        To specify a term which contains spaces, use single quotes like this:
+                        <code>'term with spaces'</code>
+                    </p>
+                    <p>
+                        By using a search like <code>fieldname:term</code>,
+                        you can search in the following fields:<br /><dl><dt><code>classifiers</code></dt><dd>
+                        The <a href="https://pypi.org/pypi?%3Aaction=list_classifiers" target="_blank">trove classifiers</a> of a package.
+                        Use single quotes to specify a classifier, as they contain spaces:
+                        <code>classifiers:'Programming Language :: Python :: 3'</code></dd><dt><code>index</code></dt><dd>The name of the index. This is only the name part, without the user. For example: <code>index:pypi</code></dd><dt><code>keywords</code></dt><dd>The keywords of a package.</dd><dt><code>name</code></dt><dd>The package name. For example: <code>name:devpi-client</code></dd><dt><code>path</code></dt><dd>The path of the package in the form '/{user}/{index}/{name}'.  For example: <code>path:/root/pypi/devpi-server</code></dd><dt><code>type</code></dt><dd>
+                        The type of text.
+                        One of <code>project</code> for the project name,
+                        <code>title</code> for the title of a documentation page,
+                        <code>page</code> for a documentation page,
+                        or one of the following project metadata fields:
+                        <code>author</code>, <code>author_email</code>,
+                        <code>description</code>, <code>keywords</code>,
+                        <code>summary</code>. For example: <code>type:page</code>
+                        </dd><dt><code>user</code></dt><dd>The user name.</dd></dl>
+                    </p>
+                    <p>
+                        End a term with an asterisk to search by prefix like this: <code>path:/fschulze/*</code>
+                    </p>
+                    <p>
+                        Group query clauses with parentheses.
+                    </p>
+                    <p>
+                        Use the <code>AND</code>, <code>OR</code>,
+                        <code>ANDNOT</code>, <code>ANDMAYBE</code>, and <code>NOT</code><br />
+                        operators to further refine your search.<br />
+                        Write them in all capital letters, otherwise they will be interpreted as search terms.<br />
+                        An example search would be: <code>devpi ANDNOT client</code>
+                    </p>
+                    <p>
+                        Boost a term by adding a circumflex followed by the boost value like this:
+                        <code>term^2</code>
+                    </p>
+                </div>
+            </form>
+            <script type="text/javascript">
+            //<![CDATA[
+                $(function() {
+                    $('.help a').click(function() {
+                        var $help = $('.query_doc.inline');
+                        // is there a docview iframe?
+                        var $iframe = $('iframe');
+                        if ($iframe.length && $help.is(':hidden')) {
+                            // then hide the iframe's scrollbar
+                            // (double scrollbar doesn't look nice)
+                            $('body', $iframe[0].contentWindow.document
+                              ).css('overflow', 'hidden');
+                        }
+                        $help.slideToggle({
+                            complete: function () {
+                                if ($iframe.length && $help.is(':hidden')) {
+                                    // give focus and scrollbar back to iframe
+                                    var iframeWindow = $iframe[0].contentWindow;
+                                    iframeWindow.focus();
+                                    $('body', iframeWindow.document
+                                      ).css('overflow', 'auto');
+                                }
+                            }
+                        });
+                        return false;
+                    });
+                });
+            //]]>
+            </script>
+
+            <div id="navigation">
+                <span>
+
+                    <a href="https://devpi.dependabot.com/">devpi</a>
+                </span>
+                <span>
+                    »
+                    <a href="https://devpi.dependabot.com/root/edge">root/edge</a>
+                </span>
+                <span>
+                    »
+                    <a href="https://devpi.dependabot.com/root/edge/luigi">luigi</a>
+                </span>
+
+                <a class="statusbadge ok"
+                   href="https://devpi.dependabot.com/+status">
+                    ok
+                </a>
+            </div>
+        </div>
+        <div id="content">
+            <h1>root/edge/: luigi versions</h1>
+            <table class="versions">
+                <thead>
+                    <tr>
+                        <th>Index</th>
+                        <th>Version</th>
+                        <th>Documentation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.10.2">0.10.2</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.10.1">0.10.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.10.0">0.10.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.9.0">0.9.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.8.0">0.8.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.7.2">0.7.2</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.7.1">0.7.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.7.0">0.7.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.6.0">0.6.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.5.1">0.5.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.5.0">0.5.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.4.0">0.4.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.3.1">0.3.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.3.0">0.3.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.2.2">0.2.2</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.2.1">0.2.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.2.0">0.2.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.1.0">0.1.0</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.30">0.0.30</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.29">0.0.29</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.28">0.0.28</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.27">0.0.27</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.26.1">0.0.26.1</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.25">0.0.25</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.24">0.0.24</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.23">0.0.23</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.22">0.0.22</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.21">0.0.21</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.20">0.0.20</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.19">0.0.19</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.18">0.0.18</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.17">0.0.17</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.16">0.0.16</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.15">0.0.15</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.14">0.0.14</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.13">0.0.13</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.12">0.0.12</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.11">0.0.11</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.10">0.0.10</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.9">0.0.9</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.8">0.0.8</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.7">0.0.7</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.6">0.0.6</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.5">0.0.5</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.4">0.0.4</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.3">0.0.3</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.2">0.0.2</a></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td><a href="https://devpi.dependabot.com/root/edge">root/edge</a></td>
+                        <td><a href="https://devpi.dependabot.com/root/edge/luigi/0.0.1">0.0.1</a></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <ul class="footer-versions">
+                <li>devpi-server-4.3.0</li>
+                <li>devpi-web-3.2.0</li>
+            </ul>
+        </footer>
+    </body>
+</html>

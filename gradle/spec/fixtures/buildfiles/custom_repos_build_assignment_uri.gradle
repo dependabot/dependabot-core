@@ -1,0 +1,9 @@
+apply plugin: 'java'
+
+repositories {
+    maven { url = uri('https://uri-helper.com') }
+    maven { url = new java.net.URI('https://java-constructor.com') }
+
+    google()
+}
+

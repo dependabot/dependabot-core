@@ -9,7 +9,8 @@ RSpec.describe Dependabot::GitCommitChecker do
     described_class.new(
       dependency: dependency,
       credentials: credentials,
-      ignored_versions: ignored_versions
+      ignored_versions: ignored_versions,
+      raise_on_ignored: raise_on_ignored
     )
   end
 
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::GitCommitChecker do
     )
   end
   let(:ignored_versions) { [] }
+  let(:raise_on_ignored) { false }
 
   let(:requirements) do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: source }]
@@ -53,6 +55,27 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     context "with a non-git dependency" do
       let(:source) { nil }
+      it { is_expected.to eq(false) }
+    end
+
+    context "with a non-git dependency that has multiple sources" do
+      let(:requirements) do
+        [
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.npmjs.org" }
+          },
+          {
+            file: "package.json",
+            requirement: "0.1.0",
+            groups: ["devDependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }
+        ]
+      end
+
       it { is_expected.to eq(false) }
     end
 
@@ -105,7 +128,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "with multiple source types" do
-          let(:s2) { { type: "path" } }
+          let(:s2) { { type: "git", url: "https://github.com/dependabot/dependabot-core" } }
 
           it "raises a helpful error" do
             expect { checker.git_dependency? }.
@@ -146,8 +169,8 @@ RSpec.describe Dependabot::GitCommitChecker do
       context "with source code hosted on GitHub" do
         let(:repo_url) { "https://api.github.com/repos/gocardless/business" }
         let(:service_pack_url) do
-          "https://github.com/gocardless/business.git/info/refs"\
-          "?service=git-upload-pack"
+          "https://github.com/gocardless/business.git/info/refs" \
+            "?service=git-upload-pack"
         end
         before do
           stub_request(:get, service_pack_url).
@@ -167,7 +190,16 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
 
         context "but GitHub returns a 404" do
-          before { stub_request(:get, service_pack_url).to_return(status: 404) }
+          let(:url) { "https://github.com/gocardless/business.git" }
+
+          before do
+            stub_request(:get, service_pack_url).to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+          end
+
           it { is_expected.to eq(false) }
         end
 
@@ -257,12 +289,12 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         let(:source_url) { "https://bitbucket.org/gocardless/business" }
         let(:service_pack_url) do
-          "https://bitbucket.org/gocardless/business.git/info/refs"\
-          "?service=git-upload-pack"
+          "https://bitbucket.org/gocardless/business.git/info/refs" \
+            "?service=git-upload-pack"
         end
         let(:bitbucket_url) do
-          "https://api.bitbucket.org/2.0/repositories/"\
-          "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
+          "https://api.bitbucket.org/2.0/repositories/" \
+            "gocardless/business/commits/?exclude=v1.5.0&include=df9f605"
         end
         before do
           stub_request(:get, service_pack_url).
@@ -410,6 +442,12 @@ RSpec.describe Dependabot::GitCommitChecker do
             git_url = "https://github.com/gocardless/business.git"
             stub_request(:get, git_url + "/info/refs?service=git-upload-pack").
               to_return(status: 404)
+
+            exit_status = double(success?: false)
+            allow(Open3).to receive(:capture3).and_call_original
+            allow(Open3).to receive(:capture3).
+              with(anything, "git ls-remote #{git_url}").
+              and_return(["", "", exit_status])
           end
           let(:ref) { "my_ref" }
 
@@ -472,31 +510,32 @@ RSpec.describe Dependabot::GitCommitChecker do
           ref: "v1.0.0"
         }
       end
-      it { is_expected.to eq(dependency.version) }
 
-      context "without a version" do
-        let(:version) { nil }
+      let(:git_header) do
+        { "content-type" => "application/x-git-upload-pack-advertisement" }
+      end
+      let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
 
-        let(:git_header) do
-          { "content-type" => "application/x-git-upload-pack-advertisement" }
-        end
-        let(:auth_header) { "Basic eC1hY2Nlc3MtdG9rZW46dG9rZW4=" }
-
-        let(:git_url) do
-          "https://github.com/gocardless/business.git" \
+      let(:git_url) do
+        "https://github.com/gocardless/business.git" \
           "/info/refs?service=git-upload-pack"
+      end
+
+      context "that can be reached just fine" do
+        before do
+          stub_request(:get, git_url).
+            with(headers: { "Authorization" => auth_header }).
+            to_return(
+              status: 200,
+              body: fixture("git", "upload_packs", "business"),
+              headers: git_header
+            )
         end
 
-        context "that can be reached just fine" do
-          before do
-            stub_request(:get, git_url).
-              with(headers: { "Authorization" => auth_header }).
-              to_return(
-                status: 200,
-                body: fixture("git", "upload_packs", "business"),
-                headers: git_header
-              )
-          end
+        it { is_expected.to eq(dependency.version) }
+
+        context "without a version" do
+          let(:version) { nil }
 
           it { is_expected.to eq("df9f605d7111b6814fe493cf8f41de3f9f0978b2") }
 
@@ -525,7 +564,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
       let(:git_url) do
         "https://github.com/gocardless/business.git" \
-        "/info/refs?service=git-upload-pack"
+          "/info/refs?service=git-upload-pack"
       end
 
       context "that can be reached just fine" do
@@ -606,10 +645,16 @@ RSpec.describe Dependabot::GitCommitChecker do
       end
 
       context "that results in a 403" do
+        let(:url) { "https://github.com/gocardless/business.git" }
+
         before do
           stub_request(:get, git_url).
             with(headers: { "Authorization" => auth_header }).
             to_return(status: 403)
+
+          exit_status = double(success?: false)
+          allow(Open3).to receive(:capture3).and_call_original
+          allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
         end
 
         it "raises a helpful error" do
@@ -629,7 +674,7 @@ RSpec.describe Dependabot::GitCommitChecker do
         end
         let(:git_url) do
           "https://bitbucket.org/gocardless/business.git" \
-          "/info/refs?service=git-upload-pack"
+            "/info/refs?service=git-upload-pack"
         end
 
         context "that needs credentials to succeed" do
@@ -667,7 +712,7 @@ RSpec.describe Dependabot::GitCommitChecker do
               let(:source) do
                 {
                   type: "git",
-                  url: "https://x-access-token:token@bitbucket.org/gocardless/"\
+                  url: "https://x-access-token:token@bitbucket.org/gocardless/" \
                        "business",
                   branch: "master",
                   ref: "master"
@@ -840,6 +885,29 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
   end
 
+  describe "#head_commit_for_local_branch" do
+    let(:tip_of_example) { "303b8a83c87d5c6d749926cf02620465a5dcd0f2" }
+
+    subject { checker.head_commit_for_local_branch("example") }
+
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    let(:upload_pack_fixture) { "monolog" }
+
+    it { is_expected.to eq(tip_of_example) }
+  end
+
   describe "#local_tag_for_latest_version" do
     subject { checker.local_tag_for_latest_version }
     let(:repo_url) { "https://github.com/gocardless/business.git" }
@@ -861,7 +929,15 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "but GitHub returns a 404" do
-      before { stub_request(:get, service_pack_url).to_return(status: 404) }
+      let(:url) { "https://github.com/gocardless/business.git" }
+
+      before do
+        stub_request(:get, service_pack_url).to_return(status: 404)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
+      end
 
       it "raises a helpful error" do
         expect { checker.local_tag_for_latest_version }.
@@ -918,9 +994,60 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("gatsby-transformer-sqip@2.0.40") }
         end
 
+        context "raise_on_ignored when later versions are allowed" do
+          let(:raise_on_ignored) { true }
+          it "doesn't raise an error" do
+            expect { subject }.to_not raise_error
+          end
+        end
+
+        context "already on the latest version" do
+          let(:version) { "1.13.0" }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "doesn't raise an error" do
+              expect { subject }.to_not raise_error
+            end
+          end
+        end
+
+        context "all later versions ignored" do
+          let(:version) { "1.0.0" }
+          let(:ignored_versions) { ["> 1.0.0"] }
+          its([:tag]) { is_expected.to eq("v1.0.0") }
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "raises an error" do
+              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            end
+          end
+        end
+
         context "and an ignore condition" do
           let(:ignored_versions) { [">= 1.12.0"] }
           its([:tag]) { is_expected.to eq("v1.11.1") }
+        end
+
+        context "multiple ignore conditions" do
+          let(:ignored_versions) { [">= 1.11.2, < 1.12.0"] }
+          its([:tag]) { is_expected.to eq("v1.13.0") }
+        end
+
+        context "all versions ignored" do
+          let(:ignored_versions) { [">= 0"] }
+          it "returns nil" do
+            expect(subject).to be_nil
+          end
+
+          context "raise_on_ignored" do
+            let(:raise_on_ignored) { true }
+            it "raises an error" do
+              expect { subject }.to raise_error(Dependabot::AllVersionsIgnored)
+            end
+          end
         end
 
         context "and a ref prefixed with tags/" do
@@ -936,6 +1063,214 @@ RSpec.describe Dependabot::GitCommitChecker do
           its([:tag]) { is_expected.to eq("tags/v1.13.0") }
         end
       end
+    end
+  end
+
+  describe "#local_ref_for_latest_version_matching_existing_precision" do
+    subject { checker.local_ref_for_latest_version_matching_existing_precision }
+    let(:repo_url) { "https://github.com/gocardless/business.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+
+    context "with no tags, nor version branches" do
+      let(:upload_pack_fixture) { "no_tags" }
+      it { is_expected.to be_nil }
+    end
+
+    context "with no version tags nor version branches" do
+      let(:upload_pack_fixture) { "no_versions" }
+      it { is_expected.to be_nil }
+    end
+
+    context "with version tags, and some version branches not matching pinned schema" do
+      let(:upload_pack_fixture) { "actions-checkout" }
+      let(:version) { "1.1.1" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "v#{version}"
+        }
+      end
+
+      let(:latest_patch) do
+        {
+          commit_sha: "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f",
+          tag: "v2.3.4",
+          tag_sha: anything,
+          version: anything
+        }
+      end
+
+      it { is_expected.to match(latest_patch) }
+    end
+
+    context "with a version branch higher than the latest version tag, and pinned to the commit sha of a version tag" do
+      let(:upload_pack_fixture) { "actions-checkout-2022-12-01" }
+      let(:version) { "1.1.0" }
+
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/gocardless/business",
+          branch: "master",
+          ref: "0b496e91ec7ae4428c3ed2eeb4c3a40df431f2cc"
+        }
+      end
+
+      let(:latest_patch) do
+        {
+          commit_sha: "93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8",
+          tag: "v3.1.0",
+          tag_sha: anything,
+          version: anything
+        }
+      end
+
+      it { is_expected.to match(latest_patch) }
+    end
+
+    context "with tags for minor versions and branches for major versions" do
+      let(:upload_pack_fixture) { "run-vcpkg" }
+
+      context "when pinned to a major" do
+        let(:version) { "7" }
+
+        let(:latest_major_branch) do
+          {
+            commit_sha: "831e6cd560cc8688a4967c5766e4215afbd196d9",
+            tag: "v10",
+            tag_sha: anything,
+            version: anything
+          }
+        end
+
+        it { is_expected.to match(latest_major_branch) }
+      end
+
+      context "when pinned to a minor" do
+        let(:version) { "7.0" }
+
+        let(:latest_minor_tag) do
+          {
+            commit_sha: "831e6cd560cc8688a4967c5766e4215afbd196d9",
+            tag: "v10.6",
+            tag_sha: anything,
+            version: anything
+          }
+        end
+
+        it { is_expected.to match(latest_minor_tag) }
+      end
+    end
+  end
+
+  describe "#local_tag_for_pinned_sha" do
+    subject { checker.local_tag_for_pinned_sha }
+
+    context "with a git commit pin" do
+      let(:source) do
+        {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          branch: "main",
+          ref: source_commit
+        }
+      end
+
+      let(:repo_url) { "https://github.com/actions/checkout.git" }
+      let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", upload_pack_fixture),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+      let(:upload_pack_fixture) { "actions-checkout" }
+
+      context "that is a tag" do
+        let(:source_commit) { "a81bbbf8298c0fa03ea29cdc473d45769f953675" }
+
+        it { is_expected.to eq("v2.3.3") }
+      end
+
+      context "that is not a tag" do
+        let(:source_commit) { "25a956c84d5dd820d28caab9f86b8d183aeeff3d" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is an invalid tag" do
+        let(:source_commit) { "18217bbd6de24e775799c3d99058f167ad168624" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is not found" do
+        let(:source_commit) { "f0987d27b23cb3fd0e97eb7908c1a27df5bf8329" }
+
+        it { is_expected.to be_nil }
+      end
+
+      context "that is multiple tags" do
+        let(:source_commit) { "5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f" }
+
+        it { is_expected.to eq("v2.3.4") }
+      end
+    end
+  end
+
+  describe "#most_specific_tag_equivalent_to_pinned_ref" do
+    subject { checker.most_specific_tag_equivalent_to_pinned_ref }
+
+    let(:source) do
+      {
+        type: "git",
+        url: "https://github.com/actions/checkout",
+        branch: "main",
+        ref: source_ref
+      }
+    end
+
+    let(:repo_url) { "https://github.com/actions/checkout.git" }
+    let(:service_pack_url) { repo_url + "/info/refs?service=git-upload-pack" }
+    before do
+      stub_request(:get, service_pack_url).
+        to_return(
+          status: 200,
+          body: fixture("git", "upload_packs", upload_pack_fixture),
+          headers: {
+            "content-type" => "application/x-git-upload-pack-advertisement"
+          }
+        )
+    end
+    let(:upload_pack_fixture) { "actions-checkout-moving-v2" }
+
+    context "for a moving major tag" do
+      let(:source_ref) { "v2" }
+
+      it { is_expected.to eq("v2.3.4") }
+    end
+
+    context "for a fixed patch tag" do
+      let(:source_ref) { "v2.3.4" }
+
+      it { is_expected.to eq("v2.3.4") }
     end
   end
 
@@ -957,7 +1292,7 @@ RSpec.describe Dependabot::GitCommitChecker do
 
     let(:git_url) do
       "https://github.com/gocardless/business.git" \
-      "/info/refs?service=git-upload-pack"
+        "/info/refs?service=git-upload-pack"
     end
 
     context "that can be reached just fine" do
@@ -975,10 +1310,16 @@ RSpec.describe Dependabot::GitCommitChecker do
     end
 
     context "that results in a 403" do
+      let(:url) { "https://github.com/gocardless/business.git" }
+
       before do
         stub_request(:get, git_url).
           with(headers: { "Authorization" => auth_header }).
           to_return(status: 403)
+
+        exit_status = double(success?: false)
+        allow(Open3).to receive(:capture3).and_call_original
+        allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
       it { is_expected.to eq(false) }

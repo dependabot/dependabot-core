@@ -24,7 +24,7 @@ module Dependabot
       #   version allowed by the gemspec, if the gemspec has a required ruby
       #   version range
       class FilePreparer
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/.freeze
+        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
 
         # Can't be a constant because some of these don't exist in bundler
         # 1.15, which Heroku uses, which causes an exception on boot.
@@ -207,13 +207,12 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless Gem::Version.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless Gem::Version.correct?(latest_allowable_version)
 
           lower_bound_req + ", <= #{latest_allowable_version}"
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements.
                          find { |r| r.fetch(:file) == filename }&.
@@ -234,6 +233,7 @@ module Dependabot
             ">= #{version_for_requirement || 0}"
           end
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def remove_git_source(content)
           FileUpdater::GitSourceRemover.new(
@@ -261,6 +261,7 @@ module Dependabot
           @lock_ruby_version && file == gemfile
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def replacement_version_for_gemspec(gemspec_content)
           return "0.0.1" unless lockfile
 
@@ -278,7 +279,9 @@ module Dependabot
           spec = gemspec_specs.find { |s| s.name == gem_name }
           spec&.version || gemspec_specs.first&.version || "0.0.1"
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
+        # TODO: Stop sanitizing the lockfile once we have bundler 2 installed
         def sanitized_lockfile_content
           re = FileUpdater::LockfileUpdater::LOCKFILE_ENDING
           lockfile.content.gsub(re, "")

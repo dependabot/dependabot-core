@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "stringio"
+require "dependabot/config"
 require "dependabot/dependency_file"
 require "dependabot/source"
 require "dependabot/errors"
@@ -14,7 +16,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials
+      attr_reader :source, :credentials, :repo_contents_path, :options
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -24,6 +26,12 @@ module Dependabot
         Dependabot::Clients::CodeCommit::NotFound
       ].freeze
 
+      GIT_SUBMODULE_INACCESSIBLE_ERROR =
+        /^fatal: unable to access '(?<url>.*)': The requested URL returned error: (?<code>\d+)$/
+      GIT_SUBMODULE_CLONE_ERROR =
+        /^fatal: clone of '(?<url>.*)' into submodule path '.*' failed$/
+      GIT_SUBMODULE_ERROR_REGEX = /(#{GIT_SUBMODULE_INACCESSIBLE_ERROR})|(#{GIT_SUBMODULE_CLONE_ERROR})/
+
       def self.required_files_in?(_filename_array)
         raise NotImplementedError
       end
@@ -32,11 +40,23 @@ module Dependabot
         raise NotImplementedError
       end
 
-      def initialize(source:, credentials:)
+      # Creates a new FileFetcher for retrieving `DependencyFile`s.
+      #
+      # Files are typically grabbed individually via the source's API.
+      # repo_contents_path is an optional empty directory that will be used
+      # to clone the entire source repository on first read.
+      #
+      # If provided, file _data_ will be loaded from the clone.
+      # Submodules and directory listings are _not_ currently supported
+      # by repo_contents_path and still use an API trip.
+      #
+      # options supports custom feature enablement
+      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
         @source = source
         @credentials = credentials
-
+        @repo_contents_path = repo_contents_path
         @linked_paths = {}
+        @options = options
       end
 
       def repo
@@ -56,6 +76,7 @@ module Dependabot
       end
 
       def commit
+        return cloned_commit if cloned_commit
         return source.commit if source.commit
 
         branch = target_branch || default_branch_for_repo
@@ -67,9 +88,35 @@ module Dependabot
         raise unless e.message.include?("Repository is empty")
       end
 
+      # Returns the path to the cloned repo
+      def clone_repo_contents
+        @clone_repo_contents ||=
+          _clone_repo_contents(target_directory: repo_contents_path)
+      rescue Dependabot::SharedHelpers::HelperSubprocessFailed => e
+        if e.message.include?("fatal: Remote branch #{target_branch} not found in upstream origin")
+          raise Dependabot::BranchNotFound, target_branch
+        elsif e.message.include?("No space left on device")
+          raise Dependabot::OutOfDisk
+        end
+
+        raise Dependabot::RepoNotFound, source
+      end
+
+      def package_manager_version
+        nil
+      end
+
       private
 
       def fetch_file_if_present(filename, fetch_submodules: false)
+        unless repo_contents_path.nil?
+          begin
+            return load_cloned_file_if_present(filename)
+          rescue Dependabot::DependencyFileNotFound
+            return
+          end
+        end
+
         dir = File.dirname(filename)
         basename = File.basename(filename)
 
@@ -85,10 +132,34 @@ module Dependabot
         raise Dependabot::DependencyFileNotFound, path
       end
 
+      def load_cloned_file_if_present(filename)
+        path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
+        repo_path = File.join(clone_repo_contents, path)
+        raise Dependabot::DependencyFileNotFound, path unless File.exist?(repo_path)
+
+        content = File.read(repo_path)
+        type = if File.symlink?(repo_path)
+                 symlink_target = File.readlink(repo_path)
+                 "symlink"
+               else
+                 "file"
+               end
+
+        DependencyFile.new(
+          name: Pathname.new(filename).cleanpath.to_path,
+          directory: directory,
+          type: type,
+          content: content,
+          symlink_target: symlink_target
+        )
+      end
+
       def fetch_file_from_host(filename, type: "file", fetch_submodules: false)
+        return load_cloned_file_if_present(filename) unless repo_contents_path.nil?
+
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = @linked_paths.key?(path.gsub(%r{^/}, "")) ? "symlink" : type
+        type = "symlink" if @linked_paths.key?(path.gsub(%r{^/}, ""))
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
@@ -107,11 +178,103 @@ module Dependabot
         path = Pathname.new(File.join(dir)).cleanpath.to_path.gsub(%r{^/*}, "")
 
         @repo_contents ||= {}
-        @repo_contents[dir] ||= _fetch_repo_contents(
-          path,
-          raise_errors: raise_errors,
-          fetch_submodules: fetch_submodules
-        )
+        @repo_contents[dir] ||= if repo_contents_path
+                                  _cloned_repo_contents(path)
+                                else
+                                  _fetch_repo_contents(path, raise_errors: raise_errors,
+                                                             fetch_submodules: fetch_submodules)
+                                end
+      end
+
+      def cloned_commit
+        return if repo_contents_path.nil? || !File.directory?(File.join(repo_contents_path, ".git"))
+
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          Dir.chdir(repo_contents_path) do
+            return SharedHelpers.run_shell_command("git rev-parse HEAD")&.strip
+          end
+        end
+      end
+
+      def default_branch_for_repo
+        @default_branch_for_repo ||= client_for_provider.
+                                     fetch_default_branch(repo)
+      rescue *CLIENT_NOT_FOUND_ERRORS
+        raise Dependabot::RepoNotFound, source
+      end
+
+      def update_linked_paths(repo, path, commit, github_response)
+        case github_response.type
+        when "submodule"
+          sub_source = Source.from_url(github_response.submodule_git_url)
+          return unless sub_source
+
+          @linked_paths[path] = {
+            repo: sub_source.repo,
+            provider: sub_source.provider,
+            commit: github_response.sha,
+            path: "/"
+          }
+        when "symlink"
+          updated_path = File.join(File.dirname(path), github_response.target)
+          @linked_paths[path] = {
+            repo: repo,
+            provider: "github",
+            commit: commit,
+            path: Pathname.new(updated_path).cleanpath.to_path
+          }
+        end
+      end
+
+      def recurse_submodules_when_cloning?
+        false
+      end
+
+      def client_for_provider
+        case source.provider
+        when "github" then github_client
+        when "gitlab" then gitlab_client
+        when "azure" then azure_client
+        when "bitbucket" then bitbucket_client
+        when "codecommit" then codecommit_client
+        else raise "Unsupported provider '#{source.provider}'."
+        end
+      end
+
+      def github_client
+        @github_client ||=
+          Dependabot::Clients::GithubWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def gitlab_client
+        @gitlab_client ||=
+          Dependabot::Clients::GitlabWithRetries.for_source(
+            source: source,
+            credentials: credentials
+          )
+      end
+
+      def azure_client
+        @azure_client ||=
+          Dependabot::Clients::Azure.
+          for_source(source: source, credentials: credentials)
+      end
+
+      def bitbucket_client
+        # TODO: When self-hosted Bitbucket is supported this should use
+        # `Bitbucket.for_source`
+        @bitbucket_client ||=
+          Dependabot::Clients::BitbucketWithRetries.
+          for_bitbucket_dot_org(credentials: credentials)
+      end
+
+      def codecommit_client
+        @codecommit_client ||=
+          Dependabot::Clients::CodeCommit.
+          for_source(source: source, credentials: credentials)
       end
 
       #################################################
@@ -175,26 +338,28 @@ module Dependabot
         github_response.map { |f| _build_github_file_struct(f) }
       end
 
-      def update_linked_paths(repo, path, commit, github_response)
-        case github_response.type
-        when "submodule"
-          sub_source = Source.from_url(github_response.submodule_git_url)
-          return unless sub_source
+      def _cloned_repo_contents(relative_path)
+        repo_path = File.join(clone_repo_contents, relative_path)
+        return [] unless Dir.exist?(repo_path)
 
-          @linked_paths[path] = {
-            repo: sub_source.repo,
-            provider: sub_source.provider,
-            commit: github_response.sha,
-            path: "/"
-          }
-        when "symlink"
-          updated_path = File.join(File.dirname(path), github_response.target)
-          @linked_paths[path] = {
-            repo: repo,
-            provider: "github",
-            commit: commit,
-            path: Pathname.new(updated_path).cleanpath.to_path
-          }
+        Dir.entries(repo_path).filter_map do |name|
+          next if name == "." || name == ".."
+
+          absolute_path = File.join(repo_path, name)
+          type = if File.symlink?(absolute_path)
+                   "symlink"
+                 elsif Dir.exist?(absolute_path)
+                   "dir"
+                 else
+                   "file"
+                 end
+
+          OpenStruct.new(
+            name: name,
+            path: Pathname.new(File.join(relative_path, name)).cleanpath.to_path,
+            type: type,
+            size: 0 # NOTE: added for parity with github contents API
+          )
         end
       end
 
@@ -280,8 +445,8 @@ module Dependabot
 
         response.files.map do |file|
           OpenStruct.new(
-            name: file.absolute_path,
-            path: file.absolute_path,
+            name: File.basename(file.relative_path),
+            path: file.relative_path,
             type: "file",
             size: 0 # file size would require new api call per file..
           )
@@ -351,7 +516,6 @@ module Dependabot
       end
 
       # rubocop:disable Metrics/AbcSize
-      # rubocop:disable Metrics/MethodLength
       def _fetch_file_content_from_github(path, repo, commit)
         tmp = github_client.contents(repo, path: path, ref: commit)
 
@@ -371,7 +535,13 @@ module Dependabot
           )
         end
 
-        Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        if tmp.content == ""
+          # The file may have exceeded the 1MB limit
+          # see https://github.blog/changelog/2022-05-03-increased-file-size-limit-when-retrieving-file-contents-via-rest-api/
+          github_client.contents(repo, path: path, ref: commit, accept: "application/vnd.github.v3.raw")
+        else
+          Base64.decode64(tmp.content).force_encoding("UTF-8").encode
+        end
       rescue Octokit::Forbidden => e
         raise unless e.message.include?("too_large")
 
@@ -388,14 +558,6 @@ module Dependabot
         Base64.decode64(tmp.content).force_encoding("UTF-8").encode
       end
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/MethodLength
-
-      def default_branch_for_repo
-        @default_branch_for_repo ||= client_for_provider.
-                                     fetch_default_branch(repo)
-      rescue *CLIENT_NOT_FOUND_ERRORS
-        raise Dependabot::RepoNotFound, source
-      end
 
       # Update the @linked_paths hash by exploiting a side-effect of
       # recursively calling `repo_contents` for each directory up the tree
@@ -421,52 +583,81 @@ module Dependabot
           max_by(&:length)
       end
 
-      def client_for_provider
-        case source.provider
-        when "github" then github_client
-        when "gitlab" then gitlab_client
-        when "azure" then azure_client
-        when "bitbucket" then bitbucket_client
-        when "codecommit" then codecommit_client
-        else raise "Unsupported provider '#{source.provider}'."
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/BlockLength
+      def _clone_repo_contents(target_directory:)
+        SharedHelpers.with_git_configured(credentials: credentials) do
+          path = target_directory || File.join("tmp", source.repo)
+          # Assume we're retrying the same branch, or that a `target_directory`
+          # is specified when retrying a different branch.
+          return path if Dir.exist?(File.join(path, ".git"))
+
+          FileUtils.mkdir_p(path)
+
+          clone_options = StringIO.new
+          clone_options << "--no-tags --depth 1"
+          clone_options << if recurse_submodules_when_cloning?
+                             " --recurse-submodules --shallow-submodules"
+                           else
+                             " --no-recurse-submodules"
+                           end
+          clone_options << " --branch #{source.branch} --single-branch" if source.branch
+
+          submodule_cloning_failed = false
+          begin
+            SharedHelpers.run_shell_command(
+              <<~CMD
+                git clone #{clone_options.string} #{source.url} #{path}
+              CMD
+            )
+          rescue SharedHelpers::HelperSubprocessFailed => e
+            raise unless e.message.match(GIT_SUBMODULE_ERROR_REGEX) && e.message.downcase.include?("submodule")
+
+            submodule_cloning_failed = true
+            match = e.message.match(GIT_SUBMODULE_ERROR_REGEX)
+            url = match.named_captures["url"]
+            code = match.named_captures["code"]
+
+            # Submodules might be in the repo but unrelated to dependencies,
+            # so ignoring this error to try the update anyway since the base repo exists.
+            Dependabot.logger.error("Cloning of submodule failed: #{url} error: #{code || 'unknown'}")
+          end
+
+          if source.commit
+            # This code will only be called for testing. Production will never pass a commit
+            # since Dependabot always wants to use the latest commit on a branch.
+            Dir.chdir(path) do
+              fetch_options = StringIO.new
+              fetch_options << "--depth 1"
+              fetch_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
+                                 " --recurse-submodules=on-demand"
+                               else
+                                 " --no-recurse-submodules"
+                               end
+              # Need to fetch the commit due to the --depth 1 above.
+              SharedHelpers.run_shell_command("git fetch #{fetch_options.string} origin #{source.commit}")
+
+              reset_options = StringIO.new
+              reset_options << "--hard"
+              reset_options << if recurse_submodules_when_cloning? && !submodule_cloning_failed
+                                 " --recurse-submodules"
+                               else
+                                 " --no-recurse-submodules"
+                               end
+              # Set HEAD to this commit so later calls so git reset HEAD will work.
+              SharedHelpers.run_shell_command("git reset #{reset_options.string} #{source.commit}")
+            end
+          end
+
+          path
         end
       end
-
-      def github_client
-        @github_client ||=
-          Dependabot::Clients::GithubWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def gitlab_client
-        @gitlab_client ||=
-          Dependabot::Clients::GitlabWithRetries.for_source(
-            source: source,
-            credentials: credentials
-          )
-      end
-
-      def azure_client
-        @azure_client ||=
-          Dependabot::Clients::Azure.
-          for_source(source: source, credentials: credentials)
-      end
-
-      def bitbucket_client
-        # TODO: When self-hosted Bitbucket is supported this should use
-        # `Bitbucket.for_source`
-        @bitbucket_client ||=
-          Dependabot::Clients::BitbucketWithRetries.
-          for_bitbucket_dot_org(credentials: credentials)
-      end
-
-      def codecommit_client
-        @codecommit_client ||=
-          Dependabot::Clients::CodeCommit.
-          for_source(source: source, credentials: credentials)
-      end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/BlockLength
     end
   end
 end

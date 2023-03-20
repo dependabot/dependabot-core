@@ -40,6 +40,63 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
   end
   let(:dependency_previous_version) { "1.0.0" }
 
+  shared_context "with multiple git sources" do
+    let(:changelog_body) { fixture("github", "actions_changelog_content.json") }
+    let(:dependency_name) { "actions/checkout" }
+    let(:dependency_version) { "aabbfeb2ce60b5bd82389903509092c4648a9713" }
+    let(:dependency_previous_version) { nil }
+    let(:dependency_requirements) do
+      [{
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@v2.1.0" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.2.0",
+          branch: nil
+        }
+      }, {
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@master" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.2.0",
+          branch: nil
+        }
+      }]
+    end
+    let(:dependency_previous_requirements) do
+      [{
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@v2.1.0" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "v2.1.0",
+          branch: nil
+        }
+      }, {
+        requirement: nil,
+        groups: [],
+        file: ".github/workflows/workflow.yml",
+        metadata: { declaration_string: "actions/checkout@master" },
+        source: {
+          type: "git",
+          url: "https://github.com/actions/checkout",
+          ref: "master",
+          branch: nil
+        }
+      }]
+    end
+  end
+
   describe "#includes_new_version?" do
     subject(:includes_new_version) { pruner.includes_new_version? }
 
@@ -50,6 +107,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     context "when the new version is not included" do
       let(:dependency_version) { "5.0.0" }
       it { is_expected.to eq(false) }
+    end
+
+    context "when the dependency has multiple git sources" do
+      include_context "with multiple git sources"
+
+      it { is_expected.to eq(true) }
     end
   end
 
@@ -64,6 +127,12 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       let(:dependency_previous_version) { "5.0.0" }
       it { is_expected.to eq(false) }
     end
+
+    context "when the dependency has multiple git sources" do
+      include_context "with multiple git sources"
+
+      it { is_expected.to eq(false) }
+    end
   end
 
   describe "#pruned_text" do
@@ -72,15 +141,15 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
     let(:dependency_previous_version) { "1.0.0" }
 
     let(:expected_pruned_changelog) do
-      "## 1.4.0 - December 24, 2014\n\n"\
-      "- Add support for custom calendar load paths\n"\
-      "- Remove the 'sepa' calendar\n\n\n"\
-      "## 1.3.0 - December 2, 2014\n\n"\
-      "- Add `Calendar#previous_business_day`\n\n\n"\
-      "## 1.2.0 - November 15, 2014\n\n"\
-      "- Add TARGET calendar\n\n\n"\
-      "## 1.1.0 - September 30, 2014\n\n"\
-      "- Add 2015 holiday definitions"
+      "## 1.4.0 - December 24, 2014\n\n" \
+        "- Add support for custom calendar load paths\n" \
+        "- Remove the 'sepa' calendar\n\n\n" \
+        "## 1.3.0 - December 2, 2014\n\n" \
+        "- Add `Calendar#previous_business_day`\n\n\n" \
+        "## 1.2.0 - November 15, 2014\n\n" \
+        "- Add TARGET calendar\n\n\n" \
+        "## 1.1.0 - September 30, 2014\n\n" \
+        "- Add 2015 holiday definitions"
     end
 
     it { is_expected.to eq(expected_pruned_changelog) }
@@ -94,7 +163,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it { is_expected.to start_with("!! 0.0.5から0.0.6の変更点:") }
     end
 
-    context "where the olf version is a substring of the new one" do
+    context "where the old version is a substring of the new one" do
       let(:changelog_text) { fixture("changelogs", "rails52.md") }
       let(:dependency_version) { "5.2.1.1" }
       let(:dependency_previous_version) { "5.2.1" }
@@ -114,10 +183,10 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
 
       # Ideally we'd prune the 1.10.0 entry off, but it's tricky.
       let(:expected_pruned_changelog) do
-        "## 1.10.0 - September 20, 2017\n\n"\
-        "- Add 2018-2019 Betalingsservice holiday definitions\n\n"\
-        "## 1.11.1 - December 20, 2017\n\n"\
-        "- Add 2017-2018 BECS holiday definitions"
+        "## 1.10.0 - September 20, 2017\n\n" \
+          "- Add 2018-2019 Betalingsservice holiday definitions\n\n" \
+          "## 1.11.1 - December 20, 2017\n\n" \
+          "- Add 2017-2018 BECS holiday definitions"
       end
 
       it { is_expected.to eq(expected_pruned_changelog) }
@@ -155,7 +224,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       it "gets the right content" do
         expect(pruned_text).
           to eq(
-            "* 2.9.1\n"\
+            "* 2.9.1\n" \
             "    * IPv6 support. Thanks https://github.com/amashinchi"
           )
       end
@@ -198,6 +267,18 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogPruner do
       context "and the previous version is the latest in the changelog" do
         let(:dependency_previous_version) { "1.11.1" }
         it { is_expected.to be_nil }
+      end
+    end
+
+    context "when the dependency has multiple git sources" do
+      include_context "with multiple git sources"
+
+      it "includes the changelog up to the new version" do
+        expect(pruned_text).to start_with("## v2.2.0")
+        expect(pruned_text).to end_with(
+          "Refer [here](https://github.com/actions/checkout/blob/v1/" \
+          "CHANGELOG.md) for the V1 changelog"
+        )
       end
     end
   end

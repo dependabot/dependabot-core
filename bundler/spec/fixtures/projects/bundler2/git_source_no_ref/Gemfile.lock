@@ -1,0 +1,18 @@
+GIT
+  remote: git@github.com:dependabot-fixtures/business
+  revision: a1b78a929dac93a52f08db4f2847d76d6cfe39bd
+  specs:
+    business (1.6.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  business (~> 1.6.0)!
+
+BUNDLED WITH
+   2.2.0.pre.2

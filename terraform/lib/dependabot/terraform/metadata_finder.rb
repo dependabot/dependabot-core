@@ -4,6 +4,7 @@ require "excon"
 require "json"
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
+require "dependabot/terraform/registry_client"
 require "dependabot/shared_helpers"
 
 module Dependabot
@@ -14,7 +15,7 @@ module Dependabot
       def look_up_source
         case new_source_type
         when "git" then find_source_from_git_url
-        when "registry" then find_source_from_registry_details
+        when "registry", "provider" then find_source_from_registry_details
         else raise "Unexpected source type: #{new_source_type}"
         end
       end
@@ -30,37 +31,19 @@ module Dependabot
       end
 
       def find_source_from_git_url
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
 
         url = info[:url] || info.fetch("url")
         Source.from_url(url)
       end
 
-      # Registry API docs:
-      # https://www.terraform.io/docs/registry/api.html
       def find_source_from_registry_details
-        info = dependency.requirements.map { |r| r[:source] }.compact.first
-
+        info = dependency.requirements.filter_map { |r| r[:source] }.first
         hostname = info[:registry_hostname] || info["registry_hostname"]
 
-        # TODO: Implement service discovery for custom registries
-        return unless hostname == "registry.terraform.io"
-
-        url = "https://registry.terraform.io/v1/modules/"\
-              "#{dependency.name}/#{dependency.version}"
-
-        response = Excon.get(
-          url,
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
-
-        unless response.status == 200
-          raise "Response from registry was #{response.status}"
-        end
-
-        source_url = JSON.parse(response.body).fetch("source")
-        Source.from_url(source_url) if source_url
+        RegistryClient.
+          new(hostname: hostname, credentials: credentials).
+          source(dependency: dependency)
       end
     end
   end

@@ -14,53 +14,52 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
   end
   let(:lockfile) { nil }
   let(:pyproject_content) { fixture("pyproject_files", pyproject_fixture_name) }
-  let(:pyproject_fixture_name) { "pyproject.toml" }
+  let(:pyproject_fixture_name) { "basic_poetry_dependencies.toml" }
 
-  describe "#replace_sources" do
-    subject(:replace_sources) { preparer.replace_sources(credentials) }
-
-    context "with no credentials" do
-      let(:credentials) { [] }
-      it { is_expected.to_not include("tool.poetry.source") }
+  describe "#add_auth_env_vars" do
+    it "adds auth env vars when a token is present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/",
+          "token" => "hello:world"
+        }
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq("hello")
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq("world")
     end
 
-    context "with a python_index credential" do
-      let(:credentials) do
-        [{
-          "type" => "python_index",
-          "index-url" => "https://username:password@pypi.posrip.com/pypi/"
-        }]
-      end
+    it "has no effect when a token is not present" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      preparer.add_auth_env_vars([
+        {
+          "index-url" => "https://some.internal.registry.com/pypi/"
+        }
+      ])
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_USERNAME")).to eq(nil)
+      expect(ENV.delete("POETRY_HTTP_BASIC_CUSTOM_SOURCE_1_PASSWORD")).to eq(nil)
+    end
 
-      it { is_expected.to include("tool.poetry.source") }
-      it { is_expected.to include('url = "https://username:password@pypi') }
-      it { is_expected.to_not include("default") }
+    it "doesn't break when there are no private sources" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: pyproject_content,
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
+    end
 
-      context "that includes auth details" do
-        let(:credentials) do
-          [{
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/",
-            "token" => "username:password"
-          }]
-        end
-
-        it { is_expected.to include("tool.poetry.source") }
-        it { is_expected.to include('url = "https://username:password@pypi') }
-      end
-
-      context "that replaces the default" do
-        let(:credentials) do
-          [{
-            "type" => "python_index",
-            "index-url" => "https://pypi.posrip.com/pypi/",
-            "replaces-base" => true
-          }]
-        end
-
-        it { is_expected.to include("tool.poetry.source") }
-        it { is_expected.to include("default = true") }
-      end
+    it "doesn't break when there are private sources but no credentials" do
+      preparer = Dependabot::Python::FileUpdater::PyprojectPreparer.new(
+        pyproject_content: fixture("pyproject_files", "private_source.toml"),
+        lockfile: nil
+      )
+      expect { preparer.add_auth_env_vars(nil) }.not_to raise_error
     end
   end
 
@@ -100,7 +99,7 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
     let(:pyproject_lock_body) do
       fixture("pyproject_locks", pyproject_lock_fixture_name)
     end
-    let(:pyproject_lock_fixture_name) { "pyproject.lock" }
+    let(:pyproject_lock_fixture_name) { "poetry.lock" }
 
     context "with no dependencies to except" do
       let(:dependencies) { [] }
@@ -114,8 +113,8 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
 
         it "preserves details of the extras" do
           expect(freeze_top_level_dependencies_except).to include(
-            "[tool.poetry.dependencies.celery]\n"\
-            "extras = [\"redis\"]\n"\
+            "[tool.poetry.dependencies.celery]\n" \
+            "extras = [\"redis\"]\n" \
             "version = \"4.3.0\"\n"
           )
         end
@@ -135,6 +134,73 @@ RSpec.describe Dependabot::Python::FileUpdater::PyprojectPreparer do
       end
 
       it { is_expected.to include("geopy = \"^1.13\"\n") }
+    end
+
+    context "with a multiple constraint dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "multiple_constraint_dependency.lock" }
+      let(:pyproject_fixture_name) { "multiple_constraint_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+
+      it "does not touch multiple constraint deps" do
+        expect(freeze_top_level_dependencies_except).not_to include("numpy = \"1.21.6\"")
+      end
+    end
+
+    context "with directory dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "dir_dependency.lock" }
+      let(:pyproject_fixture_name) { "dir_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+      it "does not include the version for path deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "path = \"../toml\"\n" \
+          "version = \"0.10.0\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"../toml\"\n"
+        )
+      end
+    end
+
+    context "with file dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "file_dependency.lock" }
+      let(:pyproject_fixture_name) { "file_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"3.7.4\"\n") }
+      it "does not include the version for path deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "path = \"toml-8.2.54.tar.gz\"\n" \
+          "version = \"8.2.54\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "path = \"toml-8.2.54.tar.gz\"\n"
+        )
+      end
+    end
+
+    context "with url dependency" do
+      let(:dependencies) { [] }
+
+      let(:pyproject_lock_fixture_name) { "url_dependency.lock" }
+      let(:pyproject_fixture_name) { "url_dependency.toml" }
+
+      it { is_expected.to include("pytest = \"6.2.4\"\n") }
+      it "does not include the version for url deps" do
+        expect(freeze_top_level_dependencies_except).to_not include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n" \
+          "version = \"0.10.2\"\n"
+        )
+        expect(freeze_top_level_dependencies_except).to include(
+          "url = \"https://github.com/uiri/toml/archive/refs/tags/0.10.2.tar.gz\"\n"
+        )
+      end
     end
   end
 end

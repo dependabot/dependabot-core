@@ -84,7 +84,7 @@ module Dependabot
           next if previously_fetched_files.map(&:name).include?(path)
           next if file.name == path
 
-          fetched_file = fetch_file_from_host(path)
+          fetched_file = fetch_file_from_host(path, fetch_submodules: true)
           previously_fetched_files << fetched_file
           grandchild_requirement_files =
             fetch_workspace_files(
@@ -98,7 +98,6 @@ module Dependabot
         files
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       def fetch_path_dependency_files(file:, previously_fetched_files:)
         current_dir = file.name.rpartition("/").first
@@ -133,7 +132,7 @@ module Dependabot
         raise Dependabot::PathDependenciesNotReachable,
               unfetchable_required_path_deps
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
       # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_paths_from_file(file)
@@ -145,7 +144,7 @@ module Dependabot
             next unless details.is_a?(Hash)
             next unless details["path"]
 
-            paths << File.join(details["path"], "Cargo.toml")
+            paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
           end
         end
 
@@ -156,7 +155,7 @@ module Dependabot
               next unless details.is_a?(Hash)
               next unless details["path"]
 
-              paths << File.join(details["path"], "Cargo.toml")
+              paths << File.join(details["path"], "Cargo.toml").delete_prefix("/")
             end
           end
         end
@@ -217,9 +216,9 @@ module Dependabot
 
       # Check whether a path is required or not. It will not be required if
       # an alternative source (i.e., a git source) is also specified
-      # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
+      # rubocop:disable Metrics/AbcSize
       def required_path?(file, path)
         # Paths specified in dependency declaration
         Cargo::FileParser::DEPENDENCY_TYPES.each do |type|
@@ -257,8 +256,8 @@ module Dependabot
         false
       end
       # rubocop:enable Metrics/AbcSize
-      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
+      # rubocop:enable Metrics/CyclomaticComplexity
 
       def expand_workspaces(path)
         path = Pathname.new(path).cleanpath.to_path

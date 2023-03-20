@@ -4,7 +4,7 @@
   "sha": "311f9743315183cc6751313cb251cfeb3de45c1a",
   "size": 4927,
   "url": "https://api.github.com/repos/dependabot/dependabot-core/contents/Dockerfile?ref=master",
-  "html_url": "https://github.com/dependabot/dependabot-core/blob/master/Dockerfile",
+  "html_url": "https://github.com/dependabot/dependabot-core/blob/main/Dockerfile",
   "git_url": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
   "download_url": "https://raw.githubusercontent.com/dependabot/dependabot-core/master/Dockerfile",
   "type": "file",
@@ -13,6 +13,6 @@
   "_links": {
     "self": "https://api.github.com/repos/dependabot/dependabot-core/contents/Dockerfile?ref=master",
     "git": "https://api.github.com/repos/dependabot/dependabot-core/git/blobs/311f9743315183cc6751313cb251cfeb3de45c1a",
-    "html": "https://github.com/dependabot/dependabot-core/blob/master/Dockerfile"
+    "html": "https://github.com/dependabot/dependabot-core/blob/main/Dockerfile"
   }
 }

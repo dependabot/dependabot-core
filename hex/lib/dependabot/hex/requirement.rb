@@ -6,8 +6,8 @@ require "dependabot/hex/version"
 module Dependabot
   module Hex
     class Requirement < Gem::Requirement
-      AND_SEPARATOR = /\s+and\s+/.freeze
-      OR_SEPARATOR = /\s+or\s+/.freeze
+      AND_SEPARATOR = /\s+and\s+/
+      OR_SEPARATOR = /\s+or\s+/
 
       # Add the double-equality matcher to the list of allowed operations
       OPS = OPS.merge("==" => ->(v, r) { v == r })
@@ -15,7 +15,7 @@ module Dependabot
       # Override the version pattern to allow local versions
       quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
       PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Hex::Version::VERSION_PATTERN})\\s*"
-      PATTERN = /\A#{PATTERN_RAW}\z/.freeze
+      PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Returns an array of requirements. At least one requirement from the
       # returned array must be satisfied for a version to be valid.
@@ -24,6 +24,16 @@ module Dependabot
           requirements = req_string.strip.split(AND_SEPARATOR)
           new(requirements)
         end
+      end
+
+      # Patches Gem::Requirement to make it accept requirement strings like
+      # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
+      def initialize(*requirements)
+        requirements = requirements.flatten.flat_map do |req_string|
+          req_string.split(",").map(&:strip)
+        end
+
+        super(requirements)
       end
 
       # Override the parser to create Hex::Versions

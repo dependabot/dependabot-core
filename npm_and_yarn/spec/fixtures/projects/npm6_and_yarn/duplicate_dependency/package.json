@@ -1,0 +1,10 @@
+{
+  "name": "duplicate_dependency",
+  "version": "0.1.0",
+  "dependencies": {
+    "preact": "^10.5.12"
+  },
+  "devDependencies": {
+    "preact": "10.5.12"
+  }
+}

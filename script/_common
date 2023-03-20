@@ -1,0 +1,88 @@
+# shellcheck shell=bash
+export UPDATER_CORE_IMAGE="ghcr.io/dependabot/dependabot-updater-core"
+export UPDATER_IMAGE="ghcr.io/dependabot/dependabot-updater-"
+export DOCKER_BUILDKIT=1
+
+function set_tag() {
+    case $ECOSYSTEM in
+      go_modules)
+        TAG=gomod
+        ;;
+      hex)
+        TAG=mix
+        ;;
+      npm_and_yarn)
+        TAG=npm
+        ;;
+      python)
+        TAG=pip
+        ;;
+      git_submodules)
+        TAG=gitsubmodule
+        ;;
+      github_actions)
+        TAG=github-actions
+        ;;
+      *)
+        TAG=$ECOSYSTEM
+        ;;
+    esac
+}
+
+function docker_build() {
+  [[ -n "$SKIP_BUILD" ]] && return
+  ECOSYSTEM="$1"
+  set_tag
+
+  if [ -z "$DEPENDABOT_USER_UID" ]; then
+    export DEPENDABOT_USER_UID=1000
+  fi
+  if [ -z "$DEPENDABOT_USER_GID" ]; then
+    export DEPENDABOT_USER_GID=1000
+  fi
+
+  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  docker build \
+    $DOCKER_BUILD_ARGS \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --build-arg USER_UID=$DEPENDABOT_USER_UID \
+    --build-arg USER_GID=$DEPENDABOT_USER_GID \
+    --cache-from "$UPDATER_CORE_IMAGE" \
+    -t "$UPDATER_CORE_IMAGE" \
+    -f Dockerfile.updater-core \
+    .
+
+  export UPDATER_IMAGE_NAME="$UPDATER_IMAGE$TAG"
+
+  # shellcheck disable=SC2086  # as $DOCKER_BUILD_ARGS relies on word-splitting
+  docker build \
+    $DOCKER_BUILD_ARGS \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    --cache-from "$UPDATER_IMAGE_NAME" \
+    -t "$UPDATER_IMAGE_NAME" \
+    -f $ECOSYSTEM/Dockerfile \
+    .
+
+  # Verify max layers; an AUFS limit that was _crucial_ on Heroku (but not now)
+  IMAGE_LAYERS=$(docker history -q "$UPDATER_IMAGE_NAME" | wc -l | sed -e 's/ //g')
+  echo "$UPDATER_IMAGE_NAME contains $IMAGE_LAYERS layers"
+  [[ $IMAGE_LAYERS -lt 126 ]]
+}
+
+function docker_exec() {
+  docker_build "$1"
+  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  --rm \
+  -v "$(pwd)/.:/home/dependabot/dependabot-updater:delegated" \
+  -ti "$UPDATER_IMAGE$TAG" "${@:2}"
+}
+
+function docker_bundle_exec() {
+  docker_build "$1"
+
+  docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
+  --env VCR \
+  --rm \
+  -v "$(pwd)/updater/spec/fixtures/vcr_cassettes:/home/dependabot/dependabot-updater/spec/fixtures/vcr_cassettes" \
+  "$UPDATER_IMAGE$TAG" bundle exec "${@:2}"
+}

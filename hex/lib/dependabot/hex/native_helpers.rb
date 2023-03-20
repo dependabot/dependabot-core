@@ -4,7 +4,7 @@ module Dependabot
   module Hex
     module NativeHelpers
       def self.hex_helpers_dir
-        helpers_root = ENV["DEPENDABOT_NATIVE_HELPERS_PATH"]
+        helpers_root = ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil)
         return File.join(helpers_root, "hex") unless helpers_root.nil?
 
         File.join(__dir__, "../../../../hex/helpers")

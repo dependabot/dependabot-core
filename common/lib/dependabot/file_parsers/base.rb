@@ -3,12 +3,16 @@
 module Dependabot
   module FileParsers
     class Base
-      attr_reader :dependency_files, :credentials, :source
+      attr_reader :dependency_files, :repo_contents_path, :credentials, :source, :options
 
-      def initialize(dependency_files:, source:, credentials: [])
+      def initialize(dependency_files:, repo_contents_path: nil, source:,
+                     credentials: [], reject_external_code: false, options: {})
         @dependency_files = dependency_files
+        @repo_contents_path = repo_contents_path
         @credentials = credentials
         @source = source
+        @reject_external_code = reject_external_code
+        @options = options
 
         check_required_files
       end

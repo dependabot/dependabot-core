@@ -16,30 +16,10 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     )
   end
 
-  let(:credentials) do
-    [{
-      "type" => "git_source",
-      "host" => "github.com",
-      "username" => "x-access-token",
-      "password" => "token"
-    }]
-  end
+  let(:credentials) { github_credentials }
   let(:requirements_to_unlock) { :own }
-  let(:dependency_files) { [manifest, lockfile] }
-  let(:manifest) do
-    Dependabot::DependencyFile.new(
-      name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
-    )
-  end
-  let(:lockfile) do
-    Dependabot::DependencyFile.new(
-      name: "composer.lock",
-      content: fixture("lockfiles", lockfile_fixture_name)
-    )
-  end
-  let(:manifest_fixture_name) { "invalid_version_constraint" }
-  let(:lockfile_fixture_name) { "invalid_version_constraint" }
+  let(:dependency_files) { project_dependency_files(project_name) }
+
   let(:dependency) do
     Dependabot::Dependency.new(
       name: dependency_name,
@@ -65,8 +45,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     subject { resolver.latest_resolvable_version }
 
     context "with an invalid version constraint" do
-      let(:manifest_fixture_name) { "invalid_version_constraint" }
-      let(:lockfile_fixture_name) { "invalid_version_constraint" }
+      let(:project_name) { "invalid_version_constraint" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -75,8 +54,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library using a >= PHP constraint" do
-      let(:manifest_fixture_name) { "php_specified_in_library" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "php_specified_in_library" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
@@ -85,8 +63,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with an application using a >= PHP constraint" do
-      let(:manifest_fixture_name) { "php_specified" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "php_specified_without_lockfile" }
       let(:dependency_name) { "phpdocumentor/reflection-docblock" }
       let(:dependency_version) { "2.0.4" }
       let(:string_req) { "2.0.4" }
@@ -103,19 +80,17 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
 
     context "with an application using a ^ PHP constraint" do
       context "the minimum version of which is invalid" do
-        let(:manifest_fixture_name) { "php_specified_min_invalid" }
-        let(:dependency_files) { [manifest] }
+        let(:project_name) { "php_specified_min_invalid_without_lockfile" }
         let(:dependency_name) { "phpdocumentor/reflection-docblock" }
         let(:dependency_version) { "2.0.4" }
         let(:string_req) { "2.0.4" }
 
-        it { is_expected.to eq(Dependabot::Composer::Version.new("3.3.2")) }
+        it { is_expected.to eq(Dependabot::Composer::Version.new("3.2.2")) }
       end
     end
 
     context "updating a subdependency that's not required anymore" do
-      let(:manifest_fixture_name) { "exact_version" }
-      let(:lockfile_fixture_name) { "version_conflict_at_latest" }
+      let(:project_name) { "subdependency_no_longer_required" }
       let(:requirements) { [] }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "doctrine/dbal" }
@@ -125,8 +100,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a dependency that's provided by another dep" do
-      let(:manifest_fixture_name) { "provided_dependency" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "provided_dependency" }
       let(:string_req) { "^1.0" }
       let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
       let(:dependency_name) { "php-http/client-implementation" }
@@ -136,8 +110,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a dependency that uses a stability flag" do
-      let(:manifest_fixture_name) { "stability_flag" }
-      let(:lockfile_fixture_name) { "minor_version" }
+      let(:project_name) { "stability_flag" }
       let(:string_req) { "@stable" }
       let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
       let(:dependency_name) { "monolog/monolog" }
@@ -148,8 +121,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library that requires itself" do
-      let(:dependency_files) { [manifest] }
-      let(:manifest_fixture_name) { "requires_self" }
+      let(:project_name) { "requires_self" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -160,9 +132,8 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a library that uses a dev branch" do
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "dev_branch" }
       let(:dependency_name) { "monolog/monolog" }
-      let(:manifest_fixture_name) { "dev_branch" }
       let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
       let(:string_req) { "dev-1.x" }
       let(:dependency_version) { nil }
@@ -171,8 +142,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a local VCS source" do
-      let(:manifest_fixture_name) { "local_vcs_source" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "local_vcs_source" }
 
       it "raises a Dependabot::DependencyFileNotResolvable error" do
         expect { resolver.latest_resolvable_version }.
@@ -181,8 +151,7 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
     end
 
     context "with a private registry that 404s" do
-      let(:manifest_fixture_name) { "private_registry_not_found" }
-      let(:dependency_files) { [manifest] }
+      let(:project_name) { "private_registry_not_found" }
       let(:dependency_name) { "dependabot/dummy-pkg-a" }
       let(:dependency_version) { nil }
       let(:string_req) { "*" }
@@ -191,30 +160,137 @@ RSpec.describe Dependabot::Composer::UpdateChecker::VersionResolver do
       it "raises a Dependabot::PrivateSourceTimedOut error" do
         expect { resolver.latest_resolvable_version }.
           to raise_error(Dependabot::DependencyFileNotResolvable) do |error|
-            expect(error.message).to eq(
-              'The "https://dependabot.com/composer-not-found/packages.json"'\
-              " file could not be downloaded (HTTP/1.1 404 Not Found)"
+            expect(error.message).to start_with(
+              'The "https://github.com/dependabot/composer-not-found/packages.json"' \
+              " file could not be downloaded"
             )
           end
       end
     end
 
-    # This test is extremely slow, as it needs to wait for Composer to time out.
-    # As a result we currently keep it commented out.
-    # context "with an unreachable private registry" do
-    #   let(:manifest_fixture_name) { "unreachable_private_registry" }
-    #   let(:dependency_files) { [manifest] }
-    #   let(:dependency_name) { "dependabot/dummy-pkg-a" }
-    #   let(:dependency_version) { nil }
-    #   let(:string_req) { "*" }
-    #   let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+    context "with a forced oom error" do
+      let(:project_name) { "php_specified_in_library" }
+      let(:dependency_name) { "phpdocumentor/reflection-docblock" }
+      let(:dependency_version) { "2.0.4" }
+      let(:string_req) { "2.0.4" }
 
-    #   it "raises a Dependabot::PrivateSourceTimedOut error" do
-    #     expect { resolver.latest_resolvable_version }.
-    #       to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
-    #         expect(error.source).to eq("https://composer.dependabot.com")
-    #       end
-    #   end
-    # end
+      before { ENV["DEPENDABOT_TEST_MEMORY_ALLOCATION"] = "16G" }
+      after { ENV.delete("DEPENDABOT_TEST_MEMORY_ALLOCATION") }
+
+      it "raises a Dependabot::OutOfMemory error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::OutOfMemory)
+      end
+    end
+
+    context "with a name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_name" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with a dependency name that is only valid in v1" do
+      let(:project_name) { "v1/invalid_v2_requirement" }
+      let(:dependency_name) { "monolog/Monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with an unresolvable path VCS source" do
+      let(:project_name) { "unreachable_path_vcs_source" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a platform extension that cannot be added" do
+      let(:project_name) { "unaddable_platform_req" }
+      let(:dependency_name) { "monolog/monolog" }
+      let(:latest_allowable_version) { Gem::Version.new("1.25.1") }
+      let(:dependency_version) { "1.0.2" }
+
+      it { is_expected.to eq(Dependabot::Composer::Version.new("1.25.1")) }
+    end
+
+    context "with an invalid version string" do
+      let(:project_name) { "invalid_version_string" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::DependencyFileNotResolvable)
+      end
+    end
+
+    context "with a missing vcs repository source (composer v1)" do
+      let(:project_name) { "v1/vcs_source_unreachable" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+          end
+      end
+    end
+
+    context "with a missing vcs repository source" do
+      let(:project_name) { "vcs_source_unreachable" }
+
+      it "raises a Dependabot::DependencyFileNotResolvable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/dependabot-fixtures/this-repo-does-not-exist.git"])
+          end
+      end
+    end
+
+    context "with a missing git repository source" do
+      let(:project_name) { "git_source_unreachable" }
+      let(:dependency_name) { "symfony/polyfill-mbstring" }
+      let(:dependency_version) { "1.0.1" }
+      let(:requirements) do
+        [{
+          file: "composer.json",
+          requirement: "1.0.*",
+          groups: [],
+          source: nil
+        }]
+      end
+
+      it "raises a Dependabot::GitDependenciesNotReachable error" do
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::GitDependenciesNotReachable) do |error|
+            expect(error.dependency_urls).
+              to eq(["https://github.com/no-exist-sorry/monolog.git"])
+          end
+      end
+    end
+
+    context "with an unreachable private registry" do
+      let(:project_name) { "unreachable_private_registry" }
+      let(:dependency_name) { "dependabot/dummy-pkg-a" }
+      let(:dependency_version) { nil }
+      let(:string_req) { "*" }
+      let(:latest_allowable_version) { Gem::Version.new("6.0.0") }
+
+      before { ENV["COMPOSER_PROCESS_TIMEOUT"] = "1" }
+      after { ENV.delete("COMPOSER_PROCESS_TIMEOUT") }
+
+      it "raises a Dependabot::PrivateSourceTimedOut error" do
+        pending("TODO: this URL has no DNS record post GitHub acquisition, so switch to a routable URL that hangs")
+        expect { resolver.latest_resolvable_version }.
+          to raise_error(Dependabot::PrivateSourceTimedOut) do |error|
+            expect(error.source).to eq("https://composer.dependabot.com")
+          end
+      end
+    end
   end
 end

@@ -19,6 +19,11 @@ RSpec.describe Dependabot::Gradle::Version do
       let(:version_string) { "Finchley" }
       it { is_expected.to eq(true) }
     end
+
+    context "with a dynamic version" do
+      let(:version_string) { "1.+" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#to_s" do
@@ -92,10 +97,15 @@ RSpec.describe Dependabot::Gradle::Version do
       let(:version_string) { "1.2.1-1.3.40-eap13-67" }
       it { is_expected.to eq(true) }
     end
+
+    context "with a dev token" do
+      let(:version_string) { "1.2.1-dev-65" }
+      it { is_expected.to eq(true) }
+    end
   end
 
   describe "#<=>" do
-    subject { version.send(:"<=>", other_version) }
+    subject { version.send(:<=>, other_version) }
 
     context "compared to a Gem::Version" do
       context "that is lower" do
@@ -257,6 +267,12 @@ RSpec.describe Dependabot::Gradle::Version do
         context "post releases 2" do
           let(:version) { described_class.new("1-sp.1") }
           let(:other_version) { described_class.new("1-ga.1") }
+          it { is_expected.to eq(1) }
+        end
+
+        context "numeric token after underscore" do
+          let(:version) { described_class.new("1.0.0_100") }
+          let(:other_version) { described_class.new("1.0.0_99") }
           it { is_expected.to eq(1) }
         end
 

@@ -1,15 +1,12 @@
 # frozen_string_literal: true
 
 require "excon"
-require "pandoc-ruby"
 
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
 require "dependabot/clients/bitbucket_with_retries"
 require "dependabot/shared_helpers"
 require "dependabot/metadata_finders/base"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   module MetadataFinders
     class Base
@@ -19,7 +16,7 @@ module Dependabot
 
         # Earlier entries are preferred
         CHANGELOG_NAMES = %w(
-          changelog news changes history release whatsnew
+          changelog news changes history release whatsnew releases
         ).freeze
 
         attr_reader :source, :dependency, :credentials, :suggested_changelog_url
@@ -39,31 +36,10 @@ module Dependabot
         def changelog_text
           return unless full_changelog_text
 
-          pruned_text = ChangelogPruner.new(
+          ChangelogPruner.new(
             dependency: dependency,
             changelog_text: full_changelog_text
           ).pruned_text
-
-          return pruned_text unless changelog.name.end_with?(".rst")
-
-          begin
-            PandocRuby.convert(
-              pruned_text,
-              from: :rst,
-              to: :markdown,
-              wrap: :none,
-              timeout: 10
-            )
-          rescue Errno::ENOENT => e
-            raise unless e.message == "No such file or directory - pandoc"
-
-            # If pandoc isn't installed just return the rst
-            pruned_text
-          rescue RuntimeError => e
-            raise unless e.message.include?("Pandoc timed out")
-
-            pruned_text
-          end
         end
 
         def upgrade_guide_url
@@ -78,7 +54,6 @@ module Dependabot
 
         private
 
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         def changelog
           return unless changelog_from_suggested_url || source
@@ -100,21 +75,19 @@ module Dependabot
           # Fall back to the changelog (or nil) from the default branch
           default_branch_changelog
         end
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def changelog_from_suggested_url
-          if defined?(@changelog_from_suggested_url)
-            return @changelog_from_suggested_url
-          end
+          return @changelog_from_suggested_url if defined?(@changelog_from_suggested_url)
           return unless suggested_changelog_url
 
           # TODO: Support other providers
-          source = Source.from_url(suggested_changelog_url)
-          return unless source&.provider == "github"
+          suggested_source = Source.from_url(suggested_changelog_url)
+          return unless suggested_source&.provider == "github"
 
-          opts = { path: source.directory, ref: source.branch }.compact
-          tmp_files = github_client.contents(source.repo, opts)
+          opts = { path: suggested_source.directory, ref: suggested_source.branch }.compact
+          suggested_source_client = github_client_for_source(suggested_source)
+          tmp_files = suggested_source_client.contents(suggested_source.repo, opts)
 
           filename = suggested_changelog_url.split("/").last.split("#").first
           @changelog_from_suggested_url =
@@ -147,6 +120,7 @@ module Dependabot
           select_best_changelog(files)
         end
 
+        # rubocop:disable Metrics/PerceivedComplexity
         def select_best_changelog(files)
           CHANGELOG_NAMES.each do |name|
             candidates = files.select { |f| f.name =~ /#{name}/i }
@@ -167,6 +141,7 @@ module Dependabot
 
           nil
         end
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def tag_for_new_version
           @tag_for_new_version ||=
@@ -187,19 +162,16 @@ module Dependabot
           @file_text ||= {}
 
           unless @file_text.key?(file.download_url)
-            provider = Source.from_url(file.html_url).provider
-            begin
-              @file_text[file.download_url] =
-                case provider
-                when "github" then fetch_github_file(file)
-                when "gitlab" then fetch_gitlab_file(file)
-                when "bitbucket" then fetch_bitbucket_file(file)
-                else raise "Unsupported provider '#{provider}'"
-                end
-            rescue StandardError => e
-              puts "Failed to read changelog: #{e.inspect}"
-              @file_text[file.download_url] = "<failed to download>"
-            end
+            file_source = Source.from_url(file.html_url)
+            @file_text[file.download_url] =
+              case file_source.provider
+              when "github" then fetch_github_file(file_source, file)
+              when "gitlab" then fetch_gitlab_file(file)
+              when "bitbucket" then fetch_bitbucket_file(file)
+              when "azure" then fetch_azure_file(file)
+              when "codecommit" then nil # TODO: git file from codecommit
+              else raise "Unsupported provider '#{provider}'"
+              end
           end
 
           return unless @file_text[file.download_url].valid_encoding?
@@ -207,9 +179,9 @@ module Dependabot
           @file_text[file.download_url].sub(/\n*\z/, "")
         end
 
-        def fetch_github_file(file)
+        def fetch_github_file(file_source, file)
           # Hitting the download URL directly causes encoding problems
-          raw_content = github_client.get(file.url).content
+          raw_content = github_client_for_source(file_source).get(file.url).content
           Base64.decode64(raw_content).force_encoding("UTF-8").encode
         end
 
@@ -222,6 +194,11 @@ module Dependabot
 
         def fetch_bitbucket_file(file)
           bitbucket_client.get(file.download_url).body.
+            force_encoding("UTF-8").encode
+        end
+
+        def fetch_azure_file(file)
+          azure_client.get(file.download_url).body.
             force_encoding("UTF-8").encode
         end
 
@@ -248,8 +225,9 @@ module Dependabot
           case source.provider
           when "github" then fetch_github_file_list(ref)
           when "bitbucket" then fetch_bitbucket_file_list
-          when "gitlab" then fetch_gitlab_file_list(ref)
-          when "azure" then [] # TODO: Fetch files from Azure
+          when "gitlab" then fetch_gitlab_file_list
+          when "azure" then fetch_azure_file_list
+          when "codecommit" then [] # TODO: Fetch Files from Codecommit
           else raise "Unexpected repo provider '#{source.provider}'"
           end
         end
@@ -267,7 +245,7 @@ module Dependabot
           files += github_client.contents(source.repo, opts)
 
           files.uniq.each do |f|
-            next unless %w(doc docs).include?(f.name) && f.type == "dir"
+            next unless f.type == "dir" && f.name.match?(/docs?/o)
 
             opts = { path: f.path, ref: ref }.compact
             files += github_client.contents(source.repo, opts)
@@ -300,7 +278,8 @@ module Dependabot
           []
         end
 
-        def fetch_gitlab_file_list(ref)
+        def fetch_gitlab_file_list
+          branch = default_gitlab_branch
           gitlab_client.repo_tree(source.repo).map do |file|
             type = case file.type
                    when "blob" then "file"
@@ -311,35 +290,63 @@ module Dependabot
               name: file.name,
               type: type,
               size: 100, # GitLab doesn't return file size
-              html_url: "#{source.url}/blob/master/#{file.path}",
-              download_url: "#{source.url}/raw/master/#{file.path}",
               repo: source.repo,
               ref: ref
+              html_url: "#{source.url}/blob/#{branch}/#{file.path}",
+              download_url: "#{source.url}/raw/#{branch}/#{file.path}"
             )
           end
         rescue Gitlab::Error::NotFound
           []
         end
 
+        def fetch_azure_file_list
+          azure_client.fetch_repo_contents.map do |entry|
+            type = case entry.fetch("gitObjectType")
+                   when "blob" then "file"
+                   when "tree" then "dir"
+                   else entry.fetch("gitObjectType")
+                   end
+
+            OpenStruct.new(
+              name: File.basename(entry.fetch("relativePath")),
+              type: type,
+              size: entry.fetch("size"),
+              path: entry.fetch("relativePath"),
+              html_url: "#{source.url}?path=/#{entry.fetch('relativePath')}",
+              download_url: entry.fetch("url")
+            )
+          end
+        rescue Dependabot::Clients::Azure::NotFound,
+               Dependabot::Clients::Azure::Unauthorized,
+               Dependabot::Clients::Azure::Forbidden
+          []
+        end
+
         def new_version
-          @new_version ||= git_source? ? new_ref : dependency.version
-          @new_version&.gsub(/^v/, "")
+          return @new_version if defined?(@new_version)
+
+          new_version = git_source? && new_ref ? new_ref : dependency.version
+          @new_version = new_version&.gsub(/^v/, "")
         end
 
         def previous_ref
-          dependency.previous_requirements.map do |r|
+          previous_refs = dependency.previous_requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return previous_refs.first if previous_refs.count == 1
         end
 
         def new_ref
-          dependency.requirements.map do |r|
+          new_refs = dependency.requirements.filter_map do |r|
             r.dig(:source, "ref") || r.dig(:source, :ref)
-          end.compact.first
+          end.uniq
+          return new_refs.first if new_refs.count == 1
         end
 
         def ref_changed?
-          previous_ref && new_ref && previous_ref != new_ref
+          # We could go from multiple previous refs (nil) to a single new ref
+          previous_ref != new_ref
         end
 
         # TODO: Refactor me so that Composer doesn't need to be special cased
@@ -351,10 +358,8 @@ module Dependabot
           requirements = dependency.requirements
           sources = requirements.map { |r| r.fetch(:source) }.uniq.compact
           return false if sources.empty?
-          raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
 
-          source_type = sources.first[:type] || sources.first.fetch("type")
-          source_type == "git"
+          sources.all? { |s| s[:type] == "git" || s["type"] == "git" }
         end
 
         def major_version_upgrade?
@@ -373,7 +378,19 @@ module Dependabot
 
         def github_client
           @github_client ||= Dependabot::Clients::GithubWithRetries.
-                             for_github_dot_com(credentials: credentials)
+                             for_source(source: source, credentials: credentials)
+        end
+
+        def azure_client
+          @azure_client ||= Dependabot::Clients::Azure.
+                            for_source(source: source, credentials: credentials)
+        end
+
+        def github_client_for_source(client_source)
+          return github_client if client_source == source
+
+          Dependabot::Clients::GithubWithRetries.
+            for_source(source: client_source, credentials: credentials)
         end
 
         def bitbucket_client
@@ -385,8 +402,12 @@ module Dependabot
           @default_bitbucket_branch ||=
             bitbucket_client.fetch_default_branch(source.repo)
         end
+
+        def default_gitlab_branch
+          @default_gitlab_branch ||=
+            gitlab_client.fetch_default_branch(source.repo)
+        end
       end
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

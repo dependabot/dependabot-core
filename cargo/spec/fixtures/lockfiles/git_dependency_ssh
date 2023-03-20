@@ -18,7 +18,3 @@ source = "git+ssh://git@github.com/dependabot-fixtures/utf8-ranges#9996043f61e9b
 dependencies = [
  "utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)",
 ]
-
-[metadata]
-"checksum utf8-ranges 1.0.0 (git+ssh://git@github.com/BurntSushi/utf8-ranges)" = "<none>"
-"checksum utf8-ranges-parent 1.0.2 (git+ssh://git@github.com/dependabot-fixtures/utf8-ranges)" = "<none>"

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+bundle install
+bundle exec parallel_test spec/ -n "$CI_NODE_TOTAL" --only-group "$CI_NODE_INDEX" --group-by filesize --type rspec
+
+# NOTE: Don't use `if` branches without `else` part, since the code in some of
+# then seems to not abort the script regardless of `set -e`
+
+# Should we only run these on one of the CI_NODE_INDEX's?
+if [[ "$SUITE_NAME" == "bundler1" ]]; then
+  # shellcheck source=../helpers/v1/build
+  DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v1/build \
+    && BUNDLER_VERSION=1.17.3 bundle exec rspec spec\
+    && cd -
+else
+  # shellcheck source=../helpers/v2/build
+  DEPENDABOT_NATIVE_HELPERS_PATH="" source helpers/v2/build \
+    && bundle exec rspec spec \
+    && cd -
+fi

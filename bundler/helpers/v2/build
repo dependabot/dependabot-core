@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+helpers_dir=$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  install_dir="$helpers_dir"
+else
+  install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/bundler/v2"
+  mkdir -p "$install_dir"
+
+  cp -r \
+    "$helpers_dir/lib" \
+    "$helpers_dir/monkey_patches" \
+    "$helpers_dir/run.rb" \
+    "$install_dir"
+fi
+
+cd "$install_dir"
+
+default_version=$(ruby -rbundler -e'print Bundler::VERSION')
+
+export GEM_HOME=$install_dir/.bundle
+
+gem install bundler -v "$default_version" --no-document

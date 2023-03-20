@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require "excon"
+require "uri"
+
 require "dependabot/metadata_finders"
 require "dependabot/metadata_finders/base"
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/python/authed_url_builder"
+require "dependabot/python/name_normaliser"
 
 module Dependabot
   module Python
@@ -52,7 +55,7 @@ module Dependabot
         # dependency name
         match_url = potential_source_urls.find do |url|
           repo = Source.from_url(url).repo
-          repo.downcase.end_with?(dependency.name)
+          repo.downcase.end_with?(normalised_dependency_name)
         end
 
         return match_url if match_url
@@ -62,14 +65,10 @@ module Dependabot
         @source_from_description ||=
           potential_source_urls.find do |url|
             full_url = Source.from_url(url).url
-            response = Excon.get(
-              full_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
-            response.body.include?(dependency.name)
+            response.body.include?(normalised_dependency_name)
           end
       end
 
@@ -83,7 +82,7 @@ module Dependabot
 
         match_url = potential_source_urls.find do |url|
           repo = Source.from_url(url).repo
-          repo.downcase.end_with?(dependency.name)
+          repo.downcase.end_with?(normalised_dependency_name)
         end
 
         return match_url if match_url
@@ -91,14 +90,10 @@ module Dependabot
         @source_from_homepage ||=
           potential_source_urls.find do |url|
             full_url = Source.from_url(url).url
-            response = Excon.get(
-              full_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            response = Dependabot::RegistryClient.get(url: full_url)
             next unless response.status == 200
 
-            response.body.include?(dependency.name)
+            response.body.include?(normalised_dependency_name)
           end
       end
 
@@ -106,16 +101,14 @@ module Dependabot
         homepage_url = pypi_listing.dig("info", "home_page")
 
         return unless homepage_url
-        return if homepage_url.include?("pypi.python.org")
-        return if homepage_url.include?("pypi.org")
+        return if [
+          "pypi.org",
+          "pypi.python.org"
+        ].include?(URI(homepage_url).host)
 
         @homepage_response ||=
           begin
-            Excon.get(
-              homepage_url,
-              idempotent: true,
-              **SharedHelpers.excon_defaults
-            )
+            Dependabot::RegistryClient.get(url: homepage_url)
           rescue Excon::Error::Timeout, Excon::Error::Socket,
                  Excon::Error::TooManyRedirects, ArgumentError
             nil
@@ -138,6 +131,8 @@ module Dependabot
           return @pypi_listing
         rescue JSON::ParserError
           next
+        rescue Excon::Error::Timeout
+          next
         end
 
         @pypi_listing = {} # No listing found
@@ -148,15 +143,15 @@ module Dependabot
            Regexp.last_match.captures[1].include?("@")
           protocol, user, pass, url = Regexp.last_match.captures
 
-          Excon.get(
-            "#{protocol}://#{url}",
-            user: user,
-            password: pass,
-            idempotent: true,
-            **SharedHelpers.excon_defaults
+          Dependabot::RegistryClient.get(
+            url: "#{protocol}://#{url}",
+            options: {
+              user: user,
+              password: pass
+            }
           )
         else
-          Excon.get(url, idempotent: true, **SharedHelpers.excon_defaults)
+          Dependabot::RegistryClient.get(url: url)
         end
       end
 
@@ -167,8 +162,13 @@ module Dependabot
           map { |c| AuthedUrlBuilder.authed_url(credential: c) }
 
         (credential_urls + [MAIN_PYPI_URL]).map do |base_url|
-          base_url.gsub(%r{/$}, "") + "/#{dependency.name}/json"
+          base_url.gsub(%r{/$}, "") + "/#{normalised_dependency_name}/json"
         end
+      end
+
+      # Strip [extras] from name (dependency_name[extra_dep,other_extra])
+      def normalised_dependency_name
+        NameNormaliser.normalise(dependency.name)
       end
     end
   end

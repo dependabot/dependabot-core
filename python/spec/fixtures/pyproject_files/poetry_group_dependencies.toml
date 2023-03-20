@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "PoetryGroups"
+version = "2.0.0"
+homepage = "https://github.com/roghu/py3_projects"
+license = "MIT"
+readme = "README.md"
+authors = ["Dependabot <support@dependabot.com>"]
+description = "Various small python projects."
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+
+[tool.poetry.dev-dependencies]
+black = "^22.12.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "6.1.3"

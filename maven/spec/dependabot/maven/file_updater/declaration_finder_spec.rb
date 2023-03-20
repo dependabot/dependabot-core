@@ -70,6 +70,25 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
       end
     end
 
+    context "with a dependency that has a classifier" do
+      let(:dependency_name) { "io.mockk:mockk:sources" }
+      let(:dependency_version) { "1.0.0" }
+
+      it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_css("version").content).to eq("1.0.0")
+        expect(declaration_node.at_css("artifactId").content).
+          to eq("mockk")
+        expect(declaration_node.at_css("classifier").content).
+          to eq("sources")
+        expect(declaration_node.at_css("groupId").content).
+          to eq("io.mockk")
+      end
+    end
+
     context "with a dependency in the dependency management node" do
       let(:pom_fixture_name) { "dependency_management_pom.xml" }
 
@@ -399,6 +418,33 @@ RSpec.describe Dependabot::Maven::FileUpdater::DeclarationFinder do
           to eq("spring-aop")
         expect(declaration_node.at_css("groupId").content).
           to eq("org.springframework")
+      end
+    end
+
+    context "with a plugin that contains a nested plugin configuration declaration" do
+      let(:pom) do
+        Dependabot::DependencyFile.new(name: "pom.xml", content: fixture("poms", "nested_plugin.xml"))
+      end
+      let(:dependency_name) { "org.jetbrains.kotlin:kotlin-maven-plugin" }
+      let(:dependency_version) { "1.4.30" }
+      let(:declaring_requirement) do
+        {
+          requirement: dependency_version,
+          file: "pom.xml",
+          groups: [],
+          source: nil,
+          metadata: { packaging_type: "jar", property_name: "kotlin.version" }
+        }
+      end
+
+      it "finds the declaration" do
+        expect(declaration_nodes.count).to eq(1)
+
+        declaration_node = declaration_nodes.first
+        expect(declaration_node).to be_a(Nokogiri::XML::Node)
+        expect(declaration_node.at_xpath("./*/version").content).to eq("${kotlin.version}")
+        expect(declaration_node.at_xpath("./*/artifactId").content).to eq("kotlin-maven-plugin")
+        expect(declaration_node.at_xpath("./*/groupId").content).to eq("org.jetbrains.kotlin")
       end
     end
   end

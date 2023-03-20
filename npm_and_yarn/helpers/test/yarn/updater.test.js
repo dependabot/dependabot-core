@@ -2,34 +2,12 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 const rimraf = require("rimraf");
-const nock = require("nock");
 const { updateDependencyFiles } = require("../../lib/yarn/updater");
 const helpers = require("./helpers");
 
 describe("updater", () => {
   let tempDir;
   beforeEach(() => {
-    nock("https://registry.yarnpkg.com")
-      .persist()
-      .get("/left-pad")
-      .replyWithFile(
-        200,
-        path.join(__dirname, "fixtures", "yarnpkg-left-pad.json"),
-        {
-          "Content-Type": "application/json"
-        }
-      );
-    nock("https://registry.yarnpkg.com")
-      .persist()
-      .get("/is-positive")
-      .replyWithFile(
-        200,
-        path.join(__dirname, "fixtures", "yarnpkg-is-positive.json"),
-        {
-          "Content-Type": "application/json"
-        }
-      );
-
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
   afterEach(() => rimraf.sync(tempDir));
@@ -55,11 +33,11 @@ describe("updater", () => {
       {
         name: "left-pad",
         version: "1.1.3",
-        requirements: [{ file: "package.json", groups: ["dependencies"] }]
-      }
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
     ]);
     expect(result).toEqual({
-      "yarn.lock": helpers.loadFixture("updater/updated/yarn.lock")
+      "yarn.lock": helpers.loadFixture("updater/updated/yarn.lock"),
     });
   });
 
@@ -70,8 +48,8 @@ describe("updater", () => {
       {
         name: "left-pad",
         version: "1.1.3",
-        requirements: [{ file: "package.json", groups: ["dependencies"] }]
-      }
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
     ]);
     expect(result["yarn.lock"]).toContain("\n# yarn v0.0.0-0\n");
     expect(result["yarn.lock"]).toContain("\n# node v0.0.0\n");
@@ -84,8 +62,8 @@ describe("updater", () => {
       {
         name: "left-pad",
         version: "1.1.3",
-        requirements: [{ file: "package.json", groups: ["dependencies"] }]
-      }
+        requirements: [{ file: "package.json", groups: ["dependencies"] }],
+      },
     ]);
     expect(result["yarn.lock"]).not.toContain("\n# yarn v");
     expect(result["yarn.lock"]).not.toContain("\n# node");
@@ -101,8 +79,8 @@ describe("updater", () => {
         {
           name: "left-pad",
           version: "99.99.99",
-          requirements: [{ file: "package.json", groups: ["dependencies"] }]
-        }
+          requirements: [{ file: "package.json", groups: ["dependencies"] }],
+        },
       ]);
     } catch (error) {
       expect(error).not.toBeNull();

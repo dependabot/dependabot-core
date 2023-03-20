@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Nuget::FileParser::GlobalJsonParser do
             [{
               requirement: "1.0.45",
               file: "global.json",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )

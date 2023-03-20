@@ -1,0 +1,9 @@
+{
+  "name": "bump-test",
+  "version": "0.0.1",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-preset-php": "gitlab:kornelski/babel-preset-php#master",
+    "is-number": "github:jonschlinkert/is-number#master"
+  }
+}

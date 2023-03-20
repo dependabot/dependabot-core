@@ -16,7 +16,7 @@ module Dependabot
       class RequirementsUpdater
         class UnfixableRequirement < StandardError; end
 
-        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/.freeze
+        VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-*]+)*/
         ALLOWED_UPDATE_STRATEGIES =
           %i(bump_versions bump_versions_if_necessary).freeze
 
@@ -34,7 +34,7 @@ module Dependabot
         end
 
         def updated_requirements
-          # Note: Order is important here. The FileUpdater needs the updated
+          # NOTE: Order is important here. The FileUpdater needs the updated
           # requirement at index `i` to correspond to the previous requirement
           # at the same index.
           requirements.map do |req|
@@ -94,13 +94,13 @@ module Dependabot
         end
 
         def update_version_string(req_string)
+          new_target_parts = target_version.to_s.sub(/\+.*/, "").split(".")
           req_string.sub(VERSION_REGEX) do |old_version|
             # For pre-release versions, just use the full version string
             next target_version.to_s if old_version.match?(/\d-/)
 
             old_parts = old_version.split(".")
-            new_parts = target_version.to_s.split(".").
-                        first(old_parts.count)
+            new_parts = new_target_parts.first(old_parts.count)
             new_parts.map.with_index do |part, i|
               old_parts[i] == "*" ? "*" : part
             end.join(".")
@@ -144,7 +144,8 @@ module Dependabot
               version_to_be_permitted.segments[index]
             elsif index == index_to_update
               version_to_be_permitted.segments[index] + 1
-            else 0
+            else
+              0
             end
           end.join(".")
         end

@@ -33,7 +33,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             [{
               requirement: "1.1.1",
               file: "my.csproj",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -51,7 +51,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             [{
               requirement: nil,
               file: "my.csproj",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -69,7 +69,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
             [{
               requirement: "4.3.0",
               file: "my.csproj",
-              groups: [],
+              groups: ["dependencies"],
               source: nil
             }]
           )
@@ -79,7 +79,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       context "with version ranges" do
         let(:file_body) { fixture("csproj", "ranges.csproj") }
 
-        its(:length) { is_expected.to eq(4) }
+        its(:length) { is_expected.to eq(6) }
 
         it "has the right details" do
           expect(dependencies.first.requirements.first.fetch(:requirement)).
@@ -97,6 +97,14 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
           expect(dependencies[3].requirements.first.fetch(:requirement)).
             to eq("1.0.*")
           expect(dependencies[3].version).to be_nil
+
+          expect(dependencies[4].requirements.first.fetch(:requirement)).
+            to eq("*")
+          expect(dependencies[4].version).to be_nil
+
+          expect(dependencies[5].requirements.first.fetch(:requirement)).
+            to eq("*-*")
+          expect(dependencies[5].version).to be_nil
         end
       end
 
@@ -133,6 +141,22 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
         end
       end
 
+      context "with an updated package specified" do
+        let(:file_body) { fixture("csproj", "directory.packages.props") }
+
+        it "has the right details" do
+          expect(dependencies.map(&:name)).
+            to match_array(
+              %w(
+                System.AskJeeves
+                System.Google
+                System.Lycos
+                System.WebCrawler
+              )
+            )
+        end
+      end
+
       context "with a property version" do
         let(:file_body) do
           fixture("csproj", "property_version.csproj")
@@ -151,7 +175,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               [{
                 requirement: "0.1.434",
                 file: "my.csproj",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil,
                 metadata: { property_name: "NukeVersion" }
               }]
@@ -176,7 +200,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
               [{
                 requirement: "0.1.434",
                 file: "my.csproj",
-                groups: [],
+                groups: ["dependencies"],
                 source: nil,
                 metadata: { property_name: "NukeVersion" }
               }]
@@ -202,7 +226,7 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
                 [{
                   requirement: "$(UnknownVersion)",
                   file: "my.csproj",
-                  groups: [],
+                  groups: ["dependencies"],
                   source: nil,
                   metadata: { property_name: "UnknownVersion" }
                 }]
@@ -215,9 +239,40 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
       context "with a nuproj" do
         let(:file_body) { fixture("csproj", "basic.nuproj") }
 
-        it "has the right details" do
-          expect(dependencies.map(&:name)).
-            to match_array(%w(nanoFramework.CoreLibrary))
+        it "gets the right number of dependencies" do
+          expect(dependencies.count).to eq(2)
+        end
+
+        describe "the first dependency" do
+          subject(:dependency) { dependencies.first }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("nanoFramework.CoreLibrary")
+            expect(dependency.version).to eq("1.0.0-preview062")
+            expect(dependency.requirements).to eq([{
+              requirement: "[1.0.0-preview062]",
+              file: "my.csproj",
+              groups: ["dependencies"],
+              source: nil
+            }])
+          end
+        end
+
+        describe "the second dependency" do
+          subject(:dependency) { dependencies.at(1) }
+
+          it "has the right details" do
+            expect(dependency).to be_a(Dependabot::Dependency)
+            expect(dependency.name).to eq("nanoFramework.CoreExtra")
+            expect(dependency.version).to eq("1.0.0-preview061")
+            expect(dependency.requirements).to eq([{
+              requirement: "[1.0.0-preview061]",
+              file: "my.csproj",
+              groups: ["devDependencies"],
+              source: nil
+            }])
+          end
         end
       end
 
@@ -226,6 +281,122 @@ RSpec.describe Dependabot::Nuget::FileParser::ProjectFileParser do
 
         it "excludes the dependencies specified using interpolation" do
           expect(dependencies.count).to eq(0)
+        end
+      end
+
+      context "with a versioned sdk reference" do
+        context "specified in the Project tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_project.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
+        end
+
+        context "specified via an Sdk tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_sdk.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
+        end
+
+        context "specified via an Import tag" do
+          let(:file_body) { fixture("csproj", "sdk_reference_via_import.csproj") }
+
+          its(:length) { is_expected.to eq(2) }
+
+          describe "the first dependency" do
+            subject(:dependency) { dependencies.first }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Awesome.Sdk")
+              expect(dependency.version).to eq("1.2.3")
+              expect(dependency.requirements).to eq([{
+                requirement: "1.2.3",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
+
+          describe "the second dependency" do
+            subject(:dependency) { dependencies[1] }
+
+            it "has the right details" do
+              expect(dependency).to be_a(Dependabot::Dependency)
+              expect(dependency.name).to eq("Prototype.Sdk")
+              expect(dependency.version).to eq("0.1.0-beta")
+              expect(dependency.requirements).to eq([{
+                requirement: "0.1.0-beta",
+                file: "my.csproj",
+                groups: ["dependencies"],
+                source: nil
+              }])
+            end
+          end
         end
       end
     end

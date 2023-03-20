@@ -16,10 +16,10 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
   let(:manifest) do
     Dependabot::DependencyFile.new(
       name: "composer.json",
-      content: fixture("composer_files", manifest_fixture_name)
+      content: fixture("projects", project_name, "composer.json")
     )
   end
-  let(:manifest_fixture_name) { "exact_version" }
+  let(:project_name) { "exact_version" }
 
   let(:dependency) do
     Dependabot::Dependency.new(
@@ -49,7 +49,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
     it { is_expected.to include "\"symfony/polyfill-mbstring\": \"1.0.1\"" }
 
     context "when the minor version is specified" do
-      let(:manifest_fixture_name) { "minor_version" }
+      let(:project_name) { "minor_version" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
     end
 
     context "when a pre-release version is specified" do
-      let(:manifest_fixture_name) { "prerelease_version" }
+      let(:project_name) { "prerelease_version" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -103,7 +103,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
     end
 
     context "with a git source using no-api" do
-      let(:manifest_fixture_name) { "git_source_no_api" }
+      let(:project_name) { "git_source_no_api" }
 
       let(:dependency) do
         Dependabot::Dependency.new(
@@ -130,13 +130,13 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
     end
 
     context "when the dependency is a development dependency" do
-      let(:manifest_fixture_name) { "development_dependencies" }
+      let(:project_name) { "development_dependencies" }
 
       it { is_expected.to include "\"monolog/monolog\": \"1.22.1\"" }
     end
 
     context "when the dependency is both development and runtime" do
-      let(:manifest_fixture_name) { "dev_and_runtime_dep" }
+      let(:project_name) { "dev_and_runtime_dep" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "monolog/monolog",
@@ -172,7 +172,7 @@ RSpec.describe Dependabot::Composer::FileUpdater::ManifestUpdater do
     end
 
     context "with non-standard whitespace" do
-      let(:manifest_fixture_name) { "non_standard_whitespace" }
+      let(:project_name) { "non_standard_whitespace" }
 
       it "keeps the non-standard whitespace" do
         expect(updated_manifest_content).

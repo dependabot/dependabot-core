@@ -53,11 +53,11 @@ function installArgsWithVersion(depName, desiredVersion, requirements) {
   const source =
     "source" in requirements
       ? requirements.source
-      : (requirements.find(req => req.source) || {}).source;
+      : (requirements.find((req) => req.source) || {}).source;
   const req =
     "requirement" in requirements
       ? requirements.requirement
-      : (requirements.find(req => req.requirement) || {}).requirement;
+      : (requirements.find((req) => req.requirement) || {}).requirement;
 
   if (source && source.type === "git") {
     if (desiredVersion) {
@@ -93,7 +93,7 @@ async function checkPeerDepsForReq(
     ignoreEngines: true,
     ignorePlatform: true,
     dev: devRequirement(requirement),
-    optional: optionalRequirement(requirement)
+    optional: optionalRequirement(requirement),
   };
   const reporter = new BufferReporter();
   const config = new Config(reporter);
@@ -101,7 +101,8 @@ async function checkPeerDepsForReq(
   await config.init({
     cwd: path.join(directory, path.dirname(requirement.file)),
     nonInteractive: true,
-    enableDefaultRc: true
+    enableDefaultRc: true,
+    extraneousYarnrcFiles: [".yarnrc"],
   });
 
   const lockfile = await Lockfile.fromDirectory(directory, reporter);
@@ -118,7 +119,7 @@ async function checkPeerDepsForReq(
   const eventBuffer = reporter.getBuffer();
   const peerDependencyWarnings = eventBuffer
     .map(({ data }) => data)
-    .filter(data => {
+    .filter((data) => {
       // Guard against event.data sometimes being an object
       return isString(data) && data.match(/(unmet|incorrect) peer dependency/);
     });

@@ -64,15 +64,41 @@ module Dependabot
             old_declaration.
             gsub(/@.*+/, "@#{new_req.fetch(:source).fetch(:ref)}")
 
+          # Replace the old declaration that's preceded by a non-word character
+          # and followed by a whitespace character (comments) or EOL.
+          # If the declaration is followed by a comment that lists the version associated
+          # with the SHA source ref, then update the comment to the human-readable new version.
+          # However, if the comment includes additional text beyond the version, for safety
+          # we skip updating the comment in case it's a custom note, todo, warning etc of some kind.
+          # See the related unit tests for examples.
           updated_content =
             updated_content.
             gsub(
-              /(?<=\W)#{Regexp.escape(old_declaration)}(?=\W)/,
-              new_declaration
-            )
+              /(?<=\W|"|')#{Regexp.escape(old_declaration)}(?<comment>\s+#.*)?(?=\s|"|'|$)/
+            ) do |match|
+              comment = Regexp.last_match(:comment)
+              match.gsub!(old_declaration, new_declaration)
+              if comment && (updated_comment = updated_version_comment(comment, new_req))
+                match.gsub!(comment, updated_comment)
+              end
+              match
+            end
         end
 
         updated_content
+      end
+
+      def updated_version_comment(comment, new_req)
+        raise "No comment!" unless comment
+
+        comment = comment.rstrip
+        return unless dependency.previous_version && dependency.version
+        return unless comment.end_with? dependency.previous_version
+
+        git_checker = Dependabot::GitCommitChecker.new(dependency: dependency, credentials: credentials)
+        return unless git_checker.ref_looks_like_commit_sha?(new_req.fetch(:source).fetch(:ref))
+
+        comment.gsub(dependency.previous_version, dependency.version)
       end
     end
   end

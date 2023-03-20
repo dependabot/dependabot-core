@@ -10,13 +10,17 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     described_class.new(
       dependency_files: files,
       dependencies: [dependency],
-      credentials: [{
-        "type" => "git_source",
-        "host" => "github.com",
-        "username" => "x-access-token",
-        "password" => "token"
-      }]
+      credentials: [credentials]
     )
+  end
+
+  let(:credentials) do
+    {
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }
   end
 
   let(:files) { [mixfile, lockfile] }
@@ -47,9 +51,9 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       package_manager: "hex"
     )
   end
-  let(:tmp_path) { Dependabot::SharedHelpers::BUMP_TMP_DIR_PATH }
+  let(:tmp_path) { Dependabot::Utils::BUMP_TMP_DIR_PATH }
 
-  before { Dir.mkdir(tmp_path) unless Dir.exist?(tmp_path) }
+  before { FileUtils.mkdir_p(tmp_path) }
 
   describe "#updated_lockfile_content" do
     subject(:updated_lockfile_content) { updater.updated_lockfile_content }
@@ -150,6 +154,42 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "with upgrade to transitive dependencies" do
+      let(:mixfile_fixture_name) { "deep_upgrade" }
+      let(:lockfile_fixture_name) { "deep_upgrade" }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "phoenix_ecto",
+          version: "4.2.0",
+          requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.2.0",
+            groups: [],
+            source: nil
+          }],
+          previous_version: "4.1.0",
+          previous_requirements: [{
+            file: "mix.exs",
+            requirement: "~> 4.1.0",
+            groups: [],
+            source: nil
+          }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include ':hex, :phoenix_ecto, "4.2'
+      end
+
+      it "retains management info for transitive dependencies" do
+        decimal_lock_line = updated_lockfile_content.
+                            split("\n").
+                            find { |l| l.include?('"decimal":') }
+        expect(decimal_lock_line).to include ", [:mix], ["
+      end
+    end
+
     context "with a mix.exs that opens another file" do
       let(:mixfile_fixture_name) { "loads_file" }
       let(:lockfile_fixture_name) { "exact_version" }
@@ -163,15 +203,33 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
     end
 
     context "with a mix.exs that evals another file" do
-      let(:mixfile_body) do
-        fixture("mixfiles", "loads_file_with_eval")
-      end
-      let(:lockfile_body) { fixture("lockfiles", "exact_version") }
+      let(:mixfile_fixture_name) { "loads_file_with_eval" }
+      let(:lockfile_fixture_name) { "exact_version" }
       let(:files) { [mixfile, lockfile, support_file] }
       let(:support_file) do
         Dependabot::DependencyFile.new(
           name: "version",
           content: fixture("support_files", "version"),
+          support_file: true
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :plug, "1.4.3")
+        expect(updated_lockfile_content).to include(
+          "236d77ce7bf3e3a2668dc0d32a9b6f1f9b1f05361019946aae49874904be4aed"
+        )
+      end
+    end
+
+    context "with a mix.exs that opens another file in a required file" do
+      let(:mixfile_fixture_name) { "loads_file_with_require" }
+      let(:lockfile_fixture_name) { "exact_version" }
+      let(:files) { [mixfile, lockfile, support_file] }
+      let(:support_file) do
+        Dependabot::DependencyFile.new(
+          name: "module_version.ex",
+          content: fixture("support_files", "module_version"),
           support_file: true
         )
       end
@@ -260,7 +318,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }
@@ -271,7 +329,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
             groups: [],
             source: {
               type: "git",
-              url: "https://github.com/phoenixframework/phoenix.git",
+              url: "https://github.com/dependabot-fixtures/phoenix.git",
               branch: "master",
               ref: nil
             }
@@ -284,6 +342,40 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
         expect(updated_lockfile_content).to include("phoenix.git")
         expect(updated_lockfile_content).
           to_not include("178ce1a2344515e9145599970313fcc190d4b881")
+      end
+    end
+
+    context "with a private repo dependency" do
+      let(:mixfile_fixture_name) { "private_repo" }
+      let(:lockfile_fixture_name) { "private_repo" }
+
+      let(:credentials) do
+        {
+          "type" => "hex_repository",
+          "repo" => "dependabot",
+          "auth_key" => "d6fc2b6n6h7katic6vuq6k5e2csahcm4",
+          "url" => "https://dependabot-private.fly.dev"
+        }
+      end
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "jason",
+          version: "1.1.0",
+          requirements:
+            [{ file: "mix.exs", requirement: "1.1.0", groups: [], source: nil }],
+          previous_version: "1.0.0",
+          previous_requirements:
+            [{ file: "mix.exs", requirement: "1.0.0", groups: [], source: nil }],
+          package_manager: "hex"
+        )
+      end
+
+      it "updates the dependency version in the lockfile" do
+        expect(updated_lockfile_content).to include %({:hex, :jason, "1.1.0")
+        expect(updated_lockfile_content).not_to include(
+          "0f7cfa9bdb23fed721ec05419bcee2b2c21a77e926bce0deda029b5adc716fe2"
+        )
       end
     end
   end

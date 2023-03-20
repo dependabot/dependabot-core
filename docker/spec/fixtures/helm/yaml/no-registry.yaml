@@ -1,0 +1,3 @@
+image:
+  repository: 'mcr.microsoft.com/sql/sql'
+  version: v1.2.3

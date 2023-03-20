@@ -52,7 +52,7 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
   let(:json_header) { { "Content-Type" => "application/json" } }
   let(:watched_repo_url) { "https://api.github.com/repos/#{source.repo}" }
   let(:pull_request_url) { watched_repo_url + "/pulls/#{pull_request_number}" }
-  let(:branch_url) { watched_repo_url + "/branches/" + branch_name }
+  let(:branch_url) { watched_repo_url + "/branches/" + CGI.escape(branch_name) }
   let(:business_repo_url) { "https://api.github.com/repos/gocardless/business" }
   let(:branch_name) { "dependabot/ruby/business-1.5.0" }
 
@@ -81,6 +81,10 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       to_return(status: 200,
                 body: fixture("github", "update_ref.json"),
                 headers: json_header)
+    stub_request(:post, "#{watched_repo_url}/git/blobs").
+      to_return(status: 200,
+                body: fixture("github", "create_blob.json"),
+                headers: json_header)
   end
 
   describe "#update" do
@@ -104,22 +108,22 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/trees").
         with(body: {
-               base_tree: "basecommitsha",
-               tree: [
-                 {
-                   path: "files/are/here/Gemfile",
-                   mode: "100644",
-                   type: "blob",
-                   content: fixture("ruby", "gemfiles", "Gemfile")
-                 },
-                 {
-                   path: "files/are/here/Gemfile.lock",
-                   mode: "100644",
-                   type: "blob",
-                   content: fixture("ruby", "gemfiles", "Gemfile")
-                 }
-               ]
-             })
+          base_tree: "basecommitsha",
+          tree: [
+            {
+              path: "files/are/here/Gemfile",
+              mode: "100644",
+              type: "blob",
+              content: fixture("ruby", "gemfiles", "Gemfile")
+            },
+            {
+              path: "files/are/here/Gemfile.lock",
+              mode: "100644",
+              type: "blob",
+              content: fixture("ruby", "gemfiles", "Gemfile")
+            }
+          ]
+        })
 
       expect(WebMock).
         to have_requested(:post, "#{watched_repo_url}/git/commits")
@@ -142,14 +146,14 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "manifesto",
-                   mode: "160000",
-                   type: "commit",
-                   sha: "sha1"
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "manifesto",
+              mode: "160000",
+              type: "commit",
+              sha: "sha1"
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits")
@@ -174,14 +178,93 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/trees").
           with(body: {
-                 base_tree: "basecommitsha",
-                 tree: [{
-                   path: "nested/manifesto",
-                   mode: "100644",
-                   type: "blob",
-                   content: "codes"
-                 }]
-               })
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "nested/manifesto",
+              mode: "100644",
+              type: "blob",
+              content: "codes"
+            }]
+          })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
+    context "with a binary file" do
+      let(:gem_content) do
+        Base64.encode64(fixture("ruby", "gems", "addressable-2.7.0.gem"))
+      end
+
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "addressable-2.7.0.gem",
+            directory: "vendor/cache",
+            content: gem_content,
+            content_encoding:
+              Dependabot::DependencyFile::ContentEncoding::BASE64
+          )
+        ]
+      end
+      let(:sha) { "3a0f86fb8db8eea7ccbb9a95f325ddbedfb25e15" }
+
+      it "creates a git blob and pushes a commit to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/blobs").
+          with(body: {
+            content: gem_content,
+            encoding: "base64"
+          })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "vendor/cache/addressable-2.7.0.gem",
+              mode: "100644",
+              type: "blob",
+              sha: sha
+            }]
+          })
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/commits")
+      end
+    end
+
+    context "with a deleted file" do
+      let(:files) do
+        [
+          Dependabot::DependencyFile.new(
+            name: "addressable-2.7.0.gem",
+            directory: "vendor/cache",
+            content: nil,
+            operation: Dependabot::DependencyFile::Operation::DELETE,
+            content_encoding:
+              Dependabot::DependencyFile::ContentEncoding::BASE64
+          )
+        ]
+      end
+
+      it "pushes a commit to GitHub" do
+        updater.update
+
+        expect(WebMock).
+          to have_requested(:post, "#{watched_repo_url}/git/trees").
+          with(body: {
+            base_tree: "basecommitsha",
+            tree: [{
+              path: "vendor/cache/addressable-2.7.0.gem",
+              mode: "100644",
+              type: "blob",
+              sha: nil
+            }]
+          })
 
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits")
@@ -197,18 +280,20 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
           body: {
             parents: ["basecommitsha"],
             tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
-            message: "Bump business from 1.4.0 to 1.5.0\n\n"\
-                     "Bumps [business](https://github.com/gocardless/business)"\
-                     " from 1.4.0 to 1.5.0.\n"\
-                     "- [Changelog](https://github.com/gocardless/business/blo"\
-                     "b/master/CHANGELOG.md)\n"\
-                     "- [Commits](https://github.com/gocardless/business/compa"\
+            message: "Bump business from 1.4.0 to 1.5.0\n\n" \
+                     "Bumps [business](https://github.com/gocardless/business)" \
+                     " from 1.4.0 to 1.5.0.\n" \
+                     "- [Changelog](https://github.com/gocardless/business/blo" \
+                     "b/master/CHANGELOG.md)\n" \
+                     "- [Commits](https://github.com/gocardless/business/compa" \
                      "re/v3.0.0...v1.5.0)"
           }
         )
     end
 
     context "with multiple commits on the branch" do
+      let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
+
       before do
         stub_request(:get, pull_request_url).
           to_return(status: 200,
@@ -230,12 +315,12 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
               parents: ["basecommitsha"],
               tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
               message:
-                "Bump business from 1.4.0 to 1.5.0\n\n"\
-                "Bumps [business](https://github.com/gocardless/business)"\
-                " from 1.4.0 to 1.5.0.\n"\
-                "- [Changelog](https://github.com/gocardless/business/blo"\
-                "b/master/CHANGELOG.md)\n"\
-                "- [Commits](https://github.com/gocardless/business/compa"\
+                "Bump business from 1.4.0 to 1.5.0\n\n" \
+                "Bumps [business](https://github.com/gocardless/business)" \
+                " from 1.4.0 to 1.5.0.\n" \
+                "- [Changelog](https://github.com/gocardless/business/blo" \
+                "b/master/CHANGELOG.md)\n" \
+                "- [Commits](https://github.com/gocardless/business/compa" \
                 "re/v3.0.0...v1.5.0)"
             }
           )
@@ -255,7 +340,6 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
               headers: json_header
             )
         end
-        let(:old_commit) { "0b7144dca992829a894671e275dec5bd66ebb16d" }
 
         it "has the right commit message" do
           updater.update
@@ -267,13 +351,35 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
                 parents: ["basecommitsha"],
                 tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
                 message:
-                  "Bump business from 1.4.0 to 1.5.0\n\n"\
-                  "Bumps [business](https://github.com/gocardless/business)"\
-                  " from 1.4.0 to 1.5.0.\n"\
-                  "- [Changelog](https://github.com/gocardless/business/blo"\
-                  "b/master/CHANGELOG.md)\n"\
-                  "- [Commits](https://github.com/gocardless/business/compa"\
+                  "Bump business from 1.4.0 to 1.5.0\n\n" \
+                  "Bumps [business](https://github.com/gocardless/business)" \
+                  " from 1.4.0 to 1.5.0.\n" \
+                  "- [Changelog](https://github.com/gocardless/business/blo" \
+                  "b/master/CHANGELOG.md)\n" \
+                  "- [Commits](https://github.com/gocardless/business/compa" \
                   "re/v3.0.0...v1.5.0)"
+              }
+            )
+        end
+      end
+
+      context "the original PR head commit cannot be found" do
+        let(:old_commit) { "oldcommitsha" }
+
+        it "generates a reasonable fallback commit message" do
+          updater.update
+
+          expect(WebMock).
+            to have_requested(:post, "#{watched_repo_url}/git/commits").
+            with(
+              body: {
+                parents: ["basecommitsha"],
+                tree: "cd8274d15fa3ae2ab983129fb037999f264ba9a7",
+                message:
+                  "Bump business from 1.4.0 to 1.5.0" \
+                  "\n\n" \
+                  "Dependabot couldn't find the original pull request " \
+                  "head commit, oldcommitsha."
               }
             )
         end
@@ -357,11 +463,11 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         expect(WebMock).
           to have_requested(:post, "#{watched_repo_url}/git/commits").
           with(body: {
-                 parents: anything,
-                 tree: anything,
-                 message: anything,
-                 author: { email: "support@dependabot.com", name: "dependabot" }
-               })
+            parents: anything,
+            tree: anything,
+            message: anything,
+            author: { email: "support@dependabot.com", name: "dependabot" }
+          })
       end
 
       context "with a signature key" do
@@ -383,21 +489,21 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         let(:signature_key) { fixture("keys", "pgp.key") }
         let(:public_key) { fixture("keys", "pgp.pub") }
         let(:text_to_sign) do
-          "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n"\
-          "parent basecommitsha\n"\
-          "author dependabot <support@dependabot.com> 978307200 +0000\n"\
-          "committer dependabot <support@dependabot.com> 978307200 +0000\n"\
-          "\n"\
-          "Bump business from 1.4.0 to 1.5.0\n"\
-          "\n"\
-          "Bumps [business](https://github.com/gocardless/business) from "\
-          "1.4.0 to 1.5.0.\n"\
-          "- [Changelog](https://github.com/gocardless/business/blob/"\
-          "master/CHANGELOG.md)\n"\
-          "- [Commits](https://github.com/gocardless/business/compare/"\
-          "v3.0.0...v1.5.0)"
+          "tree cd8274d15fa3ae2ab983129fb037999f264ba9a7\n" \
+            "parent basecommitsha\n" \
+            "author dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "committer dependabot <support@dependabot.com> 978307200 +0000\n" \
+            "\n" \
+            "Bump business from 1.4.0 to 1.5.0\n" \
+            "\n" \
+            "Bumps [business](https://github.com/gocardless/business) from " \
+            "1.4.0 to 1.5.0.\n" \
+            "- [Changelog](https://github.com/gocardless/business/blob/" \
+            "master/CHANGELOG.md)\n" \
+            "- [Commits](https://github.com/gocardless/business/compare/" \
+            "v3.0.0...v1.5.0)"
         end
-        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1)) }
+        before { allow(Time).to receive(:now).and_return(Time.new(2001, 1, 1, 0, 0, 0, "+00:00")) }
 
         it "passes the author details and signature to GitHub" do
           updater.update
@@ -492,6 +598,78 @@ RSpec.describe Dependabot::PullRequestUpdater::Github do
         ).to_return(
           status: 422,
           body: fixture("github", "force_push_protected_branch.json"),
+          headers: json_header
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update }.
+          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when unauthorized to push to a protected branch" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(
+          status: 422,
+          body: fixture("github", "unauthorized_push_protected_branch.json"),
+          headers: json_header
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update }.
+          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when unauthorized to push to (this) protected branch" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(
+          status: 422,
+          body: fixture("github", "force_push_this_protected_branch.json"),
+          headers: json_header
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update }.
+          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when pushing to a protected branch enforcing linear history" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(
+          status: 422,
+          body: fixture("github", "linear_history_protected_branch.json"),
+          headers: json_header
+        )
+      end
+
+      it "raises a helpful error" do
+        expect { updater.update }.
+          to raise_error(Dependabot::PullRequestUpdater::BranchProtected)
+      end
+    end
+
+    context "when pushing to a protected branch enforcing required status checks" do
+      before do
+        stub_request(
+          :patch,
+          "#{watched_repo_url}/git/refs/heads/#{branch_name}"
+        ).to_return(
+          status: 422,
+          body: fixture("github", "required_status_checks_protected_branch.json"),
           headers: json_header
         )
       end

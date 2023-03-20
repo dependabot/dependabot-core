@@ -35,6 +35,14 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
   let(:dependency_name) { "bitflags" }
   let(:dependency_source) { nil }
 
+  before do
+    stub_request(:get, "https://example.com/status").to_return(
+      status: 200,
+      body: "Not GHES",
+      headers: {}
+    )
+  end
+
   describe "#source_url" do
     subject(:source_url) { finder.source_url }
     let(:crates_url) { "https://crates.io/api/v1/crates/bitflags" }
@@ -63,7 +71,9 @@ RSpec.describe Dependabot::Cargo::MetadataFinder do
     end
 
     context "when there is no recognised source link in the response" do
-      let(:crates_fixture_name) { "bitflags_no_source.json" }
+      let(:crates_response) do
+        fixture("crates_io_responses", crates_fixture_name).gsub!("github.com", "example.com")
+      end
 
       it { is_expected.to be_nil }
 

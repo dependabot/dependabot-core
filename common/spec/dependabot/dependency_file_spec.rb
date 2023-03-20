@@ -76,8 +76,18 @@ RSpec.describe Dependabot::DependencyFile do
           "content" => "a",
           "directory" => "/",
           "type" => "file",
-          "support_file" => false
+          +"mode" => "100644",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
       end
     end
 
@@ -96,10 +106,171 @@ RSpec.describe Dependabot::DependencyFile do
           "name" => "Gemfile",
           "content" => "a",
           "directory" => "/",
+          "mode" => nil,
           "type" => "symlink",
           "support_file" => false,
-          "symlink_target" => "nested/Gemfile"
+          "symlink_target" => "nested/Gemfile",
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
         )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
+    end
+
+    context "with a new file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "mode" => "100644",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::CREATE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::CREATE
+      end
+    end
+
+    context "with a changed file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "mode" => "100644",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => false,
+          "operation" => Dependabot::DependencyFile::Operation::UPDATE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_falsey
+        expect(file.deleted?).to be_falsey
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::UPDATE
+      end
+    end
+
+    context "with a deleted file" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          operation: Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "mode" => "100644",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
+
+    context "with a deleted file using the legacy initializer method" do
+      let(:file) do
+        described_class.new(
+          name: "Gemfile",
+          content: "a",
+          deleted: true
+        )
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "mode" => "100644",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
+      end
+    end
+
+    context "with a deleted file using the legacy setter method" do
+      let(:file) do
+        file = described_class.new(
+          name: "Gemfile",
+          content: "a"
+        )
+        file.deleted = true
+        file
+      end
+
+      it "returns the correct array" do
+        expect(subject).to eq(
+          "name" => "Gemfile",
+          "content" => "a",
+          "directory" => "/",
+          "mode" => "100644",
+          "type" => "file",
+          "support_file" => false,
+          "content_encoding" => "utf-8",
+          "deleted" => true,
+          "operation" => Dependabot::DependencyFile::Operation::DELETE
+        )
+      end
+
+      it "has the correct operation properties" do
+        expect(file.deleted).to be_truthy
+        expect(file.deleted?).to be_truthy
+        expect(file.operation).to eq Dependabot::DependencyFile::Operation::DELETE
       end
     end
   end
@@ -126,6 +297,35 @@ RSpec.describe Dependabot::DependencyFile do
       let(:file2) { described_class.new(name: "Gemfile", content: "b") }
 
       specify { expect(file1).to_not eq(file2) }
+    end
+  end
+
+  describe "#decoded_content" do
+    context "for base64 encoded content" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content_encoding: described_class::ContentEncoding::BASE64,
+          content: "YWJj\n"
+        )
+      end
+
+      it "decodes the content to its original encoding" do
+        expect(file.decoded_content).to eq("abc")
+      end
+    end
+
+    context "for utf-8 encoded content" do
+      let(:file) do
+        described_class.new(
+          name: "example.gem",
+          content: "abc"
+        )
+      end
+
+      it "returns the unencoded content" do
+        expect(file.decoded_content).to eq("abc")
+      end
     end
   end
 end

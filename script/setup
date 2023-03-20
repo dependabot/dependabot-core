@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname "$0")/.."
+source script/_common
+
+if [ -z "$GPR_TOKEN" ]; then
+  echo "Please set a value for GPR_TOKEN so you can download the dependency containers"
+  echo
+  echo "If required, generate a Personal Access Token with 'packages:read' permissions:"
+  echo "   https://github.com/settings/tokens/new"
+  echo
+  exit 1
+fi
+
+# Log into GPR to pull downstream images
+echo "$GPR_TOKEN" | docker login docker.pkg.github.com -u x --password-stdin
+docker_build

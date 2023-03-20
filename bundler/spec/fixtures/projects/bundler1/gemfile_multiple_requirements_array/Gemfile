@@ -1,0 +1,1 @@
+gem "business", [">= 1", "<3"], require: true

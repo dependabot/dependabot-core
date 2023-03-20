@@ -8,8 +8,8 @@ module Dependabot
   module Python
     class UpdateChecker
       class IndexFinder
-        PYPI_BASE_URL = "https://pypi.python.org/simple/"
-        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/.freeze
+        PYPI_BASE_URL = "https://pypi.org/simple/"
+        ENVIRONMENT_VARIABLE_REGEX = /\$\{.+\}/
 
         def initialize(dependency_files:, credentials:)
           @dependency_files = dependency_files
@@ -152,9 +152,7 @@ module Dependabot
         def clean_check_and_remove_environment_variables(url)
           url = url.strip.gsub(%r{/*$}, "") + "/"
 
-          unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
-            return authed_base_url(url)
-          end
+          return authed_base_url(url) unless url.match?(ENVIRONMENT_VARIABLE_REGEX)
 
           config_variable_urls =
             [
@@ -166,13 +164,14 @@ module Dependabot
 
           regexp = url.
                    sub(%r{(?<=://).+@}, "").
+                   sub(%r{https?://}, "").
                    split(ENVIRONMENT_VARIABLE_REGEX).
                    map { |part| Regexp.quote(part) }.
                    join(".+")
           authed_url = config_variable_urls.find { |u| u.match?(regexp) }
           return authed_url if authed_url
 
-          cleaned_url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}, "")
+          cleaned_url = url.gsub(%r{#{ENVIRONMENT_VARIABLE_REGEX}/?}o, "")
           authed_url = authed_base_url(cleaned_url)
           return authed_url if credential_for(cleaned_url)
 

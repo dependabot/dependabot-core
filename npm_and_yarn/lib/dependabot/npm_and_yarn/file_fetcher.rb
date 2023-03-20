@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
+require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/file_parser"
+require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
@@ -18,9 +21,8 @@ module Dependabot
       # when it specifies a path. Only include Yarn "link:"'s that start with a
       # path and ignore symlinked package names that have been registered with
       # "yarn link", e.g. "link:react"
-      PATH_DEPENDENCY_STARTS =
-        %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
-      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/.freeze
+      PATH_DEPENDENCY_STARTS = %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
+      PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
@@ -30,10 +32,39 @@ module Dependabot
         "Repo must contain a package.json."
       end
 
+      # Overridden to pull any yarn data or plugins which may be stored with Git LFS.
+      def clone_repo_contents
+        return @git_lfs_cloned_repo_contents_path if defined?(@git_lfs_cloned_repo_contents_path)
+
+        @git_lfs_cloned_repo_contents_path = super
+        begin
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(@git_lfs_cloned_repo_contents_path) do
+              cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./yarn/cache")
+              SharedHelpers.run_shell_command("git lfs pull --include .yarn,#{cache_dir}")
+            end
+            @git_lfs_cloned_repo_contents_path
+          end
+        rescue StandardError
+          @git_lfs_cloned_repo_contents_path
+        end
+      end
+
+      def package_manager_version
+        package_managers = {}
+
+        package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
+        package_managers["yarn"] = yarn_version if yarn_version
+        package_managers["shrinkwrap"] = 1 if shrinkwrap
+
+        {
+          ecosystem: "npm",
+          package_managers: package_managers
+        }
+      end
+
       private
 
-      # rubocop:disable Metrics/CyclomaticComplexity
-      # rubocop:disable Metrics/PerceivedComplexity
       def fetch_files
         fetched_files = []
         fetched_files << package_json
@@ -43,14 +74,62 @@ module Dependabot
         fetched_files << lerna_json if lerna_json
         fetched_files << npmrc if npmrc
         fetched_files << yarnrc if yarnrc
+        fetched_files << yarnrc_yml if yarnrc_yml
         fetched_files += workspace_package_jsons
         fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
 
+        fetched_files << inferred_npmrc if inferred_npmrc
+
         fetched_files.uniq
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
-      # rubocop:enable Metrics/PerceivedComplexity
+
+      # If every entry in the lockfile uses the same registry, we can infer
+      # that there is a global .npmrc file, so add it here as if it were in the repo.
+      def inferred_npmrc
+        return @inferred_npmrc if defined?(@inferred_npmrc)
+        return @inferred_npmrc = nil unless npmrc.nil? && package_lock
+
+        known_registries = []
+        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |_name, details|
+          resolved = details.fetch("resolved", "https://registry.npmjs.org")
+          begin
+            uri = URI.parse(resolved)
+          rescue URI::InvalidURIError
+            # Ignoring non-URIs since they're not registries.
+            # This can happen if resolved is false, for instance.
+            next
+          end
+          # Check for scheme since path dependencies will not have one
+          known_registries << "#{uri.scheme}://#{uri.host}" if uri.scheme && uri.host
+        end
+
+        if known_registries.uniq.length == 1 && known_registries.first != "https://registry.npmjs.org"
+          Dependabot.logger.info("Inferred global NPM registry is: #{known_registries.first}")
+          return @inferred_npmrc = Dependabot::DependencyFile.new(
+            name: ".npmrc",
+            content: "registry=#{known_registries.first}"
+          )
+        end
+
+        @inferred_npmrc = nil
+      end
+
+      def yarn_version
+        return @yarn_version if defined?(@yarn_version)
+
+        package = JSON.parse(package_json.content)
+        if (package_manager = package.fetch("packageManager", nil))
+          get_yarn_version_from_package_json(package_manager)
+        elsif yarn_lock
+          1
+        end
+      end
+
+      def get_yarn_version_from_package_json(package_manager)
+        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
+        version_match&.named_captures&.fetch("version", nil)
+      end
 
       def package_json
         @package_json ||= fetch_file_from_host("package.json")
@@ -76,7 +155,7 @@ module Dependabot
 
         # Loop through parent directories looking for an npmrc
         (1..directory.split("/").count).each do |i|
-          @npmrc = fetch_file_from_host("../" * i + ".npmrc")&.
+          @npmrc = fetch_file_from_host(("../" * i) + ".npmrc")&.
                    tap { |f| f.support_file = true }
           break if @npmrc
         rescue Dependabot::DependencyFileNotFound
@@ -95,7 +174,7 @@ module Dependabot
 
         # Loop through parent directories looking for an yarnrc
         (1..directory.split("/").count).each do |i|
-          @yarnrc = fetch_file_from_host("../" * i + ".yarnrc")&.
+          @yarnrc = fetch_file_from_host(("../" * i) + ".yarnrc")&.
                    tap { |f| f.support_file = true }
           break if @yarnrc
         rescue Dependabot::DependencyFileNotFound
@@ -104,6 +183,11 @@ module Dependabot
         end
 
         @yarnrc
+      end
+
+      def yarnrc_yml
+        @yarnrc_yml ||= fetch_file_if_present(".yarnrc.yml")&.
+                       tap { |f| f.support_file = true }
       end
 
       def lerna_json
@@ -119,13 +203,23 @@ module Dependabot
         @lerna_packages ||= fetch_lerna_packages
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def path_dependencies(fetched_files)
         package_json_files = []
         unfetchable_deps = []
 
         path_dependency_details(fetched_files).each do |name, path|
+          # This happens with relative paths in the package-lock. Skipping it since it results
+          # in /package.json which is outside of the project directory.
+          next if path == "file:"
+
           path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
-          filename = File.join(path, "package.json")
+          raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/")
+
+          filename = path
+          # NPM/Yarn support loading path dependencies from tarballs:
+          # https://docs.npmjs.com/cli/pack.html
+          filename = File.join(filename, "package.json") unless filename.end_with?(".tgz", ".tar", ".tar.gz")
           cleaned_name = Pathname.new(filename).cleanpath.to_path
           next if fetched_files.map(&:name).include?(cleaned_name)
 
@@ -133,7 +227,8 @@ module Dependabot
             file = fetch_file_from_host(filename, fetch_submodules: true)
             package_json_files << file
           rescue Dependabot::DependencyFileNotFound
-            unfetchable_deps << [name, path]
+            # Unfetchable tarballs should not be re-fetched as a package
+            unfetchable_deps << [name, path] unless path.end_with?(".tgz", ".tar", ".tar.gz")
           end
         end
 
@@ -146,6 +241,7 @@ module Dependabot
 
         package_json_files.tap { |fs| fs.each { |f| f.support_file = true } }
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_details(fetched_files)
         package_json_path_deps = []
@@ -169,12 +265,16 @@ module Dependabot
         ].uniq
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def path_dependency_details_from_manifest(file)
         return [] unless file.name.end_with?("package.json")
 
         current_dir = file.name.rpartition("/").first
         current_dir = nil if current_dir == ""
+
+        current_depth = File.join(directory, file.name).split("/").count { |path| !path.empty? }
+        path_to_directory = "../" * current_depth
 
         dep_types = NpmAndYarn::FileParser::DEPENDENCY_TYPES
         parsed_manifest = JSON.parse(file.content)
@@ -183,9 +283,7 @@ module Dependabot
         resolution_objects = parsed_manifest.values_at("resolutions").compact
         manifest_objects = dependency_objects + resolution_objects
 
-        unless manifest_objects.all? { |o| o.is_a?(Hash) }
-          raise Dependabot::DependencyFileNotParseable, file.path
-        end
+        raise Dependabot::DependencyFileNotParseable, file.path unless manifest_objects.all?(Hash)
 
         resolution_deps = resolution_objects.flat_map(&:to_a).
                           map do |path, value|
@@ -197,6 +295,8 @@ module Dependabot
           select { |_, v| v.is_a?(String) && v.start_with?(*path_starts) }.
           map do |name, path|
             path = path.gsub(PATH_DEPENDENCY_CLEAN_REGEX, "")
+            raise PathDependenciesNotReachable, "#{name} at #{path}" if path.start_with?("/", "#{path_to_directory}..")
+
             path = File.join(current_dir, path) unless current_dir.nil?
             [name, Pathname.new(path).cleanpath.to_path]
           end
@@ -204,6 +304,7 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, file.path
       end
       # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def path_dependency_details_from_npm_lockfile(parsed_lockfile)
         path_starts = NPM_PATH_DEPENDENCY_STARTS
@@ -275,7 +376,7 @@ module Dependabot
 
           if matches_double_glob && !nested
             dependency_files +=
-              expanded_paths(File.join(path, "*")).flat_map do |nested_path|
+              find_directories(File.join(path, "*")).flat_map do |nested_path|
                 fetch_lerna_packages_from_path(nested_path, true)
               end
           end
@@ -289,32 +390,62 @@ module Dependabot
           if workspace_object.is_a?(Hash)
             workspace_object.values_at("packages", "nohoist").flatten.compact
           elsif workspace_object.is_a?(Array) then workspace_object
-          else [] # Invalid lerna.json, which must not be in use
+          else
+            [] # Invalid lerna.json, which must not be in use
           end
 
-        paths_array.flat_map do |path|
-          # The packages/!(not-this-package) syntax is unique to Yarn
-          if path.include?("*") || path.include?("!(")
-            expanded_paths(path)
-          else path
-          end
-        end
+        paths_array.flat_map { |path| recursive_find_directories(path) }
       end
 
       # Only expands globs one level deep, so path/**/* gets expanded to path/
-      def expanded_paths(path)
-        ignored_paths = path.scan(/!\((.*?)\)/).flatten
+      def find_directories(glob)
+        return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        unglobbed_path =
+          glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*").
+          split("*").
+          first&.gsub(%r{(?<=/)[^/]*$}, "") || "."
 
         dir = directory.gsub(%r{(^/|/$)}, "")
-        path = path.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
-        unglobbed_path = path.split("*").first&.gsub(%r{(?<=/)[^/]*$}, "") ||
-                         "."
 
-        repo_contents(dir: unglobbed_path, raise_errors: false).
+        paths =
+          repo_contents(dir: unglobbed_path, raise_errors: false).
           select { |file| file.type == "dir" }.
-          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }.
-          select { |filename| File.fnmatch?(path, filename) }.
-          reject { |fn| ignored_paths.any? { |p| fn.include?(p) } }
+          map { |f| f.path.gsub(%r{^/?#{Regexp.escape(dir)}/?}, "") }
+
+        matching_paths(glob, paths)
+      end
+
+      def matching_paths(glob, paths)
+        ignored_glob = yarn_ignored_glob(glob)
+        glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+
+        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        return results unless ignored_glob
+
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+      end
+
+      def recursive_find_directories(glob, prefix = "")
+        return [prefix + glob] unless glob.include?("*") || yarn_ignored_glob(glob)
+
+        glob = glob.gsub(%r{^\./}, "")
+        glob_parts = glob.split("/")
+
+        paths = find_directories(prefix + glob_parts.first)
+        next_parts = glob_parts.drop(1)
+        return paths if next_parts.empty?
+
+        paths = paths.flat_map do |expanded_path|
+          recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
+        end
+
+        matching_paths(prefix + glob, paths)
+      end
+
+      # The packages/!(not-this-package) syntax is unique to Yarn
+      def yarn_ignored_glob(glob)
+        glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
       end
 
       def parsed_package_json

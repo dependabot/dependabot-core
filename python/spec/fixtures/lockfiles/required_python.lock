@@ -5,12 +5,12 @@
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_full_version": "2.7.17",
-            "python_version": "2.7"
+            "python_full_version": "3.9.4",
+            "python_version": "3.9"
         },
         "sources": [
             {
-                "url": "https://pypi.python.org/simple",
+                "url": "https://pypi.org/simple",
                 "verify_ssl": true
             }
         ]

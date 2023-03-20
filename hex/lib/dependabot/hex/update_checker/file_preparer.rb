@@ -54,14 +54,10 @@ module Dependabot
         def mixfile_content_for_update_check(file)
           content = file.content
 
-          unless dependency_appears_in_file?(file.name)
-            return sanitize_mixfile(content)
-          end
+          return sanitize_mixfile(content) unless dependency_appears_in_file?(file.name)
 
           content = relax_version(content, filename: file.name)
-          if replace_git_pin?
-            content = replace_git_pin(content, filename: file.name)
-          end
+          content = replace_git_pin(content, filename: file.name) if replace_git_pin?
 
           sanitize_mixfile(content)
         end
@@ -85,15 +81,14 @@ module Dependabot
           lower_bound_req = updated_version_req_lower_bound(filename)
 
           return lower_bound_req if latest_allowable_version.nil?
-          unless version_class.correct?(latest_allowable_version)
-            return lower_bound_req
-          end
+          return lower_bound_req unless version_class.correct?(latest_allowable_version)
 
           lower_bound_req + " and <= #{latest_allowable_version}"
         end
 
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity
         def updated_version_req_lower_bound(filename)
           original_req = dependency.requirements.
                          find { |r| r.fetch(:file) == filename }&.
@@ -104,7 +99,7 @@ module Dependabot
           elsif dependency.version then ">= #{dependency.version}"
           else
             version_for_requirement =
-              dependency.requirements.map { |r| r[:requirement] }.compact.
+              dependency.requirements.filter_map { |r| r[:requirement] }.
               reject { |req_string| req_string.start_with?("<") }.
               select { |req_string| req_string.match?(version_regex) }.
               map { |req_string| req_string.match(version_regex) }.
@@ -120,8 +115,9 @@ module Dependabot
             ">= #{parts.join('.')}"
           end
         end
-        # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
+        # rubocop:enable Metrics/CyclomaticComplexity
+        # rubocop:enable Metrics/AbcSize
 
         def replace_git_pin(content, filename:)
           old_pin =

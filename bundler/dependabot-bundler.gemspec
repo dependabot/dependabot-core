@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "find"
-
 Gem::Specification.new do |spec|
   common_gemspec =
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
@@ -25,21 +23,10 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dependabot-common", Dependabot::VERSION
 
   common_gemspec.development_dependencies.each do |dep|
-    spec.add_development_dependency dep.name, dep.requirement.to_s
+    spec.add_development_dependency dep.name, *dep.requirement.as_list
   end
 
   next unless File.exist?("../.gitignore")
 
-  ignores = File.readlines("../.gitignore").grep(/\S+/).map(&:chomp)
-
-  next unless File.directory?("lib")
-
-  prefix = "/" + File.basename(File.expand_path(__dir__)) + "/"
-  Find.find("lib") do |path|
-    if ignores.any? { |i| File.fnmatch(i, prefix + path, File::FNM_DOTMATCH) }
-      Find.prune
-    else
-      spec.files << path unless File.directory?(path)
-    end
-  end
+  spec.files += `git -C #{__dir__} ls-files lib helpers -z`.split("\x0")
 end

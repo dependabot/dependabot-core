@@ -1,26 +1,31 @@
 # frozen_string_literal: true
 
 require "nokogiri"
-require "dependabot/shared_helpers"
+require "dependabot/update_checkers/version_filters"
 require "dependabot/maven/file_parser/repositories_finder"
 require "dependabot/maven/update_checker"
 require "dependabot/maven/version"
 require "dependabot/maven/requirement"
+require "dependabot/maven/utils/auth_headers_finder"
+require "dependabot/registry_client"
 
 module Dependabot
   module Maven
     class UpdateChecker
       class VersionFinder
-        TYPE_SUFFICES = %w(jre android java).freeze
+        TYPE_SUFFICES = %w(jre android java native_mt agp).freeze
 
         def initialize(dependency:, dependency_files:, credentials:,
-                       ignored_versions:, security_advisories:)
+                       ignored_versions:, security_advisories:,
+                       raise_on_ignored: false)
           @dependency          = dependency
           @dependency_files    = dependency_files
           @credentials         = credentials
           @ignored_versions    = ignored_versions
+          @raise_on_ignored    = raise_on_ignored
           @security_advisories = security_advisories
           @forbidden_urls      = []
+          @dependency_metadata = {}
         end
 
         def latest_version_details
@@ -40,8 +45,9 @@ module Dependabot
           possible_versions = filter_prereleases(possible_versions)
           possible_versions = filter_date_based_versions(possible_versions)
           possible_versions = filter_version_types(possible_versions)
+          possible_versions = Dependabot::UpdateCheckers::VersionFilters.filter_vulnerable_versions(possible_versions,
+                                                                                                    security_advisories)
           possible_versions = filter_ignored_versions(possible_versions)
-          possible_versions = filter_vulnerable_versions(possible_versions)
           possible_versions = filter_lower_versions(possible_versions)
 
           possible_versions.find { |v| released?(v.fetch(:version)) }
@@ -51,16 +57,16 @@ module Dependabot
           version_details =
             repositories.map do |repository_details|
               url = repository_details.fetch("url")
-              dependency_metadata(repository_details).
-                css("versions > version").
+              xml = dependency_metadata(repository_details)
+              next [] if xml.nil?
+
+              break xml.css("versions > version").
                 select { |node| version_class.correct?(node.content) }.
                 map { |node| version_class.new(node.content) }.
                 map { |version| { version: version, source_url: url } }
             end.flatten
 
-          if version_details.none? && forbidden_urls.any?
-            raise PrivateSourceAuthenticationFailure, forbidden_urls.first
-          end
+          raise PrivateSourceAuthenticationFailure, forbidden_urls.first if version_details.none? && forbidden_urls.any?
 
           version_details.sort_by { |details| details.fetch(:version) }
         end
@@ -89,48 +95,41 @@ module Dependabot
         end
 
         def filter_ignored_versions(possible_versions)
-          versions_array = possible_versions
+          filtered = possible_versions
 
           ignored_versions.each do |req|
-            ignore_req = Maven::Requirement.new(req.split(","))
-            versions_array =
-              versions_array.
-              reject { |v| ignore_req.satisfied_by?(v.fetch(:version)) }
+            ignore_requirements = Maven::Requirement.requirements_array(req)
+            filtered =
+              filtered.
+              reject { |v| ignore_requirements.any? { |r| r.satisfied_by?(v.fetch(:version)) } }
           end
 
-          versions_array
-        end
-
-        def filter_vulnerable_versions(possible_versions)
-          versions_array = possible_versions
-
-          security_advisories.each do |advisory|
-            versions_array =
-              versions_array.
-              reject { |v| advisory.vulnerable?(v.fetch(:version)) }
+          if @raise_on_ignored && filter_lower_versions(filtered).empty? &&
+             filter_lower_versions(possible_versions).any?
+            raise AllVersionsIgnored
           end
 
-          versions_array
+          filtered
         end
 
         def filter_lower_versions(possible_versions)
+          return possible_versions unless dependency.numeric_version
+
           possible_versions.select do |v|
-            v.fetch(:version) > version_class.new(dependency.version)
+            v.fetch(:version) > dependency.numeric_version
           end
         end
 
         def wants_prerelease?
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
+          return false unless dependency.numeric_version
 
-          version_class.new(dependency.version).prerelease?
+          dependency.numeric_version.prerelease?
         end
 
         def wants_date_based_version?
-          return false unless dependency.version
-          return false unless version_class.correct?(dependency.version)
+          return false unless dependency.numeric_version
 
-          version_class.new(dependency.version) >= version_class.new(100)
+          dependency.numeric_version >= version_class.new(100)
         end
 
         def released?(version)
@@ -140,45 +139,43 @@ module Dependabot
           @released_check[version] =
             repositories.any? do |repository_details|
               url = repository_details.fetch("url")
-              response = Excon.get(
-                dependency_files_url(url, version),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
-                idempotent: true,
-                **SharedHelpers.excon_defaults
+              response = Dependabot::RegistryClient.head(
+                url: dependency_files_url(url, version),
+                headers: repository_details.fetch("auth_headers")
               )
 
-              artifact_id = dependency.name.split(":").last
-              type = dependency.requirements.first.
-                     dig(:metadata, :packaging_type)
-              response.body.include?("#{artifact_id}-#{version}.#{type}")
+              response.status < 400
             rescue Excon::Error::Socket, Excon::Error::Timeout,
                    Excon::Error::TooManyRedirects
               false
+            rescue URI::InvalidURIError => e
+              raise DependencyFileNotResolvable, e.message
             end
         end
 
         def dependency_metadata(repository_details)
-          @dependency_metadata ||= {}
-          @dependency_metadata[repository_details.hash] ||=
-            begin
-              response = Excon.get(
-                dependency_metadata_url(repository_details.fetch("url")),
-                user: repository_details.fetch("username"),
-                password: repository_details.fetch("password"),
-                idempotent: true,
-                **Dependabot::SharedHelpers.excon_defaults
-              )
-              check_response(response, repository_details.fetch("url"))
-              Nokogiri::XML(response.body)
-            rescue URI::InvalidURIError
-              Nokogiri::XML("")
-            rescue Excon::Error::Socket, Excon::Error::Timeout,
-                   Excon::Error::TooManyRedirects
-              raise if central_repo_urls.include?(repository_details["url"])
+          repository_key = repository_details.hash
+          return @dependency_metadata[repository_key] if @dependency_metadata.key?(repository_key)
 
-              Nokogiri::XML("")
-            end
+          @dependency_metadata[repository_key] = fetch_dependency_metadata(repository_details)
+        end
+
+        def fetch_dependency_metadata(repository_details)
+          response = Dependabot::RegistryClient.get(
+            url: dependency_metadata_url(repository_details.fetch("url")),
+            headers: repository_details.fetch("auth_headers")
+          )
+          check_response(response, repository_details.fetch("url"))
+          return unless response.status < 400
+
+          Nokogiri::XML(response.body)
+        rescue URI::InvalidURIError
+          nil
+        rescue Excon::Error::Socket, Excon::Error::Timeout,
+               Excon::Error::TooManyRedirects
+          raise if central_repo_urls.include?(repository_details["url"])
+
+          nil
         end
 
         def check_response(response, repository_url)
@@ -190,26 +187,30 @@ module Dependabot
         end
 
         def repositories
-          return @repositories if @repositories
+          return @repositories if defined?(@repositories)
 
-          details = pom_repository_details + credentials_repository_details
+          @repositories = credentials_repository_details
+          pom_repository_details.each do |repo|
+            @repositories << repo unless @repositories.any? { |r| r["url"] == repo["url"] }
+          end
+          @repositories
+        end
 
-          @repositories =
-            details.reject do |repo|
-              next if repo["password"]
-
-              # Reject this entry if an identical one with a password exists
-              details.any? { |r| r["url"] == repo["url"] && r["password"] }
-            end
+        def repository_finder
+          @repository_finder ||=
+            Maven::FileParser::RepositoriesFinder.new(
+              pom_fetcher: Maven::FileParser::PomFetcher.new(dependency_files: dependency_files),
+              dependency_files: dependency_files,
+              credentials: credentials
+            )
         end
 
         def pom_repository_details
           @pom_repository_details ||=
-            Maven::FileParser::RepositoriesFinder.
-            new(dependency_files: dependency_files).
+            repository_finder.
             repository_urls(pom: pom).
             map do |url|
-              { "url" => url, "username" => nil, "password" => nil }
+              { "url" => url, "auth_headers" => {} }
             end
         end
 
@@ -219,8 +220,7 @@ module Dependabot
             map do |cred|
               {
                 "url" => cred.fetch("url").gsub(%r{/+$}, ""),
-                "username" => cred.fetch("username", nil),
-                "password" => cred.fetch("password", nil)
+                "auth_headers" => auth_headers(cred.fetch("url").gsub(%r{/+$}, ""))
               }
             end
         end
@@ -228,13 +228,19 @@ module Dependabot
         def matches_dependency_version_type?(comparison_version)
           return true unless dependency.version
 
-          current_type =
-            TYPE_SUFFICES.
-            find { |t| dependency.version.split(/[.\-]/).include?(t) }
+          current_type = dependency.version.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
+                         end
 
-          version_type =
-            TYPE_SUFFICES.
-            find { |t| comparison_version.to_s.split(/[.\-]/).include?(t) }
+          version_type = comparison_version.to_s.
+                         gsub("native-mt", "native_mt").
+                         split(/[.\-]/).
+                         find do |type|
+                           TYPE_SUFFICES.find { |s| type.include?(s) }
+                         end
 
           current_type == version_type
         end
@@ -245,21 +251,25 @@ module Dependabot
         end
 
         def dependency_metadata_url(repository_url)
-          group_id, artifact_id = dependency.name.split(":")
+          group_id, artifact_id, _classifier = dependency.name.split(":")
 
-          "#{repository_url}/"\
-          "#{group_id.tr('.', '/')}/"\
-          "#{artifact_id}/"\
-          "maven-metadata.xml"
+          "#{repository_url}/" \
+            "#{group_id.tr('.', '/')}/" \
+            "#{artifact_id}/" \
+            "maven-metadata.xml"
         end
 
         def dependency_files_url(repository_url, version)
-          group_id, artifact_id = dependency.name.split(":")
+          group_id, artifact_id, classifier = dependency.name.split(":")
+          type = dependency.requirements.first.
+                 dig(:metadata, :packaging_type)
 
-          "#{repository_url}/"\
-          "#{group_id.tr('.', '/')}/"\
-          "#{artifact_id}/"\
-          "#{version}/"
+          actual_classifier = classifier.nil? ? "" : "-#{classifier}"
+          "#{repository_url}/" \
+            "#{group_id.tr('.', '/')}/" \
+            "#{artifact_id}/" \
+            "#{version}/" \
+            "#{artifact_id}-#{version}#{actual_classifier}.#{type}"
         end
 
         def version_class
@@ -267,11 +277,17 @@ module Dependabot
         end
 
         def central_repo_urls
-          central_url_without_protocol =
-            Maven::FileParser::RepositoriesFinder::CENTRAL_REPO_URL.
-            gsub(%r{^.*://}, "")
+          central_url_without_protocol = repository_finder.central_repo_url.gsub(%r{^.*://}, "")
 
           %w(http:// https://).map { |p| p + central_url_without_protocol }
+        end
+
+        def auth_headers_finder
+          @auth_headers_finder ||= Utils::AuthHeadersFinder.new(credentials)
+        end
+
+        def auth_headers(maven_repo_url)
+          auth_headers_finder.auth_headers(maven_repo_url)
         end
       end
     end

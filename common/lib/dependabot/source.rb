@@ -10,34 +10,58 @@ module Dependabot
       (?:\.com)[/:]
       (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+    }x
+
+    GITHUB_ENTERPRISE_SOURCE = %r{
+      (?<protocol>(http://|https://|git://|ssh://))*
+      (?<username>[^@]+@)*
+      (?<host>[^/]+)
+      [/:]
+      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
+    }x
 
     GITLAB_SOURCE = %r{
       (?<provider>gitlab)
       (?:\.com)[/:]
-      (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
-      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+      (?<repo>[^/]+/(?:(?!\.git)[^/])+((?!/tree|/blob/|/-)/[^/]+)?)
+      (?:(?:/tree|/blob)/(?<branch>[^/]+)/(?<directory>.*)[\#|/].*)?
+    }x
 
     BITBUCKET_SOURCE = %r{
       (?<provider>bitbucket)
       (?:\.org)[/:]
       (?<repo>[\w.-]+/(?:(?!\.git|\.\s)[\w.-])+)
       (?:(?:/src)/(?<branch>[^/]+)/(?<directory>.*)[\#|/])?
-    }x.freeze
+    }x
 
     AZURE_SOURCE = %r{
       (?<provider>azure)
       (?:\.com)[/:]
       (?<repo>[\w.-]+/([\w.-]+/)?(?:_git/)(?:(?!\.git|\.\s)[\w.-])+)
-    }x.freeze
+    }x
 
-    DEFAULT_SOURCE_REGEXS = [
-      GITHUB_SOURCE,
-      GITLAB_SOURCE,
-      BITBUCKET_SOURCE,
-      AZURE_SOURCE
-    ].freeze
+    CODECOMMIT_SOURCE = %r{
+      (?<protocol>(http://|https://|git://|ssh://))
+      git[-]
+      (?<provider>codecommit)
+      (?:.*)
+      (?:\.com/v1/repos/)
+      (?<repo>([^/]*))
+      (?:/)?(?<directory>[^?]*)?
+      [?]?
+      (?<ref>.*)?
+    }x
+
+    SOURCE_REGEX = /
+      (?:#{GITHUB_SOURCE})|
+      (?:#{GITLAB_SOURCE})|
+      (?:#{BITBUCKET_SOURCE})|
+      (?:#{AZURE_SOURCE})|
+      (?:#{CODECOMMIT_SOURCE})
+    /x
+
+    IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 
     @registered_sources = []
 
@@ -62,7 +86,7 @@ module Dependabot
     end
 
     def self.from_url(url_string)
-      return unless url_string
+      return github_enterprise_from_url(url_string) unless url_string&.match?(SOURCE_REGEX)
 
       @registered_sources.each do |source_info|
         m = url_string.match(source_info[:regex])
@@ -71,11 +95,41 @@ module Dependabot
       puts "Source.from_url failed to find source for: #{url_string}"
     end
 
+    def self.github_enterprise_from_url(url_string)
+      captures = url_string&.match(GITHUB_ENTERPRISE_SOURCE)&.named_captures
+      return unless captures
+      return if IGNORED_PROVIDER_HOSTS.include?(captures.fetch("host"))
+
+      base_url = "https://#{captures.fetch('host')}"
+
+      return unless github_enterprise?(base_url)
+
+      new(
+        provider: "github",
+        repo: captures.fetch("repo"),
+        directory: captures.fetch("directory"),
+        branch: captures.fetch("branch"),
+        hostname: captures.fetch("host"),
+        api_endpoint: File.join(base_url, "api", "v3")
+      )
+    end
+
+    def self.github_enterprise?(base_url)
+      resp = Excon.get(File.join(base_url, "status"))
+      resp.status == 200 &&
+        # Alternatively: resp.headers["Server"] == "GitHub.com", but this
+        # currently doesn't work with development environments
+        resp.headers["X-GitHub-Request-Id"] &&
+        !resp.headers["X-GitHub-Request-Id"].empty?
+    rescue StandardError
+      false
+    end
+
     def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
                    hostname: nil, api_endpoint: nil)
       if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
-        msg = "Both hostname and api_endpoint must be specified if either "\
-              "are. Alternatively, both may be left blank to use the "\
+        msg = "Both hostname and api_endpoint must be specified if either " \
+              "are. Alternatively, both may be left blank to use the " \
               "provider's defaults."
         raise msg
       end
@@ -93,7 +147,6 @@ module Dependabot
       "https://" + hostname + "/" + repo
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity
     def url_with_directory
       return url if [nil, ".", "/"].include?(directory)
 
@@ -113,7 +166,6 @@ module Dependabot
       else raise "Unexpected repo provider '#{provider}'"
       end
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
 
     def organization
       repo.split("/").first

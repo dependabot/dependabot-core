@@ -228,6 +228,39 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
               to_not have_requested(:post, "#{repo_api_url}/labels")
           end
         end
+
+        context "when the 'github_actions' label doesn't yet exist" do
+          before do
+            allow(described_class).to receive(:label_details_for_package_manager).
+              with("github_actions").
+              and_return({
+                colour: "000000",
+                name: "github_actions",
+                description: "Pull requests that update GitHub Actions code"
+              })
+            allow(dependency).to receive(:package_manager).and_return("github_actions")
+
+            stub_request(:get, "https://api.github.com/repos/#{source.repo}/labels?per_page=100").
+              to_return(status: 200, headers: { "Content-Type" => "application/json" }, body: JSON.generate([]))
+            stub_request(:post, "https://api.github.com/repos/#{source.repo}/labels").
+              to_return(
+                status: 201,
+                headers: { "Content-Type" => "application/json" },
+                body: JSON.generate({ id: 1, name: "github_actions", color: "000000" })
+              )
+          end
+
+          it "creates a label" do
+            labeler.create_default_labels_if_required
+
+            expect(WebMock).to have_requested(:post, "https://api.github.com/repos/#{source.repo}/labels").
+              with(body: {
+                name: "github_actions",
+                color: "000000",
+                description: "Pull requests that update GitHub Actions code"
+              })
+          end
+        end
       end
 
       context "when a custom dependencies label has been requested" do
@@ -281,7 +314,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
                 body: {
                   name: "security",
                   color: "ee0701",
-                  description: "Pull requests that address a security "\
+                  description: "Pull requests that address a security " \
                                "vulnerability"
                 }
               )
@@ -297,6 +330,40 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
 
             expect(WebMock).
               to_not have_requested(:post, "#{repo_api_url}/labels")
+            expect(labeler.labels_for_pr).to include("security")
+          end
+        end
+      end
+    end
+
+    context "with Azure details" do
+      let(:source) do
+        Dependabot::Source.new(provider: "azure", repo: "gocardless/bump")
+      end
+
+      context "when the 'dependencies' label doesn't yet exist" do
+        it "creates a 'dependencies' label" do
+          labeler.create_default_labels_if_required
+
+          expect(labeler.labels_for_pr).to include("dependencies")
+        end
+      end
+
+      context "for an update that fixes a security vulnerability" do
+        let(:includes_security_fixes) { true }
+
+        context "when the 'security' label doesn't yet exist" do
+          it "creates a 'security' label" do
+            labeler.create_default_labels_if_required
+
+            expect(labeler.labels_for_pr).to include("security")
+          end
+        end
+
+        context "when a 'security' label already exist" do
+          it "does not creates a 'security' label" do
+            labeler.create_default_labels_if_required
+
             expect(labeler.labels_for_pr).to include("security")
           end
         end
@@ -337,7 +404,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
           expect(WebMock).
             to have_requested(:post, "#{repo_api_url}/labels").
             with(
-              body: "description=Pull%20requests%20that%20update%20a"\
+              body: "description=Pull%20requests%20that%20update%20a" \
                     "%20dependency%20file&name=dependencies&color=%230366d6"
             )
           expect(labeler.labels_for_pr).to include("dependencies")
@@ -399,8 +466,8 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             expect(WebMock).
               to have_requested(:post, "#{repo_api_url}/labels").
               with(
-                body: "description=Pull%20requests%20that%20address%20a"\
-                    "%20security%20vulnerability&name=security&color=%23ee0701"
+                body: "description=Pull%20requests%20that%20address%20a" \
+                      "%20security%20vulnerability&name=security&color=%23ee0701"
               )
             expect(labeler.labels_for_pr).to include("security")
           end
@@ -472,6 +539,12 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         it { is_expected.to eq(["Dependency: Gems"]) }
       end
 
+      context "when a default and custom dependencies label exists" do
+        let(:labels_fixture_name) { "labels_with_custom_and_default.json" }
+
+        it { is_expected.to eq(["dependencies"]) }
+      end
+
       context "when asking for custom labels" do
         let(:custom_labels) { ["wontfix"] }
         it { is_expected.to eq(["wontfix"]) }
@@ -527,13 +600,56 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
             end
           end
 
+          context "for a patch release with build identifier" do
+            let(:version) { "1.4.1+10" }
+            it { is_expected.to include("patch") }
+
+            context "when the tags are for an auto-releasing tool" do
+              let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
+              it { is_expected.to_not include("patch") }
+            end
+          end
+
+          context "for a patch release when both have build identifers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "1.4.1+9" }
+            it { is_expected.to include("patch") }
+
+            context "when the tags are for an auto-releasing tool" do
+              let(:labels_fixture_name) { "labels_with_semver_tags_auto.json" }
+              it { is_expected.to_not include("patch") }
+            end
+          end
+
           context "for a minor release" do
             let(:version) { "1.5.1" }
             it { is_expected.to include("minor") }
           end
 
+          context "for a minor release with build idenfitier" do
+            let(:version) { "1.5.1+1" }
+            it { is_expected.to include("minor") }
+          end
+
+          context "for a minor release when both have build identifiers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "1.5.1+1" }
+            it { is_expected.to include("minor") }
+          end
+
           context "for a major release" do
             let(:version) { "2.5.1" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a major release with build identifier" do
+            let(:version) { "2.5.1+100" }
+            it { is_expected.to include("major") }
+          end
+
+          context "for a major release when both have build identifiers" do
+            let(:previous_version) { "1.4.0+10" }
+            let(:version) { "2.5.1+100" }
             it { is_expected.to include("major") }
           end
 
@@ -581,6 +697,53 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         context "without a previous version" do
           let(:previous_version) { nil }
           it { is_expected.to eq(["dependencies"]) }
+        end
+      end
+
+      context "for an update that fixes a security vulnerability" do
+        let(:includes_security_fixes) { true }
+
+        context "when a default and custom dependencies label exists" do
+          let(:labels_fixture_name) do
+            "labels_with_security_with_custom_and_default.json"
+          end
+
+          it { is_expected.to eq(%w(dependencies security)) }
+        end
+      end
+    end
+
+    context "with Azure details" do
+      let(:source) do
+        Dependabot::Source.new(provider: "azure", repo: "gocardless/bump")
+      end
+
+      context "when a 'dependencies' label exists" do
+        it { is_expected.to eq(["dependencies"]) }
+
+        context "for a security fix" do
+          let(:includes_security_fixes) { true }
+
+          it { is_expected.to eq(%w(dependencies security)) }
+        end
+      end
+
+      context "when a custom dependencies label exists" do
+        it { is_expected.to eq(["dependencies"]) }
+      end
+
+      context "when asking for custom labels" do
+        let(:custom_labels) { ["critical"] }
+        it { is_expected.to eq(["critical"]) }
+
+        context "that don't exist" do
+          let(:custom_labels) { ["non-existent"] }
+          it { is_expected.to eq(["non-existent"]) }
+        end
+
+        context "when only one doesn't exist" do
+          let(:custom_labels) { %w(critical non-existent) }
+          it { is_expected.to eq(%w(critical non-existent)) }
         end
       end
     end
@@ -637,7 +800,7 @@ RSpec.describe Dependabot::PullRequestCreator::Labeler do
         let(:pagination_header) do
           {
             "Content-Type" => "application/json",
-            "Link" => "<#{repo_api_url}/labels?page=2&per_page=100>; "\
+            "Link" => "<#{repo_api_url}/labels?page=2&per_page=100>; " \
                       "rel=\"next\""
           }
         end

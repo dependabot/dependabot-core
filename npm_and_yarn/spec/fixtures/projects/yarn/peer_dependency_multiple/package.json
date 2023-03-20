@@ -1,0 +1,10 @@
+{
+    "name": "test",
+    "version": "1.0.0",
+    "private": true,
+    "dependencies": {
+      "react": "0.14.9",
+      "react-tabs": "1.1.0",
+      "react-modal": "0.6.1"
+    }
+}

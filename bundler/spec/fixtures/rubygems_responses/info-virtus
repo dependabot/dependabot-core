@@ -1,0 +1,37 @@
+---
+0.0.1 |checksum:b2b29827845f78f2eb78a4205cf709b0aeac2ecd8e90540a705e519884876468
+0.0.2 |checksum:e68caf6dbe05f72490067c57fe7ef343c74eecb357cd674c68d79ae5a3c28809
+0.0.3 |checksum:0f6d87115573bb1b4a9f26f7a6edf70ce998977ae9f0aa905195d6f2f5d3d941
+0.0.4 |checksum:cf4c7bea46f36ae4934fea88e6fbe67cd502664210ac78c9c28cc200f99ac0db
+0.0.5 |checksum:2458f9df87f3794ddb621b5537edac47fca5d93a49de71fd22bef0d4a2341eb3
+0.0.6 |checksum:67883d12661ef87bfd637c0d4a8a2fc527228412808218891a3c8a80971459bf
+0.0.7 |checksum:6d3b381a3f8b4b81d98b6fce9101dce35b7874ead7a1997a46cf6897dab74022
+0.0.8 |checksum:af9632bd134daf6ae8871af66474a5fb67d0a8356d90124ef4f3e026fd69fb27
+0.0.9 |checksum:896f46cbc92106249fec420af44b84a858714c0841de39a633a83033f5353de5
+0.0.10 |checksum:6025e8a57f826e9519e773a7daac0d7f6bb636eeec1e8c5a1756db06cfe5a349
+0.1.0 |checksum:990196ea6e5929f86f4e23f1ea9e3238c8b4b7eca2055d832a7b946447c83c04
+0.2.0 |checksum:323ecee2a34418658abf9b85c0984e18953fb9c5d1bb534a0258220dce57ad23
+0.3.0 |checksum:443d7031c10e0f008edbcdbb0ea49d567b92d06c6eff16b9680ade5f0fb343e9
+0.4.0 |checksum:395e46298005b709e263c3b98868e5be69b717559b20beaddcf41071c8287615
+0.4.1 backports:~> 2.5.1|checksum:3377af41176f1d440fd072fe770cefd4850768d2d0c697bdabafd985ac9f8ac6
+0.4.2 backports:~> 2.5.3|checksum:9a4e6e83c2db25f1ca1e28329a082c8832ec0f55251dc777b3416bdd3b292ee2
+0.5.0 backports:~> 2.6.1|checksum:4c7e238f972662e55a5abb829b3fc7e74295e41f8ba1ba41b7e5883fc6027a71
+0.5.1 backports:~> 2.6.1|checksum:228b9c101ae1f2f49f404b58332933a052b1fc1a7cb31aa1d1be890b86d7628e
+0.5.2 backports:~> 2.6.1|checksum:2705581cf404bf40e2a6236f2c0385689756b8d751ab0eddddd4b7144d64c7c2
+0.5.3 backports:~> 2.6.1,descendants_tracker:~> 0.0.1|checksum:933f80bf4c0b73ef17c64129bd9684e25bc978c16a3822547095f3428675d494
+0.5.4 backports:~> 2.6.1,descendants_tracker:~> 0.0.1|checksum:a86e4fe65687fc40173275f2689746ea710d0b4621933950b93cd0553a295191
+0.5.5 backports:~> 3.3,descendants_tracker:~> 0.0.1|checksum:b7de2f3be82838065033e5d1b7e93dc5ed913f1acb78a920badb8e0eb696c54f
+1.0.0.beta3 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:68502436d669008c37c5c48e4911a4dec8abe2af31b27d9ba641bdf024de9b5e,rubygems:> 1.3.1
+1.0.0.beta4 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:a5675b22131a5b1dc7e2175612cbde05a7c6b8bd5a12afa59c1d82b02d69f5a2,rubygems:> 1.3.1
+1.0.0.beta5 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:4673ddf40574c7ea2b2e5e021c7776fcb4f63bb48f549f588232aeb7adfdcb7d,rubygems:> 1.3.1
+1.0.0.beta6 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:348a508ad659278b9ce386957b04db996b397b60aad9501595948042d84b374a,rubygems:> 1.3.1
+1.0.0.beta7 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:ee7d067eedb94900312e8f63cfbb2950bb0ba4e2d4065f6e0fb8d5fbd6b847db,rubygems:> 1.3.1
+1.0.0.beta8 axiom-types:~> 0.0.3,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:f768584b82034b911f730781d1d7dbb38ec4764c471d29aa722efafdad8ebd8c,rubygems:> 1.3.1
+1.0.0.rc1 axiom-types:~> 0.0.4,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:4cc9ad8817f2e46d31b1263000429722805cd9c0a9793b0303c6017c599df024,rubygems:> 1.3.1
+1.0.0.rc2 axiom-types:~> 0.0.5,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:2e1821c975d2c605ca57107e7c24c5836232e9255e3897c57a4ec8898c52d92e,rubygems:> 1.3.1
+1.0.0 axiom-types:~> 0.0.5,coercible:~> 0.2,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:662a8cc0b28059b60dfb32a2e35a64f0dae3769c1371bf09e41795282faa84c8
+1.0.1 axiom-types:~> 0.0.5,coercible:~> 1.0,descendants_tracker:~> 0.0.1,equalizer:~> 0.0.7|checksum:03d81d65377a603894b058c0ee78130dda1c3e6d56918d40444f11dba5d644a6
+1.0.2 axiom-types:~> 0.1,coercible:~> 1.0,descendants_tracker:~> 0.0.3,equalizer:~> 0.0.9|checksum:024c5bfd65d7dfc4cf5879ae17492075031102bc1bf1f95f0cf774d330c4f3ef
+1.0.3 axiom-types:~> 0.1,coercible:~> 1.0,descendants_tracker:>= 0.0.3&~> 0.0,equalizer:>= 0.0.9&~> 0.0|checksum:5e110caf5e226b74afe9ded416d0cd9e160989bacb6f7d51edef5a0a9da080c5
+1.0.4 axiom-types:~> 0.1,coercible:~> 1.0,descendants_tracker:>= 0.0.3&~> 0.0,equalizer:>= 0.0.9&~> 0.0|checksum:be6d6da340711b3912971883325a0314c0b6cfcfcdc6142961c42bff2ebdde18
+1.0.5 axiom-types:~> 0.1,coercible:~> 1.0,descendants_tracker:>= 0.0.3&~> 0.0,equalizer:>= 0.0.9&~> 0.0|checksum:d3053b9ff62d3f8b7b233f7e1aa9530b73ed7e541bee2c62f2c711362287371a

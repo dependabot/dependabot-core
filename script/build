@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [[ -z "$1" ]]; then
+  echo "Usage: $0 <ecosystem>"
+  exit 1
+fi
+
+set -e
+cd "$(dirname "$0")/.."
+source script/_common
+
+export OMNIBUS_VERSION="latest"
+docker_build "$1"

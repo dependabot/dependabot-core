@@ -3,7 +3,7 @@
 require "excon"
 require "nokogiri"
 
-require "dependabot/shared_helpers"
+require "dependabot/registry_client"
 require "dependabot/source"
 require "dependabot/go_modules/native_helpers"
 
@@ -21,6 +21,7 @@ module Dependabot
         )
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       # Used in dependabot-backend, which doesn't have access to any Go
       # helpers.
       # TODO: remove the need for this.
@@ -52,15 +53,12 @@ module Dependabot
 
         import_details[2]
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def self.fetch_path_metadata(path)
         # TODO: This is not robust! Instead, we should shell out to Go and
         # use https://github.com/Masterminds/vcs.
-        response = Excon.get(
-          "https://#{path}?go-get=1",
-          idempotent: true,
-          **SharedHelpers.excon_defaults
-        )
+        response = Dependabot::RegistryClient.get(url: "https://#{path}?go-get=1")
 
         return unless response.status == 200
 

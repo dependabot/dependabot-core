@@ -8,11 +8,11 @@ module Dependabot
     class Azure
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :commit_message, :pr_description, :pr_name,
-                  :author_details, :labeler
+                  :author_details, :labeler, :reviewers, :assignees, :work_item
 
       def initialize(source:, branch_name:, base_commit:, credentials:,
                      files:, commit_message:, pr_description:, pr_name:,
-                     author_details:, labeler:)
+                     author_details:, labeler:, reviewers: nil, assignees: nil, work_item: nil)
         @source         = source
         @branch_name    = branch_name
         @base_commit    = base_commit
@@ -23,6 +23,9 @@ module Dependabot
         @pr_name        = pr_name
         @author_details = author_details
         @labeler        = labeler
+        @reviewers      = reviewers
+        @assignees      = assignees
+        @work_item      = work_item
       end
 
       def create
@@ -46,9 +49,7 @@ module Dependabot
       end
 
       def branch_exists?
-        @branch_ref ||= azure_client_for_source.branch(branch_name)
-
-        @branch_ref
+        azure_client_for_source.branch(branch_name)
       rescue ::Azure::Error::NotFound
         false
       end
@@ -79,7 +80,10 @@ module Dependabot
           branch_name,
           source.branch || default_branch,
           pr_description,
-          labeler.labels_for_pr
+          labeler.labels_for_pr,
+          reviewers,
+          assignees,
+          work_item
         )
       end
 

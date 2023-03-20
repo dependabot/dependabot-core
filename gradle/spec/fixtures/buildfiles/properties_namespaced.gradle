@@ -33,6 +33,9 @@ ext.versions = [
         testRunner             : '1.0.2',
         screengrab             : '1.2.0',
         deviceAnimationRule    : '0.0.2',
+
+        findPropertyVersion    : project.findProperty('findPropertyVersion') ?: '1.0.0',
+        hasPropertyVersion     : project.hasProperty('hasPropertyVersion') ? project.getProperty('hasPropertyVersion') :'1.0.0',
 ]
 
 ext.gradlePlugins = [

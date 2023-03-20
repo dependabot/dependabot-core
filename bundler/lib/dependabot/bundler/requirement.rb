@@ -5,7 +5,7 @@ require "dependabot/utils"
 module Dependabot
   module Bundler
     class Requirement < Gem::Requirement
-      # For consistency with other langauges, we define a requirements array.
+      # For consistency with other languages, we define a requirements array.
       # Ruby doesn't have an `OR` separator for requirements, so it always
       # contains a single element.
       def self.requirements_array(requirement_string)
@@ -16,7 +16,7 @@ module Dependabot
       # "~> 4.2.5, >= 4.2.5.1" without first needing to split them.
       def initialize(*requirements)
         requirements = requirements.flatten.flat_map do |req_string|
-          req_string.split(",")
+          req_string.split(",").map(&:strip)
         end
 
         super(requirements)

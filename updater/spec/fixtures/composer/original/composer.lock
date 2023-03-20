@@ -1,0 +1,65 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8fe1579c07dcc6865cfb8300382414ea",
+    "packages": [
+        {
+            "name": "dependabot/dummy-pkg-a",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dependabot/php-dummy-pkg-a.git",
+                "reference": "183c190aa576256c768a04ff2163c208e0dd81d1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-a/zipball/183c190aa576256c768a04ff2163c208e0dd81d1",
+                "reference": "183c190aa576256c768a04ff2163c208e0dd81d1",
+                "shasum": ""
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A dummy package for testing Dependabot",
+            "time": "2017-06-08T12:52:19+00:00"
+        },
+        {
+            "name": "dependabot/dummy-pkg-b",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dependabot/php-dummy-pkg-b.git",
+                "reference": "164a01c72b834713b19f05eb0cf51130fccd9429"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dependabot/php-dummy-pkg-b/zipball/164a01c72b834713b19f05eb0cf51130fccd9429",
+                "reference": "164a01c72b834713b19f05eb0cf51130fccd9429",
+                "shasum": ""
+            },
+            "require": {
+                "dependabot/dummy-pkg-a": "~2.0"
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "A dummy package for testing Dependabot",
+            "time": "2017-06-08T13:03:29+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

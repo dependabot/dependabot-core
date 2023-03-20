@@ -20,7 +20,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
     {
       requirement: declaring_requirement_string,
       file: "packages.config",
-      groups: [],
+      groups: ["dependencies"],
       source: nil
     }
   end
@@ -47,7 +47,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
           expect(declaration_strings.count).to eq(1)
 
           expect(declaration_strings.first).
-            to eq('<package id="NuGet.Core" version="2.11.1" '\
+            to eq('<package id="NuGet.Core" version="2.11.1" ' \
                   'targetFramework="net46" />')
         end
 
@@ -58,7 +58,7 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
             expect(declaration_strings.count).to eq(1)
 
             expect(declaration_strings.first).
-              to eq('<package id="NuGet.Core" version="2.11.1" '\
+              to eq('<package id="NuGet.Core" version="2.11.1" ' \
                     'targetFramework="net46" />')
           end
         end
@@ -70,6 +70,19 @@ RSpec.describe namespace::PackagesConfigDeclarationFinder do
 
         it "does not find a declaration" do
           expect(declaration_strings.count).to eq(0)
+        end
+      end
+
+      context "and the node is empty" do
+        let(:dependency_name) { "WebActivatorEx" }
+        let(:declaring_requirement_string) { "2.1.0" }
+
+        it "finds the declaration" do
+          expect(declaration_strings.count).to eq(1)
+
+          expect(declaration_strings.first).
+            to eq('<package id="WebActivatorEx" version="2.1.0" ' \
+                  'targetFramework="net46"></package>')
         end
       end
     end

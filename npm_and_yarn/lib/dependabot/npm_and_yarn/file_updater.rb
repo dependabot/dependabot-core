@@ -2,6 +2,7 @@
 
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
+require "dependabot/file_updaters/vendor_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
@@ -53,25 +54,70 @@ module Dependabot
           )
         end
 
-        updated_files
+        vendor_updated_files(updated_files)
       end
 
       private
 
+      def vendor_updated_files(updated_files)
+        base_dir = updated_files.first.directory
+        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        end
+        vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
+        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+          updated_files << file
+        end
+
+        updated_files
+      end
+
+      # Dynamically fetch the vendor cache folder from yarn
+      def vendor_cache_dir
+        return @vendor_cache_dir if defined?(@vendor_cache_dir)
+
+        @vendor_cache_dir = Helpers.fetch_yarnrc_yml_value("cacheFolder", "./.yarn/cache")
+      end
+
+      def install_state_path
+        return @install_state_path if defined?(@install_state_path)
+
+        @install_state_path = Helpers.fetch_yarnrc_yml_value("installStatePath", "./.yarn/install-state.gz")
+      end
+
+      def vendor_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: vendor_cache_dir
+        )
+      end
+
+      def install_state_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: install_state_path
+        )
+      end
+
+      def pnp_updater
+        Dependabot::FileUpdaters::VendorUpdater.new(
+          repo_contents_path: repo_contents_path,
+          vendor_dir: "./"
+        )
+      end
+
       def filtered_dependency_files
         @filtered_dependency_files ||=
-          begin
-            if dependencies.select(&:top_level?).any?
-              DependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            else
-              SubDependencyFilesFilterer.new(
-                dependency_files: dependency_files,
-                updated_dependencies: dependencies
-              ).files_requiring_update
-            end
+          if dependencies.select(&:top_level?).any?
+            DependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
+          else
+            SubDependencyFilesFilterer.new(
+              dependency_files: dependency_files,
+              updated_dependencies: dependencies
+            ).files_requiring_update
           end
       end
 
@@ -117,20 +163,20 @@ module Dependabot
       end
 
       def package_lock_changed?(package_lock)
-        package_lock.content != updated_package_lock_content(package_lock)
+        package_lock.content != updated_lockfile_content(package_lock)
       end
 
       def shrinkwrap_changed?(shrinkwrap)
-        shrinkwrap.content != updated_package_lock_content(shrinkwrap)
+        shrinkwrap.content != updated_lockfile_content(shrinkwrap)
       end
 
       def updated_manifest_files
-        package_files.map do |file|
+        package_files.filter_map do |file|
           updated_content = updated_package_json_content(file)
           next if updated_content == file.content
 
           updated_file(file: file, content: updated_content)
-        end.compact
+        end
       end
 
       def updated_lockfiles
@@ -150,7 +196,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: package_lock,
-            content: updated_package_lock_content(package_lock)
+            content: updated_lockfile_content(package_lock)
           )
         end
 
@@ -159,7 +205,7 @@ module Dependabot
 
           updated_files << updated_file(
             file: shrinkwrap,
-            content: updated_shrinkwrap_content(shrinkwrap)
+            content: updated_lockfile_content(shrinkwrap)
           )
         end
 
@@ -177,29 +223,20 @@ module Dependabot
           YarnLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
             credentials: credentials
           )
       end
 
-      def updated_package_lock_content(package_lock)
-        @updated_package_lock_content ||= {}
-        @updated_package_lock_content[package_lock.name] ||=
-          npm_lockfile_updater.updated_lockfile_content(package_lock)
-      end
-
-      def updated_shrinkwrap_content(shrinkwrap)
-        @updated_shrinkwrap_content ||= {}
-        @updated_shrinkwrap_content[shrinkwrap.name] ||=
-          npm_lockfile_updater.updated_lockfile_content(shrinkwrap)
-      end
-
-      def npm_lockfile_updater
-        @npm_lockfile_updater ||=
+      def updated_lockfile_content(file)
+        @updated_lockfile_content ||= {}
+        @updated_lockfile_content[file.name] ||=
           NpmLockfileUpdater.new(
+            lockfile: file,
             dependencies: dependencies,
             dependency_files: dependency_files,
             credentials: credentials
-          )
+          ).updated_lockfile.content
       end
 
       def updated_package_json_content(file)

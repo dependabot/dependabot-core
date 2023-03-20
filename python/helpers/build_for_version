@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+if [ -z "$DEPENDABOT_NATIVE_HELPERS_PATH" ]; then
+  echo "Unable to build, DEPENDABOT_NATIVE_HELPERS_PATH is not set"
+  exit 1
+fi
+
+install_dir="$DEPENDABOT_NATIVE_HELPERS_PATH/python"
+mkdir -p "$install_dir"
+
+helpers_dir="$(dirname "${BASH_SOURCE[0]}")"
+cp -r \
+  "$helpers_dir/lib" \
+  "$helpers_dir/run.py" \
+  "$helpers_dir/requirements.txt" \
+  "$install_dir"
+
+cd "$install_dir"
+PYENV_VERSION=$1 pyenv exec pip --disable-pip-version-check install --use-pep517 -r "requirements.txt"

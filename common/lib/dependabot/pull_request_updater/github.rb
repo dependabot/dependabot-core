@@ -124,14 +124,7 @@ module Dependabot
 
       def create_tree
         file_trees = files.map do |file|
-          if %w(file symlink).include?(file.type)
-            {
-              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob",
-              content: file.content
-            }
-          elsif file.type == "submodule"
+          if file.type == "submodule"
             {
               path: file.path.sub(%r{^/}, ""),
               mode: "160000",
@@ -139,7 +132,23 @@ module Dependabot
               sha: file.content
             }
           else
-            raise "Unknown file type #{file.type}"
+            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
+                        { sha: nil }
+                      elsif file.binary?
+                        sha = github_client_for_source.create_blob(
+                          source.repo, file.content, "base64"
+                        )
+                        { sha: sha }
+                      else
+                        { content: file.content }
+                      end
+
+            {
+              path: (file.symlink_target ||
+                     file.path).sub(%r{^/}, ""),
+              mode: "100644",
+              type: "blob"
+            }.merge(content)
           end
         end
 
@@ -162,34 +171,42 @@ module Dependabot
         return nil if e.message.match?(/Reference does not exist/i)
         return nil if e.message.match?(/Reference cannot be updated/i)
 
-        raise BranchProtected if e.message.match?(/force\-push to a protected/i)
+        if e.message.match?(/protected branch/i) ||
+           e.message.match?(/not authorized to push/i) ||
+           e.message.include?("must not contain merge commits") ||
+           e.message.match?(/required status check/i)
+          raise BranchProtected
+        end
 
         raise
       end
 
       def commit_message
-        # Take the commit message from the old commit
-        commit_being_updated.message
+        fallback_message =
+          "#{pull_request.title}" \
+          "\n\n" \
+          "Dependabot couldn't find the original pull request head commit, " \
+          "#{old_commit}."
+
+        # Take the commit message from the old commit. If the old commit can't
+        # be found, use the PR title as the commit message.
+        commit_being_updated&.message || fallback_message
       end
 
       def commit_being_updated
-        @commit_being_updated ||=
+        return @commit_being_updated if defined?(@commit_being_updated)
+
+        @commit_being_updated =
           if pull_request.commits == 1
             github_client_for_source.
               git_commit(source.repo, pull_request.head.sha)
           else
-            author_name = author_details&.fetch(:name, nil) || "dependabot"
             commits =
               github_client_for_source.
-              pull_request_commits(source.repo, pull_request_number).
-              reverse
+              pull_request_commits(source.repo, pull_request_number)
 
-            commit =
-              commits.find { |c| c.sha == old_commit } ||
-              commits.find { |c| c.commit.author.name.include?(author_name) } ||
-              commits.first
-
-            commit.commit
+            commit = commits.find { |c| c.sha == old_commit }
+            commit&.commit
           end
       end
 

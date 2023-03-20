@@ -30,7 +30,8 @@ RSpec.describe Dependabot::Python::RequirementParser do
     {
       name: requirement[:name],
       requirements: requirements,
-      hashes: hashes
+      hashes: hashes,
+      markers: requirement[:markers]
     }
   end
 
@@ -52,9 +53,22 @@ RSpec.describe Dependabot::Python::RequirementParser do
       it { is_expected.to be_nil }
     end
 
+    context "with a Jinja template" do
+      let(:line) { "{{ cookiecutter.package_name }}" }
+
+      it { is_expected.to be_nil }
+    end
+
     context "with no specification" do
       let(:line) { "luigi" }
       it { is_expected.to be_nil }
+    end
+
+    context "with an epoch specification" do
+      let(:line) { "luigi==1!1.1.0" }
+      its([:requirements]) do
+        is_expected.to eq [{ comparison: "==", version: "1!1.1.0" }]
+      end
     end
 
     context "with a simple specification" do
@@ -79,11 +93,30 @@ RSpec.describe Dependabot::Python::RequirementParser do
         end
       end
 
-      context "with markers" do
-        let(:line) { 'luigi==0.1.0;python_version>="2.7"' }
+      context "with an optional Jinja dependency" do
+        let(:line) do
+          "{% if cookiecutter.include_package == 'y' %} luigi==0.1.0 " \
+            "{% endif %}"
+        end
+
         its([:name]) { is_expected.to eq "luigi" }
         its([:requirements]) do
           is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+      end
+
+      context "with markers" do
+        let(:line) do
+          'luigi==0.1.0;python_version>="2.7" and ' \
+            '(sys_platform == "darwin" or sys_platform == "win32") '
+        end
+        its([:name]) { is_expected.to eq "luigi" }
+        its([:requirements]) do
+          is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+        end
+        its([:markers]) do
+          is_expected.to eq 'python_version>="2.7" and ' \
+                            '(sys_platform == "darwin" or sys_platform == "win32")'
         end
       end
 
@@ -121,11 +154,54 @@ RSpec.describe Dependabot::Python::RequirementParser do
 
         context "spread over multiple lines" do
           let(:line) do
-            "luigi==0.1.0 \\\n"\
-            "    --hash=sha256:2ccb79b01 \\\n"\
-            "    --hash=sha256:2ccb79b02"
+            "luigi==0.1.0 \\\n" \
+              "    --hash=sha256:2ccb79b01 \\\n" \
+              "    --hash=sha256:2ccb79b02"
           end
 
+          its([:hashes]) do
+            is_expected.to match_array(
+              [
+                { algorithm: "sha256", hash: "2ccb79b01" },
+                { algorithm: "sha256", hash: "2ccb79b02" }
+              ]
+            )
+          end
+        end
+
+        context "and with marker" do
+          let(:line) do
+            "luigi==0.1.0 ; python_version=='2.7' " \
+              "--hash=sha256:2ccb79b01 --hash=sha256:2ccb79b02"
+          end
+          its([:requirements]) do
+            is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+          end
+          its([:markers]) do
+            is_expected.to eq "python_version=='2.7'"
+          end
+          its([:hashes]) do
+            is_expected.to match_array(
+              [
+                { algorithm: "sha256", hash: "2ccb79b01" },
+                { algorithm: "sha256", hash: "2ccb79b02" }
+              ]
+            )
+          end
+        end
+
+        context "spread over multiple lines with marker" do
+          let(:line) do
+            "luigi==0.1.0 ; python_version=='2.7' \\\n" \
+              "    --hash=sha256:2ccb79b01 \\\n" \
+              "    --hash=sha256:2ccb79b02"
+          end
+          its([:requirements]) do
+            is_expected.to eq [{ comparison: "==", version: "0.1.0" }]
+          end
+          its([:markers]) do
+            is_expected.to eq "python_version=='2.7'"
+          end
           its([:hashes]) do
             is_expected.to match_array(
               [
@@ -142,18 +218,18 @@ RSpec.describe Dependabot::Python::RequirementParser do
       let(:line) { "luigi == 0.1.0, <= 1" }
       its([:requirements]) do
         is_expected.to eq([
-                            { comparison: "==", version: "0.1.0" },
-                            { comparison: "<=", version: "1" }
-                          ])
+          { comparison: "==", version: "0.1.0" },
+          { comparison: "<=", version: "1" }
+        ])
       end
 
       context "with a comment" do
         let(:line) { "luigi == 0.1.0, <= 1 # some comment" }
         its([:requirements]) do
           is_expected.to eq([
-                              { comparison: "==", version: "0.1.0" },
-                              { comparison: "<=", version: "1" }
-                            ])
+            { comparison: "==", version: "0.1.0" },
+            { comparison: "<=", version: "1" }
+          ])
         end
       end
 
@@ -161,9 +237,9 @@ RSpec.describe Dependabot::Python::RequirementParser do
         let(:line) { "luigi (>0.1.0,<2)" }
         its([:requirements]) do
           is_expected.to eq([
-                              { comparison: ">", version: "0.1.0" },
-                              { comparison: "<", version: "2" }
-                            ])
+            { comparison: ">", version: "0.1.0" },
+            { comparison: "<", version: "2" }
+          ])
         end
       end
     end

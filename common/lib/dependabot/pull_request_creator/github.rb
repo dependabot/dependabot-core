@@ -5,11 +5,12 @@ require "securerandom"
 require "dependabot/clients/github_with_retries"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/commit_signer"
-
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class PullRequestCreator
+    # rubocop:disable Metrics/ClassLength
     class Github
+      MAX_PR_DESCRIPTION_LENGTH = 65_536 # characters (see #create_pull_request)
+
       attr_reader :source, :branch_name, :base_commit, :credentials,
                   :files, :pr_description, :pr_name, :commit_message,
                   :author_details, :signature_key, :custom_headers,
@@ -43,7 +44,7 @@ module Dependabot
         return if require_up_to_date_base? && !base_commit_is_up_to_date?
 
         create_annotated_pull_request
-      rescue Octokit::Error => e
+      rescue AnnotationError, Octokit::Error => e
         handle_error(e)
       end
 
@@ -53,6 +54,7 @@ module Dependabot
         @require_up_to_date_base
       end
 
+      # rubocop:disable Metrics/PerceivedComplexity
       def branch_exists?(name)
         git_metadata_fetcher.ref_names.include?(name)
       rescue Dependabot::GitDependenciesNotReachable => e
@@ -68,6 +70,7 @@ module Dependabot
         retrying = true
         retry
       end
+      # rubocop:enable Metrics/PerceivedComplexity
 
       def unmerged_pull_request_exists?
         pull_requests_for_branch.reject(&:merged).any?
@@ -111,7 +114,11 @@ module Dependabot
         pull_request = create_pull_request
         return unless pull_request
 
-        annotate_pull_request(pull_request)
+        begin
+          annotate_pull_request(pull_request)
+        rescue StandardError => e
+          raise AnnotationError.new(e, pull_request)
+        end
 
         pull_request
       end
@@ -172,12 +179,23 @@ module Dependabot
               sha: file.content
             }
           else
+            content = if file.operation == Dependabot::DependencyFile::Operation::DELETE
+                        { sha: nil }
+                      elsif file.binary?
+                        sha = github_client_for_source.create_blob(
+                          source.repo, file.content, "base64"
+                        )
+                        { sha: sha }
+                      else
+                        { content: file.content }
+                      end
+
             {
-              path: (file.symlink_target || file.path).sub(%r{^/}, ""),
-              mode: "100644",
-              type: "blob",
-              content: file.content
-            }
+              path: (file.symlink_target ||
+                     file.path).sub(%r{^/}, ""),
+              mode: (file.mode || "100644"),
+              type: "blob"
+            }.merge(content)
           end
         end
 
@@ -201,7 +219,7 @@ module Dependabot
         retry_count ||= 0
         retry_count += 1
         if retry_count > 10
-          raise "Repeatedly failed to create or update branch #{branch_name} "\
+          raise "Repeatedly failed to create or update branch #{branch_name} " \
                 "with commit #{commit.sha}."
         end
 
@@ -210,12 +228,12 @@ module Dependabot
       end
 
       def create_branch(commit)
-        ref = "heads/#{branch_name}"
+        ref = "refs/heads/#{branch_name}"
 
         begin
           branch =
             github_client_for_source.create_ref(source.repo, ref, commit.sha)
-          @branch_name = ref.gsub(%r{^heads/}, "")
+          @branch_name = ref.gsub(%r{^refs/heads/}, "")
           branch
         rescue Octokit::UnprocessableEntity => e
           # Return quietly in the case of a race
@@ -228,7 +246,7 @@ module Dependabot
 
           # Branch creation will fail if a branch called `dependabot` already
           # exists, since git won't be able to create a dir with the same name
-          ref = "heads/#{SecureRandom.hex[0..3] + branch_name}"
+          ref = "refs/heads/#{SecureRandom.hex[0..3] + branch_name}"
           retry
         end
       end
@@ -251,7 +269,7 @@ module Dependabot
 
       def add_reviewers_to_pull_request(pull_request)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
 
         github_client_for_source.request_pull_request_review(
           source.repo,
@@ -281,7 +299,7 @@ module Dependabot
 
       def comment_with_invalid_reviewer(pull_request, message)
         reviewers_hash =
-          Hash[reviewers.keys.map { |k| [k.to_sym, reviewers[k]] }]
+          reviewers.keys.to_h { |k| [k.to_sym, reviewers[k]] }
         reviewers = []
         reviewers += reviewers_hash[:reviewers] || []
         reviewers += (reviewers_hash[:team_reviewers] || []).
@@ -297,9 +315,9 @@ module Dependabot
 
         msg = "Dependabot tried to add #{reviewers_string} as "
         msg += reviewers.count > 1 ? "reviewers" : "a reviewer"
-        msg += " to this PR, but received the following error from GitHub:\n\n"\
+        msg += " to this PR, but received the following error from GitHub:\n\n" \
                "```\n" \
-               "#{message}\n"\
+               "#{message}\n" \
                "```"
 
         github_client_for_source.add_comment(
@@ -331,6 +349,18 @@ module Dependabot
       end
 
       def create_pull_request
+        # Limit PR description to MAX_PR_DESCRIPTION_LENGTH (65,536) characters
+        # and truncate with message if over. The API limit is 262,144 bytes
+        # (https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2).
+        # As Ruby strings are UTF-8 encoded, this is a pessimistic limit: it
+        # presumes the case where all characters are 4 bytes.
+        pr_description = @pr_description.dup
+        if pr_description && pr_description.length > MAX_PR_DESCRIPTION_LENGTH
+          truncated_msg = "...\n\n_Description has been truncated_"
+          truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
+          pr_description = (pr_description[0, truncate_length] + truncated_msg)
+        end
+
         github_client_for_source.create_pull_request(
           source.repo,
           target_branch,
@@ -405,28 +435,48 @@ module Dependabot
           )
       end
 
-      # rubocop:disable Metrics/CyclomaticComplexity
       def handle_error(err)
-        case err
+        cause = case err
+                when AnnotationError
+                  err.cause
+                else
+                  err
+                end
+
+        case cause
         when Octokit::Forbidden
-          raise RepoDisabled, err.message if err.message.include?("disabled")
-          raise RepoArchived, err.message if err.message.include?("archived")
+          if err.message.include?("disabled")
+            raise_custom_error err, RepoDisabled, err.message
+          elsif err.message.include?("archived")
+            raise_custom_error err, RepoArchived, err.message
+          end
 
           raise err
         when Octokit::NotFound
           raise err if repo_exists?
 
-          raise RepoNotFound, err.message
+          raise_custom_error err, RepoNotFound, err.message
         when Octokit::UnprocessableEntity
-          raise err unless err.message.include?("no history in common")
+          raise_custom_error err, NoHistoryInCommon, err.message if err.message.include?("no history in common")
 
-          raise NoHistoryInCommon, err.message
+          raise err
         else
           raise err
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity
+
+      def raise_custom_error(base_err, type, message)
+        case base_err
+        when AnnotationError
+          raise AnnotationError.new(
+            type.new(message),
+            base_err.pull_request
+          )
+        else
+          raise type, message
+        end
+      end
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end
-# rubocop:enable Metrics/ClassLength

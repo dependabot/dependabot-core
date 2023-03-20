@@ -10,6 +10,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
     described_class.new(
       dependency: dependency,
       dependency_files: [],
+      ignored_versions: ignored_versions,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",
@@ -26,6 +27,7 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
       package_manager: "dummy"
     )
   end
+  let(:ignored_versions) { [] }
   let(:latest_version) { Gem::Version.new("1.0.0") }
   let(:original_requirements) do
     [{ file: "Gemfile", requirement: ">= 0", groups: [], source: nil }]
@@ -162,9 +164,9 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         [{ file: "Gemfile", requirement: "~> 1", groups: [], source: nil }]
       end
 
-      context "that already permits the latest version" do
+      context "when the requirement is out of date" do
         let(:updated_requirements) { requirements }
-        it { is_expected.to be_truthy }
+        it { is_expected.to be_falsy }
       end
 
       context "that doesn't yet permit the latest version" do
@@ -598,6 +600,18 @@ RSpec.describe Dependabot::UpdateCheckers::Base do
         ]
       end
       it { is_expected.to eq(false) }
+    end
+  end
+
+  describe "#ignore_requirements" do
+    subject(:ignore_requirements) { updater_instance.ignore_requirements }
+
+    it { is_expected.to eq([]) }
+
+    context "with ignored versions" do
+      let(:ignored_versions) { ["~> 1.0, < 2"] }
+
+      it { is_expected.to eq([updater_instance.requirement_class.new("~> 1.0", "< 2")]) }
     end
   end
 end
