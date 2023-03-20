@@ -11,9 +11,6 @@ require "dependabot/updater/operations/update_all_versions"
 #
 # Consider the following guidelines when working on Operation classes:
 #
-# - Operations act on the principal of least knowledge prefering to cherry pick
-#   arguments from the Dependabot::Job so their contract is explicit.
-#
 # - Operations *should not have optional parameters*, prefer to create a new
 #   class instead of adding branching to an existing one.
 #
