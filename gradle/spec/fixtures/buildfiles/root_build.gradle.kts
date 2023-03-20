@@ -12,6 +12,8 @@ plugins {
 
     val helmVersion = "1.6.0"
     id("org.unbroken-dome.helm") version helmVersion apply false
+
+    id("not.yet.updatable") version libs.versions.notYetUpdatable apply false
 }
 
 buildscript {
