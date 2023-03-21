@@ -71,7 +71,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
@@ -123,17 +122,20 @@ module Dependabot
           end
 
           updated_files = generate_dependency_files_for(updated_deps)
-          updated_deps = updated_deps.reject do |d|
+          updated_deps = filter_unrelated_and_unchanged(updated_deps, checker)
+          create_pull_request(updated_deps, updated_files)
+        end
+        # rubocop:enable Metrics/MethodLength
+        # rubocop:enable Metrics/AbcSize
+
+        def filter_unrelated_and_unchanged(updated_dependencies, checker)
+          updated_dependencies.reject do |d|
             next false if d.name == checker.dependency.name
             next true if d.top_level? && d.requirements == d.previous_requirements
 
             d.version == d.previous_version
           end
-          create_pull_request(updated_deps, updated_files)
         end
-        # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
 
         def log_up_to_date(dependency)
           Dependabot.logger.info(
