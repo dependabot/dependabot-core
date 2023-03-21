@@ -26,6 +26,7 @@ require "dependabot/bundler"
 require "dependabot/pub"
 
 require "dependabot/updater/error_handler"
+require "dependabot/updater/operations"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 require "wildcard_matcher"
@@ -58,14 +59,15 @@ module Dependabot
 
     def run
       return unless job
+      return legacy_run unless (operation_class = Operations.class_for(job: job))
 
-      if job.updating_a_pull_request?
-        Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
-        check_and_update_existing_pr_with_error_handling(dependencies)
-      else
-        Dependabot.logger.info("Starting update job for #{job.source.repo}")
-        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
-      end
+      Dependabot.logger.debug("Performing job with #{operation_class}")
+      operation_class.new(
+        service: service,
+        job: job,
+        dependency_snapshot: dependency_snapshot,
+        error_handler: error_handler
+      ).perform
     rescue *ErrorHandler::RUN_HALTING_ERRORS.keys => e
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
         error = StandardError.new(
@@ -87,6 +89,18 @@ module Dependabot
 
     attr_accessor :created_pull_requests
     attr_reader :service, :job, :dependency_snapshot, :error_handler
+
+    # This is the original logic within run, we currently fail over to this if
+    # no Operation class exists for the given job.
+    def legacy_run
+      if job.updating_a_pull_request?
+        Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
+        check_and_update_existing_pr_with_error_handling(dependencies)
+      else
+        Dependabot.logger.info("Starting update job for #{job.source.repo}")
+        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+      end
+    end
 
     def check_and_create_pr_with_error_handling(dependency)
       check_and_create_pull_request(dependency)
