@@ -23,6 +23,7 @@ module Dependabot
 
         def perform
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
+          Dependabot.logger.info("Checking all dependencies for version updates...")
           dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
         end
 
