@@ -1,5 +1,18 @@
 # frozen_string_literal: true
 
+# This class implements our strategy for creating a single Pull Request which
+# updates all outdated Dependencies within a specific project folder.
+#
+# **Note:** This is currently an experimental feature which is not supported
+#           in the service or as an integration point.
+#
+# Some limitations of the current implementation:
+# - It disregards any ignore rules for sake of simplicity
+# - It has no superseding logic, so every time this strategy runs for a repo
+#   it will create a new Pull Request regardless of any existing, open PR
+# - The concept of a 'group rule' or 'update group' which configures which
+#   dependencies should go together is stubbed out; it currently makes best
+#   effort to update everything it can in one pass.
 module Dependabot
   class Updater
     module Operations
