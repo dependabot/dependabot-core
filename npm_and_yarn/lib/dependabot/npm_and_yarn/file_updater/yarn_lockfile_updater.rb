@@ -367,6 +367,10 @@ module Dependabot
             File.write(file.name, updated_content)
           end
 
+          clean_npmrc_in_path(yarn_lock)
+        end
+
+        def clean_npmrc_in_path(yarn_lock)
           # Berry does not read npmrc files.
           return if Helpers.yarn_berry?(yarn_lock)
 
