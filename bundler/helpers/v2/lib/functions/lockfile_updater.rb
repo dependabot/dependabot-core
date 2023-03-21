@@ -35,8 +35,6 @@ module Functions
 
         old_reqs = lock_deps_being_updated_to_exact_versions(definition)
 
-        definition.resolve_remotely!
-
         old_reqs.each do |dep_name, old_req|
           d_dep = definition.dependencies.find { |d| d.name == dep_name }
           if old_req.to_s == DEPENDENCY_DROPPED then definition.dependencies.delete(d_dep)
@@ -44,6 +42,8 @@ module Functions
             d_dep.instance_variable_set(:@requirement, old_req)
           end
         end
+
+        definition.resolve_remotely!
 
         cache_vendored_gems(definition) if Bundler.app_cache.exist?
 
