@@ -56,6 +56,7 @@ module Dependabot
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
+        package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
         package_managers["unknown"] = 1 if package_managers.empty?
 
@@ -167,6 +168,18 @@ module Dependabot
         return unless yarn_lock
 
         Helpers.yarn_version_numeric(yarn_lock)
+      end
+
+      def pnpm_version
+        return @pnpm_version if defined?(@pnpm_version)
+
+        @pnpm_version = package_manager.locked_version("pnpm") || guess_pnpm_version
+      end
+
+      def guess_pnpm_version
+        return unless pnpm_lock
+
+        Helpers.pnpm_major_version
       end
 
       def package_manager
