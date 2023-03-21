@@ -72,6 +72,7 @@ module Dependabot
         fetched_files << package_json
         fetched_files += npm_files
         fetched_files += yarn_files
+        fetched_files += pnpm_files
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -94,6 +95,12 @@ module Dependabot
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
         fetched_yarn_files
+      end
+
+      def pnpm_files
+        fetched_pnpm_files = []
+        fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files
       end
 
       def lerna_files
@@ -180,6 +187,12 @@ module Dependabot
         return @yarn_lock if defined?(@yarn_lock)
 
         @yarn_lock = fetch_file_if_present("yarn.lock")
+      end
+
+      def pnpm_lock
+        return @pnpm_lock if defined?(@pnpm_lock)
+
+        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml") unless skip_pnpm_lock?
       end
 
       def shrinkwrap
@@ -494,6 +507,12 @@ module Dependabot
         return false unless npmrc
 
         npmrc.content.match?(/^package-lock\s*=\s*false/)
+      end
+
+      def skip_pnpm_lock?
+        return false unless npmrc
+
+        npmrc.content.match?(/^lockfile\s*=\s*false/)
       end
 
       def build_unfetchable_deps(unfetchable_deps)
