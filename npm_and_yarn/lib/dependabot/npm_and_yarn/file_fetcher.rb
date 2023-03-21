@@ -101,6 +101,8 @@ module Dependabot
       def pnpm_files
         fetched_pnpm_files = []
         fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
+        fetched_pnpm_files += pnpm_workspace_package_jsons
         fetched_pnpm_files
       end
 
@@ -257,6 +259,11 @@ module Dependabot
                        tap { |f| f.support_file = true }
       end
 
+      def pnpm_workspace_yaml
+        @pnpm_workspace_yaml ||= fetch_file_if_present("pnpm-workspace.yaml")&.
+                                tap { |f| f.support_file = true }
+      end
+
       def lerna_json
         @lerna_json ||= fetch_file_if_present("lerna.json")&.
                         tap { |f| f.support_file = true }
@@ -268,6 +275,10 @@ module Dependabot
 
       def lerna_packages
         @lerna_packages ||= fetch_lerna_packages
+      end
+
+      def pnpm_workspace_package_jsons
+        @pnpm_workspace_package_jsons ||= fetch_pnpm_workspace_package_jsons
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -407,6 +418,14 @@ module Dependabot
         end.compact
       end
 
+      def fetch_pnpm_workspace_package_jsons
+        return [] unless parsed_pnpm_workspace_yaml["packages"]
+
+        workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
+          fetch_package_json_if_present(workspace)
+        end
+      end
+
       def fetch_lerna_packages_from_path(path)
         package_json = fetch_package_json_if_present(path)
         return unless package_json
@@ -514,6 +533,14 @@ module Dependabot
         JSON.parse(shrinkwrap.content)
       rescue JSON::ParserError
         {}
+      end
+
+      def parsed_pnpm_workspace_yaml
+        return {} unless pnpm_workspace_yaml
+
+        YAML.safe_load(pnpm_workspace_yaml.content)
+      rescue Pysch::SyntaxError
+        raise Dependabot::DependencyFileNotParseable, pnpm_workspace_yaml.path
       end
 
       def skip_package_lock?
