@@ -366,6 +366,21 @@ module Dependabot
             updated_content = sanitized_package_json_content(updated_content)
             File.write(file.name, updated_content)
           end
+
+          # Berry does not read npmrc files.
+          return if Helpers.yarn_berry?(yarn_lock)
+
+          # Find .npmrc files in parent directories and remove variables in them
+          # to avoid errors when running yarn 1.
+          dirs = Dir.getwd.split("/")
+          dirs.pop
+          while dirs.any?
+            npmrc = dirs.join("/") + "/.npmrc"
+            break unless File.exist?(npmrc)
+
+            File.write(npmrc, File.read(npmrc).gsub(/\$\{.*\}/, ""))
+            dirs.pop
+          end
         end
 
         def write_lockfiles
