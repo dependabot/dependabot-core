@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require "fileutils"
+require "tmpdir"
+
 require "spec_helper"
 require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
+require "dependabot/workspace"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
@@ -43,6 +47,10 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:on_create) { -> { Dir.pwd } }
     let(:project_name) { "vendor_gems" }
     let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
 
     it "runs inside the temporary repo directory" do
       expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
@@ -92,6 +100,82 @@ RSpec.describe Dependabot::SharedHelpers do
         expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
           to yield_with_args(Pathname)
         expect(described_class).to have_received(:in_a_temporary_directory)
+      end
+    end
+
+    context "when :shared_workspace experiment is disabled" do
+      it "does not create a new workspace" do
+        expect(Dependabot::Experiments.enabled?(:shared_workspace)).to eq(false)
+        expect(Dependabot::Workspace::Git).not_to receive(:new)
+
+        expect do |b|
+          described_class.in_a_temporary_repo_directory(
+            directory,
+            repo_contents_path,
+            &b
+          )
+        end.to yield_with_args(Pathname)
+      end
+
+      context "when given an existing workspace" do
+        it "does not use the workspace" do
+          expect(Dependabot::Experiments.enabled?(:shared_workspace)).to eq(false)
+
+          workspace = instance_double(Dependabot::Workspace::Git)
+          expect(workspace).not_to receive(:change)
+
+          expect do |b|
+            described_class.in_a_temporary_repo_directory(
+              directory,
+              repo_contents_path,
+              workspace: workspace,
+              &b
+            )
+          end.to yield_with_args(Pathname)
+        end
+      end
+    end
+
+    context "when :shared_workspace experiment is enabled" do
+      let(:project_name) { "simple" }
+      let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
+      let(:workspace) { Dependabot::Workspace::Git.new(repo_contents_path, directory) }
+
+      before do
+        allow(Dependabot::Experiments).
+          to receive(:enabled?).with(:shared_workspace).and_return(true)
+      end
+
+      it "creates a new workspace and invokes the block in it" do
+        memo = "test change"
+        allow(Dependabot::Workspace::Git).to receive(:new).and_return(workspace)
+        expect(workspace).to receive(:change).with(memo).and_call_original
+
+        expect do |b|
+          described_class.in_a_temporary_repo_directory(
+            directory,
+            repo_contents_path,
+            memo: memo,
+            &b
+          )
+        end.to yield_with_args(Pathname)
+      end
+
+      context "when given an existing workspace" do
+        it "delegates to the workspace" do
+          memo = "test change"
+          expect(workspace).to receive(:change).with(memo).and_call_original
+
+          expect do |b|
+            described_class.in_a_temporary_repo_directory(
+              directory,
+              repo_contents_path,
+              workspace: workspace,
+              memo: memo,
+              &b
+            )
+          end.to yield_with_args(Pathname)
+        end
       end
     end
   end
