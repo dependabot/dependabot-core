@@ -224,7 +224,7 @@ module Dependabot
           blk.lines.each do |line|
             name_regex = /(id|kotlin)(\s+#{PLUGIN_ID_REGEX}|\(#{PLUGIN_ID_REGEX}\))/o
             name = line.match(name_regex)&.named_captures&.fetch("id")
-            version_regex = /version\s+['"]?(?<version>#{VSN_PART})['"]?/o
+            version_regex = /version\s+(?<version>['"]?#{VSN_PART}['"]?)/o
             version = format_plugin_version(line.match(version_regex)&.named_captures&.fetch("version"))
             next unless name && version
 
@@ -238,7 +238,7 @@ module Dependabot
       end
 
       def format_plugin_version(version)
-        version&.match?(/^\w+$/) ? "$#{version}" : version
+        quoted?(version) ? unquote(version) : "$#{version}"
       end
 
       def extra_groups(line)
@@ -400,6 +400,14 @@ module Dependabot
         dependency_files.find do |f|
           SUPPORTED_BUILD_FILE_NAMES.include?(f.name)
         end
+      end
+
+      def quoted?(string)
+        string&.match?(/^['"].*['"]$/)
+      end
+
+      def unquote(string)
+        string[1..-2]
       end
     end
   end
