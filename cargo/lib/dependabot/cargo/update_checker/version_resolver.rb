@@ -124,7 +124,6 @@ module Dependabot
             spec += ":#{git_dependency_version}" if git_dependency_version
           elsif dependency.version
             spec += ":#{dependency.version}"
-            spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec
@@ -142,7 +141,10 @@ module Dependabot
         def run_cargo_command(command, fingerprint: nil)
           start = Time.now
           command = SharedHelpers.escape_command(command)
-          stdout, process = Open3.capture2e(command)
+          # Pass through any registry tokens supplied via CARGO_REGISTRIES_...
+          # environment variables.
+          env = ENV.select{ |key, value| key.match(/^CARGO_REGISTRIES_/) }
+          stdout, process = Open3.capture2e(env, command)
           time_taken = Time.now - start
 
           # Raise an error with the output from the shell session if Cargo

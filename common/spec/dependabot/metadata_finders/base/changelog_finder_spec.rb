@@ -497,7 +497,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
       end
       let(:gitlab_raw_changelog_url) do
-        "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/files/CHANGELOG.md?ref=master"
       end
       let(:gitlab_repo_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness"
@@ -938,7 +938,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::ChangelogFinder do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tree"
       end
       let(:gitlab_raw_changelog_url) do
-        "https://gitlab.com/org/business/raw/master/CHANGELOG.md"
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/files/CHANGELOG.md?ref=master"
       end
       let(:gitlab_repo_url) do
         "https://gitlab.com/api/v4/projects/org%2Fbusiness"

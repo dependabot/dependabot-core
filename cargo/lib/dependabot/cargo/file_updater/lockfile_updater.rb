@@ -109,7 +109,6 @@ module Dependabot
             spec += ":#{git_previous_version}" if git_previous_version
           elsif dependency.previous_version
             spec += ":#{dependency.previous_version}"
-            spec = "https://github.com/rust-lang/crates.io-index#" + spec
           end
 
           spec

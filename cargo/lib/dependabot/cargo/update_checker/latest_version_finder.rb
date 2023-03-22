@@ -9,6 +9,8 @@ module Dependabot
   module Cargo
     class UpdateChecker
       class LatestVersionFinder
+        CRATES_IO_DL = "https://crates.io/api/v1/crates"
+
         def initialize(dependency:, dependency_files:, credentials:,
                        ignored_versions:, raise_on_ignored: false,
                        security_advisories:)
@@ -84,7 +86,25 @@ module Dependabot
         def crates_listing
           return @crates_listing unless @crates_listing.nil?
 
-          response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
+          info = dependency.requirements.map { |r| r[:source] }.compact.first
+          dl = info && info[:dl] || CRATES_IO_DL
+
+          # Default request headers
+          hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
+
+          # crates.microsoft.com requires an auth token
+          if dl == "https://crates.microsoft.com/api/v1/crates"
+            raise "Must specify CARGO_REGISTRIES_CRATES_MS_TOKEN" if ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"].nil?
+            hdrs["Authorization"] = ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"]
+          end
+
+          response = Excon.get(
+            "#{dl}/#{dependency.name}",
+            headers: hdrs,
+            idempotent: true,
+            **SharedHelpers.excon_defaults
+          )
+
           @crates_listing = JSON.parse(response.body)
         end
 

@@ -9,12 +9,14 @@ module Dependabot
   module Cargo
     class MetadataFinder < Dependabot::MetadataFinders::Base
       SOURCE_KEYS = %w(repository homepage documentation).freeze
+      CRATES_IO_DL = "https://crates.io/api/v1/crates"
 
       private
 
       def look_up_source
         case new_source_type
         when "default" then find_source_from_crates_listing
+        when "registry" then find_source_from_crates_listing
         when "git" then find_source_from_git_url
         else raise "Unexpected source type: #{new_source_type}"
         end
@@ -49,7 +51,25 @@ module Dependabot
       def crates_listing
         return @crates_listing unless @crates_listing.nil?
 
-        response = Dependabot::RegistryClient.get(url: "https://crates.io/api/v1/crates/#{dependency.name}")
+        info = dependency.requirements.map { |r| r[:source] }.compact.first
+        dl = info && info[:dl] || CRATES_IO_DL
+
+        # Default request headers
+        hdrs = { "User-Agent" => "Dependabot (dependabot.com)" }
+
+        # crates.microsoft.com requires an auth token
+        if dl == "https://crates.microsoft.com/api/v1/crates"
+          raise "Must specify CARGO_REGISTRIES_CRATES_MS_TOKEN" if ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"].nil?
+          hdrs["Authorization"] = ENV["CARGO_REGISTRIES_CRATES_MS_TOKEN"]
+        end
+
+        response = Excon.get(
+          "#{dl}/#{dependency.name}",
+          headers: hdrs,
+          idempotent: true,
+          **SharedHelpers.excon_defaults
+        )
+
         @crates_listing = JSON.parse(response.body)
       end
     end
