@@ -342,7 +342,14 @@ module Dependabot
           # only included here to be included in the PR info.
           deps_to_update = updated_dependencies.reject(&:informational_only?)
           updater = file_updater_for(deps_to_update, current_dependency_files)
-          updater.updated_dependency_files
+          updated_files = updater.updated_dependency_files
+          # If we couldn't update anything, sent back the original files
+          updated_files.any? ? updated_files : current_dependency_files
+          # FIXME: Can the updated files include a subset of the input files?
+          #
+          # We should unit test and establish a tolerance for this behaviour
+          # to avoid the downstream contract changing regardless of what the
+          # real-world behaviour is.
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_error(
             dependency: lead_dependency,
