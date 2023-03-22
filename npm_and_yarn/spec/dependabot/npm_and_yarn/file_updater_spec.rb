@@ -3720,5 +3720,282 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
     end
+
+    #############################
+    # Pnpm specific tests #
+    #############################
+    describe "PNPM specific" do
+      let(:updated_pnpm_lock) do
+        updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+      end
+
+      let(:repo_contents_path) { build_tmp_repo(project_name, path: "projects") }
+      let(:files) { project_dependency_files(project_name) }
+
+      describe "simple case" do
+        let(:project_name) { "pnpm/simple" }
+
+        it "keeps the lockfileVersion" do
+          expect(updated_pnpm_lock.content).to include("lockfileVersion: '6.0'")
+        end
+
+        it "has details of the updated item" do
+          expect(updated_pnpm_lock.content).to include("fetch-factory@0.0.2")
+        end
+      end
+
+      context "when updating only the lockfile" do
+        let(:project_name) { "pnpm/lockfile_only_change" }
+
+        let(:dependency_name) { "babel-jest" }
+        let(:version) { "22.4.4" }
+        let(:previous_version) { "22.0.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^22.0.4",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "has details of the updated item, but doesn't update everything" do
+          parsed_packages = YAML.safe_load(updated_pnpm_lock.content)["packages"]
+
+          # Updates the desired dependency
+          expect(parsed_packages.keys).to include(/babel-jest@22\.4\.4/)
+
+          # Doesn't update unrelated dependencies
+          expect(parsed_packages.keys).to include(/eslint@4\.14\.0/)
+        end
+      end
+
+      context "with workspaces" do
+        let(:project_name) { "pnpm/workspaces" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "1.3.1" }
+        let(:previous_version) { "1.2.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.3.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            file: "package.json",
+            requirement: "1.2.0",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "packages/package1/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }, {
+            file: "other_package/package.json",
+            requirement: "^1.2.1",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+
+        it "updates the lockfile and all three package.jsons" do
+          lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+          package = updated_files.find { |f| f.name == "package.json" }
+          package1 = updated_files.find do |f|
+            f.name == "packages/package1/package.json"
+          end
+          other_package = updated_files.find do |f|
+            f.name == "other_package/package.json"
+          end
+
+          expect(lockfile.content).to include("/lodash@1.3.1:")
+          expect(lockfile.content).to include("/lodash").once
+
+          expect(package.content).to include('"lodash": "1.3.1"')
+          expect(package1.content).to include('"lodash": "^1.3.1"')
+          expect(other_package.content).to include('"lodash": "^1.3.1"')
+        end
+
+        context "with a dependency that doesn't appear in all packages" do
+          let(:dependency_name) { "chalk" }
+          let(:version) { "0.4.0" }
+          let(:previous_version) { "0.3.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.4.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "0.3.0",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the lockfile and the correct package_json" do
+            expect(updated_files.map(&:name)).
+              to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
+
+            lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            expect(lockfile.content).to include("/chalk@0.4.0:")
+            expect(lockfile.content).to include("/chalk@0.4.0:").once
+          end
+
+          it "does not add the dependency to the top-level workspace" do
+            lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            parsed_lockfile = YAML.safe_load(lockfile.content)
+
+            expect(parsed_lockfile.dig("importers", ".", "dependencies").keys).not_to include("chalk")
+          end
+        end
+
+        context "with a dependency that appears as a development dependency" do
+          let(:dependency_name) { "etag" }
+          let(:version) { "1.8.1" }
+          let(:previous_version) { "1.8.0" }
+          let(:requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.8.1",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+          let(:previous_requirements) do
+            [{
+              file: "packages/package1/package.json",
+              requirement: "^1.1.0",
+              groups: ["devDependencies"],
+              source: nil
+            }]
+          end
+
+          it "updates the right file" do
+            root_lockfile = updated_files.find { |f| f.name == "pnpm-lock.yaml" }
+            expect(updated_files.map(&:name)). to match_array(%w(pnpm-lock.yaml packages/package1/package.json))
+
+            expect(root_lockfile.content).to include("/etag@1.8.1:")
+            expect(root_lockfile.content).to include("/etag@").once
+          end
+
+          it "updates the existing development declaration" do
+            file = updated_files.find do |f|
+              f.name == "packages/package1/package.json"
+            end
+            parsed_file = JSON.parse(file.content)
+            expect(parsed_file.dig("dependencies", "etag")).to be_nil
+            expect(parsed_file.dig("devDependencies", "etag")).to eq("^1.8.1")
+          end
+        end
+      end
+
+      context "with a sub-dependency" do
+        let(:project_name) { "pnpm/no_lockfile_change" }
+
+        let(:dependency_name) { "acorn" }
+        let(:version) { "5.7.3" }
+        let(:previous_version) { "5.2.1" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { [] }
+
+        it "updates the version" do
+          expect(updated_pnpm_lock.content).to include("/acorn@5.7.3:")
+          expect(updated_pnpm_lock.content).to include("/acorn@").once
+        end
+      end
+
+      context "when package has a invalid platform requirement" do
+        let(:project_name) { "pnpm/invalid_platform" }
+
+        let(:dependency_name) { "node-adodb" }
+        let(:requirements) do
+          [{
+            requirement: "^5.0.2",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) do
+          [{
+            requirement: "^5.0.0",
+            file: "package.json",
+            groups: ["dependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_version) { "5.0.2" }
+        let(:version) { "5.0.0" }
+
+        it "updates the manifest and lockfile" do
+          expect(updated_files.map(&:name)).to match_array(%w(package.json pnpm-lock.yaml))
+
+          expect(updated_pnpm_lock.content).to include("/node-adodb@5.0.2:")
+          expect(updated_pnpm_lock.content).to include("/node-adodb@").once
+        end
+      end
+
+      context "when updating a sub dependency with multiple requirements" do
+        let(:project_name) { "pnpm/multiple_sub_dependencies" }
+
+        let(:dependency_name) { "js-yaml" }
+        let(:version) { "3.14.1" }
+        let(:previous_version) { "3.9.0" }
+        let(:requirements) { [] }
+        let(:previous_requirements) { nil }
+
+        it "de-duplicates all entries to the same version" do
+          expect(updated_files.map(&:name)).to match_array(["pnpm-lock.yaml"])
+
+          expect(updated_pnpm_lock.content).to include("/js-yaml@3.14.1:")
+          expect(updated_pnpm_lock.content).to include("/js-yaml@").once
+        end
+      end
+
+      context "when the exact version we're updating from is still requested" do
+        let(:project_name) { "pnpm/typedoc-plugin-ui-router" }
+
+        let(:dependency_name) { "typescript" }
+        let(:version) { "2.9.1" }
+        let(:previous_version) { "2.1.4" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^2.1.1",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the lockfile" do
+          expect(updated_files.map(&:name)).to eq(%w(pnpm-lock.yaml))
+
+          expect(updated_pnpm_lock.content).to include("/typescript@2.1.4:")
+          expect(updated_pnpm_lock.content).to include("/typescript@2.9.1:")
+        end
+      end
+    end
   end
 end
