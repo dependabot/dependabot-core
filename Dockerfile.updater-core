@@ -101,6 +101,8 @@ rm -rf ~/.bundle
 
 FROM ubuntu:20.04
 
+LABEL org.opencontainers.image.source="https://github.com/dependabot/dependabot-core"
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV DEBIAN_FRONTEND="noninteractive" \
