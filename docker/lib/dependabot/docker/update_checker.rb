@@ -164,9 +164,10 @@ module Dependabot
       end
 
       def remove_version_downgrades(candidate_tags, version_tag)
+        current_version = comparable_version_from(version_tag)
+
         candidate_tags.select do |tag|
-          comparable_version_from(tag) >=
-            comparable_version_from(version_tag)
+          comparable_version_from(tag) >= current_version
         end
       end
 
