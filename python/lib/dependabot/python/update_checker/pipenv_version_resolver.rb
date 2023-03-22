@@ -239,8 +239,10 @@ module Dependabot
             raise DependencyFileNotResolvable, msg
           end
 
-          # NOTE: Pipenv masks the actualy error, see this issue for updates:
+          # NOTE: Pipenv masks the actual error, see this issue for updates:
           # https://github.com/pypa/pipenv/issues/2791
+          # TODO: This may no longer be reproducible on latest pipenv, see linked issue,
+          # so investigate when we next bump to newer pipenv...
           handle_pipenv_installation_error(error.message) if error.message.match?(PIPENV_INSTALLATION_ERROR_REGEX)
 
           # Raise an unhandled error, as this could be a problem with
