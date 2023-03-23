@@ -171,12 +171,7 @@ module Functions
       end
 
       # If there are specific dependencies we can unlock, unlock them
-      return dependencies_to_unlock.append(*potential_deps) if potential_deps.any?
-
-      # Fall back to unlocking *all* sub-dependencies. This is required
-      # because Bundler's SolveFailure objects don't include enough
-      # information to chart the full path through all conflicts unwound
-      dependencies_to_unlock.append(*allowed_new_unlocks)
+      dependencies_to_unlock.append(*potential_deps)
     end
 
     def build_definition(dependencies_to_unlock)
