@@ -122,7 +122,8 @@ module Dependabot
           Dependabot::DependencyChange.new(
             job: job,
             dependencies: all_updated_dependencies,
-            updated_dependency_files: updated_files
+            updated_dependency_files: updated_files,
+            group_rule: GROUP_NAME_PLACEHOLDER # This is a placeholder for a real rule object in future
           )
         end
 
