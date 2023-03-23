@@ -20,7 +20,7 @@ RSpec.describe Dependabot::Updater::Operations do
       expect(described_class.class_for(job: job)).to be_nil
     end
 
-    it "returns the UpdateAllVersions when the Job is for a fresh, non-security update with no dependencies" do
+    it "returns the UpdateAllVersions class when the Job is for a fresh, non-security update with no dependencies" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: false,
                             updating_a_pull_request?: false,
@@ -28,6 +28,22 @@ RSpec.describe Dependabot::Updater::Operations do
                             is_a?: true)
 
       expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::UpdateAllVersions)
+    end
+
+    context "the grouped update experiment is enabled" do
+      it "returns the GroupUpdateAllVersions class when the Job is for a fresh, version update with no dependencies" do
+        Dependabot::Experiments.register("grouped_updates_prototype", true)
+
+        job = instance_double(Dependabot::Job,
+                              security_updates_only?: false,
+                              updating_a_pull_request?: false,
+                              dependencies: [],
+                              is_a?: true)
+
+        expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::GroupUpdateAllVersions)
+
+        Dependabot::Experiments.reset!
+      end
     end
 
     it "raises an argument error with anything other than a Dependabot::Job" do

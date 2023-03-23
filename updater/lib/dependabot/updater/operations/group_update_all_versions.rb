@@ -1,15 +1,30 @@
 # frozen_string_literal: true
 
+# This class implements our strategy for creating a single Pull Request which
+# updates all outdated Dependencies within a specific project folder.
+#
+# **Note:** This is currently an experimental feature which is not supported
+#           in the service or as an integration point.
+#
+# Some limitations of the current implementation:
+# - It disregards any ignore rules for sake of simplicity
+# - It has no superseding logic, so every time this strategy runs for a repo
+#   it will create a new Pull Request regardless of any existing, open PR
+# - The concept of a 'group rule' or 'update group' which configures which
+#   dependencies should go together is stubbed out; it currently makes best
+#   effort to update everything it can in one pass.
 module Dependabot
   class Updater
     module Operations
-      class UpdateAllVersions
+      class GroupUpdateAllVersions
+        GROUP_NAME_PLACEHOLDER = "*"
+
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
           return false if job.dependencies&.any?
 
-          true
+          Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
@@ -17,14 +32,32 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = []
         end
 
         def perform
-          Dependabot.logger.info("Starting update job for #{job.source.repo}")
-          Dependabot.logger.info("Checking all dependencies for version updates...")
-          dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
+          # We should log the rule being executed, let's just hard-code wildcard for now
+          # since the prototype makes best-effort to do everything in one pass.
+          Dependabot.logger.info("Starting update group for '#{GROUP_NAME_PLACEHOLDER}'")
+          dependency_change = compile_dependency_change
+
+          if dependency_change.dependencies.any?
+            Dependabot.logger.info("Creating a pull request for '#{GROUP_NAME_PLACEHOLDER}'")
+            begin
+              service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+            rescue StandardError => e
+              # FIXME: This is a workround for not having a single Dependency to report against
+              #
+              #        We could use all_updated_deps.first, but that could be misleading. It may
+              #        make more sense to handle the group rule as a Dependancy-ish object
+              group_dependency = OpenStruct.new(name: "group-all")
+              raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+              error_handler.handle_dependabot_error(error: e, dependency: group_dependency)
+            end
+          else
+            Dependabot.logger.info("Nothing to update for Group Rule: '#{GROUP_NAME_PLACEHOLDER}'")
+          end
         end
 
         private
@@ -32,8 +65,7 @@ module Dependabot
         attr_reader :job,
                     :service,
                     :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+                    :error_handler
 
         def dependencies
           all_deps = dependency_snapshot.dependencies
@@ -57,8 +89,86 @@ module Dependabot
           []
         end
 
-        def check_and_create_pr_with_error_handling(dependency)
-          check_and_create_pull_request(dependency)
+        # Returns a Dependabot::DependencyChange object that encapsulates the
+        # outcome of attempting to update every dependency iteratively which
+        # can be used for PR creation.
+        def compile_dependency_change
+          all_updated_dependencies = []
+          updated_files = dependencies.inject(dependency_snapshot.dependency_files) do |dependency_files, dependency|
+            updated_dependencies = compile_updates_for(dependency, dependency_files)
+
+            if updated_dependencies.any?
+              lead_dependency = updated_dependencies.find do |dep|
+                dep.name.casecmp(dependency.name).zero?
+              end
+
+              # FIXME: This needs to be de-duped
+              #
+              # To start out with, using a variant on the 'existing_pull_request'
+              # logic might make sense -or- we could employ a one-and-done rule
+              # where the first update to a dependency blocks subsequent changes.
+              #
+              # In a follow-up iteration, a 'shared workspace' could provide the
+              # filtering for us assuming we iteratively make file changes for
+              # each Array of dependencies in the batch and the FileUpdater tells
+              # us which cannot be applied.
+              all_updated_dependencies.concat(updated_dependencies)
+              generate_dependency_files_for(lead_dependency, updated_dependencies, dependency_files)
+            else
+              dependency_files # pass on the existing files if no updates are possible
+            end
+          end
+
+          Dependabot::DependencyChange.new(
+            job: job,
+            dependencies: all_updated_dependencies,
+            updated_dependency_files: updated_files,
+            group_rule: GROUP_NAME_PLACEHOLDER # This is a placeholder for a real rule object in future
+          )
+        end
+
+        # This method determines which dependencies must change given a target
+        # 'lead' dependency we want to update.
+        #
+        # This may return more than 1 dependency since the ecosystem-specific
+        # tooling may find collaborators which need to be updated in lock-step.
+        #
+        # This method **must** must return an Array when it errors
+        def compile_updates_for(dependency, dependency_files)
+          checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
+
+          log_checking_for_update(dependency)
+
+          # FIXME: Grouped updates currently do not interact with ignore rules
+          # return [] if all_versions_ignored?(dependency, checker)
+
+          if checker.up_to_date?
+            log_up_to_date(dependency)
+            return []
+          end
+
+          requirements_to_unlock = requirements_to_unlock(checker)
+          log_requirements_for_update(requirements_to_unlock, checker)
+
+          if requirements_to_unlock == :update_not_possible
+            Dependabot.logger.info(
+              "No update possible for #{dependency.name} #{dependency.version}"
+            )
+            return []
+          end
+
+          updated_deps = checker.updated_dependencies(
+            requirements_to_unlock: requirements_to_unlock
+          )
+
+          if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
+            Dependabot.logger.info(
+              "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
+            )
+            return []
+          end
+
+          filter_unrelated_and_unchanged(updated_deps, checker)
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_error(
             dependency: dependency,
@@ -66,67 +176,11 @@ module Dependabot
             error_type: "inconsistent_registry_response",
             error_detail: e.message
           )
+          [] # return an empty set
         rescue StandardError => e
           error_handler.handle_dependabot_error(error: e, dependency: dependency)
+          [] # return an empty set
         end
-
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
-        def check_and_create_pull_request(dependency)
-          checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
-
-          log_checking_for_update(dependency)
-
-          return if all_versions_ignored?(dependency, checker)
-          return log_up_to_date(dependency) if checker.up_to_date?
-
-          if pr_exists_for_latest_version?(checker)
-            return Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
-              "with latest version #{checker.latest_version}"
-            )
-          end
-
-          requirements_to_unlock = requirements_to_unlock(checker)
-          log_requirements_for_update(requirements_to_unlock, checker)
-
-          if requirements_to_unlock == :update_not_possible
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version}"
-            )
-          end
-
-          updated_deps = checker.updated_dependencies(
-            requirements_to_unlock: requirements_to_unlock
-          )
-
-          if (existing_pr = existing_pull_request(updated_deps))
-            deps = existing_pr.map do |dep|
-              if dep.fetch("dependency-removed", false)
-                "#{dep.fetch('dependency-name')}@removed"
-              else
-                "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
-              end
-            end
-
-            return Dependabot.logger.info(
-              "Pull request already exists for #{deps.join(', ')}"
-            )
-          end
-
-          if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version} " \
-              "(peer dependency can be updated)"
-            )
-          end
-
-          updated_files = generate_dependency_files_for(updated_deps)
-          updated_deps = filter_unrelated_and_unchanged(updated_deps, checker)
-          create_pull_request(updated_deps, updated_files)
-        end
-        # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/AbcSize
 
         def filter_unrelated_and_unchanged(updated_dependencies, checker)
           updated_dependencies.reject do |d|
@@ -164,54 +218,36 @@ module Dependabot
             ignored_versions_for(dep, security_updates_only: false)
         end
 
-        def update_checker_for(dependency, raise_on_ignored:)
+        def update_checker_for(dependency, dependency_files, raise_on_ignored:)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
-            dependency_files: dependency_snapshot.dependency_files,
+            dependency_files: dependency_files,
             repo_contents_path: job.repo_contents_path,
             credentials: job.credentials,
-            ignored_versions: ignore_conditions_for(dependency),
-            security_advisories: security_advisories_for(dependency),
+            ignored_versions: [], # FIXME: Grouped updates do not honour ignore rules for now
+            security_advisories: [], # FIXME: Version updates do not use advisory data for now
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
             options: job.experiments
           )
         end
 
-        def file_updater_for(dependencies)
+        def file_updater_for(dependencies, dependency_files)
           Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
             dependencies: dependencies,
-            dependency_files: dependency_snapshot.dependency_files,
+            dependency_files: dependency_files,
             repo_contents_path: job.repo_contents_path,
             credentials: job.credentials,
             options: job.experiments
           )
         end
 
-        def security_advisories_for(dep)
-          relevant_advisories =
-            job.security_advisories.
-            select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
-
-          relevant_advisories.map do |adv|
-            vulnerable_versions = adv["affected-versions"] || []
-            safe_versions = (adv["patched-versions"] || []) +
-                            (adv["unaffected-versions"] || [])
-
-            Dependabot::SecurityAdvisory.new(
-              dependency_name: dep.name,
-              package_manager: job.package_manager,
-              vulnerable_versions: vulnerable_versions,
-              safe_versions: safe_versions
-            )
-          end
-        end
-
         def log_checking_for_update(dependency)
           Dependabot.logger.info(
             "Checking if #{dependency.name} #{dependency.version} needs updating"
           )
-          log_ignore_conditions(dependency)
+          # FIXME: Grouped updates do not honour ignore rules for now
+          # log_ignore_conditions(dependency)
         end
 
         def log_ignore_conditions(dep)
@@ -247,32 +283,6 @@ module Dependabot
           true
         end
 
-        def pr_exists_for_latest_version?(checker)
-          latest_version = checker.latest_version&.to_s
-          return false if latest_version.nil?
-
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
-        end
-
-        def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
-          )
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-        end
-
         def requirements_to_unlock(checker)
           if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -302,8 +312,6 @@ module Dependabot
           updated_deps.
             reject { |dep| dep.name == dependency_name }.
             any? do |dep|
-              next true if existing_pull_request([dep])
-
               original_peer_dep = ::Dependabot::Dependency.new(
                 name: dep.name,
                 version: dep.previous_version,
@@ -315,7 +323,11 @@ module Dependabot
             end
         end
 
-        def generate_dependency_files_for(updated_dependencies)
+        # This method generates new dependency files from the current files and list of dependencies to
+        # be updated
+        #
+        # This method **must** return the current files in the event of an error
+        def generate_dependency_files_for(lead_dependency, updated_dependencies, current_dependency_files)
           if updated_dependencies.count == 1
             updated_dependency = updated_dependencies.first
             Dependabot.logger.info("Updating #{updated_dependency.name} from " \
@@ -330,29 +342,28 @@ module Dependabot
           # updated indirectly as a result of a parent dependency update and are
           # only included here to be included in the PR info.
           deps_to_update = updated_dependencies.reject(&:informational_only?)
-          updater = file_updater_for(deps_to_update)
-          updater.updated_dependency_files
-        end
-
-        def create_pull_request(dependencies, updated_dependency_files)
-          Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
-
-          dependency_change = Dependabot::DependencyChange.new(
-            job: job,
-            dependencies: dependencies,
-            updated_dependency_files: updated_dependency_files
+          updater = file_updater_for(deps_to_update, current_dependency_files)
+          updated_files = updater.updated_dependency_files
+          # If we couldn't update anything, sent back the original files
+          updated_files.any? ? updated_files : current_dependency_files
+          # FIXME: Can the updated files include a subset of the input files?
+          #
+          # We should unit test and establish a tolerance for this behaviour
+          # to avoid the downstream contract changing regardless of what the
+          # real-world behaviour is.
+        rescue Dependabot::InconsistentRegistryResponse => e
+          error_handler.log_error(
+            dependency: lead_dependency,
+            error: e,
+            error_type: "inconsistent_registry_response",
+            error_detail: e.message
           )
+          current_dependency_files # return the files unchanged
+        rescue StandardError => e
+          raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
-          service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-
-          created_pull_requests << dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
-          end
+          error_handler.handle_dependabot_error(error: e, dependency: lead_dependency)
+          current_dependency_files # return the files unchanged
         end
       end
     end

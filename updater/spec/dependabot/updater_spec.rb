@@ -2465,6 +2465,58 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
+  # TODO: Expand this unit test to exercise creation of a PR with multiple changes
+  #
+  # This is currently just a very simple litmus test that the adapter for grouped updates
+  # is not broken, we rely on a smoke test to do blind testing of the "real" grouping
+  # function for now.
+  describe "#run with the grouped experiment enabled" do
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    it "updates multiple dependencies in a single PR correctly" do
+      stub_update_checker
+
+      job = build_job(experiments: { "grouped-updates-prototype" => true })
+      service = build_service
+      updater = build_updater(service: service, job: job)
+
+      expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+        expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+        expect(dependency_change.updated_dependency_files_hash).to eql(
+          [
+            {
+              "name" => "Gemfile",
+              "content" => fixture("bundler/updated/Gemfile"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            },
+            {
+              "name" => "Gemfile.lock",
+              "content" => fixture("bundler/updated/Gemfile.lock"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            }
+          ]
+        )
+        expect(base_commit_sha).to eql("sha")
+      end
+
+      updater.run
+    end
+  end
+
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
     Dependabot::Updater.new(
       service: service,
