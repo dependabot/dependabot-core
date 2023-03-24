@@ -117,6 +117,13 @@ module Dependabot
         process_termsig: process.termsig
       }
 
+      if stderr.include?("JavaScript heap out of memory")
+        raise HelperSubprocessFailed.new(
+          message: "JavaScript heap out of memory",
+          error_context: error_context
+        )
+      end
+
       response = JSON.parse(stdout)
       return response["result"] if process.success?
 
