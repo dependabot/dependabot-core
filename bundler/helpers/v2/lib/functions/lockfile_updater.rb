@@ -171,7 +171,7 @@ module Functions
       end
 
       # If there are specific dependencies we can unlock, unlock them
-      return dependencies_to_unlock.append(*potentials_deps) if potentials_deps.any?
+      return dependencies_to_unlock.append(*potential_deps) if potential_deps.any?
 
       # Fall back to unlocking *all* sub-dependencies. This is required
       # because Bundler's SolveFailure objects don't include enough
