@@ -150,6 +150,7 @@ docker run --rm -ti \
   -v "$(pwd)/elm/lib:$CODE_DIR/elm/lib" \
   -v "$(pwd)/elm/script:$CODE_DIR/elm/script" \
   -v "$(pwd)/elm/spec:$CODE_DIR/elm/spec" \
+  -v "$(pwd)/external_files:$CODE_DIR/external_files" \
   -v "$(pwd)/git_submodules/.rubocop.yml:$CODE_DIR/git_submodules/.rubocop.yml" \
   -v "$(pwd)/git_submodules/Gemfile:$CODE_DIR/git_submodules/Gemfile" \
   -v "$(pwd)/git_submodules/dependabot-git_submodules.gemspec:$CODE_DIR/git_submodules/dependabot-git_submodules.gemspec" \

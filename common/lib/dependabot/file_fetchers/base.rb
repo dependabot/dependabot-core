@@ -16,7 +16,7 @@ require "dependabot/shared_helpers"
 module Dependabot
   module FileFetchers
     class Base
-      attr_reader :source, :credentials, :repo_contents_path, :options
+      attr_reader :source, :credentials, :repo_contents_path, :options, :ext_provider
 
       CLIENT_NOT_FOUND_ERRORS = [
         Octokit::NotFound,
@@ -51,7 +51,7 @@ module Dependabot
       # by repo_contents_path and still use an API trip.
       #
       # options supports custom feature enablement
-      def initialize(source:, credentials:, repo_contents_path: nil, options: {})
+      def initialize(source: nil, credentials: nil, repo_contents_path: nil, options: {})
         @source = source
         @credentials = credentials
         @repo_contents_path = repo_contents_path
@@ -231,6 +231,8 @@ module Dependabot
       end
 
       def client_for_provider
+        return source.ext_provider.client unless source&.ext_provider.nil?
+
         case source.provider
         when "github" then github_client
         when "gitlab" then gitlab_client
@@ -311,6 +313,10 @@ module Dependabot
       end
 
       def _fetch_repo_contents_fully_specified(provider, repo, path, commit)
+        unless source&.ext_provider.nil?
+          return source.ext_provider.client.repo_contents(repo, path, commit)
+        end
+
         case provider
         when "github"
           _github_repo_contents(repo, path, commit)
@@ -499,6 +505,10 @@ module Dependabot
       end
 
       def _fetch_file_content_fully_specified(provider, repo, path, commit)
+        unless source&.ext_provider.nil?
+          return source.ext_provider.client.fetch_file_contents(repo, commit, path)
+        end
+
         case provider
         when "github"
           _fetch_file_content_from_github(path, repo, commit)

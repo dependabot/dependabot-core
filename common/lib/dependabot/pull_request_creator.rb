@@ -100,6 +100,10 @@ module Dependabot
     end
 
     def create
+      unless source&.ext_provider.nil?
+        return external_creator.create
+      end
+
       case source.provider
       when "github" then github_creator.create
       when "gitlab" then gitlab_creator.create
@@ -211,6 +215,38 @@ module Dependabot
         author_details: author_details,
         labeler: labeler,
         require_up_to_date_base: require_up_to_date_base?
+      )
+    end
+
+    def external_creator
+      source.ext_provider.client.create_pr(
+        {
+          source: source,
+          dependencies: dependencies,
+          files: files,
+          base_commit: base_commit,
+          credentials: credentials,
+          pr_message_header: pr_message_header,
+          pr_message_footer: pr_message_footer,
+          custom_labels: custom_labels,
+          author_details: author_details,
+          signature_key: signature_key,
+          commit_message_options: commit_message_options,
+          vulnerabilities_fixed: vulnerabilities_fixed,
+          reviewers: reviewers,
+          assignees: assignees,
+          milestone: milestone,
+          branch_name_separator: branch_name_separator,
+          branch_name_prefix: branch_name_prefix,
+          branch_name_max_length: branch_name_max_length,
+          github_redirection_service: github_redirection_service,
+          custom_headers: custom_headers,
+          provider_metadata: provider_metadata,
+          branch_name: branch_namer.new_branch_name,
+          message: message,
+          labeler: labeler,
+          require_up_to_date_base: require_up_to_date_base?
+        }
       )
     end
 

@@ -71,6 +71,15 @@ require "dependabot/python"
 require "dependabot/pub"
 require "dependabot/terraform"
 
+require_relative "bitbucket_server/bitbucket_server_provider"
+
+bitbucket_creds = {
+  "type" => "git_source",
+  "host" => "stash.air-watch.com",
+  "username" => "x-access-token",
+  "token" => ENV["BITBUCKET_ACCESS_TOKEN"]
+}
+
 credentials = [
   {
     "type" => "git_source",
@@ -78,12 +87,6 @@ credentials = [
     "username" => "x-access-token",
     "password" => ENV["GITHUB_ACCESS_TOKEN"]
   },
-  {
-    "type" => "git_source",
-    "host" => "stash.air-watch.com",
-    "username" => "x-access-token",
-    "token" => ENV["BITBUCKET_ACCESS_TOKEN"]
-  }
 ]
 
 # Full name of the repo you want to create pull requests for.
@@ -117,21 +120,24 @@ package_manager = ENV["PACKAGE_MANAGER"] || "nuget"
 options = JSON.parse(ENV["OPTIONS"] || "{}", {:symbolize_names => true})
 puts "Running with options: #{options}"
 
-source = Dependabot::Source.new(
-  provider: "bitbucket_server",
+ext_provider = BitbucketServerProvider.new(
   hostname: "stash.air-watch.com",
   api_endpoint: "https://stash.air-watch.com/rest/api/1.0/",
   repo: repo_name,
   directory: directory,
-  branch: branch
+  branch: branch,
+  credentials: bitbucket_creds
+)
+
+source = Dependabot::Source.new(
+  ext_provider: ext_provider
 )
 
 # Fetch the dependency files
 puts "Fetching #{package_manager} dependency files for #{repo_name}"
 fetcher = Dependabot::FileFetchers.for_package_manager(package_manager).new(
   source: source,
-  credentials: credentials,
-  options: options,
+  options: options
   )
 
 files = fetcher.files
@@ -176,7 +182,7 @@ dependencies.select(&:top_level?).each do |dep|
   )
 
   # Generate updated dependency files
-  puts "  - Updating #{dep.name} (from #{dep.version})..."
+  puts "Updating #{dep.name} (from #{dep.version})..."
   updater = Dependabot::FileUpdaters.for_package_manager(package_manager).new(
     dependencies: updated_deps,
     dependency_files: files,
@@ -195,14 +201,13 @@ dependencies.select(&:top_level?).each do |dep|
     source: source,
     github_redirection_service: nil
   ).message
-  puts " #{msg.pr_name}"
 
   # Create a Jira issue to track the update
 
   # Don't create a new ticket, just use an old one. This saves having to pull in all that Jira code.
   # issue_id = create_issue_for_package(ENV.fetch("JIRA_PROJECT"), dep.name, summary: msg.pr_name)
   issue_id = "TESTABHI-2"
-  puts " Reusing old Jira issue #{issue_id}"
+  puts "  Reusing old Jira issue #{issue_id}"
 
   # Create a pull request for the update
   pr_creator = Dependabot::PullRequestCreator.new(
@@ -217,7 +222,7 @@ dependencies.select(&:top_level?).each do |dep|
     pr_message_header: "#{issue_id} #{msg.pr_name}"
   )
   pr_creator.create
-  puts " Created PR for #{issue_id}"
+  puts "  Created PR: #{issue_id} #{msg.pr_name}"
 
   # TODO: tiedec remove next two lines before release
   puts "Aborting now for test purposes"

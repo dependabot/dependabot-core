@@ -241,6 +241,10 @@ module Dependabot
         end
 
         def source_provider_supports_html?
+          unless source&.ext_provider.nil?
+            return source.ext_provider.client.source_provider_supports_html?
+          end
+
           !%w(azure bitbucket codecommit).include?(source.provider)
         end
 

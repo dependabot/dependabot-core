@@ -262,6 +262,10 @@ module Dependabot
       end
 
       def recent_commit_messages
+        unless source&.ext_provider.nil?
+          return source.ext_provider.client.recent_commit_messages
+        end
+
         case source.provider
         when "github" then recent_github_commit_messages
         when "gitlab" then recent_gitlab_commit_messages
@@ -329,15 +333,20 @@ module Dependabot
       end
 
       def last_dependabot_commit_message
-        @last_dependabot_commit_message ||=
-          case source.provider
-          when "github" then last_github_dependabot_commit_message
-          when "gitlab" then last_gitlab_dependabot_commit_message
-          when "azure" then last_azure_dependabot_commit_message
-          when "bitbucket" then last_bitbucket_dependabot_commit_message
-          when "codecommit" then last_codecommit_dependabot_commit_message
-          else raise "Unsupported provider: #{source.provider}"
-          end
+        unless source&.ext_provider.nil?
+          @last_dependabot_commit_message ||=
+            source.ext_provider.client.last_dependabot_commit_message
+        else
+          @last_dependabot_commit_message ||=
+            case source.provider
+            when "github" then last_github_dependabot_commit_message
+            when "gitlab" then last_gitlab_dependabot_commit_message
+            when "azure" then last_azure_dependabot_commit_message
+            when "bitbucket" then last_bitbucket_dependabot_commit_message
+            when "codecommit" then last_codecommit_dependabot_commit_message
+            else raise "Unsupported provider: #{source.provider}"
+            end
+        end
       end
 
       def last_github_dependabot_commit_message

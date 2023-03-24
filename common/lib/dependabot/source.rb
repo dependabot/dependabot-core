@@ -61,7 +61,7 @@ module Dependabot
     IGNORED_PROVIDER_HOSTS = %w(gitbox.apache.org svn.apache.org fuchsia.googlesource.com).freeze
 
     attr_accessor :provider, :repo, :directory, :branch, :commit,
-                  :hostname, :api_endpoint
+                  :hostname, :api_endpoint, :ext_provider
 
     def self.from_url(url_string)
       return github_enterprise_from_url(url_string) unless url_string&.match?(SOURCE_REGEX)
@@ -106,22 +106,43 @@ module Dependabot
       false
     end
 
-    def initialize(provider:, repo:, directory: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil)
-      if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
-        msg = "Both hostname and api_endpoint must be specified if either " \
-              "are. Alternatively, both may be left blank to use the " \
-              "provider's defaults."
-        raise msg
-      end
+    def initialize(provider: nil, repo: nil, directory: nil, branch: nil,
+                   commit: nil, hostname: nil, api_endpoint: nil,
+                   ext_provider: nil)
+      if ext_provider.nil?
+        if (provider.nil? || repo.nil?)
+          raise "Must specify either ext_provider or both provider and repo."
+        end
+        if (hostname.nil? ^ api_endpoint.nil?) && (provider != "codecommit")
+          msg = "Both hostname and api_endpoint must be specified if either " \
+                "are. Alternatively, both may be left blank to use the " \
+                "provider's defaults."
+          raise msg
+        end
 
-      @provider = provider
-      @repo = repo
-      @directory = directory
-      @branch = branch
-      @commit = commit
-      @hostname = hostname || default_hostname(provider)
-      @api_endpoint = api_endpoint || default_api_endpoint(provider)
+        @provider = provider
+        @repo = repo
+        @directory = directory
+        @branch = branch
+        @commit = commit
+        @hostname = hostname || default_hostname(provider)
+        @api_endpoint = api_endpoint || default_api_endpoint(provider)
+        @ext_provider = ext_provider
+      else
+        unused_params = [provider, repo, directory, branch, commit, hostname, api_endpoint]
+        unless unused_params.all?(&:nil?)
+          raise "When using ext_provider, all other arguments must not be set."
+        end
+
+        @provider = ext_provider.provider
+        @repo = ext_provider.repo
+        @directory = ext_provider.directory
+        @branch = ext_provider.branch
+        @commit = ext_provider.commit
+        @hostname = ext_provider.hostname
+        @api_endpoint = ext_provider.api_endpoint
+        @ext_provider = ext_provider
+      end
     end
 
     def url
@@ -129,6 +150,8 @@ module Dependabot
     end
 
     def url_with_directory
+      return ext_provider.url_with_directory unless ext_provider.nil?
+
       return url if [nil, ".", "/"].include?(directory)
 
       case provider
@@ -168,6 +191,8 @@ module Dependabot
     private
 
     def default_hostname(provider)
+      return ext_provider.default_hostname unless ext_provider.nil?
+
       case provider
       when "github" then "github.com"
       when "bitbucket" then "bitbucket.org"
@@ -179,6 +204,8 @@ module Dependabot
     end
 
     def default_api_endpoint(provider)
+      return ext_provider.default_hostname unless ext_provider.nil?
+
       case provider
       when "github" then "https://api.github.com/"
       when "bitbucket" then "https://api.bitbucket.org/2.0/"
