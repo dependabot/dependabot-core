@@ -50,7 +50,7 @@ module Functions
         definition.to_lock
       rescue Bundler::GemNotFound => e
         unlock_yanked_gem(dependencies_to_unlock, e) && retry
-      rescue Bundler::VersionConflict => e
+      rescue Bundler::SolveFailure => e
         unlock_blocking_subdeps(dependencies_to_unlock, e) && retry
       rescue *RETRYABLE_ERRORS
         raise if @retrying
@@ -146,7 +146,6 @@ module Functions
       dependencies_to_unlock << gem_name
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
       all_deps =  Bundler::LockfileParser.new(lockfile).
                   specs.map(&:name).map(&:to_s)
@@ -158,22 +157,27 @@ module Functions
 
       # Unlock any sub-dependencies that Bundler reports caused the
       # conflict
-      potentials_deps =
-        error.cause.conflicts.values.
-        flat_map(&:requirement_trees).
-        filter_map do |tree|
-          tree.find { |req| allowed_new_unlocks.include?(req.name) }
-        end.map(&:name)
+      incompatibility = error.cause.incompatibility
+      potential_deps = []
+
+      while incompatibility.conflict?
+        cause = incompatibility.cause
+        incompatibility = cause.incompatibility
+
+        incompatibility.terms.each do |term|
+          name = term.package.name
+          potential_deps << name if allowed_new_unlocks.include?(name)
+        end
+      end
 
       # If there are specific dependencies we can unlock, unlock them
       return dependencies_to_unlock.append(*potentials_deps) if potentials_deps.any?
 
       # Fall back to unlocking *all* sub-dependencies. This is required
-      # because Bundler's VersionConflict objects don't include enough
+      # because Bundler's SolveFailure objects don't include enough
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
     end
-    # rubocop:enable Metrics/PerceivedComplexity
 
     def build_definition(dependencies_to_unlock)
       defn = Bundler::Definition.build(

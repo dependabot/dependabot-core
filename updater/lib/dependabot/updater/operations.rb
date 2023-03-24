@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/group_update_all_versions"
 require "dependabot/updater/operations/update_all_versions"
 
 # This module is responsible for determining which Operation a Job is requesting
@@ -24,6 +25,7 @@ module Dependabot
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
       OPERATIONS = [
+        GroupUpdateAllVersions,
         UpdateAllVersions
       ]
 
