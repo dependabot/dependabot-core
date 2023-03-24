@@ -103,79 +103,22 @@ RSpec.describe Dependabot::SharedHelpers do
       end
     end
 
-    context "when :shared_workspace experiment is disabled" do
-      it "does not create a new workspace" do
-        expect(Dependabot::Experiments.enabled?(:shared_workspace)).to eq(false)
-        expect(Dependabot::Workspace::Git).not_to receive(:new)
-
-        expect do |b|
-          described_class.in_a_temporary_repo_directory(
-            directory,
-            repo_contents_path,
-            &b
-          )
-        end.to yield_with_args(Pathname)
-      end
-
-      context "when given an existing workspace" do
-        it "does not use the workspace" do
-          expect(Dependabot::Experiments.enabled?(:shared_workspace)).to eq(false)
-
-          workspace = instance_double(Dependabot::Workspace::Git)
-          expect(workspace).not_to receive(:change)
-
-          expect do |b|
-            described_class.in_a_temporary_repo_directory(
-              directory,
-              repo_contents_path,
-              workspace: workspace,
-              &b
-            )
-          end.to yield_with_args(Pathname)
-        end
-      end
-    end
-
-    context "when :shared_workspace experiment is enabled" do
+    context "when there is an active workspace" do
       let(:project_name) { "simple" }
       let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
       let(:workspace) { Dependabot::Workspace::Git.new(repo_contents_path, directory) }
 
       before do
-        allow(Dependabot::Experiments).
-          to receive(:enabled?).with(:shared_workspace).and_return(true)
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
       end
 
-      it "creates a new workspace and invokes the block in it" do
+      it "delegates to the workspace" do
         memo = "test change"
-        allow(Dependabot::Workspace::Git).to receive(:new).and_return(workspace)
         expect(workspace).to receive(:change).with(memo).and_call_original
 
         expect do |b|
-          described_class.in_a_temporary_repo_directory(
-            directory,
-            repo_contents_path,
-            memo: memo,
-            &b
-          )
+          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, memo: memo, &b)
         end.to yield_with_args(Pathname)
-      end
-
-      context "when given an existing workspace" do
-        it "delegates to the workspace" do
-          memo = "test change"
-          expect(workspace).to receive(:change).with(memo).and_call_original
-
-          expect do |b|
-            described_class.in_a_temporary_repo_directory(
-              directory,
-              repo_contents_path,
-              workspace: workspace,
-              memo: memo,
-              &b
-            )
-          end.to yield_with_args(Pathname)
-        end
       end
     end
   end

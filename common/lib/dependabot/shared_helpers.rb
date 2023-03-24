@@ -35,8 +35,7 @@ module Dependabot
         # file fetcher to raise a DependencyFileNotFound error
         FileUtils.mkdir_p(path)
 
-        if Dependabot::Experiments.enabled?(:shared_workspace)
-          workspace = options[:workspace] || Dependabot::Workspace::Git.new(repo_contents_path, directory)
+        if (workspace = Dependabot::Workspace.active_workspace)
           return workspace.change(options[:memo], &block)
         end
 
