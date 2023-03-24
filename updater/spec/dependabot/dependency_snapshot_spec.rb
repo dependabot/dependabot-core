@@ -78,7 +78,7 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
         expect(snapshot.dependencies.count).to eql(2)
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
-        expect(snapshot.dependencies.map(&:name)).to eql(["dummy-pkg-a", "dummy-pkg-b"])
+        expect(snapshot.dependencies.map(&:name)).to eql(%w(dummy-pkg-a dummy-pkg-b))
       end
 
       it "passes any job experiments on to the FileParser it instantiates as options" do

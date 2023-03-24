@@ -585,8 +585,6 @@ module Dependabot
         created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/PerceivedComplexity
     def dependencies
       all_deps = dependency_snapshot.dependencies
 
@@ -627,8 +625,6 @@ module Dependabot
 
       deps
     end
-    # rubocop:enable Metrics/PerceivedComplexity
-    # rubocop:enable Metrics/AbcSize
 
     def update_checker_for(dependency, raise_on_ignored:)
       Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
