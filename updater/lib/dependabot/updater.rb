@@ -632,9 +632,6 @@ module Dependabot
              allowed_deps.reject { |d| job.vulnerable?(d) }
 
       deps
-    rescue StandardError => e
-      error_handler.handle_parser_error(e)
-      []
     end
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/AbcSize

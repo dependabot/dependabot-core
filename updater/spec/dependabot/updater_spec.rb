@@ -158,6 +158,7 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
+    # TODO: Remove this test, this cannot happen anymore.
     context "when the job has already been processed" do
       it "no-ops" do
         job = nil
