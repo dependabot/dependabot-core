@@ -20,10 +20,10 @@ RSpec.describe Dependabot::DependencySnapshot do
     instance_double(Dependabot::Job,
                     package_manager: "bundler",
                     repo_contents_path: nil,
-                    credentials: {},
+                    credentials: [],
                     reject_external_code?: false,
                     source: source,
-                    experiments: {})
+                    experiments: { large_hadron_collider: true })
   end
 
   let(:dependency_files) do
@@ -79,6 +79,19 @@ RSpec.describe Dependabot::DependencySnapshot do
         expect(snapshot.dependencies.count).to eql(2)
         expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
         expect(snapshot.dependencies.map(&:name)).to eql(["dummy-pkg-a", "dummy-pkg-b"])
+      end
+
+      it "passes any job experiments on to the FileParser it instantiates as options" do
+        expect(Dependabot::Bundler::FileParser).to receive(:new).with(
+          dependency_files: anything,
+          repo_contents_path: nil,
+          source: source,
+          credentials: [],
+          reject_external_code: false,
+          options: { large_hadron_collider: true }
+        ).and_call_original
+
+        create_dependency_snapshot
       end
     end
 

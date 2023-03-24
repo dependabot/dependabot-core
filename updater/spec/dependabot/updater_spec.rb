@@ -2155,48 +2155,6 @@ RSpec.describe Dependabot::Updater do
     end
 
     describe "experiments" do
-      it "passes the experiments to the FileParser as options" do
-        stub_update_checker
-
-        job = build_job(
-          experiments: {
-            "large-hadron-collider" => true
-          }
-        )
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(Dependabot::Bundler::FileParser).to receive(:new).with(
-          dependency_files: [
-            Dependabot::DependencyFile.new(
-              name: "Gemfile",
-              content: fixture("bundler/original/Gemfile"),
-              directory: "/"
-            ),
-            Dependabot::DependencyFile.new(
-              name: "Gemfile.lock",
-              content: fixture("bundler/original/Gemfile.lock"),
-              directory: "/"
-            )
-          ],
-          repo_contents_path: nil,
-          source: job.source,
-          credentials: [
-            {
-              "type" => "git_source",
-              "host" => "github.com",
-              "username" => "x-access-token",
-              "password" => "github-token"
-            },
-            { "type" => "random", "secret" => "codes" }
-          ],
-          reject_external_code: job.reject_external_code?,
-          options: { large_hadron_collider: true }
-        ).and_call_original
-
-        updater.run
-      end
-
       it "passes the experiments to the FileUpdater as options" do
         stub_update_checker
 
