@@ -75,6 +75,7 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def self.run_helper_subprocess(command:, function:, args:, env: nil,
                                    stderr_to_stdout: false,
                                    allow_unsafe_shell_command: false)
@@ -140,6 +141,7 @@ module Dependabot
         error_context: error_context
       )
     end
+    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
     def self.excon_middleware
