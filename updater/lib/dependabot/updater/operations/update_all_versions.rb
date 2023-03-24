@@ -71,6 +71,7 @@ module Dependabot
         # rubocop:disable Metrics/AbcSize
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
+          prepare_workspace
           checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
 
           log_checking_for_update(dependency)
@@ -250,6 +251,22 @@ module Dependabot
               "dependency-removed" => dep.removed? ? true : nil
             }.compact
           end
+        end
+
+        def prepare_workspace
+          if Dependabot::Workspace.active_workspace
+            Dependabot::Workspace.active_workspace.reset!
+            return
+          end
+
+          return unless Dependabot::Experiments.enabled?(:shared_workspace)
+          return unless job.clone?
+          return if job.repo_contents_path.nil?
+
+          Dependabot::Workspace.active_workspace = Dependabot::Workspace::Git.new(
+            job.repo_contents_path,
+            Pathname.new(job.source.directory || "/").cleanpath
+          )
         end
       end
     end

@@ -2303,6 +2303,81 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
+  describe "#run with :shared_workspace experiment enabled" do
+    let!(:repo_contents_path) do
+      tmp = Dir.mktmpdir("dependabot_", Dir.tmpdir)
+      tmp_path = Pathname.new(tmp).expand_path
+      FileUtils.mkdir_p(tmp_path.to_s)
+      tmp_path.to_s
+    end
+
+    let!(:dependency_files) { default_dependency_files }
+
+    before do
+      Dir.chdir(repo_contents_path) do
+        `git init .`
+        `git config user.name dependabot-ci`
+        `git config user.email no-reply@github.com`
+        dependency_files.each { |f| File.write(f.name, f.content) }
+        `git add .`
+        `git commit -m init`
+      end
+    end
+
+    after { FileUtils.rm_rf(repo_contents_path) }
+
+    it "creates a workspace for the job" do
+      job = build_job(
+        experiments: { "shared-workspace" => true },
+        repo_contents_path: repo_contents_path
+      )
+      allow(job).to receive(:clone?).and_return(true)
+
+      service = build_service
+      updater = build_updater(service: service, job: job, dependency_files: dependency_files)
+
+      workspace = Dependabot::Workspace::Git.new(repo_contents_path, job.source.directory)
+      allow(Dependabot::Workspace::Git).to receive(:new).and_return(workspace)
+      expect(Dependabot::Workspace).to receive(:active_workspace=).with(workspace).at_least(1).times
+
+      updater.run
+    end
+
+    context "for a job without a #repo_contents_path" do
+      it "does not create a workspace for the job" do
+        job = build_job(
+          experiments: { "shared-workspace" => true },
+          repo_contents_path: nil
+        )
+        allow(job).to receive(:clone?).and_return(true)
+
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Dependabot::Workspace).not_to receive(:active_workspace=)
+
+        updater.run
+      end
+    end
+
+    context "for a job that is not #clone?" do
+      it "does not create a workspace for the job" do
+        job = build_job(
+          experiments: { "shared-workspace" => true },
+          repo_contents_path: nil
+        )
+        allow(job).to receive(:clone?).and_return(false)
+
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Dependabot::Workspace).not_to receive(:active_workspace=)
+
+        updater.run
+      end
+    end
+  end
+
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
                     dependency_snapshot: nil)
     Dependabot::Updater.new(
@@ -2361,7 +2436,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false)
+                lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2404,7 +2479,7 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups
     )
   end

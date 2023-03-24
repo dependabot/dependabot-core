@@ -9,6 +9,7 @@ require "dependabot/file_fetchers"
 require "dependabot/logger"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
+require "dependabot/workspace"
 
 # Ecosystems
 require "dependabot/python"
