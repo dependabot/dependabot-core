@@ -61,6 +61,42 @@ RSpec.describe Dependabot::DependencySnapshot do
       end
     end
 
+    context "when the job definition includes valid information prepared by the file fetcher step" do
+      let(:job_definition) do
+        {
+          "base_commit_sha" => base_commit_sha,
+          "base64_dependency_files" => encoded_dependency_files
+        }
+      end
+
+      it "creates a new instance which has parsed the dependencies from the provided files" do
+        snapshot = create_dependency_snapshot
+
+        expect(snapshot).to be_a(described_class)
+        expect(snapshot.base_commit_sha).to eql("mock-sha")
+        expect(snapshot.dependency_files).to all(be_a(Dependabot::DependencyFile))
+        expect(snapshot.dependency_files.map(&:content)).to eql(dependency_files.map(&:content))
+        expect(snapshot.dependencies.count).to eql(2)
+        expect(snapshot.dependencies).to all(be_a(Dependabot::Dependency))
+        expect(snapshot.dependencies.map(&:name)).to eql(["dummy-pkg-a", "dummy-pkg-b"])
+      end
+    end
+
+    context "when there is a parser error" do
+      let(:job_definition) do
+        {
+          "base_commit_sha" => base_commit_sha,
+          "base64_dependency_files" => encoded_dependency_files.tap do |files|
+            files.first["content"] = Base64.encode64("garbage")
+          end
+        }
+      end
+
+      it "raises an error" do
+        expect { create_dependency_snapshot }.to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "when the job definition does not have the 'base64_dependency_files' key" do
       let(:job_definition) do
         {

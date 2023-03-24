@@ -25,38 +25,20 @@ module Dependabot
       )
     end
 
-    attr_reader :base_commit_sha, :dependency_files
+    attr_reader :base_commit_sha, :dependency_files, :dependencies
+
+    private
 
     def initialize(job:, base_commit_sha:, dependency_files:)
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
-    end
-
-    def dependencies
-      return @dependencies if defined?(@dependencies)
 
       parse_files!
     end
 
-    private
-
     attr_reader :job
 
-    # TODO: Parse files during instantiation?
-    #
-    # To avoid having to re-home Dependabot::Updater#handle_parser_error,
-    # we perform the parsing lazily when the `dependencies` method is first
-    # referenced.
-    #
-    # We have some unusual behaviour where we handle a parse error by
-    # returning an empty dependency array in Dependabot::Updater#dependencies
-    # in order to 'fall through' to an error outcome elsewhere in the class.
-    #
-    # Given this uncertainity, and the need to significantly refactor tests,
-    # it makes sense to introduce this shim and then deal with the call
-    # site once we've split out the downstream behaviour in the updater.
-    #
     def parse_files!
       @dependencies = dependency_file_parser.parse
     end
