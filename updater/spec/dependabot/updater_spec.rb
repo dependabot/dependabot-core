@@ -1256,30 +1256,6 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-
-          context "because an error was raised parsing the dependencies" do
-            it "does not close the pull request" do
-              job = build_job(
-                requested_dependencies: ["removed_dependency"],
-                updating_a_pull_request: true
-              )
-              service = build_service
-              updater = build_updater(service: service, job: job)
-
-              # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
-              allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).
-                and_raise(Dependabot::DependencyFileNotParseable.new("path/to/file"))
-
-              expect(service).to receive(:record_update_job_error).with(
-                error_type: "dependency_file_not_parseable",
-                error_details: anything
-              )
-              expect(service).to receive(:errors).and_return([anything])
-              expect(service).to_not receive(:close_pull_request)
-
-              updater.run
-            end
-          end
         end
 
         context "when the dependency name case doesn't match what's parsed" do

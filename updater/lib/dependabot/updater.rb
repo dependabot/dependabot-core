@@ -133,16 +133,10 @@ module Dependabot
     # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
-        # TODO: Remove the unless statement
-        #
-        # This check is to determine if there was an error parsing the dependency
-        # dependency file.
-        #
-        # For update existing PR operations we should early exit after a failed
-        # parse instead, but we currently share the `#dependencies` method
-        # with other code paths. This will be fixed as we break out Operation
-        # classes.
-        close_pull_request(reason: :dependency_removed) unless service.errors.any?
+        # If the job dependencies mismatch the parsed dependencies, then
+        # we should close the PR as at least one thing we changed has been
+        # removed from the project.
+        close_pull_request(reason: :dependency_removed)
         return
       end
 
