@@ -4,12 +4,12 @@ require "fileutils"
 require "tmpdir"
 
 require "spec_helper"
-require "dependabot/workspace"
+require "dependabot/workspace/git"
 
-RSpec.describe Dependabot::Workspace do
+RSpec.describe Dependabot::Workspace::Git do
   let(:repo_contents_path) { build_tmp_repo("simple", tmp_dir_path: Dir.tmpdir) }
 
-  subject(:workspace) { Dependabot::Workspace::Git.new(repo_contents_path) }
+  subject(:workspace) { described_class.new(repo_contents_path) }
 
   around do |example|
     Dir.chdir(repo_contents_path) { example.run }
