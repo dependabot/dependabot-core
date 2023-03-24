@@ -158,19 +158,6 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
-    # TODO: Remove this test, this cannot happen anymore.
-    context "when the job has already been processed" do
-      it "no-ops" do
-        job = nil
-        service = build_service
-        updater = build_updater(service: service, job: job)
-
-        expect(updater).to_not receive(:dependencies)
-
-        updater.run
-      end
-    end
-
     context "when the checker has an requirements update strategy" do
       it "logs the update requirements and strategy" do
         stub_update_checker(requirements_update_strategy: :bump_versions)
