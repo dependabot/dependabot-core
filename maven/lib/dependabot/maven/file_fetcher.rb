@@ -33,6 +33,7 @@ module Dependabot
         fetched_files << pom
         fetched_files += child_poms
         fetched_files += relative_path_parents(fetched_files)
+        fetched_files += targetfiles
         fetched_files << extensions if extensions
 
         # Filter excluded files from final collection
@@ -53,6 +54,14 @@ module Dependabot
       sig { returns(T.nilable(Dependabot::DependencyFile)) }
       def extensions
         @extensions ||= T.let(fetch_file_if_present(".mvn/extensions.xml"), T.nilable(Dependabot::DependencyFile))
+      end
+      
+      sig { returns(T::Array[DependencyFile]) }
+      def targetfiles
+        @targetfiles ||= T.let(
+          repo_contents(raise_errors: false).
+          select { |f| f.type == "file" && f.name.end_with?(".target") }.
+          map { |f| fetch_file_from_host(f.name) })
       end
 
       sig { returns(T::Array[DependencyFile]) }
