@@ -64,37 +64,24 @@ module Dependabot
       Dependabot.logger.error(err.message)
       err.backtrace.each { |line| Dependabot.logger.error(line) }
 
-      Raven.capture_exception(err, raven_context)
-
+      service.capture_exception(error: err, job: job)
       service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
-    end
-
-    def api_url
-      Environment.api_url
     end
 
     def job_id
       Environment.job_id
     end
 
-    def job_token
-      Environment.job_token
-    end
-
     def api_client
-      @api_client ||= Dependabot::ApiClient.new(api_url, job_id, job_token)
+      @api_client ||= Dependabot::ApiClient.new(
+        Environment.api_url,
+        job_id,
+        Environment.job_token
+      )
     end
 
     def service
       @service ||= Dependabot::Service.new(client: api_client)
-    end
-
-    private
-
-    def raven_context
-      context = { tags: {}, extra: { update_job_id: job_id } }
-      context[:tags][:package_manager] = job.package_manager if job
-      context
     end
   end
 end

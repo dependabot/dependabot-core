@@ -128,11 +128,9 @@ RSpec.describe "Dependabot Updates" do
           "hostname" => "github.com",
           "branch" => nil
         },
-        "credentials" => [{
+        "credentials-metadata" => [{
           "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => "github-token"
+          "host" => "github.com"
         }],
         "lockfile_only" => false,
         "requirements_update_strategy" => nil,
@@ -317,11 +315,9 @@ RSpec.describe "Dependabot Updates" do
           "hostname" => "github.com",
           "branch" => nil
         },
-        "credentials" => [{
+        "credentials-metadata" => [{
           "type" => "git_source",
-          "host" => "github.com",
-          "username" => "x-access-token",
-          "password" => test_access_token
+          "host" => "github.com"
         }],
         "lockfile_only" => false,
         "requirements_update_strategy" => nil,

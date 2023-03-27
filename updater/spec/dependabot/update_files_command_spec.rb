@@ -35,8 +35,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
         with(
           service: service,
           job: an_object_having_attributes(id: job_id, repo_contents_path: nil),
-          dependency_files: anything,
-          base_commit_sha: base_commit_sha
+          dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
         ).
         and_return(dummy_runner)
       expect(dummy_runner).to receive(:run)
@@ -59,8 +58,7 @@ RSpec.describe Dependabot::UpdateFilesCommand do
           with(
             service: service,
             job: an_object_having_attributes(id: job_id, repo_contents_path: repo_contents_path),
-            dependency_files: anything,
-            base_commit_sha: base_commit_sha
+            dependency_snapshot: an_object_having_attributes(base_commit_sha: base_commit_sha)
           ).
           and_return(dummy_runner)
         expect(dummy_runner).to receive(:run)

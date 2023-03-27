@@ -382,7 +382,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           }
         end
 
-        it { is_expected.to be_nil }
+        it "is nil", :bundler_v1_only do
+          expect(resolver.latest_resolvable_version_details).to be_nil
+        end
+
+        it "still resolves fine if the circular dependency does not cause any conflicts", :bundler_v2_only do
+          expect(resolver.latest_resolvable_version_details[:version].to_s).to eq("0.0.1")
+        end
       end
     end
 

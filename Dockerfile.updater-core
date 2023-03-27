@@ -41,7 +41,7 @@ ARG RUBY_INSTALL_VERSION=0.8.5
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.3.26
+ARG BUNDLER_V2_VERSION=2.4.10
 
 # Install Ruby, update RubyGems, and install Bundler
 RUN mkdir -p /tmp/ruby-install \
@@ -100,6 +100,8 @@ bundle install && \
 rm -rf ~/.bundle
 
 FROM ubuntu:20.04
+
+LABEL org.opencontainers.image.source="https://github.com/dependabot/dependabot-core"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 

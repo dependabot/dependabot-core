@@ -19,6 +19,7 @@ jobs:
       matrix:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
+          - { path: bundler, name: bundler-grouped, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
@@ -34,6 +35,7 @@ jobs:
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
+          - { path: npm_and_yarn, name: yarn, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm}
           - { path: nuget, name: nuget, ecosystem: nuget }
@@ -57,6 +59,12 @@ jobs:
             - 'updater/**'
             - 'github_actions/**'
           bundler:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'bundler/**'
+          bundler-grouped:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
@@ -188,6 +196,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'terraform/**'
+          'yarn':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
           'yarn-berry':
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core

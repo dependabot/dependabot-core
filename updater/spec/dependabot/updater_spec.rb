@@ -5,6 +5,7 @@ require "bundler/compact_index_client"
 require "bundler/compact_index_client/updater"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
+require "dependabot/dependency_snapshot"
 require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
@@ -70,36 +71,8 @@ RSpec.describe Dependabot::Updater do
       service = build_service
       updater = build_updater(service: service, job: job)
 
-      dependencies = [
-        {
-          name: "dummy-pkg-a",
-          version: "2.0.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 2.0.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        },
-        {
-          name: "dummy-pkg-b",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: [:default],
-              source: nil
-            }
-          ]
-        }
-      ]
-      dependency_files = ["/Gemfile", "/Gemfile.lock"]
-
-      expect(service).
-        to receive(:update_dependency_list).with(dependencies, dependency_files)
+      expect(service).to receive(:update_dependency_list).
+        with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       updater.run
     end
@@ -155,7 +128,7 @@ RSpec.describe Dependabot::Updater do
         updater.run
 
         expect(service).to have_received(:record_update_job_error).
-          with({ error_type: "out_of_disk", error_details: nil, dependency: nil })
+          with({ error_type: "out_of_disk", error_details: nil })
       end
     end
 
@@ -295,8 +268,7 @@ RSpec.describe Dependabot::Updater do
               error_type: "dependency_file_not_supported",
               error_details: {
                 "dependency-name": "dummy-pkg-b"
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -380,8 +352,7 @@ RSpec.describe Dependabot::Updater do
                     "requirement" => "= 1.2.0"
                   }
                 ]
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -425,8 +396,7 @@ RSpec.describe Dependabot::Updater do
                 "latest-resolvable-version": "1.1.0",
                 "lowest-non-vulnerable-version": nil,
                 "conflicting-dependencies": []
-              },
-              dependency: nil
+              }
             }
           )
           expect(Dependabot.logger).
@@ -1016,8 +986,7 @@ RSpec.describe Dependabot::Updater do
                 "dependency-name": "dummy-pkg-b",
                 "dependency-version": "1.2.0"
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1167,8 +1136,7 @@ RSpec.describe Dependabot::Updater do
                   "dependency-removed": true
                 }
               ]
-            },
-            dependency: nil
+            }
           )
         expect(Dependabot.logger).
           to receive(:info).
@@ -1297,9 +1265,15 @@ RSpec.describe Dependabot::Updater do
               service = build_service
               updater = build_updater(service: service, job: job)
 
-              allow(updater).to receive(:dependency_files).
+              # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+              allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).
                 and_raise(Dependabot::DependencyFileNotParseable.new("path/to/file"))
 
+              expect(service).to receive(:record_update_job_error).with(
+                error_type: "dependency_file_not_parseable",
+                error_details: anything
+              )
+              expect(service).to receive(:errors).and_return([anything])
               expect(service).to_not receive(:close_pull_request)
 
               updater.run
@@ -1549,8 +1523,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "all_versions_ignored",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
-                  dependency: nil
+                  }
                 }
               )
               expect(Dependabot.logger).
@@ -1587,8 +1560,7 @@ RSpec.describe Dependabot::Updater do
                   error_type: "security_update_not_needed",
                   error_details: {
                     "dependency-name": "dummy-pkg-b"
-                  },
-                  dependency: nil
+                  }
                 }
               )
               expect(Dependabot.logger).
@@ -1615,7 +1587,8 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        allow(updater).to receive(:dependency_files).and_raise(error)
+        # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+        allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
         expect(Raven).to receive(:capture_exception)
 
@@ -1632,14 +1605,14 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
-        allow(updater).to receive(:dependency_files).and_raise(error)
+        # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+        allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
         expect(service).
           to receive(:record_update_job_error).
           with(
             error_type: "unknown_error",
-            error_details: nil,
-            dependency: nil
+            error_details: nil
           )
 
         updater.run
@@ -1656,7 +1629,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1673,14 +1647,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_found",
-              error_details: { "file-path": "path/to/file" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file" }
             )
 
           updater.run
@@ -1698,7 +1672,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1715,14 +1690,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
             with(
               error_type: "branch_not_found",
-              error_details: { "branch-name": "my_branch" },
-              dependency: nil
+              error_details: { "branch-name": "my_branch" }
             )
 
           updater.run
@@ -1740,7 +1715,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1757,14 +1733,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
             with(
               error_type: "dependency_file_not_parseable",
-              error_details: { "file-path": "path/to/file", message: "a" },
-              dependency: nil
+              error_details: { "file-path": "path/to/file", message: "a" }
             )
 
           updater.run
@@ -1782,7 +1758,8 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(Raven).to_not receive(:capture_exception)
 
@@ -1799,14 +1776,14 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          allow(updater).to receive(:dependency_files).and_raise(error)
+          # TODO: Move this stub unto Dependabot::DependencySnapshot once it is better integrated
+          allow(Dependabot::FileParsers).to receive_message_chain(:for_package_manager, :new, :parse).and_raise(error)
 
           expect(service).
             to receive(:record_update_job_error).
             with(
               error_type: "path_dependencies_not_reachable",
-              error_details: { dependencies: ["bad_gem"] },
-              dependency: nil
+              error_details: { dependencies: ["bad_gem"] }
             )
 
           updater.run
@@ -2488,12 +2465,67 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
+  # TODO: Expand this unit test to exercise creation of a PR with multiple changes
+  #
+  # This is currently just a very simple litmus test that the adapter for grouped updates
+  # is not broken, we rely on a smoke test to do blind testing of the "real" grouping
+  # function for now.
+  describe "#run with the grouped experiment enabled" do
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    it "updates multiple dependencies in a single PR correctly" do
+      stub_update_checker
+
+      job = build_job(experiments: { "grouped-updates-prototype" => true })
+      service = build_service
+      updater = build_updater(service: service, job: job)
+
+      expect(service).to receive(:create_pull_request) do |dependency_change, base_commit_sha|
+        expect(dependency_change.dependencies.first).to have_attributes(name: "dummy-pkg-b")
+        expect(dependency_change.updated_dependency_files_hash).to eql(
+          [
+            {
+              "name" => "Gemfile",
+              "content" => fixture("bundler/updated/Gemfile"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            },
+            {
+              "name" => "Gemfile.lock",
+              "content" => fixture("bundler/updated/Gemfile.lock"),
+              "directory" => "/",
+              "type" => "file",
+              "mode" => "100644",
+              "support_file" => false,
+              "content_encoding" => "utf-8",
+              "deleted" => false,
+              "operation" => "update"
+            }
+          ]
+        )
+        expect(base_commit_sha).to eql("sha")
+      end
+
+      updater.run
+    end
+  end
+
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
     Dependabot::Updater.new(
       service: service,
       job: job,
-      dependency_files: dependency_files,
-      base_commit_sha: "sha"
+      dependency_snapshot: Dependabot::DependencySnapshot.new(
+        job: job,
+        dependency_files: dependency_files,
+        base_commit_sha: "sha"
+      )
     )
   end
 
@@ -2513,8 +2545,9 @@ RSpec.describe Dependabot::Updater do
   end
 
   def build_service
-    instance_double(
-      Dependabot::Service,
+    # Stub out a client so we don't hit the internet
+    api_client = instance_double(
+      Dependabot::ApiClient,
       create_pull_request: nil,
       update_pull_request: nil,
       close_pull_request: nil,
@@ -2522,6 +2555,13 @@ RSpec.describe Dependabot::Updater do
       update_dependency_list: nil,
       record_update_job_error: nil
     )
+
+    service = Dependabot::Service.new(
+      client: api_client
+    )
+    allow(service).to receive(:record_update_job_error)
+
+    service
   end
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength

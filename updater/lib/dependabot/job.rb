@@ -58,11 +58,9 @@ module Dependabot
     end
 
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
-      attrs = standardise_keys(job_definition["job"]).tap do |job_hash|
-        # The Updater should NOT have access to credentials. Let's use metadata, which
-        # can be used by the proxy for matching and applying the real credentials
-        job_hash[:credentials] = job_hash.delete(:credentials_metadata) || []
-      end.slice(*PERMITTED_KEYS)
+      job_hash = standardise_keys(job_definition["job"])
+      attrs = job_hash.slice(*PERMITTED_KEYS)
+      attrs[:credentials] = job_hash[:credentials_metadata]
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end
