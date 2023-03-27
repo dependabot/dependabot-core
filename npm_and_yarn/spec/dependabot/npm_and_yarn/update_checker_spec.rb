@@ -321,12 +321,12 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
 
     context "for a scoped package name" do
       before do
-        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep").
+        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep").
           to_return(
             status: 200,
             body: fixture("npm_responses", "etag.json")
           )
-        stub_request(:get, "https://registry.npmjs.org/@blep%2Fblep/1.7.0").
+        stub_request(:get, "https://registry.npmjs.org/@dependabot%2Fblep/1.7.0").
           to_return(status: 200)
         allow_any_instance_of(described_class::VersionResolver).
           to receive(:latest_resolvable_version).
@@ -334,7 +334,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       end
       let(:dependency) do
         Dependabot::Dependency.new(
-          name: "@blep/blep",
+          name: "@dependabot/blep",
           version: "1.0.0",
           requirements: [{
             file: "package.json",
