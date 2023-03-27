@@ -24,15 +24,15 @@ module Dependabot
       FROM = /FROM/i
       PLATFORM = /--platform\=(?<platform>\S+)/
       TAG = /:(?<tag>[\w][\w.-]{0,127})/
-      DIGEST = /@(?<digest>[^\s]+)/
+      DIGEST = /(?<digest>sha256:[0-9a-f]{64})/
       NAME = /\s+AS\s+(?<name>[\w-]+)/
       FROM_LINE =
         %r{^#{FROM}\s+(#{PLATFORM}\s+)?(#{REGISTRY}/)?
-          #{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x
+          #{IMAGE}#{TAG}?(?:@#{DIGEST})?#{NAME}?}x
 
       AWS_ECR_URL = /dkr\.ecr\.(?<region>[^.]+)\.amazonaws\.com/
 
-      IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?#{DIGEST}?#{NAME}?}x
+      IMAGE_SPEC = %r{^(#{REGISTRY}/)?#{IMAGE}#{TAG}?(?:@#{DIGEST})?#{NAME}?}x
 
       def parse
         dependency_set = DependencySet.new

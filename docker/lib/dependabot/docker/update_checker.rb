@@ -6,6 +6,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
 require "dependabot/docker/tag"
+require "dependabot/docker/file_parser"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
@@ -13,8 +14,6 @@ require "dependabot/docker/utils/credentials_finder"
 module Dependabot
   module Docker
     class UpdateChecker < Dependabot::UpdateCheckers::Base
-      DIGEST = /^sha256:[0-9a-f]{64}$/
-
       def latest_version
         latest_version_from(dependency.version)
       end
@@ -108,10 +107,10 @@ module Dependabot
         @tags[version] = fetch_latest_tag(Tag.new(version))
       end
 
-      # NOTE: It's important that this *always* returns a version (even if
+      # NOTE: It's important that this *always* returns a tag (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_tag(version_tag)
-        return latest_digest if version_tag.digest?
+        return Tag.new(latest_digest) if version_tag.digest?
         return version_tag unless version_tag.comparable?
 
         # Prune out any downgrade tags before checking for pre-releases
@@ -202,7 +201,7 @@ module Dependabot
       end
 
       def updated_digest
-        @updated_digest ||= if latest_version.match?(DIGEST)
+        @updated_digest ||= if latest_tag_from(dependency.version).digest?
                               latest_digest
                             else
                               digest_of(latest_version)
