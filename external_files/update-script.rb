@@ -15,6 +15,7 @@
 #   GITHUB_ACCESS_TOKEN: Access token for Github; used to get changelog info.
 #   BITBUCKET_ACCESS_TOKEN: Access token for Bitbucket; used to clone repos and post PRs.
 #   JIRA_API_TOKEN: Access token for Jira; used to create Jira issues.
+#   NAMESPACE: Provides the namespace for APIs. Example: "projects/my_proj" or "users/jdoe".
 
 $LOAD_PATH << "./bundler/lib"
 $LOAD_PATH << "./cargo/lib"
@@ -98,6 +99,9 @@ directory = ENV["DIRECTORY_PATH"] || "/"
 # Branch to look at. Defaults to repo's default branch
 branch = ENV["BRANCH"]
 
+# Provides the namespace for APIs. Example: "projects/my_proj" or "users/jdoe".
+namespace = ENV["BITBUCKET_REPO_NAMESPACE"]
+
 # Name of the package manager you'd like to do the update for. Options are:
 # - bundler
 # - pip (includes pipenv)
@@ -126,7 +130,8 @@ ext_provider = BitbucketServerProvider.new(
   repo: repo_name,
   directory: directory,
   branch: branch,
-  credentials: bitbucket_creds
+  credentials: bitbucket_creds,
+  namespace: namespace
 )
 
 source = Dependabot::Source.new(
@@ -204,7 +209,7 @@ dependencies.select(&:top_level?).each do |dep|
 
   # Create a Jira issue to track the update
 
-  # Don't create a new ticket, just use an old one. This saves having to pull in all that Jira code.
+  # Don't create a new ticket, just use an old one. This saves having to pull in the Jira code.
   # issue_id = create_issue_for_package(ENV.fetch("JIRA_PROJECT"), dep.name, summary: msg.pr_name)
   issue_id = "TESTABHI-2"
   puts "  Reusing old Jira issue #{issue_id}"
@@ -223,10 +228,6 @@ dependencies.select(&:top_level?).each do |dep|
   )
   pr_creator.create
   puts "  Created PR: #{issue_id} #{msg.pr_name}"
-
-  # TODO: tiedec remove next two lines before release
-  puts "Aborting now for test purposes"
-  break
 end
 
 puts "Done"

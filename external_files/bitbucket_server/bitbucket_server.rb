@@ -1,20 +1,9 @@
-# TODO: PR Comment
-# I started with the original file straight from our VMW repo. From there,
-# I added functionality to support file fetching and PR creation.
-#
-# Question: Should we maintain the separation of functionality between client,
-# file fetcher, and PR creation?
-
 # frozen_string_literal: true
 
 require "dependabot/shared_helpers"
 require "excon"
 require_relative "pull_request_creator"
 
-# TODO: PR Comment: Usually, classes like this are built up into nested namespaces.
-# For example, the original implementation had this as Dependabot::Clients::BitbucketServer.
-# I removed these wrappers because I wanted to emphasize that this are not part of the
-# dependabot-core framework.
 class BitbucketServerClient
   class NotFound < StandardError; end
 
@@ -26,33 +15,29 @@ class BitbucketServerClient
   # Client #
   ##########
 
-  # TODO: NOTE REPO_NAMESPACE in all the paths. Needs a way to get project namespace.
-  # Provides the namespace for APIs. Example: "projects/UEM" or "users/ctiede"
-  REPO_NAMESPACE = ENV["BITBUCKET_REPO_NAMESPACE"]
+  attr_reader :source, :namespace
 
-  attr_reader :source
-
-  def initialize(credentials:, source:)
+  def initialize(credentials:, source:, namespace:)
     @credentials = credentials
     @source = source
     @auth_header = auth_header_for(credentials&.fetch("token", nil))
+    @namespace = namespace
   end
 
   def fetch_commit(repo, branch)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp225
-    path = "#{REPO_NAMESPACE}/repos/#{repo}/commits/#{branch}"
+    path = "#{namespace}/repos/#{repo}/commits/#{branch}"
     response = get(base_url + path)
     JSON.parse(response.body).fetch("id")
   end
 
   def fetch_default_branch(repo)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp213
-    path = "#{REPO_NAMESPACE}/repos/#{repo}/branches/default"
+    path = "#{namespace}/repos/#{repo}/branches/default"
     response = get(base_url + path)
     JSON.parse(response.body).fetch("id").sub("refs/heads/", "")
   end
 
-  # TODO: PR Comment: This method was pulled from file_fetchers but I think it makes more sense here.
   def repo_contents(repo, path, commit)
     response = fetch_repo_contents(
       repo,
@@ -80,7 +65,7 @@ class BitbucketServerClient
     raise "Commit is required if path provided!" if commit.nil? && path
 
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp216
-    api_path = "#{REPO_NAMESPACE}/repos/#{repo}/browse?at=#{commit}&limit=100"
+    api_path = "#{namespace}/repos/#{repo}/browse?at=#{commit}&limit=100"
     response = get(base_url + api_path)
     JSON.parse(response.body).fetch("children").fetch("values")
   end
@@ -97,7 +82,7 @@ class BitbucketServerClient
             "  converted to '#{encoded_path}'")
     end
 
-    path = "#{REPO_NAMESPACE}/repos/#{repo}/raw/#{encoded_path}?at=#{commit}"
+    path = "#{namespace}/repos/#{repo}/raw/#{encoded_path}?at=#{commit}"
     response = get(base_url + path)
 
     response.body
@@ -105,14 +90,14 @@ class BitbucketServerClient
 
   def commits(repo, branch_name = nil)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp222
-    commits_path = "#{REPO_NAMESPACE}/repos/#{repo}/commits?since=#{branch_name}"
+    commits_path = "#{namespace}/repos/#{repo}/commits?since=#{branch_name}"
     next_page_url = base_url + commits_path
     paginate({ "next" => next_page_url })
   end
 
   def branch(repo, branch_name)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp209
-    branch_path = "#{REPO_NAMESPACE}/repos/#{repo}/branches?filterText=#{branch_name}"
+    branch_path = "#{namespace}/repos/#{repo}/branches?filterText=#{branch_name}"
     response = get(base_url + branch_path)
     branches = JSON.parse(response.body).fetch("values")
 
@@ -123,7 +108,7 @@ class BitbucketServerClient
 
   def pull_requests(repo, source_branch, target_branch)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp294
-    pr_path = "#{REPO_NAMESPACE}/repos/#{repo}/pull-requests?state=ALL"
+    pr_path = "#{namespace}/repos/#{repo}/pull-requests?state=ALL"
     next_page_url = base_url + pr_path
     pull_requests = paginate({ "next" => next_page_url })
 
@@ -159,7 +144,7 @@ class BitbucketServerClient
         }
       )
 
-      commit_path = "#{REPO_NAMESPACE}/repos/#{repo}/browse/#{file.name}"
+      commit_path = "#{namespace}/repos/#{repo}/browse/#{file.name}"
       response = put(base_url + commit_path, multipart_data.fetch("body"), multipart_data.fetch("header_value"))
 
       brand_details = JSON.parse(response.body)
@@ -185,16 +170,16 @@ class BitbucketServerClient
       }
     }
 
-    pr_path = "#{REPO_NAMESPACE}/repos/#{repo}/pull-requests"
+    pr_path = "#{namespace}/repos/#{repo}/pull-requests"
     post(base_url + pr_path, content.to_json)
   end
-
   # rubocop:enable Metrics/ParameterLists
+
   def tags(repo)
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp398
     raise "Not tested"
 
-    path = "#{REPO_NAMESPACE}/repos/#{repo}/tags?limit=100"
+    path = "#{namespace}/repos/#{repo}/tags?limit=100"
     response = get(base_url + path)
 
     JSON.parse(response.body).fetch("values")
@@ -204,7 +189,7 @@ class BitbucketServerClient
     raise "Not tested"
 
     # https://docs.atlassian.com/bitbucket-server/rest/7.14.0/bitbucket-rest.html#idp398
-    path = "#{REPO_NAMESPACE}/repos/#{repo}/compare/changes?from=#{previous_tag}&to=#{new_tag}"
+    path = "#{namespace}/repos/#{repo}/compare/changes?from=#{previous_tag}&to=#{new_tag}"
     response = get(base_url + path)
 
     JSON.parse(response.body).fetch("values")
@@ -250,9 +235,7 @@ class BitbucketServerClient
     }
   end
 
-  # TODO: PR Comment: The following methods were adapted from pull_request_creator/pr_name_prefixer.rb
   def dependabot_email
-    # TODO: update this to a better default
     "dependency-bot@vmware.com"
   end
 
@@ -279,7 +262,6 @@ class BitbucketServerClient
       map(&:strip)
   end
 
-  # TODO: PR Comment: This was adapted from pull_request_creator.rb
   def create_pr(opts)
     BitbucketServerPullRequestCreator.new(
       source: opts[:source],
@@ -295,13 +277,6 @@ class BitbucketServerClient
       work_item: opts[:provider_metadata]&.fetch(:work_item, nil)
     )
   end
-
-  # TODO: PR Comment: Adapted from pull_request_creator/message_builder/metadata_presenter.rb
-  def source_provider_supports_html?
-    false
-  end
-
-  # TODO: PR Comment: End of code adapted from other modules.
 
   private
 

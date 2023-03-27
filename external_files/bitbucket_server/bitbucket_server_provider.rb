@@ -5,7 +5,8 @@ class BitbucketServerProvider
                 :hostname, :api_endpoint, :client
 
   def initialize(repo:, directory: nil, branch: nil, commit: nil,
-                   hostname: nil, api_endpoint: nil, credentials: nil)
+                 hostname: nil, api_endpoint: nil, credentials: nil,
+                 namespace: nil)
     @provider = "bitbucket_server"
     @repo = repo
     @directory = directory
@@ -13,7 +14,12 @@ class BitbucketServerProvider
     @commit = commit
     @hostname = hostname
     @api_endpoint = api_endpoint
-    @client = BitbucketServerClient.new(credentials: credentials, source: self)
+    @client = BitbucketServerClient.new(credentials: credentials, source: self,
+                                        namespace: namespace)
+  end
+
+  def source_provider_supports_html?
+    false
   end
 
   def url
