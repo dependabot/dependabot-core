@@ -137,7 +137,7 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength
 
-    def check_out_of_memory_error(stderr)
+    def self.check_out_of_memory_error(stderr)
       return unless stderr&.include?("JavaScript heap out of memory")
 
       raise Dependabot::OutOfMemory.new(
