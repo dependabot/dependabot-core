@@ -64,10 +64,11 @@ RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar
 
 COPY .rubocop.yml .rubocop.yml
 COPY .ruby-version .ruby-version
-COPY common common
 COPY omnibus omnibus
 COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
+COPY common/Gemfile common/dependabot-common.gemspec common/
+COPY common/lib/dependabot.rb common/lib/dependabot.rb
 COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
 COPY cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
 COPY composer/Gemfile composer/dependabot-composer.gemspec composer/
@@ -155,6 +156,7 @@ ENV DEPENDABOT_HOME /home/dependabot
 
 # Add project
 COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
 COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 ENV PATH="$HOME/bin:$PATH"
