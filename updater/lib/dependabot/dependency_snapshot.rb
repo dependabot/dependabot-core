@@ -34,13 +34,13 @@ module Dependabot
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
 
-      parse_files!
+      @dependencies = parse_files!
     end
 
     attr_reader :job
 
     def parse_files!
-      @dependencies = dependency_file_parser.parse
+      dependency_file_parser.parse
     end
 
     def dependency_file_parser
