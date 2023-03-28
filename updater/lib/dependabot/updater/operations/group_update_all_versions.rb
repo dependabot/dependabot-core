@@ -84,9 +84,6 @@ module Dependabot
           end
 
           allowed_deps
-        rescue StandardError => e
-          error_handler.handle_parser_error(e)
-          []
         end
 
         # Returns a Dependabot::DependencyChange object that encapsulates the

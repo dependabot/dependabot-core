@@ -11,14 +11,8 @@ require "dependabot/file_parsers"
 # representing the output.
 module Dependabot
   class DependencySnapshot
-    # TODO: Enforce non-nil values for job_definition["base64_dependency_files"]
-    #       and job_definition["base_commit_sha"]
-    #
-    # We historically tolerate nil values for both these keys from the `job_definition`
-    # but it doesn't seem like we should. Rather than introduce a behaviour change
-    # as part of the change introducing this class, let's do it as a follow-up.
     def self.create_from_job_definition(job:, job_definition:)
-      decoded_dependency_files = job_definition.fetch("base64_dependency_files", []).map do |a|
+      decoded_dependency_files = job_definition.fetch("base64_dependency_files").map do |a|
         file = Dependabot::DependencyFile.new(**a.transform_keys(&:to_sym))
         file.content = Base64.decode64(file.content).force_encoding("utf-8") unless file.binary? && !file.deleted?
         file
@@ -26,45 +20,27 @@ module Dependabot
 
       new(
         job: job,
-        base_commit_sha: job_definition.fetch("base_commit_sha", nil),
+        base_commit_sha: job_definition.fetch("base_commit_sha"),
         dependency_files: decoded_dependency_files
       )
     end
 
-    attr_reader :base_commit_sha, :dependency_files
+    attr_reader :base_commit_sha, :dependency_files, :dependencies
+
+    private
 
     def initialize(job:, base_commit_sha:, dependency_files:)
       @job = job
       @base_commit_sha = base_commit_sha
       @dependency_files = dependency_files
+
+      @dependencies = parse_files!
     end
-
-    def dependencies
-      return @dependencies if defined?(@dependencies)
-
-      parse_files!
-    end
-
-    private
 
     attr_reader :job
 
-    # TODO: Parse files during instantiation?
-    #
-    # To avoid having to re-home Dependabot::Updater#handle_parser_error,
-    # we perform the parsing lazily when the `dependencies` method is first
-    # referenced.
-    #
-    # We have some unusual behaviour where we handle a parse error by
-    # returning an empty dependency array in Dependabot::Updater#dependencies
-    # in order to 'fall through' to an error outcome elsewhere in the class.
-    #
-    # Given this uncertainity, and the need to significantly refactor tests,
-    # it makes sense to introduce this shim and then deal with the call
-    # site once we've split out the downstream behaviour in the updater.
-    #
     def parse_files!
-      @dependencies = dependency_file_parser.parse
+      dependency_file_parser.parse
     end
 
     def dependency_file_parser

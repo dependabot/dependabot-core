@@ -52,9 +52,6 @@ module Dependabot
           end
 
           allowed_deps
-        rescue StandardError => e
-          error_handler.handle_parser_error(e)
-          []
         end
 
         def check_and_create_pr_with_error_handling(dependency)
