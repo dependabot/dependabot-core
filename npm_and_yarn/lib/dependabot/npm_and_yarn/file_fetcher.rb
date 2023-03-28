@@ -432,11 +432,12 @@ module Dependabot
         glob = glob.gsub(%r{^\./}, "")
         glob_parts = glob.split("/")
 
-        paths = find_directories(prefix + glob_parts.first)
-        next_parts = glob_parts.drop(1)
+        current_glob = glob_parts.first
+        paths = find_directories(prefix + current_glob)
+        next_parts = current_glob == "**" ? glob_parts : glob_parts.drop(1)
         return paths if next_parts.empty?
 
-        paths = paths.flat_map do |expanded_path|
+        paths += paths.flat_map do |expanded_path|
           recursive_find_directories(next_parts.join("/"), "#{expanded_path}/")
         end
 
