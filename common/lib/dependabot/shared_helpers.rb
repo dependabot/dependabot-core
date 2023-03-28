@@ -117,6 +117,8 @@ module Dependabot
         process_termsig: process.termsig
       }
 
+      check_out_of_memory_error(stderr, error_context)
+
       response = JSON.parse(stdout)
       return response["result"] if process.success?
 
@@ -134,6 +136,16 @@ module Dependabot
       )
     end
     # rubocop:enable Metrics/MethodLength
+
+    def self.check_out_of_memory_error(stderr, error_context)
+      return unless stderr&.include?("JavaScript heap out of memory")
+
+      raise HelperSubprocessFailed.new(
+        message: "JavaScript heap out of memory",
+        error_class: "Dependabot::OutOfMemoryError",
+        error_context: error_context
+      )
+    end
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +

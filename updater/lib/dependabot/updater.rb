@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-require "raven"
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
 require "dependabot/dependency_change"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
-require "dependabot/file_parsers"
 require "dependabot/file_updaters"
 require "dependabot/logger"
 require "dependabot/python"
@@ -27,6 +25,8 @@ require "dependabot/npm_and_yarn"
 require "dependabot/bundler"
 require "dependabot/pub"
 
+require "dependabot/updater/error_handler"
+require "dependabot/updater/operations"
 require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 require "wildcard_matcher"
@@ -44,37 +44,31 @@ module Dependabot
       end
     end
 
-    # These are errors that halt the update run and are handled in the main
-    # backend. They do *not* raise a sentry.
-    RUN_HALTING_ERRORS = {
-      Dependabot::OutOfDisk => "out_of_disk",
-      Dependabot::OutOfMemory => "out_of_memory",
-      Dependabot::AllVersionsIgnored => "all_versions_ignored",
-      Dependabot::UnexpectedExternalCode => "unexpected_external_code",
-      Errno::ENOSPC => "out_of_disk",
-      Octokit::Unauthorized => "octokit_unauthorized"
-    }.freeze
-
-    def initialize(service:, job:, dependency_files:, base_commit_sha:)
+    # To do work, this class needs three arguments:
+    # - The Dependabot::Service to send events and outcomes to
+    # - The Dependabot::Job that describes the work to be done
+    # - The Dependabot::DependencySnapshot which encapsulates the starting state of the project
+    def initialize(service:, job:, dependency_snapshot:)
       @service = service
       @job = job
-      @dependency_files = dependency_files
-      @base_commit_sha = base_commit_sha
+      @dependency_snapshot = dependency_snapshot
+      @error_handler = ErrorHandler.new(service: service, job: job)
       # TODO: Collect @created_pull_requests on the Job object?
       @created_pull_requests = []
     end
 
     def run
       return unless job
+      return legacy_run unless (operation_class = Operations.class_for(job: job))
 
-      if job.updating_a_pull_request?
-        Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
-        check_and_update_existing_pr_with_error_handling(dependencies)
-      else
-        Dependabot.logger.info("Starting update job for #{job.source.repo}")
-        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
-      end
-    rescue *RUN_HALTING_ERRORS.keys => e
+      Dependabot.logger.debug("Performing job with #{operation_class}")
+      operation_class.new(
+        service: service,
+        job: job,
+        dependency_snapshot: dependency_snapshot,
+        error_handler: error_handler
+      ).perform
+    rescue *ErrorHandler::RUN_HALTING_ERRORS.keys => e
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
         error = StandardError.new(
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
@@ -86,7 +80,7 @@ module Dependabot
 
       # OOM errors are special cased so that we stop the update run early
       service.record_update_job_error(
-        error_type: RUN_HALTING_ERRORS.fetch(e.class),
+        error_type: ErrorHandler::RUN_HALTING_ERRORS.fetch(e.class),
         error_details: nil
       )
     end
@@ -94,30 +88,38 @@ module Dependabot
     private
 
     attr_accessor :created_pull_requests
-    attr_reader :service, :job, :dependency_files, :base_commit_sha
+    attr_reader :service, :job, :dependency_snapshot, :error_handler
+
+    # This is the original logic within run, we currently fail over to this if
+    # no Operation class exists for the given job.
+    def legacy_run
+      if job.updating_a_pull_request?
+        Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
+        check_and_update_existing_pr_with_error_handling(dependencies)
+      else
+        Dependabot.logger.info("Starting update job for #{job.source.repo}")
+        dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+      end
+    end
 
     def check_and_create_pr_with_error_handling(dependency)
       check_and_create_pull_request(dependency)
     rescue Dependabot::InconsistentRegistryResponse => e
-      log_error(
+      error_handler.log_error(
         dependency: dependency,
         error: e,
         error_type: "inconsistent_registry_response",
         error_detail: e.message
       )
     rescue StandardError => e
-      raise if RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-      handle_dependabot_error(error: e, dependency: dependency)
+      error_handler.handle_dependabot_error(error: e, dependency: dependency)
     end
 
     def check_and_update_existing_pr_with_error_handling(dependencies)
       dependency = dependencies.last
       check_and_update_pull_request(dependencies)
     rescue StandardError => e
-      raise if RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-      handle_dependabot_error(error: e, dependency: dependency)
+      error_handler.handle_dependabot_error(error: e, dependency: dependency)
     end
 
     # rubocop:disable Metrics/AbcSize
@@ -131,16 +133,10 @@ module Dependabot
     # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
-        # TODO: Remove the unless statement
-        #
-        # This check is to determine if there was an error parsing the dependency
-        # dependency file.
-        #
-        # For update existing PR operations we should early exit after a failed
-        # parse instead, but we currently share the `#dependencies` method
-        # with other code paths. This will be fixed as we break out Operation
-        # classes.
-        close_pull_request(reason: :dependency_removed) unless service.errors.any?
+        # If the job dependencies mismatch the parsed dependencies, then
+        # we should close the PR as at least one thing we changed has been
+        # removed from the project.
+        close_pull_request(reason: :dependency_removed)
         return
       end
 
@@ -553,19 +549,6 @@ module Dependabot
       )
     end
 
-    def log_error(dependency:, error:, error_type:, error_detail: nil)
-      if error_type == "unknown_error"
-        Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
-        Dependabot.logger.error error.message
-        error.backtrace.each { |line| Dependabot.logger.error line }
-      else
-        Dependabot.logger.info(
-          "Handled error whilst updating #{dependency.name}: #{error_type} " \
-          "#{error_detail}"
-        )
-      end
-    end
-
     def log_requirements_for_update(requirements_to_unlock, checker)
       Dependabot.logger.info("Requirements to unlock #{requirements_to_unlock}")
 
@@ -602,12 +585,11 @@ module Dependabot
         created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
     end
 
-    # rubocop:disable Metrics/PerceivedComplexity
     def dependencies
-      all_deps = dependency_file_parser.parse
+      all_deps = dependency_snapshot.dependencies
 
       # Tell the backend about the current dependencies on the target branch
-      update_dependency_list(all_deps)
+      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
 
       # Rebases and security updates have dependencies, version updates don't
       if job.dependencies
@@ -642,27 +624,12 @@ module Dependabot
              allowed_deps.reject { |d| job.vulnerable?(d) }
 
       deps
-    rescue StandardError => e
-      handle_parser_error(e)
-      []
-    end
-    # rubocop:enable Metrics/PerceivedComplexity
-
-    def dependency_file_parser
-      Dependabot::FileParsers.for_package_manager(job.package_manager).new(
-        dependency_files: dependency_files,
-        repo_contents_path: job.repo_contents_path,
-        source: job.source,
-        credentials: job.credentials,
-        reject_external_code: job.reject_external_code?,
-        options: job.experiments
-      )
     end
 
     def update_checker_for(dependency, raise_on_ignored:)
       Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
         dependency: dependency,
-        dependency_files: dependency_files,
+        dependency_files: dependency_snapshot.dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         ignored_versions: ignore_conditions_for(dependency),
@@ -676,7 +643,7 @@ module Dependabot
     def file_updater_for(dependencies)
       Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
         dependencies: dependencies,
-        dependency_files: dependency_files,
+        dependency_files: dependency_snapshot.dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         options: job.experiments
@@ -755,7 +722,7 @@ module Dependabot
         updated_dependency_files: updated_dependency_files
       )
 
-      service.create_pull_request(dependency_change, base_commit_sha)
+      service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
       created_pull_requests << dependencies.map do |dep|
         {
@@ -776,7 +743,7 @@ module Dependabot
         updated_dependency_files: updated_dependency_files
       )
 
-      service.update_pull_request(dependency_change, base_commit_sha)
+      service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
     end
 
     def close_pull_request(reason:)
@@ -784,208 +751,6 @@ module Dependabot
       Dependabot.logger.info("Telling backend to close pull request for " \
                              "#{job.dependencies.join(', ')} - #{reason_string}")
       service.close_pull_request(job.dependencies, reason)
-    end
-
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
-    def handle_dependabot_error(error:, dependency:)
-      error_details =
-        case error
-        when Dependabot::DependencyFileNotResolvable
-          {
-            "error-type": "dependency_file_not_resolvable",
-            "error-detail": { message: error.message }
-          }
-        when Dependabot::DependencyFileNotEvaluatable
-          {
-            "error-type": "dependency_file_not_evaluatable",
-            "error-detail": { message: error.message }
-          }
-        when Dependabot::GitDependenciesNotReachable
-          {
-            "error-type": "git_dependencies_not_reachable",
-            "error-detail": { "dependency-urls": error.dependency_urls }
-          }
-        when Dependabot::GitDependencyReferenceNotFound
-          {
-            "error-type": "git_dependency_reference_not_found",
-            "error-detail": { dependency: error.dependency }
-          }
-        when Dependabot::PrivateSourceAuthenticationFailure
-          {
-            "error-type": "private_source_authentication_failure",
-            "error-detail": { source: error.source }
-          }
-        when Dependabot::PrivateSourceTimedOut
-          {
-            "error-type": "private_source_timed_out",
-            "error-detail": { source: error.source }
-          }
-        when Dependabot::PrivateSourceCertificateFailure
-          {
-            "error-type": "private_source_certificate_failure",
-            "error-detail": { source: error.source }
-          }
-        when Dependabot::MissingEnvironmentVariable
-          {
-            "error-type": "missing_environment_variable",
-            "error-detail": {
-              "environment-variable": error.environment_variable
-            }
-          }
-        when Dependabot::GoModulePathMismatch
-          {
-            "error-type": "go_module_path_mismatch",
-            "error-detail": {
-              "declared-path": error.declared_path,
-              "discovered-path": error.discovered_path,
-              "go-mod": error.go_mod
-            }
-          }
-        when Dependabot::NotImplemented
-          {
-            "error-type": "not_implemented",
-            "error-detail": {
-              message: error.message
-            }
-          }
-        when Dependabot::SharedHelpers::HelperSubprocessFailed
-          # If a helper subprocess has failed the error may include sensitive
-          # info such as file contents or paths. This information is already
-          # in the job logs, so we send a breadcrumb to Sentry to retrieve those
-          # instead.
-          msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
-          sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
-          sanitized_error.set_backtrace(error.backtrace)
-          service.capture_exception(error: sanitized_error, job: job)
-
-          { "error-type": "unknown_error" }
-        when *Octokit::RATE_LIMITED_ERRORS
-          # If we get a rate-limited error we let dependabot-api handle the
-          # retry by re-enqueing the update job after the reset
-          {
-            "error-type": "octokit_rate_limited",
-            "error-detail": {
-              "rate-limit-reset": error.response_headers["X-RateLimit-Reset"]
-            }
-          }
-        else
-          service.capture_exception(
-            error: error,
-            job: job,
-            dependency: dependency
-          )
-          { "error-type": "unknown_error" }
-        end
-
-      service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"],
-        dependency: dependency
-      )
-
-      log_error(
-        dependency: dependency,
-        error: error,
-        error_type: error_details.fetch(:"error-type"),
-        error_detail: error_details.fetch(:"error-detail", nil)
-      )
-    end
-    # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/AbcSize
-
-    # rubocop:disable Metrics/MethodLength
-    def handle_parser_error(error)
-      # This happens if the repo gets removed after a job gets kicked off.
-      # The service will handle the removal without any prompt from the updater,
-      # so no need to add an error to the errors array
-      return if error.is_a? Dependabot::RepoNotFound
-
-      error_details =
-        case error
-        when Dependabot::DependencyFileNotEvaluatable
-          {
-            "error-type": "dependency_file_not_evaluatable",
-            "error-detail": { message: error.message }
-          }
-        when Dependabot::DependencyFileNotResolvable
-          {
-            "error-type": "dependency_file_not_resolvable",
-            "error-detail": { message: error.message }
-          }
-        when Dependabot::BranchNotFound
-          {
-            "error-type": "branch_not_found",
-            "error-detail": { "branch-name": error.branch_name }
-          }
-        when Dependabot::DependencyFileNotParseable
-          {
-            "error-type": "dependency_file_not_parseable",
-            "error-detail": {
-              message: error.message,
-              "file-path": error.file_path
-            }
-          }
-        when Dependabot::DependencyFileNotFound
-          {
-            "error-type": "dependency_file_not_found",
-            "error-detail": { "file-path": error.file_path }
-          }
-        when Dependabot::PathDependenciesNotReachable
-          {
-            "error-type": "path_dependencies_not_reachable",
-            "error-detail": { dependencies: error.dependencies }
-          }
-        when Dependabot::PrivateSourceAuthenticationFailure
-          {
-            "error-type": "private_source_authentication_failure",
-            "error-detail": { source: error.source }
-          }
-        when Dependabot::GitDependenciesNotReachable
-          {
-            "error-type": "git_dependencies_not_reachable",
-            "error-detail": { "dependency-urls": error.dependency_urls }
-          }
-        when Dependabot::NotImplemented
-          {
-            "error-type": "not_implemented",
-            "error-detail": {
-              message: error.message
-            }
-          }
-        when Octokit::ServerError
-          # If we get a 500 from GitHub there's very little we can do about it,
-          # and responsibility for fixing it is on them, not us. As a result we
-          # quietly log these as errors
-          { "error-type": "unknown_error" }
-        else
-          raise if RUN_HALTING_ERRORS.keys.any? { |e| error.is_a?(e) }
-
-          Dependabot.logger.error error.message
-          error.backtrace.each { |line| Dependabot.logger.error line }
-
-          service.capture_exception(error: error, job: job)
-          { "error-type": "unknown_error" }
-        end
-
-      service.record_update_job_error(
-        error_type: error_details.fetch(:"error-type"),
-        error_details: error_details[:"error-detail"]
-      )
-    end
-    # rubocop:enable Metrics/MethodLength
-
-    def update_dependency_list(dependencies)
-      service.update_dependency_list(
-        dependencies.map do |dep|
-          {
-            name: dep.name,
-            version: dep.version,
-            requirements: dep.requirements
-          }
-        end,
-        dependency_files.reject(&:support_file).map(&:path)
-      )
     end
   end
 end

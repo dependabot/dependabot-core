@@ -20,8 +20,7 @@ module Functions
         definition = build_definition(dependencies_to_unlock: dependencies_to_unlock)
         definition.resolve_remotely!
         specs = definition.resolve
-        updates = [{ name: dependency_name }] +
-                  dependencies_to_unlock.map { |dep| { name: dep.name } }
+        updates = ([dependency_name, *dependencies_to_unlock] - subdependencies).uniq.map { |name| { name: name } }
         specs = specs.map do |dep|
           {
             name: dep.name,
@@ -29,7 +28,7 @@ module Functions
           }
         end
         [updates, specs]
-      rescue Bundler::VersionConflict => e
+      rescue Bundler::SolveFailure => e
         raise unless update_multiple_dependencies?
 
         # TODO: Not sure this won't unlock way too many things...
@@ -41,7 +40,7 @@ module Functions
 
         raise if new_dependencies_to_unlock.none?
 
-        dependencies_to_unlock += new_dependencies_to_unlock
+        dependencies_to_unlock |= new_dependencies_to_unlock
         retry
       end
     end
@@ -54,47 +53,26 @@ module Functions
     alias update_multiple_dependencies? update_multiple_dependencies
 
     def new_dependencies_to_unlock_from(error:, already_unlocked:)
-      potentials_deps =
-        relevant_conflicts(error, already_unlocked).
-        flat_map(&:requirement_trees).
-        reject do |tree|
-          # If the final requirement wasn't specific, it can't be binding
-          next true if tree.last.requirement == Gem::Requirement.new(">= 0")
+      names = [*already_unlocked, dependency_name]
+      extra_names_to_unlock = []
 
-          # If the conflict wasn't for the dependency we're updating then
-          # we don't have enough info to reject it
-          next false unless tree.last.name == dependency_name
+      incompatibility = error.cause.incompatibility
 
-          # If the final requirement *was* for the dependency we're updating
-          # then we can ignore the tree if it permits the target version
-          tree.last.requirement.satisfied_by?(
-            Gem::Version.new(target_version)
-          )
-        end.map(&:first)
+      while incompatibility.conflict?
+        cause = incompatibility.cause
+        incompatibility = cause.incompatibility
 
-      potentials_deps.
-        reject { |dep| already_unlocked.map(&:name).include?(dep.name) }.
-        reject { |dep| [dependency_name, "ruby\0"].include?(dep.name) }.
-        uniq
-    end
-
-    def relevant_conflicts(error, dependencies_being_unlocked)
-      names = [*dependencies_being_unlocked.map(&:name), dependency_name]
-
-      # For a conflict to be relevant to the updates we're making it must be
-      # 1) caused by a new requirement introduced by our unlocking, or
-      # 2) caused by an old requirement that prohibits the update.
-      # Hence, we look at the beginning and end of the requirement trees
-      error.cause.conflicts.values.
-        select do |conflict|
-          conflict.requirement_trees.any? do |t|
-            names.include?(t.last.name) || names.include?(t.first.name)
-          end
+        incompatibility.terms.each do |term|
+          name = term.package.name
+          extra_names_to_unlock << name unless names.include?(name)
         end
+      end
+
+      extra_names_to_unlock
     end
 
     def build_definition(dependencies_to_unlock:)
-      gems_to_unlock = dependencies_to_unlock.map(&:name) + [dependency_name]
+      gems_to_unlock = dependencies_to_unlock + [dependency_name]
       definition = Bundler::Definition.build(
         gemfile_name,
         lockfile_name,
@@ -140,10 +118,10 @@ module Functions
       return [] unless lockfile
 
       all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+                  specs.map(&:name)
       top_level = Bundler::Definition.
                   build(gemfile_name, lockfile_name, {}).
-                  dependencies.map(&:name).map(&:to_s)
+                  dependencies.map(&:name)
 
       all_deps - top_level
     end

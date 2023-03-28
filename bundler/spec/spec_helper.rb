@@ -56,5 +56,6 @@ RSpec.configure do |config|
     # with other specs.
     helper_path = Dependabot::Bundler::NativeHelpers.versioned_helper_path(PackageManagerHelper.bundler_version)
     FileUtils.rm_rf File.join(helper_path, ".bundle", "bundler")
+    FileUtils.rm_rf File.join(helper_path, ".bundle", "cache", "bundler", "git")
   end
 end
