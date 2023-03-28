@@ -372,6 +372,7 @@ RSpec.describe Dependabot::Hex::FileUpdater::LockfileUpdater do
       end
 
       it "updates the dependency version in the lockfile" do
+        pending "dependabot-private.fly.dev is offline"
         expect(updated_lockfile_content).to include %({:hex, :jason, "1.1.0")
         expect(updated_lockfile_content).not_to include(
           "0f7cfa9bdb23fed721ec05419bcee2b2c21a77e926bce0deda029b5adc716fe2"
