@@ -10,7 +10,6 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
-    # rubocop:disable Metrics/ClassLength
     class FileFetcher < Dependabot::FileFetchers::Base
       require_relative "file_fetcher/path_dependency_builder"
 
@@ -354,7 +353,7 @@ module Dependabot
         dependency_files
       end
 
-      def fetch_lerna_packages_from_path(path, nested = false)
+      def fetch_lerna_packages_from_path(path)
         dependency_files = []
 
         package_json_path = File.join(path, "package.json")
@@ -367,19 +366,7 @@ module Dependabot
             fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
           ].compact
         rescue Dependabot::DependencyFileNotFound
-          matches_double_glob =
-            parsed_lerna_json["packages"].any? do |globbed_path|
-              next false unless globbed_path.include?("**")
-
-              File.fnmatch?(globbed_path, path)
-            end
-
-          if matches_double_glob && !nested
-            dependency_files +=
-              find_directories(File.join(path, "*")).flat_map do |nested_path|
-                fetch_lerna_packages_from_path(nested_path, true)
-              end
-          end
+          nil
         end
 
         dependency_files
@@ -499,7 +486,6 @@ module Dependabot
         raise Dependabot::DependencyFileNotParseable, lerna_json.path
       end
     end
-    # rubocop:enable Metrics/ClassLength
   end
 end
 
