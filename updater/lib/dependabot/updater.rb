@@ -133,16 +133,10 @@ module Dependabot
     # DependencyChange as we build it up step-by-step.
     def check_and_update_pull_request(dependencies)
       if dependencies.count != job.dependencies.count
-        # TODO: Remove the unless statement
-        #
-        # This check is to determine if there was an error parsing the dependency
-        # dependency file.
-        #
-        # For update existing PR operations we should early exit after a failed
-        # parse instead, but we currently share the `#dependencies` method
-        # with other code paths. This will be fixed as we break out Operation
-        # classes.
-        close_pull_request(reason: :dependency_removed) unless service.errors.any?
+        # If the job dependencies mismatch the parsed dependencies, then
+        # we should close the PR as at least one thing we changed has been
+        # removed from the project.
+        close_pull_request(reason: :dependency_removed)
         return
       end
 
@@ -591,8 +585,6 @@ module Dependabot
         created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/PerceivedComplexity
     def dependencies
       all_deps = dependency_snapshot.dependencies
 
@@ -632,12 +624,7 @@ module Dependabot
              allowed_deps.reject { |d| job.vulnerable?(d) }
 
       deps
-    rescue StandardError => e
-      error_handler.handle_parser_error(e)
-      []
     end
-    # rubocop:enable Metrics/PerceivedComplexity
-    # rubocop:enable Metrics/AbcSize
 
     def update_checker_for(dependency, raise_on_ignored:)
       Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
