@@ -1270,7 +1270,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body: fixture("github", "package_json_with_nested_glob_workspaces.json"),
+              body: fixture_to_response("projects/yarn/nested_glob_workspaces", "package.json"),
               headers: json_header
             )
           stub_request(
