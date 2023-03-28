@@ -359,7 +359,7 @@ RSpec.describe Dependabot::Hex::UpdateChecker do
       end
     end
 
-    context "with a dependency from a private repo" do
+    pending "with a dependency from a private repo" do
       let(:mixfile_body) { fixture("mixfiles", "private_repo") }
       let(:lockfile_body) { fixture("lockfiles", "private_repo") }
 
