@@ -65,10 +65,11 @@ module Dependabot
       Raven.capture_exception(
         error,
         {
-          tags: tags,
+          tags: tags.merge({
+            package_manager: job&.package_manager
+          }.compact),
           extra: extra.merge({
             update_job_id: job&.id,
-            package_manager: job&.package_manager,
             dependency_name: dependency&.name
           }.compact)
         }
