@@ -8,6 +8,9 @@ module Dependabot
   module NpmAndYarn
     class FileParser
       class LockfileParser
+        require "dependabot/npm_and_yarn/file_parser/yarn_lock"
+        require "dependabot/npm_and_yarn/file_parser/json_lock"
+
         def initialize(dependency_files:)
           @dependency_files = dependency_files
         end
@@ -57,7 +60,7 @@ module Dependabot
         end
 
         def npm_lockfile_details(lockfile, dependency_name, manifest_name)
-          parsed_lockfile = parse_package_lock(lockfile)
+          parsed_lockfile = parse_json_lock(lockfile)
 
           if Helpers.npm_version(lockfile.content) == "npm8"
             # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
@@ -130,7 +133,7 @@ module Dependabot
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
           package_locks.each do |package_lock|
-            parsed_lockfile = parse_package_lock(package_lock)
+            parsed_lockfile = parse_json_lock(package_lock)
             deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
             dependency_set += deps
           end
@@ -146,7 +149,7 @@ module Dependabot
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
           shrinkwraps.each do |shrinkwrap|
-            parsed_lockfile = parse_shrinkwrap(shrinkwrap)
+            parsed_lockfile = parse_json_lock(shrinkwrap)
             deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
             dependency_set += deps
           end
@@ -210,36 +213,14 @@ module Dependabot
           requirement.include?("@workspace:")
         end
 
-        def parse_package_lock(package_lock)
-          @parse_package_lock ||= {}
-          @parse_package_lock[package_lock.name] ||=
-            JSON.parse(package_lock.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, package_lock.path
-        end
-
-        def parse_shrinkwrap(shrinkwrap)
-          @parse_shrinkwrap ||= {}
-          @parse_shrinkwrap[shrinkwrap.name] ||=
-            JSON.parse(shrinkwrap.content)
-        rescue JSON::ParserError
-          raise Dependabot::DependencyFileNotParseable, shrinkwrap.path
+        def parse_json_lock(package_lock)
+          @parse_json_lock ||= {}
+          @parse_json_lock[package_lock.name] ||= JsonLock.new(package_lock).parse
         end
 
         def parse_yarn_lock(yarn_lock)
           @parsed_yarn_lock ||= {}
-          @parsed_yarn_lock[yarn_lock.name] ||=
-            SharedHelpers.in_a_temporary_directory do
-              File.write("yarn.lock", yarn_lock.content)
-
-              SharedHelpers.run_helper_subprocess(
-                command: NativeHelpers.helper_path,
-                function: "yarn:parseLockfile",
-                args: [Dir.pwd]
-              )
-            rescue SharedHelpers::HelperSubprocessFailed
-              raise Dependabot::DependencyFileNotParseable, yarn_lock.path
-            end
+          @parsed_yarn_lock[yarn_lock.name] ||= YarnLock.new(yarn_lock).parse
         end
 
         def package_locks
