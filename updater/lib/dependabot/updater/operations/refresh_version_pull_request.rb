@@ -29,7 +29,10 @@ module Dependabot
 
         def perform
           Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
-          check_and_update_existing_pr_with_error_handling(dependencies)
+          dependency = dependencies.last
+          check_and_update_pull_request(dependencies)
+        rescue StandardError => e
+          error_handler.handle_dependabot_error(error: e, dependency: dependency)
         end
 
         private
@@ -71,13 +74,6 @@ module Dependabot
           end
 
           allowed_deps
-        end
-
-        def check_and_update_existing_pr_with_error_handling(dependencies)
-          dependency = dependencies.last
-          check_and_update_pull_request(dependencies)
-        rescue StandardError => e
-          error_handler.handle_dependabot_error(error: e, dependency: dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
