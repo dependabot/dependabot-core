@@ -293,6 +293,39 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
+### Private Registry Credential Management
+
+For many ecosystems, Dependabot Core supports private registries. Sometimes this happens by passing the private registry
+credentials directly to the native package managers (`npm`, `pip`, `bundler`, etc), other times it happens within the
+Dependabot Core Ruby code.
+
+```mermaid
+sequenceDiagram
+    Private Registry Credentials->>Dependabot Core:<br />
+    Dependabot Core->>Native Package Managers:<br />
+    Native Package Managers->>Package Registries:<br />
+    Dependabot Core->>Package Registries:<br />
+```
+
+While simple and straightforward, this is a security risk for ecosystems that allow running untrusted code within their
+manifest files. For example `setup.py` and `.gemspec` allow running native Python and Ruby code. If a package in the
+dependency tree gets hacked, an attacker could push a malicious manifest that forces the native package manager to
+expose the creds.
+
+To guard against this, for the Dependabot service that Github runs, we wrap Dependabot Core with a credential proxy so
+those private registry secrets are never exposed to Dependabot Core.
+
+```mermaid
+sequenceDiagram
+    Dependabot Core->>Credentials Proxy: All requests are unauthenticated
+    Credentials Proxy->>Package Registries: Creds are injected by the Proxy
+    Note left of Dependabot Core: The Dependabot Service<br /> that GitHub Runs
+    Package Registries->>Credentials Proxy: Creds are stripped by the Proxy
+    Credentials Proxy->>Dependabot Core: Dependabot Core never sees private registry credentials
+```
+
+This also means if Dependabot Core ever has a security vulnerability, those creds are still not at risk of being exposed.
+
 ## Profiling
 
 You can profile a dry-run by passing the `--profile` flag when running it, or
