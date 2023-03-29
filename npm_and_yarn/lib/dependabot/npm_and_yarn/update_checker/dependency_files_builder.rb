@@ -42,10 +42,22 @@ module Dependabot
             select { |f| f.name.end_with?("yarn.lock") }
         end
 
+        def pnpm_locks
+          @pnpm_locks ||=
+            dependency_files.
+            select { |f| f.name.end_with?("pnpm-lock.yaml") }
+        end
+
         def root_yarn_lock
           @root_yarn_lock ||=
             dependency_files.
             find { |f| f.name == "yarn.lock" }
+        end
+
+        def root_pnpm_lock
+          @root_pnpm_lock ||=
+            dependency_files.
+            find { |f| f.name == "pnpm-lock.yaml" }
         end
 
         def shrinkwraps
@@ -72,6 +84,11 @@ module Dependabot
           yarn_locks.each do |f|
             FileUtils.mkdir_p(Pathname.new(f.name).dirname)
             File.write(f.name, prepared_yarn_lockfile_content(f.content))
+          end
+
+          pnpm_locks.each do |f|
+            FileUtils.mkdir_p(Pathname.new(f.name).dirname)
+            File.write(f.name, f.content)
           end
 
           [*package_locks, *shrinkwraps].each do |f|

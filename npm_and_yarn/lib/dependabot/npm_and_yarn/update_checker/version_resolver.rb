@@ -46,6 +46,15 @@ module Dependabot
             YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
           /x
 
+        # Error message returned by `pnpm update`:
+        # └─┬ react-dom 15.7.0
+        #   └── ✕ unmet peer react@^15.7.0: found 16.3.1
+        PNPM_PEER_DEP_ERROR_REGEX =
+          /
+            ┬\s(?<requiring_dep>[^\n]+)\n
+            [^\n]*✕\sunmet\speer\s(?<required_dep>[^:]+):
+          /mx
+
         # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
@@ -349,6 +358,12 @@ module Dependabot
             message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
+          elsif message.match?(PNPM_PEER_DEP_ERROR_REGEX)
+            message.scan(PNPM_PEER_DEP_ERROR_REGEX) do
+              captures = Regexp.last_match.named_captures
+              captures["requiring_dep"].tr!(" ", "@")
+              errors << captures
+            end
           else
             raise
           end
@@ -482,16 +497,20 @@ module Dependabot
         end
 
         def run_checker(path:, version:)
-          # If there are both yarn lockfiles and npm lockfiles only run the
-          # yarn updater
           yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
           return run_yarn_checker(path: path, version: version, lockfile: yarn_lockfiles.first) if yarn_lockfiles.any?
+
+          pnpm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.pnpm_locks, path: path)
+          return run_pnpm_checker(path: path, version: version) if pnpm_lockfiles.any?
 
           npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
           return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
 
           root_yarn_lock = dependency_files_builder.root_yarn_lock
           return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
+
+          root_pnpm_lock = dependency_files_builder.root_pnpm_lock
+          return run_pnpm_checker(path: path, version: version) if root_pnpm_lock
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
@@ -502,6 +521,23 @@ module Dependabot
           return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
 
           run_yarn_classic_checker(path: path, version: version)
+        end
+
+        def run_pnpm_checker(path:, version:)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              output = SharedHelpers.run_shell_command(
+                "pnpm update #{dependency.name}@#{version} --lockfile-only",
+                fingerprint: "pnpm update <dependency_name>@<version> --lockfile-only"
+              )
+              if PNPM_PEER_DEP_ERROR_REGEX.match?(output)
+                raise SharedHelpers::HelperSubprocessFailed.new(
+                  message: output,
+                  error_context: {}
+                )
+              end
+            end
+          end
         end
 
         def run_yarn_berry_checker(path:, version:)

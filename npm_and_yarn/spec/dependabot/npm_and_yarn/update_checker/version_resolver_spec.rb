@@ -884,6 +884,204 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
       end
     end
+
+    context "with a pnpm-lock.yaml" do
+      context "updating a dependency without peer dependency issues" do
+        let(:dependency_files) { project_dependency_files("pnpm/pnpm-lock") }
+        let(:latest_allowable_version) { Gem::Version.new("1.3.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "left-pad",
+            version: "1.0.1",
+            requirements: [{
+              file: "package.json",
+              requirement: "^1.0.1",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }],
+            package_manager: "npm_and_yarn"
+          )
+        end
+
+        it { is_expected.to eq(latest_allowable_version) }
+      end
+
+      describe "updating a dependency with a peer requirement" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-dom",
+            version: "15.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+      end
+
+      describe "updating a dependency with a peer requirement and some badly written peer dependency requirements" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-dom",
+            version: "15.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+        let(:react_dom_registry_response) do
+          fixture("npm_responses", "react-dom-bad-reqs.json")
+        end
+
+        it { is_expected.to eq(Gem::Version.new("15.2.0")) }
+      end
+
+      describe "updating a dependency with a peer requirement that has (old) peer requirements that aren't included" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency_changed") }
+        let(:latest_allowable_version) { Gem::Version.new("2.2.4") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-apollo",
+            version: "2.1.8",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^2.1.8",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        let(:react_apollo_registry_listing_url) do
+          "https://registry.npmjs.org/react-apollo"
+        end
+        let(:react_apollo_registry_response) do
+          fixture("npm_responses", "react-apollo.json")
+        end
+        before do
+          stub_request(:get, react_apollo_registry_listing_url).
+            to_return(status: 200, body: react_apollo_registry_response)
+          stub_request(:get, react_apollo_registry_listing_url + "/latest").
+            to_return(status: 200, body: "{}")
+        end
+
+        # Upgrading react-apollo is blocked by our apollo-client version.
+        # This test also checks that the old peer requirement on redux, which
+        # is no longer in the package.json, doesn't cause any problems *and*
+        # tests that complicated react peer requirements are processed OK.
+        it { is_expected.to eq(Gem::Version.new("2.1.9")) }
+      end
+
+      describe "updating a dependency with a peer requirement that previously had the peer dep as a normal dep" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency_switch") }
+        let(:latest_allowable_version) { Gem::Version.new("2.5.4") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react-burger-menu",
+            version: "1.8.4",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "~1.8.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        let(:react_burger_menu_registry_listing_url) do
+          "https://registry.npmjs.org/react-burger-menu"
+        end
+        let(:react_burger_menu_registry_response) do
+          fixture("npm_responses", "react-burger-menu.json")
+        end
+        before do
+          stub_request(:get, react_burger_menu_registry_listing_url).
+            to_return(status: 200, body: react_burger_menu_registry_response)
+          stub_request(
+            :get,
+            react_burger_menu_registry_listing_url + "/latest"
+          ).to_return(status: 200, body: "{}")
+        end
+
+        # NOTE: pnpm automatically installs the peer requirement react and react-dom :tada:
+        it { is_expected.to eq(Gem::Version.new("2.5.4")) }
+      end
+
+      describe "updating a dependency that is a peer requirement" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "15.2.0",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "^15.2.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("15.6.2")) }
+      end
+
+      describe "updating a dependency that is a peer requirement with two semver constraints" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency_two_semver_constraints") }
+        let(:latest_allowable_version) { Gem::Version.new("1.1.0") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "@opentelemetry/api",
+            version: "1.0.4",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: ">=1.0.0 <1.1.0",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("1.0.4")) }
+      end
+
+      describe "updating a dependency that is a peer requirement of multiple dependencies" do
+        let(:dependency_files) { project_dependency_files("pnpm/peer_dependency_multiple") }
+        let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "react",
+            version: "0.14.2",
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              file: "package.json",
+              requirement: "0.14.2",
+              groups: ["dependencies"],
+              source: { type: "registry", url: "https://registry.npmjs.org" }
+            }]
+          )
+        end
+
+        it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+      end
+    end
   end
 
   describe "#latest_version_resolvable_with_full_unlock?" do
