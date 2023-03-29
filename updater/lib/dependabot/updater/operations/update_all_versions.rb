@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# This class implements our strategy for iterating over all of the dependencies
+# for a specific project folder to find those that are out of date and create
+# a single PR per Dependency.
 module Dependabot
   class Updater
     module Operations
