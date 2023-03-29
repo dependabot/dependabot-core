@@ -274,7 +274,7 @@ def show_diff(original_file, updated_file)
   updated_tmp_file.write(updated_file.content)
   updated_tmp_file.close
 
-  diff = `diff #{original_tmp_file.path} #{updated_tmp_file.path}`
+  diff = `diff -u #{original_tmp_file.path} #{updated_tmp_file.path}`
   puts
   puts "    ± #{original_file.name}"
   puts "    ~~~"
