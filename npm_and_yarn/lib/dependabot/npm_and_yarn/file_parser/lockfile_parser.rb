@@ -30,12 +30,7 @@ module Dependabot
 
         def lockfile_details(dependency_name:, requirement:, manifest_name:)
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
-            details =
-              if [*package_locks, *shrinkwraps].include?(lockfile)
-                npm_lockfile_details(lockfile, dependency_name, manifest_name)
-              else
-                yarn_lockfile_details(lockfile, dependency_name, requirement, manifest_name)
-              end
+            details = lockfile_for(lockfile).details(dependency_name, requirement, manifest_name)
 
             return details if details
           end
@@ -57,44 +52,6 @@ module Dependabot
 
           possible_lockfile_names.uniq.
             filter_map { |nm| dependency_files.find { |f| f.name == nm } }
-        end
-
-        def npm_lockfile_details(lockfile, dependency_name, manifest_name)
-          parsed_lockfile = parsed_lockfile(lockfile)
-
-          if Helpers.npm_version(lockfile.content) == "npm8"
-            # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
-            # workspace folder so we need to fallback to checking top-level
-            nested_details = parsed_lockfile.dig("packages", node_modules_path(manifest_name, dependency_name))
-            details = nested_details || parsed_lockfile.dig("packages", "node_modules/#{dependency_name}")
-            details&.slice("version", "resolved", "integrity", "dev")
-          else
-            parsed_lockfile.dig("dependencies", dependency_name)
-          end
-        end
-
-        def yarn_lockfile_details(lockfile, dependency_name, requirement, _manifest_name)
-          parsed_yarn_lock = parsed_lockfile(lockfile)
-          details_candidates =
-            parsed_yarn_lock.
-            select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
-
-          # If there's only one entry for this dependency, use it, even if
-          # the requirement in the lockfile doesn't match
-          if details_candidates.one?
-            details_candidates.first.last
-          else
-            details_candidates.find do |k, _|
-              k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
-            end&.last
-          end
-        end
-
-        def node_modules_path(manifest_name, dependency_name)
-          return "node_modules/#{dependency_name}" if manifest_name == "package.json"
-
-          workspace_path = manifest_name.gsub("/package.json", "")
-          File.join(workspace_path, "node_modules", dependency_name)
         end
 
         def yarn_lock_dependencies
