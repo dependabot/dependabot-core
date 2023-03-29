@@ -66,17 +66,6 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "updates the update config's dependency list" do
-      job = build_job
-      service = build_service
-      updater = build_updater(service: service, job: job)
-
-      expect(service).to receive(:update_dependency_list).
-        with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
-
-      updater.run
-    end
-
     it "updates only the dependencies that need updating" do
       stub_update_checker
 
@@ -2261,7 +2250,6 @@ RSpec.describe Dependabot::Updater do
       update_pull_request: nil,
       close_pull_request: nil,
       mark_job_as_processed: nil,
-      update_dependency_list: nil,
       record_update_job_error: nil
     )
 
