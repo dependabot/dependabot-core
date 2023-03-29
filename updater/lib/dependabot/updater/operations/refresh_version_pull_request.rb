@@ -77,9 +77,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/MethodLength
         #
         # TODO: Push checks on dependencies into Dependabot::DependencyChange
         #
@@ -148,9 +146,7 @@ module Dependabot
           end
         end
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
-        # rubocop:enable Metrics/MethodLength
 
         def create_pull_request(dependencies, updated_dependency_files)
           Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
