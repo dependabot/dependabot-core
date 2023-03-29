@@ -60,7 +60,7 @@ module Dependabot
         end
 
         def npm_lockfile_details(lockfile, dependency_name, manifest_name)
-          parsed_lockfile = parse_json_lock(lockfile)
+          parsed_lockfile = parsed_lockfile(lockfile)
 
           if Helpers.npm_version(lockfile.content) == "npm8"
             # NOTE: npm 8 sometimes doesn't install workspace dependencies in the
@@ -74,7 +74,7 @@ module Dependabot
         end
 
         def yarn_lockfile_details(lockfile, dependency_name, requirement, _manifest_name)
-          parsed_yarn_lock = parse_yarn_lock(lockfile)
+          parsed_yarn_lock = parsed_lockfile(lockfile)
           details_candidates =
             parsed_yarn_lock.
             select { |k, _| k.split(/(?<=\w)\@/)[0] == dependency_name }
@@ -101,7 +101,7 @@ module Dependabot
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
           yarn_locks.each do |yarn_lock|
-            parse_yarn_lock(yarn_lock).each do |reqs, details|
+            parsed_lockfile(yarn_lock).each do |reqs, details|
               reqs.split(", ").each do |req|
                 next unless semver_version_for(details["version"])
                 next if alias_package?(req)
@@ -133,7 +133,7 @@ module Dependabot
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
           package_locks.each do |package_lock|
-            parsed_lockfile = parse_json_lock(package_lock)
+            parsed_lockfile = parsed_lockfile(package_lock)
             deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
             dependency_set += deps
           end
@@ -149,7 +149,7 @@ module Dependabot
           # the nested nature of JS resolution, but it makes everything work
           # comparably to other flat-resolution strategies
           shrinkwraps.each do |shrinkwrap|
-            parsed_lockfile = parse_json_lock(shrinkwrap)
+            parsed_lockfile = parsed_lockfile(shrinkwrap)
             deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
             dependency_set += deps
           end
@@ -213,14 +213,17 @@ module Dependabot
           requirement.include?("@workspace:")
         end
 
-        def parse_json_lock(package_lock)
-          @parse_json_lock ||= {}
-          @parse_json_lock[package_lock.name] ||= JsonLock.new(package_lock).parse
+        def parsed_lockfile(file)
+          lockfile_for(file).parsed
         end
 
-        def parse_yarn_lock(yarn_lock)
-          @parsed_yarn_lock ||= {}
-          @parsed_yarn_lock[yarn_lock.name] ||= YarnLock.new(yarn_lock).parse
+        def lockfile_for(file)
+          @lockfiles ||= {}
+          @lockfiles[file.name] ||= if [*package_locks, *shrinkwraps].include?(file)
+                                      JsonLock.new(file)
+                                    else
+                                      YarnLock.new(file)
+                                    end
         end
 
         def package_locks

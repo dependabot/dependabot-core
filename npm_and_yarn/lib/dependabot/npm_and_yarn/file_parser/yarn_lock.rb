@@ -12,8 +12,8 @@ module Dependabot
           @dependency_file = dependency_file
         end
 
-        def parse
-          SharedHelpers.in_a_temporary_directory do
+        def parsed
+          @parsed ||= SharedHelpers.in_a_temporary_directory do
             File.write("yarn.lock", @dependency_file.content)
 
             SharedHelpers.run_helper_subprocess(

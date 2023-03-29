@@ -11,8 +11,8 @@ module Dependabot
           @dependency_file = dependency_file
         end
 
-        def parse
-          JSON.parse(@dependency_file.content)
+        def parsed
+          @parsed ||= JSON.parse(@dependency_file.content)
         rescue JSON::ParserError
           raise Dependabot::DependencyFileNotParseable, @dependency_file.path
         end
