@@ -324,8 +324,7 @@ the following:
   fact, we'd love you to and will help and support you however we can.
 - If you would like to add Dependabot's functionality to your for-profit
   company's offering then we DO NOT give you permission to use Dependabot Core
-  to do so. Please contact us directly to discuss a partnership or licensing
-  arrangement.
+  to do so.
 
 If you make a significant contribution to Dependabot Core then you will be asked
 to transfer the IP of that contribution to GitHub Inc. so that it can be
