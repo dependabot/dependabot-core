@@ -200,7 +200,12 @@ module Dependabot
                 command,
                 stdin_data: stdin_data
               )
-              raise Dependabot::DependabotError, "dependency_services failed: #{stderr}" unless status.success?
+              unless status.success?
+                if ["Failed resolving", "Package not available", "Git error."].any? { |s| stderr.include?(s) }
+                  raise Dependabot::DependencyFileNotResolvable, "dependency_services failed: #{stderr}"
+                end
+                raise Dependabot::DependabotError, "dependency_services failed: #{stderr}"
+              end
               return stdout unless block_given?
 
               yield
