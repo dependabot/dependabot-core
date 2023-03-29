@@ -70,12 +70,7 @@ module Dependabot
                                    "updates")
           end
 
-          # Consider updating vulnerable deps first. Only consider the first 10,
-          # though, to ensure they don't take up the entire update run
-          deps = allowed_deps.select { |d| job.vulnerable?(d) }.sample(10) +
-                 allowed_deps.reject { |d| job.vulnerable?(d) }
-
-          deps
+          allowed_deps
         end
 
         def check_and_update_existing_pr_with_error_handling(dependencies)
@@ -100,24 +95,6 @@ module Dependabot
             # we should close the PR as at least one thing we changed has been
             # removed from the project.
             close_pull_request(reason: :dependency_removed)
-            return
-          end
-
-          # NOTE: Prevent security only updates from turning into latest version
-          # updates if the current version is no longer vulnerable. This happens
-          # when a security update is applied by the user directly and the existing
-          # pull request is rebased.
-          if job.security_updates_only? &&
-             dependencies.none? { |d| job.allowed_update?(d) }
-            lead_dependency = dependencies.first
-            if job.vulnerable?(lead_dependency)
-              Dependabot.logger.info(
-                "Dependency no longer allowed to update #{lead_dependency.name} #{lead_dependency.version}"
-              )
-            else
-              Dependabot.logger.info("No longer vulnerable #{lead_dependency.name} #{lead_dependency.version}")
-            end
-            close_pull_request(reason: :up_to_date)
             return
           end
 
@@ -213,7 +190,7 @@ module Dependabot
         end
 
         def raise_on_ignored?(dependency)
-          job.security_updates_only? || ignore_conditions_for(dependency).any?
+          ignore_conditions_for(dependency).any?
         end
 
         def ignore_conditions_for(dep)
@@ -230,7 +207,7 @@ module Dependabot
           end
           Dependabot::Config::UpdateConfig.
             new(ignore_conditions: ignore_conditions).
-            ignored_versions_for(dep, security_updates_only: job.security_updates_only?)
+            ignored_versions_for(dep, security_updates_only: false)
         end
 
         def update_checker_for(dependency, raise_on_ignored:)
@@ -296,7 +273,6 @@ module Dependabot
 
             ic["update-types"]&.each do |update_type|
               msg = "  #{update_type} - from #{ic['source']}"
-              msg += " (doesn't apply to security update)" if job.security_updates_only?
               Dependabot.logger.info(msg)
             end
           end
@@ -307,10 +283,6 @@ module Dependabot
           false
         rescue Dependabot::AllVersionsIgnored
           Dependabot.logger.info("All updates for #{dependency.name} were ignored")
-
-          # Report this error to the backend to create an update job error
-          raise if job.security_updates_only?
-
           true
         end
 
