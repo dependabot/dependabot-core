@@ -95,7 +95,7 @@ module Dependabot
           requirement: requirement,
           manifest_name: file.name
         )
-        version = version_for(name, requirement, file.name)
+        version = version_for(requirement, lockfile_details)
 
         return if lockfile_details && !version
         return if ignore_requirement?(requirement)
@@ -116,7 +116,7 @@ module Dependabot
             requirement: requirement_for(requirement),
             file: file.name,
             groups: [type],
-            source: source_for(name, requirement, file.name)
+            source: source_for(name, requirement, lockfile_details)
           }]
         )
       end
@@ -165,29 +165,21 @@ module Dependabot
           package_files.filter_map { |f| JSON.parse(f.content)["name"] }
       end
 
-      def version_for(name, requirement, manifest_name)
+      def version_for(requirement, lockfile_details)
         if git_url_with_semver?(requirement)
-          semver_version = semver_version_for(name, requirement, manifest_name)
+          semver_version = semver_version_for(lockfile_details)
           return semver_version if semver_version
 
-          git_revision = git_revision_for(name, requirement, manifest_name)
+          git_revision = git_revision_for(lockfile_details)
           version_from_git_revision(requirement, git_revision) || git_revision
         elsif git_url?(requirement)
-          git_revision_for(name, requirement, manifest_name)
+          git_revision_for(lockfile_details)
         else
-          semver_version_for(name, requirement, manifest_name)
+          semver_version_for(lockfile_details)
         end
       end
 
-      def git_revision_for(name, requirement, manifest_name)
-        return unless git_url?(requirement)
-
-        lockfile_details = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )
-
+      def git_revision_for(lockfile_details)
         [
           lockfile_details&.fetch("version", nil)&.split("#")&.last,
           lockfile_details&.fetch("resolved", nil)&.split("#")&.last,
@@ -224,12 +216,8 @@ module Dependabot
         nil
       end
 
-      def semver_version_for(name, requirement, manifest_name)
-        lock_version = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )&.fetch("version", nil)
+      def semver_version_for(lockfile_details)
+        lock_version = lockfile_details&.fetch("version", nil)
 
         # This line is to guard against improperly formatted versions in a
         # lockfile, such as additional characters. NPM/yarn fixes these when
@@ -239,14 +227,9 @@ module Dependabot
         lock_version
       end
 
-      def source_for(name, requirement, manifest_name)
+      def source_for(name, requirement, lockfile_details)
         return git_source_for(requirement) if git_url?(requirement)
 
-        lockfile_details = lockfile_parser.lockfile_details(
-          dependency_name: name,
-          requirement: requirement,
-          manifest_name: manifest_name
-        )
         resolved_url = lockfile_details&.fetch("resolved", nil)
 
         resolution = lockfile_details&.fetch("resolution", nil)
