@@ -70,9 +70,6 @@ module Dependabot
         def dependencies
           all_deps = dependency_snapshot.dependencies
 
-          # Tell the backend about the current dependencies on the target branch
-          service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
           allowed_deps = all_deps.select { |d| job.allowed_update?(d) }
           # Return dependencies in a random order, with top-level dependencies
           # considered first so that dependency runs which time out don't always hit

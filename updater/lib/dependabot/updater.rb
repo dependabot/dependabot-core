@@ -588,9 +588,6 @@ module Dependabot
     def dependencies
       all_deps = dependency_snapshot.dependencies
 
-      # Tell the backend about the current dependencies on the target branch
-      service.update_dependency_list(dependency_snapshot: dependency_snapshot)
-
       # Rebases and security updates have dependencies, version updates don't
       if job.dependencies
         # Gradle, Maven and Nuget dependency names can be case-insensitive and

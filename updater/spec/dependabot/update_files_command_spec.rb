@@ -11,7 +11,8 @@ RSpec.describe Dependabot::UpdateFilesCommand do
     instance_double(Dependabot::Service,
                     capture_exception: nil,
                     mark_job_as_processed: nil,
-                    record_update_job_error: nil)
+                    record_update_job_error: nil,
+                    update_dependency_list: nil)
   end
   let(:job_definition) do
     JSON.parse(fixture("file_fetcher_output/output.json"))
@@ -43,6 +44,13 @@ RSpec.describe Dependabot::UpdateFilesCommand do
       expect(dummy_runner).to receive(:run)
       expect(service).to receive(:mark_job_as_processed).
         with(base_commit_sha)
+
+      perform_job
+    end
+
+    it "sends dependency metadata to the service" do
+      expect(service).to receive(:update_dependency_list).
+        with(dependency_snapshot: an_instance_of(Dependabot::DependencySnapshot))
 
       perform_job
     end
