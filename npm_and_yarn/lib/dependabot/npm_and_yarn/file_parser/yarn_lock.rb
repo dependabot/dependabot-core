@@ -26,6 +26,29 @@ module Dependabot
           end
         end
 
+        def dependencies
+          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
+
+          parsed.each do |reqs, details|
+            reqs.split(", ").each do |req|
+              version = Version.semver_for(details["version"])
+              next unless version
+              next if alias_package?(req)
+              next if workspace_package?(req)
+              next if req == "__metadata"
+
+              dependency_set << Dependency.new(
+                name: req.split(/(?<=\w)\@/).first,
+                version: version,
+                package_manager: "npm_and_yarn",
+                requirements: []
+              )
+            end
+          end
+
+          dependency_set
+        end
+
         def details(dependency_name, requirement, _manifest_name)
           details_candidates =
             parsed.
@@ -40,6 +63,16 @@ module Dependabot
               k.scan(/(?<=\w)\@(?:npm:)?([^\s,]+)/).flatten.include?(requirement)
             end&.last
           end
+        end
+
+        private
+
+        def alias_package?(requirement)
+          requirement.match?(/@npm:(.+@(?!npm))/)
+        end
+
+        def workspace_package?(requirement)
+          requirement.include?("@workspace:")
         end
       end
     end

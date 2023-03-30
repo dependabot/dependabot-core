@@ -17,9 +17,14 @@ module Dependabot
 
         def parse_set
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-          dependency_set += yarn_lock_dependencies if yarn_locks.any?
-          dependency_set += package_lock_dependencies if package_locks.any?
-          dependency_set += shrinkwrap_dependencies if shrinkwraps.any?
+
+          # NOTE: The DependencySet will de-dupe our dependencies, so they
+          # end up unique by name. That's not a perfect representation of
+          # the nested nature of JS resolution, but it makes everything work
+          # comparably to other flat-resolution strategies
+          (yarn_locks + package_locks + shrinkwraps).each do |file|
+            dependency_set += lockfile_for(file).dependencies
+          end
 
           dependency_set
         end
@@ -52,113 +57,6 @@ module Dependabot
 
           possible_lockfile_names.uniq.
             filter_map { |nm| dependency_files.find { |f| f.name == nm } }
-        end
-
-        def yarn_lock_dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-
-          yarn_locks.each do |yarn_lock|
-            parsed_lockfile(yarn_lock).each do |reqs, details|
-              reqs.split(", ").each do |req|
-                version = version_class.semver_for(details["version"])
-                next unless version
-                next if alias_package?(req)
-                next if workspace_package?(req)
-                next if req == "__metadata"
-
-                # NOTE: The DependencySet will de-dupe our dependencies, so they
-                # end up unique by name. That's not a perfect representation of
-                # the nested nature of JS resolution, but it makes everything work
-                # comparably to other flat-resolution strategies
-                dependency_set << Dependency.new(
-                  name: req.split(/(?<=\w)\@/).first,
-                  version: version,
-                  package_manager: "npm_and_yarn",
-                  requirements: []
-                )
-              end
-            end
-          end
-
-          dependency_set
-        end
-
-        def package_lock_dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-
-          # NOTE: The DependencySet will de-dupe our dependencies, so they
-          # end up unique by name. That's not a perfect representation of
-          # the nested nature of JS resolution, but it makes everything work
-          # comparably to other flat-resolution strategies
-          package_locks.each do |package_lock|
-            parsed_lockfile = parsed_lockfile(package_lock)
-            deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
-            dependency_set += deps
-          end
-
-          dependency_set
-        end
-
-        def shrinkwrap_dependencies
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-
-          # NOTE: The DependencySet will de-dupe our dependencies, so they
-          # end up unique by name. That's not a perfect representation of
-          # the nested nature of JS resolution, but it makes everything work
-          # comparably to other flat-resolution strategies
-          shrinkwraps.each do |shrinkwrap|
-            parsed_lockfile = parsed_lockfile(shrinkwrap)
-            deps = recursively_fetch_npm_lock_dependencies(parsed_lockfile)
-            dependency_set += deps
-          end
-
-          dependency_set
-        end
-
-        def recursively_fetch_npm_lock_dependencies(object_with_dependencies)
-          dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
-
-          dependencies = object_with_dependencies["dependencies"]
-          dependencies ||= object_with_dependencies.fetch("packages", {}).transform_keys do |name|
-            name.delete_prefix("node_modules/")
-          end
-
-          dependencies.each do |name, details|
-            next if name.empty? # v3 lockfiles include an empty key holding info of the current package
-
-            version = version_class.semver_for(details["version"])
-            next unless version
-
-            dependency_args = {
-              name: name,
-              version: version,
-              package_manager: "npm_and_yarn",
-              requirements: []
-            }
-
-            if details["bundled"]
-              dependency_args[:subdependency_metadata] =
-                [{ npm_bundled: details["bundled"] }]
-            end
-
-            if details["dev"]
-              dependency_args[:subdependency_metadata] =
-                [{ production: !details["dev"] }]
-            end
-
-            dependency_set << Dependency.new(**dependency_args)
-            dependency_set += recursively_fetch_npm_lock_dependencies(details)
-          end
-
-          dependency_set
-        end
-
-        def alias_package?(requirement)
-          requirement.match?(/@npm:(.+@(?!npm))/)
-        end
-
-        def workspace_package?(requirement)
-          requirement.include?("@workspace:")
         end
 
         def parsed_lockfile(file)
