@@ -46,14 +46,15 @@ RSpec.describe Dependabot::Updater::Operations do
       end
     end
 
-    it "returns the RefreshVersionPullRequest class when the Job is for an existing dependency version update" do
+    it "returns the RefreshVersionUpdatePullRequest class when the Job is for an existing dependency version update" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: false,
                             updating_a_pull_request?: true,
                             dependencies: [anything],
                             is_a?: true)
 
-      expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::RefreshVersionPullRequest)
+      expect(described_class.class_for(job: job)).
+        to be(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest)
     end
 
     it "raises an argument error with anything other than a Dependabot::Job" do

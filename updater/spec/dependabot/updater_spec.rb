@@ -1134,7 +1134,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(Dependabot::Updater::Operations::RefreshVersionPullRequest).to receive(:new).and_call_original
+          expect(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest).to receive(:new).and_call_original
           expect(service).to receive(:create_pull_request).once
 
           updater.run
@@ -1241,7 +1241,7 @@ RSpec.describe Dependabot::Updater do
             service = build_service
             updater = build_updater(service: service, job: job)
 
-            expect(Dependabot::Updater::Operations::RefreshVersionPullRequest).to receive(:new).and_call_original
+            expect(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest).to receive(:new).and_call_original
             expect(service).to receive(:create_pull_request).once
             expect(service).not_to receive(:close_pull_request)
 

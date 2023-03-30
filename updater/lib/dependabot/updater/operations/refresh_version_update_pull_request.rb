@@ -10,7 +10,7 @@
 module Dependabot
   class Updater
     module Operations
-      class RefreshVersionPullRequest
+      class RefreshVersionUpdatePullRequest
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           # If we haven't been given metadata about the dependencies present
