@@ -217,14 +217,7 @@ module Dependabot
       end
 
       def semver_version_for(lockfile_details)
-        lock_version = lockfile_details&.fetch("version", nil)
-
-        # This line is to guard against improperly formatted versions in a
-        # lockfile, such as additional characters. NPM/yarn fixes these when
-        # running an update, so we can safely ignore these versions.
-        return unless version_class.correct?(lock_version)
-
-        lock_version
+        version_class.semver_for(lockfile_details&.fetch("version", ""))
       end
 
       def source_for(name, requirement, lockfile_details)

@@ -60,7 +60,8 @@ module Dependabot
           yarn_locks.each do |yarn_lock|
             parsed_lockfile(yarn_lock).each do |reqs, details|
               reqs.split(", ").each do |req|
-                next unless semver_version_for(details["version"])
+                version = version_class.semver_for(details["version"])
+                next unless version
                 next if alias_package?(req)
                 next if workspace_package?(req)
                 next if req == "__metadata"
@@ -71,7 +72,7 @@ module Dependabot
                 # comparably to other flat-resolution strategies
                 dependency_set << Dependency.new(
                   name: req.split(/(?<=\w)\@/).first,
-                  version: semver_version_for(details["version"]),
+                  version: version,
                   package_manager: "npm_and_yarn",
                   requirements: []
                 )
@@ -125,11 +126,12 @@ module Dependabot
           dependencies.each do |name, details|
             next if name.empty? # v3 lockfiles include an empty key holding info of the current package
 
-            next unless semver_version_for(details["version"])
+            version = version_class.semver_for(details["version"])
+            next unless version
 
             dependency_args = {
               name: name,
-              version: semver_version_for(details["version"]),
+              version: version,
               package_manager: "npm_and_yarn",
               requirements: []
             }
@@ -149,17 +151,6 @@ module Dependabot
           end
 
           dependency_set
-        end
-
-        def semver_version_for(version_string)
-          # The next two lines are to guard against improperly formatted
-          # versions in a lockfile, such as an empty string or additional
-          # characters. NPM/yarn fixes these when running an update, so we can
-          # safely ignore these versions.
-          return if version_string == ""
-          return unless version_class.correct?(version_string)
-
-          version_string
         end
 
         def alias_package?(requirement)
