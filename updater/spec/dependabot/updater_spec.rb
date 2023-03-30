@@ -2131,6 +2131,9 @@ RSpec.describe Dependabot::Updater do
         service = build_service
         updater = build_updater(service: service, job: job)
 
+        checker = stub_update_checker
+        allow(checker).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
+
         updater.run
         expect(Dependabot.logger).
           to have_received(:info).
@@ -2151,6 +2154,9 @@ RSpec.describe Dependabot::Updater do
         )
         service = build_service
         updater = build_updater(service: service, job: job)
+
+        checker = stub_update_checker
+        allow(checker).to receive(:latest_version).and_raise(Dependabot::AllVersionsIgnored)
 
         updater.run
 
