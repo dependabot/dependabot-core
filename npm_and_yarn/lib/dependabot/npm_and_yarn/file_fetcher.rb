@@ -384,7 +384,6 @@ module Dependabot
         paths_array.flat_map { |path| recursive_find_directories(path) }
       end
 
-      # Only expands globs one level deep, so path/**/* gets expanded to path/
       def find_directories(glob)
         return [glob] unless glob.include?("*") || yarn_ignored_glob(glob)
 
@@ -406,11 +405,12 @@ module Dependabot
       def matching_paths(glob, paths)
         ignored_glob = yarn_ignored_glob(glob)
         glob = glob.gsub(%r{^\./}, "").gsub(/!\(.*?\)/, "*")
+        glob = "#{glob}/*" if glob.end_with?("**")
 
-        results = paths.select { |filename| File.fnmatch?(glob, filename) }
+        results = paths.select { |filename| File.fnmatch?(glob, filename, File::FNM_PATHNAME) }
         return results unless ignored_glob
 
-        results.reject { |filename| File.fnmatch?(ignored_glob, filename) }
+        results.reject { |filename| File.fnmatch?(ignored_glob, filename, File::FNM_PATHNAME) }
       end
 
       def recursive_find_directories(glob, prefix = "")

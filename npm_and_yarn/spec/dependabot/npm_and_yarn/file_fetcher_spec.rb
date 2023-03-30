@@ -1349,13 +1349,13 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
         end
       end
 
-      context "specified using 'packages/**'" do
+      shared_examples_for "fetching all files recursively" do
         before do
           stub_request(:get, File.join(url, "package.json?ref=sha")).
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body: fixture_to_response("projects/yarn/double_star_workspaces", "package.json"),
+              body: fixture_to_response("projects/#{project}", "package.json"),
               headers: json_header
             )
           stub_request(
@@ -1467,6 +1467,18 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
 
           expect(file_fetcher_instance.files.map(&:type).uniq).to eq(["file"])
         end
+      end
+
+      context "specified using 'packages/**'" do
+        let(:project) { "yarn/double_star_workspaces" }
+
+        it_behaves_like "fetching all files recursively"
+      end
+
+      context "specified using 'packages/**/*'" do
+        let(:project) { "yarn/double_star_single_star_workspaces" }
+
+        it_behaves_like "fetching all files recursively"
       end
 
       context "specified using a hash" do
