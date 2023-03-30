@@ -278,6 +278,13 @@ module Dependabot
           true
         end
 
+        def name_match?(name1, name2)
+          WildcardMatcher.match?(
+            job.name_normaliser.call(name1),
+            job.name_normaliser.call(name2)
+          )
+        end
+
         def requirements_to_unlock(checker)
           if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
