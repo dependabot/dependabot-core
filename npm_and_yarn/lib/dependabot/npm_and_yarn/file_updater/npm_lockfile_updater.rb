@@ -186,7 +186,7 @@ module Dependabot
           end
 
           # TODO: Update the npm 6 updater to use these args as we currently
-          # do the same in the js updater helper, we've kept it seperate for
+          # do the same in the js updater helper, we've kept it separate for
           # the npm 7 rollout
           install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
