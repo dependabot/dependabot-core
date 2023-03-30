@@ -148,6 +148,17 @@ module Dependabot
         latest_same_precision_digest = digest_of(latest_same_precision_tag.name)
         latest_digest = digest_of(latest_tag.name)
 
+        # NOTE: Some registries don't provide digests (the API documents them as
+        # optional: https://docs.docker.com/registry/spec/api/#content-digests).
+        #
+        # In that case we can't know for sure whether the latest tag keeping
+        # existing precision is the same as the absolute latest tag.
+        #
+        # We can however, make a best-effort to avoid unwanted changes by
+        # directly looking at version numbers and checking whether the absolute
+        # latest tag is just a more precise version of the latest tag that keeps
+        # existing precision.
+
         if latest_same_precision_digest == latest_digest && latest_same_precision_tag.same_but_less_precise?(latest_tag)
           latest_same_precision_tag
         else
