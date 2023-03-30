@@ -274,12 +274,16 @@ def show_diff(original_file, updated_file)
   updated_tmp_file.write(updated_file.content)
   updated_tmp_file.close
 
-  diff = `diff -u #{original_tmp_file.path} #{updated_tmp_file.path}`
+  diff = `diff -u #{original_tmp_file.path} #{updated_tmp_file.path}`.lines
+  added_lines = diff.count { |line| line.start_with?("+") }
+  removed_lines = diff.count { |line| line.start_with?("-") }
+
   puts
   puts "    ± #{original_file.name}"
   puts "    ~~~"
-  puts diff.lines.map { |line| "    " + line }.join
+  puts diff.map { |line| "    " + line }.join
   puts "    ~~~"
+  puts "    #{added_lines} insertions (+), #{removed_lines} deletions (-)"
 end
 
 def cached_read(name)
