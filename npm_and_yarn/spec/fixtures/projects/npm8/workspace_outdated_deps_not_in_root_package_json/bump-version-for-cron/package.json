@@ -1,0 +1,10 @@
+{
+  "name": "@k8slens/bump-version-for-cron",
+  "version": "6.5.0-alpha.1",
+  "description": "CLI to bump the version to during a cron daily alpha release",
+  "license": "MIT",
+  "private": false,
+  "devDependencies": {
+    "@swc/core": "^1.3.37"
+  }
+}

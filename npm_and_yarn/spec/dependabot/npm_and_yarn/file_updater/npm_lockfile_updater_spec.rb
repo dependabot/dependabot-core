@@ -265,6 +265,28 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmLockfileUpdater do
     end
   end
 
+  context "workspace with outdated deps not in root package.json" do
+    let(:dependency_name) { "@swc/core" }
+    let(:version) { "1.3.44" }
+    let(:previous_version) { "1.3.40" }
+    let(:requirements) do
+      [{
+        file: "packages/bump-version-for-cron/package.json",
+        requirement: "^1.3.37",
+        groups: ["dependencies"],
+        source: nil
+      }]
+    end
+    let(:previous_requirements) { requirements }
+
+    let(:files) { project_dependency_files("npm8/workspace_outdated_deps_not_in_root_package_json") }
+
+    it "updates" do
+      expect(JSON.parse(updated_npm_lock_content)["packages"]["node_modules/@swc/core"]["version"]).
+        to eq("1.3.44")
+    end
+  end
+
   %w(npm6 npm8).each do |npm_version|
     describe "#{npm_version} updates" do
       let(:files) { project_dependency_files("#{npm_version}/simple") }
