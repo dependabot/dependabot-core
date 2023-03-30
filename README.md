@@ -244,15 +244,6 @@ missing some functionality and are therefore not supported. You have to clone th
 repository manually and use the `Reopen in Container` or `Open Folder in Container...`
 command.
 
-## Releasing
-
-Triggering the jobs that will push the new gems is done by following the steps below.
-
-- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
-- Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
-- Edit the `CHANGELOG` file and remove any entries that aren't needed
-- Run the commands that were output by running `bin/bump-version.rb patch`
-
 ## Architecture
 
 Dependabot Core is a collection of Ruby packages (gems), which contain the
@@ -383,3 +374,18 @@ recurring payments from Europe, check them out.
 [support]: https://support.github.com/
 [vsc-dev-containers]: https://code.visualstudio.com/docs/devcontainers/containers
 [vsc-dev-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
+
+## Notes for project maintainers
+
+<details><summary>:book: Release guide</summary>
+<p>
+
+  Triggering the jobs that will push the new gems is done by following the steps below.
+
+  - Ensure you have the latest merged changes:  `git checkout main` and `git pull`
+  - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
+  - Edit the `CHANGELOG` file and remove any entries that aren't needed
+  - Run the commands that were output by running `bin/bump-version.rb patch`
+
+</p>
+</details>
