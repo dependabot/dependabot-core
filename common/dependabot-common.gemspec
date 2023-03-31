@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
                       "Python, PHP, Elixir, Rust, Java, .NET, Elm and Go"
 
   spec.author       = "Dependabot"
-  spec.email        = "support@dependabot.com"
+  spec.email        = "opensource@github.com"
   spec.homepage     = "https://github.com/dependabot/dependabot-core"
   spec.license      = "Nonstandard" # License Zero Prosperity Public License
 
