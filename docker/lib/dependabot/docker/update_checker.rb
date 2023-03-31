@@ -262,10 +262,13 @@ module Dependabot
           rescue *transient_docker_errors => e
             attempt ||= 1
             attempt += 1
-            return if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
-            raise if attempt > 3
+            if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
+              nil
+            else
+              raise if attempt > 3
 
-            retry
+              retry
+            end
           end
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
