@@ -1270,7 +1270,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             with(headers: { "Authorization" => "token token" }).
             to_return(
               status: 200,
-              body: fixture("github", "package_json_with_nested_glob_workspaces.json"),
+              body: fixture_to_response("projects/yarn/nested_glob_workspaces", "package.json"),
               headers: json_header
             )
           stub_request(
@@ -1347,6 +1347,138 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
             find { |f| f.name == "packages/package1/package1/package.json" }
           expect(workspace_dep.type).to eq("file")
         end
+      end
+
+      shared_examples_for "fetching all files recursively" do
+        before do
+          stub_request(:get, File.join(url, "package.json?ref=sha")).
+            with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture_to_response("projects/#{project}", "package.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "packages_files_nested2.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "packages_files_nested3.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package1/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package2/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package21/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package22/package.json?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "package_json_content.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package1?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_js_library.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package1/package2?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_python_repo.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package21?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_js_library.json"),
+              headers: json_header
+            )
+          stub_request(
+            :get,
+            File.join(url, "packages/package2/package22?ref=sha")
+          ).with(headers: { "Authorization" => "token token" }).
+            to_return(
+              status: 200,
+              body: fixture("github", "contents_python_repo.json"),
+              headers: json_header
+            )
+        end
+
+        it "fetches package.json from the workspace dependencies" do
+          expect(file_fetcher_instance.files.map(&:name)).
+            to match_array(
+              %w(
+                package.json
+                package-lock.json
+                packages/package1/package.json
+                packages/package1/package1/package.json
+                packages/package1/package2/package.json
+                packages/package2/package.json
+                packages/package2/package21/package.json
+                packages/package2/package22/package.json
+              )
+            )
+
+          expect(file_fetcher_instance.files.map(&:type).uniq).to eq(["file"])
+        end
+      end
+
+      context "specified using 'packages/**'" do
+        let(:project) { "yarn/double_star_workspaces" }
+
+        it_behaves_like "fetching all files recursively"
+      end
+
+      context "specified using 'packages/**/*'" do
+        let(:project) { "yarn/double_star_single_star_workspaces" }
+
+        it_behaves_like "fetching all files recursively"
       end
 
       context "specified using a hash" do
