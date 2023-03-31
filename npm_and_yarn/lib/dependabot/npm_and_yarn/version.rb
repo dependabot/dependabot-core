@@ -25,6 +25,17 @@ module Dependabot
         version.to_s.match?(ANCHORED_VERSION_PATTERN)
       end
 
+      def self.semver_for(version)
+        # The next two lines are to guard against improperly formatted
+        # versions in a lockfile, such as an empty string or additional
+        # characters. NPM/yarn fixes these when running an update, so we can
+        # safely ignore these versions.
+        return if version == ""
+        return unless correct?(version)
+
+        version
+      end
+
       def initialize(version)
         @version_string = version.to_s
         version = version.gsub(/^v/, "") if version.is_a?(String)
