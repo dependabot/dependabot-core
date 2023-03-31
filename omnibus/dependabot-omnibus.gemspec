@@ -18,6 +18,11 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = common_gemspec.required_ruby_version
   spec.required_rubygems_version = common_gemspec.required_ruby_version
 
+  spec.metadata = {
+    "issue_tracker_uri" => common_gemspec.metadata["issue_tracker_uri"],
+    "changelog_uri" => common_gemspec.metadata["changelog_uri"]
+  }
+
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 

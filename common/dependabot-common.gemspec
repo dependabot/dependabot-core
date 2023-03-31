@@ -14,6 +14,11 @@ Gem::Specification.new do |spec|
   spec.homepage     = "https://github.com/dependabot/dependabot-core"
   spec.license      = "Nonstandard" # License Zero Prosperity Public License
 
+  spec.metadata = {
+    "issue_tracker_uri" => "https://github.com/dependabot/dependabot-core/issues",
+    "changelog_uri" => "https://github.com/dependabot/dependabot-core/blob/main/CHANGELOG.md"
+  }
+
   spec.require_path = "lib"
   spec.files        = []
 
