@@ -1,18 +1,23 @@
 # frozen_string_literal: true
 
-# This class implements our strategy for iterating over all of the dependencies
-# for a specific project folder to find those that are out of date and create
-# a single PR per Dependency.
+# This class implements our strategy for 'refreshing' an existing Pull Request
+# that updates a dependnency to the latest permitted version.
+#
+# It will determine if the existing diff is still relevant, in which case it
+# functions similar to a "rebase", but in the case where the project folder's
+# dependencies have changed or a newer version is available, it will supersede
+# the existing pull request with a new one for clarity.
 module Dependabot
   class Updater
     module Operations
-      class UpdateAllVersions
+      class RefreshVersionUpdatePullRequest
         def self.applies_to?(job:)
           return false if job.security_updates_only?
-          return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          # If we haven't been given metadata about the dependencies present
+          # in the pull request, this strategy cannot act.
+          return false if job.dependencies&.none?
 
-          true
+          job.updating_a_pull_request?
         end
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
@@ -20,14 +25,14 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          # TODO: Collect @created_pull_requests on the Job object?
-          @created_pull_requests = []
         end
 
         def perform
-          Dependabot.logger.info("Starting update job for #{job.source.repo}")
-          Dependabot.logger.info("Checking all dependencies for version updates...")
-          dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
+          dependency = dependencies.last
+          check_and_update_pull_request(dependencies)
+        rescue StandardError => e
+          error_handler.handle_dependabot_error(error: e, dependency: dependency)
         end
 
         private
@@ -39,105 +44,118 @@ module Dependabot
                     :created_pull_requests
 
         def dependencies
-          all_deps = dependency_snapshot.dependencies
-
-          allowed_deps = all_deps.select { |d| job.allowed_update?(d) }
-          # Return dependencies in a random order, with top-level dependencies
-          # considered first so that dependency runs which time out don't always hit
-          # the same dependencies
-          allowed_deps = allowed_deps.shuffle unless ENV["UPDATER_DETERMINISTIC"]
-
-          if all_deps.any? && allowed_deps.none?
-            Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
+          # Gradle, Maven and Nuget dependency names can be case-insensitive and
+          # the dependency name in the security advisory often doesn't match what
+          # users have specified in their manifest.
+          #
+          # It's technically possibly to publish case-sensitive npm packages to a
+          # private registry but shouldn't cause problems here as job.dependencies
+          # is set either from an existing PR rebase/recreate or a security
+          # advisory.
+          job_dependencies = job.dependencies.map(&:downcase)
+          dependency_snapshot.dependencies.select do |dep|
+            job_dependencies.include?(dep.name.downcase)
           end
-
-          allowed_deps
-        end
-
-        def check_and_create_pr_with_error_handling(dependency)
-          check_and_create_pull_request(dependency)
-        rescue Dependabot::InconsistentRegistryResponse => e
-          error_handler.log_error(
-            dependency: dependency,
-            error: e,
-            error_type: "inconsistent_registry_response",
-            error_detail: e.message
-          )
-        rescue StandardError => e
-          error_handler.handle_dependabot_error(error: e, dependency: dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/MethodLength
-        def check_and_create_pull_request(dependency)
-          checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
-
-          log_checking_for_update(dependency)
-
-          return if all_versions_ignored?(dependency, checker)
-          return log_up_to_date(dependency) if checker.up_to_date?
-
-          if pr_exists_for_latest_version?(checker)
-            return Dependabot.logger.info(
-              "Pull request already exists for #{checker.dependency.name} " \
-              "with latest version #{checker.latest_version}"
-            )
+        # rubocop:disable Metrics/PerceivedComplexity
+        def check_and_update_pull_request(dependencies)
+          if dependencies.count != job.dependencies.count
+            # If the job dependencies mismatch the parsed dependencies, then
+            # we should close the PR as at least one thing we changed has been
+            # removed from the project.
+            close_pull_request(reason: :dependency_removed)
+            return
           end
+
+          # The first dependency is the "lead" dependency in a multi-dependency
+          # update - i.e., the one we're trying to update.
+          #
+          # Note: Gradle, Maven and Nuget dependency names can be case-insensitive
+          # and the dependency name in the security advisory often doesn't match
+          # what users have specified in their manifest.
+          lead_dep_name = job.dependencies.first.downcase
+          lead_dependency = dependencies.find do |dep|
+            dep.name.downcase == lead_dep_name
+          end
+          checker = update_checker_for(lead_dependency, raise_on_ignored: raise_on_ignored?(lead_dependency))
+          log_checking_for_update(lead_dependency)
+
+          return if all_versions_ignored?(lead_dependency, checker)
+
+          return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
           if requirements_to_unlock == :update_not_possible
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version}"
-            )
+            return close_pull_request(reason: :update_no_longer_possible)
           end
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
           )
 
-          if (existing_pr = existing_pull_request(updated_deps))
-            deps = existing_pr.map do |dep|
-              if dep.fetch("dependency-removed", false)
-                "#{dep.fetch('dependency-name')}@removed"
-              else
-                "#{dep.fetch('dependency-name')}@#{dep.fetch('dependency-version')}"
-              end
-            end
-
-            return Dependabot.logger.info(
-              "Pull request already exists for #{deps.join(', ')}"
-            )
-          end
-
-          if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version} " \
-              "(peer dependency can be updated)"
-            )
-          end
-
           updated_files = generate_dependency_files_for(updated_deps)
-          updated_deps = filter_unrelated_and_unchanged(updated_deps, checker)
-          create_pull_request(updated_deps, updated_files)
-        end
-        # rubocop:enable Metrics/MethodLength
-        # rubocop:enable Metrics/AbcSize
-
-        def filter_unrelated_and_unchanged(updated_dependencies, checker)
-          updated_dependencies.reject do |d|
+          updated_deps = updated_deps.reject do |d|
             next false if d.name == checker.dependency.name
             next true if d.top_level? && d.requirements == d.previous_requirements
 
             d.version == d.previous_version
           end
+
+          # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
+          # and the dependency name in the security advisory often doesn't match
+          # what users have specified in their manifest.
+          job_dependencies = job.dependencies.map(&:downcase)
+          if updated_deps.map(&:name).map(&:downcase) != job_dependencies
+            # The dependencies being updated have changed. Close the existing
+            # multi-dependency PR and try creating a new one.
+            close_pull_request(reason: :dependencies_changed)
+            create_pull_request(updated_deps, updated_files)
+          elsif existing_pull_request(updated_deps)
+            # The existing PR is for this version. Update it.
+            update_pull_request(updated_deps, updated_files)
+          else
+            # The existing PR is for a previous version. Supersede it.
+            create_pull_request(updated_deps, updated_files)
+          end
+        end
+        # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
+
+        def create_pull_request(dependencies, updated_dependency_files)
+          Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+                                 "pull request for creation")
+
+          dependency_change = Dependabot::DependencyChange.new(
+            job: job,
+            dependencies: dependencies,
+            updated_dependency_files: updated_dependency_files
+          )
+
+          service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
-        def log_up_to_date(dependency)
-          Dependabot.logger.info(
-            "No update needed for #{dependency.name} #{dependency.version}"
+        def update_pull_request(dependencies, updated_dependency_files)
+          Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+                                 "pull request for update")
+
+          dependency_change = Dependabot::DependencyChange.new(
+            job: job,
+            dependencies: dependencies,
+            updated_dependency_files: updated_dependency_files
           )
+
+          service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+        end
+
+        def close_pull_request(reason:)
+          reason_string = reason.to_s.tr("_", " ")
+          Dependabot.logger.info("Telling backend to close pull request for " \
+                                 "#{job.dependencies.join(', ')} - #{reason_string}")
+          service.close_pull_request(job.dependencies, reason)
         end
 
         def raise_on_ignored?(dependency)
@@ -229,13 +247,6 @@ module Dependabot
           end
         end
 
-        def name_match?(name1, name2)
-          WildcardMatcher.match?(
-            job.name_normaliser.call(name1),
-            job.name_normaliser.call(name2)
-          )
-        end
-
         def all_versions_ignored?(dependency, checker)
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
           false
@@ -244,30 +255,11 @@ module Dependabot
           true
         end
 
-        def pr_exists_for_latest_version?(checker)
-          latest_version = checker.latest_version&.to_s
-          return false if latest_version.nil?
-
-          job.existing_pull_requests.
-            select { |pr| pr.count == 1 }.
-            map(&:first).
-            select { |pr| pr.fetch("dependency-name") == checker.dependency.name }.
-            any? { |pr| pr.fetch("dependency-version", nil) == latest_version }
-        end
-
-        def existing_pull_request(updated_dependencies)
-          new_pr_set = Set.new(
-            updated_dependencies.map do |dep|
-              {
-                "dependency-name" => dep.name,
-                "dependency-version" => dep.version,
-                "dependency-removed" => dep.removed? ? true : nil
-              }.compact
-            end
+        def name_match?(name1, name2)
+          WildcardMatcher.match?(
+            job.name_normaliser.call(name1),
+            job.name_normaliser.call(name2)
           )
-
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
         def requirements_to_unlock(checker)
@@ -293,23 +285,18 @@ module Dependabot
           )
         end
 
-        # If a version update for a peer dependency is possible we should
-        # defer to the PR that will be created for it to avoid duplicate PRs.
-        def peer_dependency_should_update_instead?(dependency_name, updated_deps)
-          updated_deps.
-            reject { |dep| dep.name == dependency_name }.
-            any? do |dep|
-              next true if existing_pull_request([dep])
-
-              original_peer_dep = ::Dependabot::Dependency.new(
-                name: dep.name,
-                version: dep.previous_version,
-                requirements: dep.previous_requirements,
-                package_manager: dep.package_manager
-              )
-              update_checker_for(original_peer_dep, raise_on_ignored: false).
-                can_update?(requirements_to_unlock: :own)
+        def existing_pull_request(updated_dependencies)
+          new_pr_set = Set.new(
+            updated_dependencies.map do |dep|
+              {
+                "dependency-name" => dep.name,
+                "dependency-version" => dep.version,
+                "dependency-removed" => dep.removed? ? true : nil
+              }.compact
             end
+          )
+
+          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
         def generate_dependency_files_for(updated_dependencies)
@@ -329,27 +316,6 @@ module Dependabot
           deps_to_update = updated_dependencies.reject(&:informational_only?)
           updater = file_updater_for(deps_to_update)
           updater.updated_dependency_files
-        end
-
-        def create_pull_request(dependencies, updated_dependency_files)
-          Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
-                                 "pull request for creation")
-
-          dependency_change = Dependabot::DependencyChange.new(
-            job: job,
-            dependencies: dependencies,
-            updated_dependency_files: updated_dependency_files
-          )
-
-          service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-
-          created_pull_requests << dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
-          end
         end
       end
     end

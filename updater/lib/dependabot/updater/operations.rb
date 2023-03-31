@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/updater/operations/group_update_all_versions"
+require "dependabot/updater/operations/refresh_version_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
 
 # This module is responsible for determining which Operation a Job is requesting
@@ -26,6 +27,7 @@ module Dependabot
       # specific preconditions go before those with more permissive checks.
       OPERATIONS = [
         GroupUpdateAllVersions,
+        RefreshVersionUpdatePullRequest,
         UpdateAllVersions
       ]
 
