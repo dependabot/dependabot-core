@@ -43,21 +43,6 @@ In addition to this library, you may be interested in the [dependabot-script][de
 which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab,
 BitBucket or Azure DevOps.
 
-## Cloning the repository
-Clone the repository with Git using:
-
-```
-git clone https://github.com/dependabot/dependabot-core.git
-```
-
-On Windows this might fail with "Filename too long". To solve this, run the
-following commands in the cloned Git repository:
-
-1. `git config core.longpaths true`
-2. `git reset --hard`
-
-You can read more about this in the [Git for Windows wiki](https://github.com/git-for-windows/git/wiki/Git-cannot-create-a-file-or-directory-with-a-long-path).
-
 ## Setup
 
 To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
@@ -244,15 +229,6 @@ missing some functionality and are therefore not supported. You have to clone th
 repository manually and use the `Reopen in Container` or `Open Folder in Container...`
 command.
 
-## Releasing
-
-Triggering the jobs that will push the new gems is done by following the steps below.
-
-- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
-- Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
-- Edit the `CHANGELOG` file and remove any entries that aren't needed
-- Run the commands that were output by running `bin/bump-version.rb patch`
-
 ## Architecture
 
 Dependabot Core is a collection of Ruby packages (gems), which contain the
@@ -292,6 +268,39 @@ The high-level flow looks like this:
 This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
+
+### Private Registry Credential Management
+
+For many ecosystems, Dependabot Core supports private registries. Sometimes this happens by passing the private registry
+credentials directly to the native package managers (`npm`, `pip`, `bundler`, etc), other times it happens within the
+Dependabot Core Ruby code.
+
+```mermaid
+sequenceDiagram
+    Private Registry Credentials->>Dependabot Core:<br />
+    Dependabot Core->>Native Package Managers:<br />
+    Native Package Managers->>Package Registries:<br />
+    Dependabot Core->>Package Registries:<br />
+```
+
+While simple and straightforward, this is a security risk for ecosystems that allow running untrusted code within their
+manifest files. For example `setup.py` and `.gemspec` allow running native Python and Ruby code. If a package in the
+dependency tree gets hacked, an attacker could push a malicious manifest that forces the native package manager to
+expose the creds.
+
+To guard against this, for the Dependabot service that Github runs, we wrap Dependabot Core with a credential proxy so
+those private registry secrets are never exposed to Dependabot Core.
+
+```mermaid
+sequenceDiagram
+    Dependabot Core->>Credentials Proxy: All requests are unauthenticated
+    Credentials Proxy->>Package Registries: Creds are injected by the Proxy
+    Note left of Dependabot Core: The Dependabot Service<br /> that GitHub Runs
+    Package Registries->>Credentials Proxy: Creds are stripped by the Proxy
+    Credentials Proxy->>Dependabot Core: Dependabot Core never sees private registry credentials
+```
+
+This also means if Dependabot Core ever has a security vulnerability, those creds are still not at risk of being exposed.
 
 ## Profiling
 
@@ -350,3 +359,18 @@ recurring payments from Europe, check them out.
 [support]: https://support.github.com/
 [vsc-dev-containers]: https://code.visualstudio.com/docs/devcontainers/containers
 [vsc-dev-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
+
+## Notes for project maintainers
+
+<details><summary>:book: Release guide</summary>
+<p>
+
+  Triggering the jobs that will push the new gems is done by following the steps below.
+
+  - Ensure you have the latest merged changes:  `git checkout main` and `git pull`
+  - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
+  - Edit the `CHANGELOG` file and remove any entries that aren't needed
+  - Run the commands that were output by running `bin/bump-version.rb patch`
+
+</p>
+</details>
