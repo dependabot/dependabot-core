@@ -210,7 +210,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v4
         with:
           python-version-file: .python-version
           cache: pip
