@@ -15,7 +15,9 @@ Gem::Specification.new do |spec|
   spec.homepage     = common_gemspec.homepage
   spec.license      = common_gemspec.license
 
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = common_gemspec.required_ruby_version
+  spec.required_rubygems_version = common_gemspec.required_ruby_version
+
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
 
