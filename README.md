@@ -328,6 +328,7 @@ If you use Dependabot Core then we'd love to hear what you build!
 
 We use the License Zero Prosperity Public License, which essentially enshrines
 the following:
+
 - If you would like to use Dependabot Core in a non-commercial capacity, such as
   to host a bot at your workplace, then we give you full permission to do so. In
   fact, we'd love you to and will help and support you however we can.
@@ -335,9 +336,8 @@ the following:
   company's offering then we DO NOT give you permission to use Dependabot Core
   to do so.
 
-If you make a significant contribution to Dependabot Core then you will be asked
-to transfer the IP of that contribution to GitHub Inc. so that it can be
-licensed in the same way as the above.
+All contributions to Dependabot Core implicitly transfer the IP of that contribution to
+GitHub, Inc. where it will be licensed the same way as above.
 
 ## History
 
