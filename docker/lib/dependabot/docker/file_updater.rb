@@ -134,15 +134,12 @@ module Dependabot
       end
 
       def new_tags(file)
-        dependency.requirements.
-          select { |r| r[:file] == file.name }.
+        requirements(file).
           map { |r| r.fetch(:source)[:tag] }
       end
 
       def old_tags(file)
-        dependency.
-          previous_requirements.
-          select { |r| r[:file] == file.name }.
+        previous_requirements(file).
           map { |r| r.fetch(:source)[:tag] }
       end
 
@@ -207,22 +204,28 @@ module Dependabot
       end
 
       def old_yaml_images(file)
-        dependency.
-          previous_requirements.
-          select { |r| r[:file] == file.name }.map do |r|
-            prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-            digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
-            tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
-            "#{prefix}#{dependency.name}#{tag}#{digest}"
-          end
+        previous_requirements(file).map do |r|
+          prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
+          digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
+          tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
+          "#{prefix}#{dependency.name}#{tag}#{digest}"
+        end
       end
 
       def old_helm_tags(file)
-        dependency.
-          previous_requirements.
-          select { |r| r[:file] == file.name }.map do |r|
-            r.fetch(:source)[:tag] || ""
-          end
+        previous_requirements(file).map do |r|
+          r.fetch(:source)[:tag] || ""
+        end
+      end
+
+      def requirements(file)
+        dependency.requirements.
+          select { |r| r[:file] == file.name }
+      end
+
+      def previous_requirements(file)
+        dependency.previous_requirements.
+          select { |r| r[:file] == file.name }
       end
     end
   end
