@@ -49,7 +49,11 @@ module Dependabot
       end
 
       def version_can_update?(*)
-        !version_up_to_date?
+        if digest_requirements.any?
+          !digest_up_to_date?
+        else
+          !version_up_to_date?
+        end
       end
 
       def version_up_to_date?
@@ -59,9 +63,7 @@ module Dependabot
                           version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
                         end
 
-        # Otherwise, if the Dockerfile specifies a digest check that that is
-        # up-to-date
-        digest_up_to_date?
+        true
       end
 
       def version_tag_up_to_date?(version)
@@ -79,11 +81,10 @@ module Dependabot
       end
 
       def digest_up_to_date?
-        dependency.requirements.all? do |req|
-          next true unless req.fetch(:source)[:digest]
-          next true unless (new_digest = digest_of(dependency.version))
+        digest_requirements.all? do |req|
+          next true unless updated_digest
 
-          req.fetch(:source).fetch(:digest) == new_digest
+          req.fetch(:source).fetch(:digest) == updated_digest
         end
       end
 
@@ -334,7 +335,7 @@ module Dependabot
         if @raise_on_ignored &&
            filter_lower_versions(filtered).empty? &&
            filter_lower_versions(candidate_tags).any? &&
-           digest_up_to_date?
+           digest_requirements.none?
           raise AllVersionsIgnored
         end
 
@@ -345,6 +346,12 @@ module Dependabot
         versions_array = tags.map { |tag| comparable_version_from(tag) }
         versions_array.
           select { |version| version > comparable_version_from(Tag.new(dependency.version)) }
+      end
+
+      def digest_requirements
+        dependency.requirements.select do |requirement|
+          requirement.dig(:source, :digest)
+        end
       end
     end
   end
