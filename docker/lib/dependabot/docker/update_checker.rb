@@ -100,7 +100,7 @@ module Dependabot
         version_tag = Tag.new(version)
         return unless version_tag.comparable?
 
-        latest_tag = fetch_latest_version(version_tag)
+        latest_tag = latest_tag_from(version)
 
         old_v = version_tag.numeric_version
         latest_v = latest_tag.numeric_version
@@ -118,15 +118,19 @@ module Dependabot
       end
 
       def latest_version_from(version)
-        @versions ||= {}
-        return @versions[version] if @versions.key?(version)
+        latest_tag_from(version).name
+      end
 
-        @versions[version] = fetch_latest_version(Tag.new(version)).name
+      def latest_tag_from(version)
+        @tags ||= {}
+        return @tags[version] if @tags.key?(version)
+
+        @tags[version] = fetch_latest_tag(Tag.new(version))
       end
 
       # NOTE: It's important that this *always* returns a version (even if
       # it's the existing one) as it is what we later check the digest of.
-      def fetch_latest_version(version_tag)
+      def fetch_latest_tag(version_tag)
         return version_tag unless version_tag.comparable?
 
         # Prune out any downgrade tags before checking for pre-releases
