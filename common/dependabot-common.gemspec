@@ -4,10 +4,10 @@ require "./lib/dependabot"
 
 Gem::Specification.new do |spec|
   spec.name         = "dependabot-common"
-  spec.version      = Dependabot::VERSION
-  spec.summary      = "Shared code used between Dependabot package managers"
-  spec.description  = "Automated dependency management for Ruby, JavaScript, " \
-                      "Python, PHP, Elixir, Rust, Java, .NET, Elm and Go"
+  spec.summary      = "Shared code used across Dependabot Core"
+  spec.description  = "Dependabot-Common provides the shared code used across Dependabot. " \
+                      "If you want support for multiple package managers, you probably want the meta-gem " \
+                      "dependabot-omnibus."
 
   spec.author       = "Dependabot"
   spec.email        = "opensource@github.com"
@@ -19,11 +19,12 @@ Gem::Specification.new do |spec|
     "changelog_uri" => "https://github.com/dependabot/dependabot-core/blob/main/CHANGELOG.md"
   }
 
-  spec.require_path = "lib"
-  spec.files        = []
-
+  spec.version = Dependabot::VERSION
   spec.required_ruby_version = ">= 3.1.0"
   spec.required_rubygems_version = ">= 3.3.7"
+
+  spec.require_path = "lib"
+  spec.files        = []
 
   spec.add_dependency "aws-sdk-codecommit", "~> 1.28"
   spec.add_dependency "aws-sdk-ecr", "~> 1.5"

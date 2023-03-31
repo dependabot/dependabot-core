@@ -5,9 +5,10 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-gradle"
-  spec.summary      = "Gradle support for dependabot"
-  spec.version      = common_gemspec.version
-  spec.description  = common_gemspec.description
+  spec.summary      = "Provides Dependabot support for Gradle"
+  spec.description  = "Dependabot-Gradle provides support for bumping Gradle packages via Dependabot. " \
+                      "If you want support for multiple package managers, you probably want the meta-gem " \
+                      "dependabot-omnibus."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
@@ -19,11 +20,12 @@ Gem::Specification.new do |spec|
     "changelog_uri" => common_gemspec.metadata["changelog_uri"]
   }
 
-  spec.require_path = "lib"
-  spec.files        = Dir["lib/**/*"]
-
+  spec.version = common_gemspec.version
   spec.required_ruby_version = common_gemspec.required_ruby_version
   spec.required_rubygems_version = common_gemspec.required_ruby_version
+
+  spec.require_path = "lib"
+  spec.files        = Dir["lib/**/*"]
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
   spec.add_dependency "dependabot-maven", Dependabot::VERSION

@@ -5,23 +5,23 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-omnibus"
-  spec.summary      = "Meta-package that depends on all dependabot package " \
-                      "managers"
-  spec.version      = common_gemspec.version
-  spec.description  = common_gemspec.description
+  spec.summary      = "Meta-package that provides all the gems included in Dependabot"
+  spec.description  = "Dependabot-Omnibus provides all the gems included in Dependabot. " \
+                      "Dependabot provides automated dependency updates for multiple package managers."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
   spec.homepage     = common_gemspec.homepage
   spec.license      = common_gemspec.license
 
-  spec.required_ruby_version = common_gemspec.required_ruby_version
-  spec.required_rubygems_version = common_gemspec.required_ruby_version
-
   spec.metadata = {
     "issue_tracker_uri" => common_gemspec.metadata["issue_tracker_uri"],
     "changelog_uri" => common_gemspec.metadata["changelog_uri"]
   }
+
+  spec.version = common_gemspec.version
+  spec.required_ruby_version = common_gemspec.required_ruby_version
+  spec.required_rubygems_version = common_gemspec.required_ruby_version
 
   spec.require_path = "lib"
   spec.files        = ["lib/dependabot/omnibus.rb"]
