@@ -180,6 +180,31 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       it { is_expected.to be true }
     end
+
+    context "when the 'latest' version is newer, and API does not provide digests but there's a digest requirement" do
+      let(:dependency_name) { "ubi8/ubi-minimal" }
+      let(:source) do
+        {
+          registry: "registry.access.redhat.com",
+          digest: "3f32ebba0cbf3849a48372d4fc3a4ce70816f248d39eb50da7ea5f15c7f9d120"
+        }
+      end
+      let(:version) { "8.5" }
+      let(:tags_fixture_name) { "ubi-minimal.json" }
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+      let(:repo_url) { "https://registry.access.redhat.com/v2/ubi8/ubi-minimal/" }
+
+      before do
+        stub_request(:get, repo_url + "tags/list").
+          and_return(status: 200, body: registry_tags)
+        stub_tag_with_no_digest("8.7")
+        stub_tag_with_no_digest("8.7-1049")
+      end
+
+      it { is_expected.to be false }
+    end
   end
 
   describe "#latest_version" do

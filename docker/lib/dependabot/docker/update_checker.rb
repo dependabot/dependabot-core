@@ -49,7 +49,11 @@ module Dependabot
       end
 
       def version_can_update?(*)
-        !version_up_to_date?
+        if digest_requirements.any?
+          !digest_up_to_date?
+        else
+          !version_up_to_date?
+        end
       end
 
       def version_up_to_date?
@@ -59,9 +63,7 @@ module Dependabot
                           version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
                         end
 
-        # Otherwise, if the Dockerfile specifies a digest check that that is
-        # up-to-date
-        digest_up_to_date?
+        true
       end
 
       def version_tag_up_to_date?(version)
