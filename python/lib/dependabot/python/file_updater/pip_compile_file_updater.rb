@@ -26,6 +26,7 @@ module Dependabot
         INCOMPATIBLE_VERSIONS_REGEX = /There are incompatible versions in the resolved dependencies:.*\z/m
         WARNINGS = /\s*# WARNING:.*\Z/m
         UNSAFE_NOTE = /\s*# The following packages are considered to be unsafe.*\Z/m
+        RESOLVER_REGEX = /(?<=--resolver=)(\w+)/
 
         attr_reader :dependencies, :dependency_files, :credentials
 
@@ -440,6 +441,10 @@ module Dependabot
           options << "--pre" if requirements_file.content.include?("--pre")
 
           options << "--strip-extras" if requirements_file.content.include?("--strip-extras")
+
+          if (resolver = RESOLVER_REGEX.match(requirements_file.content))
+            options << "--resolver=#{resolver}"
+          end
 
           options
         end
