@@ -30,8 +30,17 @@ module Dependabot
       def updated_requirements
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
-          updated_source[:digest] = updated_digest if req[:source][:digest]
-          updated_source[:tag] = latest_version_from(req[:source][:tag]) if req[:source][:tag]
+
+          tag = req[:source][:tag]
+          digest = req[:source][:digest]
+
+          if tag
+            updated_tag = latest_version_from(tag)
+            updated_source[:tag] = updated_tag
+            updated_source[:digest] = digest_of(updated_tag) if digest
+          elsif digest
+            updated_source[:digest] = digest_of("latest")
+          end
 
           req.merge(source: updated_source)
         end
@@ -57,20 +66,18 @@ module Dependabot
       end
 
       def version_up_to_date?
-        # If the tag isn't up-to-date then we can definitely update
-        return false if version_tag_up_to_date?(dependency.version) == false
-        return false if dependency.requirements.any? do |req|
-                          version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
-                        end
-
-        true
+        if digest_requirements.any?
+          version_tag_up_to_date? && digest_up_to_date?
+        else
+          version_tag_up_to_date?
+        end
       end
 
-      def version_tag_up_to_date?(version)
+      def version_tag_up_to_date?
+        version = dependency.version
         return unless version
 
-        version_tag = Tag.new(version)
-        return unless version_tag.comparable?
+        return true unless version_tag.comparable?
 
         latest_tag = latest_tag_from(version)
 
@@ -343,15 +350,19 @@ module Dependabot
       end
 
       def filter_lower_versions(tags)
-        versions_array = tags.map { |tag| comparable_version_from(tag) }
-        versions_array.
-          select { |version| version > comparable_version_from(Tag.new(dependency.version)) }
+        tags.select do |tag|
+          comparable_version_from(tag) > comparable_version_from(version_tag)
+        end
       end
 
       def digest_requirements
         dependency.requirements.select do |requirement|
           requirement.dig(:source, :digest)
         end
+      end
+
+      def version_tag
+        @version_tag ||= Tag.new(dependency.version)
       end
     end
   end
