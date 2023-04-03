@@ -44,9 +44,11 @@ module Dependabot
             return []
           end
 
-          return dependency_snapshot.allowed_dependencies unless ENV["UPDATER_DETERMINISTIC"]
-
-          dependency_snapshot.allowed_dependencies.shuffle
+          if ENV["UPDATER_DETERMINISTIC"]
+            dependency_snapshot.allowed_dependencies
+          else
+            dependency_snapshot.allowed_dependencies.shuffle
+          end
         end
 
         def check_and_create_pr_with_error_handling(dependency)
