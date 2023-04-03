@@ -349,7 +349,6 @@ recurring payments from Europe, check them out.
 
 
 [dependabot]: https://dependabot.com
-[dependabot-status]: https://api.dependabot.com/badges/status?host=github&identifier=93163073
 [dependabot-script]: https://github.com/dependabot/dependabot-script
 [contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
 [bump]: https://github.com/gocardless/bump
