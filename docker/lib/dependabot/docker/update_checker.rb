@@ -235,20 +235,18 @@ module Dependabot
         @digests ||= {}
         return @digests[tag] if @digests.key?(tag)
 
-        @digests[tag] =
-          begin
-            docker_registry_client.digest(docker_repo_name, tag)
-          rescue *transient_docker_errors => e
-            attempt ||= 1
-            attempt += 1
-            if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
-              nil
-            else
-              raise if attempt > 3
+        @digests[tag] = fetch_digest_of(tag)
+      end
 
-              retry
-            end
-          end
+      def fetch_digest_of(tag)
+        docker_registry_client.digest(docker_repo_name, tag)
+      rescue *transient_docker_errors => e
+        attempt ||= 1
+        attempt += 1
+        return if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
+        raise if attempt > 3
+
+        retry
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname
