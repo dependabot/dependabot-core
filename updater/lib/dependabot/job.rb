@@ -238,6 +238,34 @@ module Dependabot
       )
     end
 
+    # TODO: Present Dependabot::Config::IgnoreCondition in calling code
+    #
+    # This is a workaround for our existing logging using the 'raw'
+    # ignore conditions passed into the job definition rather than
+    # the objects returned by `ignore_conditions_for`.
+    #
+    # The blocker on adopting Dependabot::Config::IgnoreCondition is
+    # that it does not have a 'source' attribute which we currently
+    # use to distinguish rules from the config file from those that
+    # were created via "@dependabot ignore version" commands
+    def log_ignore_conditions_for(dependency)
+      conditions = ignore_conditions.select { |ic| name_match?(ic["dependency-name"], dependency.name) }
+      return if conditions.empty?
+
+      Dependabot.logger.info("Ignored versions:")
+      conditions.each do |ic|
+        unless ic["version-requirement"].nil?
+          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
+        end
+
+        ic["update-types"]&.each do |update_type|
+          msg = "  #{update_type} - from #{ic['source']}"
+          msg += " (doesn't apply to security update)" if security_updates_only?
+          Dependabot.logger.info(msg)
+        end
+      end
+    end
+
     private
 
     def register_experiments

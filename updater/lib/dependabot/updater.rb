@@ -505,7 +505,7 @@ module Dependabot
       Dependabot.logger.info(
         "Checking if #{dependency.name} #{dependency.version} needs updating"
       )
-      log_ignore_conditions(dependency)
+      job.log_ignore_conditions_for(dependency)
     end
 
     def all_versions_ignored?(dependency, checker)
@@ -518,25 +518,6 @@ module Dependabot
       raise if job.security_updates_only?
 
       true
-    end
-
-    def log_ignore_conditions(dep)
-      conditions = job.ignore_conditions.
-                   select { |ic| name_match?(ic["dependency-name"], dep.name) }
-      return if conditions.empty?
-
-      Dependabot.logger.info("Ignored versions:")
-      conditions.each do |ic|
-        unless ic["version-requirement"].nil?
-          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
-        end
-
-        ic["update-types"]&.each do |update_type|
-          msg = "  #{update_type} - from #{ic['source']}"
-          msg += " (doesn't apply to security update)" if job.security_updates_only?
-          Dependabot.logger.info(msg)
-        end
-      end
     end
 
     def log_up_to_date(dependency)
@@ -625,13 +606,6 @@ module Dependabot
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         options: job.experiments
-      )
-    end
-
-    def name_match?(name1, name2)
-      WildcardMatcher.match?(
-        job.name_normaliser.call(name1),
-        job.name_normaliser.call(name2)
       )
     end
 
