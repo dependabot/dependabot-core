@@ -8,7 +8,7 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@8.19.2 \
+  && npm install -g npm@8.19.4 \
   && rm -rf ~/.npm
 
 # Install yarn berry and set it to a stable version
