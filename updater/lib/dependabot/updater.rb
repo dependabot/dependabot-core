@@ -69,6 +69,7 @@ module Dependabot
         error_handler: error_handler
       ).perform
     rescue *ErrorHandler::RUN_HALTING_ERRORS.keys => e
+      # TODO: Drop this into Security-specific operations
       if e.is_a?(Dependabot::AllVersionsIgnored) && !job.security_updates_only?
         error = StandardError.new(
           "Dependabot::AllVersionsIgnored was unexpectedly raised for a non-security update job"
