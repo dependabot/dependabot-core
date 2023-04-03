@@ -30,8 +30,17 @@ module Dependabot
       def updated_requirements
         dependency.requirements.map do |req|
           updated_source = req.fetch(:source).dup
-          updated_source[:digest] = updated_digest if req[:source][:digest]
-          updated_source[:tag] = latest_version_from(req[:source][:tag]) if req[:source][:tag]
+
+          tag = req[:source][:tag]
+          digest = req[:source][:digest]
+
+          if tag
+            updated_tag = latest_version_from(tag)
+            updated_source[:tag] = updated_tag
+            updated_source[:digest] = digest_of(updated_tag) if digest
+          elsif digest
+            updated_source[:digest] = digest_of("latest")
+          end
 
           req.merge(source: updated_source)
         end

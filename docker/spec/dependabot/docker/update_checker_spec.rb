@@ -1008,7 +1008,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         new_headers =
           fixture("docker", "registry_manifest_headers", "generic.json")
-        stub_request(:head, repo_url + "manifests/17.10").
+        stub_request(:head, repo_url + "manifests/latest").
           and_return(status: 200, body: "", headers: JSON.parse(new_headers))
       end
 
