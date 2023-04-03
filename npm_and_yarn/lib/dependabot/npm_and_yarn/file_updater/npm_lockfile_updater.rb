@@ -176,48 +176,28 @@ module Dependabot
             dependency_in_package_json?(dependency)
           end
 
-          # NOTE: When updating a dependency in a nested workspace project we
-          # need to run `npm install` without any arguments to update the root
-          # level lockfile after having updated the nested packages package.json
-          # requirement, otherwise npm will add the dependency as a new
-          # top-level dependency to the root lockfile.
-          install_args = ""
-          if dependencies_in_current_package_json
-            # TODO: Update the npm 6 updater to use these args as we currently
-            # do the same in the js updater helper, we've kept it seperate for
-            # the npm 7 rollout
-            install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
+          unless dependencies_in_current_package_json
+            # NOTE: When updating a dependency in a nested workspace project, npm
+            # will add the dependency as a new top-level dependency to the root
+            # lockfile. To overcome this, we save the content before the update,
+            # and then re-run `npm install` after the update against the previous
+            # content to remove that
+            previous_package_json = File.read(package_json.name)
           end
 
-          # NOTE: npm options
-          # - `--force` ignores checks for platform (os, cpu) and engines
-          # - `--dry-run=false` the updater sets a global .npmrc with dry-run:
-          #   true to work around an issue in npm 6, we don't want that here
-          # - `--ignore-scripts` disables prepare and prepack scripts which are
-          #   run when installing git dependencies
-          command = [
-            "npm",
-            "install",
-            *install_args,
-            "--force",
-            "--dry-run",
-            "false",
-            "--ignore-scripts",
-            "--package-lock-only"
-          ].join(" ")
+          # TODO: Update the npm 6 updater to use these args as we currently
+          # do the same in the js updater helper, we've kept it separate for
+          # the npm 7 rollout
+          install_args = top_level_dependencies.map { |dependency| npm_install_args(dependency) }
 
-          fingerprint = [
-            "npm",
-            "install",
-            "<install_args>",
-            "--force",
-            "--dry-run",
-            "false",
-            "--ignore-scripts",
-            "--package-lock-only"
-          ].join(" ")
+          run_npm_install_lockfile_only(*install_args)
 
-          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+          unless dependencies_in_current_package_json
+            File.write(package_json.name, previous_package_json)
+
+            run_npm_install_lockfile_only
+          end
+
           { lockfile_basename => File.read(lockfile_basename) }
         end
 
@@ -254,6 +234,41 @@ module Dependabot
             NpmAndYarn::FileParser::DEPENDENCY_TYPES.inject({}) do |deps, type|
               deps.merge(parsed_package_json[type] || {})
             end
+        end
+
+        # Runs `npm install` with `--package-lock-only` flag to update the
+        # lockfiile.
+        #
+        # Other npm flags:
+        # - `--force` ignores checks for platform (os, cpu) and engines
+        # - `--dry-run=false` the updater sets a global .npmrc with `dry-run: true`
+        #   to work around an issue in npm 6, we don't want that here
+        # - `--ignore-scripts` disables prepare and prepack scripts which are
+        #   run when installing git dependencies
+        def run_npm_install_lockfile_only(*install_args)
+          command = [
+            "npm",
+            "install",
+            *install_args,
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          fingerprint = [
+            "npm",
+            "install",
+            install_args.empty? ? "" : "<install_args>",
+            "--force",
+            "--dry-run",
+            "false",
+            "--ignore-scripts",
+            "--package-lock-only"
+          ].join(" ")
+
+          SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
         end
 
         def npm_install_args(dependency)
