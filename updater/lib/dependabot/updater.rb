@@ -611,7 +611,7 @@ module Dependabot
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
         ignored_versions: ignore_conditions_for(dependency),
-        security_advisories: security_advisories_for(dependency),
+        security_advisories: job.security_advisories_for(dependency),
         raise_on_ignored: raise_on_ignored,
         requirements_update_strategy: job.requirements_update_strategy,
         options: job.experiments
@@ -650,25 +650,6 @@ module Dependabot
         job.name_normaliser.call(name1),
         job.name_normaliser.call(name2)
       )
-    end
-
-    def security_advisories_for(dep)
-      relevant_advisories =
-        job.security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
-
-      relevant_advisories.map do |adv|
-        vulnerable_versions = adv["affected-versions"] || []
-        safe_versions = (adv["patched-versions"] || []) +
-                        (adv["unaffected-versions"] || [])
-
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: dep.name,
-          package_manager: job.package_manager,
-          vulnerable_versions: vulnerable_versions,
-          safe_versions: safe_versions
-        )
-      end
     end
 
     def generate_dependency_files_for(updated_dependencies)

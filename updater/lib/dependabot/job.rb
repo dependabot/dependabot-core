@@ -212,6 +212,25 @@ module Dependabot
       self.class.standardise_keys(@commit_message_options).compact
     end
 
+    def security_advisories_for(dep)
+      relevant_advisories =
+        security_advisories.
+        select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
+
+      relevant_advisories.map do |adv|
+        vulnerable_versions = adv["affected-versions"] || []
+        safe_versions = (adv["patched-versions"] || []) +
+                        (adv["unaffected-versions"] || [])
+
+        Dependabot::SecurityAdvisory.new(
+          dependency_name: dep.name,
+          package_manager: package_manager,
+          vulnerable_versions: vulnerable_versions,
+          safe_versions: safe_versions
+        )
+      end
+    end
+
     private
 
     def register_experiments
@@ -231,25 +250,6 @@ module Dependabot
       Dependabot::Source.new(
         **source_details.transform_keys { |k| k.tr("-", "_").to_sym }
       )
-    end
-
-    def security_advisories_for(dep)
-      relevant_advisories =
-        security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
-
-      relevant_advisories.map do |adv|
-        vulnerable_versions = adv["affected-versions"] || []
-        safe_versions = (adv["patched-versions"] || []) +
-                        (adv["unaffected-versions"] || [])
-
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: dep.name,
-          package_manager: package_manager,
-          vulnerable_versions: vulnerable_versions,
-          safe_versions: safe_versions
-        )
-      end
     end
   end
 end
