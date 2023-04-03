@@ -27,6 +27,32 @@ module Dependabot
 
     attr_reader :base_commit_sha, :dependency_files, :dependencies
 
+    # Returns the subset of all project dependencies which are permitted
+    # by the project configuration.
+    def allowed_dependencies
+      @allowed_dependencies ||= dependencies.select { |d| job.allowed_update?(d) }
+    end
+
+    # Returns the subset of all project dependencies which are specifically
+    # requested to be updated by the job definition.
+    def job_dependencies
+      return [] unless job.dependencies&.any?
+      return @job_dependencies if defined? @job_dependencies
+
+      # Gradle, Maven and Nuget dependency names can be case-insensitive and
+      # the dependency name in the security advisory often doesn't match what
+      # users have specified in their manifest.
+      #
+      # It's technically possibly to publish case-sensitive npm packages to a
+      # private registry but shouldn't cause problems here as job.dependencies
+      # is set either from an existing PR rebase/recreate or a security
+      # advisory.
+      job_dependency_names = job.dependencies.map(&:downcase)
+      @job_dependencies = dependencies.select do |dep|
+        job_dependency_names.include?(dep.name.downcase)
+      end
+    end
+
     private
 
     def initialize(job:, base_commit_sha:, dependency_files:)
