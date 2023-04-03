@@ -44,7 +44,7 @@ module Dependabot
             return []
           end
 
-          if ENV["UPDATER_DETERMINISTIC"]
+          if Environment.deterministic_updates?
             dependency_snapshot.allowed_dependencies
           else
             dependency_snapshot.allowed_dependencies.shuffle

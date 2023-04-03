@@ -594,7 +594,7 @@ module Dependabot
       # Return dependencies in a random order, with top-level dependencies
       # considered first so that dependency runs which time out don't always hit
       # the same dependencies
-      allowed_deps = allowed_deps.shuffle unless ENV["UPDATER_DETERMINISTIC"]
+      allowed_deps = allowed_deps.shuffle unless Environment.deterministic_updates?
 
       # Consider updating vulnerable deps first. Only consider the first 10,
       # though, to ensure they don't take up the entire update run
