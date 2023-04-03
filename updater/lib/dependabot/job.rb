@@ -212,10 +212,10 @@ module Dependabot
       self.class.standardise_keys(@commit_message_options).compact
     end
 
-    def security_advisories_for(dep)
+    def security_advisories_for(dependency)
       relevant_advisories =
         security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
+        select { |adv| adv.fetch("dependency-name").casecmp(dependency.name).zero? }
 
       relevant_advisories.map do |adv|
         vulnerable_versions = adv["affected-versions"] || []
@@ -223,12 +223,19 @@ module Dependabot
                         (adv["unaffected-versions"] || [])
 
         Dependabot::SecurityAdvisory.new(
-          dependency_name: dep.name,
+          dependency_name: dependency.name,
           package_manager: package_manager,
           vulnerable_versions: vulnerable_versions,
           safe_versions: safe_versions
         )
       end
+    end
+
+    def ignore_conditions_for(dependency)
+      update_config.ignored_versions_for(
+        dependency,
+        security_updates_only: security_updates_only?
+      )
     end
 
     private
@@ -249,6 +256,24 @@ module Dependabot
     def build_source(source_details)
       Dependabot::Source.new(
         **source_details.transform_keys { |k| k.tr("-", "_").to_sym }
+      )
+    end
+
+    # Provides a Dependabot::Config::UpdateConfig objected hydrated with
+    # relevant information obtained from the job definition.
+    #
+    # At present we only use this for ignore rules.
+    def update_config
+      return @update_config if defined? @update_config
+
+      @update_config ||= Dependabot::Config::UpdateConfig.new(
+        ignore_conditions: ignore_conditions.map do |ic|
+          Dependabot::Config::IgnoreCondition.new(
+            dependency_name: ic["dependency-name"],
+            versions: [ic["version-requirement"]].compact,
+            update_types: ic["update-types"]
+          )
+        end
       )
     end
   end

@@ -185,24 +185,7 @@ module Dependabot
         end
 
         def raise_on_ignored?(dependency)
-          ignore_conditions_for(dependency).any?
-        end
-
-        def ignore_conditions_for(dep)
-          update_config_ignored_versions(job.ignore_conditions, dep)
-        end
-
-        def update_config_ignored_versions(ignore_conditions, dep)
-          ignore_conditions = ignore_conditions.map do |ic|
-            Dependabot::Config::IgnoreCondition.new(
-              dependency_name: ic["dependency-name"],
-              versions: [ic["version-requirement"]].compact,
-              update_types: ic["update-types"]
-            )
-          end
-          Dependabot::Config::UpdateConfig.
-            new(ignore_conditions: ignore_conditions).
-            ignored_versions_for(dep, security_updates_only: false)
+          job.ignore_conditions_for(dependency).any?
         end
 
         def update_checker_for(dependency, dependency_files, raise_on_ignored:)
