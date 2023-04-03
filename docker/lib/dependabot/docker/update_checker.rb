@@ -66,17 +66,18 @@ module Dependabot
       end
 
       def version_up_to_date?
-        # If the tag isn't up-to-date then we can definitely update
-        return false if version_tag_up_to_date? == false
-
-        true
+        if digest_requirements.any?
+          version_tag_up_to_date? && digest_up_to_date?
+        else
+          version_tag_up_to_date?
+        end
       end
 
       def version_tag_up_to_date?
         version = dependency.version
         return unless version
 
-        return unless version_tag.comparable?
+        return true unless version_tag.comparable?
 
         latest_tag = latest_tag_from(version)
 

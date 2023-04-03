@@ -62,6 +62,24 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       and_return(status: 200, headers: JSON.parse(headers_response).except("docker_content_digest"))
   end
 
+  describe "#up_to_date?" do
+    subject { checker.up_to_date? }
+
+    context "given an out of date digest and an up to date tag" do
+      let(:version) { "17.10" }
+      let(:source) { { digest: "old_digest", tag: "17.10" } }
+
+      before do
+        new_headers =
+          fixture("docker", "registry_manifest_headers", "generic.json")
+        stub_request(:head, repo_url + "manifests/17.10").
+          and_return(status: 200, body: "", headers: JSON.parse(new_headers))
+      end
+
+      it { is_expected.to be_falsy }
+    end
+  end
+
   describe "#can_update?" do
     subject { checker.can_update?(requirements_to_unlock: :own) }
 
