@@ -82,11 +82,11 @@ module Dependabot
         old_tag = old_source[:tag]
         new_tag = new_source[:tag]
 
-        old_declaration_regex = /^#{FROM_REGEX}\s+.*@#{old_digest}/
+        old_declaration_regex = /^#{FROM_REGEX}\s+.*@sha256:#{old_digest}/
 
         previous_content.gsub(old_declaration_regex) do |old_dec|
           old_dec.
-            gsub("@#{old_digest}", "@#{new_digest}").
+            gsub("@sha256:#{old_digest}", "@sha256:#{new_digest}").
             gsub(":#{old_tag}", ":#{new_tag}")
         end
       end
@@ -181,7 +181,7 @@ module Dependabot
       def new_yaml_image(file)
         element = dependency.requirements.find { |r| r[:file] == file.name }
         prefix = element.fetch(:source)[:registry] ? "#{element.fetch(:source)[:registry]}/" : ""
-        digest = element.fetch(:source)[:digest] ? "@#{element.fetch(:source)[:digest]}" : ""
+        digest = element.fetch(:source)[:digest] ? "@sha256:#{element.fetch(:source)[:digest]}" : ""
         tag = element.fetch(:source)[:tag] ? ":#{element.fetch(:source)[:tag]}" : ""
         "#{prefix}#{dependency.name}#{tag}#{digest}"
       end
@@ -194,7 +194,7 @@ module Dependabot
       def old_yaml_images(file)
         previous_requirements(file).map do |r|
           prefix = r.fetch(:source)[:registry] ? "#{r.fetch(:source)[:registry]}/" : ""
-          digest = r.fetch(:source)[:digest] ? "@#{r.fetch(:source)[:digest]}" : ""
+          digest = r.fetch(:source)[:digest] ? "@sha256:#{r.fetch(:source)[:digest]}" : ""
           tag = r.fetch(:source)[:tag] ? ":#{r.fetch(:source)[:tag]}" : ""
           "#{prefix}#{dependency.name}#{tag}#{digest}"
         end

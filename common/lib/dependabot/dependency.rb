@@ -118,7 +118,7 @@ module Dependabot
         return ref_changed? ? previous_ref : nil
       end
 
-      if previous_version.match?(/^[0-9a-f]{40}$/)
+      if previous_version.match?(/^[0-9a-f]{40}/)
         return previous_ref if ref_changed? && previous_ref
 
         "`#{previous_version[0..6]}`"
@@ -134,7 +134,7 @@ module Dependabot
     def humanized_version
       return if removed?
 
-      if version.match?(/^[0-9a-f]{40}$/)
+      if version.match?(/^[0-9a-f]{40}/)
         return new_ref if ref_changed? && new_ref
 
         "`#{version[0..6]}`"

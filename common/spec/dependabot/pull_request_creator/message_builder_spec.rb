@@ -431,7 +431,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 groups: [],
                 source: {
                   type: "digest",
-                  digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8d" \
+                  digest: "18305429afa14ea462f810146ba44d4363ae76e4c8d" \
                           "fc38288cf73aa07485005"
                 }
               }],
@@ -441,7 +441,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                 groups: [],
                 source: {
                   type: "digest",
-                  digest: "sha256:2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
+                  digest: "2167a21baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" \
                           "aaaaaaaaaaaaaaaaaaaaa"
                 }
               }]
