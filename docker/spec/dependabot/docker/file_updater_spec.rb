@@ -118,12 +118,20 @@ RSpec.describe Dependabot::Docker::FileUpdater do
           name: "node",
           version: "10.9.4-alpine",
           previous_version: "10.9.2-alpine",
-          requirements: [{
-            requirement: nil,
-            groups: [],
-            file: "Dockerfile",
-            source: { tag: "10.9.4-alpine" }
-          }],
+          requirements: [
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.4-alpine" }
+            },
+            {
+              requirement: nil,
+              groups: [],
+              file: "Dockerfile",
+              source: { tag: "10.9.4-alpine" }
+            }
+          ],
           previous_requirements: [
             {
               requirement: nil,
@@ -331,6 +339,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
+              tag: "17.10",
               digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                       "ca97eba880ebf600d68608"
             }
@@ -340,6 +349,7 @@ RSpec.describe Dependabot::Docker::FileUpdater do
             groups: [],
             file: "Dockerfile",
             source: {
+              tag: "12.04.5",
               digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
                       "dfc38288cf73aa07485005"
             }
@@ -502,7 +512,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "custom-name",
               source: {
                 digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
-                        "ca97eba880ebf600d68608"
+                        "ca97eba880ebf600d68608",
+                tag: "17.10"
               }
             }],
             previous_requirements: [{
@@ -511,7 +522,8 @@ RSpec.describe Dependabot::Docker::FileUpdater do
               file: "custom-name",
               source: {
                 digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8" \
-                        "dfc38288cf73aa07485005"
+                        "dfc38288cf73aa07485005",
+                tag: "12.04.5"
               }
             }],
             package_manager: "docker"
