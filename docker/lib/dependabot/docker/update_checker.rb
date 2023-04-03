@@ -59,9 +59,6 @@ module Dependabot
       def version_up_to_date?
         # If the tag isn't up-to-date then we can definitely update
         return false if version_tag_up_to_date?(dependency.version) == false
-        return false if dependency.requirements.any? do |req|
-                          version_tag_up_to_date?(req.fetch(:source, {})[:tag]) == false
-                        end
 
         true
       end
