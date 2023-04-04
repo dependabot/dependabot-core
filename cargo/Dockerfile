@@ -5,7 +5,6 @@ USER root
 # Install Rust
 ENV RUSTUP_HOME=/opt/rust \
   CARGO_HOME=/opt/rust \
-  CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse \
   PATH="${PATH}:/opt/rust/bin"
 RUN mkdir -p "$RUSTUP_HOME" && chown dependabot:dependabot "$RUSTUP_HOME"
 
