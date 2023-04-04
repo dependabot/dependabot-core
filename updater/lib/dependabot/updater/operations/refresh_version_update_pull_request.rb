@@ -44,18 +44,7 @@ module Dependabot
                     :created_pull_requests
 
         def dependencies
-          # Gradle, Maven and Nuget dependency names can be case-insensitive and
-          # the dependency name in the security advisory often doesn't match what
-          # users have specified in their manifest.
-          #
-          # It's technically possibly to publish case-sensitive npm packages to a
-          # private registry but shouldn't cause problems here as job.dependencies
-          # is set either from an existing PR rebase/recreate or a security
-          # advisory.
-          job_dependencies = job.dependencies.map(&:downcase)
-          dependency_snapshot.dependencies.select do |dep|
-            job_dependencies.include?(dep.name.downcase)
-          end
+          dependency_snapshot.job_dependencies
         end
 
         # rubocop:disable Metrics/AbcSize

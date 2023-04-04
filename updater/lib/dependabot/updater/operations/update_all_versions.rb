@@ -39,19 +39,16 @@ module Dependabot
                     :created_pull_requests
 
         def dependencies
-          all_deps = dependency_snapshot.dependencies
-
-          allowed_deps = all_deps.select { |d| job.allowed_update?(d) }
-          # Return dependencies in a random order, with top-level dependencies
-          # considered first so that dependency runs which time out don't always hit
-          # the same dependencies
-          allowed_deps = allowed_deps.shuffle unless ENV["UPDATER_DETERMINISTIC"]
-
-          if all_deps.any? && allowed_deps.none?
+          if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
             Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
+            return []
           end
 
-          allowed_deps
+          if Environment.deterministic_updates?
+            dependency_snapshot.allowed_dependencies
+          else
+            dependency_snapshot.allowed_dependencies.shuffle
+          end
         end
 
         def check_and_create_pr_with_error_handling(dependency)

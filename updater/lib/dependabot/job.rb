@@ -134,6 +134,14 @@ module Dependabot
       @reject_external_code
     end
 
+    # TODO: Remove vulnerability checking
+    #
+    # This method does too much, let's make it focused on _just_ determining
+    # if the given dependency is within the configurations allowed_updates.
+    #
+    # The calling operation should be responsible for checking vulnerability
+    # separately, if required.
+    #
     # rubocop:disable Metrics/PerceivedComplexity
     def allowed_update?(dependency)
       allowed_updates.any? do |update|

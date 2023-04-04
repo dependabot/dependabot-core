@@ -38,6 +38,10 @@ module Dependabot
       @github_actions ||= environment_variable("GITHUB_ACTIONS", false)
     end
 
+    def self.deterministic_updates?
+      @deterministic_updates ||= environment_variable("UPDATER_DETERMINISTIC", false)
+    end
+
     def self.job_definition
       @job_definition ||= JSON.parse(File.read(job_path))
     end
