@@ -110,6 +110,65 @@ module Dependabot
       display_name_builder.call(name)
     end
 
+    def humanized_previous_version
+      # If we don't have a previous version, we *may* still be able to figure
+      # one out if a ref was provided and has been changed (in which case the
+      # previous ref was essentially the version).
+      if previous_version.nil?
+        return ref_changed? ? previous_ref : nil
+      end
+
+      if previous_version.match?(/^[0-9a-f]{40}$/)
+        return previous_ref if ref_changed? && previous_ref
+
+        "`#{previous_version[0..6]}`"
+      elsif version == previous_version &&
+            package_manager == "docker"
+        digest = docker_digest_from_reqs(previous_requirements)
+        "`#{digest.split(':').last[0..6]}`"
+      else
+        previous_version
+      end
+    end
+
+    def humanized_version
+      if version.match?(/^[0-9a-f]{40}$/)
+        return new_ref if ref_changed? && new_ref
+
+        "`#{version[0..6]}`"
+      elsif version == previous_version &&
+            package_manager == "docker"
+        digest = docker_digest_from_reqs(requirements)
+        "`#{digest.split(':').last[0..6]}`"
+      else
+        version
+      end
+    end
+
+    def docker_digest_from_reqs(requirements)
+      requirements.
+        filter_map { |r| r.dig(:source, "digest") || r.dig(:source, :digest) }.
+        first
+    end
+
+    def previous_ref
+      previous_refs = previous_requirements.filter_map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.uniq
+      return previous_refs.first if previous_refs.count == 1
+    end
+
+    def new_ref
+      new_refs = requirements.filter_map do |r|
+        r.dig(:source, "ref") || r.dig(:source, :ref)
+      end.uniq
+      return new_refs.first if new_refs.count == 1
+    end
+
+    def ref_changed?
+      previous_ref != new_ref
+    end
+
     # Returns all detected versions of the dependency. Only ecosystems that
     # support this feature will return more than the current version.
     def all_versions
