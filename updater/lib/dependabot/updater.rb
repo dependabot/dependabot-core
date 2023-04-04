@@ -322,7 +322,7 @@ module Dependabot
     # rubocop:enable Metrics/PerceivedComplexity
 
     def raise_on_ignored?(dependency)
-      job.security_updates_only? || ignore_conditions_for(dependency).any?
+      job.security_updates_only? || job.ignore_conditions_for(dependency).any?
     end
 
     def record_security_update_not_needed_error(checker)
@@ -505,7 +505,7 @@ module Dependabot
       Dependabot.logger.info(
         "Checking if #{dependency.name} #{dependency.version} needs updating"
       )
-      log_ignore_conditions(dependency)
+      job.log_ignore_conditions_for(dependency)
     end
 
     def all_versions_ignored?(dependency, checker)
@@ -518,25 +518,6 @@ module Dependabot
       raise if job.security_updates_only?
 
       true
-    end
-
-    def log_ignore_conditions(dep)
-      conditions = job.ignore_conditions.
-                   select { |ic| name_match?(ic["dependency-name"], dep.name) }
-      return if conditions.empty?
-
-      Dependabot.logger.info("Ignored versions:")
-      conditions.each do |ic|
-        unless ic["version-requirement"].nil?
-          Dependabot.logger.info("  #{ic['version-requirement']} - from #{ic['source']}")
-        end
-
-        ic["update-types"]&.each do |update_type|
-          msg = "  #{update_type} - from #{ic['source']}"
-          msg += " (doesn't apply to security update)" if job.security_updates_only?
-          Dependabot.logger.info(msg)
-        end
-      end
     end
 
     def log_up_to_date(dependency)
@@ -610,8 +591,8 @@ module Dependabot
         dependency_files: dependency_snapshot.dependency_files,
         repo_contents_path: job.repo_contents_path,
         credentials: job.credentials,
-        ignored_versions: ignore_conditions_for(dependency),
-        security_advisories: security_advisories_for(dependency),
+        ignored_versions: job.ignore_conditions_for(dependency),
+        security_advisories: job.security_advisories_for(dependency),
         raise_on_ignored: raise_on_ignored,
         requirements_update_strategy: job.requirements_update_strategy,
         options: job.experiments
@@ -626,49 +607,6 @@ module Dependabot
         credentials: job.credentials,
         options: job.experiments
       )
-    end
-
-    def ignore_conditions_for(dep)
-      update_config_ignored_versions(job.ignore_conditions, dep)
-    end
-
-    def update_config_ignored_versions(ignore_conditions, dep)
-      ignore_conditions = ignore_conditions.map do |ic|
-        Dependabot::Config::IgnoreCondition.new(
-          dependency_name: ic["dependency-name"],
-          versions: [ic["version-requirement"]].compact,
-          update_types: ic["update-types"]
-        )
-      end
-      Dependabot::Config::UpdateConfig.
-        new(ignore_conditions: ignore_conditions).
-        ignored_versions_for(dep, security_updates_only: job.security_updates_only?)
-    end
-
-    def name_match?(name1, name2)
-      WildcardMatcher.match?(
-        job.name_normaliser.call(name1),
-        job.name_normaliser.call(name2)
-      )
-    end
-
-    def security_advisories_for(dep)
-      relevant_advisories =
-        job.security_advisories.
-        select { |adv| adv.fetch("dependency-name").casecmp(dep.name).zero? }
-
-      relevant_advisories.map do |adv|
-        vulnerable_versions = adv["affected-versions"] || []
-        safe_versions = (adv["patched-versions"] || []) +
-                        (adv["unaffected-versions"] || [])
-
-        Dependabot::SecurityAdvisory.new(
-          dependency_name: dep.name,
-          package_manager: job.package_manager,
-          vulnerable_versions: vulnerable_versions,
-          safe_versions: safe_versions
-        )
-      end
     end
 
     def generate_dependency_files_for(updated_dependencies)
