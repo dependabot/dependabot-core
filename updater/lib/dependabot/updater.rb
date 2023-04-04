@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/config/ignore_condition"
-require "dependabot/config/update_config"
 require "dependabot/dependency_change"
 require "dependabot/environment"
 require "dependabot/experiments"
