@@ -16,4 +16,4 @@ docker run --env DEPENDABOT_TEST_ACCESS_TOKEN \
   -v "$(pwd)/npm_and_yarn:/home/dependabot/npm_and_yarn" \
   -v "$(pwd)/go_modules:/home/dependabot/go_modules" \
   -v "$(pwd)/composer:/home/dependabot/composer" \
-  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec
+  "ghcr.io/dependabot/dependabot-updater-bundler:latest" bundle exec rspec "$@"
