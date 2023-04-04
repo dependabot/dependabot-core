@@ -132,6 +132,8 @@ module Dependabot
     end
 
     def humanized_version
+      return if removed?
+
       if version.match?(/^[0-9a-f]{40}$/)
         return new_ref if ref_changed? && new_ref
 

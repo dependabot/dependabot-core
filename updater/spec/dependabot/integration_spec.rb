@@ -398,8 +398,8 @@ RSpec.describe "Dependabot Updates" do
         expect(log_message).to include(
           "created",
           "dummy-git-dependency",
-          "from 20151f9b67c8a04461fa0ee28385b6187b86587b",
-          "to c0e25c2eb332122873f73acb3b61fb2e261cfd8f"
+          "from v1.0.0",
+          "to v1.1.0"
         )
       end
 
