@@ -34,9 +34,9 @@ module Dependabot
     end
 
     def run
-      updated_deps = updated_dependencies
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
+      updated_files = generate_dependency_files
+      # Remove any unchanged dependencies from the updated list
+      updated_deps = updated_dependencies.reject do |d|
         # Avoid rejecting the source dependency
         next false if source_dependency_name && d.name == source_dependency_name
         next true if d.top_level? && d.requirements == d.previous_requirements
@@ -68,7 +68,7 @@ module Dependabot
       change_source
     end
 
-    def generate_dependency_files_for(updated_dependencies)
+    def generate_dependency_files
       if updated_dependencies.count == 1
         updated_dependency = updated_dependencies.first
         Dependabot.logger.info("Updating #{updated_dependency.name} from " \
@@ -82,9 +82,8 @@ module Dependabot
       # Ignore dependencies that are tagged as information_only. These will be
       # updated indirectly as a result of a parent dependency update and are
       # only included here to be included in the PR info.
-      deps_to_update = updated_dependencies.reject(&:informational_only?)
-      updater = file_updater_for(deps_to_update)
-      updater.updated_dependency_files
+      relevant_dependencies = updated_dependencies.reject(&:informational_only?)
+      file_updater_for(relevant_dependencies).updated_dependency_files
     end
 
     def file_updater_for(dependencies)
