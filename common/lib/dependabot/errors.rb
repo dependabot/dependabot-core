@@ -80,7 +80,7 @@ module Dependabot
 
     def initialize(file_path, msg = nil)
       @file_path = file_path
-      super(msg)
+      super("#{file_path} not found" || msg)
     end
 
     def file_name
