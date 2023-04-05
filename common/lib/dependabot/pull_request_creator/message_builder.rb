@@ -52,7 +52,7 @@ module Dependabot
       end
 
       def pr_message
-        suffixed_pr_message_header + commit_message_intro + \
+        suffixed_pr_message_header + commit_message_intro +
           metadata_cascades + prefixed_pr_message_footer
       rescue StandardError => e
         Dependabot.logger.error("Error while generating PR message: #{e.message}")

@@ -169,8 +169,7 @@ RSpec.describe Dependabot::Docker::Utils::CredentialsFinder do
               authorization_data:
                 [authorization_token: Base64.encode64("foo:bar")]
             )
-            expect(Aws::ECR::Client).to \
-              receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
+            expect(Aws::ECR::Client).to receive(:new).with(region: "eu-west-2").and_return(ecr_stub)
           end
 
           it "returns updated, valid credentials" do
