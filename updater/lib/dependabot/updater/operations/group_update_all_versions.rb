@@ -10,7 +10,7 @@
 # - It disregards any ignore rules for sake of simplicity
 # - It has no superseding logic, so every time this strategy runs for a repo
 #   it will create a new Pull Request regardless of any existing, open PR
-# - The concept of a 'group rule' or 'update group' which configures which
+# - The concept of a 'dependency group' or 'update group' which configures which
 #   dependencies should go together is stubbed out; it currently makes best
 #   effort to update everything it can in one pass.
 module Dependabot
@@ -22,7 +22,8 @@ module Dependabot
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          return false if job.dependencies&.any?
+          #return false if job.dependencies&.any?
+          return false if job.dependency_groups.empty?
 
           Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
@@ -37,7 +38,8 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # This is a placeholder for a real rule object obtained from config in future
-          @group_rule = Dependabot::GroupRule.new(name: GROUP_NAME_PLACEHOLDER)
+          #@dependency_group = Dependabot::DependencyGroup.new(name: GROUP_NAME_PLACEHOLDER)
+          @dependency_group = dependency_snapshot.dependency_groups
         end
 
         def perform
@@ -55,14 +57,14 @@ module Dependabot
               # FIXME: This is a workround for not having a single Dependency to report against
               #
               #        We could use all_updated_deps.first, but that could be misleading. It may
-              #        make more sense to handle the group rule as a Dependancy-ish object
+              #        make more sense to handle the dependency group as a Dependancy-ish object
               group_dependency = OpenStruct.new(name: "group-all")
               raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
               error_handler.handle_dependabot_error(error: e, dependency: group_dependency)
             end
           else
-            Dependabot.logger.info("Nothing to update for Group Rule: '#{GROUP_NAME_PLACEHOLDER}'")
+            Dependabot.logger.info("Nothing to update for Dependency Group: '#{GROUP_NAME_PLACEHOLDER}'")
           end
         end
 
@@ -72,7 +74,7 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler,
-                    :group_rule
+                    :dependency_group
 
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
@@ -125,7 +127,7 @@ module Dependabot
             job: job,
             updated_dependencies: all_updated_dependencies,
             updated_dependency_files: updated_files,
-            group_rule: group_rule
+            dependency_group: dependency_group
           )
         end
 
@@ -138,7 +140,7 @@ module Dependabot
             job: job,
             dependency_files: dependency_files,
             updated_dependencies: updated_dependencies,
-            change_source: group_rule
+            change_source: dependency_group
           )
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_error(
