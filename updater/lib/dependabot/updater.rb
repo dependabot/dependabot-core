@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_change"
+require "dependabot/dependency_change_builder"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
@@ -178,29 +179,28 @@ module Dependabot
         requirements_to_unlock: requirements_to_unlock
       )
 
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
-        next false if d.name == checker.dependency.name
-        next true if d.top_level? && d.requirements == d.previous_requirements
-
-        d.version == d.previous_version
-      end
+      dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+        job: job,
+        dependency_files: dependency_snapshot.dependency_files,
+        updated_dependencies: updated_deps,
+        change_source: checker.dependency
+      )
 
       # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
       # and the dependency name in the security advisory often doesn't match
       # what users have specified in their manifest.
       job_dependencies = job.dependencies.map(&:downcase)
-      if updated_deps.map(&:name).map(&:downcase) != job_dependencies
+      if dependency_change.dependencies.map(&:name).map(&:downcase) != job_dependencies
         # The dependencies being updated have changed. Close the existing
         # multi-dependency PR and try creating a new one.
         close_pull_request(reason: :dependencies_changed)
-        create_pull_request(updated_deps, updated_files)
-      elsif existing_pull_request(updated_deps)
+        create_pull_request(dependency_change.dependencies, dependency_change.updated_dependency_files)
+      elsif existing_pull_request(dependency_change.dependencies)
         # The existing PR is for this version. Update it.
-        update_pull_request(updated_deps, updated_files)
+        update_pull_request(dependency_change.dependencies, dependency_change.updated_dependency_files)
       else
         # The existing PR is for a previous version. Supersede it.
-        create_pull_request(updated_deps, updated_files)
+        create_pull_request(dependency_change.dependencies, dependency_change.updated_dependency_files)
       end
     end
     # rubocop:enable Metrics/AbcSize
@@ -305,14 +305,13 @@ module Dependabot
         )
       end
 
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
-        next false if d.name == checker.dependency.name
-        next true if d.top_level? && d.requirements == d.previous_requirements
-
-        d.version == d.previous_version
-      end
-      create_pull_request(updated_deps, updated_files)
+      dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+        job: job,
+        dependency_files: dependency_snapshot.dependency_files,
+        updated_dependencies: updated_deps,
+        change_source: checker.dependency
+      )
+      create_pull_request(dependency_change.dependencies, dependency_change.updated_dependency_files)
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
