@@ -137,6 +137,25 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
+    def increment_metric(metric, tags:)
+      api_url = "#{base_url}/update_jobs/#{job_id}/increment_metric"
+      body = {
+        data: {
+          metric: metric,
+          tags: tags
+        }
+      }
+      response = http_client.post(api_url, json: body)
+      # We treat metrics as fire-and-forget, so just warn if they fail.
+      Dependabot.logger.warn("Unable to report metric '#{metric}'.") if response.code >= 400
+    rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
+      retry_count ||= 0
+      retry_count += 1
+      raise if retry_count > 3
+
+      sleep(rand(3.0..10.0)) && retry
+    end
+
     private
 
     attr_reader :base_url, :job_id, :job_token
