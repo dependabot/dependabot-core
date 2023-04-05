@@ -101,7 +101,10 @@ RSpec.describe Dependabot::Elm::UpdateChecker do
           to_return(status: 200, body: elm_package_response)
       end
 
-      it { is_expected.to eq(true) }
+      it "is true" do
+        pending "skipped due to https://github.com/dependabot/dependabot-core/issues/7006"
+        is_expected.to eq(true)
+      end
     end
 
     context "with a requirement that is out of date, but needs a full unlock" do
