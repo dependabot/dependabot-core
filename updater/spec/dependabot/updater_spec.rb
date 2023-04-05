@@ -410,7 +410,7 @@ RSpec.describe Dependabot::Updater do
           updater = build_updater(service: service, job: job)
 
           expect(checker).to receive(:up_to_date?).and_return(true)
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
           expect(service).to_not receive(:create_pull_request)
           expect(service).to receive(:record_update_job_error).
             with(
@@ -789,7 +789,7 @@ RSpec.describe Dependabot::Updater do
           service = build_service
           updater = build_updater(service: service, job: job)
 
-          expect(updater).to_not receive(:generate_dependency_files_for)
+          expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
           expect(service).to_not receive(:create_pull_request)
 
           updater.run
@@ -895,7 +895,7 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(checker).to_not receive(:can_update?)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to_not receive(:record_update_job_error)
         expect(Dependabot.logger).
@@ -924,7 +924,7 @@ RSpec.describe Dependabot::Updater do
 
         expect(checker).to receive(:up_to_date?).and_return(false, false)
         expect(checker).to receive(:can_update?).and_return(true, false)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to_not receive(:record_update_job_error)
         expect(Dependabot.logger).
@@ -961,7 +961,7 @@ RSpec.describe Dependabot::Updater do
 
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
@@ -1006,7 +1006,7 @@ RSpec.describe Dependabot::Updater do
         updater = build_updater(service: service, job: job)
 
         expect(checker).to_not receive(:can_update?)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
@@ -1105,7 +1105,7 @@ RSpec.describe Dependabot::Updater do
 
         expect(checker).to receive(:up_to_date?).and_return(false)
         expect(checker).to receive(:can_update?).and_return(true)
-        expect(updater).to_not receive(:generate_dependency_files_for)
+        expect(Dependabot::DependencyChangeBuilder).to_not receive(:create_from)
         expect(service).to_not receive(:create_pull_request)
         expect(service).to receive(:record_update_job_error).
           with(
