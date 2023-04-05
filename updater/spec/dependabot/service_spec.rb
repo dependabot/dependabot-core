@@ -23,7 +23,7 @@ RSpec.describe Dependabot::Service do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: instance_double(Dependabot::Job, source: nil, credentials: [], commit_message_options: []),
-        dependencies: dependencies,
+        updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
     end
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::Service do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: anything,
-        dependencies: dependencies,
+        updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
     end

@@ -45,7 +45,7 @@ module Dependabot
 
       Dependabot::DependencyChange.new(
         job: job,
-        dependencies: updated_deps,
+        updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
         group_rule: source_group_rule
       )

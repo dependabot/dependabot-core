@@ -11,11 +11,11 @@
 # by adapters to create a Pull Request, apply the changes on disk, etc.
 module Dependabot
   class DependencyChange
-    attr_reader :job, :dependencies, :updated_dependency_files
+    attr_reader :job, :updated_dependencies, :updated_dependency_files
 
-    def initialize(job:, dependencies:, updated_dependency_files:, group_rule: nil)
+    def initialize(job:, updated_dependencies:, updated_dependency_files:, group_rule: nil)
       @job = job
-      @dependencies = dependencies
+      @updated_dependencies = updated_dependencies
       @updated_dependency_files = updated_dependency_files
       @group_rule = group_rule
     end
@@ -25,7 +25,7 @@ module Dependabot
 
       @pr_message = Dependabot::PullRequestCreator::MessageBuilder.new(
         source: job.source,
-        dependencies: dependencies,
+        dependencies: updated_dependencies,
         files: updated_dependency_files,
         credentials: job.credentials,
         commit_message_options: job.commit_message_options
@@ -33,7 +33,7 @@ module Dependabot
     end
 
     def humanized
-      dependencies.map do |dependency|
+      updated_dependencies.map do |dependency|
         "#{dependency.name} ( from #{dependency.humanized_previous_version} to #{dependency.humanized_version} )"
       end.join(", ")
     end
