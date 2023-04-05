@@ -2271,7 +2271,8 @@ RSpec.describe Dependabot::Updater do
       update_pull_request: nil,
       close_pull_request: nil,
       mark_job_as_processed: nil,
-      record_update_job_error: nil
+      record_update_job_error: nil,
+      increment_metric: nil,
     )
 
     service = Dependabot::Service.new(

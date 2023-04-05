@@ -51,7 +51,8 @@ RSpec.describe "Dependabot Updates" do
                     mark_job_as_processed: nil,
                     update_dependency_list: nil,
                     record_update_job_error: nil,
-                    record_package_manager_version: nil)
+                    record_package_manager_version: nil,
+                    increment_metric: nil)
   end
   let(:file_fetcher) do
     instance_double(Dependabot::FileFetchers::Base,

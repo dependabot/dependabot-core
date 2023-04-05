@@ -149,11 +149,7 @@ module Dependabot
       # We treat metrics as fire-and-forget, so just warn if they fail.
       Dependabot.logger.warn("Unable to report metric '#{metric}'.") if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-      retry_count ||= 0
-      retry_count += 1
-      raise if retry_count > 3
-
-      sleep(rand(3.0..10.0)) && retry
+      Dependabot.logger.warn("Unable to report metric '#{metric}'.")
     end
 
     private
