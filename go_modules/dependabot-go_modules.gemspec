@@ -5,9 +5,10 @@ Gem::Specification.new do |spec|
     Bundler.load_gemspec_uncached("../common/dependabot-common.gemspec")
 
   spec.name         = "dependabot-go_modules"
-  spec.summary      = "Go modules support for dependabot"
-  spec.version      = common_gemspec.version
-  spec.description  = common_gemspec.description
+  spec.summary      = "Provides Dependabot support for Go Modules"
+  spec.description  = "Dependabot-Go_Modules provides support for bumping Go Modules versions via Dependabot. " \
+                      "If you want support for multiple package managers, you probably want the meta-gem " \
+                      "dependabot-omnibus."
 
   spec.author       = common_gemspec.author
   spec.email        = common_gemspec.email
@@ -19,11 +20,12 @@ Gem::Specification.new do |spec|
     "changelog_uri" => common_gemspec.metadata["changelog_uri"]
   }
 
-  spec.require_path = "lib"
-  spec.files        = []
-
+  spec.version = common_gemspec.version
   spec.required_ruby_version = common_gemspec.required_ruby_version
   spec.required_rubygems_version = common_gemspec.required_ruby_version
+
+  spec.require_path = "lib"
+  spec.files        = []
 
   spec.add_dependency "dependabot-common", Dependabot::VERSION
 
