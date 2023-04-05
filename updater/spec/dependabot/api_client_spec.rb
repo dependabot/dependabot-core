@@ -185,12 +185,12 @@ RSpec.describe Dependabot::ApiClient do
              end)
       end
 
-      it "flags the PR as a grouped-update if the dependency change has a group rule assigned" do
+      it "flags the PR as a grouped-update if the dependency change has a dependency group assigned" do
         grouped_dependency_change = Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: dependencies,
           updated_dependency_files: dependency_files,
-          group_rule: anything
+          dependency_group: anything
         )
 
         client.create_pull_request(grouped_dependency_change, base_commit)

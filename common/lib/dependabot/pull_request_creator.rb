@@ -235,7 +235,7 @@ module Dependabot
           dependencies: dependencies,
           files: files,
           target_branch: source.branch,
-          group_rule: nil,
+          dependency_group: nil,
           separator: branch_name_separator,
           prefix: branch_name_prefix,
           max_length: branch_name_max_length
