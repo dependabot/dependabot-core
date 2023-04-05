@@ -165,11 +165,5 @@ module Dependabot
       snip = max - 3
       string.length > max ? "#{string[0...snip]}..." : string
     end
-
-    def humanize(dependencies)
-      dependencies.map do |dependency|
-        "#{dependency.name} ( from #{dependency.previous_version} to #{dependency.version} )"
-      end.join(", ")
-    end
   end
 end

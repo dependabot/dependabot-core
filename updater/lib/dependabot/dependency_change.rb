@@ -34,7 +34,7 @@ module Dependabot
 
     def humanized
       dependencies.map do |dependency|
-        "#{dependency.name} ( from #{dependency.previous_version} to #{dependency.version} )"
+        "#{dependency.name} ( from #{dependency.humanized_previous_version} to #{dependency.humanized_version} )"
       end.join(", ")
     end
 
