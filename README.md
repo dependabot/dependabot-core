@@ -6,78 +6,228 @@
     </picture>
 </h1>
 
-Welcome to the public home of Dependabot :dependabot:. This repository serves 2 purposes:
+Welcome to the public home of Dependabot :dependabot:.
 
-1. It houses the source code for Dependabot Core, which is the heart of [Dependabot][dependabot]. Dependabot Core handles the logic for updating dependencies on GitHub (including GitHub Enterprise), GitLab, and Azure DevOps. If you want to host your own automated dependency update bot then this repo should give you the tools you need. A reference implementation is available [here][dependabot-script].
-2. It is the public issue tracker for issues related to Dependabot's updating logic. For issues about Dependabot the service, please contact [GitHub support][support]. While the distinction between Dependabot Core and the service can be fuzzy, a good rule of thumb is if your issue is with the _diff_ that Dependabot created, it belongs here and for most other things the GitHub support team is best equipped to help you.
+# Table of Contents
 
-## Got feedback?
+- [What is Dependabot-Core?](#what-is-dependabot-core)
+- [How to run Dependabot](#how-to-run-dependabot)
+- [Contributing to Dependabot](#contributing-to-dependabot)
+  - [Reporting Issues and Feature Requests](#reporting-issues-and-feature-requests)
+  - [Submitting Pull Requests](#submitting-pull-requests)
+- [Development Guide](#development-guide)
+  - [Getting a Development Environment Running](#getting-a-development-environment-running)
+  - [Debugging Problems](#debugging-problems)
+  - [Running Tests](#running-tests)
+  - [Profiling](#profiling)
+- [Architecture and Code Layout](#architecture-and-code-layout)
+- [License and Project History](#license-and-project-history)
+- [Notes for Project Maintainers](#notes-for-project-maintainers)
 
-https://github.com/orgs/community/discussions/categories/code-security
+---
 
-## Contributing to Dependabot
+# What is Dependabot-Core?
 
-Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
+Dependabot-Core is the library at the heart of [Dependabot](https://docs.github.com/en/code-security/dependabot) security / version updates.
 
-Please refer to the [CONTRIBUTING][contributing] guidelines for more information.
+Use it to generate automated pull requests updating dependencies for projects written in Ruby, JavaScript, Python,
+PHP, Dart, Elixir, Elm, Go, Rust, Java and .NET. It can also update git submodules, Docker files, and Terraform files.
+Features include:
 
-### Disclosing security issues
+- Check for the latest version of a dependency *that's resolvable given a project's other dependencies*
+- Generate updated manifest and lockfiles for a new dependency version
+- Generate PR descriptions that include the updated dependency's changelogs, release notes, and commits
+
+# How to run Dependabot
+
+Most people are familiar with the Dependabot service that runs on GitHub.com and GitHub Enterprise. Enabling that is as
+simple as [checking a `dependabot.yml` configuration file in to your repository's `.github` directory](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates).
+
+However, if you want to run a custom version of Dependabot or run it on another platform, you're not left out in the cold.
+This repo provides the logic necessary for hosting your own standalone Dependabot, as long as you're [not re-selling
+Dependabot to others](#license). It currently supports opening Pull Requests against repositories hosted on GitHub, Github Enterprise, Azure DevOps, GitLab, BitBucket, and AWS CodeCommit.
+
+Dependabot-Core is a library, so you'll need an entrypoint script of some kind. Here are a few examples to help you get
+started.
+
+>**Note:** If you're looking to run Dependabot locally for development/debugging purposes, see the [Development Guide](#development-guide).
+
+## Dependabot-Script
+
+The [dependabot-script](https://github.com/dependabot/dependabot-script) repo provides a collection of example scripts for configuring the Dependabot-Core library.
+It is intended as a starting point for advanced users to run a self-hosted version of Dependabot within their own projects.
+
+## Dependabot CLI
+
+The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may eventually replace [`dependabot-script`](#dependabot-script) for standalone use cases.
+While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
+may be useful for advanced users looking for examples of how to hack on Dependabot.
+
+# Contributing to Dependabot
+
+## Reporting issues and Feature Requests
+
+👋 Want to give us feedback on Dependabot, or contribute to it? That's great - thank you so much!
+
+### Reproducible Example
+
+Most bug reports should be accompanied by a link to a public repository that reproduces the problem. Bug reports that
+cannot be reproduced on a public repo using the [CLI tool](#cli-tool) or [dry-run script](#dry-run-script) may be
+closed as "cannot reproduce".
+
+### No "+1" Comments
+
+Our issue tracker is quite active, and as a result there's a good chance someone already filed the same issue. If so,
+please upvote that issue, because we use 👍 reactions on issues as one signal to gauge the impact of a feature request or bug.
+
+However, please do not leave comments that contribute nothing new to the discussion. For details, see [https://github.com/golang/go/wiki/NoPlusOne](https://github.com/golang/go/wiki/NoPlusOne). This is open source, if you see something you want fixed, we are happy to coach you through contributing a pull request to fix it.
+
+### Don't file issues about Security Alerts or Dependency Graph
+
+The issue-tracker is meant solely for issues related to Dependabot's updating logic. Issues about security alerts or Dependency Graph should instead be filed as a [Code Security discussion](https://github.com/orgs/community/discussions/categories/code-security).
+
+A good rule of thumb is that if you have questions about the _diff_ in a PR, it belongs here.
+
+### Disclosing Security Issues
 
 If you believe you have found a security vulnerability in Dependabot please submit the vulnerability to GitHub Security [Bug Bounty](https://bounty.github.com/) so that we can resolve the issue before it is disclosed publicly.
 
-## What's in this repo?
+## Submitting Pull Requests
 
-Dependabot Core is a collection of packages for automating dependency updating
-in Ruby, JavaScript, Python, PHP, Elixir, Elm, Go, Rust, Java and
-.NET. It can also update git submodules, Docker files, and Terraform files.
-Highlights include:
+Want to contribute to Dependabot? That's great - thank you so much!
 
-- Logic to check for the latest version of a dependency *that's resolvable given
-  a project's other dependencies*
-- Logic to generate updated manifest and lockfiles for a new dependency version
-- Logic to find changelogs, release notes, and commits for a dependency update
+Contribution workflow:
+1. Fork the project.
+2. Get the [development environment running](#getting-a-development-environment-running).
+3. Make your feature addition or bug fix.
+4. Add [tests for it](#running-tests). This is important so we don't break it in a future version unintentionally.
+5. Send a pull request. The tests will run on it automatically, so don't worry if you couldn't get them running locally.
 
-## Other Dependabot resources
+Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
 
-In addition to this library, you may be interested in the [dependabot-script][dependabot-script] repo,
-which provides a collection of scripts that use this library to update dependencies on GitHub Enterprise, GitLab,
-BitBucket or Azure DevOps.
+### New Ecosystems
 
-## Setup
+Currently, the Dependabot team is not accepting support for new ecosystems. We are prioritising upgrades to already supported ecosystems at this time.
 
-To run all of Dependabot Core, you'll need Ruby, Python, PHP, Elixir, Node, Go,
-Elm, and Rust installed. However, if you just wish to run it for a single
-language you can get away with just having that language and Ruby.
+Please refer to the [CONTRIBUTING](CONTRIBUTING.md) guidelines for more information.
 
-While you can run Dependabot Core without Docker, we provide a development
-Dockerfile that bakes in all required dependencies. In most cases this is the
-best way to work with the project.
+# Development Guide
 
-## Running with Docker
+## Getting a Development Environment Running
 
-Start by running the developer shell:
+The first step to debugging a problem or writing a new feature is getting a development environment going. We provide a
+custom [Docker-based](https://www.docker.com/products/docker-desktop/) developer shell that bakes in all required dependencies.
+In most cases this is the best way to work with the project.
 
-```shell
-$ bin/docker-dev-shell go_modules
-=> running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
-```
+The developer shell uses volume mounts to incorporate your local changes to Dependabot's source code. This way you can
+edit locally using your favorite editor and the changes are immediately reflected within the docker container for performing
+[dry-runs](#debugging-problems) or executing [tests](#running-tests).
+Note: See caveat about [editing the native package manager helper scripts](#making-changes-to-native-package-manager-helpers).
 
-The ecosystem parameter is the top-level directory name of the ecosystem in this project.
+### Quickstart
 
-If you're running the amd64 architecture, you have the option to pull the updater image instead
-of building it from scratch:
+The script to launch the developer shell builds the docker images from scratch if it can't find them locally. This can take a while.
+
+Skip the wait by pulling the pre-built image for the ecosystem you want to work on. The image name uses the [YAML ecosystem name](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
+to specify the ecosystem.  For example, for Go Modules, the YAML name is `gomod`:
 
 ```shell
 $ docker pull ghcr.io/dependabot/dependabot-updater-gomod
 ```
 
-The updater image name uses the [YAML name](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#package-ecosystem)
-to specify the ecosystem.
+>**Note:** Pre-built images are currently only available for AMD64 / Intel architecture. They _will_ run on ARM, but 2x-3x slower than if you [manually build ARM-specific images](#building-images-from-scratch).
 
-### Dry run script
+Next, run the developer shell, specifying the desired ecosystem _using the top-level directory name of the ecosystem in this project_. For example, for Go Modules, the top-level directory is named `go_modules`:
 
-You can use the "dry-run" script to simulate a dependency update job, printing
+```shell
+$ bin/docker-dev-shell go_modules
+=> running docker development shell
+[dependabot-core-dev] ~/dependabot-core $
+[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
+```
+
+### Building Images from Scratch
+
+Normally the [Quickstart](#quickstart) is all you need, but occasionally you'll need to rebuild the underlying images.
+
+For example, while we don't yet publish ARM-specific images, if you _are_ working on an ARM-based platform, we recommend
+manually building the images because the resulting containers run much faster.
+
+The developer shell runs within a Dependabot Development docker image, which is built on top of an ecosystem image.
+
+```mermaid
+flowchart LR
+    A["docker-dev-shell script"] --> B("Dependabot Development docker image")
+    B --> C("Dependabot Updater Ecosystem docker image (ecosystem specific)")
+    C --> D("Dependabot Updater Core docker image")
+```
+
+Changes to the docker files for any of these images requires building one or more of the images locally in order to be reflected in the development shell.
+
+The simple but slow way is to delete any existing images and then run `bin/docker-dev-shell` which automatically builds
+missing images.
+
+The faster way is to pull all the pre-built images that are dependencies of the image you actually need to build.
+To (re)build a specific one:
+
+- The Updater core image:
+
+  ```shell
+  $ docker pull ghcr.io/dependabot/dependabot-updater-core # OR
+  $ docker build Dockerfile.updater-core # recommended on ARM
+  ```
+
+- The Updater ecosystem image:
+
+  ```shell
+  $ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
+  $ script/build go_modules # recommended on ARM
+  ```
+
+- The development container using the `--rebuild` flag:
+
+  ```shell
+  $ bin/docker-dev-shell go_modules --rebuild
+  ```
+
+### Making Changes to native Package Manager helpers
+
+Several Dependabot packages make use of 'native helpers', small executables in their host language.
+
+**Changes to these files are not automatically reflected inside the development container.**
+
+Once you have made any edits to the helper files, run the appropriate build script to update the
+installed version with your changes like so:
+
+```bash
+$ bin/docker-dev-shell bundler
+=> running docker development shell
+$ bundler/helpers/v2/build
+$ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
+```
+
+To view logs and stdout from the native package manager helpers, see [debugging native helpers](#debugging-native-package-manager-helpers).
+
+## Debugging Problems
+
+The first step to debugging is getting the [development environment running](#getting-a-development-environment-running).
+
+Within the development environment, you have two options for simulating a dependency update job:
+You can use the newly-developed [CLI tool](#cli-tool) or the original [Dry-run script](#dry-run-script).
+
+### CLI tool
+
+The [Dependabot CLI](https://github.com/dependabot/cli) is a newly-developed tool that incorporates the [GitHub
+Credentials Proxy](#private-registry-credential-management) to more realistically simulate what's happening within
+the Dependabot-at-GitHub service when talking to private registries.
+
+It has a [dedicated debugging guide](https://github.com/dependabot/cli#debugging-with-the-cli), including support for dropping into the Ruby debugger.
+
+### Dry-Run Script
+
+>Note: Before running the dry-run script, you'll need to [get the development environment running](#getting-a-development-environment-running).
+
+You can use the `bin/dry-run.rb` script to simulate a dependency update job, printing
 the diff that would be generated to the terminal. It takes two positional
 arguments: the package manager and the GitHub repo name (including the
 account):
@@ -92,61 +242,55 @@ $ bin/dry-run.rb go_modules rsc/quote
 ...
 ```
 
-Note: If the dependency files are not in the top-level directory, then you must
-also pass the path to the subdirectory as an argument: `--dir /<subdirectory>`.
+The Dry Run script supports many other options, all of which are documented at the top of the script's source code.
 
-### Running the tests
+You can add a `debugger` statement anywhere in the ruby code, for example:
 
-Run the tests by running `rspec spec` inside each of the packages, e.g.
-
-```bash
-$ cd go_modules
-$ bundle exec rspec spec
+```ruby
+      def latest_resolvable_version
+        debugger
+        latest_version_finder.latest_version
+      end
 ```
 
-Style is enforced by RuboCop. To check for style violations, simply run `rubocop` in
-each of the packages, e.g.
+When you execute the job, the Ruby debugger will open. It should look something like this:
 
-```bash
-$ cd go_modules
-$ bundle exec rubocop
+```ruby
+[11, 20] in ~/go_modules/lib/dependabot/go_modules/update_checker.rb
+    11|   module GoModules
+    12|     class UpdateChecker < Dependabot::UpdateCheckers::Base
+    13|       require_relative "update_checker/latest_version_finder"
+    14|
+    15|       def latest_resolvable_version
+=>  16|         debugger
+    17|         latest_version_finder.latest_version
+    18|       end
+    19|
+    20|       # This is currently used to short-circuit latest_resolvable_version,
+=>#0    Dependabot::GoModules::UpdateChecker#latest_resolvable_version at ~/go_modules/lib/dependabot/go_modules/update_checker.rb:16
+  #1    Dependabot::GoModules::UpdateChecker#latest_version at ~/go_modules/lib/dependabot/go_modules/update_checker.rb:24
+  # and 9 frames (use `bt' command for all frames)
+(rdbg)
 ```
 
-### Making changes to native helpers
+At this prompt, you can run [debugger commands](https://github.com/ruby/debug) to navigate around, or enter methods and variables to see what they contain. Try entering `dependency` to see what dependency Dependabot is currently working on.
 
-Several Dependabot packages make use of 'native helpers', small executables in their host language.
+>**Note** While in the debugger, changes made to the source code will not be picked up. You will have to end your debugging session and restart it.
 
-**Changes to these files are not automatically reflected inside the development container**
+### Debugging Native Package Manager Helpers
 
-Once you have made any edits to the helper files, run the appropriate build script to update the
-installed version with your changes like so:
+When you're debugging an issue you often need to peek inside these scripts that run in a separate process.
 
-```bash
-$ bin/docker-dev-shell bundler
-=> running docker development shell
-$ bundler/helpers/v1/build
-$ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
-```
-
-### Debugging native helpers
-
-When you're making changes to native helpers or debugging a customer issue you often need to peek inside these scripts that run in a separate process.
-
-Print all log statements from native helpers:
+Print all log statements from native helpers using `DEBUG_HELPERS=true`:
 
 ```bash
 DEBUG_HELPERS=true bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
 ```
 
-Pause execution to debug a single native helper function:
+Pause execution to debug a single native helper function using `DEBUG_FUNCTION=<function name>`. The function maps to a
+native helper function name, for example, one of the functions in `bundler/helpers/v2/lib/functions.rb`.
 
-```bash
-DEBUG_FUNCTION=parsed_gemfile bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
-```
-
-The function maps to a native helper function name, for example, one of the functions in `bundler/helpers/v2/lib/functions.rb`.
-
-When this function is being executed a `debugger` is inserted, pausing execution of the `bin/dry-run.rb` script, this leaves the current updates tmp directory in place allowing you to cd into the directory and run the native helper function directly:
+When this function is being executed a `debugger` is inserted, pausing execution of the `bin/dry-run.rb` script, this leaves the current updates `tmp` directory in place allowing you to `cd` into the directory and run the native helper function directly:
 
 ```bash
  DEBUG_FUNCTION=parsed_gemfile bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
@@ -156,7 +300,7 @@ When this function is being executed a `debugger` is inserted, pausing execution
 $ cd /home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby && echo "{\"function\":\"parsed_gemfile\",\"args\":{\"gemfile_name\":\"Gemfile\",\"lockfile_name\":\"Gemfile.lock\",\"dir\":\"/home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby\"}}" | BUNDLER_VERSION=1.17.3 BUNDLE_GEMFILE=/opt/bundler/v1/Gemfile GEM_HOME=/opt/bundler/v1/.bundle bundle exec ruby /opt/bundler/v1/run.rb
 ```
 
-Copy and run the `cd... ` command:
+Copy and run the `cd...` command:
 
 ```bash
 cd /home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby && echo "{\"function\":\"parsed_gemfile\",\"args\":{\"gemfile_name\":\"Gemfile\",\"lockfile_name\":\"Gemfile.lock\",\"dir\":\"/home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby\"}}" | BUNDLER_VERSION=1.17.3 BUNDLE_GEMFILE=/opt/bundler/v1/Gemfile GEM_HOME=/opt/bundler/v1/.bundle bundle exec ruby /opt/bundler/v1/run.rb
@@ -164,56 +308,21 @@ cd /home/dependabot/dependabot-core/tmp/dependabot_TEMP/ruby && echo "{\"functio
 
 This should log out the output of the `parsed_gemfile` function:
 
-```
+```ruby
 {"result":[{"name":"business","requirement":"~> 1.0.0","groups":["default"],"source":null,"type":"runtime"},{"name":"uk_phone_numbers","requirement":"~> 0.1.0","groups":["default"],"source":null,"type":"runtime"}]}
 ```
 
-Edit the native helper function and re-run the above, for example: `vi /opt/bundler/v1/lib/functions/file_parser.rb`.
+Keep in mind that unlike changes to the ruby source, changes on your host machine to the native helpers source code are
+not synced to the development container. So you have two choices for editing the native helper:
 
-### Building the development image from source
+- You can directly edit the temporary copy of the native helper within the development container, for example: `vi /opt/bundler/v1/lib/functions/file_parser.rb`. And then re-run the `cd...` command. This is the fastest way to debug, but any changes won't be saved outside the container.
+- You can edit your local copy, and then [rebuild the native helper](#making-changes-to-native-package-manager-helpers). This will require re-running the dry-run script to pickup the change.
 
-The developer shell uses volume mounts to incorporate your local changes to Dependabot's source
-code. If you need to make changes to the development shell itself, you can rebuild it locally.
-
-The developer shell is built on top of an ecosystem image.
-
-Start by building the ecosystem image, or pull it from the Docker registry.
-
-```shell
-$ docker pull ghcr.io/dependabot/dependabot-updater-gomod # OR
-$ script/build go_modules
-```
-
-Once you have the base Docker image, you can build and run the development
-container using the `docker-dev-shell` script. The script will automatically
-build the container if it's not present and can be forced to rebuild with the
-`--rebuild` flag. The image includes all dependencies of the ecosystem, and
-the script runs the image, mounting the local copy of Dependabot Core so changes
-made locally will be reflected inside the container. This means you can continue
-to use your editor of choice while running the tests inside the container.
-
-The `docker-dev-shell` and other scripts take a single parameter of the ecosystem directory
-you wish to run against.
-
-```shell
-$ bin/docker-dev-shell go_modules --rebuild
-=> building image from Dockerfile.development
-=> running docker development shell
-[dependabot-core-dev] ~/dependabot-core $
-[dependabot-core-dev] ~/dependabot-core $ cd go_modules && rspec spec # to run tests for a particular package
-```
-
-## Running locally on your computer
-
-To work with Dependabot packages on your local machine you will need Ruby and the package's specific language installed.
-
-For some languages there are additional steps required, please refer to the README file in each package.
-
-## Debugging with Visual Studio Code and Docker
+### Visual Studio Code and Docker
 
 There's built-in support for leveraging Visual Studio Code's [ability for
-debugging][vsc-dev-containers] inside a Docker container.
-After installing the recommended [`Dev Containers` extension][vsc-dev-containers-ext],
+debugging](https://code.visualstudio.com/docs/devcontainers/containers) inside a Docker container.
+After installing the recommended [`Dev Containers` extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers),
 simply press `Ctrl+Shift+P` (`⇧⌘P` on macOS) and select `Dev Containers: Reopen in Container`.
 You can also access the dropdown by clicking on the green button in the bottom-left corner of the editor.
 If the development Docker image isn't present on your machine, it will be built automatically.
@@ -229,19 +338,50 @@ missing some functionality and are therefore not supported. You have to clone th
 repository manually and use the `Reopen in Container` or `Open Folder in Container...`
 command.
 
-## Architecture
+## Running Tests
 
-Dependabot Core is a collection of Ruby packages (gems), which contain the
-logic for updating dependencies in several languages.
+Once you get the [development environment for a particular ecosystem](#getting-a-development-environment-running) going,
+execute the tests for that ecosystem by running `rspec spec` inside that ecosystem's folder, e.g.
+
+```bash
+$ cd go_modules
+$ rspec spec
+```
+
+You can also limit the tests to only the file you're working on, or only tests that previously failed, for example:
+
+```bash
+$ rspec spec/dependabot/file_updaters/elixir --only-failures
+```
+
+Style is enforced by [RuboCop](https://rubocop.org/). To check for style violations, simply run `rubocop` in
+each of the packages, e.g.
+
+```bash
+$ cd go_modules
+$ rubocop
+```
+
+## Profiling
+
+You can profile a [dry-run](#dry-run-script) by passing the `--profile` flag when running it, or tag an `rspec` test with `:profile`.
+This will generate a `stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a flamegraph from this
+by running:
+
+```bash
+stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html
+```
+
+# Architecture and Code Layout
+
+Dependabot-Core is a collection of Ruby packages (gems), which contain the logic for updating dependencies in several languages.
 
 ### `dependabot-common`
 
-The `common` package contains all general-purpose/shared functionality. For
-instance, the code for creating pull requests via GitHub's API lives here, as
-does most of the logic for handling Git dependencies (as most languages support
-Git dependencies in one way or another). There are also base classes defined for
-each of the major concerns required to implement support for a language or
-package manager.
+The `common` package contains all general-purpose/shared functionality. For instance, the code for creating pull
+requests for the different supported platforms lives here, as does most of the logic for handling Git dependencies (as
+most languages support Git dependencies in one way or another). There are also base classes defined for each of the
+major concerns required to implement support for a language or package manager.
 
 ### `dependabot-{package-manager}`
 
@@ -251,13 +391,13 @@ classes:
 
 | Service          | Description                                                                                   |
 |------------------|-----------------------------------------------------------------------------------------------|
-| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_fetchers/README.md) for more details. |
-| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](https://github.com/dependabot/dependabot-core/blob/main/common/lib/dependabot/file_parsers/README.md) for more details. |
-| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/update_checkers/README.md) for more details. |
-| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/file_updaters/README.md) for more details. |
-| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](https://github.com/dependabot/dependabot-core/tree/main/common/lib/dependabot/metadata_finders/README.md) for more details. |
-| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/version.rb) for an example. |
-| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](https://github.com/dependabot/dependabot-core/blob/main/hex/lib/dependabot/hex/requirement.rb) for an example. |
+| `FileFetcher`    | Fetches the relevant dependency files for a project (e.g., the `Gemfile` and `Gemfile.lock`). See the [README](common/lib/dependabot/file_fetchers/README.md) for more details. |
+| `FileParser`     | Parses a dependency file and extracts a list of dependencies for a project. See the [README](common/lib/dependabot/file_parsers/README.md) for more details. |
+| `UpdateChecker`  | Checks whether a given dependency is up-to-date. See the [README](common/lib/dependabot/update_checkers/README.md) for more details. |
+| `FileUpdater`    | Updates a dependency file to use the latest version of a given dependency. See the [README](common/lib/dependabot/file_updaters/README.md) for more details. |
+| `MetadataFinder` | Looks up metadata about a dependency, such as its GitHub URL. See the [README](common/lib/dependabot/metadata_finders/README.md) for more details. |
+| `Version`        | Describes the logic for comparing dependency versions. See the [hex Version class](hex/lib/dependabot/hex/version.rb) for an example. |
+| `Requirement`    | Describes the format of a dependency requirement (e.g. `>= 1.2.3`). See the [hex Requirement class](hex/lib/dependabot/hex/requirement.rb) for an example. |
 
 The high-level flow looks like this:
 
@@ -269,18 +409,18 @@ This is a "meta" gem, that simply depends on all the others. If you want to
 automatically include support for all languages, you can just include this gem
 and you'll get all you need.
 
-### Private Registry Credential Management
+## Private Registry Credential Management
 
-For many ecosystems, Dependabot Core supports private registries. Sometimes this happens by passing the private registry
+For many ecosystems, Dependabot-Core supports private registries. Sometimes this happens by passing the private registry
 credentials directly to the native package managers (`npm`, `pip`, `bundler`, etc), other times it happens within the
-Dependabot Core Ruby code.
+Dependabot-Core Ruby code.
 
 ```mermaid
 sequenceDiagram
-    Private Registry Credentials->>Dependabot Core:<br />
-    Dependabot Core->>Native Package Managers:<br />
+    Private Registry Credentials->>Dependabot-Core:<br />
+    Dependabot-Core->>Native Package Managers:<br />
     Native Package Managers->>Package Registries:<br />
-    Dependabot Core->>Package Registries:<br />
+    Dependabot-Core->>Package Registries:<br />
 ```
 
 While simple and straightforward, this is a security risk for ecosystems that allow running untrusted code within their
@@ -288,52 +428,46 @@ manifest files. For example `setup.py` and `.gemspec` allow running native Pytho
 dependency tree gets hacked, an attacker could push a malicious manifest that forces the native package manager to
 expose the creds.
 
-To guard against this, for the Dependabot service that Github runs, we wrap Dependabot Core with a credential proxy so
-those private registry secrets are never exposed to Dependabot Core.
+To guard against this, for the Dependabot service that Github runs, we wrap Dependabot-Core with a credential proxy so
+those private registry secrets are never exposed to Dependabot-Core.
 
 ```mermaid
 sequenceDiagram
-    Dependabot Core->>Credentials Proxy: All requests are unauthenticated
+    Dependabot-Core->>Credentials Proxy: All requests are unauthenticated
     Credentials Proxy->>Package Registries: Creds are injected by the Proxy
-    Note left of Dependabot Core: The Dependabot Service<br /> that GitHub Runs
+    Note left of Dependabot-Core: The Dependabot Service<br /> that GitHub Runs
     Package Registries->>Credentials Proxy: Creds are stripped by the Proxy
-    Credentials Proxy->>Dependabot Core: Dependabot Core never sees private registry credentials
+    Credentials Proxy->>Dependabot-Core: Dependabot-Core never sees private registry credentials
 ```
 
-This also means if Dependabot Core ever has a security vulnerability, those creds are still not at risk of being exposed.
+This also means if Dependabot-Core ever has a security vulnerability, those creds are still not at risk of being exposed.
 
-## Profiling
-
-You can profile a dry-run by passing the `--profile` flag when running it, or
-tag an rspec test with `:profile`. This will generate a
-`stackprof-<datetime>.dump` file in the `tmp/` folder, and you can generate a
-flamegraph from this by running:
-`stackprof --d3-flamegraph tmp/stackprof-<data or spec name>.dump > tmp/flamegraph.html`.
+# License and Project History
 
 ## Why is this public?
 
-As the name suggests, Dependabot Core is the core of Dependabot (the rest of the
+As the name suggests, Dependabot-Core is the core of Dependabot (the rest of the
 app is pretty much just a UI and database). If we were paranoid about someone
 stealing our business then we'd be keeping it under lock and key.
 
-Dependabot Core is public because we're more interested in it having an
+Dependabot-Core is public because we're more interested in it having an
 impact than we are in making a buck from it. We'd love you to use
-[Dependabot][dependabot] so that we can continue to develop it, but if you want
+[Dependabot](https://docs.github.com/en/code-security/dependabot) so that we can continue to develop it, but if you want
 to build and host your own version then this library should make doing so a
 *lot* easier.
 
-If you use Dependabot Core then we'd love to hear what you build!
+If you use Dependabot-Core then we'd love to hear what you build!
 
 ## License
 
 We use the License Zero Prosperity Public License, which essentially enshrines
 the following:
 
-- If you would like to use Dependabot Core in a non-commercial capacity, such as
+- If you would like to use Dependabot-Core in a non-commercial capacity, such as
   to host a bot at your workplace, then we give you full permission to do so. In
   fact, we'd love you to and will help and support you however we can.
 - If you would like to add Dependabot's functionality to your for-profit
-  company's offering then we DO NOT give you permission to use Dependabot Core
+  company's offering then we DO NOT give you permission to use Dependabot-Core
   to do so.
 
 All contributions to Dependabot Core implicitly transfer the IP of that contribution to
@@ -341,35 +475,23 @@ GitHub, Inc. where it will be licensed the same way as above.
 
 ## History
 
-Dependabot and Dependabot Core started life as [Bump][bump] and
-[Bump Core][bump-core], back when Harry and Grey were working at
-[GoCardless][gocardless]. We remain grateful for the help and support of
+Dependabot and Dependabot-Core started life as [Bump][https://github.com/gocardless/bump] and
+[Bump Core][https://github.com/gocardless/bump-core], back when Harry and Grey were working at
+[GoCardless][https://gocardless.com]. We remain grateful for the help and support of
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
-
-[dependabot]: https://dependabot.com
-[dependabot-script]: https://github.com/dependabot/dependabot-script
-[contributing]: https://github.com/dependabot/dependabot-core/blob/main/CONTRIBUTING.md
-[bump]: https://github.com/gocardless/bump
-[bump-core]: https://github.com/gocardless/bump-core
-[gocardless]: https://gocardless.com
-[ghcr-core-dev]: https://github.com/dependabot/dependabot-core/pkgs/container/dependabot-core-development
-[support]: https://support.github.com/
-[vsc-dev-containers]: https://code.visualstudio.com/docs/devcontainers/containers
-[vsc-dev-containers-ext]: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers
-
-## Notes for project maintainers
+# Notes for project maintainers
 
 <details><summary>:book: Release guide</summary>
 <p>
 
-  Triggering the jobs that will push the new gems is done by following the steps below.
+Triggering the jobs that will push the new gems is done by following the steps below.
 
-  - Ensure you have the latest merged changes:  `git checkout main` and `git pull`
-  - Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
-  - Edit the `CHANGELOG` file and remove any entries that aren't needed
-  - Run the commands that were output by running `bin/bump-version.rb patch`
+- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
+- Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
+- Edit the `CHANGELOG` file and remove any entries that aren't needed
+- Run the commands that were output by running `bin/bump-version.rb patch`
 
 </p>
 </details>
