@@ -21,7 +21,6 @@ require "dependabot/group_rule"
 #     a GroupRule
 module Dependabot
   class DependencyChangeBuilder
-
     def self.create_from(**kwargs)
       new(**kwargs).run
     end
