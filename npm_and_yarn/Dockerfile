@@ -1,7 +1,7 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ENV DEPENDABOT_HOME /home/dependabot
 ### JAVASCRIPT
-ARG YARN_VERSION=3.5.0
+ARG YARN_VERSION=3.4.1
 
 # Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
