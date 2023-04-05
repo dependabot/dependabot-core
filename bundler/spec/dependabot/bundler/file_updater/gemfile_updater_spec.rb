@@ -279,7 +279,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
       context "that should have its tag updated" do
         let(:gemfile_body) do
           %(gem "dependabot-test-ruby-package", "~> 1.0.0", ) +
-            %(git: "https://github.com/dependabot-fixtures/\
+            %(git: "https://github.com/dependabot-fixtures/
           dependabot-test-ruby-package", tag: "v1.0.0")
         end
         let(:gemfile) do
@@ -301,7 +301,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater::GemfileUpdater do
 
         let(:expected_string) do
           %(gem "dependabot-test-ruby-package", "~> 1.1.0", ) +
-            %(git: "https://github.com/dependabot-fixtures/\
+            %(git: "https://github.com/dependabot-fixtures/
           dependabot-test-ruby-package", tag: "v1.1.0")
         end
 

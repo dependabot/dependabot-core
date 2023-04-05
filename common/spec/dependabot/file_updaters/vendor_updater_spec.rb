@@ -145,7 +145,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
       before do
         in_cloned_repository(repo_contents_path) do
           # change a vendor file like an updater would
-          `mv nested/vendor/cache/business-1.4.0.gem \
+          `mv nested/vendor/cache/business-1.4.0.gem
           nested/vendor/cache/business-1.5.0.gem`
         end
       end
