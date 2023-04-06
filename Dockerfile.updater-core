@@ -54,8 +54,8 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
   && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
 USER dependabot
-ENV HOME=/home/dependabot
-WORKDIR $HOME
+ENV DEPENDABOT_HOME="/home/dependabot"
+WORKDIR $DEPENDABOT_HOME
 
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
@@ -98,7 +98,7 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-WORKDIR $HOME/dependabot-updater
+WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
 RUN bundle config set --local path 'vendor' && \
 bundle config set --local frozen 'true' && \
@@ -107,15 +107,13 @@ bundle install && \
 rm -rf ~/.bundle
 
 # Add project after bundle install to avoid re-installing gems when only the project code changes
-COPY --chown=dependabot:dependabot LICENSE $HOME
-COPY --chown=dependabot:dependabot common $HOME/common
-COPY --chown=dependabot:dependabot updater $HOME/dependabot-updater
+COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
-ENV PATH="$HOME/bin:$PATH"
+ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 USER root
-
-RUN chown -R dependabot:dependabot $HOME
 
 CMD ["bin/run"]
