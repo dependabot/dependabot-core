@@ -37,6 +37,7 @@ module Dependabot
       update_subdependencies
       updating_a_pull_request
       vendor_dependencies
+      dependency_groups
     )
 
     attr_reader :allowed_updates,
@@ -51,7 +52,8 @@ module Dependabot
                 :security_updates_only,
                 :source,
                 :token,
-                :vendor_dependencies
+                :vendor_dependencies,
+                :dependency_groups
 
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
@@ -94,6 +96,7 @@ module Dependabot
       @update_subdependencies       = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request      = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies          = attributes.fetch(:vendor_dependencies, false)
+      @dependency_groups            = attributes.fetch(:dependency_groups, [])
 
       register_experiments
     end
@@ -231,6 +234,17 @@ module Dependabot
           safe_versions: safe_versions
         )
       end
+    end
+
+    def register_dependency_groups
+      dependency_groups.each do |group|
+        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
+      end
+    end
+
+    def belongs_to_dependency_group?(dependency)
+      return false unless dependency_groups.any?
+      Dependabot::DependencyGroupEngine.groups_for(dependency).any?
     end
 
     def ignore_conditions_for(dependency)
