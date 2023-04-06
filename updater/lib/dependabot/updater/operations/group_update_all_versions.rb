@@ -41,7 +41,18 @@ module Dependabot
           # We should log the rule being executed, let's just hard-code wildcard for now
           # since the prototype makes best-effort to do everything in one pass.
           Dependabot.logger.info("Starting update group for '#{GROUP_NAME_PLACEHOLDER}'")
-          dependency_change = compile_all_dependency_changes
+
+          # Hypothetical code using groups
+          dependency_snapshot.groups.each do |group|
+            dependency_change = compile_all_dependency_changes_for(group.dependencies)
+          end
+
+          # Let's not worry about this for now, but eventually we'd try to do single updates
+          # for anything that didn't appear in _at least one_ group.
+          dependency_snapshot.ungrouped_dependences.each do |dependency|
+            # dependency_change = create_dependency_change_for(dependency)
+            # create_pull_request(dependency_change)
+          end
 
           if dependency_change.updated_dependencies.any?
             Dependabot.logger.info("Creating a pull request for '#{GROUP_NAME_PLACEHOLDER}'")
