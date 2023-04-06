@@ -20,6 +20,10 @@ module Dependabot
           job.updating_a_pull_request?
         end
 
+        def self.tag_name
+          :update_version_pr
+        end
+
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job

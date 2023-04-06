@@ -60,7 +60,7 @@ module Dependabot
       return legacy_run unless (operation_class = Operations.class_for(job: job))
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
-      service.increment_metric("updater.started", tags: { operation: operation_class })
+      service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })
       operation_class.new(
         service: service,
         job: job,
