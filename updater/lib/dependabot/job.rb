@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/config/ignore_condition"
+require "dependabot/config/update_config"
 require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"

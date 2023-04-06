@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "dependabot/config/ignore_condition"
-require "dependabot/config/update_config"
 require "dependabot/dependency_change"
+require "dependabot/dependency_change_builder"
 require "dependabot/environment"
 require "dependabot/experiments"
 require "dependabot/file_fetchers"
-require "dependabot/file_updaters"
 require "dependabot/logger"
 require "dependabot/python"
 require "dependabot/terraform"
@@ -124,7 +122,6 @@ module Dependabot
     end
 
     # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/MethodLength
     def check_and_update_pull_request(dependencies)
@@ -180,33 +177,31 @@ module Dependabot
         requirements_to_unlock: requirements_to_unlock
       )
 
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
-        next false if d.name == checker.dependency.name
-        next true if d.top_level? && d.requirements == d.previous_requirements
-
-        d.version == d.previous_version
-      end
+      dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+        job: job,
+        dependency_files: dependency_snapshot.dependency_files,
+        updated_dependencies: updated_deps,
+        change_source: checker.dependency
+      )
 
       # NOTE: Gradle, Maven and Nuget dependency names can be case-insensitive
       # and the dependency name in the security advisory often doesn't match
       # what users have specified in their manifest.
       job_dependencies = job.dependencies.map(&:downcase)
-      if updated_deps.map(&:name).map(&:downcase) != job_dependencies
+      if dependency_change.dependencies.map(&:name).map(&:downcase) != job_dependencies
         # The dependencies being updated have changed. Close the existing
         # multi-dependency PR and try creating a new one.
         close_pull_request(reason: :dependencies_changed)
-        create_pull_request(updated_deps, updated_files)
-      elsif existing_pull_request(updated_deps)
+        create_pull_request(dependency_change)
+      elsif existing_pull_request(dependency_change.dependencies)
         # The existing PR is for this version. Update it.
-        update_pull_request(updated_deps, updated_files)
+        update_pull_request(dependency_change)
       else
         # The existing PR is for a previous version. Supersede it.
-        create_pull_request(updated_deps, updated_files)
+        create_pull_request(dependency_change)
       end
     end
     # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/PerceivedComplexity
     # rubocop:enable Metrics/MethodLength
 
@@ -307,14 +302,13 @@ module Dependabot
         )
       end
 
-      updated_files = generate_dependency_files_for(updated_deps)
-      updated_deps = updated_deps.reject do |d|
-        next false if d.name == checker.dependency.name
-        next true if d.top_level? && d.requirements == d.previous_requirements
-
-        d.version == d.previous_version
-      end
-      create_pull_request(updated_deps, updated_files)
+      dependency_change = Dependabot::DependencyChangeBuilder.create_from(
+        job: job,
+        dependency_files: dependency_snapshot.dependency_files,
+        updated_dependencies: updated_deps,
+        change_source: checker.dependency
+      )
+      create_pull_request(dependency_change)
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
@@ -599,48 +593,13 @@ module Dependabot
       )
     end
 
-    def file_updater_for(dependencies)
-      Dependabot::FileUpdaters.for_package_manager(job.package_manager).new(
-        dependencies: dependencies,
-        dependency_files: dependency_snapshot.dependency_files,
-        repo_contents_path: job.repo_contents_path,
-        credentials: job.credentials,
-        options: job.experiments
-      )
-    end
-
-    def generate_dependency_files_for(updated_dependencies)
-      if updated_dependencies.count == 1
-        updated_dependency = updated_dependencies.first
-        Dependabot.logger.info("Updating #{updated_dependency.name} from " \
-                               "#{updated_dependency.previous_version} to " \
-                               "#{updated_dependency.version}")
-      else
-        dependency_names = updated_dependencies.map(&:name)
-        Dependabot.logger.info("Updating #{dependency_names.join(', ')}")
-      end
-
-      # Ignore dependencies that are tagged as information_only. These will be
-      # updated indirectly as a result of a parent dependency update and are
-      # only included here to be included in the PR info.
-      deps_to_update = updated_dependencies.reject(&:informational_only?)
-      updater = file_updater_for(deps_to_update)
-      updater.updated_dependency_files
-    end
-
-    def create_pull_request(dependencies, updated_dependency_files)
-      Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+    def create_pull_request(dependency_change)
+      Dependabot.logger.info("Submitting #{dependency_change.dependencies.map(&:name).join(', ')} " \
                              "pull request for creation")
-
-      dependency_change = Dependabot::DependencyChange.new(
-        job: job,
-        dependencies: dependencies,
-        updated_dependency_files: updated_dependency_files
-      )
 
       service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-      created_pull_requests << dependencies.map do |dep|
+      created_pull_requests << dependency_change.dependencies.map do |dep|
         {
           "dependency-name" => dep.name,
           "dependency-version" => dep.version,
@@ -649,15 +608,9 @@ module Dependabot
       end
     end
 
-    def update_pull_request(dependencies, updated_dependency_files)
-      Dependabot.logger.info("Submitting #{dependencies.map(&:name).join(', ')} " \
+    def update_pull_request(dependency_change)
+      Dependabot.logger.info("Submitting #{dependency_change.dependencies.map(&:name).join(', ')} " \
                              "pull request for update")
-
-      dependency_change = Dependabot::DependencyChange.new(
-        job: job,
-        dependencies: dependencies,
-        updated_dependency_files: updated_dependency_files
-      )
 
       service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
     end
