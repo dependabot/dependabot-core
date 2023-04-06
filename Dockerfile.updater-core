@@ -86,6 +86,7 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
 
 WORKDIR $DEPENDABOT_HOME/dependabot-updater
 
+# Install Ruby from official Docker image
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
 COPY --from=ruby:3.1.4 --chown=dependabot:dependabot /usr/local /usr/local
 
