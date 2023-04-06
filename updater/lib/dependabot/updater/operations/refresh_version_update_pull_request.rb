@@ -97,12 +97,12 @@ module Dependabot
           # and the dependency name in the security advisory often doesn't match
           # what users have specified in their manifest.
           job_dependencies = job.dependencies.map(&:downcase)
-          if dependency_change.dependencies.map(&:name).map(&:downcase) != job_dependencies
+          if dependency_change.updated_dependencies.map(&:name).map(&:downcase) != job_dependencies
             # The dependencies being updated have changed. Close the existing
             # multi-dependency PR and try creating a new one.
             close_pull_request(reason: :dependencies_changed)
             create_pull_request(dependency_change)
-          elsif existing_pull_request(dependency_change.dependencies)
+          elsif existing_pull_request(dependency_change.updated_dependencies)
             # The existing PR is for this version. Update it.
             update_pull_request(dependency_change)
           else
@@ -114,14 +114,14 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
 
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.dependencies.map(&:name).join(', ')} " \
+          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for creation")
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         def update_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.dependencies.map(&:name).join(', ')} " \
+          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for update")
 
           service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)

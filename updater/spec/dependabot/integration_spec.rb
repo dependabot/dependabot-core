@@ -162,7 +162,7 @@ RSpec.describe "Dependabot Updates" do
                 file: "Gemfile" }
             ]
           )
-          expect(dependency_change.dependencies).to eql([dep])
+          expect(dependency_change.updated_dependencies).to eql([dep])
           expect(dependency_change.updated_dependency_files_hash).to eq(
             [
               {
@@ -361,7 +361,7 @@ RSpec.describe "Dependabot Updates" do
                 file: "Gemfile" }
             ]
           )
-          expect(dependency_change.dependencies).to eql([dep])
+          expect(dependency_change.updated_dependencies).to eql([dep])
           expect(dependency_change.updated_dependency_files_hash).to eq(
             [
               {

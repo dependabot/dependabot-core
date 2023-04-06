@@ -42,7 +42,7 @@ module Dependabot
       api_url = "#{base_url}/update_jobs/#{job_id}/update_pull_request"
       body = {
         data: {
-          "dependency-names": dependency_change.dependencies.map(&:name),
+          "dependency-names": dependency_change.updated_dependencies.map(&:name),
           "updated-dependency-files": dependency_change.updated_dependency_files_hash,
           "base-commit-sha": base_commit_sha
         }
@@ -153,7 +153,7 @@ module Dependabot
 
     def create_pull_request_data(dependency_change, base_commit_sha)
       data = {
-        dependencies: dependency_change.dependencies.map do |dep|
+        dependencies: dependency_change.updated_dependencies.map do |dep|
           {
             name: dep.name,
             "previous-version": dep.previous_version,

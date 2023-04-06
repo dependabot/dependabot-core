@@ -13,7 +13,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: job,
-        dependencies: dependencies,
+        updated_dependencies: dependencies,
         updated_dependency_files: dependency_files
       )
     end
@@ -188,7 +188,7 @@ RSpec.describe Dependabot::ApiClient do
       it "flags the PR as a grouped-update if the dependency change has a group rule assigned" do
         grouped_dependency_change = Dependabot::DependencyChange.new(
           job: job,
-          dependencies: dependencies,
+          updated_dependencies: dependencies,
           updated_dependency_files: dependency_files,
           group_rule: anything
         )
@@ -209,7 +209,7 @@ RSpec.describe Dependabot::ApiClient do
     let(:dependency_change) do
       Dependabot::DependencyChange.new(
         job: job,
-        dependencies: [dependency],
+        updated_dependencies: [dependency],
         updated_dependency_files: dependency_files
       )
     end
