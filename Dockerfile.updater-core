@@ -116,4 +116,6 @@ ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 
 USER root
 
+RUN chown -R dependabot:dependabot $HOME
+
 CMD ["bin/run"]
