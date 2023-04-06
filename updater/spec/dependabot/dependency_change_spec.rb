@@ -8,7 +8,7 @@ RSpec.describe Dependabot::DependencyChange do
   subject(:dependency_change) do
     described_class.new(
       job: job,
-      dependencies: dependencies,
+      updated_dependencies: updated_dependencies,
       updated_dependency_files: updated_dependency_files
     )
   end
@@ -17,7 +17,7 @@ RSpec.describe Dependabot::DependencyChange do
     instance_double(Dependabot::Job)
   end
 
-  let(:dependencies) do
+  let(:updated_dependencies) do
     [
       Dependabot::Dependency.new(
         name: "business",
@@ -97,7 +97,7 @@ RSpec.describe Dependabot::DependencyChange do
         to receive(:new).with(
           source: github_source,
           files: updated_dependency_files,
-          dependencies: dependencies,
+          dependencies: updated_dependencies,
           credentials: job_credentials,
           commit_message_options: commit_message_options
         )
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::DependencyChange do
       it "is true" do
         rule = described_class.new(
           job: job,
-          dependencies: dependencies,
+          updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
           group_rule: anything # For now the group_rule parameter is treated permissively as any non-nil value
         )

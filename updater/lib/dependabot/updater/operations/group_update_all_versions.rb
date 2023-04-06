@@ -43,7 +43,7 @@ module Dependabot
           Dependabot.logger.info("Starting update group for '#{GROUP_NAME_PLACEHOLDER}'")
           dependency_change = compile_all_dependency_changes
 
-          if dependency_change.dependencies.any?
+          if dependency_change.updated_dependencies.any?
             Dependabot.logger.info("Creating a pull request for '#{GROUP_NAME_PLACEHOLDER}'")
             begin
               service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
@@ -108,7 +108,7 @@ module Dependabot
               # filtering for us assuming we iteratively make file changes for
               # each Array of dependencies in the batch and the FileUpdater tells
               # us which cannot be applied.
-              all_updated_dependencies.concat(dependency_change.dependencies)
+              all_updated_dependencies.concat(dependency_change.updated_dependencies)
               dependency_change.updated_dependency_files
             else
               dependency_files # pass on the existing files if no updates are possible
@@ -119,7 +119,7 @@ module Dependabot
           # into a single object we can pass to PR creation.
           Dependabot::DependencyChange.new(
             job: job,
-            dependencies: all_updated_dependencies,
+            updated_dependencies: all_updated_dependencies,
             updated_dependency_files: updated_files,
             group_rule: group_rule
           )

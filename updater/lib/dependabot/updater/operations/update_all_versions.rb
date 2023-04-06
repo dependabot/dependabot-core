@@ -234,12 +234,12 @@ module Dependabot
         end
 
         def create_pull_request(dependency_change)
-          Dependabot.logger.info("Submitting #{dependency_change.dependencies.map(&:name).join(', ')} " \
+          Dependabot.logger.info("Submitting #{dependency_change.updated_dependencies.map(&:name).join(', ')} " \
                                  "pull request for creation")
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
 
-          created_pull_requests << dependency_change.dependencies.map do |dep|
+          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
             {
               "dependency-name" => dep.name,
               "dependency-version" => dep.version,

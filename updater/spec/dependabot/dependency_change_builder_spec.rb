@@ -93,7 +93,7 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
         dependency_change = create_change
 
         expect(dependency_change).to be_a(Dependabot::DependencyChange)
-        expect(dependency_change.dependencies).to eql(updated_dependencies)
+        expect(dependency_change.updated_dependencies).to eql(updated_dependencies)
         expect(dependency_change.updated_dependency_files.map(&:name)).to eql(["Gemfile", "Gemfile.lock"])
         expect(dependency_change).not_to be_grouped_update
 
