@@ -60,6 +60,7 @@ module Dependabot
       return legacy_run unless (operation_class = Operations.class_for(job: job))
 
       Dependabot.logger.debug("Performing job with #{operation_class}")
+      service.increment_metric("updater.started", tags: { operation: operation_class.tag_name })
       operation_class.new(
         service: service,
         job: job,
@@ -92,6 +93,7 @@ module Dependabot
     # This is the original logic within run, we currently fail over to this if
     # no Operation class exists for the given job.
     def legacy_run
+      service.increment_metric("updater.started", tags: { operation: "Legacy" })
       if job.updating_a_pull_request?
         Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
         check_and_update_existing_pr_with_error_handling(dependencies)

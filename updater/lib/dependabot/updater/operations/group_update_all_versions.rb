@@ -27,6 +27,10 @@ module Dependabot
           Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
 
+        def self.tag_name
+          :grouped_updates_prototype
+        end
+
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
