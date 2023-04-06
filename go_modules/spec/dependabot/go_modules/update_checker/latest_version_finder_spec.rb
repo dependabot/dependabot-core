@@ -155,8 +155,9 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
     context "for a Git psuedo-version with releases available" do
       let(:dependency_version) { "0.0.0-20201021035429-f5854403a974" }
       let(:dependency_name) { "golang.org/x/net" }
+      let(:ignored_versions) { ["> 0.8.0"] }
 
-      it "picks the latest version" do
+      it "picks the latest version not ignored" do
         expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.8.0"))
       end
     end
