@@ -318,6 +318,21 @@ not synced to the development container. So you have two choices for editing the
 - You can directly edit the temporary copy of the native helper within the development container, for example: `vi /opt/bundler/v1/lib/functions/file_parser.rb`. And then re-run the `cd...` command. This is the fastest way to debug, but any changes won't be saved outside the container.
 - You can edit your local copy, and then [rebuild the native helper](#making-changes-to-native-package-manager-helpers). This will require re-running the dry-run script to pickup the change.
 
+
+### Debugging Security Alerts / Advisories
+
+Many of the ecosystems in Dependabot-Core support security updates. These are a special form of version update where a
+dependency name and range of vulnerable versions are passed in. Dependabot-Core will try to upgrade any instance of that
+dependency to the _minimum_ non-vulnerable version. This is in contrast to a normal version update which tries to update
+to the latest version.
+
+The env var `SECURITY_ADVISORIES` allows simulating a security alert notification to the [dry-run script](#dry-run-script):
+
+```bash
+SECURITY_ADVISORIES='[{"dependency-name":"buffer","patched-versions":[],"unaffected-versions":[],"affected-versions":["<= 2.0.0"]}]' \
+bin/dry-run.rb pub dart-lang/pub-dev --dir "/app" --cache=files --dep="buffer"
+```
+
 ### Visual Studio Code and Docker
 
 There's built-in support for leveraging Visual Studio Code's [ability for
