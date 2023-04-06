@@ -13,7 +13,6 @@ require "dependabot/service"
 RSpec.describe Dependabot::Updater do
   before do
     allow(Dependabot.logger).to receive(:info)
-    allow(Dependabot.logger).to receive(:error)
 
     stub_request(:get, "https://index.rubygems.org/versions").
       to_return(status: 200, body: fixture("rubygems-index"))
@@ -26,6 +25,8 @@ RSpec.describe Dependabot::Updater do
   describe "#run" do
     # FIXME: This spec fails (when run outside Dockerfile.updater-core) because mode is being changed to 100666
     it "updates dependencies correctly" do
+      allow(Dependabot.logger).to receive(:error)
+
       stub_update_checker
 
       job = build_job
@@ -67,6 +68,8 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "updates only the dependencies that need updating" do
+      allow(Dependabot.logger).to receive(:error)
+
       stub_update_checker
 
       job = build_job
@@ -79,6 +82,8 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "logs the current and latest versions" do
+      allow(Dependabot.logger).to receive(:error)
+
       stub_update_checker
 
       job = build_job
@@ -96,6 +101,8 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "does not log empty ignore conditions" do
+      allow(Dependabot.logger).to receive(:error)
+
       job = build_job
       service = build_service
       updater = build_updater(service: service, job: job)
@@ -791,6 +798,7 @@ RSpec.describe Dependabot::Updater do
 
       context "with ignore conditions" do
         it "doesn't set raise_on_ignore for the peer_checker" do
+          allow(Dependabot.logger).to receive(:error)
           checker = stub_update_checker
           allow(checker).
             to receive(:can_update?).with(requirements_to_unlock: :own).
@@ -1523,6 +1531,7 @@ RSpec.describe Dependabot::Updater do
 
     context "when an unknown error is raised while updating dependencies" do
       it "tells Sentry" do
+        allow(Dependabot.logger).to receive(:error)
         checker = stub_update_checker
         error = StandardError.new("hell")
         values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1538,6 +1547,8 @@ RSpec.describe Dependabot::Updater do
       end
 
       it "tells the main backend" do
+        allow(Dependabot.logger).to receive(:error)
+
         checker = stub_update_checker
         error = StandardError.new("hell")
         values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1559,6 +1570,8 @@ RSpec.describe Dependabot::Updater do
       end
 
       it "continues to process any other dependencies" do
+        allow(Dependabot.logger).to receive(:error)
+
         checker = stub_update_checker
         error = StandardError.new("hell")
         values = [-> { raise error }, -> { true }, -> { true }, -> { true }]
@@ -1838,6 +1851,10 @@ RSpec.describe Dependabot::Updater do
       end
 
       context "when Dependabot::SharedHelpers::HelperSubprocessFailed is raised" do
+        before do
+          allow(Dependabot.logger).to receive(:error)
+        end
+
         it "tells the main backend there has been an unknown error" do
           checker = stub_update_checker
           error =
@@ -2029,6 +2046,8 @@ RSpec.describe Dependabot::Updater do
 
     context "with ignore conditions" do
       it "logs ignored versions" do
+        allow(Dependabot.logger).to receive(:error)
+
         job = build_job(
           ignore_conditions: [
             {
@@ -2054,6 +2073,8 @@ RSpec.describe Dependabot::Updater do
       end
 
       it "logs ignore conditions" do
+        allow(Dependabot.logger).to receive(:error)
+
         job = build_job(
           ignore_conditions: [
             {
@@ -2079,6 +2100,8 @@ RSpec.describe Dependabot::Updater do
       end
 
       it "logs ignored update types" do
+        allow(Dependabot.logger).to receive(:error)
+
         job = build_job(
           ignore_conditions: [
             {
