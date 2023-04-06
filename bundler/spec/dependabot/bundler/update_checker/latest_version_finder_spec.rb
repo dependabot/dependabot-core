@@ -478,7 +478,6 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::LatestVersionFinder do
               ref: "bad_branch"
             }
           end
-          around { |example| capture_stderr { example.run } }
 
           it "raises a helpful error" do
             expect { finder.latest_version_details }.
