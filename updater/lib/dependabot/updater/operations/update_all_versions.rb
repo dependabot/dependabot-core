@@ -15,6 +15,10 @@ module Dependabot
           true
         end
 
+        def self.tag_name
+          :update_all_versions
+        end
+
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job

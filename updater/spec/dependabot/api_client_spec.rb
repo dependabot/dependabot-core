@@ -396,4 +396,40 @@ RSpec.describe Dependabot::ApiClient do
         with(headers: { "Authorization" => "token" })
     end
   end
+
+  describe "increment_metric" do
+    let(:url) { "http://example.com/update_jobs/1/increment_metric" }
+    before { stub_request(:post, url).to_return(status: 204) }
+
+    context "when successful" do
+      before { stub_request(:post, url).to_return(status: 204) }
+
+      it "hits the expected endpoint" do
+        client.increment_metric("apples", tags: { red: 1, green: 2 })
+
+        expect(WebMock).
+          to have_requested(:post, url).
+          with(headers: { "Authorization" => "token" })
+      end
+    end
+
+    context "when unsuccessful" do
+      before do
+        stub_request(:post, url).to_return(status: 401)
+        allow(Dependabot.logger).to receive(:debug)
+      end
+
+      it "logs a debug notice" do
+        client.increment_metric("apples", tags: { red: 1, green: 2 })
+
+        expect(WebMock).
+          to have_requested(:post, url).
+          with(headers: { "Authorization" => "token" })
+
+        expect(Dependabot.logger).to have_received(:debug).with(
+          "Unable to report metric 'apples'."
+        )
+      end
+    end
+  end
 end
