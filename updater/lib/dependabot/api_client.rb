@@ -147,9 +147,9 @@ module Dependabot
       }
       response = http_client.post(api_url, json: body)
       # We treat metrics as fire-and-forget, so just warn if they fail.
-      Dependabot.logger.warn("Unable to report metric '#{metric}'.") if response.code >= 400
+      Dependabot.logger.debug("Unable to report metric '#{metric}'.") if response.code >= 400
     rescue HTTP::ConnectionError, OpenSSL::SSL::SSLError
-      Dependabot.logger.warn("Unable to report metric '#{metric}'.")
+      Dependabot.logger.debug("Unable to report metric '#{metric}'.")
     end
 
     private
