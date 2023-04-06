@@ -157,7 +157,8 @@ RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
       let(:dependency_name) { "golang.org/x/net" }
 
       it "picks the latest version" do
-        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.8.0"))
+        # This makes actual requests so we should use a VCR cassette
+        expect(finder.latest_version).to eq(Dependabot::GoModules::Version.new("0.9.0"))
       end
     end
 
