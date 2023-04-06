@@ -53,6 +53,10 @@ RUN if ! getent group "$USER_GID"; then groupadd --gid "$USER_GID" dependabot ; 
   && useradd --uid "${USER_UID}" --gid "${USER_GID}" -m dependabot \
   && mkdir -p /opt && chown dependabot:dependabot /opt && chgrp dependabot /etc/ssl/certs && chmod g+w /etc/ssl/certs
 
+USER dependabot
+ENV HOME=/home/dependabot
+WORKDIR $HOME
+
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
@@ -60,36 +64,33 @@ ENV GIT_LFS_SKIP_SMUDGE=1
 # Bring in Ruby and Bundler from the builder image
 COPY --from=builder --chown=dependabot:dependabot /usr/local /usr/local
 
-ENV HOME="/home/dependabot"
-WORKDIR ${HOME}
-
 # Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
 ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
 RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
 
-COPY .rubocop.yml .rubocop.yml
-COPY .ruby-version .ruby-version
-COPY omnibus omnibus
-COPY updater/Gemfile updater/Gemfile.lock dependabot-updater/
+COPY --chown=dependabot:dependabot .rubocop.yml .rubocop.yml
+COPY --chown=dependabot:dependabot .ruby-version .ruby-version
+COPY --chown=dependabot:dependabot omnibus omnibus
+COPY --chown=dependabot:dependabot updater/Gemfile updater/Gemfile.lock dependabot-updater/
 
-COPY common/Gemfile common/dependabot-common.gemspec common/
-COPY common/lib/dependabot.rb common/lib/dependabot.rb
-COPY bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
-COPY cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
-COPY composer/Gemfile composer/dependabot-composer.gemspec composer/
-COPY docker/Gemfile docker/dependabot-docker.gemspec docker/
-COPY elm/Gemfile elm/dependabot-elm.gemspec elm/
-COPY git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
-COPY github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
-COPY go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
-COPY gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
-COPY hex/Gemfile hex/dependabot-hex.gemspec hex/
-COPY maven/Gemfile maven/dependabot-maven.gemspec maven/
-COPY npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
-COPY nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
-COPY pub/Gemfile pub/dependabot-pub.gemspec pub/
-COPY python/Gemfile python/dependabot-python.gemspec python/
-COPY terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
+COPY --chown=dependabot:dependabot common/Gemfile common/dependabot-common.gemspec common/
+COPY --chown=dependabot:dependabot common/lib/dependabot.rb common/lib/dependabot.rb
+COPY --chown=dependabot:dependabot bundler/Gemfile bundler/dependabot-bundler.gemspec bundler/
+COPY --chown=dependabot:dependabot cargo/Gemfile cargo/dependabot-cargo.gemspec cargo/
+COPY --chown=dependabot:dependabot composer/Gemfile composer/dependabot-composer.gemspec composer/
+COPY --chown=dependabot:dependabot docker/Gemfile docker/dependabot-docker.gemspec docker/
+COPY --chown=dependabot:dependabot elm/Gemfile elm/dependabot-elm.gemspec elm/
+COPY --chown=dependabot:dependabot git_submodules/Gemfile git_submodules/dependabot-git_submodules.gemspec git_submodules/
+COPY --chown=dependabot:dependabot github_actions/Gemfile github_actions/dependabot-github_actions.gemspec github_actions/
+COPY --chown=dependabot:dependabot go_modules/Gemfile go_modules/dependabot-go_modules.gemspec go_modules/
+COPY --chown=dependabot:dependabot gradle/Gemfile gradle/dependabot-gradle.gemspec gradle/
+COPY --chown=dependabot:dependabot hex/Gemfile hex/dependabot-hex.gemspec hex/
+COPY --chown=dependabot:dependabot maven/Gemfile maven/dependabot-maven.gemspec maven/
+COPY --chown=dependabot:dependabot npm_and_yarn/Gemfile npm_and_yarn/dependabot-npm_and_yarn.gemspec npm_and_yarn/
+COPY --chown=dependabot:dependabot nuget/Gemfile nuget/dependabot-nuget.gemspec nuget/
+COPY --chown=dependabot:dependabot pub/Gemfile pub/dependabot-pub.gemspec pub/
+COPY --chown=dependabot:dependabot python/Gemfile python/dependabot-python.gemspec python/
+COPY --chown=dependabot:dependabot terraform/Gemfile terraform/dependabot-terraform.gemspec terraform/
 
 # prevent having all the source in every ecosystem image
 RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuget maven gradle cargo composer go_modules python pub npm_and_yarn bundler; do \
@@ -97,8 +98,7 @@ RUN for ecosystem in git_submodules terraform github_actions hex elm docker nuge
     touch $ecosystem/lib/dependabot/$ecosystem.rb; \
   done
 
-ENV DEPENDABOT_HOME /home/dependabot
-WORKDIR $DEPENDABOT_HOME/dependabot-updater
+WORKDIR $HOME/dependabot-updater
 
 RUN bundle config set --local path 'vendor' && \
 bundle config set --local frozen 'true' && \
@@ -107,9 +107,9 @@ bundle install && \
 rm -rf ~/.bundle
 
 # Add project after bundle install to avoid re-installing gems when only the project code changes
-COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
+COPY --chown=dependabot:dependabot LICENSE $HOME
+COPY --chown=dependabot:dependabot common $HOME/common
+COPY --chown=dependabot:dependabot updater $HOME/dependabot-updater
 
 ENV PATH="$HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
