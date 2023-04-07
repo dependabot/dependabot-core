@@ -84,7 +84,7 @@ However, please do not leave comments that contribute nothing new to the discuss
 
 ### Don't file issues about Security Alerts or Dependency Graph
 
-The issue-tracker is meant solely for issues related to Dependabot's updating logic. Issues about security alerts or Dependency Graph should instead be filed as a [Code Security discussion](https://github.com/orgs/community/discussions/categories/code-security).
+The issue-tracker is meant solely for issues related to Dependabot's updating logic. Issues about [security alerts](https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts) or [Dependency Graph](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-the-dependency-graph) should instead be filed as a [Code Security discussion](https://github.com/orgs/community/discussions/categories/code-security).
 
 A good rule of thumb is that if you have questions about the _diff_ in a PR, it belongs here.
 
@@ -208,14 +208,14 @@ $ bin/dry-run.rb bundler dependabot/demo --dir="/ruby"
 
 To view logs and stdout from the native package manager helpers, see [debugging native helpers](#debugging-native-package-manager-helpers).
 
-## Debugging Problems
+# Debugging Problems
 
 The first step to debugging is getting the [development environment running](#getting-a-development-environment-running).
 
 Within the development environment, you have two options for simulating a dependency update job:
 You can use the newly-developed [CLI tool](#cli-tool) or the original [Dry-run script](#dry-run-script).
 
-### CLI tool
+## CLI tool
 
 The [Dependabot CLI](https://github.com/dependabot/cli) is a newly-developed tool that incorporates the [GitHub
 Credentials Proxy](#private-registry-credential-management) to more realistically simulate what's happening within
@@ -223,7 +223,7 @@ the Dependabot-at-GitHub service when talking to private registries.
 
 It has a [dedicated debugging guide](https://github.com/dependabot/cli#debugging-with-the-cli), including support for dropping into the Ruby debugger.
 
-### Dry-Run Script
+## Dry-Run Script
 
 >Note: Before running the dry-run script, you'll need to [get the development environment running](#getting-a-development-environment-running).
 
@@ -242,7 +242,28 @@ $ bin/dry-run.rb go_modules rsc/quote
 ...
 ```
 
-The Dry Run script supports many other options, all of which are documented at the top of the script's source code.
+### Helpful options to speed up dry-run testing
+
+The [Dry-Run script](#dry-run-script) supports many other options, all of which are documented at the [top of the script's source code](bin/dry-run.rb). For example:
+
+1. `LOCAL_GITHUB_ACCESS_TOKEN="fake-GitHub-PAT"` allows specifying a [GitHub Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) to avoid rate-limiting.
+2. `--dir="path/to/subdir/containing/manifest` is required if the manifest file is located in a subdirectory.
+3. `--dep="dep-name-that-I-want-to-test"` allows specifying a single dep to try to update and all others are ignored.
+4. `--cache=files` allows caching remote dep files locally for faster re-runs when testing local logic changes.
+5. `--updater-options=feature_flag_name` allows passing in feature flags.
+
+Here's an example of how to string all these together
+
+```bash
+  LOCAL_GITHUB_ACCESS_TOKEN=github_pat_123_fake_string \
+  bin/dry-run.rb docker jeffwidman/secrets-store-driver \
+  --dir "/manifest_staging/charts/secrets-store-provider" \
+  --cache=files \
+  --dep="secrets-store" \
+  --updater-options=kubernetes_updates
+```
+
+### Adding debug breakpoints
 
 You can add a `debugger` statement anywhere in the ruby code, for example:
 
@@ -318,15 +339,26 @@ not synced to the development container. So you have two choices for editing the
 - You can directly edit the temporary copy of the native helper within the development container, for example: `vi /opt/bundler/v1/lib/functions/file_parser.rb`. And then re-run the `cd...` command. This is the fastest way to debug, but any changes won't be saved outside the container.
 - You can edit your local copy, and then [rebuild the native helper](#making-changes-to-native-package-manager-helpers). This will require re-running the dry-run script to pickup the change.
 
+### Debugging Ignore Conditions
 
-### Debugging Security Alerts / Advisories
+Most of the ecosystems in Dependabot-Core support `ignore` conditions which allow a user to specify dependency names or
+versions to exclude from upgrades. The docs for the Dependabot service at GitHub [describe the feature in more detail](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#ignore).
 
-Many of the ecosystems in Dependabot-Core support security updates. These are a special form of version update where a
+The env var `IGNORE_CONDITIONS` allows passing one or more ignore conditions to the to the [dry-run script](#dry-run-script):
+
+```bash
+IGNORE_CONDITIONS='[{"dependency-name":"*","update-types": ["version-update:semver-major"]}]' \
+bin/dry-run.rb docker test_org/test-dependabot`
+```
+
+### Debugging Security Updates
+
+Many of the ecosystems in Dependabot-Core support [security updates](https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/about-dependabot-security-updates). These are a special form of version update where a
 dependency name and range of vulnerable versions are passed in. Dependabot-Core will try to upgrade any instance of that
 dependency to the _minimum_ non-vulnerable version. This is in contrast to a normal version update which tries to update
-to the latest version.
+to the _latest_ version.
 
-The env var `SECURITY_ADVISORIES` allows simulating a security alert notification to the [dry-run script](#dry-run-script):
+The env var `SECURITY_ADVISORIES` allows passing one or more security alert notifications to the [dry-run script](#dry-run-script) in order to simulate a security update:
 
 ```bash
 SECURITY_ADVISORIES='[{"dependency-name":"buffer","patched-versions":[],"unaffected-versions":[],"affected-versions":["<= 2.0.0"]}]' \
