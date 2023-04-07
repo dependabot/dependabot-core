@@ -486,8 +486,14 @@ module Dependabot
         def run_checker(path:, version:)
           # If there are both yarn lockfiles and npm lockfiles only run the
           # yarn updater
-          lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
-          return run_yarn_checker(path: path, version: version, lockfile: lockfiles.first) if lockfiles.any?
+          yarn_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
+          return run_yarn_checker(path: path, version: version, lockfile: yarn_lockfiles.first) if yarn_lockfiles.any?
+
+          npm_lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.package_locks, path: path)
+          return run_npm_checker(path: path, version: version) if npm_lockfiles.any?
+
+          root_yarn_lock = dependency_files_builder.root_yarn_lock
+          return run_yarn_checker(path: path, version: version, lockfile: root_yarn_lock) if root_yarn_lock
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e

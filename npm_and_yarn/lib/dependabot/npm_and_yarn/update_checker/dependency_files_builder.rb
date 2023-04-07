@@ -42,6 +42,12 @@ module Dependabot
             select { |f| f.name.end_with?("yarn.lock") }
         end
 
+        def root_yarn_lock
+          @root_yarn_lock ||=
+            dependency_files.
+            find { |f| f.name == "yarn.lock" }
+        end
+
         def shrinkwraps
           @shrinkwraps ||=
             dependency_files.
