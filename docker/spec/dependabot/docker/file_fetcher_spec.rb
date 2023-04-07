@@ -282,7 +282,9 @@ RSpec.describe Dependabot::Docker::FileFetcher do
         "values_other.yml",
         "values_other.yaml",
         "values2.yml",
-        "values2.yaml"
+        "values2.yaml",
+        "filename.with.dots.yaml",
+        "filename.with.dots.yml"
       ]
 
       before do
