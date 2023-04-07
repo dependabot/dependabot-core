@@ -487,15 +487,17 @@ module Dependabot
           # If there are both yarn lockfiles and npm lockfiles only run the
           # yarn updater
           lockfiles = lockfiles_for_path(lockfiles: dependency_files_builder.yarn_locks, path: path)
-          if lockfiles.any?
-            return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfiles.first)
-
-            return run_yarn_checker(path: path, version: version)
-          end
+          return run_yarn_checker(path: path, version: version, lockfile: lockfiles.first) if lockfiles.any?
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
           handle_peer_dependency_errors(e)
+        end
+
+        def run_yarn_checker(path:, version:, lockfile:)
+          return run_yarn_berry_checker(path: path, version: version) if Helpers.yarn_berry?(lockfile)
+
+          run_yarn_classic_checker(path: path, version: version)
         end
 
         def run_yarn_berry_checker(path:, version:)
@@ -519,7 +521,7 @@ module Dependabot
           end
         end
 
-        def run_yarn_checker(path:, version:)
+        def run_yarn_classic_checker(path:, version:)
           SharedHelpers.with_git_configured(credentials: credentials) do
             Dir.chdir(path) do
               SharedHelpers.run_helper_subprocess(
