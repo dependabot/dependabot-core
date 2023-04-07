@@ -27,10 +27,8 @@ module Dependabot
         }.freeze
 
         # Error message from yarn add:
-        # " > @reach/router@1.2.1" has incorrect \
-        # peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
-        # " > react-burger-menu@1.9.9" has unmet \
-        # peer dependency "react@>=0.14.0 <16.0.0".
+        # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
+        # " > react-burger-menu@1.9.9" has unmet peer dependency "react@>=0.14.0 <16.0.0"
         YARN_PEER_DEP_ERROR_REGEX =
           /
             "\s>\s(?<requiring_dep>[^"]+)"\s
