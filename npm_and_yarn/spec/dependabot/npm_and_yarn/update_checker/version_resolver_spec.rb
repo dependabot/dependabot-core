@@ -1378,6 +1378,62 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       end
     end
 
+    context "yarn: updating a nested dependency that is a peer requirement in a monorepo" do
+      let(:dependency_files) { project_dependency_files("yarn/peer_dependency_monorepo") }
+      let(:latest_allowable_version) { Gem::Version.new("16.3.1") }
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "react",
+          version: "15.6.2",
+          package_manager: "npm_and_yarn",
+          requirements: [{
+            file: "packages/package1/package.json",
+            requirement: "15.6.2",
+            groups: ["dependencies"],
+            source: { type: "registry", url: "https://registry.yarnpkg.com" }
+          }]
+        )
+      end
+      let(:react_dom_registry_listing_url) do
+        "https://registry.yarnpkg.com/react-dom"
+      end
+
+      it "gets the right list of dependencies to update" do
+        expect(resolver.dependency_updates_from_full_unlock).
+          to match_array(
+            [{
+              dependency: Dependabot::Dependency.new(
+                name: "react",
+                version: "15.6.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.3.1"),
+              previous_version: "15.6.2"
+            }, {
+              dependency: Dependabot::Dependency.new(
+                name: "react-dom",
+                version: "15.6.2",
+                package_manager: "npm_and_yarn",
+                requirements: [{
+                  file: "packages/package1/package.json",
+                  requirement: "15.6.2",
+                  groups: ["dependencies"],
+                  source: { type: "registry", url: "https://registry.yarnpkg.com" }
+                }]
+              ),
+              version: Dependabot::NpmAndYarn::Version.new("16.6.0"),
+              previous_version: "15.6.2"
+            }]
+          )
+      end
+    end
+
     context "updating duplicate nested dependencies with peer requirements" do
       let(:dependency_files) { project_dependency_files("npm6/peer_dependency_duplicate_nested_no_lockfile") }
       let(:dependency) do
