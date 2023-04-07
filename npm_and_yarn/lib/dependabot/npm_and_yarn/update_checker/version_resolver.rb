@@ -324,8 +324,6 @@ module Dependabot
             filtered_package_files.flat_map do |file|
               path = Pathname.new(file.name).dirname
               run_checker(path: path, version: version)
-            rescue SharedHelpers::HelperSubprocessFailed => e
-              handle_peer_dependency_errors(e)
             end.compact
           end
         rescue SharedHelpers::HelperSubprocessFailed
@@ -496,6 +494,8 @@ module Dependabot
           end
 
           run_npm_checker(path: path, version: version)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          handle_peer_dependency_errors(e)
         end
 
         def run_yarn_berry_checker(path:, version:)
