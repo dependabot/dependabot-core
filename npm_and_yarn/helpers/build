@@ -22,4 +22,4 @@ cp -r \
   "$install_dir"
 
 cd "$install_dir"
-npm ci --no-audit --fetch-timeout=600000 --fetch-retries=5
+npm ci --no-audit --fetch-timeout=600000 --fetch-retries=5 --no-dry-run
