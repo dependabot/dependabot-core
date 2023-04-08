@@ -222,7 +222,7 @@ RSpec.describe Dependabot::Clients::Azure do
       client.autocomplete_pull_request(
         pull_request_id, auto_complete_set_by, merge_commit_message,
         delete_source_branch, squash_merge, merge_strategy,
-        trans_work_items
+        trans_work_items, ignore_config_ids
       )
     end
 
@@ -232,6 +232,7 @@ RSpec.describe Dependabot::Clients::Azure do
     let(:squash_merge) { true }
     let(:merge_strategy) { "squash" }
     let(:trans_work_items) { true }
+    let(:ignore_config_ids) { [1, 8] }
     let(:pull_request_id) { 42 }
     let(:autocomplete_pull_request_url) do
       base_url + "/_apis/git/repositories/#{source.unscoped_repo}/pullrequests/42?api-version=5.1"
@@ -246,7 +247,7 @@ RSpec.describe Dependabot::Clients::Azure do
           completionOptions: {
             mergeCommitMessage: "Dependabot merge", deleteSourceBranch: true,
             squashMerge: true, mergeStrategy: "squash", transitionWorkItems: true,
-            autoCompleteIgnoreConfigIds: []
+            autoCompleteIgnoreConfigIds: [1, 8]
           }
         }
 
