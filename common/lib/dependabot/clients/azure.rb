@@ -194,7 +194,7 @@ module Dependabot
 
       def autocomplete_pull_request(pull_request_id, auto_complete_set_by, merge_commit_message,
                                     delete_source_branch = true, squash_merge = true, merge_strategy = "squash",
-                                    trans_work_items = true)
+                                    trans_work_items = true, ignore_config_ids = [])
 
         content = {
           autoCompleteSetBy: {
@@ -206,7 +206,7 @@ module Dependabot
             squashMerge: squash_merge,
             mergeStrategy: merge_strategy,
             transitionWorkItems: trans_work_items,
-            autoCompleteIgnoreConfigIds: []
+            autoCompleteIgnoreConfigIds: ignore_config_ids
           }
         }
 
