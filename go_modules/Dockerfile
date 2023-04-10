@@ -17,10 +17,5 @@ RUN cd /tmp \
   && tar -xzf go-${TARGETARCH}.tar.gz -C /opt \
   && rm go-${TARGETARCH}.tar.gz
 
-ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
-
-COPY go_modules/helpers /opt/go_modules/helpers
-RUN bash /opt/go_modules/helpers/build
-
 USER dependabot
 COPY --chown=dependabot:dependabot go_modules /home/dependabot/go_modules

@@ -3,7 +3,6 @@
 require "open3"
 require "dependabot/dependency"
 require "dependabot/file_parsers/base/dependency_set"
-require "dependabot/go_modules/path_converter"
 require "dependabot/go_modules/replace_stubber"
 require "dependabot/errors"
 require "dependabot/file_parsers"

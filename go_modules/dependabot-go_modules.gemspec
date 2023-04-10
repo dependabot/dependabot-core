@@ -35,5 +35,5 @@ Gem::Specification.new do |spec|
 
   next unless File.exist?("../.gitignore")
 
-  spec.files += `git -C #{__dir__} ls-files lib helpers -z`.split("\x0")
+  spec.files += `git -C #{__dir__} ls-files lib -z`.split("\x0")
 end

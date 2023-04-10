@@ -3,7 +3,6 @@
 require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
-require "dependabot/go_modules/native_helpers"
 require "dependabot/go_modules/update_checker/latest_version_finder"
 
 RSpec.describe Dependabot::GoModules::UpdateChecker::LatestVersionFinder do
