@@ -49,7 +49,9 @@ module Dependabot
         version_catalog_file.each do |toml_file|
           dependency_set += version_catalog_dependencies(toml_file)
         end
-        dependency_set.dependencies
+        dependency_set.dependencies.reject do |dependency|
+          dependency.version == "latest.integration" || dependency.version == "latest.release"
+        end
       end
 
       def self.find_include_names(buildfile)
