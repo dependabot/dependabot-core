@@ -6,6 +6,7 @@ require "dependabot/update_checkers"
 require "dependabot/update_checkers/base"
 require "dependabot/errors"
 require "dependabot/docker/tag"
+require "dependabot/docker/file_parser"
 require "dependabot/docker/version"
 require "dependabot/docker/requirement"
 require "dependabot/docker/utils/credentials_finder"
@@ -106,9 +107,10 @@ module Dependabot
         @tags[version] = fetch_latest_tag(Tag.new(version))
       end
 
-      # NOTE: It's important that this *always* returns a version (even if
+      # NOTE: It's important that this *always* returns a tag (even if
       # it's the existing one) as it is what we later check the digest of.
       def fetch_latest_tag(version_tag)
+        return Tag.new(latest_digest) if version_tag.digest?
         return version_tag unless version_tag.comparable?
 
         # Prune out any downgrade tags before checking for pre-releases
@@ -164,9 +166,10 @@ module Dependabot
       end
 
       def remove_version_downgrades(candidate_tags, version_tag)
+        current_version = comparable_version_from(version_tag)
+
         candidate_tags.select do |tag|
-          comparable_version_from(tag) >=
-            comparable_version_from(version_tag)
+          comparable_version_from(tag) >= current_version
         end
       end
 
@@ -198,7 +201,11 @@ module Dependabot
       end
 
       def updated_digest
-        @updated_digest ||= digest_of(latest_version)
+        @updated_digest ||= if latest_tag_from(dependency.version).digest?
+                              latest_digest
+                            else
+                              digest_of(latest_version)
+                            end
       end
 
       def tags_from_registry
@@ -234,20 +241,18 @@ module Dependabot
         @digests ||= {}
         return @digests[tag] if @digests.key?(tag)
 
-        @digests[tag] =
-          begin
-            docker_registry_client.digest(docker_repo_name, tag)
-          rescue *transient_docker_errors => e
-            attempt ||= 1
-            attempt += 1
-            if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
-              nil
-            else
-              raise if attempt > 3
+        @digests[tag] = fetch_digest_of(tag)
+      end
 
-              retry
-            end
-          end
+      def fetch_digest_of(tag)
+        docker_registry_client.digest(docker_repo_name, tag)&.delete_prefix("sha256:")
+      rescue *transient_docker_errors => e
+        attempt ||= 1
+        attempt += 1
+        return if attempt > 3 && e.is_a?(DockerRegistry2::NotFound)
+        raise if attempt > 3
+
+        retry
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden
         raise PrivateSourceAuthenticationFailure, registry_hostname

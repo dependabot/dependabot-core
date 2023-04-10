@@ -133,13 +133,42 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         context "that is up-to-date" do
           let(:source) do
             {
-              digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
+              digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97" \
                       "eba880ebf600d68608"
             }
           end
 
           it { is_expected.to be_falsey }
         end
+      end
+    end
+
+    context "given a digest only" do
+      let(:tags_fixture_name) { "ubuntu.json" }
+
+      let(:version) { digest }
+      let(:source) { { digest: digest } }
+
+      let(:headers_response) do
+        fixture("docker", "registry_manifest_headers", "generic.json")
+      end
+
+      before do
+        stub_request(:head, repo_url + "manifests/latest").
+          and_return(status: 200, headers: JSON.parse(headers_response))
+      end
+
+      context "that is out-to-date" do
+        let(:digest) { "c5dcd377b75ca89f40a7b4284c05c58be4cd43d089f83af1333e56bde33d579f" }
+
+        it { is_expected.to be_truthy }
+      end
+
+      context "that is up-to-date" do
+        let(:latest_digest) { "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86ca97eba880ebf600d68608" }
+        let(:digest) { latest_digest }
+
+        it { is_expected.to be_falsy }
       end
     end
 
@@ -964,7 +993,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
     context "when the docker registry only knows about versions older than the current version" do
       let(:dependency_name) { "jetstack/cert-manager-controller" }
       let(:version) { "v1.7.2" }
-      let(:digest) { "sha256:1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
+      let(:digest) { "1815870847a48a9a6f177b90005d8df273e79d00830c21af9d43e1b5d8d208b4" }
       let(:dependency) do
         Dependabot::Dependency.new(
           name: dependency_name,
@@ -976,7 +1005,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             source: {
               registry: "quay.io",
               tag: "v1.7.2",
-              digest: "sha256:18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
+              digest: "18305429afa14ea462f810146ba44d4363ae76e4c8dfc38288cf73aa07485005"
             }
           }],
           package_manager: "docker"
@@ -1038,7 +1067,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608"
               }
             }]
@@ -1064,7 +1093,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
               groups: [],
               file: "Dockerfile",
               source: {
-                digest: "sha256:3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
+                digest: "3ea1ca1aa8483a38081750953ad75046e6cc9f6b86" \
                         "ca97eba880ebf600d68608",
                 tag: "17.10"
               }
