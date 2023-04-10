@@ -21,8 +21,8 @@ gemspec path: "../python"
 gemspec path: "../terraform"
 
 # Visual Studio Code integration
+gem "debug", group: :development
 gem "reek", group: :development
-gem "ruby-debug-ide", group: :development
 gem "solargraph", group: :development
 
 gemspec
