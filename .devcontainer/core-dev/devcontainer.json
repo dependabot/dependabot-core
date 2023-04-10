@@ -124,7 +124,7 @@
   "extensions": [
     "rebornix.ruby",
     "castwide.solargraph",
-    "misogi.ruby-rubocop",
+    "LoranKloeze.ruby-rubocop-revived",
     "groksrc.ruby",
     "hoovercj.ruby-linter",
     "miguel-savignano.ruby-symbols"
