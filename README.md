@@ -344,7 +344,9 @@ not synced to the development container. So you have two choices for editing the
 Most of the ecosystems in Dependabot-Core support `ignore` conditions which allow a user to specify dependency names or
 versions to exclude from upgrades. The docs for the Dependabot service at GitHub [describe the feature in more detail](https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#ignore).
 
-The env var `IGNORE_CONDITIONS` allows passing one or more ignore conditions to the to the [dry-run script](#dry-run-script):
+The [Dependabot CLI](#cli-tool) supports passing in ignore conditions as part of the job definition. See [the example](https://github.com/dependabot/cli#scenario-file).
+
+The [dry-run script](#dry-run-script) supports passing in one or more ignore conditions via the env var `IGNORE_CONDITIONS`:
 
 ```bash
 IGNORE_CONDITIONS='[{"dependency-name":"*","update-types": ["version-update:semver-major"]}]' \
