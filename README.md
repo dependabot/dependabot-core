@@ -505,7 +505,7 @@ impact than we are in making a buck from it. We'd love you to use
 to build and host your own version then this library should make doing so a
 *lot* easier.
 
-If you use Dependabot-Core then we'd love to hear what you build!
+If you use Dependabot-Core then we'd love to hear what you build! If you are curious about what we are currently working on, [check out our public board!](https://github.com/orgs/dependabot/projects/5/views/6)
 
 ## License
 
