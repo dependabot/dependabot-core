@@ -72,50 +72,36 @@ module Dependabot
 
           Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
-          # If the dependency isn't vulnerable or we can't know for sure we won't be
-          # able to know if the updated dependency fixes any advisories
-          if job.security_updates_only?
-            unless checker.vulnerable?
-              # The current dependency isn't vulnerable if the version is correct and
-              # can be matched against the advisories affected versions
-              if checker.version_class.correct?(checker.dependency.version)
-                return record_security_update_not_needed_error(checker)
-              end
-
-              return record_dependency_file_not_supported_error(checker)
+          unless checker.vulnerable?
+            # The current dependency isn't vulnerable if the version is correct and
+            # can be matched against the advisories affected versions
+            if checker.version_class.correct?(checker.dependency.version)
+              return record_security_update_not_needed_error(checker)
             end
-            return record_security_update_ignored(checker) unless job.allowed_update?(dependency)
+
+            return record_dependency_file_not_supported_error(checker)
           end
 
-          if checker.up_to_date?
-            # The current version is still vulnerable and  Dependabot can't find a
-            # published or compatible non-vulnerable version, this can happen if the
-            # fixed version hasn't been published yet or the published version isn't
-            # compatible with the current enviroment (e.g. python version) or
-            # version (uses a different version suffix for gradle/maven)
-            return record_security_update_not_found(checker) if job.security_updates_only?
+          return record_security_update_ignored(checker) unless job.allowed_update?(dependency)
 
-            return log_up_to_date(dependency)
-          end
+          # The current version is still vulnerable and  Dependabot can't find a
+          # published or compatible non-vulnerable version, this can happen if the
+          # fixed version hasn't been published yet or the published version isn't
+          # compatible with the current enviroment (e.g. python version) or
+          # version (uses a different version suffix for gradle/maven)
+          return record_security_update_not_found(checker) if checker.up_to_date?
 
           if pr_exists_for_latest_version?(checker)
-            record_pull_request_exists_for_latest_version(checker) if job.security_updates_only?
-            return Dependabot.logger.info(
+            Dependabot.logger.info(
               "Pull request already exists for #{checker.dependency.name} " \
               "with latest version #{checker.latest_version}"
             )
+            return record_pull_request_exists_for_latest_version(checker)
           end
 
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
-
-          if requirements_to_unlock == :update_not_possible
-            return record_security_update_not_possible_error(checker) if job.security_updates_only? && job.dependencies
-
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version}"
-            )
-          end
+          return record_security_update_not_possible_error(checker) if requirements_to_unlock == :update_not_possible
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
@@ -125,18 +111,15 @@ module Dependabot
           # blocking any updates where dependabot-core updates to a vulnerable
           # version. This happens for npm/yarn subdendencies where Dependabot has no
           # control over the target version. Related issue:
-          # https://github.com/github/dependabot-api/issues/905
-          if job.security_updates_only? &&
-            updated_deps.none? { |d| job.security_fix?(d) }
-            return record_security_update_not_possible_error(checker)
-          end
+          #   https://github.com/github/dependabot-api/issues/905
+          return record_security_update_not_possible_error(checker) if updated_deps.none? { |d| job.security_fix?(d) }
 
           if (existing_pr = existing_pull_request(updated_deps))
             # Create a update job error to prevent dependabot-api from creating a
             # update_not_possible error, this is likely caused by a update job retry
             # so should be invisible to users (as the first job completed with a pull
             # request)
-            record_pull_request_exists_for_security_update(existing_pr) if job.security_updates_only?
+            record_pull_request_exists_for_security_update(existing_pr)
 
             deps = existing_pr.map do |dep|
               if dep.fetch("dependency-removed", false)
