@@ -62,7 +62,6 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
@@ -148,7 +147,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
         def update_checker_for(dependency)

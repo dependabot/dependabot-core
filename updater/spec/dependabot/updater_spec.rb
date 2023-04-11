@@ -274,7 +274,7 @@ RSpec.describe Dependabot::Updater do
 
       context "when the dependency is no longer vulnerable" do
         it "does not create pull request" do
-          checker = stub_update_checker(vulnerable?: false)
+          stub_update_checker(vulnerable?: false)
 
           job = build_job(
             requested_dependencies: ["dummy-pkg-b"],
