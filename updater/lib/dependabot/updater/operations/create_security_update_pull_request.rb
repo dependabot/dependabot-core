@@ -66,7 +66,7 @@ module Dependabot
         # rubocop:disable Metrics/PerceivedComplexity
         # rubocop:disable Metrics/MethodLength
         def check_and_create_pull_request(dependency)
-          checker = update_checker_for(dependency, raise_on_ignored: raise_on_ignored?(dependency))
+          checker = update_checker_for(dependency)
 
           log_checking_for_update(dependency)
 
@@ -151,11 +151,7 @@ module Dependabot
         # rubocop:enable Metrics/CyclomaticComplexity
         # rubocop:enable Metrics/PerceivedComplexity
 
-        def raise_on_ignored?(dependency)
-          job.security_updates_only? || job.ignore_conditions_for(dependency).any?
-        end
-
-        def update_checker_for(dependency, raise_on_ignored:)
+        def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
             dependency_files: dependency_snapshot.dependency_files,
@@ -163,7 +159,7 @@ module Dependabot
             credentials: job.credentials,
             ignored_versions: job.ignore_conditions_for(dependency),
             security_advisories: job.security_advisories_for(dependency),
-            raise_on_ignored: raise_on_ignored,
+            raise_on_ignored: true, # always true for security updates
             requirements_update_strategy: job.requirements_update_strategy,
             options: job.experiments
           )
@@ -216,10 +212,6 @@ module Dependabot
 
           job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
-        end
-
-        def raise_on_ignored?(dependency)
-          job.security_updates_only? || job.ignore_conditions_for(dependency).any?
         end
 
         ### BEGIN: Security Update Helpers
