@@ -1,1 +1,3 @@
 * text=auto
+Dockerfile.development linguist-language=Dockerfile
+Dockerfile.updater-core linguist-language=Dockerfile
