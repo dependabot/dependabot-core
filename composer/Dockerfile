@@ -54,5 +54,8 @@ RUN mkdir /tmp/composer-cache \
 
 COPY --chown=dependabot:dependabot composer/helpers /opt/composer/helpers
 RUN bash /opt/composer/helpers/v1/build \
-  && bash /opt/composer/helpers/v2/build
-COPY --chown=dependabot:dependabot composer /home/dependabot/composer
+  && bash /opt/composer/helpers/v2/build \
+
+COPY --chown=dependabot:dependabot composer $DEPENDABOT_HOME/composer
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

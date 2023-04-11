@@ -17,4 +17,6 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker /home/dependabot/docker
+COPY --chown=dependabot:dependabot docker $DEPENDABOT_HOME/docker
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

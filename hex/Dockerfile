@@ -28,4 +28,6 @@ ENV MIX_HOME="/opt/hex/mix"
 ENV HEX_VERSION="1.0.1"
 RUN bash /opt/hex/helpers/build
 
-COPY --chown=dependabot:dependabot hex /home/dependabot/hex
+COPY --chown=dependabot:dependabot hex $DEPENDABOT_HOME/hex
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

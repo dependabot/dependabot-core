@@ -23,4 +23,6 @@ COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
 USER dependabot
-COPY --chown=dependabot:dependabot go_modules /home/dependabot/go_modules
+COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
