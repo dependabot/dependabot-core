@@ -127,6 +127,7 @@
     "LoranKloeze.ruby-rubocop-revived",
     "groksrc.ruby",
     "hoovercj.ruby-linter",
-    "miguel-savignano.ruby-symbols"
+    "miguel-savignano.ruby-symbols",
+    "koichisasada.vscode-rdbg"
   ]
 }
