@@ -134,13 +134,6 @@ module Dependabot
             )
           end
 
-          if peer_dependency_should_update_instead?(checker.dependency.name, updated_deps)
-            return Dependabot.logger.info(
-              "No update possible for #{dependency.name} #{dependency.version} " \
-              "(peer dependency can be updated)"
-            )
-          end
-
           dependency_change = Dependabot::DependencyChangeBuilder.create_from(
             job: job,
             dependency_files: dependency_snapshot.dependency_files,
@@ -382,29 +375,6 @@ module Dependabot
           else
             :update_not_possible
           end
-        end
-
-        # If a version update for a peer dependency is possible we should
-        # defer to the PR that will be created for it to avoid duplicate PRs.
-        def peer_dependency_should_update_instead?(dependency_name, updated_deps)
-          # This doesn't apply to security updates as we can't rely on the
-          # peer dependency getting updated.
-          return false if job.security_updates_only?
-
-          updated_deps.
-            reject { |dep| dep.name == dependency_name }.
-            any? do |dep|
-              next true if existing_pull_request([dep])
-
-              original_peer_dep = ::Dependabot::Dependency.new(
-                name: dep.name,
-                version: dep.previous_version,
-                requirements: dep.previous_requirements,
-                package_manager: dep.package_manager
-              )
-              update_checker_for(original_peer_dep, raise_on_ignored: false).
-                can_update?(requirements_to_unlock: :own)
-            end
         end
 
         def create_pull_request(dependency_change)
