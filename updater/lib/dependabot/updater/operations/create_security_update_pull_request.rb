@@ -70,7 +70,7 @@ module Dependabot
 
           log_checking_for_update(dependency)
 
-          return if all_versions_ignored?(dependency, checker)
+          Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
           # If the dependency isn't vulnerable or we can't know for sure we won't be
           # able to know if the updated dependency fixes any advisories
@@ -165,6 +165,10 @@ module Dependabot
             change_source: checker.dependency
           )
           create_pull_request(dependency_change)
+        rescue Dependabot::AllVersionsIgnored
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+          # Report this error to the backend to create an update job error
+          raise
         end
         # rubocop:enable Metrics/MethodLength
         # rubocop:enable Metrics/AbcSize
@@ -194,18 +198,6 @@ module Dependabot
             "Checking if #{dependency.name} #{dependency.version} needs updating"
           )
           job.log_ignore_conditions_for(dependency)
-        end
-
-        def all_versions_ignored?(dependency, checker)
-          Dependabot.logger.info("Latest version is #{checker.latest_version}")
-          false
-        rescue Dependabot::AllVersionsIgnored
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
-
-          # Report this error to the backend to create an update job error
-          raise if job.security_updates_only?
-
-          true
         end
 
         def log_up_to_date(dependency)
@@ -250,11 +242,11 @@ module Dependabot
             created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
-        ### BEGIN: Security Update Helpers
         def raise_on_ignored?(dependency)
           job.security_updates_only? || job.ignore_conditions_for(dependency).any?
         end
 
+        ### BEGIN: Security Update Helpers
         def record_security_update_not_needed_error(checker)
           Dependabot.logger.info(
             "no security update needed as #{checker.dependency.name} " \
