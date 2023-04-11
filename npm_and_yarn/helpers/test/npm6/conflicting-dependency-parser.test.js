@@ -1,7 +1,6 @@
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
-const rimraf = require("rimraf");
 const {
   findConflictingDependencies,
 } = require("../../lib/npm/conflicting-dependency-parser");
@@ -12,7 +11,7 @@ describe("findConflictingDependencies", () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(os.tmpdir() + path.sep);
   });
-  afterEach(() => rimraf.sync(tempDir));
+  afterEach(() => fs.rmdir(tempDir, { recursive: true }, () => {}));
 
   it("finds conflicting dependencies", async () => {
     helpers.copyDependencies("conflicting-dependency-parser/simple", tempDir);
