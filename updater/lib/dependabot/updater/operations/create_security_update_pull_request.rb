@@ -37,7 +37,7 @@ module Dependabot
         # something we should make much more intentional in future.
         def perform
           Dependabot.logger.info("Starting update job for #{job.source.repo}")
-          dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
+          dependency_snapshot.job_dependencies.each { |dep| check_and_create_pr_with_error_handling(dep) }
         end
 
         private
@@ -47,10 +47,6 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler,
                     :created_pull_requests
-
-        def dependencies
-          dependency_snapshot.job_dependencies
-        end
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
