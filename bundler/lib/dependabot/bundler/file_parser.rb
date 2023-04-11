@@ -297,8 +297,7 @@ module Dependabot
       def gemspecs
         # Path gemspecs are excluded (they're supporting files)
         @gemspecs ||= prepared_dependency_files.
-                      select { |file| file.name.end_with?(".gemspec") }.
-                      reject(&:support_file?)
+                      select { |file| file.name.end_with?(".gemspec") }
       end
 
       def imported_ruby_files
