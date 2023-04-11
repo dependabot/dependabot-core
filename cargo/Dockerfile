@@ -15,4 +15,6 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain 1.68.2 --pr
 # Configure cargo to use Git CLI so the Git shim works
 RUN mkdir -p ~/.cargo && printf "[net]\ngit-fetch-with-cli = true\n" >> ~/.cargo/config.toml
 
-COPY --chown=dependabot:dependabot cargo /home/dependabot/cargo
+COPY --chown=dependabot:dependabot cargo $DEPENDABOT_HOME/cargo
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

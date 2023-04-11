@@ -103,10 +103,7 @@ RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  bundle install && \
  rm -rf ~/.bundle
 
-# Add project after bundle install to avoid re-installing gems when only the project code changes
 COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"

@@ -38,4 +38,6 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 # Our native helpers pull in yarn 1, so we need to reset the version globally
 RUN corepack prepare yarn@$YARN_VERSION --activate
 
-COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn
+COPY --chown=dependabot:dependabot npm_and_yarn $DEPENDABOT_HOME/npm_and_yarn
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
