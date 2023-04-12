@@ -75,7 +75,7 @@ else
   File.write(version_path, new_version_contents)
   puts "☑️  common/lib/dependabot.rb updated"
 
-  # Bump the updater's Gemfile with the new version
+  # Bump the updater's Gemfile.lock with the new version
   `cd updater/ && bundle lock`
   puts "☑️  updater/Gemfile.lock updated"
 end
