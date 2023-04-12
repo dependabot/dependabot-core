@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "toml-rb"
 
 module Dependabot
@@ -17,6 +19,7 @@ module Dependabot
 
       attr_reader :toolchain
 
+      # We only need to set the -Z sparse-registry flag for nightly toolchains between 2023-01-20 and
       def needs_sparse_flag
         return false unless toolchain
 
@@ -26,7 +29,7 @@ module Dependabot
         date = channel.match(/nightly-(\d{4}-\d{2}-\d{2})/)&.captures&.first
         return false unless date
 
-        Date.parse(date) < Date.parse("2023-01-20")
+        Date.parse(date).between?(Date.parse("2022-07-10"), Date.parse("2023-01-20"))
       end
     end
   end
