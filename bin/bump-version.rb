@@ -75,6 +75,9 @@ else
   File.write(version_path, new_version_contents)
   puts "☑️  common/lib/dependabot.rb updated"
 
+  # Bump the updater's Gemfile with the new version
+  `cd updater/ && bundle`
+  puts "☑️  common/lib/dependabot.rb updated"
 end
 
 proposed_changes = proposed_changes(version, new_version)
@@ -100,7 +103,7 @@ unless dry_run
   puts "commit, tag, and push the release:"
   puts
   puts "git checkout -b v#{new_version}-release-notes"
-  puts "git add CHANGELOG.md common/lib/dependabot.rb"
+  puts "git add CHANGELOG.md common/lib/dependabot.rb updater/Gemfile.lock"
   puts "git commit -m 'v#{new_version}'"
   puts "git push origin HEAD:v#{new_version}-release-notes"
   puts "# ... create PR, verify, merge, for example:"
