@@ -6,7 +6,9 @@ require "dependabot/shared_helpers"
 require "dependabot/cargo/update_checker"
 require "dependabot/cargo/file_parser"
 require "dependabot/cargo/version"
+require "dependabot/cargo/toolchain_parser"
 require "dependabot/errors"
+
 module Dependabot
   module Cargo
     class UpdateChecker
@@ -134,7 +136,7 @@ module Dependabot
         # so without doing an install (so it's fast).
         def run_cargo_update_command
           run_cargo_command(
-            "cargo -Z sparse-registry update -p #{dependency_spec} --verbose",
+            "cargo #{toolchain_parser.sparse_flag} update -p #{dependency_spec} --verbose",
             fingerprint: "cargo update -p <dependency_spec> --verbose"
           )
         end
@@ -405,6 +407,10 @@ module Dependabot
         def toolchain
           @toolchain ||= prepared_dependency_files.
                          find { |f| f.name == "rust-toolchain" }
+        end
+
+        def toolchain_parser
+          @toolchain_parser ||= Cargo::ToolchainParser.new(toolchain)
         end
 
         def git_dependency?

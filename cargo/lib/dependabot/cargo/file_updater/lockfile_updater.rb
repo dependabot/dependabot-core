@@ -6,6 +6,7 @@ require "dependabot/git_commit_checker"
 require "dependabot/cargo/file_updater"
 require "dependabot/cargo/file_updater/manifest_updater"
 require "dependabot/cargo/file_parser"
+require "dependabot/cargo/toolchain_parser"
 require "dependabot/shared_helpers"
 module Dependabot
   module Cargo
@@ -32,7 +33,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo -Z sparse-registry update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
+              run_shell_command("cargo #{toolchain_parser.sparse_flag} update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")
@@ -367,6 +368,10 @@ module Dependabot
         def toolchain
           @toolchain ||=
             dependency_files.find { |f| f.name == "rust-toolchain" }
+        end
+
+        def toolchain_parser
+          @toolchain_parser ||= Cargo::ToolchainParser.new(toolchain)
         end
 
         def virtual_manifest?(file)
