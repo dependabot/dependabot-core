@@ -11,7 +11,7 @@ module Dependabot
           return false if job.updating_a_pull_request?
           # If we haven't been given data for the vulnerable dependency,
           # this strategy cannot act.
-          return false if job.dependencies&.none?
+          return false unless job.dependencies&.any?
 
           job.security_updates_only?
         end
