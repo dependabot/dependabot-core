@@ -19,7 +19,8 @@ module Dependabot
 
       attr_reader :toolchain
 
-      # We only need to set the -Z sparse-registry flag for nightly toolchains between 2023-01-20 and
+      # We only need to set the -Z sparse-registry flag for nightly and unstable toolchains
+      # during which the feature exists and is reading the environment variable CARGO_REGISTRIES_CRATES_IO_PROTOCOL.
       def needs_sparse_flag
         return false unless toolchain
 
