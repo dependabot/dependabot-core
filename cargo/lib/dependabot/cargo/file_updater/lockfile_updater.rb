@@ -32,7 +32,7 @@ module Dependabot
             SharedHelpers.with_git_configured(credentials: credentials) do
               # Shell out to Cargo, which handles everything for us, and does
               # so without doing an install (so it's fast).
-              run_shell_command("cargo update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
+              run_shell_command("cargo -Z sparse-registry update -p #{dependency_spec}", fingerprint: "cargo update -p <dependency_spec>")
             end
 
             updated_lockfile = File.read("Cargo.lock")

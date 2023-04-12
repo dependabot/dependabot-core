@@ -134,7 +134,7 @@ module Dependabot
         # so without doing an install (so it's fast).
         def run_cargo_update_command
           run_cargo_command(
-            "cargo update -p #{dependency_spec} --verbose",
+            "cargo -Z sparse-registry update -p #{dependency_spec} --verbose",
             fingerprint: "cargo update -p <dependency_spec> --verbose"
           )
         end
