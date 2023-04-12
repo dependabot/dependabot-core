@@ -17,8 +17,6 @@ module Dependabot
   class Updater
     module Operations
       class GroupUpdateAllVersions
-        GROUP_NAME_PLACEHOLDER = "*"
-
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
@@ -39,38 +37,46 @@ module Dependabot
           @error_handler = error_handler
         end
 
+        # rubocop:disable Metrics/AbcSize
         def perform
-          Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
-          # We should log the rule being executed, let's just hard-code wildcard for now
-          # since the prototype makes best-effort to do everything in one pass.
-          Dependabot.logger.info("Starting update group for '#{GROUP_NAME_PLACEHOLDER}'")
-          dependency_change = compile_all_dependency_changes
+          dependency_snapshot.groups.each do |_group_hash, group|
+            Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
+            # We should log the rule being executed, let's just hard-code wildcard for now
+            # since the prototype makes best-effort to do everything in one pass.
+            # This should be replaced with the actual Dependabot::DependencyGroup instances that have names
+            # dependency_snapshot.groups will need to be updated to return a list of
+            # Dependabot::DependencyGroup instances
+            Dependabot.logger.info("Starting update group for '#{group.name}'")
 
-          if dependency_change.updated_dependencies.any?
-            Dependabot.logger.info("Creating a pull request for '#{GROUP_NAME_PLACEHOLDER}'")
-            begin
-              service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-            rescue StandardError => e
-              # FIXME: This is a workround for not having a single Dependency to report against
-              #
-              #        We could use all_updated_deps.first, but that could be misleading. It may
-              #        make more sense to handle the dependency group as a Dependancy-ish object
-              group_dependency = OpenStruct.new(name: "group-all")
-              raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+            dependency_change = compile_all_dependency_changes_for(group)
 
-              error_handler.handle_dependabot_error(error: e, dependency: group_dependency)
+            if dependency_change.updated_dependencies.any?
+              Dependabot.logger.info("Creating a pull request for '#{group.name}'")
+              begin
+                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+              rescue StandardError => e
+                # FIXME: This is a workround for not having a single Dependency to report against
+                #
+                #        We could use all_updated_deps.first, but that could be misleading. It may
+                #        make more sense to handle the dependency group as a Dependancy-ish object
+                group_dependency = OpenStruct.new(name: "group-all")
+                raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+                error_handler.handle_dependabot_error(error: e, dependency: group_dependency)
+              end
+            else
+              Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
             end
-          else
-            Dependabot.logger.info("Nothing to update for Dependency Group: '#{GROUP_NAME_PLACEHOLDER}'")
+          end
+
+          # Let's not worry about this for now, but eventually we'd try to do single updates
+          # for anything that didn't appear in _at least one_ group.
+          dependency_snapshot.ungrouped_dependencies.each do |dependency|
+            # dependency_change = create_dependency_change_for(dependency)
+            # create_pull_request(dependency_change)
           end
         end
-
-        private
-
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler,
+        # rubocop:enable Metrics/AbcSize
 
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
@@ -81,12 +87,21 @@ module Dependabot
           dependency_snapshot.allowed_dependencies
         end
 
+        private
+
+        attr_reader :job,
+                    :service,
+                    :dependency_snapshot,
+                    :error_handler
+
         # Returns a Dependabot::DependencyChange object that encapsulates the
         # outcome of attempting to update every dependency iteratively which
         # can be used for PR creation.
-        def compile_all_dependency_changes
+        def compile_all_dependency_changes_for(group)
           all_updated_dependencies = []
           updated_files = dependencies.inject(dependency_snapshot.dependency_files) do |dependency_files, dependency|
+            next dependency_files unless group.contains?(dependency)
+
             updated_dependencies = compile_updates_for(dependency, dependency_files)
 
             if updated_dependencies.any?
@@ -94,7 +109,7 @@ module Dependabot
                 dep.name.casecmp(dependency.name).zero?
               end
 
-              dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files)
+              dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
 
               # Move on to the next dependency using the existing files if we
               # could not create a change for any reason
@@ -123,7 +138,7 @@ module Dependabot
             job: job,
             updated_dependencies: all_updated_dependencies,
             updated_dependency_files: updated_files,
-            dependency_group: Dependabot::DependencyGroupEngine.group_for(all_updated_dependencies.first)
+            dependency_group: group
           )
         end
 
@@ -131,12 +146,12 @@ module Dependabot
         # list of dependencies to be updated
         #
         # This method **must** return false in the event of an error
-        def create_change_for(lead_dependency, updated_dependencies, dependency_files)
+        def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
           Dependabot::DependencyChangeBuilder.create_from(
             job: job,
             dependency_files: dependency_files,
             updated_dependencies: updated_dependencies,
-            change_source: Dependabot::DependencyGroupEngine.group_for(lead_dependency)
+            change_source: dependency_group
           )
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_error(
