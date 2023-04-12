@@ -143,8 +143,7 @@ module Dependabot
 
         def top_level_gemspecs
           dependency_files.
-            select { |f| f.name.end_with?(".gemspec") }.
-            reject(&:support_file?)
+            select { |f| f.name.end_with?(".gemspec") }
         end
 
         def ruby_version_file
