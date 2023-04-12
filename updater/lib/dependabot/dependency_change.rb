@@ -13,7 +13,7 @@ module Dependabot
   class DependencyChange
     attr_reader :job, :updated_dependencies, :updated_dependency_files
 
-    def initialize(job:, dependencies:, updated_dependency_files:, dependency_group: nil)
+    def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
       @job = job
       @updated_dependencies = updated_dependencies
       @updated_dependency_files = updated_dependency_files
