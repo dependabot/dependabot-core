@@ -22,7 +22,7 @@ module Dependabot
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          #return false if job.dependencies&.any?
+          return false if job.dependencies&.any?
           return false if job.dependency_groups.empty?
 
           Dependabot::Experiments.enabled?(:grouped_updates_prototype)
@@ -37,9 +37,6 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          # This is a placeholder for a real rule object obtained from config in future
-          #@dependency_group = Dependabot::DependencyGroup.new(name: GROUP_NAME_PLACEHOLDER)
-          @dependency_group = dependency_snapshot.dependency_groups
         end
 
         def perform
@@ -74,7 +71,6 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler,
-                    :dependency_group
 
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
@@ -127,7 +123,7 @@ module Dependabot
             job: job,
             updated_dependencies: all_updated_dependencies,
             updated_dependency_files: updated_files,
-            dependency_group: dependency_group
+            dependency_group: Dependabot::DependencyGroupEngine.group_for(all_updated_dependencies.first)
           )
         end
 
@@ -140,7 +136,7 @@ module Dependabot
             job: job,
             dependency_files: dependency_files,
             updated_dependencies: updated_dependencies,
-            change_source: dependency_group
+            change_source: Dependabot::DependencyGroupEngine.group_for(lead_dependency)
           )
         rescue Dependabot::InconsistentRegistryResponse => e
           error_handler.log_error(
