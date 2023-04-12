@@ -2,6 +2,7 @@
 
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"
@@ -99,6 +100,7 @@ module Dependabot
       @dependency_groups            = attributes.fetch(:dependency_groups, [])
 
       register_experiments
+      register_dependency_groups
     end
 
     def clone?
@@ -244,6 +246,7 @@ module Dependabot
 
     def belongs_to_dependency_group?(dependency)
       return false unless dependency_groups.any?
+
       Dependabot::DependencyGroupEngine.groups_for(dependency).any?
     end
 
