@@ -76,8 +76,8 @@ else
   puts "☑️  common/lib/dependabot.rb updated"
 
   # Bump the updater's Gemfile with the new version
-  `cd updater/ && bundle`
-  puts "☑️  common/lib/dependabot.rb updated"
+  `cd updater/ && bundle lock`
+  puts "☑️  updater/Gemfile.lock updated"
 end
 
 proposed_changes = proposed_changes(version, new_version)
