@@ -30,3 +30,5 @@ coverage/
 .tool-versions
 .rspec_status
 .rdbg_history
+# Ignore Jetbrains IntelliJ project-config directory
+.idea/
