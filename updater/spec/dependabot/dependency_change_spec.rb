@@ -117,7 +117,8 @@ RSpec.describe Dependabot::DependencyChange do
           job: job,
           updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          dependency_group: anything # For now the dependency_group parameter is treated permissively as any non-nil value
+          # For now the dependency_group parameter is treated permissively as any non-nil value
+          dependency_group: anything
         )
 
         expect(rule.grouped_update?).to be true

@@ -35,6 +35,7 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
+          @dependency_group = dependency_snapshot.dependency_groups
         end
 
         # rubocop:disable Metrics/AbcSize
