@@ -16,7 +16,7 @@ module Dependabot
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
-        @dependency_group    = dependency_group
+        @dependency_group  = dependency_group
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
