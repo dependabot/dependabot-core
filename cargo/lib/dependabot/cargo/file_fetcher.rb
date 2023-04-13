@@ -287,6 +287,14 @@ module Dependabot
       def rust_toolchain
         @rust_toolchain ||= fetch_file_if_present("rust-toolchain")&.
                             tap { |f| f.support_file = true }
+        return @rust_toolchain if @rust_toolchain
+
+        # Per https://rust-lang.github.io/rustup/overrides.html the file can
+        # have a `.toml` extension, but the non-extension version is preferred.
+        # Renaming here to simplify finding it later in the code.
+        @rust_toolchain ||= fetch_file_if_present("rust-toolchain.toml")&.
+                            tap { |f| f.support_file = true }&.
+                            tap { |f| f.name = "rust-toolchain" }
       end
     end
   end
