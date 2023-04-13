@@ -36,11 +36,15 @@
     "dependency-groups": [
       {
         "name": "group-a",
-        "rules": ["dummy-pkg-*"]
+        "rules": { 
+          "patterns": ["dummy-pkg-*"]
+        }
       },
       {
         "name": "group-b",
-        "rules": ["dummy-pkg-b"]
+        "rules": { 
+          "patterns": ["dummy-pkg-b"]
+        }
       }
     ],
     "experiments": { "grouped_updates_prototype": true }
