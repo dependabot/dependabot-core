@@ -39,7 +39,8 @@ RSpec.describe Dependabot::Job do
       vendor_dependencies: vendor_dependencies,
       experiments: experiments,
       commit_message_options: commit_message_options,
-      security_updates_only: security_updates_only
+      security_updates_only: security_updates_only,
+      dependency_groups: dependency_groups
     }
   end
 
@@ -62,6 +63,7 @@ RSpec.describe Dependabot::Job do
   let(:experiments) { nil }
   let(:commit_message_options) { nil }
   let(:vendor_dependencies) { false }
+  let(:dependency_groups) { [] }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
@@ -84,6 +86,11 @@ RSpec.describe Dependabot::Job do
       ruby_credential = new_update_job.credentials.find { |creds| creds["type"] == "rubygems_index" }
       expect(ruby_credential["host"]).to eql("my.rubygems-host.org")
       expect(ruby_credential.keys).not_to include("token")
+    end
+
+    it "will register its dependency groups" do
+      expect(:job).to receive(:register_dependency_groups).with(dependency_groups)
+      new_update_job
     end
   end
 
