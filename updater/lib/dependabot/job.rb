@@ -244,12 +244,6 @@ module Dependabot
       end
     end
 
-    def belongs_to_dependency_group?(dependency)
-      return false unless dependency_groups.any?
-
-      Dependabot::DependencyGroupEngine.groups_for(dependency).any?
-    end
-
     def ignore_conditions_for(dependency)
       update_config.ignored_versions_for(
         dependency,
