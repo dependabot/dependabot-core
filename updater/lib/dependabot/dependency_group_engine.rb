@@ -63,7 +63,7 @@ module Dependabot
     end
 
     def self.calculate_dependency_groups!(dependencies)
-      dependencies.inject(@dependency_groups) do |_dependency_groups, dependency|
+      dependencies.each do |dependency|
         groups = groups_for(dependency)
 
         @ungrouped_dependencies << dependency if groups.empty?
