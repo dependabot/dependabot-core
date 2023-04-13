@@ -1,0 +1,47 @@
+"L: ruby:bundler":
+  - bundler/**/*
+
+"L: rust:cargo":
+  - cargo/**/*
+
+"L: php:composer":
+  - composer/**/*
+
+"L: docker":
+  - docker/**/*
+
+"L: elm":
+  - elm/**/*
+
+"L: git:submodules":
+  - git_submodules/**/*
+
+"L: github:actions":
+  - github_actions/**/*
+
+"L: go:modules":
+  - go_modules/**/*
+
+"L: javascript":
+  - npm_and_yarn/**/*
+
+"L: java:gradle":
+  - gradle/**/*
+
+"L: elixir:hex":
+  - hex/**/*
+
+"L: java:maven":
+  - maven/**/*
+
+"L: dotnet:nuget"
+  - nuget/**/*
+
+"L: dart:pub":
+  - pub/**/*
+
+"L: python":
+  - python/**/*
+
+"L: terraform":
+  - terraform/**/*
