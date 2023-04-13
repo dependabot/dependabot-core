@@ -55,13 +55,13 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#dependencies" do
-    context "when calculate_dependency_groups! has not been run" do
+    context "when no dependencies are assigned to the group" do
       it "returns an empty list" do
         expect(dependency_group.dependencies).to eq([])
       end
     end
 
-    context "after calculate_dependency_groups! has been run" do
+    context "when dependencies have been assigned" do
       before do
         dependency_group.dependencies << test_dependency_1
       end
@@ -74,7 +74,7 @@ RSpec.describe Dependabot::DependencyGroup do
   end
 
   describe "#contains?" do
-    context "before calculate_dependency_groups! has been run" do
+    context "before dependencies are assigned to the group" do
       it "returns true if the dependency matches a rule" do
         expect(dependency_group.dependencies).to eq([])
         expect(dependency_group.contains?(test_dependency_1)).to be_truthy
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
 
-    context "after calculate_dependency_groups! has been run" do
+    context "after dependencies are assigned to the group" do
       before do
         dependency_group.dependencies << test_dependency_1
       end

@@ -5,14 +5,11 @@ require "dependabot/dependency_group"
 # This class implements our strategy for keeping track of and matching dependency
 # groups that are defined by users in their dependabot config file.
 #
-# Each UpdateJob registers its own DependencyGroupEngine which calculates
-# the grouped and ungrouped dependencies for a DependencySnapshot
-#
 # This is a static class tied to the lifecycle of a Job
-# Its methods should only be called with Dependabot::DependencyGroupEngine
-#
-# Groups are only calculated once after the Job has registered its dependencies
-# All allowed dependencies should be passed in to the calculate_dependency_groups! method
+# - Each UpdateJob registers its own DependencyGroupEngine which calculates
+#    the grouped and ungrouped dependencies for a DependencySnapshot
+# - Groups are only calculated once after the Job has registered its dependencies
+# - All allowed dependencies should be passed in to the calculate_dependency_groups! method
 #
 # **Note:** This is currently an experimental feature which is not supported
 #           in the service or as an integration point.

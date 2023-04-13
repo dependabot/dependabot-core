@@ -42,11 +42,6 @@ module Dependabot
         def perform
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
-            # We should log the rule being executed, let's just hard-code wildcard for now
-            # since the prototype makes best-effort to do everything in one pass.
-            # This should be replaced with the actual Dependabot::DependencyGroup instances that have names
-            # dependency_snapshot.groups will need to be updated to return a list of
-            # Dependabot::DependencyGroup instances
             Dependabot.logger.info("Starting update group for '#{group.name}'")
 
             dependency_change = compile_all_dependency_changes_for(group)
@@ -70,12 +65,12 @@ module Dependabot
             end
           end
 
-          # Let's not worry about this for now, but eventually we'd try to do single updates
+          # FIXME: Let's not worry about this for now but eventually we'd try to do single updates
           # for anything that didn't appear in _at least one_ group.
-          dependency_snapshot.ungrouped_dependencies.each do |dependency|
-            # dependency_change = create_dependency_change_for(dependency)
-            # create_pull_request(dependency_change)
-          end
+          # dependency_snapshot.ungrouped_dependencies.each do |dependency|
+          #   dependency_change = create_dependency_change_for(dependency)
+          #   create_pull_request(dependency_change)
+          # end
         end
         # rubocop:enable Metrics/AbcSize
 
