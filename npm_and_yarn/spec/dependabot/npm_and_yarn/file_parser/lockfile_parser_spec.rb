@@ -148,6 +148,16 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
 
         its(:length) { is_expected.to eq(2) }
       end
+
+      context "in v3 format with nested node_modules dependencies" do
+        let(:dependency_files) { project_dependency_files("npm8/nested_node_modules_lockfile_v3") }
+
+        it "does not incorrectly parse dependencies with node_modules/ in their name" do
+          bad_names = subject.filter_map { |dep| dep.name if dep.name.include?("node_modules/") }
+
+          expect(bad_names).to be_empty
+        end
+      end
     end
 
     context "for npm shrinkwraps" do
