@@ -3,7 +3,7 @@
 require "dependabot/dependency"
 require "dependabot/dependency_change"
 require "dependabot/file_updaters"
-require "dependabot/group_rule"
+require "dependabot/dependency_group"
 
 # This class is responsible for generating a DependencyChange for a given
 # set of dependencies and dependency files.
@@ -18,7 +18,7 @@ require "dependabot/group_rule"
 #     The set of dependency updates to be applied to the dependency files
 # - change_source:
 #     A change can be generated from either a single 'lead' Dependency or
-#     a GroupRule
+#     a DependencyGroup
 module Dependabot
   class DependencyChangeBuilder
     def self.create_from(**kwargs)
@@ -47,7 +47,7 @@ module Dependabot
         job: job,
         updated_dependencies: updated_deps,
         updated_dependency_files: updated_files,
-        group_rule: source_group_rule
+        dependency_group: source_dependency_group
       )
     end
 
@@ -61,8 +61,8 @@ module Dependabot
       change_source.name
     end
 
-    def source_group_rule
-      return nil unless change_source.is_a? Dependabot::GroupRule
+    def source_dependency_group
+      return nil unless change_source.is_a? Dependabot::DependencyGroup
 
       change_source
     end

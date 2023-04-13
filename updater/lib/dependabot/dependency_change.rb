@@ -5,7 +5,7 @@
 #
 # It includes a list of changed Dependabot::Dependency objects, an array of
 # Dependabot::DependencyFile objects which contain the changes to be applied
-# along with any Dependabot::GroupRule that was used to generate the change.
+# along with any Dependabot::DependencyGroup that was used to generate the change.
 #
 # This class provides methods for presenting the change set which can be used
 # by adapters to create a Pull Request, apply the changes on disk, etc.
@@ -13,11 +13,11 @@ module Dependabot
   class DependencyChange
     attr_reader :job, :updated_dependencies, :updated_dependency_files
 
-    def initialize(job:, updated_dependencies:, updated_dependency_files:, group_rule: nil)
+    def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
       @job = job
       @updated_dependencies = updated_dependencies
       @updated_dependency_files = updated_dependency_files
-      @group_rule = group_rule
+      @dependency_group = dependency_group
     end
 
     def pr_message
@@ -42,11 +42,11 @@ module Dependabot
       updated_dependency_files.map(&:to_h)
     end
 
-    # FIXME: This is a placeholder for using a concrete GroupRule object to create
+    # FIXME: This is a placeholder for using a concrete DependencyGroup object to create
     # as grouped rule hash to pass to the Dependabot API client. For now, we just
     # use a flag on whether a rule has been assigned to the change.
     def grouped_update?
-      !!@group_rule
+      !!@dependency_group
     end
   end
 end

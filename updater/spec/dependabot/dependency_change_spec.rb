@@ -111,13 +111,14 @@ RSpec.describe Dependabot::DependencyChange do
       expect(dependency_change.grouped_update?).to be false
     end
 
-    context "when a group rule is assigned" do
+    context "when a dependency group is assigned" do
       it "is true" do
         rule = described_class.new(
           job: job,
           updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          group_rule: anything # For now the group_rule parameter is treated permissively as any non-nil value
+          # For now the dependency_group parameter is treated permissively as any non-nil value
+          dependency_group: anything
         )
 
         expect(rule.grouped_update?).to be true

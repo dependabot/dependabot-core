@@ -182,10 +182,10 @@ module Dependabot
         "updated-dependency-files": dependency_change.updated_dependency_files_hash,
         "base-commit-sha": base_commit_sha
       }.merge({
-        # TODO: Replace this flag with a group-rule object
+        # TODO: Replace this flag with a dependency-group object
         #
         # In future this should be something like:
-        #    "group-rule": dependency_change.group_rule_hash
+        #    "dependency-group": dependency_change.dependency_group_hash
         #
         # This will allow us to pass back the rule id and other parameters
         # to allow Dependabot API to augment PR creation and associate it

@@ -9,14 +9,14 @@ require "dependabot/pull_request_creator/branch_namer/solo_strategy"
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :group_rule
+      attr_reader :dependencies, :files, :target_branch, :separator, :prefix, :max_length, :dependency_group
 
-      def initialize(dependencies:, files:, target_branch:, group_rule: nil,
+      def initialize(dependencies:, files:, target_branch:, dependency_group: nil,
                      separator: "/", prefix: "dependabot", max_length: nil)
         @dependencies  = dependencies
         @files         = files
         @target_branch = target_branch
-        @group_rule    = group_rule
+        @dependency_group = dependency_group
         @separator     = separator
         @prefix        = prefix
         @max_length    = max_length
@@ -30,7 +30,7 @@ module Dependabot
 
       def strategy
         @strategy ||=
-          if group_rule.nil?
+          if dependency_group.nil?
             SoloStrategy.new(
               dependencies: dependencies,
               files: files,
@@ -40,11 +40,11 @@ module Dependabot
               max_length: max_length
             )
           else
-            GroupRuleStrategy.new(
+            DependencyGroupStrategy.new(
               dependencies: dependencies,
               files: files,
               target_branch: target_branch,
-              group_rule: group_rule,
+              dependency_group: dependency_group,
               separator: separator,
               prefix: prefix,
               max_length: max_length

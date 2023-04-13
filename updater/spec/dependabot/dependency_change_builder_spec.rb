@@ -105,9 +105,9 @@ RSpec.describe Dependabot::DependencyChangeBuilder do
       end
     end
 
-    context "when the source is a group rule" do
+    context "when the source is a dependency group" do
       let(:change_source) do
-        Dependabot::GroupRule.new(name: "dummy-pkg-*")
+        Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: ["dummy-pkg-*"])
       end
 
       it "creates a new DependencyChange flagged as a grouped update" do
