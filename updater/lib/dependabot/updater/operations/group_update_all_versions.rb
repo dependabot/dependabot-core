@@ -22,8 +22,7 @@ module Dependabot
         def self.applies_to?(job:)
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
-          #return false if job.dependencies&.any?
-          return false if job.dependency_groups.empty?
+          return false if job.dependencies&.any?
 
           Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
