@@ -240,7 +240,7 @@ module Dependabot
 
     def register_dependency_groups
       dependency_groups.each do |group|
-        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
+        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"]["patterns"])
       end
     end
 
