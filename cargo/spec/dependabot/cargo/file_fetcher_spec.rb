@@ -109,6 +109,31 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
   end
 
+  context "with a rust-toolchain.toml file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_toolchain.json").gsub(/rust-toolchain/, "rust-toolchain.toml"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "rust-toolchain.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_lockfile.json"),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml and rust-toolchain" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Cargo.toml rust-toolchain))
+    end
+  end
+
   context "with a path dependency" do
     before do
       stub_request(:get, url + "?ref=sha").
