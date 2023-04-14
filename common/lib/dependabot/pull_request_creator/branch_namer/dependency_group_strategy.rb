@@ -16,12 +16,29 @@ module Dependabot
         end
 
         def new_branch_name
-          dependency_group.name
+          File.join(prefixes, dependency_group.name).gsub("/", separator)
         end
 
         private
 
-        attr_reader :dependency_group
+        attr_reader :dependencies, :dependency_group, :files, :target_branch, :separator, :prefix, :max_length
+
+        def prefixes
+          [
+            prefix,
+            package_manager,
+            directory,
+            target_branch
+          ].compact
+        end
+
+        def package_manager
+          dependencies.first.package_manager
+        end
+
+        def directory
+          files.first.directory.tr(" ", "-")
+        end
       end
     end
   end
