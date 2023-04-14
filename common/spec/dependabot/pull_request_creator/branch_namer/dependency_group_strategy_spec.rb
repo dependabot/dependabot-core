@@ -46,7 +46,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
-        expect(namer.new_branch_name).to eq("dependabot/bundler/my-dependency-group")
+        expect(namer.new_branch_name).to start_with("dependabot/bundler/my-dependency-group")
       end
     end
 
@@ -56,7 +56,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       let(:separator) { "_" }
 
       it "returns the name of the dependency group prefixed correctly" do
-        expect(namer.new_branch_name).to eq("dependabot_bundler_my-dependency-group")
+        expect(namer.new_branch_name).to start_with("dependabot_bundler_my-dependency-group")
       end
     end
 
@@ -66,7 +66,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
-        expect(namer.new_branch_name).to eq("dependabot/bundler/rails-app/my-dependency-group")
+        expect(namer.new_branch_name).to start_with("dependabot/bundler/rails-app/my-dependency-group")
       end
     end
 
@@ -76,7 +76,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       let(:separator) { "/" }
 
       it "returns the name of the dependency group prefixed correctly" do
-        expect(namer.new_branch_name).to eq("dependabot/bundler/develop/my-dependency-group")
+        expect(namer.new_branch_name).to start_with("dependabot/bundler/develop/my-dependency-group")
       end
     end
 
@@ -86,7 +86,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       let(:separator) { "_" }
 
       it "returns the name of the dependency group prefixed correctly" do
-        expect(namer.new_branch_name).to eq("dependabot_bundler_rails-app_develop_my-dependency-group")
+        expect(namer.new_branch_name).to start_with("dependabot_bundler_rails-app_develop_my-dependency-group")
       end
     end
   end

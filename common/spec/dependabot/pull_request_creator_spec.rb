@@ -384,7 +384,7 @@ RSpec.describe Dependabot::PullRequestCreator do
           to receive(:new).
           with(
             source: source,
-            branch_name: "dependabot/bundler/all-the-things",
+            branch_name: start_with("dependabot/bundler/all-the-things/prototype-"),
             base_commit: base_commit,
             credentials: credentials,
             files: files,
