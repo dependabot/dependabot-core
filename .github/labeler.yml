@@ -34,7 +34,7 @@
 "L: java:maven":
   - maven/**/*
 
-"L: dotnet:nuget"
+"L: dotnet:nuget":
   - nuget/**/*
 
 "L: dart:pub":
