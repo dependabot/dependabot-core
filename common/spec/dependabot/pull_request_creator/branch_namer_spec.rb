@@ -5,8 +5,6 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/branch_namer"
-require "dependabot/pull_request_creator/branch_namer/solo_strategy"
-require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do

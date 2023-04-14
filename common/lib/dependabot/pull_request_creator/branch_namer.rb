@@ -5,6 +5,7 @@ require "digest"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
 require "dependabot/pull_request_creator/branch_namer/solo_strategy"
+require "dependabot/pull_request_creator/branch_namer/dependency_group_strategy"
 
 module Dependabot
   class PullRequestCreator

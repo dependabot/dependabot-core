@@ -2,10 +2,11 @@
 
 module Dependabot
   class DependencyGroup
-    attr_reader :name
+    attr_reader :name, :rules
 
-    def initialize(name)
+    def initialize(name:, rules:)
       @name = name
+      @rules = rules
     end
   end
 end
