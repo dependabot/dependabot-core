@@ -56,6 +56,7 @@ module Dependabot
             project_files << csproj_file if csproj_file
             project_files << vbproj_file if vbproj_file
             project_files << fsproj_file if fsproj_file
+            project_files << directory_packages_props_file if directory_packages_props_file
 
             project_files += sln_project_files
             project_files
@@ -199,6 +200,14 @@ module Dependabot
         @fsproj_file ||=
           begin
             file = repo_contents.find { |f| f.name.end_with?(".fsproj") }
+            fetch_file_from_host(file.name) if file
+          end
+      end
+
+      def directory_packages_props_file
+        @directory_packages_props_file ||=
+          begin
+            file = repo_contents.find { |f| f.name == "Directory.Packages.props" }
             fetch_file_from_host(file.name) if file
           end
       end
