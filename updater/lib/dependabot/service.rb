@@ -70,10 +70,10 @@ module Dependabot
         error,
         {
           tags: tags.merge({
+            update_job_id: job&.id,
             package_manager: job&.package_manager
           }.compact),
           extra: extra.merge({
-            update_job_id: job&.id,
             dependency_name: dependency&.name
           }.compact)
         }
