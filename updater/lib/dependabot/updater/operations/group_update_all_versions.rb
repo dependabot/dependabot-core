@@ -37,7 +37,7 @@ module Dependabot
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
           # This is a placeholder for a real rule object obtained from config in future
-          @dependency_group = Dependabot::DependencyGroup.new(name: GROUP_NAME_PLACEHOLDER)
+          @dependency_group = Dependabot::DependencyGroup.new(name: GROUP_NAME_PLACEHOLDER, rules: [])
         end
 
         def perform

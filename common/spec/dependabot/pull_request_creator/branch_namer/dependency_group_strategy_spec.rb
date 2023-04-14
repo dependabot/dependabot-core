@@ -36,7 +36,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
   end
 
   let(:dependency_group) do
-    Dependabot::DependencyGroup.new(name: "my-dependency-group")
+    Dependabot::DependencyGroup.new(name: "my-dependency-group", rules: anything)
   end
 
   describe "#new_branch_name" do

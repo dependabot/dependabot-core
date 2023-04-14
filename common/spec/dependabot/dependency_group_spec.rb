@@ -6,7 +6,7 @@ RSpec.describe Dependabot::DependencyGroup do
   describe "#name" do
     it "returns the name" do
       my_dependency_group_name = "darren-from-work"
-      dependency_group = described_class.new(my_dependency_group_name)
+      dependency_group = described_class.new(name: my_dependency_group_name, rules: anything)
 
       expect(dependency_group.name).to eq(my_dependency_group_name)
     end
