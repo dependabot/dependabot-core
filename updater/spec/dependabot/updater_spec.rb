@@ -18,8 +18,12 @@ RSpec.describe Dependabot::Updater do
       to_return(status: 200, body: fixture("rubygems-index"))
     stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-a").
       to_return(status: 200, body: fixture("rubygems-info-a"))
+    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-a.json").
+      to_return(status: 200, body: fixture("rubygems-versions-a.json"))
     stub_request(:get, "https://index.rubygems.org/info/dummy-pkg-b").
       to_return(status: 200, body: fixture("rubygems-info-b"))
+    stub_request(:get, "https://rubygems.org/api/v1/versions/dummy-pkg-b.json").
+      to_return(status: 200, body: fixture("rubygems-versions-b.json"))
   end
 
   describe "#run" do
@@ -2195,8 +2199,6 @@ RSpec.describe Dependabot::Updater do
     end
 
     it "updates multiple dependencies in a single PR correctly" do
-      stub_update_checker
-
       job = build_job(experiments: { "grouped-updates-prototype" => true })
       service = build_service
       updater = build_updater(service: service, job: job)
@@ -2232,6 +2234,29 @@ RSpec.describe Dependabot::Updater do
         expect(base_commit_sha).to eql("sha")
       end
 
+      updater.run
+    end
+
+    it "does not include ignored dependencies in the group PR" do
+      job = build_job(
+        ignore_conditions: [
+          {
+            "dependency-name" => "dummy-pkg-b",
+            "version-requirement" => ">= 0"
+          }
+        ],
+        experiments: { "grouped-updates-prototype" => true }
+      )
+      service = build_service
+      updater = build_updater(service: service, job: job)
+
+      expect(Dependabot.logger).
+        to receive(:info).
+        with(
+          "All updates for dummy-pkg-b were ignored"
+        )
+
+      expect(service).not_to receive(:create_pull_request)
       updater.run
     end
   end

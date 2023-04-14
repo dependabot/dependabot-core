@@ -169,8 +169,7 @@ module Dependabot
 
           log_checking_for_update(dependency)
 
-          # FIXME: Grouped updates currently do not interact with ignore rules
-          # return [] if all_versions_ignored?(dependency, checker)
+          return [] if all_versions_ignored?(dependency, checker)
 
           if checker.up_to_date?
             log_up_to_date(dependency)
@@ -228,7 +227,7 @@ module Dependabot
             dependency_files: dependency_files,
             repo_contents_path: job.repo_contents_path,
             credentials: job.credentials,
-            ignored_versions: [], # FIXME: Grouped updates do not honour ignore rules for now
+            ignored_versions: job.ignore_conditions_for(dependency),
             security_advisories: [], # FIXME: Version updates do not use advisory data for now
             raise_on_ignored: raise_on_ignored,
             requirements_update_strategy: job.requirements_update_strategy,
@@ -240,8 +239,7 @@ module Dependabot
           Dependabot.logger.info(
             "Checking if #{dependency.name} #{dependency.version} needs updating"
           )
-          # FIXME: Grouped updates do not honour ignore rules for now
-          # job.log_ignore_conditions_for(dependency)
+          job.log_ignore_conditions_for(dependency)
         end
 
         def all_versions_ignored?(dependency, checker)
