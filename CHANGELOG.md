@@ -1,3 +1,11 @@
+## v0.216.1, 14 April 2023
+
+- [Updater] Wire up and flesh out branch naming for Grouped Update PRs [#7084](https://github.com/dependabot/dependabot-core/pull/7084)
+- Fix incorrect detection of top level gemspecs [#7085](https://github.com/dependabot/dependabot-core/pull/7085)
+- Improve some exception error messages [#7068](https://github.com/dependabot/dependabot-core/pull/7068)
+- Bundle the updater when bumping versions [#7070](https://github.com/dependabot/dependabot-core/pull/7070)
+- Bump rubocop from 1.48.0 to 1.50.0 in /updater (@app/dependabot) [#7064](https://github.com/dependabot/dependabot-core/pull/7064)
+
 ## v0.216.0, 12 April 2023
 
 - Allow updating gemspecs loaded from a Gemfile [#7051](https://github.com/dependabot/dependabot-core/pull/7051)
