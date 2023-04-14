@@ -32,7 +32,7 @@ module Dependabot
       end
 
       def self.yarn_major_version
-        output = SharedHelpers.run_shell_command("yarn --version")
+        output = SharedHelpers.run_shell_command("yarn --version", safe_to_log: true)
         Version.new(output).major
       end
 

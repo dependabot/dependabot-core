@@ -104,8 +104,12 @@ module Dependabot
             # If a helper subprocess has failed the error may include sensitive
             # info such as file contents or paths. This information is already
             # in the job logs, so we send a breadcrumb to Sentry to retrieve those
-            # instead.
-            msg = "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
+            # instead. The message can be optionally allowlisted though
+            msg = if error.raven_context[:extra][:safe_to_log]
+                    error.message
+                  else
+                    "Subprocess #{error.raven_context[:fingerprint]} failed to run. Check the job logs for error messages"
+                  end
             sanitized_error = SubprocessFailed.new(msg, raven_context: error.raven_context)
             sanitized_error.set_backtrace(error.backtrace)
             service.capture_exception(error: sanitized_error, job: job)

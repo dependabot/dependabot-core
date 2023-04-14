@@ -309,7 +309,7 @@ module Dependabot
       FileUtils.mv(backup_path, GIT_CONFIG_GLOBAL_PATH)
     end
 
-    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil)
+    def self.run_shell_command(command, allow_unsafe_shell_command: false, env: {}, fingerprint: nil, safe_to_log: false)
       start = Time.now
       cmd = allow_unsafe_shell_command ? command : escape_command(command)
       stdout, process = Open3.capture2e(env || {}, cmd)
@@ -323,7 +323,8 @@ module Dependabot
         command: cmd,
         fingerprint: fingerprint,
         time_taken: time_taken,
-        process_exit_value: process.to_s
+        process_exit_value: process.to_s,
+        safe_to_log: safe_to_log
       }
 
       raise SharedHelpers::HelperSubprocessFailed.new(
