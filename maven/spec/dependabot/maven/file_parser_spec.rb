@@ -578,11 +578,11 @@ RSpec.describe Dependabot::Maven::FileParser do
 
         it "has the right details" do
           expect(dependency).to be_a(Dependabot::Dependency)
-          expect(dependency.name).to eq("com.google.guava:guava")
-          expect(dependency.version).to eq("23.3-jre")
+          expect(dependency.name).to eq("org.apache.httpcomponents:httpclient")
+          expect(dependency.version).to eq("4.5.3")
           expect(dependency.requirements).to eq(
             [{
-              requirement: "[23.3-jre]",
+              requirement: "[4.5.3]",
               file: "pom.xml",
               groups: [],
               source: nil,

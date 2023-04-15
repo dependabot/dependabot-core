@@ -58,6 +58,7 @@ module Dependabot
         reqs.each do |new_req, old_req|
           raise "Bad req match" unless new_req[:file] == old_req[:file]
           next if new_req[:requirement] == old_req[:requirement]
+          next if /^\[.+\]$/.match?(old_req[:requirement])
 
           if new_req.dig(:metadata, :property_name)
             files = update_pomfiles_for_property_change(files, new_req)

@@ -112,7 +112,7 @@ RSpec.describe Dependabot::Maven::FileUpdater do
         end
       end
 
-      context "when the requirement is a hard requirement" do
+      context "when the requirement is a hard requirement, it should not be updated" do
         let(:pom_body) { fixture("poms", "hard_requirement_pom.xml") }
         let(:dependency) do
           Dependabot::Dependency.new(
@@ -136,8 +136,30 @@ RSpec.describe Dependabot::Maven::FileUpdater do
           )
         end
 
-        its(:content) { is_expected.to include "<version>[4.6.1]</version>" }
-        its(:content) { is_expected.to include "<version>[23.3-jre]</version>" }
+        let(:dependency) do
+          Dependabot::Dependency.new(
+            name: "com.google.guava:guava",
+            version: "23.4-jre",
+            requirements: [{
+              file: "pom.xml",
+              requirement: "23.4-jre",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            previous_requirements: [{
+              file: "pom.xml",
+              requirement: "23.3-jre",
+              groups: [],
+              source: nil,
+              metadata: { packaging_type: "jar" }
+            }],
+            package_manager: "maven"
+          )
+        end
+
+        its(:content) { is_expected.to include "<version>[4.5.3]</version>" }
+        its(:content) { is_expected.to include "<version>23.4-jre</version>" }
       end
 
       context "with a plugin dependency using the default groupId" do
