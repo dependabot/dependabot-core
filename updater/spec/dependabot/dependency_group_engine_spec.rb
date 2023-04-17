@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "debug"
 require "spec_helper"
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
@@ -124,7 +123,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       expect(groups.key?(:"group-a")).to be_truthy
       expect(groups.key?(:"group-b")).to be_truthy
-      expect(groups[:"group-a"].first).to be_a(Dependabot::Dependency)
+      expect(groups[:"group-a"]).to be_a(Dependabot::DependencyGroup)
     end
 
     it "does not call calculate_dependency_groups! again after groups are initially calculated" do

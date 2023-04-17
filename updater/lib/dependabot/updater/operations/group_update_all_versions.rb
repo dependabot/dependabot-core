@@ -21,7 +21,6 @@ module Dependabot
           return false if job.security_updates_only?
           return false if job.updating_a_pull_request?
           return false if job.dependencies&.any?
-          return false if job.dependency_groups.empty?
 
           Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
@@ -35,11 +34,14 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          @dependency_group = dependency_snapshot.dependency_groups
         end
 
         # rubocop:disable Metrics/AbcSize
         def perform
+          # FIXME: This preserves the default behavior of grouping all updates into a single PR
+          # but we should figure out if this is the default behavior we want.
+          register_all_dependencies_group if job.dependency_groups.empty?
+
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
             Dependabot.logger.info("Starting update group for '#{group.name}'")
@@ -89,6 +91,12 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler
+
+        def register_all_dependencies_group
+          all_dependencies_group = { "name" => "group-all", "rules" => { "patterns" => ["*"] } }
+          Dependabot::DependencyGroupEngine.register(all_dependencies_group["name"],
+                                                     all_dependencies_group["rules"]["patterns"])
+        end
 
         # Returns a Dependabot::DependencyChange object that encapsulates the
         # outcome of attempting to update every dependency iteratively which
