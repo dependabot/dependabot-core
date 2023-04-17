@@ -31,8 +31,8 @@ module Dependabot
     end
 
     # Eventually the key for a dependency group should be a hash since names _can_ conflict within jobs
-    def self.register(name, rule)
-      @registered_groups.push Dependabot::DependencyGroup.new(name, rule)
+    def self.register(name, rules)
+      @registered_groups.push Dependabot::DependencyGroup.new(name: name, rules: rules)
     end
 
     def self.groups_for(dependency)

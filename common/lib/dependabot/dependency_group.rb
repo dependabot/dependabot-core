@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require 'wildcard_matcher'
+require "wildcard_matcher"
 
 module Dependabot
   class DependencyGroup
     attr_reader :name, :rules, :dependencies
 
-    def initialize(name, rule)
+    def initialize(name:, rules:)
       @name = name
-      @rules = rule
+      @rules = rules
       @dependencies = []
     end
 
