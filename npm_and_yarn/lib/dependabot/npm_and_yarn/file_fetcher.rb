@@ -10,7 +10,7 @@ require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
 module Dependabot
   module NpmAndYarn
-    class FileFetcher < Dependabot::FileFetchers::Base
+    class FileFetcher < Dependabot::FileFetchers::Base # rubocop:disable Metrics/ClassLength
       require_relative "file_fetcher/path_dependency_builder"
 
       # Npm always prefixes file paths in the lockfile "version" with "file:"
@@ -22,6 +22,7 @@ module Dependabot
       # "yarn link", e.g. "link:react"
       PATH_DEPENDENCY_STARTS = %w(file: link:. link:/ link:~/ / ./ ../ ~/).freeze
       PATH_DEPENDENCY_CLEAN_REGEX = /^file:|^link:/
+      DEFAULT_NPM_REGISTRY = "https://registry.npmjs.org"
 
       def self.required_files_in?(filenames)
         filenames.include?("package.json")
@@ -86,25 +87,39 @@ module Dependabot
 
       # If every entry in the lockfile uses the same registry, we can infer
       # that there is a global .npmrc file, so add it here as if it were in the repo.
-      def inferred_npmrc
+
+      def inferred_npmrc # rubocop:disable Metrics/PerceivedComplexity
         return @inferred_npmrc if defined?(@inferred_npmrc)
         return @inferred_npmrc = nil unless npmrc.nil? && package_lock
 
         known_registries = []
-        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |_name, details|
-          resolved = details.fetch("resolved", "https://registry.npmjs.org")
+        JSON.parse(package_lock.content).fetch("dependencies", {}).each do |dependency_name, details|
+          resolved = details.fetch("resolved", DEFAULT_NPM_REGISTRY)
+
           begin
             uri = URI.parse(resolved)
           rescue URI::InvalidURIError
             # Ignoring non-URIs since they're not registries.
-            # This can happen if resolved is false, for instance.
             next
           end
-          # Check for scheme since path dependencies will not have one
-          known_registries << "#{uri.scheme}://#{uri.host}" if uri.scheme && uri.host
+
+          next unless uri.scheme && uri.host
+
+          known_registry = "#{uri.scheme}://#{uri.host}"
+          path = uri.path
+
+          next unless path
+
+          index = path.index(dependency_name)
+          if index
+            registry_base_path = path[0...index].delete_suffix("/")
+            known_registry << registry_base_path
+          end
+
+          known_registries << known_registry
         end
 
-        if known_registries.uniq.length == 1 && known_registries.first != "https://registry.npmjs.org"
+        if known_registries.uniq.length == 1 && known_registries.first != DEFAULT_NPM_REGISTRY
           Dependabot.logger.info("Inferred global NPM registry is: #{known_registries.first}")
           return @inferred_npmrc = Dependabot::DependencyFile.new(
             name: ".npmrc",
