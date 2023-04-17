@@ -55,6 +55,7 @@ module Dependabot
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
+        package_managers["unknown"] = 1 if package_managers.empty?
 
         {
           ecosystem: "npm",
@@ -121,7 +122,7 @@ module Dependabot
         if (package_manager = package.fetch("packageManager", nil))
           get_yarn_version_from_package_json(package_manager)
         elsif yarn_lock
-          1
+          Helpers.yarn_version_numeric(yarn_lock.content)
         end
       end
 
