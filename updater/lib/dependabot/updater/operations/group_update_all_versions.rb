@@ -40,7 +40,7 @@ module Dependabot
         def perform
           # FIXME: This preserves the default behavior of grouping all updates into a single PR
           # but we should figure out if this is the default behavior we want.
-          register_all_dependencies_group if job.dependency_groups.empty?
+          register_all_dependencies_group unless job.dependency_groups&.any?
 
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("[Experimental] Starting grouped update job for #{job.source.repo}")
