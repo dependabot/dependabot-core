@@ -180,7 +180,7 @@ GEM
       reline (>= 0.3.0)
     jmespath (1.6.2)
     json (2.6.3)
-    licensed (4.3.0)
+    licensed (4.3.1)
       json (~> 2.6)
       licensee (~> 9.16)
       parallel (~> 1.22)
