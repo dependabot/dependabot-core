@@ -239,7 +239,7 @@ module Dependabot
     end
 
     def register_dependency_groups
-      return if dependency_groups.empty?
+      return if dependency_groups.nil?
 
       dependency_groups.each do |group|
         Dependabot::DependencyGroupEngine.register(group["name"], group["rules"]["patterns"])
