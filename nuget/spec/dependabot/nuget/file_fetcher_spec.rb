@@ -32,6 +32,16 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
 
   before { allow(file_fetcher_instance).to receive(:commit).and_return("sha") }
 
+  before do
+    allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+    stub_request(:get, File.join(url, ".config?ref=sha")).
+      with(headers: { "Authorization" => "token token" }).
+      to_return(
+        status: 404
+      )
+  end
+
   context "with a .csproj" do
     before do
       stub_request(:get, url + "?ref=sha").
@@ -105,7 +115,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_dotnet_config.json"),
+            body: fixture("github", "contents_dotnet_global.json"),
             headers: { "content-type" => "application/json" }
           )
       end
@@ -113,6 +123,31 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
       it "fetches the global.json file" do
         expect(file_fetcher_instance.files.map(&:name)).
           to match_array(%w(Nancy.csproj global.json))
+      end
+    end
+
+    context "with a dotnet-tools.json" do
+      before do
+        stub_request(:get, File.join(url, ".config?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_config_directory.json"),
+            headers: { "content-type" => "application/json" }
+          )
+
+        stub_request(:get, File.join(url, ".config/dotnet-tools.json?ref=sha")).
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_dotnet_tools.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the dotnet-tools.json file" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(%w(Nancy.csproj .config/dotnet-tools.json))
       end
     end
 

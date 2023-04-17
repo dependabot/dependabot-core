@@ -15,6 +15,7 @@ module Dependabot
           %r{^[^/]*\.[a-z]{2}proj$},
           /^packages\.config$/i,
           /^global\.json$/i,
+          /^dotnet-tools\.json$/i,
           /^Directory\.Build\.props$/i,
           /^Directory\.Build\.targets$/i,
           /^Packages\.props$/i
@@ -56,6 +57,10 @@ module Dependabot
 
       def global_json
         dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+      end
+
+      def dotnet_tools_json
+        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
       end
 
       def check_required_files
@@ -126,6 +131,13 @@ module Dependabot
             global_json.content.match(
               /"#{Regexp.escape(dependency.name)}"\s*:\s*
                "#{Regexp.escape(dependency.previous_version)}"/x
+            ).to_s
+          ]
+        elsif requirement.fetch(:file).casecmp(".config/dotnet-tools.json").zero?
+          [
+            dotnet_tools_json.content.match(
+              /"#{Regexp.escape(dependency.name)}"\s*:\s*{\s*"version"\s*:\s*
+               "#{Regexp.escape(dependency.previous_version)}"/xm
             ).to_s
           ]
         else

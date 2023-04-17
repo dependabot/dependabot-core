@@ -250,6 +250,42 @@ RSpec.describe Dependabot::Nuget::FileParser do
       end
     end
 
+    context "with a dotnet-tools.json" do
+      let(:files) { [packages_config, dotnet_tools_json] }
+      let(:packages_config) do
+        Dependabot::DependencyFile.new(
+          name: "packages.config",
+          content: fixture("packages_configs", "packages.config")
+        )
+      end
+      let(:dotnet_tools_json) do
+        Dependabot::DependencyFile.new(
+          name: ".config/dotnet-tools.json",
+          content: fixture("dotnet_tools_jsons", "dotnet-tools.json")
+        )
+      end
+
+      its(:length) { is_expected.to eq(11) }
+
+      describe "the last dependency" do
+        subject(:dependency) { dependencies.last }
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("dotnetsay")
+          expect(dependency.version).to eq("1.0.0")
+          expect(dependency.requirements).to eq(
+            [{
+              requirement: "1.0.0",
+              file: ".config/dotnet-tools.json",
+              groups: ["dependencies"],
+              source: nil
+            }]
+          )
+        end
+      end
+    end
+
     context "with an imported properties file" do
       let(:files) { [csproj_file, imported_file] }
       let(:imported_file) do

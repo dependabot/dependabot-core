@@ -1,0 +1,18 @@
+{
+  "name": "global.json",
+  "path": "global.json",
+  "sha": "b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "size": 1367,
+  "url": "https://api.github.com/repos/fsharp/fsharp/contents/global.json?ref=master",
+  "html_url": "https://github.com/fsharp/fsharp/blob/master/global.json",
+  "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/global.json",
+  "type": "file",
+  "content": "ewogICJzZGsiOiB7CiAgICAidmVyc2lvbiI6ICIyLjIuMTA0IgogIH0sCiAgIm1zYnVpbGQtc2RrcyI6IHsKICAgICJNaWNyb3NvZnQuQnVpbGQuVHJhdmVyc2FsIjogIjEuMC40NSIKICB9Cn0K",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/fsharp/fsharp/contents/global.json?ref=master",
+    "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+    "html": "https://github.com/fsharp/fsharp/blob/master/global.json"
+  }
+}
