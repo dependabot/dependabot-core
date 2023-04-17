@@ -32,6 +32,7 @@ module Dependabot
         fetched_files += packages_config_files
         fetched_files += nuget_config_files
         fetched_files << global_json if global_json
+        fetched_files << dotnet_tools_json if dotnet_tools_json
         fetched_files << packages_props if packages_props
 
         fetched_files = fetched_files.uniq
@@ -219,6 +220,12 @@ module Dependabot
 
       def global_json
         @global_json ||= fetch_file_if_present("global.json")
+      end
+
+      def dotnet_tools_json
+        @dotnet_tools_json ||= fetch_file_if_present(".config/dotnet-tools.json")
+      rescue Dependabot::DependencyFileNotFound
+        nil
       end
 
       def packages_props
