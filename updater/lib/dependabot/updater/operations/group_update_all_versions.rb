@@ -67,12 +67,13 @@ module Dependabot
             end
           end
 
-          # FIXME: Let's not worry about this for now but eventually we'd try to do single updates
-          # for anything that didn't appear in _at least one_ group.
-          # dependency_snapshot.ungrouped_dependencies.each do |dependency|
-          #   dependency_change = create_dependency_change_for(dependency)
-          #   create_pull_request(dependency_change)
-          # end
+          # Run ungrouped dependency updates
+          Dependabot::Updater::Operations::UpdateAllVersions.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot,
+            error_handler: error_handler
+          ).perform
         end
         # rubocop:enable Metrics/AbcSize
 
