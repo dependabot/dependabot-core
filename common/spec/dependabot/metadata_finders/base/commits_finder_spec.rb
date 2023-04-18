@@ -276,7 +276,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
         allow(Open3).to receive(:capture3).with(anything, "git ls-remote #{url}").and_return(["", "", exit_status])
       end
 
-      it { is_expected.to eq("https://github.com/gocardless/business/commits") }
+      it { is_expected.to be_nil }
     end
 
     context "with a github repo and no tags found" do
@@ -528,7 +528,7 @@ RSpec.describe Dependabot::MetadataFinders::Base::CommitsFinder do
 
             it do
               is_expected
-                .to eq("https://github.com/gocardless/business/commits")
+                .to be_nil
             end
           end
 
