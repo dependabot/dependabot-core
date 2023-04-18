@@ -100,6 +100,8 @@ module Dependabot
             uri = URI.parse(resolved)
           rescue URI::InvalidURIError
             # Ignoring non-URIs since they're not registries.
+            # This can happen if resolved is `false`, for instance
+            # npm6 bug https://github.com/npm/cli/issues/1138
             next
           end
 
