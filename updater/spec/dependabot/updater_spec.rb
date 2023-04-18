@@ -202,6 +202,7 @@ RSpec.describe Dependabot::Updater do
         stub_update_checker(vulnerable?: true)
 
         job = build_job(
+          requested_dependencies: ["dummy-pkg-b"],
           security_advisories: [
             {
               "dependency-name" => "dummy-pkg-b",
@@ -238,6 +239,7 @@ RSpec.describe Dependabot::Updater do
           )
 
           job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
             security_advisories: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -272,7 +274,10 @@ RSpec.describe Dependabot::Updater do
 
       context "when the dependency is no longer vulnerable" do
         it "does not create pull request" do
+          stub_update_checker(vulnerable?: false)
+
           job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
             security_advisories: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -296,6 +301,7 @@ RSpec.describe Dependabot::Updater do
           checker = stub_update_checker(vulnerable?: true)
 
           job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
             security_advisories: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -358,6 +364,7 @@ RSpec.describe Dependabot::Updater do
           checker = stub_update_checker(vulnerable?: true)
 
           job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
             security_advisories: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -402,6 +409,7 @@ RSpec.describe Dependabot::Updater do
           checker = stub_update_checker(vulnerable?: true, up_to_date?: true)
 
           job = build_job(
+            requested_dependencies: ["dummy-pkg-b"],
             security_advisories: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -944,6 +952,7 @@ RSpec.describe Dependabot::Updater do
         checker = stub_update_checker(latest_version: Gem::Version.new("1.3.0"), vulnerable?: true)
 
         job = build_job(
+          requested_dependencies: ["dummy-pkg-b"],
           existing_pull_requests: [
             [
               {
@@ -990,6 +999,7 @@ RSpec.describe Dependabot::Updater do
         checker = stub_update_checker(vulnerable?: true)
 
         job = build_job(
+          requested_dependencies: ["dummy-pkg-b"],
           existing_pull_requests: [
             [
               {
@@ -1084,6 +1094,7 @@ RSpec.describe Dependabot::Updater do
           )
 
         job = build_job(
+          requested_dependencies: ["dummy-pkg-b"],
           existing_pull_requests: [
             [
               {
