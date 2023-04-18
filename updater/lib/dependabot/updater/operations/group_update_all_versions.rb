@@ -67,13 +67,7 @@ module Dependabot
             end
           end
 
-          # Run ungrouped dependency updates
-          Dependabot::Updater::Operations::UpdateAllVersions.new(
-            service: service,
-            job: job,
-            dependency_snapshot: dependency_snapshot,
-            error_handler: error_handler
-          ).perform
+          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
         end
         # rubocop:enable Metrics/AbcSize
 
@@ -97,6 +91,15 @@ module Dependabot
           all_dependencies_group = { "name" => "group-all", "rules" => { "patterns" => ["*"] } }
           Dependabot::DependencyGroupEngine.register(all_dependencies_group["name"],
                                                      all_dependencies_group["rules"]["patterns"])
+        end
+
+        def run_ungrouped_dependency_updates
+          Dependabot::Updater::Operations::UpdateAllVersions.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot,
+            error_handler: error_handler
+          ).perform
         end
 
         # Returns a Dependabot::DependencyChange object that encapsulates the
