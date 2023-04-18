@@ -63,12 +63,7 @@ RSpec.describe Dependabot::Job do
   let(:experiments) { nil }
   let(:commit_message_options) { nil }
   let(:vendor_dependencies) { false }
-  # FIXME: rules are actually a hash but for the purposes of this pass we can leave it as a list
-  # Once this is refactored we should create a DependencyGroup like so
-  # Dependabot::DependencyGroup.new(name: "dummy-pkg-*", rules: { "patterns" => ["dummy-pkg-*"] })
-  let(:dependency_groups) do
-    [{ "name" => "dummy-pkg-*", "rules" => { "patterns" => ["dummy-pkg-*"] } }]
-  end
+  let(:dependency_groups) { [] }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
