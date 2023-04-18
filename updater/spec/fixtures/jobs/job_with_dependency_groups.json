@@ -1,0 +1,52 @@
+{
+  "job": {
+    "allowed-updates": [
+      {
+        "dependency-type": "direct",
+        "update-type": "all"
+      }
+    ],
+    "credentials-metadata": [
+      {
+        "type": "git_source",
+        "host": "github.com"
+      }
+    ],
+    "dependencies": null,
+    "directory": "/",
+    "existing-pull-requests": [],
+    "ignore-conditions": [],
+    "security-advisories": [],
+    "package-manager": "bundler",
+    "repo-name": "dependabot-fixtures/dependabot-test-ruby-package",
+    "source": {
+      "provider": "github",
+      "repo": "dependabot-fixtures/dependabot-test-ruby-package",
+      "directory": "/",
+      "branch": null,
+      "hostname": "github.com",
+      "api-endpoint": "https://api.github.com/"
+    },
+    "lockfile-only": false,
+    "requirements-update-strategy": null,
+    "update-subdependencies": false,
+    "updating-a-pull-request": false,
+    "vendor-dependencies": false,
+    "security-updates-only": false,
+    "dependency-groups": [
+      {
+        "name": "group-a",
+        "rules": { 
+          "patterns": ["dummy-pkg-*"]
+        }
+      },
+      {
+        "name": "group-b",
+        "rules": { 
+          "patterns": ["dummy-pkg-b"]
+        }
+      }
+    ],
+    "experiments": { "grouped_updates_prototype": true }
+  }
+}

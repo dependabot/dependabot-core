@@ -2,6 +2,7 @@
 
 require "dependabot/config/ignore_condition"
 require "dependabot/config/update_config"
+require "dependabot/dependency_group_engine"
 require "dependabot/experiments"
 require "dependabot/source"
 require "wildcard_matcher"
@@ -37,6 +38,7 @@ module Dependabot
       update_subdependencies
       updating_a_pull_request
       vendor_dependencies
+      dependency_groups
     )
 
     attr_reader :allowed_updates,
@@ -51,7 +53,8 @@ module Dependabot
                 :security_updates_only,
                 :source,
                 :token,
-                :vendor_dependencies
+                :vendor_dependencies,
+                :dependency_groups
 
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
@@ -94,8 +97,10 @@ module Dependabot
       @update_subdependencies       = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request      = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies          = attributes.fetch(:vendor_dependencies, false)
+      @dependency_groups            = attributes.fetch(:dependency_groups, [])
 
       register_experiments
+      register_dependency_groups
     end
 
     def clone?
@@ -230,6 +235,14 @@ module Dependabot
           vulnerable_versions: vulnerable_versions,
           safe_versions: safe_versions
         )
+      end
+    end
+
+    def register_dependency_groups
+      return if dependency_groups.nil?
+
+      dependency_groups.each do |group|
+        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"]["patterns"])
       end
     end
 

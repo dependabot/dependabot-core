@@ -7,6 +7,10 @@ require "spec_helper"
 
 RSpec.describe Dependabot::Updater::Operations do
   describe "::class_for" do
+    before do
+      Dependabot::Experiments.reset!
+    end
+
     it "returns nil if no operation matches" do
       # We always expect jobs that update a pull request to specify their
       # existing dependency changes, a job with this set of conditions

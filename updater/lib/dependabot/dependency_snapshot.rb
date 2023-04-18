@@ -53,6 +53,18 @@ module Dependabot
       end
     end
 
+    # A dependency snapshot will always have the same set of dependencies since it only depends
+    # on the Job and dependency groups, which are static for a given commit.
+    def groups
+      # The DependencyGroupEngine registers dependencies when the Job is created
+      # and it will memoize the dependency groups
+      Dependabot::DependencyGroupEngine.dependency_groups(allowed_dependencies)
+    end
+
+    def ungrouped_dependencies
+      Dependabot::DependencyGroupEngine.ungrouped_dependencies(allowed_dependencies)
+    end
+
     private
 
     def initialize(job:, base_commit_sha:, dependency_files:)
