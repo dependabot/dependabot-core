@@ -79,6 +79,10 @@ module Dependabot
               )
             end
           post_process_lockfile(lockfile_body)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
+
+          raise
         end
 
         def write_temporary_dependency_files
