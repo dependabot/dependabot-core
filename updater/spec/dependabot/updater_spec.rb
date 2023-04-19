@@ -2247,9 +2247,6 @@ RSpec.describe Dependabot::Updater do
       end
 
       updater.run
-
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "performs a grouped and ungrouped dependency update when both are present" do
@@ -2284,9 +2281,6 @@ RSpec.describe Dependabot::Updater do
       #   with("Updater.started", {:tags=>{:operation=>:update_all_versions}})
 
       updater.run
-
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "does not include ignored dependencies in the group PR" do
@@ -2310,9 +2304,6 @@ RSpec.describe Dependabot::Updater do
 
       expect(service).not_to receive(:create_pull_request)
       updater.run
-
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
   end
 
