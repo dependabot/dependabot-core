@@ -33,6 +33,8 @@ module Dependabot
             "channel" => channel
           }
         }
+      rescue TomlRB::ParseError
+        raise Dependabot::DependencyFileNotParseable, rust_toolchain.path
       end
 
       private
