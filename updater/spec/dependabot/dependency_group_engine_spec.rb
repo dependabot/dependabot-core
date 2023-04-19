@@ -176,10 +176,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#reset!" do
-    after do
-      dependency_group_engine.reset!
-    end
-
     it "resets the dependency group engine" do
       snapshot = create_dependency_snapshot
       snapshot.groups
