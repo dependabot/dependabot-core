@@ -42,16 +42,9 @@ module Dependabot
       end
 
       def pr_name
-        begin
-          pr_name = pr_name_prefixer.pr_name_prefix
-        rescue StandardError => e
-          Dependabot.logger.error("Error while generating PR name: #{e.message}")
-          pr_name = ""
-        end
-        pr_name += library? ? library_pr_name : application_pr_name
-        return pr_name if files.first.directory == "/"
-
-        pr_name + " in #{files.first.directory}"
+        name = library? ? library_pr_name : application_pr_name
+        name[0] = name[0].capitalize if pr_name_prefixer.capitalize_first_word?
+        "#{pr_name_prefix}#{name}#{pr_name_suffix}"
       end
 
       def pr_message
@@ -86,10 +79,7 @@ module Dependabot
       private
 
       def library_pr_name
-        pr_name = "update "
-        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
-
-        pr_name +
+        "update " +
           if dependencies.count == 1
             "#{dependencies.first.display_name} requirement " \
               "#{from_version_msg(old_library_requirement(dependencies.first))}" \
@@ -106,10 +96,7 @@ module Dependabot
 
       # rubocop:disable Metrics/AbcSize
       def application_pr_name
-        pr_name = "bump "
-        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
-
-        pr_name +
+        "bump " +
           if dependencies.count == 1
             dependency = dependencies.first
             "#{dependency.display_name} " \
@@ -137,7 +124,18 @@ module Dependabot
       # rubocop:enable Metrics/AbcSize
 
       def pr_name_prefix
-        pr_name_prefixer.pr_name_prefix
+        begin
+          pr_name_prefixer.pr_name_prefix
+        rescue StandardError => e
+          Dependabot.logger.error("Error while generating PR name: #{e.message}")
+          ""
+        end
+      end
+
+      def pr_name_suffix
+        return "" if files.first.directory == "/"
+
+        " in #{files.first.directory}"
       end
 
       def commit_subject
