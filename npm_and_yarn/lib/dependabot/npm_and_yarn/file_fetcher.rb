@@ -152,8 +152,7 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        package = JSON.parse(package_json.content)
-        if (package_manager = package.fetch("packageManager", nil))
+        if (package_manager = parsed_package_json.fetch("packageManager", nil))
           get_yarn_version_from_package_json(package_manager)
         elsif yarn_lock
           Helpers.yarn_version_numeric(yarn_lock)
