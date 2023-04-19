@@ -52,7 +52,6 @@ module Dependabot
         rescue SharedHelpers::HelperSubprocessFailed => e
           # TODO: Remove once we stop stubbing out the V2 native helper
           raise Dependabot::NotImplemented, e.message if e.error_class == "Functions::NotImplementedError"
-          raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
 
           raise
         end
