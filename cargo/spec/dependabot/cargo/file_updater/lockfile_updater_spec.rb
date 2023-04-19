@@ -60,6 +60,21 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
 
     it { expect { updated_lockfile_content }.to_not output.to_stdout }
 
+    context "when using a toolchain file that is too old" do
+      let(:toolchain_file) do
+        Dependabot::DependencyFile.new(
+          name: "rust-toolchain",
+          content: "[toolchain]\nchannel = \"1.67\"\n"
+        )
+      end
+      let(:dependency_files) { [manifest, lockfile, toolchain_file] }
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "when updating the lockfile fails" do
       let(:dependency_version) { "99.0.0" }
       let(:requirements) do
