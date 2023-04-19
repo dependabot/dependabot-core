@@ -422,7 +422,7 @@ module Dependabot
         end
 
         def version_class
-          Cargo::Version
+          dependency.version_class
         end
       end
     end

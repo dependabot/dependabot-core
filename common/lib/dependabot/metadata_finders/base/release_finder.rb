@@ -186,7 +186,7 @@ module Dependabot
         end
 
         def version_class
-          Utils.version_class_for_package_manager(dependency.package_manager)
+          dependency.version_class
         end
 
         def fetch_dependency_releases

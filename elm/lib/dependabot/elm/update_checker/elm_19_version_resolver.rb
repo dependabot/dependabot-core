@@ -182,11 +182,11 @@ module Dependabot
         end
 
         def version_class
-          Elm::Version
+          dependency.version_class
         end
 
         def requirement_class
-          Elm::Requirement
+          dependency.requirement_class
         end
       end
     end
