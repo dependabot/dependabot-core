@@ -5,6 +5,7 @@ require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
@@ -152,16 +153,15 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        if (package_manager = parsed_package_json.fetch("packageManager", nil))
-          get_yarn_version_from_package_json(package_manager)
+        if locked_version = package_manager.locked_version("yarn")
+          locked_version
         elsif yarn_lock
           Helpers.yarn_version_numeric(yarn_lock)
         end
       end
 
-      def get_yarn_version_from_package_json(package_manager)
-        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
-        version_match&.named_captures&.fetch("version", nil)
+      def package_manager
+        @package_manager ||= PackageManager.new(parsed_package_json)
       end
 
       def package_json
