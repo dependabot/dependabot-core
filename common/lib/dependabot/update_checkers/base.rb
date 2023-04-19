@@ -113,11 +113,11 @@ module Dependabot
       end
 
       def version_class
-        Utils.version_class_for_package_manager(dependency.package_manager)
+        dependency.version_class
       end
 
       def requirement_class
-        Utils.requirement_class_for_package_manager(dependency.package_manager)
+        dependency.requirement_class
       end
 
       # For some languages, the manifest file may be constructed such that

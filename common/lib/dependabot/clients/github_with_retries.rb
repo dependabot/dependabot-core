@@ -95,7 +95,7 @@ module Dependabot
           c.proxy = ENV["HTTPS_PROXY"] if ENV["HTTPS_PROXY"]
         end
 
-        Octokit.middleware = Faraday::RackBuilder.new do |builder|
+        args[:middleware] = Faraday::RackBuilder.new do |builder|
           builder.use Faraday::Retry::Middleware, exceptions: RETRYABLE_ERRORS, max: max_retries || 3
 
           Octokit::Default::MIDDLEWARE.handlers.each do |handler|
