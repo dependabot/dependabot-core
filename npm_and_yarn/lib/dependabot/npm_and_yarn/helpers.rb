@@ -16,8 +16,8 @@ module Dependabot
         6
       end
 
-      def self.yarn_version_numeric(lockfile_content)
-        if yarn_berry?(lockfile_content)
+      def self.yarn_version_numeric(yarn_lock)
+        if yarn_berry?(yarn_lock)
           3
         else
           1

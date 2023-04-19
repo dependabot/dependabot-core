@@ -139,7 +139,7 @@ module Dependabot
         if (package_manager = package.fetch("packageManager", nil))
           get_yarn_version_from_package_json(package_manager)
         elsif yarn_lock
-          Helpers.yarn_version_numeric(yarn_lock.content)
+          Helpers.yarn_version_numeric(yarn_lock)
         end
       end
 
