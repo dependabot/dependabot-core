@@ -73,7 +73,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#register" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
@@ -92,7 +92,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#groups_for" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
@@ -106,7 +106,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#dependency_groups" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
@@ -142,7 +142,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#ungrouped_dependencies" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
@@ -176,7 +176,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#reset!" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
@@ -199,7 +199,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#calculate_dependency_groups!" do
-    before do
+    after do
       dependency_group_engine.reset!
     end
 
