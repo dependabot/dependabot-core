@@ -81,7 +81,7 @@ module Dependabot
 
       def npm_files
         fetched_npm_files = []
-        fetched_npm_files << package_lock if package_lock && !ignore_package_lock?
+        fetched_npm_files << package_lock if package_lock
         fetched_npm_files << shrinkwrap if shrinkwrap
         fetched_npm_files << npmrc if npmrc
         fetched_npm_files << inferred_npmrc if inferred_npmrc
@@ -173,7 +173,7 @@ module Dependabot
       def package_lock
         return @package_lock if defined?(@package_lock)
 
-        @package_lock = fetch_file_if_present("package-lock.json")
+        @package_lock = fetch_file_if_present("package-lock.json") unless ignore_package_lock?
       end
 
       def yarn_lock
