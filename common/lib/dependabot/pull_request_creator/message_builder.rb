@@ -42,9 +42,9 @@ module Dependabot
       end
 
       def pr_name
-        name = library? ? library_pr_name : application_pr_name
+        name = dependency_group ? group_pr_name : solo_pr_name
         name[0] = name[0].capitalize if pr_name_prefixer.capitalize_first_word?
-        "#{pr_name_prefix}#{name}#{pr_name_suffix}"
+        "#{pr_name_prefix}#{name}"
       end
 
       def pr_message
@@ -78,6 +78,11 @@ module Dependabot
 
       private
 
+      def solo_pr_name
+        name = library? ? library_pr_name : application_pr_name
+        "#{name}#{pr_name_directory}"
+      end
+
       def library_pr_name
         "update " +
           if dependencies.count == 1
@@ -94,7 +99,6 @@ module Dependabot
           end
       end
 
-      # rubocop:disable Metrics/AbcSize
       def application_pr_name
         "bump " +
           if dependencies.count == 1
@@ -121,18 +125,20 @@ module Dependabot
             end
           end
       end
-      # rubocop:enable Metrics/AbcSize
 
-      def pr_name_prefix
-        begin
-          pr_name_prefixer.pr_name_prefix
-        rescue StandardError => e
-          Dependabot.logger.error("Error while generating PR name: #{e.message}")
-          ""
-        end
+      def group_pr_name
+        updates = dependencies.map(&:name).uniq.count
+        "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
       end
 
-      def pr_name_suffix
+      def pr_name_prefix
+        pr_name_prefixer.pr_name_prefix
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating PR name: #{e.message}")
+        ""
+      end
+
+      def pr_name_directory
         return "" if files.first.directory == "/"
 
         " in #{files.first.directory}"
