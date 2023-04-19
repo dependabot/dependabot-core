@@ -153,7 +153,7 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        package_manager.locked_version("yarn") || guess_yarn_version
+        @yarn_version = package_manager.locked_version("yarn") || guess_yarn_version
       end
 
       def guess_yarn_version
