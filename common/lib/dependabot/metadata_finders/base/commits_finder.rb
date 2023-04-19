@@ -171,8 +171,6 @@ module Dependabot
         end
 
         def fetch_dependency_tags
-          return [] unless source
-
           GitMetadataFetcher
             .new(url: source.url, credentials: credentials)
             .tags
