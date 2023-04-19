@@ -441,10 +441,8 @@ module Dependabot
       end
 
       def dependency_link(dependency)
-        if source_url(dependency)
-          "[#{dependency.display_name}](#{source_url(dependency)})"
-        elsif homepage_url(dependency)
-          "[#{dependency.display_name}](#{homepage_url(dependency)})"
+        if dependency_url(dependency)
+          "[#{dependency.display_name}](#{dependency_url(dependency)})"
         else
           dependency.display_name
         end
@@ -452,6 +450,10 @@ module Dependabot
 
       def dependency_version_update(dependency)
         "#{dependency.humanized_previous_version} to #{dependency.humanized_version}"
+      end
+
+      def dependency_url(dependency)
+        source_url(dependency) || homepage_url(dependency)
       end
 
       def metadata_links
@@ -475,6 +477,7 @@ module Dependabot
         msg += "\n- [Changelog](#{changelog_url(dep)})" if changelog_url(dep)
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
+        msg += missing_metadata_explanation(dep) if msg.empty?
         msg
       end
 
@@ -521,13 +524,24 @@ module Dependabot
       def metadata_cascades_for_dep(dependency)
         return "" if dependency.removed?
 
-        MetadataPresenter.new(
+        msg = MetadataPresenter.new(
           dependency: dependency,
           source: source,
           metadata_finder: metadata_finder(dependency),
           vulnerabilities_fixed: vulnerabilities_fixed[dependency.name],
           github_redirection_service: github_redirection_service
         ).to_s
+
+        msg += missing_metadata_explanation(dependency) if msg.strip.empty?
+        msg
+      end
+
+      def missing_metadata_explanation(dep)
+        dep_url = dependency_url(dep)
+        return "" unless dep_url
+
+        "\n\n:info: Dependabot could not fetch any release metadata from [the url](#{dep_url}) " \
+          "it found as the source for this release."
       end
 
       def ignore_conditions_table
