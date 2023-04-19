@@ -3,6 +3,7 @@
 require "pathname"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
+require "dependabot/dependency_group"
 require "dependabot/logger"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
@@ -21,12 +22,13 @@ module Dependabot
       attr_reader :source, :dependencies, :files, :credentials,
                   :pr_message_header, :pr_message_footer,
                   :commit_message_options, :vulnerabilities_fixed,
-                  :github_redirection_service
+                  :github_redirection_service, :dependency_group
 
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
-                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE)
+                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
+                     dependency_group: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -36,6 +38,7 @@ module Dependabot
         @commit_message_options     = commit_message_options
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
+        @dependency_group           = dependency_group
       end
 
       def pr_name

@@ -17,7 +17,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       pr_message_footer: pr_message_footer,
       commit_message_options: commit_message_options,
       vulnerabilities_fixed: vulnerabilities_fixed,
-      github_redirection_service: github_redirection_service
+      github_redirection_service: github_redirection_service,
+      dependency_group: dependency_group
     )
   end
 
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "redirect.github.com" }
+  let(:dependency_group) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
