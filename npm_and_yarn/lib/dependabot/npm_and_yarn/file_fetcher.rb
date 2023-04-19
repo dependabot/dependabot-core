@@ -177,19 +177,13 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        @yarn_version = package_manager.version("yarn")
+        @yarn_version = package_manager.setup("yarn")
       end
 
       def pnpm_version
         return @pnpm_version if defined?(@pnpm_version)
 
-        version = package_manager.version("pnpm")
-
-        if version && Version.new(version.to_s) < Version.new("7")
-          raise ToolVersionNotSupported.new("PNPM", version.to_s, "7.*, 8.*")
-        end
-
-        @pnpm_version = version
+        @pnpm_version = package_manager.setup("pnpm")
       end
 
       def package_manager

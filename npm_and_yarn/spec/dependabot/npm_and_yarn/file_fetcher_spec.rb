@@ -366,9 +366,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to match_array(%w(package.json pnpm-lock.yaml))
       end
 
-      it "parses the version as 8" do
+      it "parses the version as 7" do
         expect(file_fetcher_instance.ecosystem_versions).to eq(
-          { package_managers: { "pnpm" => 8 } }
+          { package_managers: { "pnpm" => 7 } }
         )
       end
     end

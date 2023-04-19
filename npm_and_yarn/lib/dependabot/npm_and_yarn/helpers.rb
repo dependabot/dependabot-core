@@ -31,8 +31,10 @@ module Dependabot
       # Mapping from lockfile versions to PNPM versions is at
       # https://github.com/pnpm/spec/tree/274ff02de23376ad59773a9f25ecfedd03a41f64/lockfile, but simplify it for now.
       def self.pnpm_version_numeric(pnpm_lock)
-        if pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
+        if pnpm_lockfile_version(pnpm_lock).to_f >= 6.0
           8
+        elsif pnpm_lockfile_version(pnpm_lock).to_f >= 5.4
+          7
         else
           6
         end
