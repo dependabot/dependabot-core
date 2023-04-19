@@ -171,15 +171,21 @@ module Dependabot
       end
 
       def package_lock
-        @package_lock ||= fetch_file_if_present("package-lock.json")
+        return @package_lock if defined?(@package_lock)
+
+        @package_lock = fetch_file_if_present("package-lock.json")
       end
 
       def yarn_lock
-        @yarn_lock ||= fetch_file_if_present("yarn.lock")
+        return @yarn_lock if defined?(@yarn_lock)
+
+        @yarn_lock = fetch_file_if_present("yarn.lock")
       end
 
       def shrinkwrap
-        @shrinkwrap ||= fetch_file_if_present("npm-shrinkwrap.json")
+        return @shrinkwrap if defined?(@shrinkwrap)
+
+        @shrinkwrap = fetch_file_if_present("npm-shrinkwrap.json")
       end
 
       def npmrc
