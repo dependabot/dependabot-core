@@ -2247,12 +2247,15 @@ RSpec.describe Dependabot::Updater do
       end
 
       updater.run
+
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "performs a grouped and ungrouped dependency update when both are present" do
       job = build_job(experiments: { "grouped-updates-prototype" => true },
-                      dependency_groups: [{ "name" => "group-b", "rules" => {"patterns"=>["dummy-pkg-b"]} }])
-      checker = stub_update_checker
+                      dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }])
+      stub_update_checker
       service = build_service
       updater = build_updater(
         service: service,
@@ -2271,15 +2274,19 @@ RSpec.describe Dependabot::Updater do
         ]
       )
 
+      allow(service).to receive(:create_pull_request)
       expect(updater.dependency_snapshot).to receive(:groups).and_call_original
       expect(updater.dependency_snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
       expect(service).to receive(:increment_metric).
-        with("updater.started", {:tags=>{:operation=>:grouped_updates_prototype}})
+        with("updater.started", { tags: { operation: :grouped_updates_prototype } })
       # FIXME: This doesn't run because service.increment_metric runs in the updater not in the Operation
       # expect(service).to receive(:increment_metric).
       #   with("Updater.started", {:tags=>{:operation=>:update_all_versions}})
 
       updater.run
+
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "does not include ignored dependencies in the group PR" do
@@ -2303,6 +2310,9 @@ RSpec.describe Dependabot::Updater do
 
       expect(service).not_to receive(:create_pull_request)
       updater.run
+
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
   end
 

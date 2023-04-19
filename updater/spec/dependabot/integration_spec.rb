@@ -138,7 +138,8 @@ RSpec.describe "Dependabot Updates" do
         "update_subdependencies" => false,
         "updating_a_pull_request" => false,
         "vendor_dependencies" => false,
-        "security_updates_only" => false
+        "security_updates_only" => false,
+        "dependency_groups" => []
       }
     end
 

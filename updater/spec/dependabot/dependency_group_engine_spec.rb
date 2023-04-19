@@ -73,8 +73,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#register" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "registers the dependency groups" do
@@ -92,8 +93,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#groups_for" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the expected groups" do
@@ -106,8 +108,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#dependency_groups" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the dependency groups" do
@@ -142,8 +145,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#ungrouped_dependencies" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the ungrouped dependencies" do
@@ -176,8 +180,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#reset!" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "resets the dependency group engine" do
@@ -199,8 +204,9 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   end
 
   describe "#calculate_dependency_groups!" do
-    before do
-      dependency_group_engine.reset!
+    after do
+      Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "runs once" do

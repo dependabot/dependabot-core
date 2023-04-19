@@ -7,7 +7,7 @@ require "spec_helper"
 
 RSpec.describe Dependabot::Updater::Operations do
   describe "::class_for" do
-    before do
+    after do
       Dependabot::Experiments.reset!
     end
 
