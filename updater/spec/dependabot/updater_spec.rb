@@ -2248,6 +2248,39 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
+    it "performs a grouped and ungrouped dependency update when both are present" do
+      job = build_job(experiments: { "grouped-updates-prototype" => true },
+                      dependency_groups: [{ "name" => "group-b", "rules" => {"patterns"=>["dummy-pkg-b"]} }])
+      checker = stub_update_checker
+      service = build_service
+      updater = build_updater(
+        service: service,
+        job: job,
+        dependency_files: [
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("bundler/original/Gemfile"),
+            directory: "/"
+          ),
+          Dependabot::DependencyFile.new(
+            name: "Gemfile.lock",
+            content: fixture("bundler/original/Gemfile.lock"),
+            directory: "/"
+          )
+        ]
+      )
+
+      expect(updater.dependency_snapshot).to receive(:groups).and_call_original
+      expect(updater.dependency_snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
+      expect(service).to receive(:increment_metric).
+        with("updater.started", {:tags=>{:operation=>:grouped_updates_prototype}})
+      # FIXME: This doesn't run because service.increment_metric runs in the updater not in the Operation
+      # expect(service).to receive(:increment_metric).
+      #   with("Updater.started", {:tags=>{:operation=>:update_all_versions}})
+
+      updater.run
+    end
+
     it "does not include ignored dependencies in the group PR" do
       job = build_job(
         ignore_conditions: [
@@ -2321,7 +2354,7 @@ RSpec.describe Dependabot::Updater do
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false)
+                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2363,7 +2396,8 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil
+      repo_contents_path: nil,
+      dependency_groups: dependency_groups
     )
   end
 
