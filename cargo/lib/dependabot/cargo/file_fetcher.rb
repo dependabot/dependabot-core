@@ -34,7 +34,8 @@ module Dependabot
           }
         }
       rescue TomlRB::ParseError
-        raise Dependabot::DependencyFileNotParseable, rust_toolchain.path
+        raise Dependabot::DependencyFileNotParseable.new(rust_toolchain.path,
+                                                         "only rust-toolchain files with TOML syntax are supported")
       end
 
       private
