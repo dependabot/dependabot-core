@@ -153,11 +153,13 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        if locked_version = package_manager.locked_version("yarn")
-          locked_version
-        elsif yarn_lock
-          Helpers.yarn_version_numeric(yarn_lock)
-        end
+        package_manager.locked_version("yarn") || guess_yarn_version
+      end
+
+      def guess_yarn_version
+        return unless yarn_lock
+
+        Helpers.yarn_version_numeric(yarn_lock)
       end
 
       def package_manager
