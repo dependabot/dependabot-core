@@ -226,7 +226,8 @@ module Dependabot
           pr_message_header: pr_message_header,
           pr_message_footer: pr_message_footer,
           vulnerabilities_fixed: vulnerabilities_fixed,
-          github_redirection_service: github_redirection_service
+          github_redirection_service: github_redirection_service,
+          dependency_group: dependency_group
         )
     end
 

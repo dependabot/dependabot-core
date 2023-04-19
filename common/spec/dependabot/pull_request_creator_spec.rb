@@ -403,6 +403,17 @@ RSpec.describe Dependabot::PullRequestCreator do
         expect(dummy_creator).to receive(:create)
         creator_with_group.create
       end
+
+      it "passes the dependency_group to the PullRequestCreator::MessageBuilder" do
+        allow(described_class::Github).to receive(:new).and_return(dummy_creator)
+        allow(dummy_creator).to receive(:create)
+
+        expect(described_class::MessageBuilder).
+          to receive(:new).
+          with(hash_including(dependency_group: dependency_group))
+
+        creator_with_group.create
+      end
     end
   end
 end
