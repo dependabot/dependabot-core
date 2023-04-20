@@ -2,6 +2,7 @@
 
 require "dependabot/updater/operations/create_security_update_pull_request"
 require "dependabot/updater/operations/group_update_all_versions"
+require "dependabot/updater/operations/refresh_security_update_pull_request"
 require "dependabot/updater/operations/refresh_version_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
 
@@ -27,9 +28,10 @@ module Dependabot
       # that does, so these Operations should be ordered so that those with most
       # specific preconditions go before those with more permissive checks.
       OPERATIONS = [
-        GroupUpdateAllVersions,
         CreateSecurityUpdatePullRequest,
+        RefreshSecurityUpdatePullRequest,
         RefreshVersionUpdatePullRequest,
+        GroupUpdateAllVersions,
         UpdateAllVersions
       ]
 
