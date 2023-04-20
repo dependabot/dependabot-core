@@ -93,7 +93,7 @@ module Dependabot
           lead_dependency = dependencies.find do |dep|
             dep.name.downcase == lead_dep_name
           end
-          checker = update_checker_for(lead_dependency, raise_on_ignored: raise_on_ignored?(lead_dependency))
+          checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
           return if all_versions_ignored?(lead_dependency, checker)
@@ -137,10 +137,6 @@ module Dependabot
         # rubocop:enable Metrics/PerceivedComplexity
         # rubocop:enable Metrics/MethodLength
 
-        def raise_on_ignored?(dependency)
-          job.security_updates_only? || job.ignore_conditions_for(dependency).any?
-        end
-
         def requirements_to_unlock(checker)
           if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
@@ -154,7 +150,7 @@ module Dependabot
           end
         end
 
-        def update_checker_for(dependency, raise_on_ignored:)
+        def update_checker_for(dependency)
           Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
             dependency: dependency,
             dependency_files: dependency_snapshot.dependency_files,
@@ -162,7 +158,7 @@ module Dependabot
             credentials: job.credentials,
             ignored_versions: job.ignore_conditions_for(dependency),
             security_advisories: job.security_advisories_for(dependency),
-            raise_on_ignored: raise_on_ignored,
+            raise_on_ignored: true,
             requirements_update_strategy: job.requirements_update_strategy,
             options: job.experiments
           )
