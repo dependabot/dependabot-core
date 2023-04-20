@@ -33,7 +33,6 @@ module Dependabot
           @job = job
           @dependency_snapshot = dependency_snapshot
           @error_handler = error_handler
-          @created_pull_requests = []
         end
 
         def perform
@@ -48,8 +47,7 @@ module Dependabot
         attr_reader :job,
                     :service,
                     :dependency_snapshot,
-                    :error_handler,
-                    :created_pull_requests
+                    :error_handler
 
         def dependencies
           dependency_snapshot.job_dependencies
@@ -216,8 +214,7 @@ module Dependabot
             end
           )
 
-          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set } ||
-            created_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
+          job.existing_pull_requests.find { |pr| Set.new(pr) == new_pr_set }
         end
 
         def create_pull_request(dependency_change)
@@ -225,14 +222,6 @@ module Dependabot
                                  "pull request for creation")
 
           service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-
-          created_pull_requests << dependency_change.updated_dependencies.map do |dep|
-            {
-              "dependency-name" => dep.name,
-              "dependency-version" => dep.version,
-              "dependency-removed" => dep.removed? ? true : nil
-            }.compact
-          end
         end
 
         def update_pull_request(dependency_change)
