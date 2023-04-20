@@ -105,7 +105,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: JSON.dump({ content: Base64.encode64("[toolchain]\nchannel = \"nightly-2019-01-01\"") }),
+          body: JSON.dump({ content: Base64.encode64("nightly-2019-01-01") }),
           headers: json_header
         )
     end
@@ -115,11 +115,8 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         to match_array(%w(Cargo.toml rust-toolchain))
     end
 
-    it "provides the Rust channel" do
-      expect(file_fetcher_instance.package_manager_version).to eq({
-        ecosystem: "cargo",
-        package_managers: { "channel" => "nightly-2019-01-01" }
-      })
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.package_manager_version }.to raise_error(Dependabot::DependencyFileNotParseable)
     end
   end
 
