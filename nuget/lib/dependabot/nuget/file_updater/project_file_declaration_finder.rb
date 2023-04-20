@@ -3,6 +3,7 @@
 
 require "nokogiri"
 require "dependabot/nuget/file_updater"
+require "dependabot/nuget/file_updater/dependency_finder"
 
 module Dependabot
   module Nuget
@@ -37,14 +38,18 @@ module Dependabot
                     :dependency_files
 
         def initialize(dependency_name:, dependency_files:,
-                       declaring_requirement:)
+                       declaring_requirement:, credentials:)
           @dependency_name       = dependency_name
           @dependency_files      = dependency_files
           @declaring_requirement = declaring_requirement
+          @credentials           = credentials
         end
 
         def declaration_strings
-          @declaration_strings ||= fetch_declaration_strings
+          return unless @declaration_strings.nil?
+
+          @declaration_strings = fetch_declaration_strings
+          @declaration_strings += fetch_implicit_declaration_strings if @declaration_strings.none?
           @declaration_strings += fetch_sdk_strings
         end
 
@@ -66,7 +71,7 @@ module Dependabot
 
         # rubocop:disable Metrics/CyclomaticComplexity
         # rubocop:disable Metrics/PerceivedComplexity
-        def fetch_declaration_strings
+        def fetch_declaration_strings(excludeNonMatchingNames: true)
           deep_find_declarations(declaring_file.content).select do |nd|
             node = Nokogiri::XML(nd)
             node.remove_namespaces!
@@ -76,10 +81,14 @@ module Dependabot
                         node.at_xpath("./Include")&.content&.strip ||
                         node.attribute("Update")&.value&.strip ||
                         node.at_xpath("./Update")&.content&.strip
-            next false unless node_name&.downcase == dependency_name&.downcase
+
+            next false if excludeNonMatchingNames && node_name&.downcase != dependency_name&.downcase
 
             node_requirement = get_node_version_value(node)
-            node_requirement == declaring_requirement.fetch(:requirement)
+
+            node_requirement == declaring_requirement.fetch(:requirement) if excludeNonMatchingNames
+
+            nd
           end
         end
         # rubocop:enable Metrics/PerceivedComplexity
@@ -176,6 +185,42 @@ module Dependabot
             strings << string
           end
           strings
+        end
+
+        def fetch_dependencies(package)
+          node = Nokogiri::XML(package)
+          node.remove_namespaces!
+          node = get_element_from_node(node)
+
+          node_name = node.attribute("Include")&.value&.strip ||
+                      node.at_xpath("./Include")&.content&.strip ||
+                      node.attribute("Update")&.value&.strip ||
+                      node.at_xpath("./Update")&.content&.strip
+          node_version = get_node_version_value(node)
+          current_dependency = Dependency.new(name: node_name, requirements: [declaring_requirement],
+                                              package_manager: "nuget", version: node_version)
+          dependency_finder = DependencyFinder.new(dependency: current_dependency, dependency_files: @dependency_files,
+                                                   credentials: @credentials)
+          dependency_finder.dependencies
+        end
+
+        def fetch_implicit_declaration_strings
+          declaration_strings = fetch_declaration_strings(excludeNonMatchingNames: false)
+
+          implicit_dependencies = declaration_strings.flat_map do |declaration_string|
+            fetch_dependencies(declaration_string).compact
+          end
+
+          filtered_dependencies = implicit_dependencies.select do |x|
+            x["packageName"] == @dependency_name
+          end
+
+          implicit_declaration_strings = []
+          filtered_dependencies.each do |current_dependency|
+            implicit_declaration_strings << "<PackageReference Include=\"#{current_dependency['id']}\" Version=\"#{current_dependency['range']}\" />"
+          end
+
+          implicit_declaration_strings
         end
       end
     end

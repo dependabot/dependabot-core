@@ -12,10 +12,19 @@ RSpec.describe namespace::ProjectFileDeclarationFinder do
     described_class.new(
       dependency_name: dependency_name,
       declaring_requirement: declaring_requirement,
-      dependency_files: dependency_files
+      dependency_files: dependency_files,
+      credentials: credentials
     )
   end
 
+  let(:credentials) do
+    [{
+      "type" => "git_source",
+      "host" => "github.com",
+      "username" => "x-access-token",
+      "password" => "token"
+    }]
+  end
   let(:dependency_name) { "Microsoft.Extensions.DependencyModel" }
   let(:declaring_requirement) do
     {
