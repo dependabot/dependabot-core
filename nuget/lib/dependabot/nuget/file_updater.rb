@@ -107,6 +107,63 @@ module Dependabot
           )
       end
 
+      def insert_new_declaration(file_content, declaration_name, declaration_version)
+        new_package_reference = "<PackageReference Include=\"#{declaration_name}\" Version=\"#{declaration_version}\" />"
+
+        # guess at kind of newlines we should use when modifying the file
+        # if there are mixed newlines we will use \r\n
+        newline = file_content.include?("\r\n") ? "\r\n" : "\n"
+        # Determine if the file uses tabs or spaces for indentation
+        indent_regex = /^(\s+)/
+        indent_match = file_content.match(indent_regex)
+        use_tabs = indent_match[1].include?("\t")
+
+        # attempt to find any existing item group in the file
+        item_group_regex = /<ItemGroup>((\r\n|\n)(\s*).*\S)*(\r\n|\n)/m
+        match = file_content.match(item_group_regex)
+
+        if match
+          # found an ItemGroup
+          indent_regex = /^([ \t]+)/
+          item_group_indent_match = match[0].match(indent_regex)
+          item_group_indentation = item_group_indent_match[1]
+
+          # Look for the last element inside the ItemGroup
+          last_element_regex = %r{(\r\n|\n)(\s*).*\S(?=(\r\n|\n)\s*</ItemGroup>)}
+          last_element_match = match[0].match(last_element_regex)
+
+          # use whatever indentation elements in the ItemGroup are using
+          # else, fall back to the indentation level of the item group itself
+          # and use the know tab or space character, defaulting to two spaces
+          if last_element_match
+            element_indent_match = last_element_match[0].match(indent_regex)
+            element_indentation = element_indent_match[1]
+          else
+            element_indentation = item_group_indentation + (use_tabs ? "\t" : "  ")
+          end
+
+          new_line_with_indentation = "#{element_indentation}#{new_package_reference}#{newline}"
+          file_content.sub(match[0], match[0].sub(/<\/ItemGroup>/, "#{new_line_with_indentation}#{item_group_indentation}</ItemGroup>"))
+        else
+          # need to create a new item group
+          # first find the project element
+          project_end_regex = /<\/Project>((\r\n|\n))?/m
+          match = file_content.match(project_end_regex)
+          if match
+            indent_regex = /^([ \t]+)/
+            # then find the property group element and use that to try and determine the indentation
+            indent_match = file_content.match(/.*<\/PropertyGroup>/m)[0].match(indent_regex)
+            indentation = indent_match ? indent_match[1] : (use_tabs ? "\t" : "  ")
+
+            # insert our new item group between the last property group and then end of the project
+            item_group = "#{newline}#{indentation}<ItemGroup>#{newline}#{indentation}#{indentation}#{new_package_reference}#{newline}#{indentation}</ItemGroup>"
+            # replace the </Project> element with our item group ensuring we append the final newline if
+            # it exists
+            file_content.sub(project_end_regex, item_group + "#{newline}</Project>#{match[1].to_s}")
+          end
+        end
+      end
+
       def update_declaration(files, dependency, file, old_req, new_req)
         files = files.dup
 
@@ -117,6 +174,11 @@ module Dependabot
             old_dec,
             updated_declaration(old_dec, old_req, new_req)
           )
+        end
+
+        if updated_content == file.content
+          # append new package reference to project file
+          updated_content = insert_new_declaration(updated_content, dependency.name, new_req[:requirement])
         end
 
         raise "Expected content to change!" if updated_content == file.content
@@ -162,7 +224,8 @@ module Dependabot
             ProjectFileDeclarationFinder.new(
               dependency_name: dependency.name,
               declaring_requirement: requirement,
-              dependency_files: dependency_files
+              dependency_files: dependency_files,
+              credentials: credentials
             )
           end
       end

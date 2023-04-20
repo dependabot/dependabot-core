@@ -3,5 +3,6 @@
 source "https://rubygems.org"
 
 gem "dependabot-common", path: "../common"
+gem "rubyzip", ">= 2.3.2", "< 3.0"
 
 gemspec

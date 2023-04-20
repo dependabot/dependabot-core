@@ -104,6 +104,38 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         its(:content) { is_expected.to include '"Dep1" Version="[1.0,2.1]" />' }
       end
 
+      context "with an implicit package", :vcr do
+        let(:dependency_files) { [csproj_file, nuget_config] }
+        let(:nuget_config) do
+          Dependabot::DependencyFile.new(
+            content: fixture("projects/implicit_reference", "nuget.config"),
+            name: "nuget.config"
+          )
+        end
+        let(:csproj_body) { fixture("projects/implicit_reference", "implicitReference.csproj") }
+        let(:dependency_name) { "NuGet.Protocol" }
+        let(:version) { "6.3.1" }
+        let(:previous_version) { "6.3.0" }
+        let(:requirements) do
+          [{
+             file: "my.csproj",
+             requirement: "6.3.1",
+             groups: ["dependencies"],
+             source: nil
+           }]
+        end
+        let(:previous_requirements) do
+          [{
+             file: "my.csproj",
+             requirement: "6.3.0",
+             groups: ["dependencies"],
+             source: nil
+           }]
+        end
+
+        its(:content) { is_expected.to include '"NuGet.Protocol" Version="6.3.1" />' }
+      end
+
       context "with a property version" do
         let(:csproj_body) do
           fixture("csproj", "property_version.csproj")
