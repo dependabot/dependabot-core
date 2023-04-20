@@ -449,9 +449,9 @@ RSpec.describe Dependabot::Updater do
     end
 
     context "when ignore conditions are set" do
-      def expect_update_checker_with_ignored_versions(versions)
+      def expect_update_checker_with_ignored_versions(versions, dependency_matcher: anything)
         expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
-          dependency: anything,
+          dependency: dependency_matcher,
           dependency_files: anything,
           repo_contents_path: anything,
           credentials: anything,
@@ -463,12 +463,11 @@ RSpec.describe Dependabot::Updater do
         ).once
       end
 
-      describe "when ignores match the dependency name" do
+      describe "when ignores match the a dependency being checked" do
         it "passes ignored_versions to the update checker" do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -531,14 +530,14 @@ RSpec.describe Dependabot::Updater do
         it "doesn't enable raised_on_ignore for ignore logging" do
           stub_update_checker
 
-          job = build_job(requested_dependencies: ["dummy-pkg-b"])
+          job = build_job
           service = build_service
           updater = build_updater(service: service, job: job)
 
           updater.run
 
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
-            dependency: anything,
+            dependency: having_attributes(name: "dummy-pkg-b"),
             dependency_files: anything,
             repo_contents_path: anything,
             credentials: anything,
@@ -556,7 +555,6 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -570,7 +568,7 @@ RSpec.describe Dependabot::Updater do
           updater.run
 
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
-            dependency: anything,
+            dependency: having_attributes(name: "dummy-pkg-b"),
             dependency_files: anything,
             repo_contents_path: anything,
             credentials: anything,
@@ -588,7 +586,6 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -602,7 +599,7 @@ RSpec.describe Dependabot::Updater do
           updater.run
 
           expect(Dependabot::Bundler::UpdateChecker).to have_received(:new).with(
-            dependency: anything,
+            dependency: having_attributes(name: "dummy-pkg-b"),
             dependency_files: anything,
             repo_contents_path: anything,
             credentials: anything,
@@ -620,7 +617,6 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-a"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-b",
@@ -633,7 +629,7 @@ RSpec.describe Dependabot::Updater do
 
           updater.run
 
-          expect_update_checker_with_ignored_versions([])
+          expect_update_checker_with_ignored_versions([], dependency_matcher: having_attributes(name: "dummy-pkg-a"))
         end
       end
 
@@ -642,7 +638,6 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-a"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-*",
@@ -655,7 +650,10 @@ RSpec.describe Dependabot::Updater do
 
           updater.run
 
-          expect_update_checker_with_ignored_versions([">= 0"])
+          expect_update_checker_with_ignored_versions(
+            [">= 0"],
+            dependency_matcher: having_attributes(name: "dummy-pkg-a")
+          )
         end
       end
 
@@ -664,7 +662,6 @@ RSpec.describe Dependabot::Updater do
           stub_update_checker
 
           job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
             ignore_conditions: [
               {
                 "dependency-name" => "dummy-pkg-a",
@@ -685,7 +682,10 @@ RSpec.describe Dependabot::Updater do
 
           updater.run
 
-          expect_update_checker_with_ignored_versions([">= 2.0.0, < 3", "> 1.1.0, < 1.2", ">= 1.2.a, < 2"])
+          expect_update_checker_with_ignored_versions(
+            [">= 2.0.0, < 3", "> 1.1.0, < 1.2", ">= 1.2.a, < 2"],
+            dependency_matcher: having_attributes(name: "dummy-pkg-b")
+          )
         end
       end
     end
