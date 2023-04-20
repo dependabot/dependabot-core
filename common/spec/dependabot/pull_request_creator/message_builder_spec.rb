@@ -17,7 +17,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       pr_message_footer: pr_message_footer,
       commit_message_options: commit_message_options,
       vulnerabilities_fixed: vulnerabilities_fixed,
-      github_redirection_service: github_redirection_service
+      github_redirection_service: github_redirection_service,
+      dependency_group: dependency_group
     )
   end
 
@@ -46,6 +47,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
   let(:trailers) { nil }
   let(:vulnerabilities_fixed) { { "business" => [] } }
   let(:github_redirection_service) { "redirect.github.com" }
+  let(:dependency_group) { nil }
 
   let(:gemfile) do
     Dependabot::DependencyFile.new(
@@ -814,6 +816,97 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         context "with a security vulnerability fixed" do
           let(:vulnerabilities_fixed) { { business: [{}] } }
           it { is_expected.to start_with("Upgrade: [Security] Update") }
+        end
+      end
+    end
+
+    context "for a dependency group" do
+      let(:dependency_group) do
+        Dependabot::DependencyGroup.new(name: "all-the-things", rules: anything)
+      end
+
+      before do
+        stub_request(:get, watched_repo_url + "/commits?per_page=100").
+          to_return(
+            status: 200,
+            body: commits_response,
+            headers: json_header
+          )
+      end
+      let(:commits_response) { fixture("github", "commits.json") }
+
+      it { is_expected.to eq("Bump the all-the-things group with 1 update") }
+
+      context "with two dependencies" do
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "business2",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependencies) { [dependency, dependency2] }
+
+        it { is_expected.to eq("Bump the all-the-things group with 2 updates") }
+      end
+
+      context "with two dependencies with the same name" do
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "business",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependencies) { [dependency, dependency2] }
+
+        it { is_expected.to eq("Bump the all-the-things group with 1 update") }
+      end
+
+      context "with three dependencies" do
+        let(:dependency2) do
+          Dependabot::Dependency.new(
+            name: "business2",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependency3) do
+          Dependabot::Dependency.new(
+            name: "business3",
+            version: "1.5.0",
+            previous_version: "1.4.0",
+            package_manager: "dummy",
+            requirements: [],
+            previous_requirements: []
+          )
+        end
+        let(:dependencies) { [dependency, dependency2, dependency3] }
+
+        it { is_expected.to eq("Bump the all-the-things group with 3 updates") }
+      end
+
+      context "with a directory specified" do
+        let(:gemfile) do
+          Dependabot::DependencyFile.new(
+            name: "Gemfile",
+            content: fixture("ruby", "gemfiles", "Gemfile"),
+            directory: "directory"
+          )
+        end
+
+        it "includes the directory" do
+          expect(pr_name).
+            to eq("Bump the all-the-things group in /directory with 1 update")
         end
       end
     end

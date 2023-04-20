@@ -3,6 +3,7 @@
 require "pathname"
 require "dependabot/clients/github_with_retries"
 require "dependabot/clients/gitlab_with_retries"
+require "dependabot/dependency_group"
 require "dependabot/logger"
 require "dependabot/metadata_finders"
 require "dependabot/pull_request_creator"
@@ -21,12 +22,13 @@ module Dependabot
       attr_reader :source, :dependencies, :files, :credentials,
                   :pr_message_header, :pr_message_footer,
                   :commit_message_options, :vulnerabilities_fixed,
-                  :github_redirection_service
+                  :github_redirection_service, :dependency_group
 
       def initialize(source:, dependencies:, files:, credentials:,
                      pr_message_header: nil, pr_message_footer: nil,
                      commit_message_options: {}, vulnerabilities_fixed: {},
-                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE)
+                     github_redirection_service: DEFAULT_GITHUB_REDIRECTION_SERVICE,
+                     dependency_group: nil)
         @dependencies               = dependencies
         @files                      = files
         @source                     = source
@@ -36,19 +38,13 @@ module Dependabot
         @commit_message_options     = commit_message_options
         @vulnerabilities_fixed      = vulnerabilities_fixed
         @github_redirection_service = github_redirection_service
+        @dependency_group           = dependency_group
       end
 
       def pr_name
-        begin
-          pr_name = pr_name_prefixer.pr_name_prefix
-        rescue StandardError => e
-          Dependabot.logger.error("Error while generating PR name: #{e.message}")
-          pr_name = ""
-        end
-        pr_name += library? ? library_pr_name : application_pr_name
-        return pr_name if files.first.directory == "/"
-
-        pr_name + " in #{files.first.directory}"
+        name = dependency_group ? group_pr_name : solo_pr_name
+        name[0] = name[0].capitalize if pr_name_prefixer.capitalize_first_word?
+        "#{pr_name_prefix}#{name}"
       end
 
       def pr_message
@@ -82,11 +78,13 @@ module Dependabot
 
       private
 
-      def library_pr_name
-        pr_name = "update "
-        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
+      def solo_pr_name
+        name = library? ? library_pr_name : application_pr_name
+        "#{name}#{pr_name_directory}"
+      end
 
-        pr_name +
+      def library_pr_name
+        "update " +
           if dependencies.count == 1
             "#{dependencies.first.display_name} requirement " \
               "#{from_version_msg(old_library_requirement(dependencies.first))}" \
@@ -101,12 +99,8 @@ module Dependabot
           end
       end
 
-      # rubocop:disable Metrics/AbcSize
       def application_pr_name
-        pr_name = "bump "
-        pr_name = pr_name.capitalize if pr_name_prefixer.capitalize_first_word?
-
-        pr_name +
+        "bump " +
           if dependencies.count == 1
             dependency = dependencies.first
             "#{dependency.display_name} " \
@@ -131,10 +125,23 @@ module Dependabot
             end
           end
       end
-      # rubocop:enable Metrics/AbcSize
+
+      def group_pr_name
+        updates = dependencies.map(&:name).uniq.count
+        "bump the #{dependency_group.name} group#{pr_name_directory} with #{updates} update#{'s' if updates > 1}"
+      end
 
       def pr_name_prefix
         pr_name_prefixer.pr_name_prefix
+      rescue StandardError => e
+        Dependabot.logger.error("Error while generating PR name: #{e.message}")
+        ""
+      end
+
+      def pr_name_directory
+        return "" if files.first.directory == "/"
+
+        " in #{files.first.directory}"
       end
 
       def commit_subject
