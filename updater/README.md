@@ -11,11 +11,10 @@ GitHub network, and so is not generally accessible.
 
 ## Setup
 
-To work on the Updater, you will need to start a Docker dev shell. The bundler
-shell will suffice
+To work on the Updater, you will need to start a Docker dev shell:
 
 ```zsh
-➜ bin/docker-dev-shell bundler
+➜ bin/docker-dev-shell updater  # the docker-dev-shell internally maps 'updater' to the 'bundler' ecosystem image
 [dependabot-core-dev] ~/dependabot-core $ cd updater/
 [dependabot-core-dev] ~/dependabot-core/updater $ bundle
 ```
