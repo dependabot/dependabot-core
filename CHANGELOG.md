@@ -1,3 +1,14 @@
+## v0.216.2, 20 April 2023
+
+- Pull Request names are Dependency Group aware [#7115](https://github.com/dependabot/dependabot-core/pull/7115)
+- 🛑 Stop clobbering Octokit middleware [#7121](https://github.com/dependabot/dependabot-core/pull/7121)
+- Fix more order dependent spec failures [#7114](https://github.com/dependabot/dependabot-core/pull/7114)
+- Fix flaky specs in updater [#7113](https://github.com/dependabot/dependabot-core/pull/7113)
+- Run Dependency Group updates [#7075](https://github.com/dependabot/dependabot-core/pull/7075)
+- [Updater] Extract UpdateVulnerableVersion as an Operation class [#6961](https://github.com/dependabot/dependabot-core/pull/6961)
+- [Updater] Grouped updates will not include ignored dependencies [#7091](https://github.com/dependabot/dependabot-core/pull/7091)
+- Improve npm package manager instrumentation [#7087](https://github.com/dependabot/dependabot-core/pull/7087)
+
 ## v0.216.1, 14 April 2023
 
 - [Updater] Wire up and flesh out branch naming for Grouped Update PRs [#7084](https://github.com/dependabot/dependabot-core/pull/7084)
