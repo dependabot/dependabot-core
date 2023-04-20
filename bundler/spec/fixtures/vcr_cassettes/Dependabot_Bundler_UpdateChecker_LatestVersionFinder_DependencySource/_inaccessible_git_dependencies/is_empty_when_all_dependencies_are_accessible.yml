@@ -187,7 +187,7 @@ http_interactions:
   recorded_at: Tue, 15 Jun 2021 18:26:30 GMT
 - request:
     method: get
-    uri: http://github.com/dependabot-fixtures/uk_phone_numbers.git/info/refs?service=git-upload-pack
+    uri: https://github.com/dependabot-fixtures/uk_phone_numbers.git/info/refs?service=git-upload-pack
     body:
       encoding: US-ASCII
       string: ''
