@@ -69,8 +69,7 @@ module Dependabot
           # updates if the current version is no longer vulnerable. This happens
           # when a security update is applied by the user directly and the existing
           # pull request is rebased.
-          if job.security_updates_only? &&
-             dependencies.none? { |d| job.allowed_update?(d) }
+          if dependencies.none? { |d| job.allowed_update?(d) }
             lead_dependency = dependencies.first
             if job.vulnerable?(lead_dependency)
               Dependabot.logger.info(
@@ -96,7 +95,7 @@ module Dependabot
           checker = update_checker_for(lead_dependency)
           log_checking_for_update(lead_dependency)
 
-          return if all_versions_ignored?(lead_dependency, checker)
+          Dependabot.logger.info("Latest version is #{checker.latest_version}")
 
           return close_pull_request(reason: :up_to_date) if checker.up_to_date?
 
@@ -132,6 +131,11 @@ module Dependabot
             # The existing PR is for a previous version. Supersede it.
             create_pull_request(dependency_change)
           end
+        rescue Dependabot::AllVersionsIgnored
+          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
+
+          # Report this error to the backend to create an update job error
+          raise
         end
         # rubocop:enable Metrics/AbcSize
         # rubocop:enable Metrics/PerceivedComplexity
@@ -169,18 +173,6 @@ module Dependabot
             "Checking if #{dependency.name} #{dependency.version} needs updating"
           )
           job.log_ignore_conditions_for(dependency)
-        end
-
-        def all_versions_ignored?(dependency, checker)
-          Dependabot.logger.info("Latest version is #{checker.latest_version}")
-          false
-        rescue Dependabot::AllVersionsIgnored
-          Dependabot.logger.info("All updates for #{dependency.name} were ignored")
-
-          # Report this error to the backend to create an update job error
-          raise if job.security_updates_only?
-
-          true
         end
 
         def log_up_to_date(dependency)
