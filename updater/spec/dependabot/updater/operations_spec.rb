@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Updater::Operations do
         to be(Dependabot::Updater::Operations::CreateSecurityUpdatePullRequest)
     end
 
-    it "returns the RefreshSecurityUpdatePullRequest class when the Job is for an existing dependency security update" do
+    it "returns the RefreshSecurityUpdatePullRequest class when the Job is for an existing security update" do
       job = instance_double(Dependabot::Job,
                             security_updates_only?: true,
                             updating_a_pull_request?: true,

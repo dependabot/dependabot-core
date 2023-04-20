@@ -30,7 +30,6 @@ require "dependabot/security_advisory"
 require "dependabot/update_checkers"
 require "wildcard_matcher"
 
-# rubocop:disable Metrics/ClassLength
 module Dependabot
   class Updater
     # FIXME: Remove this once we deprecate the legacy_run code path
@@ -488,4 +487,3 @@ module Dependabot
     end
   end
 end
-# rubocop:enable Metrics/ClassLength

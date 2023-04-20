@@ -102,7 +102,9 @@ module Dependabot
           requirements_to_unlock = requirements_to_unlock(checker)
           log_requirements_for_update(requirements_to_unlock, checker)
 
-          return close_pull_request(reason: :update_no_longer_possible) if requirements_to_unlock == :update_not_possible
+          if requirements_to_unlock == :update_not_possible
+            return close_pull_request(reason: :update_no_longer_possible)
+          end
 
           updated_deps = checker.updated_dependencies(
             requirements_to_unlock: requirements_to_unlock
