@@ -95,6 +95,8 @@ module Dependabot
     # This is the original logic within run, we currently fail over to this if
     # no Operation class exists for the given job.
     def legacy_run
+      raise Dependabot::NotImplemented unless Environment.legacy_run_enabled?
+
       service.increment_metric("updater.started", tags: { operation: "Legacy" })
       if job.updating_a_pull_request?
         Dependabot.logger.info("Starting PR update job for #{job.source.repo}")

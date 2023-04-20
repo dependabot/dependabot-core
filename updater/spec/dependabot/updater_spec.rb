@@ -12,6 +12,8 @@ require "dependabot/service"
 
 RSpec.describe Dependabot::Updater do
   before do
+    # TODO: Remove
+    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
     allow(Dependabot.logger).to receive(:info)
 
     stub_request(:get, "https://index.rubygems.org/versions").
