@@ -385,7 +385,9 @@ module Dependabot
           truncate_length = MAX_PR_DESCRIPTION_LENGTH - truncated_msg.length
           pr_description = (pr_description[0..truncate_length] + truncated_msg)
         end
-        pr_description.force_encoding(Encoding::UTF_8)
+        # Using pr_description.force_encoding(Encoding::UTF_8) doesn't always work.
+        # https://stackoverflow.com/a/10466273
+        pr_description.encode("utf-8", "binary", invalid: :replace, undef: :replace)
       end
 
       def tags_creation_forbidden?(response)
