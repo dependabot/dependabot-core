@@ -1165,6 +1165,40 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
+
+        context "when the dependency is a sub-dependency" do
+          it "still attempts to update the dependency" do
+            stub_update_checker(vulnerable?: true)
+
+            job = build_job(
+              requested_dependencies: ["dummy-pkg-a"],
+              updating_a_pull_request: true
+            )
+            service = build_service
+            updater = build_updater(
+              service: service,
+              job: job,
+              dependency_files: [
+                Dependabot::DependencyFile.new(
+                  name: "Gemfile",
+                  content: fixture("bundler/original/sub_dep"),
+                  directory: "/"
+                ),
+                Dependabot::DependencyFile.new(
+                  name: "Gemfile.lock",
+                  content: fixture("bundler/original/sub_dep.lock"),
+                  directory: "/"
+                )
+              ]
+            )
+
+            expect(Dependabot::Updater::Operations::RefreshVersionUpdatePullRequest).to receive(:new).and_call_original
+            expect(service).to receive(:create_pull_request).once
+
+            updater.run
+          end
+        end
+
         context "when the dependency isn't vulnerable in a security update" do
           it "closes the pull request" do
             stub_update_checker(vulnerable?: true)
@@ -1343,7 +1377,12 @@ RSpec.describe Dependabot::Updater do
         end
       end
 
-      context "and the job is not to update a PR" do
+      # This scenario is not currently used in production, it only exists
+      # implicity due to the legacy code mode-switching within methods.
+      #
+      # This will be deprecated when `legacy_run` is removed but should be
+      # fairly trivial to bring back if required.
+      context "and the job is create a version PR" do
         it "only attempts to update dependencies on the specified list" do
           stub_update_checker
 
@@ -1363,13 +1402,124 @@ RSpec.describe Dependabot::Updater do
 
           updater.run
         end
+      end
+
+      context "and the job is create a security PR" do
+        context "when the dependency is vulnerable" do
+          it "creates the pull request" do
+            stub_update_checker(vulnerable?: true)
+
+            job = build_job(
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              security_updates_only: true,
+              updating_a_pull_request: false
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to receive(:create_pull_request)
+
+            updater.run
+          end
+        end
+
+        context "when the dependency is not allowed to update" do
+          it "does not create the pull request" do
+            stub_update_checker(vulnerable?: true)
+
+            job = build_job(
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              allowed_updates: [
+                {
+                  "dependency-type" => "development"
+                }
+              ],
+              security_updates_only: true
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).not_to receive(:create_pull_request)
+            expect(service).to receive(:record_update_job_error).with(
+              {
+                error_type: "all_versions_ignored",
+                error_details: {
+                  "dependency-name": "dummy-pkg-b"
+                }
+              }
+            )
+            expect(Dependabot.logger).
+              to receive(:info).with(
+                "Dependabot cannot update to the required version as all " \
+                "versions were ignored for dummy-pkg-b"
+              )
+
+            updater.run
+          end
+        end
+
+        context "when the dependency is no longer vulnerable" do
+          it "does not create pull request" do
+            stub_update_checker(vulnerable?: false)
+
+            job = build_job(
+              requested_dependencies: ["dummy-pkg-b"],
+              security_advisories: [
+                {
+                  "dependency-name" => "dummy-pkg-b",
+                  "affected-versions" => ["1.0.0"],
+                  "patched-versions" => ["1.1.0"]
+                }
+              ],
+              security_updates_only: true
+            )
+            service = build_service
+            updater = build_updater(service: service, job: job)
+
+            expect(service).to_not receive(:create_pull_request)
+            expect(service).to receive(:record_update_job_error).with(
+              {
+                error_type: "security_update_not_needed",
+                error_details: {
+                  "dependency-name": "dummy-pkg-b"
+                }
+              }
+            )
+            expect(Dependabot.logger).
+              to receive(:info).with(
+                "no security update needed as dummy-pkg-b " \
+                "is no longer vulnerable"
+              )
+
+            updater.run
+          end
+        end
 
         context "when the dependency doesn't appear in the parsed file" do
           it "does not try to close any pull request" do
-            stub_update_checker
+            stub_update_checker(vulnerable?: true)
 
             job = build_job(
               requested_dependencies: ["removed_dependency"],
+              security_advisories: [
+                {
+                  "dependency-name" => "removed_dependency",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              security_updates_only: true,
               updating_a_pull_request: false
             )
             service = build_service
@@ -1382,165 +1532,27 @@ RSpec.describe Dependabot::Updater do
         end
 
         context "when the dependency name case doesn't match what's parsed" do
-          it "only attempts to update dependencies on the specified list" do
-            stub_update_checker
+          it "still updates dependencies on the specified list" do
+            stub_update_checker(vulnerable?: true)
 
             job = build_job(
               requested_dependencies: ["Dummy-pkg-b"],
+              security_advisories: [
+                {
+                  # TODO: Should advisory name matching be case-insensitive too?
+                  "dependency-name" => "Dummy-pkg-b",
+                  "affected-versions" => ["1.1.0"]
+                }
+              ],
+              security_updates_only: true,
               updating_a_pull_request: false
             )
             service = build_service
             updater = build_updater(service: service, job: job)
 
-            expect(updater).
-              to receive(:check_and_create_pr_with_error_handling).
-              and_call_original
-            expect(updater).
-              to_not receive(:check_and_update_existing_pr_with_error_handling)
             expect(service).to receive(:create_pull_request).once
 
             updater.run
-          end
-        end
-
-        context "when the dependency is a sub-dependency" do
-          it "still attempts to update the dependency" do
-            stub_update_checker
-
-            job = build_job(
-              requested_dependencies: ["dummy-pkg-a"],
-              updating_a_pull_request: false
-            )
-            service = build_service
-            updater = build_updater(
-              service: service,
-              job: job,
-              dependency_files: [
-                Dependabot::DependencyFile.new(
-                  name: "Gemfile",
-                  content: fixture("bundler/original/sub_dep"),
-                  directory: "/"
-                ),
-                Dependabot::DependencyFile.new(
-                  name: "Gemfile.lock",
-                  content: fixture("bundler/original/sub_dep.lock"),
-                  directory: "/"
-                )
-              ]
-            )
-
-            expect(updater).
-              to receive(:check_and_create_pr_with_error_handling).
-              and_call_original
-            expect(updater).
-              to_not receive(:check_and_update_existing_pr_with_error_handling)
-            expect(service).to receive(:create_pull_request).once
-
-            updater.run
-          end
-        end
-
-        context "for security only updates" do
-          context "when the dependency is vulnerable" do
-            it "creates the pull request" do
-              stub_update_checker(vulnerable?: true)
-
-              job = build_job(
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                security_updates_only: true,
-                updating_a_pull_request: false
-              )
-              service = build_service
-              updater = build_updater(service: service, job: job)
-
-              expect(service).to receive(:create_pull_request)
-
-              updater.run
-            end
-          end
-
-          context "when the dependency is not allowed to update" do
-            it "does not create the pull request" do
-              stub_update_checker(vulnerable?: true)
-
-              job = build_job(
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.1.0"]
-                  }
-                ],
-                allowed_updates: [
-                  {
-                    "dependency-type" => "development"
-                  }
-                ],
-                security_updates_only: true
-              )
-              service = build_service
-              updater = build_updater(service: service, job: job)
-
-              expect(service).not_to receive(:create_pull_request)
-              expect(service).to receive(:record_update_job_error).with(
-                {
-                  error_type: "all_versions_ignored",
-                  error_details: {
-                    "dependency-name": "dummy-pkg-b"
-                  }
-                }
-              )
-              expect(Dependabot.logger).
-                to receive(:info).with(
-                  "Dependabot cannot update to the required version as all " \
-                  "versions were ignored for dummy-pkg-b"
-                )
-
-              updater.run
-            end
-          end
-
-          context "when the dependency is no longer vulnerable" do
-            it "does not create pull request" do
-              stub_update_checker(vulnerable?: false)
-
-              job = build_job(
-                requested_dependencies: ["dummy-pkg-b"],
-                security_advisories: [
-                  {
-                    "dependency-name" => "dummy-pkg-b",
-                    "affected-versions" => ["1.0.0"],
-                    "patched-versions" => ["1.1.0"]
-                  }
-                ],
-                security_updates_only: true
-              )
-              service = build_service
-              updater = build_updater(service: service, job: job)
-
-              expect(service).to_not receive(:create_pull_request)
-              expect(service).to receive(:record_update_job_error).with(
-                {
-                  error_type: "security_update_not_needed",
-                  error_details: {
-                    "dependency-name": "dummy-pkg-b"
-                  }
-                }
-              )
-              expect(Dependabot.logger).
-                to receive(:info).with(
-                  "no security update needed as dummy-pkg-b " \
-                  "is no longer vulnerable"
-                )
-
-              updater.run
-            end
           end
         end
       end
