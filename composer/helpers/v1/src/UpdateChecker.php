@@ -82,7 +82,7 @@ final class UpdateChecker
 
         // We found the package in the list of updated packages. Return its version.
         if ($updatedPackage instanceof PackageInterface) {
-            return preg_replace('/^([v])/', '', $updatedPackage->getPrettyVersion());
+            return ltrim($updatedPackage->getPrettyVersion(), 'v');
         }
 
         // We didn't find the package in the list of updated packages. Check if
@@ -104,14 +104,14 @@ final class UpdateChecker
         // Similarly, check if the package was provided by any other package.
         foreach ($composer->getPackage()->getProvides() as $link) {
             if ($link->getTarget() === $dependencyName) {
-                return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
+                return ltrim($link->getPrettyConstraint(), 'v');
             }
         }
 
         foreach ($installedPackages as $package) {
             foreach ($package->getProvides() as $link) {
                 if ($link->getTarget() === $dependencyName) {
-                    return preg_replace('/^([v])/', '', $link->getPrettyConstraint());
+                    return ltrim($link->getPrettyConstraint(), 'v');
                 }
             }
         }

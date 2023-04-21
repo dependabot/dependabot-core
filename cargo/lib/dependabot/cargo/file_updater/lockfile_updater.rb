@@ -145,6 +145,10 @@ module Dependabot
           # returns a non-zero status
           return if process.success?
 
+          if stdout.include?("usage of sparse registries requires `-Z sparse-registry`")
+            raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+          end
+
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {

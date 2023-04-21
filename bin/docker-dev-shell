@@ -21,7 +21,14 @@ fi
 if [[ -z "$1" ]]; then
   HELP=true
 fi
-ECOSYSTEM="$1"
+
+# Technically every ecosystem results in building a per-ecosystem updater image.
+# But currently running the `updater` unit tests requires the `bundler` ecosystem image.
+if [ "$1" == "updater" ]; then
+  ECOSYSTEM="bundler"
+else
+  ECOSYSTEM="$1"
+fi
 
 while true; do
   case "$2" in
