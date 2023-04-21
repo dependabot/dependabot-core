@@ -1383,6 +1383,11 @@ RSpec.describe Dependabot::Updater do
       # This will be deprecated when `legacy_run` is removed but should be
       # fairly trivial to bring back if required.
       context "and the job is create a version PR" do
+        before do
+          # Permit the legacy_run method to be used
+          allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { true }
+        end
+
         it "only attempts to update dependencies on the specified list" do
           stub_update_checker
 
