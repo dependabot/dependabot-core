@@ -1165,7 +1165,6 @@ RSpec.describe Dependabot::Updater do
           updater.run
         end
 
-
         context "when the dependency is a sub-dependency" do
           it "still attempts to update the dependency" do
             stub_update_checker(vulnerable?: true)
