@@ -149,6 +149,11 @@ module Dependabot
             raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
           end
 
+          # package doesn't exist in the index
+          if (match = stdout.match(/no matching package named `([^`]+)` found/))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
