@@ -207,7 +207,7 @@ module Dependabot
       def directory_packages_props_file
         @directory_packages_props_file ||=
           begin
-            file = repo_contents.find { |f| f.name == "Directory.Packages.props" }
+            file = repo_contents.find { |f| f.name.casecmp?("directory.packages.props") }
             fetch_file_from_host(file.name) if file
           end
       end
