@@ -99,10 +99,36 @@ RSpec.describe Dependabot::DependencyChange do
           files: updated_dependency_files,
           dependencies: updated_dependencies,
           credentials: job_credentials,
-          commit_message_options: commit_message_options
+          commit_message_options: commit_message_options,
+          dependency_group: nil
         )
 
       expect(dependency_change.pr_message).to eql("Hello World!")
+    end
+
+    context "when a dependency group is assigned" do
+      it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the group included" do
+        group = Dependabot::DependencyGroup.new(name: "foo", rules: anything)
+
+        dependency_change = described_class.new(
+          job: job,
+          updated_dependencies: updated_dependencies,
+          updated_dependency_files: updated_dependency_files,
+          dependency_group: group
+        )
+
+        expect(Dependabot::PullRequestCreator::MessageBuilder).
+          to receive(:new).with(
+            source: github_source,
+            files: updated_dependency_files,
+            dependencies: updated_dependencies,
+            credentials: job_credentials,
+            commit_message_options: commit_message_options,
+            dependency_group: group
+          )
+
+        expect(dependency_change.pr_message).to eql("Hello World!")
+      end
     end
   end
 
@@ -113,15 +139,14 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when a dependency group is assigned" do
       it "is true" do
-        rule = described_class.new(
+        dependency_change = described_class.new(
           job: job,
           updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          # For now the dependency_group parameter is treated permissively as any non-nil value
-          dependency_group: anything
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: anything)
         )
 
-        expect(rule.grouped_update?).to be true
+        expect(dependency_change.grouped_update?).to be true
       end
     end
   end
