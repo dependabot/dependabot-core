@@ -40,6 +40,10 @@ module Dependabot
       end
 
       def self.yarn_major_version
+        @yarn_major_version ||= fetch_yarn_major_version
+      end
+
+      def self.fetch_yarn_major_version
         output = SharedHelpers.run_shell_command("yarn --version")
         Version.new(output).major
       end
