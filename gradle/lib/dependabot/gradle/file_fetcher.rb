@@ -41,13 +41,15 @@ module Dependabot
         files += subproject_buildfiles(root_dir)
         files += dependency_script_plugins(root_dir)
         files + included_builds(root_dir).
-                flat_map do |dir|
-                  all_buildfiles_in_build(dir)
+                filter do |dir|
+                  buildfile(dir)
                 rescue Dependabot::DependencyFileNotFound
-                  # included build can be in a submodule
-                  nil
+                  # ignore included build if its is in a submodule
+                  SUPPORTED_BUILD_FILE_NAMES.
+                    map { |name| clean_join(dir, name) }.
+                    all? { |path| !file_exists_in_submodule?(path) }
                 end.
-                compact
+                flat_map { |dir| all_buildfiles_in_build(dir) }
       end
 
       def included_builds(root_dir)
