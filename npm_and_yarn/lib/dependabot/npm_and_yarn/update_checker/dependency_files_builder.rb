@@ -19,7 +19,7 @@ module Dependabot
           if Helpers.yarn_berry?(yarn_locks.first)
             File.write(".yarnrc.yml", yarnrc_yml_content) if yarnrc_yml_file
           else
-            File.write(".npmrc", npmrc_content) unless Helpers.yarn_berry?(yarn_locks.first)
+            File.write(".npmrc", npmrc_content)
             File.write(".yarnrc", yarnrc_content) if yarnrc_specifies_private_reg?
           end
 
