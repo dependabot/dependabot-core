@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata = {
     "bug_tracker_uri" => "https://github.com/dependabot/dependabot-core/issues",
-    "changelog_uri" => "https://github.com/dependabot/dependabot-core/blob/main/CHANGELOG.md"
+    "changelog_uri" => "https://github.com/dependabot/dependabot-core/releases/tag/v#{Dependabot::VERSION}"
   }
 
   spec.version = Dependabot::VERSION

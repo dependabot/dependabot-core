@@ -1,3 +1,12 @@
+## Deprecated in favor of GitHub releases April 24th, 2023
+
+The Dependabot-core [Changelog is now available through GitHub Releases](https://github.com/dependabot/dependabot-core/releases).
+
+We switched to GitHub Releases to avoid the race condition between the version bump pull request and another pull
+request. If the other PR is merged between the time the version bump pull request was created and when it was merged,
+then the other pull request wasn't getting pulled into our changelog. This also allows a lot more flexibility around
+automation the creation of the version bump PR.
+
 ## v0.217.0, 24 April 2023
 
 - Run UpdateAllVersions with ungrouped dependencies [#7110](https://github.com/dependabot/dependabot-core/pull/7110)
