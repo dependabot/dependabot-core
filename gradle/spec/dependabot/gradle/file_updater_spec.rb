@@ -702,6 +702,62 @@ RSpec.describe Dependabot::Gradle::FileUpdater do
           )
         end
       end
+      context "build_same_groupId_different_artifactId.gradle" do
+        let(:buildfile) do
+          Dependabot::DependencyFile.new(
+            name: "buildfiles/build_same_groupId_different_artifactId.gradle",
+            content: fixture("buildfiles", "build_same_groupId_different_artifactId.gradle")
+          )
+        end
+        let(:dependencies) do
+          [
+            Dependabot::Dependency.new(
+              name: "com.graphql-java:graphql-java",
+              version: "21",
+              previous_version: "20.0",
+              requirements: [{
+                file: "buildfiles/build_same_groupId_different_artifactId.gradle",
+                requirement: "21.0",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              previous_requirements: [{
+                file: "buildfiles/build_same_groupId_different_artifactId.gradle",
+                requirement: "20.0",
+                groups: [],
+                source: nil,
+                metadata: nil
+              }],
+              package_manager: "gradle"
+            )
+          ]
+        end
+
+        subject(:updated_buildfile) do
+          updated_files.find { |f| f.name == "buildfiles/build_same_groupId_different_artifactId.gradle" }
+        end
+        its(:content) do
+          is_expected.
+            to include("com.graphql-java:graphql-java-extended-scalars:20.0")
+          is_expected.
+            to include("com.graphql-java:graphql-java:21.0")
+          is_expected.
+            to include("group: 'com.graphql-java', name: 'graphql-java', version: '21.0'")
+          is_expected.
+            to include("group: 'com.graphql-java', version: '21.0', name: 'graphql-java'")
+          is_expected.
+            to include("version: '21.0', group: 'com.graphql-java', name: 'graphql-java'")
+          is_expected.
+            to include("version: '21.0', name: 'graphql-java', group: 'com.graphql-java'")
+          is_expected.
+            to include("name: 'graphql-java', version: '21.0', group: 'com.graphql-java'")
+          is_expected.
+            to include("name: 'graphql-java', group: 'com.graphql-java',version: '21.0'")
+          is_expected.
+            to include("group: 'com.graphql-java', name: 'graphql-java-extended-scalars', version: '20.0'")
+        end
+      end
     end
   end
 end

@@ -1,0 +1,18 @@
+# See https://github.com/dependabot/dependabot-core/issues/7002
+
+dependencies {
+implementation 'com.graphql-java:graphql-java-extended-scalars:20.0'
+implementation 'com.graphql-java:graphql-java:20.0'
+implementation group: 'com.graphql-java', name: 'graphql-java-extended-scalars', version: '20.0'
+
+implementation group: 'com.graphql-java', name: 'graphql-java', version: '20.0'
+implementation group: 'com.graphql-java', version: '20.0', name: 'graphql-java'
+
+implementation version: '20.0', group: 'com.graphql-java', name: 'graphql-java'
+implementation version: '20.0', name: 'graphql-java', group: 'com.graphql-java'
+
+implementation name: 'graphql-java', version: '20.0', group: 'com.graphql-java'
+implementation name: 'graphql-java', group: 'com.graphql-java',version: '20.0'
+
+
+}
