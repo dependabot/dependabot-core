@@ -37,12 +37,20 @@ puts "git add common/lib/dependabot.rb updater/Gemfile.lock"
 puts "git commit -m 'v#{new_version}'"
 puts "git push origin HEAD:v#{new_version}"
 puts "# ... create PR and merge after getting it approved."
+# TODO all steps up to here should be automatically handled by the workflow...
+# also, the workflow can accept as input minor/patch, and default to minor... so weekly cadence is minor.
+# first step though is getting the action working manually, then move it to cron
+# see example in https://github.com/dependabot/fetch-metadata/pull/347
+# the PR should be manually reviewed/merged, and then the release notes manually tagged (so that a human can review the release notes)
+#
+# TODO: also update the placeholder gem description for `dependabot-core` gem on RubyGems
 puts
 puts "Once the PR is merged, create a new release tagged with that version using the format `v1.2.3`"
 puts
 puts "* You can do this via the web UI: https://github.com/dependabot/dependabot-core/releases/new"
 puts "  Use the 'Generate release notes' button and then edit as needed."
 puts "* Or via the GitHub CLI:"
+# TODO this example command can be displayed on the github action summary screen
 puts "    gh release create v1.X.X --generate-notes --draft"
 puts "    > https://github.com/dependabot/fetch-metadata/releases/tag/untagged-XXXXXX"
 puts "    # Use the generated URL to review/edit the release notes, and then publish it."
