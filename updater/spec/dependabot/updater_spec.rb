@@ -2267,6 +2267,27 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
+    it "performs a grouped and ungrouped dependency update when both are present" do
+      job = build_job(experiments: { "grouped-updates-prototype" => true },
+                      dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }])
+      stub_update_checker
+      service = build_service
+      snapshot = build_dependency_snapshot(job: job)
+      updater = build_updater(
+        service: service,
+        job: job,
+        dependency_snapshot: snapshot
+      )
+
+      allow(service).to receive(:create_pull_request)
+      expect(snapshot).to receive(:groups).and_call_original
+      expect(snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
+      expect(service).to receive(:increment_metric).
+        with("updater.started", { tags: { operation: :grouped_updates_prototype } })
+
+      updater.run
+    end
+
     it "does not include ignored dependencies in the group PR" do
       job = build_job(
         ignore_conditions: [
@@ -2291,15 +2312,22 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
-  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
+  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
+                    dependency_snapshot: nil)
     Dependabot::Updater.new(
       service: service,
       job: job,
-      dependency_snapshot: Dependabot::DependencySnapshot.new(
-        job: job,
-        dependency_files: dependency_files,
-        base_commit_sha: "sha"
+      dependency_snapshot: dependency_snapshot || build_dependency_snapshot(
+        job: job, dependency_files: dependency_files
       )
+    )
+  end
+
+  def build_dependency_snapshot(job:, dependency_files: default_dependency_files)
+    Dependabot::DependencySnapshot.new(
+      job: job,
+      dependency_files: dependency_files,
+      base_commit_sha: "sha"
     )
   end
 
@@ -2340,7 +2368,7 @@ RSpec.describe Dependabot::Updater do
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false)
+                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2382,7 +2410,8 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil
+      repo_contents_path: nil,
+      dependency_groups: dependency_groups
     )
   end
 
