@@ -46,6 +46,14 @@ module Dependabot
       @job_definition ||= JSON.parse(File.read(job_path))
     end
 
+    # TODO: Remove
+    #
+    # This is purely to provide a stubbable method for tests to start disabling
+    # this codeline and it can be removed before merging this branch
+    def self.legacy_run_enabled?
+      true
+    end
+
     private_class_method def self.environment_variable(variable_name, default = :_undefined)
       return ENV.fetch(variable_name, default) unless default == :_undefined
 

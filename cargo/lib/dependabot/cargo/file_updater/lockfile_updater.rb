@@ -154,6 +154,10 @@ module Dependabot
             raise Dependabot::DependencyFileNotResolvable, match[1]
           end
 
+          if (match = /error: no matching package found\nsearched package name: `([^`]+)`/m.match(stdout))
+            raise Dependabot::DependencyFileNotResolvable, match[1]
+          end
+
           raise SharedHelpers::HelperSubprocessFailed.new(
             message: stdout,
             error_context: {
