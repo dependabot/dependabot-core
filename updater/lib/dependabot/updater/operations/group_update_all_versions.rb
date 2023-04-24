@@ -93,7 +93,7 @@ module Dependabot
                     :error_handler
 
         def register_all_dependencies_group
-          all_dependencies_group = { "name" => "group-all", "rules" => { "patterns" => ["*"] } }
+          all_dependencies_group = { "name" => "all-dependencies", "rules" => { "patterns" => ["*"] } }
           Dependabot::DependencyGroupEngine.register(all_dependencies_group["name"],
                                                      all_dependencies_group["rules"]["patterns"])
         end
