@@ -275,13 +275,13 @@ RSpec.describe Dependabot::Gradle::FileFetcher do
         end
       end
 
-      context "when the included build can't be found" do
+      context "when the included build is in git submodule" do
         before do
           stub_content_request("?ref=sha", "contents_java_with_settings.json")
           stub_content_request("settings.gradle?ref=sha", "contents_java_settings_1_included_build.json")
           stub_content_request("build.gradle?ref=sha", "contents_java_basic_buildfile.json")
           stub_content_request("app/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
-          stub_no_content_request("included?ref=sha")
+          stub_content_request("included?ref=sha", "contents_submodule.json")
           stub_content_request("included/build.gradle?ref=sha", "contents_java_basic_buildfile.json")
         end
 

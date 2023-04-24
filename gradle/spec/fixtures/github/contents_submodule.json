@@ -1,0 +1,17 @@
+{
+  "_links": {
+      "git": "https://api.github.com/repos/gocardless/bump/git/trees/sha",
+      "html": "https://github.com/gocardless/bump/tree/sha",
+      "self": "https://api.github.com/repos/gocardless/bump/contents/included?ref=main"
+  },
+  "download_url": null,
+  "git_url": "https://api.github.com/repos/gocardless/bump/git/trees/sha",
+  "html_url": "https://github.com/gocardless/bump/tree/sha",
+  "name": "included",
+  "path": "included",
+  "sha": "sha",
+  "size": 0,
+  "submodule_git_url": "https://github.com/gocardless/bump.git",
+  "type": "submodule",
+  "url": "https://api.github.com/repos/gocardless/bump/contents/included?ref=main"
+}
