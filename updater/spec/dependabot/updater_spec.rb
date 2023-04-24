@@ -2254,31 +2254,18 @@ RSpec.describe Dependabot::Updater do
                       dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }])
       stub_update_checker
       service = build_service
+      snapshot = build_dependency_snapshot(job: job)
       updater = build_updater(
         service: service,
         job: job,
-        dependency_files: [
-          Dependabot::DependencyFile.new(
-            name: "Gemfile",
-            content: fixture("bundler/original/Gemfile"),
-            directory: "/"
-          ),
-          Dependabot::DependencyFile.new(
-            name: "Gemfile.lock",
-            content: fixture("bundler/original/Gemfile.lock"),
-            directory: "/"
-          )
-        ]
+        dependency_snapshot: snapshot
       )
 
       allow(service).to receive(:create_pull_request)
-      expect(updater.dependency_snapshot).to receive(:groups).and_call_original
-      expect(updater.dependency_snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
+      expect(snapshot).to receive(:groups).and_call_original
+      expect(snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
       expect(service).to receive(:increment_metric).
         with("updater.started", { tags: { operation: :grouped_updates_prototype } })
-      # FIXME: This doesn't run because service.increment_metric runs in the updater not in the Operation
-      # expect(service).to receive(:increment_metric).
-      #   with("Updater.started", {:tags=>{:operation=>:update_all_versions}})
 
       updater.run
     end
@@ -2307,15 +2294,22 @@ RSpec.describe Dependabot::Updater do
     end
   end
 
-  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files)
+  def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
+                    dependency_snapshot: nil)
     Dependabot::Updater.new(
       service: service,
       job: job,
-      dependency_snapshot: Dependabot::DependencySnapshot.new(
-        job: job,
-        dependency_files: dependency_files,
-        base_commit_sha: "sha"
+      dependency_snapshot: dependency_snapshot || build_dependency_snapshot(
+        job: job, dependency_files: dependency_files
       )
+    )
+  end
+
+  def build_dependency_snapshot(job:, dependency_files: default_dependency_files)
+    Dependabot::DependencySnapshot.new(
+      job: job,
+      dependency_files: dependency_files,
+      base_commit_sha: "sha"
     )
   end
 

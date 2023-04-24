@@ -55,8 +55,6 @@ module Dependabot
       @created_pull_requests = []
     end
 
-    attr_reader :dependency_snapshot
-
     def run
       return unless job
       return legacy_run unless (operation_class = Operations.class_for(job: job))
@@ -90,7 +88,7 @@ module Dependabot
     private
 
     attr_accessor :created_pull_requests
-    attr_reader :service, :job, :error_handler
+    attr_reader :service, :job, :dependency_snapshot, :error_handler
 
     # This is the original logic within run, we currently fail over to this if
     # no Operation class exists for the given job.
