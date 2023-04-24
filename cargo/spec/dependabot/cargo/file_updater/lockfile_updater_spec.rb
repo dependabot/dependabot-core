@@ -105,6 +105,29 @@ RSpec.describe Dependabot::Cargo::FileUpdater::LockfileUpdater do
       end
     end
 
+    context "when the package doesn't exist at the git source" do
+      content = <<~CONTENT
+        [package]
+        name = "foo"
+        version = "0.1.0"
+        authors = ["me"]
+        [dependencies]
+        yewtil = { git = "https://github.com/yewstack/yew" }
+      CONTENT
+
+      let(:manifest) do
+        Dependabot::DependencyFile.new(name: "Cargo.toml", content: content)
+      end
+
+      it "raises a helpful error" do
+        expect { updated_lockfile_content }.
+          to raise_error do |error|
+          expect(error).to be_a(Dependabot::DependencyFileNotResolvable)
+          expect(error.message).to include("yewtil")
+        end
+      end
+    end
+
     describe "the updated lockfile" do
       it "updates the dependency version in the lockfile" do
         expect(updated_lockfile_content).
