@@ -53,6 +53,13 @@ RSpec.configure do |config|
   def fixture(path)
     File.read(File.join("spec", "fixtures", path))
   end
+
+  # TODO: Remove once Updater#legacy_run is gone
+  config.before do
+    require "dependabot/environment"
+
+    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
+  end
 end
 
 VCR.configure do |config|

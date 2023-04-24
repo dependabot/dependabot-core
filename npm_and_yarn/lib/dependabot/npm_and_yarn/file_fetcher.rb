@@ -69,20 +69,37 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << package_json
-        fetched_files << package_lock if package_lock && !ignore_package_lock?
-        fetched_files << yarn_lock if yarn_lock
-        fetched_files << shrinkwrap if shrinkwrap
-        fetched_files << lerna_json if lerna_json
-        fetched_files << npmrc if npmrc
-        fetched_files << yarnrc if yarnrc
-        fetched_files << yarnrc_yml if yarnrc_yml
+        fetched_files += npm_files
+        fetched_files += yarn_files
+        fetched_files += lerna_files
         fetched_files += workspace_package_jsons
-        fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files << inferred_npmrc if inferred_npmrc
-
         fetched_files.uniq
+      end
+
+      def npm_files
+        fetched_npm_files = []
+        fetched_npm_files << package_lock if package_lock && !ignore_package_lock?
+        fetched_npm_files << shrinkwrap if shrinkwrap
+        fetched_npm_files << npmrc if npmrc
+        fetched_npm_files << inferred_npmrc if inferred_npmrc
+        fetched_npm_files
+      end
+
+      def yarn_files
+        fetched_yarn_files = []
+        fetched_yarn_files << yarn_lock if yarn_lock
+        fetched_yarn_files << yarnrc if yarnrc
+        fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        fetched_yarn_files
+      end
+
+      def lerna_files
+        fetched_lerna_files = []
+        fetched_lerna_files << lerna_json if lerna_json
+        fetched_lerna_files += lerna_packages
+        fetched_lerna_files
       end
 
       # If every entry in the lockfile uses the same registry, we can infer
