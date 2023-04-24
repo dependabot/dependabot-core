@@ -11,7 +11,7 @@
 # by adapters to create a Pull Request, apply the changes on disk, etc.
 module Dependabot
   class DependencyChange
-    attr_reader :job, :updated_dependencies, :updated_dependency_files
+    attr_reader :job, :updated_dependencies, :updated_dependency_files, :dependency_group
 
     def initialize(job:, updated_dependencies:, updated_dependency_files:, dependency_group: nil)
       @job = job
@@ -28,7 +28,8 @@ module Dependabot
         dependencies: updated_dependencies,
         files: updated_dependency_files,
         credentials: job.credentials,
-        commit_message_options: job.commit_message_options
+        commit_message_options: job.commit_message_options,
+        dependency_group: dependency_group
       ).message
     end
 
@@ -42,11 +43,8 @@ module Dependabot
       updated_dependency_files.map(&:to_h)
     end
 
-    # FIXME: This is a placeholder for using a concrete DependencyGroup object to create
-    # as grouped rule hash to pass to the Dependabot API client. For now, we just
-    # use a flag on whether a rule has been assigned to the change.
     def grouped_update?
-      !!@dependency_group
+      !!dependency_group
     end
   end
 end
