@@ -1,3 +1,10 @@
+## v0.217.0, 24 April 2023
+
+- Run UpdateAllVersions with ungrouped dependencies [#7110](https://github.com/dependabot/dependabot-core/pull/7110)
+- [Updater] Ensure we no longer test the legacy code path [#7136](https://github.com/dependabot/dependabot-core/pull/7136)
+- [Updater] Extract RefreshSecurityUpdatePullRequest into an Operation class [#7128](https://github.com/dependabot/dependabot-core/pull/7128)
+- [Updater] DependencyChange passes any group to the PR message builder [#7137](https://github.com/dependabot/dependabot-core/pull/7137)
+
 ## v0.216.2, 20 April 2023
 
 - Pull Request names are Dependency Group aware [#7115](https://github.com/dependabot/dependabot-core/pull/7115)
