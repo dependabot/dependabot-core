@@ -36,6 +36,17 @@ module Dependabot
       ]
 
       def self.class_for(job:)
+        # Let's not bother generating the string if debug is disabled
+        if Dependabot.logger.debug?
+          update_type = job.security_updates_only? ? "security" : "version"
+          update_verb = job.updating_a_pull_request? ? "refresh" : "create"
+          update_deps = job.dependencies&.any? ? job.dependencies.count : "all"
+
+          Dependabot.logger.debug(
+            "Finding operation for a #{update_type} to #{update_verb} a Pull Request for #{update_deps} dependencies"
+          )
+        end
+
         raise ArgumentError, "Expected Dependabot::Job, got #{job.class}" unless job.is_a?(Dependabot::Job)
 
         OPERATIONS.find { |op| op.applies_to?(job: job) }
