@@ -16,12 +16,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
-        content: fixture("bundler/grouped/Gemfile"),
+        content: fixture("bundler_grouped/original/Gemfile"),
         directory: "/"
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
-        content: fixture("bundler/grouped/Gemfile.lock"),
+        content: fixture("bundler_grouped/original/Gemfile.lock"),
         directory: "/"
       )
     ]
