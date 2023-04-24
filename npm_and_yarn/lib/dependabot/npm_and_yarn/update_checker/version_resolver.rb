@@ -331,22 +331,22 @@ module Dependabot
           []
         end
 
-        def handle_peer_dependency_errors(error)
+        def handle_peer_dependency_errors(message)
           errors = []
-          if error.message.match?(NPM6_PEER_DEP_ERROR_REGEX)
-            error.message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
+          if message.match?(NPM6_PEER_DEP_ERROR_REGEX)
+            message.scan(NPM6_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(NPM8_PEER_DEP_ERROR_REGEX)
-            error.message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(NPM8_PEER_DEP_ERROR_REGEX)
+            message.scan(NPM8_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(YARN_PEER_DEP_ERROR_REGEX)
-            error.message.scan(YARN_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(YARN_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
-          elsif error.message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
-            error.message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
+          elsif message.match?(YARN_BERRY_PEER_DEP_ERROR_REGEX)
+            message.scan(YARN_BERRY_PEER_DEP_ERROR_REGEX) do
               errors << Regexp.last_match.named_captures
             end
           else
@@ -495,7 +495,7 @@ module Dependabot
 
           run_npm_checker(path: path, version: version)
         rescue SharedHelpers::HelperSubprocessFailed => e
-          handle_peer_dependency_errors(e)
+          handle_peer_dependency_errors(e.message)
         end
 
         def run_yarn_checker(path:, version:, lockfile:)
