@@ -237,6 +237,10 @@ module Dependabot
             return nil
           end
 
+          if error.message.include?("usage of sparse registries requires `-Z sparse-registry`")
+            raise Dependabot::DependencyFileNotEvaluatable, "Dependabot only supports toolchain 1.68 and up."
+          end
+
           raise Dependabot::DependencyFileNotResolvable, error.message if resolvability_error?(error.message)
 
           raise error
