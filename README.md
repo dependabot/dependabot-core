@@ -535,12 +535,22 @@ recurring payments from Europe, check them out.
 <details><summary>:book: Release guide</summary>
 <p>
 
-Triggering the jobs that will push the new gems is done by following the steps below.
+Publish a new release to RubyGems using the following steps:
 
-- Ensure you have the latest merged changes:  `git checkout main` and `git pull`
-- Generate an updated `CHANGELOG`, `version.rb`, and the rest of the needed commands:  `bin/bump-version.rb patch`
-- Edit the `CHANGELOG` file and remove any entries that aren't needed
-- Run the commands that were output by running `bin/bump-version.rb patch`
+1. Ensure you have the latest merged changes:  `git checkout main` and `git pull`
+2. Run `bin/bump-version.rb` to bump the version.
+3. Create a PR with the change and merge after getting it reviewed.
+4. Tag that commit as a new release using the format `v1.2.3`: https://github.com/dependabot/dependabot-core/releases/new
+   - Use the 'Generate release notes' button and then edit as needed.
+   - Or via the GitHub CLI:
+
+      ```bash
+      gh release create v1.X.X --generate-notes --draft"
+      > https://github.com/dependabot/fetch-metadata/releases/tag/untagged-XXXXXX"
+      # Use the generated URL to review/edit the release notes, and then publish it."
+      ```
+
+5. Once the release is tagged, it will be automatically pushed to RubyGems.
 
 </p>
 </details>
