@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.license      = common_gemspec.license
 
   spec.metadata = {
-    "issue_tracker_uri" => common_gemspec.metadata["issue_tracker_uri"],
+    "bug_tracker_uri" => common_gemspec.metadata["bug_tracker_uri"],
     "changelog_uri" => common_gemspec.metadata["changelog_uri"]
   }
 
