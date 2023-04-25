@@ -175,13 +175,12 @@ RSpec.describe Dependabot::ApiClient do
     end
 
     context "grouped updates" do
-      it "does not include the grouped-update or dependency-group keys by default" do
+      it "does not include the dependency-group key by default" do
         client.create_pull_request(dependency_change, base_commit)
 
         expect(WebMock).
           to(have_requested(:post, create_pull_request_url).
              with do |req|
-               expect(req.body).not_to include("grouped-update")
                expect(req.body).not_to include("dependency-group")
              end)
       end
@@ -202,10 +201,6 @@ RSpec.describe Dependabot::ApiClient do
           to(have_requested(:post, create_pull_request_url).
              with do |req|
                data = JSON.parse(req.body)["data"]
-               # FIXME: Once we fully remove the `group-all` prototype behavior, we can also remove the
-               # `grouped-update` expectation since dependency-groups will require rules and only
-               # return the `dependency-group` key
-               expect(data["grouped-update"]).to be nil
                expect(data["dependency-group"]).to eq({ "name" => "dummy_group_name" })
              end)
       end
