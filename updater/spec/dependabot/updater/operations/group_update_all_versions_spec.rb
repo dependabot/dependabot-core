@@ -81,6 +81,28 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when nothing in the group needs to be updated" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all")
+    end
+
+    let(:dependency_files) do
+      # Let's use the already up-to-date files
+      updated_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "raises no errors and creates no pull requests" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).not_to receive(:create_pull_request)
+
+      group_update_all.perform
+    end
+  end
+
   context "when the snapshot is updating a gemspec", :vcr do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all")
