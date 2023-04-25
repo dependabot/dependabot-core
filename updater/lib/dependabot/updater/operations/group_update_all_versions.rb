@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/dependency_change_builder"
+
 # This class implements our strategy for creating a single Pull Request which
 # updates all outdated Dependencies within a specific project folder.
 #
