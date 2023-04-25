@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "dependabot/docker/utils/helpers"
-require "dependabot/experiments"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 
