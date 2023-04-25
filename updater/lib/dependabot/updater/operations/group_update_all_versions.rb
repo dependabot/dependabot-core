@@ -117,32 +117,32 @@ module Dependabot
             dependency_files = original_files_merged_with(updated_files)
             updated_dependencies = compile_updates_for(dependency, dependency_files)
 
-            if updated_dependencies.any?
-              lead_dependency = updated_dependencies.find do |dep|
-                dep.name.casecmp(dependency.name).zero?
-              end
+            next unless updated_dependencies.any?
 
-              dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
-
-              # Move on to the next dependency using the existing files if we
-              # could not create a change for any reason
-              next unless dependency_change
-
-              # FIXME: all_updated_dependencies may need to be de-duped
-              #
-              # To start out with, using a variant on the 'existing_pull_request'
-              # logic might make sense -or- we could employ a one-and-done rule
-              # where the first update to a dependency blocks subsequent changes.
-              #
-              # In a follow-up iteration, a 'shared workspace' could provide the
-              # filtering for us assuming we iteratively make file changes for
-              # each Array of dependencies in the batch and the FileUpdater tells
-              # us which cannot be applied.
-              all_updated_dependencies.concat(dependency_change.updated_dependencies)
-
-              # Store the updated files for the next loop
-              updated_files = dependency_change.updated_dependency_files
+            lead_dependency = updated_dependencies.find do |dep|
+              dep.name.casecmp(dependency.name).zero?
             end
+
+            dependency_change = create_change_for(lead_dependency, updated_dependencies, dependency_files, group)
+
+            # Move on to the next dependency using the existing files if we
+            # could not create a change for any reason
+            next unless dependency_change
+
+            # FIXME: all_updated_dependencies may need to be de-duped
+            #
+            # To start out with, using a variant on the 'existing_pull_request'
+            # logic might make sense -or- we could employ a one-and-done rule
+            # where the first update to a dependency blocks subsequent changes.
+            #
+            # In a follow-up iteration, a 'shared workspace' could provide the
+            # filtering for us assuming we iteratively make file changes for
+            # each Array of dependencies in the batch and the FileUpdater tells
+            # us which cannot be applied.
+            all_updated_dependencies.concat(dependency_change.updated_dependencies)
+
+            # Store the updated files for the next loop
+            updated_files = dependency_change.updated_dependency_files
           end
 
           # Create a single Dependabot::DependencyChange that aggregates everything we've updated
@@ -245,7 +245,7 @@ module Dependabot
           return dependency_snapshot.dependency_files if updated_files.empty?
 
           dependency_snapshot.dependency_files.map do |original_file|
-            original_file = updated_files.find{ |f| f.path == original_file.path } || original_file
+            original_file = updated_files.find { |f| f.path == original_file.path } || original_file
           end
         end
 

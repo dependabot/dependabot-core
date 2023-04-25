@@ -20,7 +20,7 @@ require "dependabot/pub"
 require "logger"
 require "vcr"
 require "webmock/rspec"
-require 'yaml'
+require "yaml"
 
 # TODO: Stop rescuing StandardError in Dependabot::BaseCommand#run
 #

@@ -19,7 +19,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       service: mock_service,
       job: job,
       dependency_snapshot: dependency_snapshot,
-      error_handler: mock_error_handler,
+      error_handler: mock_error_handler
     )
   end
 
@@ -29,8 +29,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
   let(:job) do
     Dependabot::Job.new_update_job(
-      job_id: 1558782000,
-      job_definition: job_definition_with_fetched_files,
+      job_id: "1558782000",
+      job_definition: job_definition_with_fetched_files
     )
   end
 
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           name: "library.gemspec",
           content: fixture("bundler_gemspec/original/library.gemspec"),
           directory: "/"
-        ),
+        )
       ]
     end
 
@@ -141,7 +141,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/library.gemspec"))
 
         expect(dependency_change.updated_dependencies.length).to eql(2)
-        expect(dependency_change.updated_dependencies.map(&:name)).to eql(["rubocop", "rack"])
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop rack))
       end
 
       group_update_all.perform
