@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "support/dependency_file_helpers"
+
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
@@ -8,6 +10,8 @@ require "dependabot/job"
 # The DependencyGroupEngine is not accessed directly, but though a DependencySnapshot.
 # So these tests use DependencySnapshot methods to check the DependencyGroupEngine works as expected
 RSpec.describe Dependabot::DependencyGroupEngine do
+  include DependencyFileHelpers
+
   let(:dependency_group_engine) { described_class }
 
   let(:job_json) { fixture("jobs/job_with_dependency_groups.json") }
@@ -31,18 +35,10 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     "mock-sha"
   end
 
-  let(:encoded_dependency_files) do
-    dependency_files.map do |file|
-      base64_file = file.dup
-      base64_file.content = Base64.encode64(file.content)
-      base64_file.to_h
-    end
-  end
-
   let(:job_definition) do
     {
       "base_commit_sha" => base_commit_sha,
-      "base64_dependency_files" => encoded_dependency_files
+      "base64_dependency_files" => encode_dependency_files(dependency_files)
     }
   end
 
