@@ -18,13 +18,7 @@ module Dependabot
     end
 
     def to_h
-      { "name" => serialized_group_name }
-    end
-    
-    private
-
-    def serialized_group_name
-      name.downcase.gsub("-", "_").to_sym
+      { "name" => name }
     end
   end
 end
