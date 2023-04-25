@@ -52,6 +52,11 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     instance_double(Dependabot::Updater::ErrorHandler)
   end
 
+  after do
+    Dependabot::Experiments.reset!
+    Dependabot::DependencyGroupEngine.reset!
+  end
+
   context "when the snapshot has no groups configured" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/update_all_simple")
@@ -70,6 +75,48 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("all-dependencies")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is updating a gemspec", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all")
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Gemfile",
+          content: fixture("bundler_gemspec/original/Gemfile"),
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Gemfile.lock",
+          content: fixture("bundler_gemspec/original/Gemfile.lock"),
+          directory: "/"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "library.gemspec",
+          content: fixture("bundler_gemspec/original/library.gemspec"),
+          directory: "/"
+        ),
+      ]
+    end
+
+    it "creates a DependencyChange for just the modified files without reporting errors" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+
+        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/Gemfile.lock" }
+        expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/Gemfile.lock"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/library.gemspec" }
+        expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/library.gemspec"))
       end
 
       group_update_all.perform
