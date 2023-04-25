@@ -139,6 +139,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
         gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/library.gemspec" }
         expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/library.gemspec"))
+
+        expect(dependency_change.updated_dependencies.length).to eql(2)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(["rubocop", "rack"])
       end
 
       group_update_all.perform
