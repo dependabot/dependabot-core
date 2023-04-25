@@ -172,7 +172,7 @@ module Dependabot
       # FIXME: We currently assumpt that _an attempt_ to send a DependencyGroup#id should
       # result in the `grouped-update` flag being set, regardless of whether the
       # DependencyGroup actually exists.
-      { "dependency-group": dependency_change.dependency_group.id }.compact
+      { "dependency-group": dependency_change.dependency_group.to_h }.compact
     end
 
     def create_pull_request_data(dependency_change, base_commit_sha)
