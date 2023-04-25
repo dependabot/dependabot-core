@@ -201,7 +201,7 @@ RSpec.describe Dependabot::ApiClient do
           to(have_requested(:post, create_pull_request_url).
              with do |req|
                data = JSON.parse(req.body)["data"]
-               expect(data["dependency-group"]).to eq({ "name" => "dummy_group_name" })
+               expect(data["dependency-group"]).to eq({ "name" => "dummy-group-name" })
              end)
       end
     end
