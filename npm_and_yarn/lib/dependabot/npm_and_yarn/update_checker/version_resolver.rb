@@ -320,8 +320,7 @@ module Dependabot
           SharedHelpers.in_a_temporary_repo_directory(base_dir, repo_contents_path) do
             dependency_files_builder.write_temporary_dependency_files
 
-            filtered_package_files.flat_map do |file|
-              path = Pathname.new(file.name).dirname
+            paths_requiring_update_check.flat_map do |path|
               run_checker(path: path, version: version)
             end.compact
           end
@@ -612,12 +611,12 @@ module Dependabot
           ).parse.select(&:top_level?)
         end
 
-        def filtered_package_files
-          @filtered_package_files ||=
+        def paths_requiring_update_check
+          @paths_requiring_update_check ||=
             DependencyFilesFilterer.new(
               dependency_files: dependency_files,
               updated_dependencies: [dependency]
-            ).package_files_requiring_update
+            ).paths_requiring_update_check
         end
 
         def dependency_files_builder
