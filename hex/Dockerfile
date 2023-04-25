@@ -2,25 +2,25 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 RUN apt-get update \
   && apt-get upgrade -y \
   && apt-get install -y --no-install-recommends \
-    gnupg2
+    gnupg2 libncurses5 libsctp1  
 
 # Install Erlang
-# Note: Currently we install from Ubuntu PPA to unblock upgrading to Ubuntu 22.04, but we'd be happy to accept a PR
-# switching to a more up to date PPA. See also:
-#  * https://github.com/esl/packages/issues/15
-#  * https://github.com/dependabot/dependabot-core/pull/7865
-#  * https://erlangforums.com/t/erlang-solutions-apt-package-for-otp-25/1552/1
-#  * https://erlangforums.com/t/the-eef-is-looking-for-volunteers-to-take-over-esls-build-packages/2238/1
-ARG ERLANG_MAJOR_VERSION=24
-ARG ERLANG_VERSION=1:${ERLANG_MAJOR_VERSION}.2.1+dfsg-1ubuntu0.1
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    erlang=${ERLANG_VERSION}
+# From https://www.erlang-solutions.com/downloads/
+ARG ERLANG_MAJOR_VERSION=25
+ARG ERLANG_MINOR_VERSION=3.2-1
+ARG ERLANG_VERSION=${ERLANG_MAJOR_VERSION}.${ERLANG_MINOR_VERSION}
+ARG ERLANG_CHECKSUM=79116f9fe5679376927d02750437f2941b465591c44d4b8304152f0bd89dda00
+
+RUN \
+  curl -O https://binaries2.erlang-solutions.com/ubuntu/pool/contrib/e/esl-erlang/esl-erlang_${ERLANG_VERSION}~ubuntu~jammy_amd64.deb && \
+  echo "$ERLANG_CHECKSUM esl-erlang_${ERLANG_VERSION}~ubuntu~jammy_amd64.deb" | sha256sum -c - && \
+  dpkg -i esl-erlang_${ERLANG_VERSION}~ubuntu~jammy_amd64.deb && \
+  rm esl-erlang_${ERLANG_VERSION}~ubuntu~jammy_amd64.deb
 
 # Install Elixir
 # https://github.com/elixir-lang/elixir/releases
 ARG ELIXIR_VERSION=v1.14.4
-ARG ELIXIR_CHECKSUM=b5705275d62ce3dae172d25d7ea567fffdabb45458abeb29c0189923b907367c
+ARG ELIXIR_CHECKSUM=a5b7aadfd896e691a6494f9079fcd6f1209adcbd93f2d40e5770d80edc0f33e6
 RUN curl -sSLfO https://github.com/elixir-lang/elixir/releases/download/${ELIXIR_VERSION}/elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
   && echo "$ELIXIR_CHECKSUM  elixir-otp-${ERLANG_MAJOR_VERSION}.zip" | sha256sum -c - \
   && unzip -d /usr/local/elixir -x elixir-otp-${ERLANG_MAJOR_VERSION}.zip \
