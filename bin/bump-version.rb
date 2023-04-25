@@ -38,7 +38,7 @@ puts "git commit -m 'v#{new_version}'"
 puts "git push origin HEAD:v#{new_version}"
 puts "# ... create PR and merge after getting it approved."
 puts
-puts "Once the PR is merged, create a new release tagged with that version using the format `v1.2.3"
+puts "Once the PR is merged, create a new release tagged with that version using the format `v1.2.3`"
 puts
 puts "* You can do this via the web UI: https://github.com/dependabot/dependabot-core/releases/new"
 puts "  Use the 'Generate release notes' button and then edit as needed."
