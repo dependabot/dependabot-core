@@ -67,7 +67,7 @@ module Dependabot
         end
 
         def lockfiles
-          [*package_locks, *shrinkwraps, *yarn_locks]
+          [*package_locks, *shrinkwraps, *yarn_locks, *pnpm_locks]
         end
 
         def package_files
