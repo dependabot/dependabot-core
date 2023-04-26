@@ -16,5 +16,9 @@ module Dependabot
       @dependencies.include?(dependency) if @dependencies.any?
       rules.any? { |rule| WildcardMatcher.match?(rule, dependency.name) }
     end
+
+    def to_h
+      { "name" => name }
+    end
   end
 end
