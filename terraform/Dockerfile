@@ -1,5 +1,6 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
+# From https://github.com/hashicorp/terraform/releases
 ARG TERRAFORM_VERSION=1.4.5
 ARG TERRAFORM_AMD64_CHECKSUM=ce10e941cd11554b15a189cd00191c05abc20dff865599d361bdb863c5f406a9
 ARG TERRAFORM_ARM64_CHECKSUM=ca2c48f518f72fef668255150cc5e63b92545edc62a05939bbff8a350bceb357
