@@ -5,6 +5,7 @@ require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
@@ -80,7 +81,7 @@ module Dependabot
 
       def npm_files
         fetched_npm_files = []
-        fetched_npm_files << package_lock if package_lock && !ignore_package_lock?
+        fetched_npm_files << package_lock if package_lock
         fetched_npm_files << shrinkwrap if shrinkwrap
         fetched_npm_files << npmrc if npmrc
         fetched_npm_files << inferred_npmrc if inferred_npmrc
@@ -152,17 +153,17 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        package = JSON.parse(package_json.content)
-        if (package_manager = package.fetch("packageManager", nil))
-          get_yarn_version_from_package_json(package_manager)
-        elsif yarn_lock
-          Helpers.yarn_version_numeric(yarn_lock)
-        end
+        @yarn_version = package_manager.locked_version("yarn") || guess_yarn_version
       end
 
-      def get_yarn_version_from_package_json(package_manager)
-        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
-        version_match&.named_captures&.fetch("version", nil)
+      def guess_yarn_version
+        return unless yarn_lock
+
+        Helpers.yarn_version_numeric(yarn_lock)
+      end
+
+      def package_manager
+        @package_manager ||= PackageManager.new(parsed_package_json)
       end
 
       def package_json
@@ -170,15 +171,21 @@ module Dependabot
       end
 
       def package_lock
-        @package_lock ||= fetch_file_if_present("package-lock.json")
+        return @package_lock if defined?(@package_lock)
+
+        @package_lock = fetch_file_if_present("package-lock.json") unless ignore_package_lock?
       end
 
       def yarn_lock
-        @yarn_lock ||= fetch_file_if_present("yarn.lock")
+        return @yarn_lock if defined?(@yarn_lock)
+
+        @yarn_lock = fetch_file_if_present("yarn.lock")
       end
 
       def shrinkwrap
-        @shrinkwrap ||= fetch_file_if_present("npm-shrinkwrap.json")
+        return @shrinkwrap if defined?(@shrinkwrap)
+
+        @shrinkwrap = fetch_file_if_present("npm-shrinkwrap.json")
       end
 
       def npmrc
