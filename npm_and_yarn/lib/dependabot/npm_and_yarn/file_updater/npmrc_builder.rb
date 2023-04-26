@@ -81,7 +81,9 @@ module Dependabot
               next false if CENTRAL_REGISTRIES.include?(cred["registry"])
 
               # If all the URLs include this registry, it's global
-              next true if dependency_urls.all? { |url| url.include?(cred["registry"]) }
+              next true if dependency_urls.size.positive? && dependency_urls.all? do |url|
+                             url.include?(cred["registry"])
+                           end
 
               # Check if this registry has already been defined in .npmrc as a scoped registry
               next false if npmrc_scoped_registries.any? { |sr| sr.include?(cred["registry"]) }
@@ -133,8 +135,8 @@ module Dependabot
           @dependency_urls = []
           if package_lock
             @dependency_urls +=
-              parsed_package_lock.fetch("dependencies", {}).
-              filter_map { |_, details| details["resolved"] }.
+              package_lock.content.scan(/"resolved"\s*:\s*"(.*)"/).
+              flatten.
               select { |url| url.is_a?(String) }.
               reject { |url| url.start_with?("git") }
           end
@@ -267,7 +269,7 @@ module Dependabot
 
           scopes = affected_urls.map do |url|
             url.split(/\%40|@/)[1]&.split(%r{\%2[fF]|/})&.first
-          end
+          end.uniq
 
           # Registry used for unscoped packages
           return if scopes.include?(nil)
