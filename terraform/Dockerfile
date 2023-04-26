@@ -7,7 +7,7 @@ ARG TERRAFORM_VERSION=1.4.5
 # curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
 ARG TERRAFORM_AMD64_CHECKSUM=ce10e941cd11554b15a189cd00191c05abc20dff865599d361bdb863c5f406a9
 
-# curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+# curl "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_SHA256SUMS" | grep "terraform_${TERRAFORM_VERSION}_linux_arm64.zip"
 ARG TERRAFORM_ARM64_CHECKSUM=ca2c48f518f72fef668255150cc5e63b92545edc62a05939bbff8a350bceb357
 
 RUN cd /tmp \
