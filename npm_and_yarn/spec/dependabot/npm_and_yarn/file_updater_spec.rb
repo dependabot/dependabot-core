@@ -3925,6 +3925,54 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
         end
       end
 
+      context "with resolutions" do
+        let(:project_name) { "pnpm/resolution_specified" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the resolution, as well as the declaration" do
+          expect(updated_package_json.content).to include('"lodash": "3.10.1"')
+
+          expect(updated_pnpm_lock.content).to include("/lodash@3.10.1:")
+          expect(updated_pnpm_lock.content).to include("/lodash@").once
+        end
+      end
+
+      context "with overrides (pnpm specific resolutions)" do
+        let(:project_name) { "pnpm/overrides_specified" }
+
+        let(:dependency_name) { "lodash" }
+        let(:version) { "3.10.1" }
+        let(:previous_version) { "3.10.0" }
+        let(:requirements) do
+          [{
+            file: "package.json",
+            requirement: "^3.0",
+            groups: ["devDependencies"],
+            source: nil
+          }]
+        end
+        let(:previous_requirements) { requirements }
+
+        it "updates the resolution, as well as the declaration" do
+          expect(updated_package_json.content).to include('"lodash": "3.10.1"')
+
+          expect(updated_pnpm_lock.content).to include("/lodash@3.10.1:")
+          expect(updated_pnpm_lock.content).to include("/lodash@").once
+        end
+      end
+
       context "when package has a invalid platform requirement" do
         let(:project_name) { "pnpm/invalid_platform" }
 
