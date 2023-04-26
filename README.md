@@ -6,7 +6,7 @@
     </picture>
 </h1>
 
-Welcome to the public home of Dependabot :dependabot:.
+Hello and welcome to the public home of Dependabot :dependabot:.
 
 # Table of Contents
 
