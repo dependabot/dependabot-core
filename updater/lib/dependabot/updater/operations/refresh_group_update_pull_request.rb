@@ -73,7 +73,7 @@ module Dependabot
               error_handler.handle_dependabot_error(error: e, dependency: group)
             end
           else
-            # close PR
+            close_pull_request(reason: :up_to_date)
           end
         end
 
@@ -83,6 +83,17 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler
+
+        def close_pull_request(reason:)
+          reason_string = reason.to_s.tr("_", " ")
+          Dependabot.logger.info(
+            "Telling backend to close pull request for the " \
+            "#{dependency_snapshot.job_group.name} group " \
+            "(#{job.dependencies.join(', ')}) - #{reason_string}"
+          )
+
+          service.close_pull_request(job.dependencies, reason)
+        end
       end
     end
   end

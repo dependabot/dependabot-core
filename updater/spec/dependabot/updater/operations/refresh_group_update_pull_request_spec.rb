@@ -81,6 +81,36 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
   end
 
+  context "when the dependencies have been since been updated by someone else and there's nothing to do" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh")
+    end
+
+    let(:dependency_files) do
+      updated_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "closes the pull request" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).to receive(:close_pull_request).with([
+          [
+            {
+              "dependency-name"=>"dummy-pkg-b",
+              "dependency-version"=>"1.2.0"
+            }
+          ]
+        ],
+        :up_to_date
+      )
+
+      group_update_all.perform
+    end
+  end
+
   context "when the target dependency group is no longer present in the project's config" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_refresh_missing_group")
