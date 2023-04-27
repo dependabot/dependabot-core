@@ -39,6 +39,7 @@ module Dependabot
       updating_a_pull_request
       vendor_dependencies
       dependency_groups
+      dependency_group_to_refresh
     )
 
     attr_reader :allowed_updates,
@@ -54,7 +55,8 @@ module Dependabot
                 :source,
                 :token,
                 :vendor_dependencies,
-                :dependency_groups
+                :dependency_groups,
+                :dependency_group_to_refresh
 
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
@@ -98,6 +100,7 @@ module Dependabot
       @updating_a_pull_request      = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies          = attributes.fetch(:vendor_dependencies, false)
       @dependency_groups            = attributes.fetch(:dependency_groups, [])
+      @dependency_group_to_refresh  = attributes.fetch(:dependency_group_to_refresh, nil)
 
       register_experiments
       register_dependency_groups
