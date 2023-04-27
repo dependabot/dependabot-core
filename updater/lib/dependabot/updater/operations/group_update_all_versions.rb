@@ -52,14 +52,13 @@ module Dependabot
               begin
                 service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
               rescue StandardError => e
-                # FIXME: This is a workround for not having a single Dependency to report against
-                #
-                #        We could use all_updated_deps.first, but that could be misleading. It may
-                #        make more sense to handle the dependency group as a Dependancy-ish object
-                group_dependency = OpenStruct.new(name: "group-all")
                 raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
 
-                error_handler.handle_dependabot_error(error: e, dependency: group_dependency)
+                # FIXME: This will result in us reporting a the group name as a dependency name
+                #
+                # In future we should modify this method to accept both dependency and group
+                # so the downstream error handling can tag things appropriately.
+                error_handler.handle_dependabot_error(error: e, dependency: group)
               end
             else
               Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
