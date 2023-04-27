@@ -48,6 +48,21 @@ RSpec.describe Dependabot::Updater::Operations do
 
         Dependabot::Experiments.reset!
       end
+
+      it "returns the RefreshGroupUpdatePullRequest class when the Job is for an existing group update" do
+        Dependabot::Experiments.register("grouped_updates_prototype", true)
+
+        job = instance_double(Dependabot::Job,
+                              security_updates_only?: false,
+                              updating_a_pull_request?: true,
+                              dependencies: [anything],
+                              dependency_group_to_refresh: anything,
+                              is_a?: true)
+
+        expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
+
+        Dependabot::Experiments.reset!
+      end
     end
 
     it "returns the RefreshVersionUpdatePullRequest class when the Job is for an existing dependency version update" do
@@ -55,6 +70,7 @@ RSpec.describe Dependabot::Updater::Operations do
                             security_updates_only?: false,
                             updating_a_pull_request?: true,
                             dependencies: [anything],
+                            dependency_group_to_refresh: nil,
                             is_a?: true)
 
       expect(described_class.class_for(job: job)).

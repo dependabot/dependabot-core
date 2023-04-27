@@ -2,15 +2,16 @@
 
 require "dependabot/dependency_change_builder"
 
-# This class implements our strategy for creating a single Pull Request which
-# updates all outdated Dependencies within a specific project folder.
+# This class implements our strategy for creating Pull Requests for Dependency
+# Groups defined for a given folder before handling any un-grouped Dependencies
+# via Dependabot::Updater::Operations::UpdateAllVersions.
 #
 # **Note:** This is currently an experimental feature which is not supported
 #           in the service or as an integration point.
 #
 # Some limitations of the current implementation:
-# - It has no superseding logic, so every time this strategy runs for a repo
-#   it will create a new Pull Request regardless of any existing, open PR
+# - It has no superseding logic for groups - every time this strategy runs for a
+#  repo it will create a new Pull Request regardless of any existing, open PR
 module Dependabot
   class Updater
     module Operations
