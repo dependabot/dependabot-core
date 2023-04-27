@@ -368,50 +368,28 @@ module Dependabot
       def fetch_workspace_package_jsons
         return [] unless parsed_package_json["workspaces"]
 
-        package_json_files = []
-
-        workspace_paths(parsed_package_json["workspaces"]).each do |workspace|
-          file = File.join(workspace, "package.json")
-
-          begin
-            package_json_files << fetch_file_from_host(file)
-          rescue Dependabot::DependencyFileNotFound
-            nil
-          end
+        workspace_paths(parsed_package_json["workspaces"]).filter_map do |workspace|
+          fetch_package_json_if_present(workspace)
         end
-
-        package_json_files
       end
 
       def fetch_lerna_packages
         return [] unless parsed_lerna_json["packages"]
 
-        dependency_files = []
-
-        workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
-          dependency_files += fetch_lerna_packages_from_path(workspace)
-        end
-
-        dependency_files
+        workspace_paths(parsed_lerna_json["packages"]).flat_map do |workspace|
+          fetch_lerna_packages_from_path(workspace)
+        end.compact
       end
 
       def fetch_lerna_packages_from_path(path)
-        dependency_files = []
+        package_json = fetch_package_json_if_present(path)
+        return unless package_json
 
-        package_json_path = File.join(path, "package.json")
-
-        begin
-          dependency_files << fetch_file_from_host(package_json_path)
-          dependency_files += [
-            fetch_file_if_present(File.join(path, "package-lock.json")),
-            fetch_file_if_present(File.join(path, "yarn.lock")),
-            fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
-          ].compact
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
-
-        dependency_files
+        [package_json] + [
+          fetch_file_if_present(File.join(path, "package-lock.json")),
+          fetch_file_if_present(File.join(path, "yarn.lock")),
+          fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
+        ]
       end
 
       def workspace_paths(workspace_object)
@@ -471,6 +449,18 @@ module Dependabot
         end
 
         matching_paths(prefix + glob, paths)
+      end
+
+      def fetch_package_json_if_present(workspace)
+        file = File.join(workspace, "package.json")
+
+        begin
+          fetch_file_from_host(file)
+        rescue Dependabot::DependencyFileNotFound
+          # Not all paths matched by a workspace glob may contain a package.json
+          # file. Ignore if that's the case
+          nil
+        end
       end
 
       # The packages/!(not-this-package) syntax is unique to Yarn
