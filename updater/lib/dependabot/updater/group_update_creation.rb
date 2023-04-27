@@ -13,9 +13,7 @@ module Dependabot
       def compile_all_dependency_changes_for(group)
         all_updated_dependencies = []
         updated_files = []
-        dependencies.each do |dependency|
-          next unless group.contains?(dependency)
-
+        group.dependencies.each do |dependency|
           dependency_files = original_files_merged_with(updated_files)
           updated_dependencies = compile_updates_for(dependency, dependency_files)
 

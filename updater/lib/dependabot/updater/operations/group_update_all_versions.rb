@@ -72,15 +72,6 @@ module Dependabot
         end
         # rubocop:enable Metrics/AbcSize
 
-        def dependencies
-          if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
-            Dependabot.logger.info("Found no dependencies to update after filtering allowed updates")
-            return []
-          end
-
-          dependency_snapshot.allowed_dependencies
-        end
-
         private
 
         attr_reader :job,
