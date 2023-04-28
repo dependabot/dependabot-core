@@ -71,7 +71,11 @@ module Dependabot
 
     def existing_pull_request
       if grouped_update?
-        job.existing_group_pull_requests.find { |pr| Set.new(pr["dependencies"]) == updated_dependencies_set }
+        # We only want PRs for the same group that have the same versions
+        job.existing_group_pull_requests.find do |pr|
+          pr["dependency-group"]["name"] == dependency_group.name &&
+            Set.new(pr["dependencies"]) == updated_dependencies_set
+        end
       else
         job.existing_pull_requests.find { |pr| Set.new(pr) == updated_dependencies_set }
       end

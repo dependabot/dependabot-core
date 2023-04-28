@@ -152,6 +152,30 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
     end
   end
 
+  context "when there is a pull request for an overlapping group" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_similar_pr")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "does not attempt to update the other group's pull request" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      group_update_all.perform
+    end
+  end
+
   context "when the target dependency group is no longer present in the project's config" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_refresh_missing_group")
