@@ -59,21 +59,35 @@ module Dependabot
 
           dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
 
-          if dependency_change.updated_dependencies.any?
-            Dependabot.logger.info("Updating pull request for '#{dependency_snapshot.job_group.name}'")
-            begin
-              service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-            rescue StandardError => e
-              raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-              # FIXME: This will result in us reporting a the group name as a dependency name
-              #
-              # In future we should modify this method to accept both dependency and group
-              # so the downstream error handling can tag things appropriately.
-              error_handler.handle_dependabot_error(error: e, dependency: group)
+          begin
+            if dependency_change.updated_dependencies.any?
+              if dependency_change.should_replace_existing_pr?
+                Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
+                close_pull_request(reason: :dependencies_changed)
+                Dependabot.logger.info("Creating a new pull request for '#{dependency_snapshot.job_group.name}'")
+                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+              elsif dependency_change.matches_existing_pr?
+                Dependabot.logger.info("Updating pull request for '#{dependency_snapshot.job_group.name}'")
+                service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+              else
+                # If the changes do not match an existing PR, then we should open a new pull request and leave it to
+                # the backend to close the existing pull request with a comment that it has been superseded.
+                Dependabot.logger.info("Target versions have changed, existing Pull Request should be superseded")
+                Dependabot.logger.info("Creating a new pull request for '#{dependency_snapshot.job_group.name}'")
+                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+              end
+            else
+              Dependabot.logger.info("Dependencies are up to date, closing existing Pull Request")
+              close_pull_request(reason: :up_to_date)
             end
-          else
-            close_pull_request(reason: :up_to_date)
+          rescue StandardError => e
+            raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+            # FIXME: This will result in us reporting a the group name as a dependency name
+            #
+            # In future we should modify this method to accept both dependency and group
+            # so the downstream error handling can tag things appropriately.
+            error_handler.handle_dependabot_error(error: e, dependency: dependency_snapshot.job_group)
           end
         end
 
