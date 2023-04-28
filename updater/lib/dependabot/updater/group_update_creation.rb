@@ -4,6 +4,13 @@ require "dependabot/dependency_change_builder"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
+#
+# When included in an Operation it expects the following to be available:
+# - job: the current Dependabot::Job object
+# - dependency_snapshot: the Dependabot::DependencySnapshot of the current
+#   repo state
+# - error_handler: a Dependabot::UpdaterErrorHandler to report
+#
 module Dependabot
   class Updater
     module GroupUpdateCreation

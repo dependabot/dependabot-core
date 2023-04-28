@@ -96,16 +96,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
     it "closes the pull request" do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).to receive(:close_pull_request).with([
-          [
-            {
-              "dependency-name"=>"dummy-pkg-b",
-              "dependency-version"=>"1.2.0"
-            }
-          ]
-        ],
-        :up_to_date
-      )
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :up_to_date)
 
       group_update_all.perform
     end
