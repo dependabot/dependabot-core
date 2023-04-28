@@ -26,7 +26,7 @@ module Dependabot
           "vue" => %w(vue vue-template-compiler)
         }.freeze
 
-        # Error message from yarn add:
+        # Error message returned by `yarn add` (for Yarn classic):
         # " > @reach/router@1.2.1" has incorrect peer dependency "react@15.x || 16.x || 16.4.0-alpha.0911da3"
         # "workspace-aggregator-<random-string> > test > react-dom@15.6.2" has incorrect peer dependency "react@^15.6.2"
         # " > react-burger-menu@1.9.9" has unmet peer dependency "react@>=0.14.0 <16.0.0"
@@ -37,7 +37,7 @@ module Dependabot
             "(?<required_dep>[^"]+)"
           /x
 
-        # Error message from yarn add:
+        # Error message returned by `yarn add` (for Yarn berry):
         # YN0060: │ eve-roster@workspace:. provides jest (p8d618) \
         # with version 29.3.0, which doesn't satisfy \
         # what ts-jest requests\n
@@ -46,7 +46,7 @@ module Dependabot
             YN0060:\s|\s.+\sprovides\s(?<required_dep>.+?)\s\((?<info_hash>\w+)\).+what\s(?<requiring_dep>.+?)\srequests
           /x
 
-        # Error message from npm install:
+        # Error message returned by `npm install` (for NPM 6):
         # react-dom@15.2.0 requires a peer of react@^15.2.0 \
         # but none is installed. You must install peer dependencies yourself.
         NPM6_PEER_DEP_ERROR_REGEX =
@@ -56,7 +56,7 @@ module Dependabot
             (?<required_dep>.+?)\sbut\snone\sis\sinstalled.
           /x
 
-        # Error message from npm install:
+        # Error message returned by `npm install` (for NPM 8):
         # npm ERR! Could not resolve dependency:
         # npm ERR! peer react@"^16.14.0" from react-dom@16.14.0
         #
