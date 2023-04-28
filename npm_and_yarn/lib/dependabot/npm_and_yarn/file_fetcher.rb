@@ -173,7 +173,7 @@ module Dependabot
       def package_lock
         return @package_lock if defined?(@package_lock)
 
-        @package_lock = fetch_file_if_present("package-lock.json") unless ignore_package_lock?
+        @package_lock = fetch_file_if_present("package-lock.json") unless skip_package_lock?
       end
 
       def yarn_lock
@@ -490,7 +490,7 @@ module Dependabot
         {}
       end
 
-      def ignore_package_lock?
+      def skip_package_lock?
         return false unless npmrc
 
         npmrc.content.match?(/^package-lock\s*=\s*false/)
