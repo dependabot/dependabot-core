@@ -59,7 +59,8 @@ RSpec.describe Dependabot::Updater::Operations do
                               dependency_group_to_refresh: anything,
                               is_a?: true)
 
-        expect(described_class.class_for(job: job)).to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
+        expect(described_class.class_for(job: job)).
+          to be(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest)
 
         Dependabot::Experiments.reset!
       end

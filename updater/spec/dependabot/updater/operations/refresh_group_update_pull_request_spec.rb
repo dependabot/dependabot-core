@@ -117,7 +117,7 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
     it "closes the existing pull request and creates a new one" do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b", "dummy-pkg-c"], :dependencies_changed)
+      expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b dummy-pkg-c), :dependencies_changed)
 
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
