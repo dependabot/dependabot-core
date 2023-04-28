@@ -34,6 +34,10 @@ module Dependabot
           job.updating_a_pull_request? && Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
 
+        def self.tag_name
+          :update_version_group_pr
+        end
+
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
           @job = job
