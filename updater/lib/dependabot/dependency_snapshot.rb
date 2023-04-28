@@ -54,7 +54,7 @@ module Dependabot
     end
 
     def job_group_name
-      job.dependency_group_to_refresh["name"]
+      job.dependency_group_to_refresh
     end
 
     # Returns just the group that is specifically requested to be updated by
@@ -63,7 +63,7 @@ module Dependabot
       return nil unless job_group_name
       return @job_group if defined?(@job_group)
 
-      @job_group = groups.fetch(job.dependency_group_to_refresh["name"].to_sym, nil)
+      @job_group = groups.fetch(job.dependency_group_to_refresh.to_sym, nil)
     end
 
     # A dependency snapshot will always have the same set of dependencies since it only depends

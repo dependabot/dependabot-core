@@ -43,8 +43,4 @@ job:
     rules:
       patterns:
         - "*"
-  dependency-group-to-refresh:
-    name: everything-everywhere-all-at-once
-    rules:
-      patterns:
-        - "*"
+  dependency-group-to-refresh: everything-everywhere-all-at-once
