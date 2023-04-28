@@ -2310,6 +2310,21 @@ RSpec.describe Dependabot::Updater do
       expect(service).not_to receive(:create_pull_request)
       updater.run
     end
+
+    it "does not create a new pull request for a group if one already exists" do
+      job = build_job(
+        existing_pull_requests: [
+          [{ "dependency-name" => "dummy-pkg-b", "dependency-group" => "group-b" }]
+        ],
+        dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }],
+        experiments: { "grouped-updates-prototype" => true }
+      )
+      service = build_service
+      updater = build_updater(service: service, job: job)
+
+      expect(service).not_to receive(:create_pull_request)
+      updater.run
+    end
   end
 
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
