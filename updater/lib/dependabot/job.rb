@@ -91,7 +91,7 @@ module Dependabot
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
       # so let's consider it optional for now.
-      @existing_group_pull_requests = attributes.fetch(:existing_group_pull_requests, [])
+      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, [])
       @experiments                    = attributes.fetch(:experiments, {})
       @ignore_conditions              = attributes.fetch(:ignore_conditions)
       @lockfile_only                  = attributes.fetch(:lockfile_only)
