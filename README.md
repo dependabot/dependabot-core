@@ -524,9 +524,9 @@ GitHub, Inc. where it will be licensed the same way as above.
 
 ## History
 
-Dependabot and Dependabot-Core started life as [Bump][https://github.com/gocardless/bump] and
-[Bump Core][https://github.com/gocardless/bump-core], back when Harry and Grey were working at
-[GoCardless][https://gocardless.com]. We remain grateful for the help and support of
+Dependabot and Dependabot-Core started life as [Bump](https://github.com/gocardless/bump) and
+[Bump Core](https://github.com/gocardless/bump-core), back when Harry and Grey were working at
+[GoCardless](https://gocardless.com). We remain grateful for the help and support of
 GoCardless in helping make Dependabot possible - if you need to collect
 recurring payments from Europe, check them out.
 
