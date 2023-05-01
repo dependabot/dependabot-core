@@ -39,6 +39,7 @@ module Dependabot
         end
 
         # rubocop:disable Metrics/AbcSize
+        # rubocop:disable Metrics/PerceivedComplexity
         def perform
           # FIXME: This preserves the default behavior of grouping all updates into a single PR
           # but we should figure out if this is the default behavior we want.
@@ -50,6 +51,7 @@ module Dependabot
             Dependabot.logger.info("Starting update group for '#{group.name}'")
 
             next if pr_exists_for_dependency_group?(group)
+
             dependency_change = compile_all_dependency_changes_for(group)
 
             if dependency_change.updated_dependencies.any?
@@ -74,6 +76,7 @@ module Dependabot
           run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
         end
         # rubocop:enable Metrics/AbcSize
+        # rubocop:enable Metrics/PerceivedComplexity
 
         def dependencies
           if dependency_snapshot.dependencies.any? && dependency_snapshot.allowed_dependencies.none?
