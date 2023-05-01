@@ -25,6 +25,7 @@ module Dependabot
       commit_message_options
       dependencies
       existing_pull_requests
+      existing_group_pull_requests
       experiments
       ignore_conditions
       lockfile_only
@@ -45,6 +46,7 @@ module Dependabot
                 :credentials,
                 :dependencies,
                 :existing_pull_requests,
+                :existing_group_pull_requests,
                 :id,
                 :ignore_conditions,
                 :package_manager,
@@ -83,6 +85,7 @@ module Dependabot
       @credentials                  = attributes.fetch(:credentials, [])
       @dependencies                 = attributes.fetch(:dependencies)
       @existing_pull_requests       = attributes.fetch(:existing_pull_requests)
+      @existing_group_pull_requests = attributes.fetch(:existing_group_pull_requests, [])
       @experiments                  = attributes.fetch(:experiments, {})
       @ignore_conditions            = attributes.fetch(:ignore_conditions)
       @lockfile_only                = attributes.fetch(:lockfile_only)
