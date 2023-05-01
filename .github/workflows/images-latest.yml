@@ -1,6 +1,5 @@
 name: Latest images
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   UPDATER_IMAGE: "ghcr.io/dependabot/dependabot-updater-"
 on:
   push:
