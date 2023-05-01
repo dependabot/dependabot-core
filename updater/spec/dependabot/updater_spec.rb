@@ -2313,8 +2313,13 @@ RSpec.describe Dependabot::Updater do
 
     it "does not create a new pull request for a group if one already exists" do
       job = build_job(
-        existing_pull_requests: [
-          [{ "dependency-name" => "dummy-pkg-b", "dependency-group" => "group-b" }]
+        existing_group_pull_requests: [
+          {
+            dependency_group: { "name" => "group-b" },
+            dependencies: [
+              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" }
+            ]
+          }
         ],
         dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }],
         experiments: { "grouped-updates-prototype" => true }
@@ -2382,7 +2387,7 @@ RSpec.describe Dependabot::Updater do
   end
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
-                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
+                existing_pull_requests: [], existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [],
                 experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
     Dependabot::Job.new(
       id: 1,
@@ -2390,6 +2395,7 @@ RSpec.describe Dependabot::Updater do
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
       existing_pull_requests: existing_pull_requests,
+      existing_group_pull_requests: existing_group_pull_requests,
       ignore_conditions: ignore_conditions,
       security_advisories: security_advisories,
       package_manager: "bundler",
