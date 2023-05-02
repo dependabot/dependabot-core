@@ -19,7 +19,7 @@ jobs:
       matrix:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
-          - { path: bundler, name: bundler-grouped, ecosystem: bundler }
+          - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
@@ -64,7 +64,7 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'bundler/**'
-          bundler-grouped:
+          bundler-group-rules:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
