@@ -34,19 +34,23 @@ module Dependabot
       end
 
       def updated_requirements
-        previous = dependency_source_details
-        updated = updated_source
+        updated = updated_ref
 
-        # Maintain a short git hash only if it matches the latest
-        if previous[:type] == "git" &&
-           previous[:url] == updated[:url] &&
-           updated[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
-           previous[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
-           updated[:ref]&.start_with?(previous[:ref])
-          return dependency.requirements
+        dependency.requirements.map do |req|
+          next req unless updated
+
+          # Maintain a short git hash only if it matches the latest
+          if req[:type] == "git" &&
+             updated.match?(/^[0-9a-f]{6,40}$/) &&
+             req[:ref]&.match?(/^[0-9a-f]{6,40}$/) &&
+             updated.start_with?(req[:ref])
+            next req
+          end
+
+          source = req[:source]
+          new_source = source.merge(ref: updated)
+          req.merge(source: new_source)
         end
-
-        dependency.requirements.map { |req| req.merge(source: updated) }
       end
 
       private
@@ -167,31 +171,31 @@ module Dependabot
           select { |tag| tag.fetch(:version) > current_version }
       end
 
-      def updated_source
+      def updated_ref
         # TODO: Support Docker sources
-        return dependency_source_details unless git_dependency?
+        return unless git_dependency?
 
         if vulnerable? &&
            (new_tag = lowest_security_fix_version_tag)
-          return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          return new_tag.fetch(:tag)
         end
 
-        # Update the git tag if updating a pinned version
+        # Return the git tag if updating a pinned version
         if git_commit_checker.pinned_ref_looks_like_version? &&
            (new_tag = latest_version_tag) &&
            new_tag.fetch(:commit_sha) != current_commit
-          return dependency_source_details.merge(ref: new_tag.fetch(:tag))
+          return new_tag.fetch(:tag)
         end
 
-        # Update the pinned git commit if one is available
+        # Return the pinned git commit if one is available
         if git_commit_checker.pinned_ref_looks_like_commit_sha? &&
            (new_commit_sha = latest_commit_sha) &&
            new_commit_sha != current_commit
-          return dependency_source_details.merge(ref: new_commit_sha)
+          return new_commit_sha
         end
 
-        # Otherwise return the original source
-        dependency_source_details
+        # Otherwise we can't update the ref
+        nil
       end
 
       def latest_commit_sha

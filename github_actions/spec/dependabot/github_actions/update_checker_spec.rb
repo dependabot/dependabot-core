@@ -914,5 +914,71 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         expect(subject).to eq(expected_requirements)
       end
     end
+
+    context "with multiple requirement sources pinned to different SHAs" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          version: nil,
+          package_manager: "github_actions",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+              branch: nil
+            }
+          }]
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }]
+      end
+
+      it "updates all source refs to the target ref" do
+        expect(subject).to eq(expected_requirements)
+      end
+    end
   end
 end
