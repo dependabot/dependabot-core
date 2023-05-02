@@ -2315,8 +2315,8 @@ RSpec.describe Dependabot::Updater do
       job = build_job(
         existing_group_pull_requests: [
           {
-            dependency_group: { "name" => "group-b" },
-            dependencies: [
+            "dependency-group-name" => "group-b",
+            "dependencies" => [
               { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" }
             ]
           }

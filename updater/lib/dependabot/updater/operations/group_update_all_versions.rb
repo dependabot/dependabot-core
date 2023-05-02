@@ -110,9 +110,7 @@ module Dependabot
         end
 
         def pr_exists_for_dependency_group?(group)
-          job.existing_group_pull_requests.
-            each&.
-            any? { |pr| pr.dig(:dependency_group, "name") == group.name }
+          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
         end
 
         # Returns a Dependabot::DependencyChange object that encapsulates the
