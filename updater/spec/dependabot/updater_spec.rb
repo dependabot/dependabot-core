@@ -2275,7 +2275,7 @@ RSpec.describe Dependabot::Updater do
       )
 
       allow(service).to receive(:create_pull_request)
-      expect(snapshot).to receive(:groups).and_call_original
+      expect(snapshot).to receive(:groups).at_least(:once).and_call_original
       expect(snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
       expect(service).to receive(:increment_metric).
         with("updater.started", { tags: { operation: :grouped_updates_prototype } })

@@ -70,12 +70,22 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       stub_rubygems_calls
     end
 
-    it "injects a placeholder group to update everything in a single request without errors" do
+    it "logs a warning, reports an error but defers everything to individual updates" do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("all-dependencies")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
-      end
+      expect(mock_service).not_to receive(:create_pull_request)
+
+      expect(Dependabot.logger).to receive(:warn).with("No dependency groups defined!")
+
+      expect(mock_service).to receive(:capture_exception).with(
+        error: an_instance_of(Dependabot::DependabotError),
+        job: job
+      )
+
+      expect(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new) do |args|
+        expect(args[:dependency_snapshot].dependencies.length).to eql(2)
+        expect(args[:dependency_snapshot].dependencies.first.name).to eql("dummy-pkg-a")
+        expect(args[:dependency_snapshot].dependencies.last.name).to eql("dummy-pkg-b")
+      end.and_return(instance_double(Dependabot::Updater::Operations::UpdateAllVersions, perform: nil))
 
       group_update_all.perform
     end
