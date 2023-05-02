@@ -38,7 +38,6 @@ module Dependabot
           @error_handler = error_handler
         end
 
-        # rubocop:disable Metrics/AbcSize
         def perform
           if dependency_snapshot.groups.any?
             run_grouped_dependency_updates
@@ -61,7 +60,6 @@ module Dependabot
 
           run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
         end
-        # rubocop:enable Metrics/AbcSize
 
         private
 
