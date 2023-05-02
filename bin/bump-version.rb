@@ -28,7 +28,7 @@ puts "☑️  common/lib/dependabot.rb updated"
 
 # Bump the updater's Gemfile.lock with the new version
 `cd updater/ && bundle lock`
-if $?.exitstatus
+unless $?.success?
   puts "Failed to update updater/Gemfile.lock"
   exit $?.exitstatus
 end
