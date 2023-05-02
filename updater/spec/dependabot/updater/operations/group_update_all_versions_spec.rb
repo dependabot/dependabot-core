@@ -132,16 +132,22 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
 
-        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/Gemfile.lock" }
-        expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/Gemfile.lock"))
-
-        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/library.gemspec" }
-        expect(gemfile_lock.content).to eql(fixture("bundler_gemspec/updated/library.gemspec"))
-
+        # We updated the right depednencies
         expect(dependency_change.updated_dependencies.length).to eql(2)
         expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop rack))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+
+        gemspec = dependency_change.updated_dependency_files.find { |file| file.path == "/library.gemspec" }
+        expect(gemspec.content).to eql(fixture("bundler_gemspec/updated/library.gemspec"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/Gemfile.lock" }
+        # Since we are actually running bundler for this test, let's just check the Gemfile.lock has been updated
+        # with the same ranges as the library.gemspec rather than expecting the entire lockfile to match.
+        expect(gemfile_lock.content).to include("rack (>= 2.1.4, < 3.1.0)")
+        expect(gemfile_lock.content).to include("rubocop (>= 0.76, < 1.51)")
       end
 
       group_update_all.perform
