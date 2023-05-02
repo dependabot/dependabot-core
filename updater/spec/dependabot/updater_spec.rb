@@ -12,8 +12,6 @@ require "dependabot/service"
 
 RSpec.describe Dependabot::Updater do
   before do
-    # TODO: Remove
-    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
     allow(Dependabot.logger).to receive(:info)
 
     stub_request(:get, "https://index.rubygems.org/versions").
@@ -1373,38 +1371,6 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
-      end
-
-      # This scenario is not currently used in production, it only exists
-      # implicity due to the legacy code mode-switching within methods.
-      #
-      # This will be deprecated when `legacy_run` is removed but should be
-      # fairly trivial to bring back if required.
-      context "and the job is create a version PR" do
-        before do
-          # Permit the legacy_run method to be used
-          allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { true }
-        end
-
-        it "only attempts to update dependencies on the specified list" do
-          stub_update_checker
-
-          job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
-            updating_a_pull_request: false
-          )
-          service = build_service
-          updater = build_updater(service: service, job: job)
-
-          expect(updater).
-            to receive(:check_and_create_pr_with_error_handling).
-            and_call_original
-          expect(updater).
-            to_not receive(:check_and_update_existing_pr_with_error_handling)
-          expect(service).to receive(:create_pull_request).once
-
-          updater.run
         end
       end
 

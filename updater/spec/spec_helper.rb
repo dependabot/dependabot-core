@@ -60,13 +60,6 @@ RSpec.configure do |config|
       fixture(File.join("job_definitions", "#{path}.yaml"))
     )
   end
-
-  # TODO: Remove once Updater#legacy_run is gone
-  config.before do
-    require "dependabot/environment"
-
-    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
-  end
 end
 
 VCR.configure do |config|
