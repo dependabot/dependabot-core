@@ -10,10 +10,37 @@ require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
 
+### DO NOT ADD NEW TESTS TO THIS FILE
+#
+# This file tests all of our specific Dependabot::Updater::Operations via the
+# top-level Dependabot::Updater interface as it predates us breaking the class
+# up.
+#
+# Any tests should be added to the relevant file in spec/dependabot/operations,
+# if it does not exist it should be created, for an example see:
+#   updater/spec/dependabot/updater/operations/group_update_all_versions_spec.rb
+#
+### Migration Path
+#
+# This file mixes tests that are specific to a single Operation with standard
+# behaviours that should be tested against several Operations.
+#
+# To migrate this file, follow this pattern:
+# - Remove all but the target class from Updater::OPERATIONS to 'brown-out'
+#   the code paths you aren't focused on
+# - Run this spec
+# - Copy any _passing_ tests to your new spec/dependabot/operations file
+# - Check which of the failing tests should apply to the target Operation
+# - Copy them and adjust their setup so they pass
+# - Repeat for the next Operation
+# - Consider breaking out shared_example groups for any tests which are the same
+#   for each Operation
+#
+# Once this process has been completed, this test should be repurposed to ensure
+# that the Updater delegates to the right Operation class and handles halting
+# errors in an expected way.
 RSpec.describe Dependabot::Updater do
   before do
-    # TODO: Remove
-    allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { false }
     allow(Dependabot.logger).to receive(:info)
 
     stub_request(:get, "https://index.rubygems.org/versions").
@@ -1373,38 +1400,6 @@ RSpec.describe Dependabot::Updater do
 
             updater.run
           end
-        end
-      end
-
-      # This scenario is not currently used in production, it only exists
-      # implicity due to the legacy code mode-switching within methods.
-      #
-      # This will be deprecated when `legacy_run` is removed but should be
-      # fairly trivial to bring back if required.
-      context "and the job is create a version PR" do
-        before do
-          # Permit the legacy_run method to be used
-          allow(Dependabot::Environment).to receive(:legacy_run_enabled?) { true }
-        end
-
-        it "only attempts to update dependencies on the specified list" do
-          stub_update_checker
-
-          job = build_job(
-            requested_dependencies: ["dummy-pkg-b"],
-            updating_a_pull_request: false
-          )
-          service = build_service
-          updater = build_updater(service: service, job: job)
-
-          expect(updater).
-            to receive(:check_and_create_pr_with_error_handling).
-            and_call_original
-          expect(updater).
-            to_not receive(:check_and_update_existing_pr_with_error_handling)
-          expect(service).to receive(:create_pull_request).once
-
-          updater.run
         end
       end
 
