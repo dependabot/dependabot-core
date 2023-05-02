@@ -40,6 +40,7 @@ module Dependabot
       updating_a_pull_request
       vendor_dependencies
       dependency_groups
+      dependency_group_to_refresh
     )
 
     attr_reader :allowed_updates,
@@ -56,7 +57,8 @@ module Dependabot
                 :source,
                 :token,
                 :vendor_dependencies,
-                :dependency_groups
+                :dependency_groups,
+                :dependency_group_to_refresh
 
     def self.new_fetch_job(job_id:, job_definition:, repo_contents_path: nil)
       attrs = standardise_keys(job_definition["job"]).slice(*PERMITTED_KEYS)
@@ -79,28 +81,33 @@ module Dependabot
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
     def initialize(attributes)
-      @id                           = attributes.fetch(:id)
-      @allowed_updates              = attributes.fetch(:allowed_updates)
-      @commit_message_options       = attributes.fetch(:commit_message_options, {})
-      @credentials                  = attributes.fetch(:credentials, [])
-      @dependencies                 = attributes.fetch(:dependencies)
-      @existing_pull_requests       = attributes.fetch(:existing_pull_requests)
-      @existing_group_pull_requests = attributes.fetch(:existing_group_pull_requests, [])
-      @experiments                  = attributes.fetch(:experiments, {})
-      @ignore_conditions            = attributes.fetch(:ignore_conditions)
-      @lockfile_only                = attributes.fetch(:lockfile_only)
-      @package_manager              = attributes.fetch(:package_manager)
-      @reject_external_code         = attributes.fetch(:reject_external_code, false)
-      @repo_contents_path           = attributes.fetch(:repo_contents_path, nil)
-      @requirements_update_strategy = attributes.fetch(:requirements_update_strategy)
-      @security_advisories          = attributes.fetch(:security_advisories)
-      @security_updates_only        = attributes.fetch(:security_updates_only)
-      @source                       = build_source(attributes.fetch(:source))
-      @token                        = attributes.fetch(:token, nil)
-      @update_subdependencies       = attributes.fetch(:update_subdependencies)
-      @updating_a_pull_request      = attributes.fetch(:updating_a_pull_request)
-      @vendor_dependencies          = attributes.fetch(:vendor_dependencies, false)
-      @dependency_groups            = attributes.fetch(:dependency_groups, [])
+      @id                             = attributes.fetch(:id)
+      @allowed_updates                = attributes.fetch(:allowed_updates)
+      @commit_message_options         = attributes.fetch(:commit_message_options, {})
+      @credentials                    = attributes.fetch(:credentials, [])
+      @dependencies                   = attributes.fetch(:dependencies)
+      @existing_pull_requests         = attributes.fetch(:existing_pull_requests)
+      # TODO: Make this hash required
+      #
+      # We will need to do a pass updating the CLI and smoke tests before this is possible,
+      # so let's consider it optional for now.
+      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, [])
+      @experiments                    = attributes.fetch(:experiments, {})
+      @ignore_conditions              = attributes.fetch(:ignore_conditions)
+      @lockfile_only                  = attributes.fetch(:lockfile_only)
+      @package_manager                = attributes.fetch(:package_manager)
+      @reject_external_code           = attributes.fetch(:reject_external_code, false)
+      @repo_contents_path             = attributes.fetch(:repo_contents_path, nil)
+      @requirements_update_strategy   = attributes.fetch(:requirements_update_strategy)
+      @security_advisories            = attributes.fetch(:security_advisories)
+      @security_updates_only          = attributes.fetch(:security_updates_only)
+      @source                         = build_source(attributes.fetch(:source))
+      @token                          = attributes.fetch(:token, nil)
+      @update_subdependencies         = attributes.fetch(:update_subdependencies)
+      @updating_a_pull_request        = attributes.fetch(:updating_a_pull_request)
+      @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
+      @dependency_groups              = attributes.fetch(:dependency_groups, [])
+      @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
 
       register_experiments
       register_dependency_groups
