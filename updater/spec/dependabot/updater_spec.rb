@@ -10,6 +10,35 @@ require "dependabot/file_fetchers"
 require "dependabot/updater"
 require "dependabot/service"
 
+### DO NOT ADD NEW TESTS TO THIS FILE
+#
+# This file tests all of our specific Dependabot::Updater::Operations via the
+# top-level Dependabot::Updater interface as it predates us breaking the class
+# up.
+#
+# Any tests should be added to the relevant file in spec/dependabot/operations,
+# if it does not exist it should be created, for an example see:
+#   updater/spec/dependabot/updater/operations/group_update_all_versions_spec.rb
+#
+### Migration Path
+#
+# This file mixes tests that are specific to a single Operation with standard
+# behaviours that should be tested against several Operations.
+#
+# To migrate this file, follow this pattern:
+# - Remove all but the target class from Updater::OPERATIONS to 'brown-out'
+#   the code paths you aren't focused on
+# - Run this spec
+# - Copy any _passing_ tests to your new spec/dependabot/operations file
+# - Check which of the failing tests should apply to the target Operation
+# - Copy them and adjust their setup so they pass
+# - Repeat for the next Operation
+# - Consider breaking out shared_example groups for any tests which are the same
+#   for each Operation
+#
+# Once this process has been completed, this test should be repurposed to ensure
+# that the Updater delegates to the right Operation class and handles halting
+# errors in an expected way.
 RSpec.describe Dependabot::Updater do
   before do
     allow(Dependabot.logger).to receive(:info)
