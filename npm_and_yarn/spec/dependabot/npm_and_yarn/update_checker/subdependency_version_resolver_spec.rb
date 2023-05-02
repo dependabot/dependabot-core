@@ -89,6 +89,24 @@ RSpec.describe namespace::SubdependencyVersionResolver do
       it { is_expected.to eq(Gem::Version.new("5.7.4")) }
     end
 
+    context "with a pnpm-lock.yaml" do
+      let(:dependency_files) { project_dependency_files("pnpm/no_lockfile_change") }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "acorn",
+          version: "5.1.1",
+          requirements: [],
+          package_manager: "npm_and_yarn"
+        )
+      end
+      let(:latest_allowable_version) { "6.0.2" }
+
+      # NOTE: The latest vision is 6.0.2, but we can't reach it as other
+      # dependencies constrain us
+      it { is_expected.to eq(Gem::Version.new("5.7.4")) }
+    end
+
     context "with a npm8 package-lock.json" do
       let(:dependency_files) { project_dependency_files("npm8/subdependency_update") }
 

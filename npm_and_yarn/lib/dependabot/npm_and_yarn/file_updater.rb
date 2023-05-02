@@ -12,6 +12,7 @@ module Dependabot
       require_relative "file_updater/package_json_updater"
       require_relative "file_updater/npm_lockfile_updater"
       require_relative "file_updater/yarn_lockfile_updater"
+      require_relative "file_updater/pnpm_lockfile_updater"
 
       class NoChangeError < StandardError
         def initialize(message:, error_context:)
@@ -29,7 +30,8 @@ module Dependabot
           /^package\.json$/,
           /^package-lock\.json$/,
           /^npm-shrinkwrap\.json$/,
-          /^yarn\.lock$/
+          /^yarn\.lock$/,
+          /^pnpm-lock\.yaml$/
         ]
       end
 
@@ -145,6 +147,12 @@ module Dependabot
           select { |f| f.name.end_with?("yarn.lock") }
       end
 
+      def pnpm_locks
+        @pnpm_locks ||=
+          filtered_dependency_files.
+          select { |f| f.name.end_with?("pnpm-lock.yaml") }
+      end
+
       def shrinkwraps
         @shrinkwraps ||=
           filtered_dependency_files.
@@ -160,6 +168,10 @@ module Dependabot
 
       def yarn_lock_changed?(yarn_lock)
         yarn_lock.content != updated_yarn_lock_content(yarn_lock)
+      end
+
+      def pnpm_lock_changed?(pnpm_lock)
+        pnpm_lock.content != updated_pnpm_lock_content(pnpm_lock)
       end
 
       def package_lock_changed?(package_lock)
@@ -191,6 +203,15 @@ module Dependabot
           )
         end
 
+        pnpm_locks.each do |pnpm_lock|
+          next unless pnpm_lock_changed?(pnpm_lock)
+
+          updated_files << updated_file(
+            file: pnpm_lock,
+            content: updated_pnpm_lock_content(pnpm_lock)
+          )
+        end
+
         package_locks.each do |package_lock|
           next unless package_lock_changed?(package_lock)
 
@@ -218,9 +239,25 @@ module Dependabot
           yarn_lockfile_updater.updated_yarn_lock_content(yarn_lock)
       end
 
+      def updated_pnpm_lock_content(pnpm_lock)
+        @updated_pnpm_lock_content ||= {}
+        @updated_pnpm_lock_content[pnpm_lock.name] ||=
+          pnpm_lockfile_updater.updated_pnpm_lock_content(pnpm_lock)
+      end
+
       def yarn_lockfile_updater
         @yarn_lockfile_updater ||=
           YarnLockfileUpdater.new(
+            dependencies: dependencies,
+            dependency_files: dependency_files,
+            repo_contents_path: repo_contents_path,
+            credentials: credentials
+          )
+      end
+
+      def pnpm_lockfile_updater
+        @pnpm_lockfile_updater ||=
+          PnpmLockfileUpdater.new(
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,

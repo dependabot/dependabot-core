@@ -63,6 +63,8 @@ module Dependabot
                             run_yarn_berry_updater(path, lockfile_name)
                           elsif lockfile.name.end_with?("yarn.lock")
                             run_yarn_updater(path, lockfile_name)
+                          elsif lockfile.name.end_with?("pnpm-lock.yaml")
+                            run_pnpm_updater(path, lockfile_name)
                           else
                             run_npm_updater(path, lockfile_name, lockfile.content)
                           end
@@ -72,9 +74,7 @@ module Dependabot
 
         def version_from_updated_lockfiles(updated_lockfiles)
           updated_files = dependency_files -
-                          dependency_files_builder.yarn_locks -
-                          dependency_files_builder.package_locks -
-                          dependency_files_builder.shrinkwraps +
+                          dependency_files_builder.lockfiles +
                           updated_lockfiles
 
           updated_version = NpmAndYarn::FileParser.new(
@@ -117,6 +117,18 @@ module Dependabot
               Helpers.run_yarn_command(
                 "yarn up -R #{dependency.name} #{Helpers.yarn_berry_args}".strip,
                 fingerprint: "yarn up -R <dependency_name> #{Helpers.yarn_berry_args}".strip
+              )
+              { lockfile_name => File.read(lockfile_name) }
+            end
+          end
+        end
+
+        def run_pnpm_updater(path, lockfile_name)
+          SharedHelpers.with_git_configured(credentials: credentials) do
+            Dir.chdir(path) do
+              SharedHelpers.run_shell_command(
+                "pnpm update #{dependency.name} --lockfile-only",
+                fingerprint: "pnpm update <dependency_name> --lockfile-only"
               )
               { lockfile_name => File.read(lockfile_name) }
             end
