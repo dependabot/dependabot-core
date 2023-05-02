@@ -89,6 +89,10 @@ module Dependabot
                                                      all_dependencies_group["rules"]["patterns"])
         end
 
+        def pr_exists_for_dependency_group?(group)
+          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        end
+
         def run_ungrouped_dependency_updates
           Dependabot::Updater::Operations::UpdateAllVersions.new(
             service: service,
