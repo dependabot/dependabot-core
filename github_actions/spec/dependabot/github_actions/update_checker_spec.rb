@@ -131,7 +131,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
-        let(:reference) { "v2" }
+        let(:reference) { "v3" }
         it { is_expected.to be_falsey }
       end
 
@@ -391,7 +391,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
-        expect(subject).to eq(Gem::Version.new("2.3.4"))
+        expect(subject).to eq(Gem::Version.new("3.5.2"))
       end
     end
 
@@ -893,7 +893,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.3.4",
+            ref: "v3.5.2",
             branch: nil
           }
         }, {
@@ -904,7 +904,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.3.4",
+            ref: "v3.5.2",
             branch: nil
           }
         }]
