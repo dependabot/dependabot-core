@@ -155,10 +155,6 @@ module Dependabot
           @package_files ||= dependency_files.select { |f| f.name.end_with?("package.json") }
         end
 
-        def package_files_contents
-          package_files.map { |file| File.read(file.name) }
-        end
-
         def base_dir
           dependency_files.first.directory
         end
