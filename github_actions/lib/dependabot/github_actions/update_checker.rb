@@ -138,7 +138,7 @@ module Dependabot
           if head_commit_for_ref_sha
             head_commit_for_ref_sha
           else
-            url = dependency_source_details[:url]
+            url = git_commit_checker.dependency_source_details[:url]
             source = Source.from_url(url)
 
             SharedHelpers.in_a_temporary_directory(File.dirname(source.repo)) do |temp_dir|
@@ -147,7 +147,7 @@ module Dependabot
               SharedHelpers.run_shell_command("git clone --no-recurse-submodules #{url} #{repo_contents_path}")
 
               Dir.chdir(repo_contents_path) do
-                ref_branch = find_container_branch(dependency_source_details[:ref])
+                ref_branch = find_container_branch(git_commit_checker.dependency_source_details[:ref])
 
                 git_commit_checker.head_commit_for_local_branch(ref_branch)
               end
@@ -207,22 +207,6 @@ module Dependabot
         else
           latest_commit_for_pinned_ref
         end
-      end
-
-      def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        return sources.first if sources.count <= 1
-
-        # If there are multiple source types, or multiple source URLs, then it's
-        # unclear how we should proceed
-        raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| [s.fetch(:type), s[:url]] }.uniq.count > 1
-
-        # Otherwise it's reasonable to take the first source and use that. This
-        # will happen if we have multiple git sources with difference references
-        # specified. In that case it's fine to update them all.
-        sources.first
       end
 
       def current_commit
