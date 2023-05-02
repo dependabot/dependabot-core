@@ -71,6 +71,8 @@ module Dependabot
         def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
 
+          Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
+
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("Starting update group for '#{group.name}'")
 

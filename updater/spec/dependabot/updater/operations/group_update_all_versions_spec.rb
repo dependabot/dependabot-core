@@ -128,6 +128,40 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when there are two overlapping groups" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_overlapping_groups")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "creates a pull request for each containing the same dependencies" do
+      allow(Dependabot.logger).to receive(:info)
+      expect(Dependabot.logger).to receive(:info).with(
+        "Found 2 group(s)."
+      )
+
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("my-group")
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("my-overlapping-group")
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      group_update_all.perform
+    end
+  end
+
   context "when nothing in the group needs to be updated" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all")
