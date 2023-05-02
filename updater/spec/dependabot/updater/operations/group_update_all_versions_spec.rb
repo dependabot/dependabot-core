@@ -119,9 +119,9 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       )
 
       expect(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new) do |args|
-        expect(args[:dependency_snapshot].dependencies.length).to eql(2)
-        expect(args[:dependency_snapshot].dependencies.first.name).to eql("dummy-pkg-a")
-        expect(args[:dependency_snapshot].dependencies.last.name).to eql("dummy-pkg-b")
+        expect(args[:dependency_snapshot].ungrouped_dependencies.length).to eql(2)
+        expect(args[:dependency_snapshot].ungrouped_dependencies.first.name).to eql("dummy-pkg-a")
+        expect(args[:dependency_snapshot].ungrouped_dependencies.last.name).to eql("dummy-pkg-b")
       end.and_return(instance_double(Dependabot::Updater::Operations::UpdateAllVersions, perform: nil))
 
       group_update_all.perform

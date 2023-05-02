@@ -42,7 +42,6 @@ module Dependabot
         def perform
           if dependency_snapshot.groups.any?
             run_grouped_dependency_updates
-            run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
           else
             # We shouldn't have selected this operation if no groups were defined
             # due to the rules in `::applies_to?`, but if it happens it isn't
@@ -51,15 +50,16 @@ module Dependabot
               "No dependency groups defined!"
             )
 
-            # We should warn our exception tracker...
+            # We should warn our exception tracker in case this represents an
+            # unexpected problem hydrating groups we have swallowed and then
+            # delegate everything to run_ungrouped_dependency_updates.
             service.capture_exception(
               error: DependabotError.new("Attempted a grouped update with no groups defined."),
               job: job
             )
-
-            # ... and then just delegate everything to UpdateAllVersions
-            run_ungrouped_dependency_updates
           end
+
+          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
         end
         # rubocop:enable Metrics/AbcSize
 
