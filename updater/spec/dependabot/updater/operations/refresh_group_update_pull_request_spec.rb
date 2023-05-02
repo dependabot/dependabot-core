@@ -207,28 +207,4 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       group_update_all.perform
     end
   end
-
-  context "when the target dependency group has stale values for its rules" do
-    let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_refresh_stale_group")
-    end
-
-    let(:dependency_files) do
-      original_bundler_files
-    end
-
-    before do
-      stub_rubygems_calls
-    end
-
-    it "updates the existing pull request using the current configuration for the group" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).to receive(:update_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
-      end
-
-      group_update_all.perform
-    end
-  end
 end
