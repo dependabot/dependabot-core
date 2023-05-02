@@ -57,6 +57,43 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     Dependabot::DependencyGroupEngine.reset!
   end
 
+  context "when only some dependencies match the defined group" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_with_ungrouped")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "performs a grouped and ungrouped dependency update when both are present" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("group-b")
+
+        # We updated the right depednencies
+        expect(dependency_change.updated_dependencies.length).to eql(1)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      expect(Dependabot::Updater::Operations::UpdateAllVersions).to receive(:new) do |args|
+        expect(args[:dependency_snapshot].ungrouped_dependencies.length).to eql(1)
+        expect(args[:dependency_snapshot].ungrouped_dependencies.first.name).to eql("dummy-pkg-a")
+      end.and_return(instance_double(Dependabot::Updater::Operations::UpdateAllVersions, perform: nil))
+
+      group_update_all.perform
+    end
+  end
+
   context "when the snapshot has no groups configured" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/update_all_simple")

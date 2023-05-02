@@ -2262,27 +2262,6 @@ RSpec.describe Dependabot::Updater do
       updater.run
     end
 
-    it "performs a grouped and ungrouped dependency update when both are present" do
-      job = build_job(experiments: { "grouped-updates-prototype" => true },
-                      dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }])
-      stub_update_checker
-      service = build_service
-      snapshot = build_dependency_snapshot(job: job)
-      updater = build_updater(
-        service: service,
-        job: job,
-        dependency_snapshot: snapshot
-      )
-
-      allow(service).to receive(:create_pull_request)
-      expect(snapshot).to receive(:groups).at_least(:once).and_call_original
-      expect(snapshot).to receive(:ungrouped_dependencies).at_least(:once).and_call_original
-      expect(service).to receive(:increment_metric).
-        with("updater.started", { tags: { operation: :grouped_updates_prototype } })
-
-      updater.run
-    end
-
     it "does not include ignored dependencies in the group PR" do
       job = build_job(
         ignore_conditions: [
