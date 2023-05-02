@@ -1,0 +1,53 @@
+job:
+  package-manager: bundler
+  source:
+    provider: github
+    repo: dependabot/smoke-tests
+    directory: "/bundler"
+    branch:
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+  dependencies:
+  - dummy-pkg-b
+  existing-pull-requests: []
+  existing-group-pull-requests:
+  - dependency-group-name: everything-everywhere-all-at-once
+    dependencies:
+    - dependency-name: dummy-pkg-b
+      dependency-version: 1.1.5
+  - dependency-group-name: overlapping-group
+    dependencies:
+    - dependency-name: dummy-pkg-b
+      dependency-version: 1.2.0
+  updating-a-pull-request: true
+  lockfile-only: false
+  update-subdependencies: false
+  ignore-conditions: []
+  requirements-update-strategy:
+  allowed-updates:
+  - dependency-type: direct
+    update-type: all
+  credentials-metadata:
+  - type: git_source
+    host: github.com
+  security-advisories: []
+  max-updater-run-time: 2700
+  vendor-dependencies: false
+  experiments:
+    grouped-updates-prototype: true
+  reject-external-code: false
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  security-updates-only: false
+  dependency-groups:
+  - name: everything-everywhere-all-at-once
+    rules:
+      patterns:
+        - "*"
+  - name: overlapping-group
+    rules:
+      patterns:
+        - "dummy-pkg-*"
+  dependency-group-to-refresh: everything-everywhere-all-at-once
