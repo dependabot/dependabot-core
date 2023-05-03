@@ -37,6 +37,7 @@ module Dependabot
               name: name,
               version: version,
               package_manager: "npm_and_yarn",
+              specific_package_manager: "pnpm",
               requirements: []
             }
 

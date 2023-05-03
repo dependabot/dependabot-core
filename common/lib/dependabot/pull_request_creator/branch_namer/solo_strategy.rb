@@ -63,7 +63,7 @@ module Dependabot
         end
 
         def package_manager
-          dependencies.first.package_manager
+          dependencies.first.specific_package_manager
         end
 
         def updating_a_property?

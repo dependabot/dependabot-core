@@ -69,7 +69,7 @@ module Dependabot
 
               requirement = "*" if requirement == ""
               dep = build_dependency(
-                file: file, type: type, name: name, requirement: requirement
+                manifest_name: file.name, type: type, name: name, requirement: requirement
               )
               dependency_set << dep if dep
             end
@@ -89,11 +89,11 @@ module Dependabot
         lockfile_parser.parse_set
       end
 
-      def build_dependency(file:, type:, name:, requirement:)
+      def build_dependency(manifest_name:, type:, name:, requirement:)
         lockfile_details = lockfile_parser.lockfile_details(
           dependency_name: name,
           requirement: requirement,
-          manifest_name: file.name
+          manifest_name: manifest_name
         )
         version = version_for(requirement, lockfile_details)
 
@@ -112,9 +112,10 @@ module Dependabot
           name: name,
           version: version,
           package_manager: "npm_and_yarn",
+          specific_package_manager: lockfile_parser.specific_package_manager_for(manifest_name),
           requirements: [{
             requirement: requirement_for(requirement),
-            file: file.name,
+            file: manifest_name,
             groups: [type],
             source: source_for(name, requirement, lockfile_details)
           }]

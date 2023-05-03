@@ -44,6 +44,14 @@ module Dependabot
           nil
         end
 
+        def specific_package_manager_for(manifest_name)
+          potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
+            return "pnpm" if lockfile.name.end_with?("pnpm-lock.yaml")
+          end
+
+          nil
+        end
+
         private
 
         attr_reader :dependency_files
