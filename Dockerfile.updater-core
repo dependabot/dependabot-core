@@ -90,9 +90,9 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
 COPY --from=ruby:3.1.4 --chown=dependabot:dependabot /usr/local /usr/local
 
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
-# This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
+# This controls the version of Bundler used for our native helpers when running against user repos. Typically we want
+# the latest version to pickup Bundler bugfixes. The `updater/Gemfile.lock` BUNDLED WITH version does not need to be
+# kept in-sync with this.
 ARG BUNDLER_V2_VERSION=2.4.11
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 20.04 has a bug.
