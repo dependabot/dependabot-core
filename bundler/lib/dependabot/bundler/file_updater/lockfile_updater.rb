@@ -119,7 +119,8 @@ module Dependabot
           path_gemspecs.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(path, file.content))
+            updated_content = updated_gemspec_content(file)
+            File.write(path, sanitized_gemspec_content(path, updated_content))
           end
 
           specification_files.each do |file|
