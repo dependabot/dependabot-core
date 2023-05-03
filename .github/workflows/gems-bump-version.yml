@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
+        with:
+          # We pin bundler version in Dockerfile.updater-core BUNDLER_V2_VERSION
+          # which also ends up in `updater/Gemfile.lock`. To avoid having to
+          # keep the pin in-sync here, assume that core is generally on 'latest'.
+          bundler: 'latest'
 
       - name: Bump the version
         run: |
