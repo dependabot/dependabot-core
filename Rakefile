@@ -10,6 +10,8 @@ require "bundler"
 require "./common/lib/dependabot"
 require "yaml"
 
+# ./dependabot-core.gemspec is purposefully excluded from this list
+# because it's an empty gem as a placeholder to prevent namesquatting.
 GEMSPECS = %w(
   common/dependabot-common.gemspec
   go_modules/dependabot-go_modules.gemspec
