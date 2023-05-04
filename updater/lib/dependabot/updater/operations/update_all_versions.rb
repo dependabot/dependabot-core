@@ -48,16 +48,10 @@ module Dependabot
             return []
           end
 
-          dependencies = if dependency_snapshot.ungrouped_dependencies.any?
-                           dependency_snapshot.ungrouped_dependencies
-                         else
-                           dependency_snapshot.allowed_dependencies
-                         end
-
           if Environment.deterministic_updates?
-            dependencies
+            dependency_snapshot.ungrouped_dependencies
           else
-            dependencies.shuffle
+            dependency_snapshot.ungrouped_dependencies.shuffle
           end
         end
 
