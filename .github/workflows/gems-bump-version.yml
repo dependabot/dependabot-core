@@ -17,6 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
+        with:
+          # Use the version of bundler specified in `updater/Gemfile.lock`.
+          # Otherwise the generated PR will change `BUNDLED WITH` in
+          # `updater/Gemfile.lock`, which in prod will silently change the
+          # version of bundler used by the bundler native helper.
+          working-directory: updater
 
       - name: Bump the version
         run: |
