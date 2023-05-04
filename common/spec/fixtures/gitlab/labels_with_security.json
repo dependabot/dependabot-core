@@ -75,5 +75,16 @@
     "open_merge_requests_count": 1,
     "subscribed": true,
     "priority": null
+  },
+  {
+    "id" : 12,
+    "color" : "#ed9121",
+    "name" : "severity:high",
+    "description": "Pull requests that address a security vulnerability with high severity",
+    "open_issues_count": 1,
+    "closed_issues_count": 0,
+    "open_merge_requests_count": 1,
+    "subscribed": true,
+    "priority": null
   }
 ]
