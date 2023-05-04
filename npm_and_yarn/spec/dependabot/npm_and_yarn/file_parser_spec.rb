@@ -1372,6 +1372,12 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser do
         its(:length) { is_expected.to eq(389) }
       end
 
+      context "with a pnpm-lock.yaml" do
+        let(:files) { project_dependency_files("pnpm/no_lockfile_change") }
+
+        its(:length) { is_expected.to eq(366) }
+      end
+
       context "with a package-lock.json" do
         let(:files) { project_dependency_files("npm6/blank_requirement") }
 

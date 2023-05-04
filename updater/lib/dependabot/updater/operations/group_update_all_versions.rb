@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/update_all_versions"
 require "dependabot/updater/group_update_creation"
 
 # This class implements our strategy for creating Pull Requests for Dependency
@@ -23,7 +24,7 @@ module Dependabot
           return false if job.updating_a_pull_request?
           return false if job.dependencies&.any?
 
-          Dependabot::Experiments.enabled?(:grouped_updates_prototype)
+          job.dependency_groups&.any? && Dependabot::Experiments.enabled?(:grouped_updates_prototype)
         end
 
         def self.tag_name
@@ -37,14 +38,39 @@ module Dependabot
           @error_handler = error_handler
         end
 
-        # rubocop:disable Metrics/AbcSize
-        # rubocop:disable Metrics/PerceivedComplexity
         def perform
-          # FIXME: This preserves the default behavior of grouping all updates into a single PR
-          # but we should figure out if this is the default behavior we want.
-          register_all_dependencies_group unless job.dependency_groups&.any?
+          if dependency_snapshot.groups.any?
+            run_grouped_dependency_updates
+          else
+            # We shouldn't have selected this operation if no groups were defined
+            # due to the rules in `::applies_to?`, but if it happens it isn't
+            # enough reasons to fail the job.
+            Dependabot.logger.warn(
+              "No dependency groups defined!"
+            )
 
+            # We should warn our exception tracker in case this represents an
+            # unexpected problem hydrating groups we have swallowed and then
+            # delegate everything to run_ungrouped_dependency_updates.
+            service.capture_exception(
+              error: DependabotError.new("Attempted a grouped update with no groups defined."),
+              job: job
+            )
+          end
+
+          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
+        end
+
+        private
+
+        attr_reader :job,
+                    :service,
+                    :dependency_snapshot,
+                    :error_handler
+
+        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
+          Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("Starting update group for '#{group.name}'")
@@ -70,23 +96,6 @@ module Dependabot
               Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
             end
           end
-
-          run_ungrouped_dependency_updates if dependency_snapshot.ungrouped_dependencies.any?
-        end
-        # rubocop:enable Metrics/AbcSize
-        # rubocop:enable Metrics/PerceivedComplexity
-
-        private
-
-        attr_reader :job,
-                    :service,
-                    :dependency_snapshot,
-                    :error_handler
-
-        def register_all_dependencies_group
-          all_dependencies_group = { "name" => "all-dependencies", "rules" => { "patterns" => ["*"] } }
-          Dependabot::DependencyGroupEngine.register(all_dependencies_group["name"],
-                                                     all_dependencies_group["rules"]["patterns"])
         end
 
         def pr_exists_for_dependency_group?(group)

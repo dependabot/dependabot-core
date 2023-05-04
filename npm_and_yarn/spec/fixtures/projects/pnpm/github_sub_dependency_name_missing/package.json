@@ -1,0 +1,14 @@
+{
+  "name": "setup-test-missing-dep-name-npm-package",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "test-missing-dep-name-npm-package": "dependabot-fixtures/test-missing-dep-name-npm-package#v1.0.0"
+  }
+}

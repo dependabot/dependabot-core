@@ -75,6 +75,9 @@ module Dependabot
     end
 
     def ungrouped_dependencies
+      # If no groups are defined, all dependencies are ungrouped by default.
+      return allowed_dependencies unless groups.any?
+
       Dependabot::DependencyGroupEngine.ungrouped_dependencies(allowed_dependencies)
     end
 

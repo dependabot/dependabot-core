@@ -77,6 +77,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:upload_pack_fixture) { "setup-node" }
 
   shared_context "with multiple git sources" do
+    let(:upload_pack_fixture) { "checkout" }
+    let(:dependency_name) { "actions/checkout" }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "actions/checkout",
@@ -184,10 +187,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "with a dependency that has a latest requirement and a valid version", vcr: true do
+      context "with a dependency that has a latest requirement and a valid version" do
+        let(:dependency_name) { "actions/create-release" }
+        let(:upload_pack_fixture) { "create-release" }
+
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "actions/create-release",
+            name: dependency_name,
             version: "1",
             requirements: [{
               requirement: nil,
@@ -381,15 +387,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with multiple git refs", :vcr do
+    context "given a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
-        expect(subject).to eq(Gem::Version.new("2.2.0"))
+        expect(subject).to eq(Gem::Version.new("2.3.4"))
       end
     end
 
-    context "given a realworld repository", :vcr do
+    context "given a realworld repository" do
       let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
       let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
       let(:dependency_version) { nil }
@@ -875,7 +881,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "with multiple requirement sources", :vcr do
+    context "with multiple requirement sources" do
       include_context "with multiple git sources"
 
       let(:expected_requirements) do
@@ -887,7 +893,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.2.0",
+            ref: "v2.3.4",
             branch: nil
           }
         }, {
@@ -898,7 +904,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.2.0",
+            ref: "v2.3.4",
             branch: nil
           }
         }]
