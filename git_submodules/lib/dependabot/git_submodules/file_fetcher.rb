@@ -41,7 +41,7 @@ module Dependabot
         @submodule_paths ||=
           Dependabot::SharedHelpers.in_a_temporary_directory do
             File.write(".gitmodules", gitmodules_file.content)
-            ParseConfig.new(".gitmodules").params.values.map { |p| p["path"] }
+            ParseConfig.new(".gitmodules").params.values.filter_map { |p| p["path"] unless p == true }
           end
       end
 

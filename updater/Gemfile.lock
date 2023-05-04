@@ -52,7 +52,7 @@ PATH
   specs:
     dependabot-git_submodules (0.217.0)
       dependabot-common (= 0.217.0)
-      parseconfig (~> 1.0, < 1.1.0)
+      parseconfig (~> 1.0, < 1.2.0)
 
 PATH
   remote: ../github_actions
@@ -213,7 +213,7 @@ GEM
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
     parallel (1.22.1)
-    parseconfig (1.0.8)
+    parseconfig (1.1.2)
     parser (3.2.2.0)
       ast (~> 2.4.1)
     pathname-common_prefix (0.0.1)
