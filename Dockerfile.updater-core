@@ -90,11 +90,6 @@ WORKDIR $DEPENDABOT_HOME/dependabot-updater
 # When bumping Ruby minor, need to also add the previous version to `bundler/helpers/v{1,2}/monkey_patches/definition_ruby_version_patch.rb`
 COPY --from=ruby:3.1.4 --chown=dependabot:dependabot /usr/local /usr/local
 
-# When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
-# Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
-# This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.11
-
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 20.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to
 # explicitly manage this. However, if we do opt to pull it back out, see all changes
@@ -105,9 +100,7 @@ RUN curl -sL https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz -o
   tar -xvf libyaml.tar.gz -C $DEPENDABOT_HOME/src/libyaml && \
   rm libyaml.tar.gz
 
-RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
- rm -rf /var/lib/gems/*/cache/* && \
- bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
+RUN bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
  bundle config set --local path 'vendor' && \
  bundle config set --local frozen 'true' && \
  bundle config set --local without 'development' && \
