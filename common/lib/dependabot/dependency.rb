@@ -35,11 +35,11 @@ module Dependabot
       @name_normalisers[package_manager] = name_builder
     end
 
-    attr_reader :name, :version, :requirements, :package_manager, :specific_package_manager,
+    attr_reader :name, :version, :requirements, :package_manager, :package_ecosystem,
                 :previous_version, :previous_requirements,
                 :subdependency_metadata, :metadata
 
-    def initialize(name:, requirements:, package_manager:, specific_package_manager: nil,
+    def initialize(name:, requirements:, package_manager:, package_ecosystem: nil,
                    version: nil, previous_version: nil, previous_requirements: nil,
                    subdependency_metadata: [], removed: false, metadata: {})
       @name = name
@@ -49,16 +49,18 @@ module Dependabot
       @previous_requirements =
         previous_requirements&.map { |req| symbolize_keys(req) }
 
-      # This generally holds the package manager that manages this dependency,
-      # but for ecosystems like NPM, it has the value "npm_and_yarn" which does
-      # not fit package managers like PNPM. It's kept for backwards
-      # compatibility, since this is used in a few places and changing it is
-      # risky, but it should eventually be unified and always hold the specific
-      # package manager that manages the dependency. For now, "PNPM" is kept in
-      # the `@specific_package_manager` instance variable.
-
       @package_manager = package_manager
-      @specific_package_manager = specific_package_manager || package_manager
+
+      # When given, this holds the package ecosystem that maps 1:1 to the
+      # `package-ecosystem` key value in `.dependabot.yml` file. If present, it
+      # will be preferred over package-manager for branch names in PRs, since
+      # the `package-manager` value can be confusing, refering to
+      # package managers not managing this dependency. For example, it has the
+      # value `npm_and_yarn` for PNPM updates.
+      #
+      # TODO: Eventually reconcile this
+
+      @package_ecosystem = package_ecosystem || package_manager
 
       unless top_level? || subdependency_metadata == []
         @subdependency_metadata = subdependency_metadata&.

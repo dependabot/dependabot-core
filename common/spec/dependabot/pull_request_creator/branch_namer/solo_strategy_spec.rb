@@ -372,20 +372,20 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::SoloStrategy do
       end
     end
 
-    context "with a specific package manager" do
+    context "with a generic package manager" do
       let(:dependency) do
         Dependabot::Dependency.new(
           name: "foo",
           version: "1.0.1",
           previous_version: "1.0.0",
           package_manager: "npm_and_yarn",
-          specific_package_manager: "pnpm",
+          package_ecosystem: "npm",
           requirements: []
         )
       end
 
       it "uses it" do
-        expect(new_branch_name).to eq("dependabot/pnpm/foo-1.0.1")
+        expect(new_branch_name).to eq("dependabot/npm/foo-1.0.1")
       end
     end
 

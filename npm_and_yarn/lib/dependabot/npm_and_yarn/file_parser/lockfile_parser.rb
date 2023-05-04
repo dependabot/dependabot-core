@@ -44,9 +44,12 @@ module Dependabot
           nil
         end
 
-        def specific_package_manager_for(manifest_name)
+        # This should eventually always return "npm". But that will cause a
+        # change in branch names for NPM and Yarn PRs, so we should announce the
+        # change in advance first.
+        def package_ecosystem_for(manifest_name)
           potential_lockfiles_for_manifest(manifest_name).each do |lockfile|
-            return "pnpm" if lockfile.name.end_with?("pnpm-lock.yaml")
+            return "npm" if lockfile.name.end_with?("pnpm-lock.yaml")
           end
 
           nil

@@ -112,7 +112,7 @@ module Dependabot
           name: name,
           version: version,
           package_manager: "npm_and_yarn",
-          specific_package_manager: lockfile_parser.specific_package_manager_for(manifest_name),
+          package_ecosystem: lockfile_parser.package_ecosystem_for(manifest_name),
           requirements: [{
             requirement: requirement_for(requirement),
             file: manifest_name,
