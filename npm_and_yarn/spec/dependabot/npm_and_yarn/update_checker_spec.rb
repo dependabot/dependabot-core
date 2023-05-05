@@ -30,11 +30,13 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy,
       options: options
     )
   end
   let(:ignored_versions) { [] }
   let(:security_advisories) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:dependency_files) { project_dependency_files("npm6/no_lockfile") }
   let(:options) { {} }
 
@@ -1211,6 +1213,18 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           }
         )
       end
+    end
+  end
+
+  context "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { :lockfile_only }
+
+      it { is_expected.to eq(false) }
     end
   end
 

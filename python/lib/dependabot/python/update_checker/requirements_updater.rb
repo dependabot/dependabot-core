@@ -30,6 +30,8 @@ module Dependabot
         end
 
         def updated_requirements
+          return requirements if update_strategy == :lockfile_only
+
           requirements.map do |req|
             case req[:file]
             when /setup\.(?:py|cfg)$/ then updated_setup_requirement(req)

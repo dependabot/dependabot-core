@@ -21,7 +21,8 @@ RSpec.describe Dependabot::Python::UpdateChecker do
       credentials: credentials,
       ignored_versions: ignored_versions,
       raise_on_ignored: raise_on_ignored,
-      security_advisories: security_advisories
+      security_advisories: security_advisories,
+      requirements_update_strategy: requirements_update_strategy
     )
   end
   let(:credentials) do
@@ -35,6 +36,7 @@ RSpec.describe Dependabot::Python::UpdateChecker do
   let(:ignored_versions) { [] }
   let(:raise_on_ignored) { false }
   let(:security_advisories) { [] }
+  let(:requirements_update_strategy) { nil }
   let(:dependency_files) { [requirements_file] }
   let(:pipfile) do
     Dependabot::DependencyFile.new(
@@ -749,6 +751,18 @@ RSpec.describe Dependabot::Python::UpdateChecker do
           }]
         )
       end
+    end
+  end
+
+  context "#requirements_unlocked_or_can_be?" do
+    subject { checker.requirements_unlocked_or_can_be? }
+
+    it { is_expected.to eq(true) }
+
+    context "with the lockfile-only requirements update strategy set" do
+      let(:requirements_update_strategy) { :lockfile_only }
+
+      it { is_expected.to eq(false) }
     end
   end
 end

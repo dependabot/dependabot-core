@@ -206,6 +206,23 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
+    context "when lockfile_only is set in the job" do
+      it "still tries to unlock requirements of dependencies" do
+        checker = stub_update_checker
+        allow(checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
+
+        job = build_job(lockfile_only: true)
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Requirements to unlock own")
+
+        updater.run
+      end
+    end
+
     context "when no dependencies are allowed" do
       it "logs the current and latest versions" do
         job = build_job(
@@ -2342,7 +2359,8 @@ RSpec.describe Dependabot::Updater do
 
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
                 existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
+                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
+                lockfile_only: false)
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2372,7 +2390,7 @@ RSpec.describe Dependabot::Updater do
           "secret" => "codes"
         }
       ],
-      lockfile_only: false,
+      lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
       update_subdependencies: false,
       updating_a_pull_request: updating_a_pull_request,
