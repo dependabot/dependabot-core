@@ -25,6 +25,17 @@ module Dependabot
         end
       end
 
+      class GroupedSubDependencyUpToDate < StandardError
+        def initialize(message:, error_context:)
+          super(message)
+          @error_context = error_context
+        end
+
+        def raven_context
+          { extra: @error_context }
+        end
+      end
+
       def self.updated_files_regex
         [
           /^package\.json$/,
@@ -40,6 +51,16 @@ module Dependabot
 
         updated_files += updated_manifest_files
         updated_files += updated_lockfiles
+
+        # FIXME: For grouped dependency updates, it is possible that a transitive dependency was updated
+        # by a previous dependency update. We should avoid filtering sub dependency files when
+        # performing grouped updates.
+        if updated_files.none? && filtered_sub_dependency_files.none?
+          raise GroupedSubDependencyUpToDate.new(
+            message: "Subdependency is already up-to-date",
+            error_context: error_context(updated_files: updated_files)
+          )
+        end
 
         if updated_files.none?
           raise NoChangeError.new(
@@ -109,18 +130,26 @@ module Dependabot
       end
 
       def filtered_dependency_files
-        @filtered_dependency_files ||=
+        @filtered_dependency_files ||= 
           if dependencies.select(&:top_level?).any?
-            DependencyFilesFilterer.new(
-              dependency_files: dependency_files,
-              updated_dependencies: dependencies
-            ).files_requiring_update
+            filtered_top_level_dependency_files
           else
-            SubDependencyFilesFilterer.new(
-              dependency_files: dependency_files,
-              updated_dependencies: dependencies
-            ).files_requiring_update
+            filtered_sub_dependency_files
           end
+      end
+
+      def filtered_top_level_dependency_files
+        DependencyFilesFilterer.new(
+          dependency_files: dependency_files,
+          updated_dependencies: dependencies
+        ).files_requiring_update
+      end
+
+      def filtered_sub_dependency_files
+        SubDependencyFilesFilterer.new(
+          dependency_files: dependency_files,
+          updated_dependencies: dependencies
+        ).files_requiring_update
       end
 
       def check_required_files
