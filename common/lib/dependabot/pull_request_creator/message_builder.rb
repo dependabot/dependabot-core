@@ -225,6 +225,8 @@ module Dependabot
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
+        return group_intro if dependency_group
+
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
@@ -309,6 +311,19 @@ module Dependabot
         msg
       end
 
+      def group_intro
+        update_count = dependencies.map(&:name).uniq.count
+
+        msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} with #{update_count} update"
+        msg += if update_count > 1
+                 "s: #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
+               else
+                 ": #{dependency_links.first}."
+               end
+
+        msg
+      end
+
       def from_version_msg(previous_version)
         return "" unless previous_version
 
@@ -357,14 +372,17 @@ module Dependabot
       end
 
       def dependency_links
-        dependencies.map do |dependency|
-          if source_url(dependency)
-            "[#{dependency.display_name}](#{source_url(dependency)})"
-          elsif homepage_url(dependency)
-            "[#{dependency.display_name}](#{homepage_url(dependency)})"
-          else
-            dependency.display_name
-          end
+        uniq_deps = dependencies.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
+        uniq_deps.map { |dep| dependency_link(dep) }
+      end
+
+      def dependency_link(dependency)
+        if source_url(dependency)
+          "[#{dependency.display_name}](#{source_url(dependency)})"
+        elsif homepage_url(dependency)
+          "[#{dependency.display_name}](#{homepage_url(dependency)})"
+        else
+          dependency.display_name
         end
       end
 
