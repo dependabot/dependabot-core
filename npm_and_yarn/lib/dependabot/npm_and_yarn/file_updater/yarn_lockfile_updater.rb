@@ -17,6 +17,7 @@ module Dependabot
       class YarnLockfileUpdater
         require_relative "npmrc_builder"
         require_relative "package_json_updater"
+        require_relative "package_json_preparer"
 
         def initialize(dependencies:, dependency_files:, repo_contents_path:, credentials:)
           @dependencies = dependencies
@@ -357,13 +358,7 @@ module Dependabot
                 file.content
               end
 
-            updated_content = replace_ssh_sources(updated_content)
-
-            # A bug prevents Yarn recognising that a directory is part of a
-            # workspace if it is specified with a `./` prefix.
-            updated_content = remove_workspace_path_prefixes(updated_content)
-
-            updated_content = sanitized_package_json_content(updated_content)
+            updated_content = package_json_preparer(updated_content).prepared_content
             File.write(file.name, updated_content)
           end
 
@@ -395,60 +390,12 @@ module Dependabot
           end
         end
 
-        def replace_ssh_sources(content)
-          updated_content = content
-
-          git_ssh_requirements_to_swap.each do |req|
-            new_req = req.gsub(%r{git\+ssh://git@(.*?)[:/]}, 'https://\1/')
-            updated_content = updated_content.gsub(req, new_req)
-          end
-
-          updated_content
-        end
-
-        def remove_workspace_path_prefixes(content)
-          json = JSON.parse(content)
-          return content unless json.key?("workspaces")
-
-          workspace_object = json.fetch("workspaces")
-          paths_array =
-            if workspace_object.is_a?(Hash)
-              workspace_object.values_at("packages", "nohoist").
-                flatten.compact
-            elsif workspace_object.is_a?(Array) then workspace_object
-            else
-              raise "Unexpected workspace object"
-            end
-
-          paths_array.each { |path| path.gsub!(%r{^\./}, "") }
-
-          json.to_json
-        end
-
         def git_ssh_requirements_to_swap
           return @git_ssh_requirements_to_swap if @git_ssh_requirements_to_swap
 
-          git_dependencies =
-            dependencies.
-            select do |dep|
-              dep.requirements.any? { |r| r.dig(:source, :type) == "git" }
-            end
-
-          @git_ssh_requirements_to_swap = []
-
-          package_files.each do |file|
-            NpmAndYarn::FileParser::DEPENDENCY_TYPES.each do |t|
-              JSON.parse(file.content).fetch(t, {}).each do |nm, requirement|
-                next unless git_dependencies.map(&:name).include?(nm)
-                next unless requirement.start_with?("git+ssh:")
-
-                req = requirement.split("#").first
-                @git_ssh_requirements_to_swap << req
-              end
-            end
+          @git_ssh_requirements_to_swap = package_files.flat_map do |file|
+            package_json_preparer(file.content).swapped_ssh_requirements
           end
-
-          @git_ssh_requirements_to_swap
         end
 
         def post_process_yarn_lockfile(lockfile_content)
@@ -544,6 +491,14 @@ module Dependabot
           ).updated_package_json.content
         end
 
+        def package_json_preparer(content)
+          @package_json_preparer ||= {}
+          @package_json_preparer[content] ||=
+            PackageJsonPreparer.new(
+              package_json_content: content
+            )
+        end
+
         def npmrc_disables_lockfile?
           npmrc_content.match?(/^package-lock\s*=\s*false/)
         end
@@ -571,13 +526,6 @@ module Dependabot
             credentials: credentials,
             dependency_files: dependency_files
           ).yarnrc_content
-        end
-
-        def sanitized_package_json_content(content)
-          content.
-            gsub(/\{\{[^\}]*?\}\}/, "something"). # {{ nm }} syntax not allowed
-            gsub(/(?<!\\)\\ /, " ").          # escaped whitespace not allowed
-            gsub(%r{^\s*//.*}, " ")           # comments are not allowed
         end
 
         def sanitize_package_name(package_name)
