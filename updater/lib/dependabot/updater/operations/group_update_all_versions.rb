@@ -73,9 +73,15 @@ module Dependabot
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
           dependency_snapshot.groups.each do |_group_hash, group|
-            Dependabot.logger.info("Starting update group for '#{group.name}'")
+            if pr_exists_for_dependency_group?(group)
+              Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
+              Dependabot.logger.info(
+                "Deferring creation of a new pull request. The existing pull request will update in a separate job."
+              )
+              next
+            end
 
-            next if pr_exists_for_dependency_group?(group)
+            Dependabot.logger.info("Starting update group for '#{group.name}'")
 
             dependency_change = compile_all_dependency_changes_for(group)
 
