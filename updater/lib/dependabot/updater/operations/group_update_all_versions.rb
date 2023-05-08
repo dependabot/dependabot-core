@@ -75,6 +75,8 @@ module Dependabot
           dependency_snapshot.groups.each do |_group_hash, group|
             Dependabot.logger.info("Starting update group for '#{group.name}'")
 
+            next if pr_exists_for_dependency_group?(group)
+
             dependency_change = compile_all_dependency_changes_for(group)
 
             if dependency_change.updated_dependencies.any?
@@ -94,6 +96,10 @@ module Dependabot
               Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
             end
           end
+        end
+
+        def pr_exists_for_dependency_group?(group)
+          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
         end
 
         def run_ungrouped_dependency_updates

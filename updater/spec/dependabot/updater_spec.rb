@@ -2301,6 +2301,26 @@ RSpec.describe Dependabot::Updater do
       expect(service).not_to receive(:create_pull_request)
       updater.run
     end
+
+    it "does not create a new pull request for a group if one already exists" do
+      job = build_job(
+        existing_group_pull_requests: [
+          {
+            "dependency-group-name" => "group-b",
+            "dependencies" => [
+              { "dependency-name" => "dummy-pkg-b", "dependency-version" => "1.2.0" }
+            ]
+          }
+        ],
+        dependency_groups: [{ "name" => "group-b", "rules" => { "patterns" => ["dummy-pkg-b"] } }],
+        experiments: { "grouped-updates-prototype" => true }
+      )
+      service = build_service
+      updater = build_updater(service: service, job: job)
+
+      expect(service).not_to receive(:create_pull_request)
+      updater.run
+    end
   end
 
   def build_updater(service: build_service, job: build_job, dependency_files: default_dependency_files,
@@ -2357,9 +2377,10 @@ RSpec.describe Dependabot::Updater do
     service
   end
 
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
-                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
+  # rubocop:disable Metrics/MethodLength
+  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
+                existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
+                updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
                 lockfile_only: false)
     Dependabot::Job.new(
       id: 1,
@@ -2367,6 +2388,7 @@ RSpec.describe Dependabot::Updater do
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
       existing_pull_requests: existing_pull_requests,
+      existing_group_pull_requests: existing_group_pull_requests,
       ignore_conditions: ignore_conditions,
       security_advisories: security_advisories,
       package_manager: "bundler",
@@ -2406,6 +2428,7 @@ RSpec.describe Dependabot::Updater do
       dependency_groups: dependency_groups
     )
   end
+  # rubocop:enable Metrics/MethodLength
 
   def default_allowed_updates
     [
@@ -2420,7 +2443,8 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  def stub_update_checker(stubs = {}) # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/MethodLength
+  def stub_update_checker(stubs = {})
     update_checker =
       instance_double(
         Dependabot::Bundler::UpdateChecker,
@@ -2475,4 +2499,5 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
   end
+  # rubocop:enable Metrics/MethodLength
 end
