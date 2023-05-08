@@ -72,7 +72,8 @@ module Dependabot
         {
           tags: tags.merge({
             update_job_id: job&.id,
-            package_manager: job&.package_manager
+            package_manager: job&.package_manager,
+            repo_private: job&.repo_private?
           }.compact),
           extra: extra.merge({
             dependency_name: dependency&.name

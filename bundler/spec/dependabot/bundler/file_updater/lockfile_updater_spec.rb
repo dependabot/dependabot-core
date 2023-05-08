@@ -82,4 +82,36 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       expect(updated_lockfile_content).to include("activesupport (6.0.3)")
     end
   end
+
+  context "with local gemspecs that require updates" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "docker_registry2",
+        version: "1.15.0",
+        previous_version: "1.14.0",
+        requirements: [
+          { requirement: "~> 1.15.0", file: "common/dependabot-common.gemspec", groups: [], source: nil }
+        ],
+        previous_requirements: [
+          { requirement: "~> 1.14.0", file: "common/dependabot-common.gemspec", groups: [], source: nil }
+        ],
+        package_manager: "bundler"
+      )
+    end
+
+    let(:files) { [gemspec, gemfile, lockfile] }
+    let(:gemspec) do
+      bundler_project_dependency_file("local_gemspec_needs_updates", filename: "common/dependabot-common.gemspec")
+    end
+    let(:gemfile) do
+      bundler_project_dependency_file("local_gemspec_needs_updates", filename: "Gemfile")
+    end
+    let(:lockfile) do
+      bundler_project_dependency_file("local_gemspec_needs_updates", filename: "Gemfile.lock")
+    end
+
+    it "upgrades dependency" do
+      expect(updated_lockfile_content).to include("docker_registry2 (1.15.0)")
+    end
+  end
 end

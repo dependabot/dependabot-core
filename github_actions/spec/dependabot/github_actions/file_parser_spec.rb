@@ -149,6 +149,44 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    describe "with multiple sources pinned to different refs, and newest ref parsed first" do
+      subject(:dependency) { dependencies.first }
+      let(:workflow_file_fixture_name) { "newest_ref_parsed_first.yml" }
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+            branch: nil
+          },
+          metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" }
+        }]
+      end
+
+      it "has the right details" do
+        expect(dependency).to be_a(Dependabot::Dependency)
+        expect(dependency.name).to eq("actions/checkout")
+        expect(dependency.version).to eq("3.5.0")
+        expect(dependency.requirements).to eq(expected_requirements)
+      end
+    end
+
     describe "with reusable workflow" do
       subject(:dependency) { dependencies.first }
       let(:workflow_file_fixture_name) { "workflow_reusable.yml" }

@@ -41,6 +41,7 @@ module Dependabot
       vendor_dependencies
       dependency_groups
       dependency_group_to_refresh
+      repo_private
     )
 
     attr_reader :allowed_updates,
@@ -80,7 +81,7 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    def initialize(attributes)
+    def initialize(attributes) # rubocop:disable Metrics/AbcSize
       @id                             = attributes.fetch(:id)
       @allowed_updates                = attributes.fetch(:allowed_updates)
       @commit_message_options         = attributes.fetch(:commit_message_options, {})
@@ -94,11 +95,14 @@ module Dependabot
       @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, [])
       @experiments                    = attributes.fetch(:experiments, {})
       @ignore_conditions              = attributes.fetch(:ignore_conditions)
-      @lockfile_only                  = attributes.fetch(:lockfile_only)
       @package_manager                = attributes.fetch(:package_manager)
       @reject_external_code           = attributes.fetch(:reject_external_code, false)
       @repo_contents_path             = attributes.fetch(:repo_contents_path, nil)
-      @requirements_update_strategy   = attributes.fetch(:requirements_update_strategy)
+
+      @requirements_update_strategy   = build_update_strategy(
+        **attributes.slice(:requirements_update_strategy, :lockfile_only)
+      )
+
       @security_advisories            = attributes.fetch(:security_advisories)
       @security_updates_only          = attributes.fetch(:security_updates_only)
       @source                         = build_source(attributes.fetch(:source))
@@ -108,6 +112,7 @@ module Dependabot
       @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
       @dependency_groups              = attributes.fetch(:dependency_groups, [])
       @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
+      @repo_private                   = attributes.fetch(:repo_private, nil)
 
       register_experiments
       register_dependency_groups
@@ -127,8 +132,8 @@ module Dependabot
       @repo_contents_path
     end
 
-    def lockfile_only?
-      @lockfile_only
+    def repo_private?
+      @repo_private
     end
 
     def updating_a_pull_request?
@@ -304,6 +309,12 @@ module Dependabot
         name_normaliser.call(name1),
         name_normaliser.call(name2)
       )
+    end
+
+    def build_update_strategy(requirements_update_strategy:, lockfile_only:)
+      return requirements_update_strategy unless requirements_update_strategy.nil?
+
+      lockfile_only ? "lockfile_only" : nil
     end
 
     def build_source(source_details)

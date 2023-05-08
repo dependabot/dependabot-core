@@ -1,0 +1,77 @@
+name: Gems - Bump Version
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version Type?"
+        required: true
+        type: choice
+        options:
+          - minor
+          - patch
+        default: "minor"
+
+jobs:
+  Create-PR-To-Bump-Dependabot-Gems-Version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
+        with:
+          # Use the version of bundler specified in `updater/Gemfile.lock`.
+          # Otherwise the generated PR will change `BUNDLED WITH` in
+          # `updater/Gemfile.lock`, which in prod will silently change the
+          # version of bundler used by the bundler native helper.
+          working-directory: updater
+
+      - name: Bump the version
+        run: |
+          NEW_VERSION=$(bin/bump-version.rb ${{ github.event.inputs.version_type }})
+          echo "New version is: $NEW_VERSION"
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Configure the git user
+        run: |
+          git config user.name "github-actions[bot]"
+          # Specifying the full email allows the avatar to show up: https://github.com/orgs/community/discussions/26560
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create a branch and commit the changes
+        run: |
+          # Using an idempotent branch name ensures no duplicate PR's are created
+          # if the action is re-run before the previous PR is merged.
+          # The branch name is purposefully different from the release tag to
+          # avoid ambiguity when selecting git refs.
+          git checkout -b "bump-to-v${{ env.NEW_VERSION }}"
+          git add common/lib/dependabot.rb updater/Gemfile.lock
+          echo "Creating commit / PR linking to the releases notes URL."
+          echo "This URL will 404 until the release is actually tagged, which you should do as soon as the PR is merged."
+          git commit -m "v${{ env.NEW_VERSION }}" -m "Release notes: https://github.com/${{ github.repository }}/releases/tag/v${{ env.NEW_VERSION }}"
+
+      - name: Push the branch
+        run: |
+          echo "Pushing branch to remote. If this fails, check if a branch/PR already exists for this version."
+          git config push.autoSetupRemote true
+          git push
+
+      - name: Create a PR from the branch with the commit
+        run: |
+          PR_URL=$(gh pr create --fill) # `fill` re-uses the title / body from the commit
+          echo "PR created at URL: $PR_URL"
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set summary
+        run: |
+          echo ":rocket: PR created at URL: ${{ env.PR_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "After the PR is approved/merged, create a new release tagged as \`v${{ env.NEW_VERSION }}\`, _making sure to point it at the merge commit_:" >> $GITHUB_STEP_SUMMARY
+          echo "* You can do this via the web UI - use the \`Generate release notes\` button and then edit as needed: https://github.com/${{ github.repository }}/releases/new?tag=v${{ env.NEW_VERSION }}&title=v${{ env.NEW_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "* Or via the GitHub CLI:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "    gh release create v${{ env.NEW_VERSION }} --title v${{ env.NEW_VERSION }} --generate-notes --draft" >> $GITHUB_STEP_SUMMARY
+          echo "    > https://github.com/${{ github.repository }}/releases/tag/untagged-XXXXXX" >> $GITHUB_STEP_SUMMARY
+          echo "    # Use the generated URL to review/edit the release notes." >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "Once the release is tagged, another GitHub Action workflow automatically pushes it to RubyGems." >> $GITHUB_STEP_SUMMARY
