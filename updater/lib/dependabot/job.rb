@@ -41,6 +41,7 @@ module Dependabot
       vendor_dependencies
       dependency_groups
       dependency_group_to_refresh
+      repo_private
     )
 
     attr_reader :allowed_updates,
@@ -80,7 +81,7 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    def initialize(attributes)
+    def initialize(attributes) # rubocop:disable Metrics/AbcSize
       @id                             = attributes.fetch(:id)
       @allowed_updates                = attributes.fetch(:allowed_updates)
       @commit_message_options         = attributes.fetch(:commit_message_options, {})
@@ -111,6 +112,7 @@ module Dependabot
       @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
       @dependency_groups              = attributes.fetch(:dependency_groups, [])
       @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
+      @repo_private                   = attributes.fetch(:repo_private, nil)
 
       register_experiments
       register_dependency_groups
@@ -128,6 +130,10 @@ module Dependabot
       return nil unless clone?
 
       @repo_contents_path
+    end
+
+    def repo_private?
+      @repo_private
     end
 
     def updating_a_pull_request?

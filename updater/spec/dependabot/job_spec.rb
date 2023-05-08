@@ -40,7 +40,8 @@ RSpec.describe Dependabot::Job do
       experiments: experiments,
       commit_message_options: commit_message_options,
       security_updates_only: security_updates_only,
-      dependency_groups: dependency_groups
+      dependency_groups: dependency_groups,
+      repo_private: repo_private
     }
   end
 
@@ -65,6 +66,7 @@ RSpec.describe Dependabot::Job do
   let(:commit_message_options) { nil }
   let(:vendor_dependencies) { false }
   let(:dependency_groups) { [] }
+  let(:repo_private) { false }
 
   describe "::new_update_job" do
     let(:job_json) { fixture("jobs/job_with_credentials.json") }
