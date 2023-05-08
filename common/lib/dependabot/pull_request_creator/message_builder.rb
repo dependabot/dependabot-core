@@ -222,6 +222,7 @@ module Dependabot
         msg + "to permit the latest version."
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
@@ -253,7 +254,7 @@ module Dependabot
 
         msg
       end
-
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
 

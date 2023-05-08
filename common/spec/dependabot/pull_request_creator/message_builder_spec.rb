@@ -1883,7 +1883,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
         it "has the correct message" do
           expect(pr_message).to start_with(
             "Bumps the all-the-things group with 1 update: " \
-              "[business](https://github.com/gocardless/business)."
+            "[business](https://github.com/gocardless/business)."
           )
         end
 
@@ -1916,7 +1916,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                         body: fixture("github", "business_releases.json"),
                         headers: json_header)
             stub_request(:get, "https://api.github.com/repos/gocardless/" \
-                              "business2/contents/CHANGELOG.md?ref=master").
+                               "business2/contents/CHANGELOG.md?ref=master").
               to_return(status: 200,
                         body: fixture("github", "changelog_contents.json"),
                         headers: json_header)
@@ -1942,8 +1942,8 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 2 updates: " \
-                "[business](https://github.com/gocardless/business) and " \
-                "[business2](https://github.com/gocardless/business2)."
+              "[business](https://github.com/gocardless/business) and " \
+              "[business2](https://github.com/gocardless/business2)."
             )
           end
         end
@@ -1964,7 +1964,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 1 update: " \
-                "[business](https://github.com/gocardless/business)."
+              "[business](https://github.com/gocardless/business)."
             )
           end
         end
@@ -2008,7 +2008,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                         body: fixture("github", "business_releases.json"),
                         headers: json_header)
             stub_request(:get, "https://api.github.com/repos/gocardless/" \
-                              "business2/contents/CHANGELOG.md?ref=master").
+                               "business2/contents/CHANGELOG.md?ref=master").
               to_return(status: 200,
                         body: fixture("github", "changelog_contents.json"),
                         headers: json_header)
@@ -2045,7 +2045,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                         body: fixture("github", "business_releases.json"),
                         headers: json_header)
             stub_request(:get, "https://api.github.com/repos/gocardless/" \
-                              "business3/contents/CHANGELOG.md?ref=master").
+                               "business3/contents/CHANGELOG.md?ref=master").
               to_return(status: 200,
                         body: fixture("github", "changelog_contents.json"),
                         headers: json_header)
@@ -2071,9 +2071,9 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "has the correct message" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group with 3 updates: " \
-                "[business](https://github.com/gocardless/business), " \
-                "[business2](https://github.com/gocardless/business2) and " \
-                "[business3](https://github.com/gocardless/business3)."
+              "[business](https://github.com/gocardless/business), " \
+              "[business2](https://github.com/gocardless/business2) and " \
+              "[business3](https://github.com/gocardless/business3)."
             )
           end
         end
@@ -2090,7 +2090,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
           it "includes the directory" do
             expect(pr_message).to start_with(
               "Bumps the all-the-things group in /directory with 1 update: " \
-                "[business](https://github.com/gocardless/business)."
+              "[business](https://github.com/gocardless/business)."
             )
           end
         end
