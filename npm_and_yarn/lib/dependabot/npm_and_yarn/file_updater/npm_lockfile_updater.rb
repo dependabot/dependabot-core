@@ -88,7 +88,7 @@ module Dependabot
             ).parse
         end
 
-        def dependency_up_to_date?(dependency)
+        def dependency_up_to_date?(dependency, lockfile_dependencices: lockfile)
           existing_dep = lockfile_dependencies.find { |dep| dep.name == dependency.name }
 
           # If the dependency is missing but top level it should be treated as

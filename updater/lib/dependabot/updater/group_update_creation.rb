@@ -22,6 +22,14 @@ module Dependabot
         updated_files = []
         group.dependencies.each do |dependency|
           dependency_files = original_files_merged_with(updated_files)
+
+          reparsed_dependencies = dependency_file_parser(dependency_files).parse
+          dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
+
+          # If the dependency can not be found in the reparsed files then it was likely removed by a previous
+          # dependency update
+          next if dependency.nil?
+
           updated_dependencies = compile_updates_for(dependency, dependency_files)
 
           next unless updated_dependencies.any?
@@ -59,6 +67,17 @@ module Dependabot
           updated_dependencies: all_updated_dependencies,
           updated_dependency_files: updated_files,
           dependency_group: group
+        )
+      end
+
+      def dependency_file_parser(dependency_files)
+        Dependabot::FileParsers.for_package_manager(job.package_manager).new(
+          dependency_files: dependency_files,
+          repo_contents_path: job.repo_contents_path,
+          source: job.source,
+          credentials: job.credentials,
+          reject_external_code: job.reject_external_code?,
+          options: job.experiments
         )
       end
 
