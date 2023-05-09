@@ -9,7 +9,7 @@ on:
       - v[0-9]+.[0-9]+.[0-9]+
 jobs:
   push-updater-core-image:
-    name: Push dependabot-updater-core image to docker hub
+    name: Push dependabot-updater-core image to GHCR
     runs-on: ubuntu-latest
     if: github.repository == 'dependabot/dependabot-core'
     permissions:
