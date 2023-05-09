@@ -66,22 +66,7 @@ module Dependabot
 
           dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
 
-          begin
-            if dependency_change.updated_dependencies.any?
-              upsert_pull_request(dependency_change)
-            else
-              Dependabot.logger.info("Dependencies are up to date, closing existing Pull Request")
-              close_pull_request(reason: :up_to_date)
-            end
-          rescue StandardError => e
-            raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-            # FIXME: This will result in us reporting a the group name as a dependency name
-            #
-            # In future we should modify this method to accept both dependency and group
-            # so the downstream error handling can tag things appropriately.
-            error_handler.handle_dependabot_error(error: e, dependency: dependency_change.dependency_group)
-          end
+          upsert_pull_request_with_error_handling(dependency_change)
         end
 
         private
@@ -90,6 +75,23 @@ module Dependabot
                     :service,
                     :dependency_snapshot,
                     :error_handler
+
+        def upsert_pull_request_with_error_handling(dependency_change)
+          if dependency_change.updated_dependencies.any?
+            upsert_pull_request(dependency_change)
+          else
+            Dependabot.logger.info("Dependencies are up to date, closing existing Pull Request")
+            close_pull_request(reason: :up_to_date)
+          end
+        rescue StandardError => e
+          raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+          # FIXME: This will result in us reporting a the group name as a dependency name
+          #
+          # In future we should modify this method to accept both dependency and group
+          # so the downstream error handling can tag things appropriately.
+          error_handler.handle_dependabot_error(error: e, dependency: dependency_change.dependency_group)
+        end
 
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
         # - Replace existing PR if the dependencies involved have changed
