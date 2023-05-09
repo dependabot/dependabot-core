@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
+require "dependabot/updater/group_dependency_file_batch"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -19,9 +20,14 @@ module Dependabot
       # can be used for PR creation.
       def compile_all_dependency_changes_for(group)
         all_updated_dependencies = []
-        updated_files = []
+        # TODO: Iterate to a GroupDependencyBatch?
+        #
+        # It might make sense for this class to take on responsibility for `all_updated_dependencies` as well,
+        # but I'm deferring on that for compatability with other work in progress.
+        dependency_file_batch = Dependabot::Updater::GroupDependencyFileBatch.new(dependency_snapshot.dependency_files)
+
         group.dependencies.each do |dependency|
-          dependency_files = original_files_merged_with(updated_files)
+          dependency_files = dependency_file_batch.dependency_files
           updated_dependencies = compile_updates_for(dependency, dependency_files)
 
           next unless updated_dependencies.any?
@@ -49,7 +55,7 @@ module Dependabot
           all_updated_dependencies.concat(dependency_change.updated_dependencies)
 
           # Store the updated files for the next loop
-          updated_files = dependency_change.updated_dependency_files
+          dependency_file_batch.merge(dependency_change.updated_dependency_files)
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
@@ -57,7 +63,7 @@ module Dependabot
         Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: all_updated_dependencies,
-          updated_dependency_files: updated_files,
+          updated_dependency_files: dependency_file_batch.updated_files,
           dependency_group: group
         )
       end
@@ -143,17 +149,6 @@ module Dependabot
       rescue StandardError => e
         error_handler.handle_dependabot_error(error: e, dependency: dependency)
         [] # return an empty set
-      end
-
-      # This method is responsible for superimposing a set of file changes on
-      # top of the snapshot we started with. This ensures that every update
-      # has the full file list, not just those which have been modified so far
-      def original_files_merged_with(updated_files)
-        return dependency_snapshot.dependency_files if updated_files.empty?
-
-        dependency_snapshot.dependency_files.map do |original_file|
-          original_file = updated_files.find { |f| f.path == original_file.path } || original_file
-        end
       end
 
       def log_up_to_date(dependency)

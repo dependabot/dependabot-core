@@ -251,7 +251,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
           name: "Dockerfile.cargo",
           content: fixture("docker/original/Dockerfile.cargo"),
           directory: "/docker"
-        ),
+        )
       ]
     end
 
@@ -260,15 +260,15 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("dependabot-core-images")
 
-        puts dependency_change.updated_dependency_files_hash
-
         # We updated the right depednencies
         expect(dependency_change.updated_dependencies.length).to eql(2)
         expect(dependency_change.updated_dependencies.map(&:name)).
           to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
 
-        # We updated the right files correctly.
+        # We updated the right files.
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files.map(&:name)).
+          to eql(%w(Dockerfile.bundler Dockerfile.cargo))
       end
 
       group_update_all.perform
