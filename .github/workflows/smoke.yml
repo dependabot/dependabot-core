@@ -19,8 +19,7 @@ jobs:
       matrix:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
-          # TODO(bdragon): re-enable once smoke test has been updated for new PR intro
-          # - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
+          - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
