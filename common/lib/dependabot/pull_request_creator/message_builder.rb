@@ -373,8 +373,10 @@ module Dependabot
       end
 
       def dependency_links
+        return @dependency_links if defined?(@dependency_links)
+
         uniq_deps = dependencies.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
-        uniq_deps.map { |dep| dependency_link(dep) }
+        @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
       end
 
       def dependency_link(dependency)
