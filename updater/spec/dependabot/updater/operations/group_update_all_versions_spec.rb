@@ -234,4 +234,44 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       group_update_all.perform
     end
   end
+
+  context "when the snapshot is updating several peer manifests", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("docker/version_updates/group_update_peer_manifests")
+    end
+
+    let(:dependency_files) do
+      [
+        Dependabot::DependencyFile.new(
+          name: "Dockerfile.bundler",
+          content: fixture("docker/original/Dockerfile.bundler"),
+          directory: "/docker"
+        ),
+        Dependabot::DependencyFile.new(
+          name: "Dockerfile.cargo",
+          content: fixture("docker/original/Dockerfile.cargo"),
+          directory: "/docker"
+        )
+      ]
+    end
+
+    it "creates a DependencyChange for both of the manifests without reporting errors" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("dependabot-core-images")
+
+        # We updated the right depednencies
+        expect(dependency_change.updated_dependencies.length).to eql(2)
+        expect(dependency_change.updated_dependencies.map(&:name)).
+          to eql(%w(dependabot/dependabot-updater-bundler dependabot/dependabot-updater-cargo))
+
+        # We updated the right files.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files.map(&:name)).
+          to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+      end
+
+      group_update_all.perform
+    end
+  end
 end
