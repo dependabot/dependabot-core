@@ -32,7 +32,7 @@ RSpec.describe Dependabot::Job do
         "username" => "x-access-token",
         "password" => "github-token"
       }],
-      lockfile_only: lockfile_only,
+      lockfile_only: false,
       requirements_update_strategy: nil,
       update_subdependencies: false,
       updating_a_pull_request: false,
@@ -48,7 +48,6 @@ RSpec.describe Dependabot::Job do
   let(:dependencies) { nil }
   let(:security_advisories) { [] }
   let(:package_manager) { "bundler" }
-  let(:lockfile_only) { false }
   let(:security_updates_only) { false }
   let(:allowed_updates) do
     [
@@ -94,14 +93,6 @@ RSpec.describe Dependabot::Job do
     it "will register its dependency groups" do
       expect_any_instance_of(described_class).to receive(:register_dependency_groups)
       new_update_job
-    end
-  end
-
-  context "when lockfile_only is passed as true" do
-    let(:lockfile_only) { true }
-
-    it "infers a lockfile_only requirements_update_strategy" do
-      expect(subject.requirements_update_strategy).to eq("lockfile_only")
     end
   end
 

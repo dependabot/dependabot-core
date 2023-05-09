@@ -199,10 +199,6 @@ module Dependabot
       self == other
     end
 
-    def specific_requirements
-      requirements.select { |r| requirement_class.new(r[:requirement]).specific? }
-    end
-
     def requirement_class
       Utils.requirement_class_for_package_manager(package_manager)
     end

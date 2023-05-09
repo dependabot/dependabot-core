@@ -73,10 +73,8 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        return true if requirements_unlocked?
-        return false if requirements_update_strategy == :lockfile_only
-
-        dependency.specific_requirements.
+        dependency.requirements.
+          select { |r| requirement_class.new(r[:requirement]).specific? }.
           all? do |req|
             file = dependency_files.find { |f| f.name == req.fetch(:file) }
             updated = FileUpdater::RequirementReplacer.new(
@@ -110,10 +108,6 @@ module Dependabot
       end
 
       private
-
-      def requirements_unlocked?
-        dependency.specific_requirements.none?
-      end
 
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
