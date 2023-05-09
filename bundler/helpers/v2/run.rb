@@ -16,6 +16,7 @@ end
 require "definition_ruby_version_patch"
 require "definition_bundler_version_patch"
 require "git_source_patch"
+require "fetcher_patch"
 
 require "functions"
 
