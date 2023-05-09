@@ -41,6 +41,7 @@ RSpec.configure do |config|
   config.color = true
   config.order = :rand
   config.mock_with(:rspec) { |mocks| mocks.verify_partial_doubles = true }
+  config.expect_with(:rspec) { |expectations| expectations.max_formatted_output_length = 1000 }
   config.raise_errors_for_deprecations!
   config.example_status_persistence_file_path = ".rspec_status"
 

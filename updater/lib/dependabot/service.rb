@@ -37,9 +37,10 @@ module Dependabot
       @pull_requests << [dependency_change.humanized, :updated]
     end
 
-    def close_pull_request(dependency_name, reason)
-      client.close_pull_request(dependency_name, reason)
-      @pull_requests << [dependency_name, "closed: #{reason}"]
+    def close_pull_request(dependencies, reason)
+      client.close_pull_request(dependencies, reason)
+      humanized_deps = dependencies.is_a?(String) ? dependencies : dependencies.join(",")
+      @pull_requests << [humanized_deps, "closed: #{reason}"]
     end
 
     def record_update_job_error(error_type:, error_details:, dependency: nil)
@@ -71,7 +72,8 @@ module Dependabot
         {
           tags: tags.merge({
             update_job_id: job&.id,
-            package_manager: job&.package_manager
+            package_manager: job&.package_manager,
+            repo_private: job&.repo_private?
           }.compact),
           extra: extra.merge({
             dependency_name: dependency&.name

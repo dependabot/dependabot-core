@@ -75,7 +75,15 @@ module Dependabot
         ).updated_requirements
       end
 
+      def requirements_unlocked_or_can_be?
+        requirements_update_strategy != :lockfile_only
+      end
+
       def requirements_update_strategy
+        # If passed in as an option (in the base class) honour that option
+        return @requirements_update_strategy.to_sym if @requirements_update_strategy
+
+        # Otherwise, widen ranges for libraries and bump versions for apps
         library? ? :bump_versions_if_necessary : :bump_versions
       end
 

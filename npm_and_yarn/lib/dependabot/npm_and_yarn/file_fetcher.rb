@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
@@ -56,6 +57,7 @@ module Dependabot
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
+        package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
         package_managers["unknown"] = 1 if package_managers.empty?
 
@@ -72,6 +74,7 @@ module Dependabot
         fetched_files << package_json
         fetched_files += npm_files
         fetched_files += yarn_files
+        fetched_files += pnpm_files if Experiments.enabled?(:pnpm_updates)
         fetched_files += lerna_files
         fetched_files += workspace_package_jsons
         fetched_files += path_dependencies(fetched_files)
@@ -94,6 +97,14 @@ module Dependabot
         fetched_yarn_files << yarnrc if yarnrc
         fetched_yarn_files << yarnrc_yml if yarnrc_yml
         fetched_yarn_files
+      end
+
+      def pnpm_files
+        fetched_pnpm_files = []
+        fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
+        fetched_pnpm_files += pnpm_workspace_package_jsons
+        fetched_pnpm_files
       end
 
       def lerna_files
@@ -162,6 +173,18 @@ module Dependabot
         Helpers.yarn_version_numeric(yarn_lock)
       end
 
+      def pnpm_version
+        return @pnpm_version if defined?(@pnpm_version)
+
+        @pnpm_version = package_manager.locked_version("pnpm") || guess_pnpm_version
+      end
+
+      def guess_pnpm_version
+        return unless pnpm_lock
+
+        Helpers.pnpm_major_version
+      end
+
       def package_manager
         @package_manager ||= PackageManager.new(parsed_package_json)
       end
@@ -180,6 +203,12 @@ module Dependabot
         return @yarn_lock if defined?(@yarn_lock)
 
         @yarn_lock = fetch_file_if_present("yarn.lock")
+      end
+
+      def pnpm_lock
+        return @pnpm_lock if defined?(@pnpm_lock)
+
+        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml") unless skip_pnpm_lock?
       end
 
       def shrinkwrap
@@ -231,6 +260,11 @@ module Dependabot
                        tap { |f| f.support_file = true }
       end
 
+      def pnpm_workspace_yaml
+        @pnpm_workspace_yaml ||= fetch_file_if_present("pnpm-workspace.yaml")&.
+                                tap { |f| f.support_file = true }
+      end
+
       def lerna_json
         @lerna_json ||= fetch_file_if_present("lerna.json")&.
                         tap { |f| f.support_file = true }
@@ -242,6 +276,10 @@ module Dependabot
 
       def lerna_packages
         @lerna_packages ||= fetch_lerna_packages
+      end
+
+      def pnpm_workspace_package_jsons
+        @pnpm_workspace_package_jsons ||= fetch_pnpm_workspace_package_jsons
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -381,6 +419,14 @@ module Dependabot
         end.compact
       end
 
+      def fetch_pnpm_workspace_package_jsons
+        return [] unless parsed_pnpm_workspace_yaml["packages"]
+
+        workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
+          fetch_package_json_if_present(workspace)
+        end
+      end
+
       def fetch_lerna_packages_from_path(path)
         package_json = fetch_package_json_if_present(path)
         return unless package_json
@@ -490,10 +536,24 @@ module Dependabot
         {}
       end
 
+      def parsed_pnpm_workspace_yaml
+        return {} unless pnpm_workspace_yaml
+
+        YAML.safe_load(pnpm_workspace_yaml.content)
+      rescue Pysch::SyntaxError
+        raise Dependabot::DependencyFileNotParseable, pnpm_workspace_yaml.path
+      end
+
       def skip_package_lock?
         return false unless npmrc
 
         npmrc.content.match?(/^package-lock\s*=\s*false/)
+      end
+
+      def skip_pnpm_lock?
+        return false unless npmrc
+
+        npmrc.content.match?(/^lockfile\s*=\s*false/)
       end
 
       def build_unfetchable_deps(unfetchable_deps)

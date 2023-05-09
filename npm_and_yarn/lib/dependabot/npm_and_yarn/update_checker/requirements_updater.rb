@@ -15,7 +15,7 @@ module Dependabot
       class RequirementsUpdater
         VERSION_REGEX = /[0-9]+(?:\.[A-Za-z0-9\-_]+)*/
         SEPARATOR = /(?<=[a-zA-Z0-9*])[\s|]+(?![\s|-])/
-        ALLOWED_UPDATE_STRATEGIES = %i(widen_ranges bump_versions bump_versions_if_necessary).freeze
+        ALLOWED_UPDATE_STRATEGIES = %i(lockfile_only widen_ranges bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, updated_source:, update_strategy:,
                        latest_resolvable_version:)
@@ -32,6 +32,8 @@ module Dependabot
         end
 
         def updated_requirements
+          return requirements if update_strategy == :lockfile_only
+
           requirements.map do |req|
             req = req.merge(source: updated_source)
             next req unless latest_resolvable_version
