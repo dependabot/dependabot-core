@@ -64,8 +64,6 @@ module Functions
     def cache_vendored_gems(definition)
       # Dependencies that have been unlocked for the update (including
       # sub-dependencies)
-      unlocked_gems = definition.instance_variable_get(:@unlock).
-                      fetch(:gems).reject { |gem| __keep_on_prune?(gem) }
       bundler_opts = {
         cache_all: true,
         cache_all_platforms: true,
@@ -80,29 +78,19 @@ module Functions
         # Bundler::Runtime)
         cache_path = Bundler.app_cache
         resolve = definition.resolve
-        prune_gem_cache(resolve, cache_path, unlocked_gems)
+        prune_gem_cache(resolve, cache_path)
         prune_git_and_path_cache(resolve, cache_path)
       end
     end
 
-    # This is not officially supported and may be removed without notice.
-    def __keep_on_prune?(spec_name)
-      unless (specs = Bundler.settings[:persistent_gems_after_clean])
-        return false
-      end
-
-      specs.include?(spec_name)
-    end
-
-    # Copied from Bundler::Runtime: Modified to only prune gems that have
-    # been unlocked
-    def prune_gem_cache(resolve, cache_path, unlocked_gems)
+    # Copied from Bundler::Runtime
+    def prune_gem_cache(resolve, cache_path)
       cached_gems = Dir["#{cache_path}/*.gem"]
 
       outdated_gems = cached_gems.reject do |path|
         spec = Bundler.rubygems.spec_from_gem path
 
-        !unlocked_gems.include?(spec.name) || resolve.any? do |s|
+        resolve.any? do |s|
           s.name == spec.name && s.version == spec.version &&
             !s.source.is_a?(Bundler::Source::Git)
         end
