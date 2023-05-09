@@ -61,6 +61,9 @@ module Dependabot
             return
           end
 
+          Dependabot.logger.info("Starting PR update job for #{job.source.repo}")
+          Dependabot.logger.info("Updating the '#{dependency_snapshot.job_group.name}' group")
+
           dependency_change = compile_all_dependency_changes_for(dependency_snapshot.job_group)
 
           begin
