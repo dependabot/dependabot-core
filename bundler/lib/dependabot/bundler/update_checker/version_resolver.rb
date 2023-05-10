@@ -37,11 +37,17 @@ module Dependabot
           @unlock_requirement          = unlock_requirement
           @latest_allowable_version    = latest_allowable_version
           @options                     = options
+
+          @latest_allowable_version_incompatible_with_ruby = false
         end
 
         def latest_resolvable_version_details
           @latest_resolvable_version_details ||=
             fetch_latest_resolvable_version_details
+        end
+
+        def latest_allowable_version_incompatible_with_ruby?
+          @latest_allowable_version_incompatible_with_ruby
         end
 
         private
@@ -208,7 +214,9 @@ module Dependabot
           ruby_requirement = Dependabot::Bundler::Requirement.new(ruby_requirement)
           current_ruby_version = Dependabot::Bundler::Version.new(details[:ruby_version])
 
-          !ruby_requirement.satisfied_by?(current_ruby_version)
+          return false if ruby_requirement.satisfied_by?(current_ruby_version)
+
+          @latest_allowable_version_incompatible_with_ruby = true
         rescue JSON::ParserError, Excon::Error::Socket, Excon::Error::Timeout
           # Give the benefit of the doubt if something goes wrong fetching
           # version details (could be that it's a private index, etc.)

@@ -70,7 +70,7 @@ module Dependabot
     def self.new_update_job(job_id:, job_definition:, repo_contents_path: nil)
       job_hash = standardise_keys(job_definition["job"])
       attrs = job_hash.slice(*PERMITTED_KEYS)
-      attrs[:credentials] = job_hash[:credentials_metadata]
+      attrs[:credentials] = job_hash[:credentials_metadata] || []
 
       new(attrs.merge(id: job_id, repo_contents_path: repo_contents_path))
     end

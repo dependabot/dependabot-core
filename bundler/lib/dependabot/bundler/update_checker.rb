@@ -117,6 +117,7 @@ module Dependabot
 
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
+        return false if version_resolver(remove_git_source: false).latest_allowable_version_incompatible_with_ruby?
 
         updated_dependencies = force_updater.updated_dependencies
 
