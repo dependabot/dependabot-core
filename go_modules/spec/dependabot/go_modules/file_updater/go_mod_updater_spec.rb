@@ -9,6 +9,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:updater) do
     described_class.new(
       dependencies: [dependency],
+      dependency_files: dependency_files,
       credentials: credentials,
       repo_contents_path: repo_contents_path,
       directory: directory,
@@ -22,6 +23,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   let(:tidy) { true }
   let(:directory) { "/" }
   let(:goprivate) { "*" }
+  let(:dependency_files) { [] }
 
   let(:credentials) { [] }
 

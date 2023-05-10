@@ -63,9 +63,10 @@ module Dependabot
 
         GO_MOD_VERSION = /^go 1\.[\d]+$/
 
-        def initialize(dependencies:, credentials:, repo_contents_path:,
+        def initialize(dependencies:, dependency_files:, credentials:, repo_contents_path:,
                        directory:, options:)
           @dependencies = dependencies
+          @dependency_files = dependency_files
           @credentials = credentials
           @repo_contents_path = repo_contents_path
           @directory = directory
@@ -84,15 +85,24 @@ module Dependabot
 
         private
 
-        attr_reader :dependencies, :credentials, :repo_contents_path,
+        attr_reader :dependencies, :dependency_files, :credentials, :repo_contents_path,
                     :directory
 
         def updated_files
           @updated_files ||= update_files
         end
 
-        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
+        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/MethodLength
           in_repo_path do
+            # During grouped updates, the dependency_files are from a previous dependency
+            # update, so we need to update them on disk after the git reset in in_repo_path.
+            dependency_files.each do |file|
+              path = File.join(file.name)
+              path = Pathname.new(path).expand_path
+              FileUtils.mkdir_p(path.dirname)
+              File.write(path, file.content)
+            end
+
             # Map paths in local replace directives to path hashes
             original_go_mod = File.read("go.mod")
             original_manifest = parse_manifest
