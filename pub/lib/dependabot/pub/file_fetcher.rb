@@ -27,9 +27,12 @@ module Dependabot
         extra_pubspecs = Dir.glob("**/pubspec.yaml", base: clone_repo_contents)
         fetched_files += extra_pubspecs.map do |pubspec|
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)
-          fetch_file_from_host(relative_name)
+          file = fetch_file_from_host(relative_name)
+          next if file.symlink_target
+
+          file
         end
-        fetched_files.uniq
+        fetched_files.compact.uniq
       end
 
       def pubspec_yaml
