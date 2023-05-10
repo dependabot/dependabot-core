@@ -37,7 +37,7 @@ module Dependabot
                            existing_file.fetch(:change_count, 0)
                          else
                            # Let's warn about this in debug mode, but otherwise tolerate this.
-                           Dependabot.logger.debug("Updated an unexpected file at '#{existing_file.path}'")
+                           Dependabot.logger.debug("New file added: '#{updated_file.path}'")
                            0
                          end
 
