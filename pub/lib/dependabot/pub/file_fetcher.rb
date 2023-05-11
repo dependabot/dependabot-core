@@ -28,11 +28,12 @@ module Dependabot
         fetched_files += extra_pubspecs.map do |pubspec|
           relative_name = Pathname.new("/#{pubspec}").relative_path_from(directory)
           file = fetch_file_from_host(relative_name)
-          next if file.symlink_target
+          next file unless file.symlink_target
 
-          file
+          relative_name = Pathname.new("/#{file.symlink_target}").relative_path_from(directory)
+          fetch_file_from_host(relative_name)
         end
-        fetched_files.compact.uniq
+        fetched_files.uniq
       end
 
       def pubspec_yaml
