@@ -16,12 +16,14 @@ module Dependabot
         File.join(ENV.fetch("DEPENDABOT_NATIVE_HELPERS_PATH", nil), "pub")
       end
 
-      def self.run_infer_sdk_versions(url: nil)
-        stdout, _, status = Open3.capture3(
-          {},
-          File.join(pub_helpers_path, "infer_sdk_versions"),
-          *("--flutter-releases-url=#{url}" if url)
-        )
+      def self.run_infer_sdk_versions(dir, url: nil)
+        stdout, _, status = Dir.chdir dir do
+           Open3.capture3(
+            {},
+            File.join(pub_helpers_path, "infer_sdk_versions"),
+            *("--flutter-releases-url=#{url}" if url),
+          )
+        end
         return nil unless status.success?
 
         JSON.parse(stdout)
@@ -108,7 +110,10 @@ module Dependabot
       ## Returns the sdk versions
       def ensure_right_flutter_release
         @ensure_right_flutter_release ||= begin
-          versions = Helpers.run_infer_sdk_versions url: options[:flutter_releases_url]
+          versions = Helpers.run_infer_sdk_versions(
+            File.join(Dir.pwd, dependency_files.first.directory),
+            url: options[:flutter_releases_url]
+          )
           flutter_ref =
             if versions
               Dependabot.logger.info(
