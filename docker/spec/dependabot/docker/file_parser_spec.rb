@@ -106,9 +106,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu_namespace.json") }
       let(:repo_url) { "https://registry.hub.docker.com/v2/my-fork/ubuntu/" }
       let(:digest_body) do
-        JSON.parse(
-          fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
-        )
+        fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
       end
 
       before do
@@ -200,9 +198,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:dockerfile_fixture_name) { "digest" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_body) do
-        JSON.parse(
-          fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
-        )
+        fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
@@ -335,9 +331,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:dockerfile_fixture_name) { "digest_and_tag" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_body) do
-        JSON.parse(
-          fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
-        )
+        fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
@@ -709,9 +703,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:podfile_fixture_name) { "digest.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_body) do
-        JSON.parse(
-          fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
-        )
+        fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }
@@ -781,9 +773,7 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
       let(:digest_body) do
-        JSON.parse(
-          fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
-        )
+        fixture("docker", "registry_manifest_response_body", "ubuntu_12.04.5.json")
       end
 
       let(:repo_url) { "https://registry.hub.docker.com/v2/library/ubuntu/" }

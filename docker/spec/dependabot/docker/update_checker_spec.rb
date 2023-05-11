@@ -316,10 +316,10 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         let(:raise_on_ignored) { true }
 
         before do
-          new_headers =
+          new_body =
             fixture("docker", "registry_manifest_response_body", "generic.json")
           stub_request(:get, repo_url + "manifests/17.04").
-            and_return(status: 200, body: JSON.parse(new_headers))
+            and_return(status: 200, body: new_body)
         end
 
         it "doesn't raise an error" do
@@ -386,7 +386,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
       end
@@ -519,7 +519,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
 
@@ -527,7 +527,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/jdk-11.28").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "11171a2"))
+            body: manifest_response_body.gsub("3ea1ca1", "11171a2")
           )
       end
 
@@ -560,7 +560,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
       end
@@ -575,7 +575,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, repo_url + "manifests/#{latest_version}").
             and_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
 
@@ -737,7 +737,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
       end
@@ -792,7 +792,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
             to_return(status: 404).then.
             to_return(
               status: 200,
-              body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
+              body: manifest_response_body.gsub("3ea1ca1", "4da71a2")
             )
         end
 
