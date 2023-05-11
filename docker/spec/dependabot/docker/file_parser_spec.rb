@@ -126,7 +126,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       describe "the first dependency" do
@@ -213,7 +214,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       context "that doesn't match any tags" do
@@ -271,7 +273,8 @@ RSpec.describe Dependabot::Docker::FileParser do
           before do
             tags_url = repo_url + "tags/list"
             stub_request(:get, tags_url).
-              and_return(status: 200, body: registry_tags)
+              and_return(status: 200, body: registry_tags.to_json,
+                         headers: { "Content-Type" => "application/json" })
           end
 
           context "when replaces-base is false" do
@@ -348,7 +351,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it "determines the correct version" do
@@ -719,7 +723,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       context "that doesn't match any tags" do
@@ -792,7 +797,8 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         tags_url = repo_url + "tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it "determines the correct version" do

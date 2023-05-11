@@ -214,12 +214,12 @@ module Dependabot
             client = docker_registry_client
 
             client.tags(docker_repo_name, auto_paginate: true).fetch("tags").map { |name| Tag.new(name) }
-          rescue *transient_docker_errors
-            attempt ||= 1
-            attempt += 1
-            raise if attempt > 3
+              rescue *transient_docker_errors
+                attempt ||= 1
+                attempt += 1
+                raise if attempt > 3
 
-            retry
+                retry
           end
       rescue DockerRegistry2::RegistryAuthenticationException,
              RestClient::Forbidden

@@ -54,7 +54,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       and_return(status: 200, body: { token: "token" }.to_json)
 
     stub_request(:get, repo_url + "tags/list").
-      and_return(status: 200, body: registry_tags)
+      and_return(status: 200, body: registry_tags.to_json,
+                 headers: { "Content-Type" => "application/json" })
   end
 
   def stub_tag_with_no_digest(tag)
@@ -183,7 +184,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, repo_url + "manifests/3.6").
           and_return(status: 200, body: JSON.parse(manifest_response_body))
         stub_request(:get, repo_url + "manifests/3.6.3").
@@ -205,7 +207,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
         stub_tag_with_no_digest("8.7-923.1669829893")
         stub_tag_with_no_digest("8.7-1049")
       end
@@ -230,7 +233,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
         stub_tag_with_no_digest("8.7")
         stub_tag_with_no_digest("8.7-1049")
       end
@@ -261,7 +265,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("2.5.0-slim") }
@@ -424,7 +429,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         stub_request(:get, repo_url + "tags/list").
           to_raise(RestClient::Exceptions::OpenTimeout).then.
-          to_return(status: 200, body: registry_tags)
+          to_return(status: 200, body: registry_tags.to_json,
+                    headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("17.10") }
@@ -473,7 +479,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/ruby/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("2.4.2-slim") }
@@ -491,7 +498,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
 
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
@@ -530,7 +538,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
 
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
@@ -579,7 +588,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
 
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
@@ -602,7 +612,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://registry.hub.docker.com/v2/moj/ruby/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("2.4.2") }
@@ -638,7 +649,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
 
         stub_same_sha_for("3.6", "3.6.3")
       end
@@ -663,7 +675,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
         stub_tag_with_no_digest("8.7-923.1669829893")
         stub_tag_with_no_digest("8.7-1049")
       end
@@ -683,7 +696,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "tags/list").
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
         stub_tag_with_no_digest("8.5")
         stub_tag_with_no_digest("8.7")
         stub_tag_with_no_digest("8.7-923.1669829893")
@@ -792,7 +806,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://registry.hub.docker.com/v2/library/python/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("3.6.3-alpine3.6") }
@@ -853,7 +868,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         before do
           tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
           stub_request(:get, tags_url).
-            and_return(status: 200, body: registry_tags)
+            and_return(status: 200, body: registry_tags.to_json,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it { is_expected.to eq("17.10") }
@@ -912,7 +928,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         before do
           tags_url = "https:/registry.hub.docker.com/v2/ubuntu/tags/list"
           stub_request(:get, tags_url).
-            and_return(status: 200, body: registry_tags)
+            and_return(status: 200, body: registry_tags.to_json,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it { is_expected.to eq("17.10") }
@@ -937,7 +954,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         before do
           tags_url = "https://registry-host.io:5000/v2/ubuntu/tags/list"
           stub_request(:get, tags_url).
-            and_return(status: 200, body: registry_tags)
+            and_return(status: 200, body: registry_tags.to_json,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         it { is_expected.to eq("17.10") }
@@ -1003,7 +1021,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         tags_url = "https://quay.io/v2/jetstack/cert-manager-controller/tags/list"
         stub_request(:get, tags_url).
-          and_return(status: 200, body: registry_tags)
+          and_return(status: 200, body: registry_tags.to_json,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to eq("v1.7.2") }
