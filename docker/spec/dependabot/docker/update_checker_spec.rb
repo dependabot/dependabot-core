@@ -60,7 +60,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
   def stub_tag_with_no_digest(tag)
     stub_request(:get, repo_url + "manifests/#{tag}").
-      and_return(status: 200, body: JSON.parse(manifest_response_body).except("docker_content_digest"))
+      and_return(status: 200, body: manifest_response_body,
+                 headers: { "Content-Type" => "application/json" }.except("docker_content_digest"))
   end
 
   describe "#up_to_date?" do
@@ -111,7 +112,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         before do
           stub_request(:get, repo_url + "manifests/artful").
-            and_return(status: 200, body: JSON.parse(manifest_response_body))
+            and_return(status: 200, body: manifest_response_body,
+                       headers: { "Content-Type" => "application/json" })
         end
 
         context "that is out-of-date" do
@@ -156,7 +158,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       before do
         stub_request(:get, repo_url + "manifests/latest").
-          and_return(status: 200, body: JSON.parse(manifest_response_body))
+          and_return(status: 200, body: manifest_response_body,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       context "that is out-to-date" do
@@ -187,9 +190,11 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
           and_return(status: 200, body: registry_tags.to_json,
                      headers: { "Content-Type" => "application/json" })
         stub_request(:get, repo_url + "manifests/3.6").
-          and_return(status: 200, body: JSON.parse(manifest_response_body))
+          and_return(status: 200, body: manifest_response_body,
+                     headers: { "Content-Type" => "application/json" })
         stub_request(:get, repo_url + "manifests/3.6.3").
-          and_return(status: 200, body: JSON.parse(manifest_response_body))
+          and_return(status: 200, body: manifest_response_body,
+                     headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to be_falsey }
@@ -372,7 +377,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/17.10").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body)
+            body: manifest_response_body,
+            headers: { "Content-Type" => "application/json" }
           )
 
         # Stub the latest version to return a different digest
@@ -504,7 +510,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body)
+            body: manifest_response_body,
+            headers: { "Content-Type" => "application/json" }
           )
 
         # Stub the latest version to return a different digest
@@ -544,7 +551,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body)
+            body: manifest_response_body,
+            headers: { "Content-Type" => "application/json" }
           )
 
         # Stub the latest version to return a different digest
@@ -594,7 +602,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body)
+            body: manifest_response_body,
+            headers: { "Content-Type" => "application/json" }
           )
       end
 
@@ -719,7 +728,8 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "manifests/2.2-sdk").
           and_return(
             status: 200,
-            body: JSON.parse(manifest_response_body)
+            body: manifest_response_body,
+            headers: { "Content-Type" => "application/json" }
           )
 
         # Stub the latest version to return a different digest
