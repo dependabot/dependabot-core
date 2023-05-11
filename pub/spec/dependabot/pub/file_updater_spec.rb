@@ -98,7 +98,7 @@ RSpec.describe Dependabot::Pub::FileUpdater do
   end
 
   describe "#updated_dependency_files unlock none inserts content-locks when needed" do
-    let (:project) { "can_update_content_hashes" }
+    let(:project) { "can_update_content_hashes" }
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "collection",
@@ -112,7 +112,8 @@ RSpec.describe Dependabot::Pub::FileUpdater do
       updated_files = updater.updated_dependency_files
       expect(manifest(updated_files)).to eq manifest(dependency_files)
       expect(lockfile(updated_files)).to include "version: \"1.15.0\""
-      expect(lockfile(updated_files)).to include "sha256: \"6d4193120997ecfd09acf0e313f13dc122b119e5eca87ef57a7d065ec9183762\""
+      expect(lockfile(updated_files)).to include 
+        "sha256: \"6d4193120997ecfd09acf0e313f13dc122b119e5eca87ef57a7d065ec9183762\""
     end
   end
 
