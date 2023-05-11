@@ -92,13 +92,12 @@ module Dependabot
           @updated_files ||= update_files
         end
 
-        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/MethodLength
+        def update_files # rubocop:disable Metrics/AbcSize, Metrics/PerceivedComplexity
           in_repo_path do
             # During grouped updates, the dependency_files are from a previous dependency
             # update, so we need to update them on disk after the git reset in in_repo_path.
             dependency_files.each do |file|
-              path = File.join(file.name)
-              path = Pathname.new(path).expand_path
+              path = Pathname.new(file.name).expand_path
               FileUtils.mkdir_p(path.dirname)
               File.write(path, file.content)
             end
