@@ -75,7 +75,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         new_manifest =
           fixture("docker", "registry_manifest_response_body", "generic.json")
         stub_request(:get, repo_url + "manifests/17.10").
-          and_return(status: 200, body: JSON.parse(new_manifest))
+          and_return(status: 200, body: new_manifest, headers: { "Content-Type" => "application/json" })
       end
 
       it { is_expected.to be_falsy }
