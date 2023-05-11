@@ -62,6 +62,13 @@ module Functions
     end
 
     def cache_vendored_gems(definition)
+      resolve = definition.resolve
+
+      # Dependencies that have been updated (including sub-dependencies)
+      updated_gems = resolve.reject do |spec|
+        lockfile_specs.include?(spec)
+      end.map(&:name).uniq
+
       # Dependencies that have been unlocked for the update (including
       # sub-dependencies)
       bundler_opts = {
@@ -74,23 +81,24 @@ module Functions
         # Fetch and cache gems on all platforms without pruning
         Bundler::Runtime.new(nil, definition).cache
 
-        # Only prune unlocked gems (the original implementation is in
+        # Only prune updated gems (the original implementation is in
         # Bundler::Runtime)
         cache_path = Bundler.app_cache
         resolve = definition.resolve
-        prune_gem_cache(resolve, cache_path)
+        prune_gem_cache(resolve, cache_path, updated_gems)
         prune_git_and_path_cache(resolve, cache_path)
       end
     end
 
-    # Copied from Bundler::Runtime
-    def prune_gem_cache(resolve, cache_path)
+    # Copied from Bundler::Runtime: Modified to only prune gems that have
+    # been updated
+    def prune_gem_cache(resolve, cache_path, updated_gems)
       cached_gems = Dir["#{cache_path}/*.gem"]
 
       outdated_gems = cached_gems.reject do |path|
         spec = Bundler.rubygems.spec_from_gem path
 
-        resolve.any? do |s|
+        !updated_gems.include?(spec.name) || resolve.any? do |s|
           s.name == spec.name && s.version == spec.version &&
             !s.source.is_a?(Bundler::Source::Git)
         end
@@ -135,8 +143,7 @@ module Functions
     end
 
     def unlock_blocking_subdeps(dependencies_to_unlock, error)
-      all_deps =  Bundler::LockfileParser.new(lockfile).
-                  specs.map(&:name).map(&:to_s)
+      all_deps = lockfile_specs.map(&:name).map(&:to_s)
       top_level = build_definition([]).dependencies.
                   map(&:name).map(&:to_s)
       allowed_new_unlocks = all_deps - top_level - dependencies_to_unlock
@@ -165,6 +172,10 @@ module Functions
       # because Bundler's SolveFailure objects don't include enough
       # information to chart the full path through all conflicts unwound
       dependencies_to_unlock.append(*allowed_new_unlocks)
+    end
+
+    def lockfile_specs
+      @lockfile_specs ||= Bundler::LockfileParser.new(lockfile).specs
     end
 
     def build_definition(dependencies_to_unlock)
