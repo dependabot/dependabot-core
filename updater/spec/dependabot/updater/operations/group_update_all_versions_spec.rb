@@ -6,6 +6,7 @@ require "support/dependency_file_helpers"
 
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
+require "dependabot/environment"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
@@ -157,6 +158,32 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.dependency_group.name).to eql("my-overlapping-group")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
       end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when a pull request already exists for a group" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_with_existing_pr")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "does not create a new pull request for a group if one already exists" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+      expect(mock_service).not_to receive(:create_pull_request)
+
+      allow(Dependabot.logger).to receive(:info)
+      expect(Dependabot.logger).to receive(:info).with(
+        "Detected existing pull request for 'group-b'."
+      )
 
       group_update_all.perform
     end
