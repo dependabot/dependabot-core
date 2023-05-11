@@ -77,7 +77,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
       "business/issues/9\">#9</a>] Allow custom calendars</li>\n" \
       "<li><a href=\"https://github.com/gocardless/business/commit/" \
       "1c72c35ff2aa9d7ce0403d7fd4aa010d94723076\"><code>1c72c35</code></a> " \
-      "Allow custom calendars</li>\n" \
+      "Allow custom calendars [skip ci]</li>\n" \
       "<li><a href=\"https://github.com/gocardless/business/commit/" \
       "5555535ff2aa9d7ce0403d7fd4aa010d94723076\"><code>5555535</code>" \
       "</a></li>\n" \

@@ -41,6 +41,7 @@ module Dependabot
           msg += commits_cascade
           msg += maintainer_changes_cascade
           msg += break_tag unless msg == ""
+          msg = sanitize_skipping_workflow_tags(msg)
           "\n" + sanitize_links_and_mentions(msg, unsafe: true)
         end
 
@@ -131,6 +132,7 @@ module Dependabot
             end
           msg = link_issues(text: msg)
           msg = sanitize_links_and_mentions(msg)
+          msg = sanitize_skipping_workflow_tags(msg)
 
           build_details_tag(summary: "Commits", body: msg)
         end
@@ -248,6 +250,10 @@ module Dependabot
           LinkAndMentionSanitizer.
             new(github_redirection_service: github_redirection_service).
             sanitize_links_and_mentions(text: text, unsafe: unsafe, format_html: source_provider_supports_html?)
+        end
+
+        def sanitize_skipping_workflow_tags(text)
+          text.gsub(/\[skip ci|ci skip|skip actions|actions skip|no ci\]/, "[REMOVED SKIPPING WORKFLOW FLAG]")
         end
 
         def sanitize_template_tags(text)

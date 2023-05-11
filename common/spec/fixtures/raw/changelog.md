@@ -26,7 +26,7 @@
 
 ## 1.5.0 - June 2, 2015
 
-- Add 2016 holiday definitions
+- Add 2016 holiday definitions [skip ci]
 
 ## 1.4.0 - December 24, 2014
 
