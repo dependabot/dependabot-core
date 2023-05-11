@@ -105,9 +105,9 @@ RSpec.describe Dependabot::Docker::FileParser do
       let(:dockerfile_fixture_name) { "namespace_digest" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu_namespace.json") }
       let(:repo_url) { "https://registry.hub.docker.com/v2/my-fork/ubuntu/" }
-      let(:digest_headers) do
+      let(:digest_body) do
         JSON.parse(
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest", "ubuntu_12.04.5.json")
         )
       end
 
@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           and_return(status: 404)
 
         stub_request(:head, repo_url + "manifests/12.04.5").
-          and_return(status: 200, body: "", headers: digest_headers)
+          and_return(status: 200, body: digest_body)
       end
 
       before do
@@ -198,9 +198,9 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with a digest" do
       let(:dockerfile_fixture_name) { "digest" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
-      let(:digest_headers) do
+      let(:digest_body) do
         JSON.parse(
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest", "ubuntu_12.04.5.json")
         )
       end
 
@@ -220,12 +220,12 @@ RSpec.describe Dependabot::Docker::FileParser do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
-        before { digest_headers["docker_content_digest"] = "nomatch" }
+        before { digest_body["docker_content_digest"] = "nomatch" }
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: "", headers: digest_headers)
+            and_return(status: 200, body: digest_body)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -237,7 +237,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             and_return(status: 404)
 
           stub_request(:head, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: "", headers: digest_headers)
+            and_return(status: 200, body: digest_body)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -296,7 +296,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 and_return(status: 404)
 
               stub_request(:head, repo_url + "manifests/12.04.5").
-                and_return(status: 200, body: "", headers: digest_headers)
+                and_return(status: 200, body: digest_body)
             end
 
             its(:length) { is_expected.to eq(1) }
@@ -331,9 +331,9 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with a tag and digest" do
       let(:dockerfile_fixture_name) { "digest_and_tag" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
-      let(:digest_headers) do
+      let(:digest_body) do
         JSON.parse(
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest", "ubuntu_12.04.5.json")
         )
       end
 
@@ -704,9 +704,9 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with a digest" do
       let(:podfile_fixture_name) { "digest.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
-      let(:digest_headers) do
+      let(:digest_body) do
         JSON.parse(
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest", "ubuntu_12.04.5.json")
         )
       end
 
@@ -726,12 +726,12 @@ RSpec.describe Dependabot::Docker::FileParser do
         let(:registry_tags) do
           fixture("docker", "registry_tags", "small_ubuntu.json")
         end
-        before { digest_headers["docker_content_digest"] = "nomatch" }
+        before { digest_body["docker_content_digest"] = "nomatch" }
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: "", headers: digest_headers)
+            and_return(status: 200, body: digest_body)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -743,7 +743,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             and_return(status: 404)
 
           stub_request(:head, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: "", headers: digest_headers)
+            and_return(status: 200, body: digest_body)
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -775,9 +775,9 @@ RSpec.describe Dependabot::Docker::FileParser do
     context "with a tag and digest" do
       let(:podfile_fixture_name) { "digest_and_tag.yaml" }
       let(:registry_tags) { fixture("docker", "registry_tags", "ubuntu.json") }
-      let(:digest_headers) do
+      let(:digest_body) do
         JSON.parse(
-          fixture("docker", "registry_manifest_headers", "ubuntu_12.04.5.json")
+          fixture("docker", "registry_manifest", "ubuntu_12.04.5.json")
         )
       end
 
