@@ -112,10 +112,10 @@ RSpec.describe Dependabot::Docker::FileParser do
       end
 
       before do
-        stub_request(:head, repo_url + "manifests/10.04").
+        stub_request(:get, repo_url + "manifests/10.04").
           and_return(status: 404)
 
-        stub_request(:head, repo_url + "manifests/12.04.5").
+        stub_request(:get, repo_url + "manifests/12.04.5").
           and_return(status: 200, body: digest_body)
       end
 
@@ -224,7 +224,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
-          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
+          stub_request(:get, /#{Regexp.quote(ubuntu_url)}manifests/).
             and_return(status: 200, body: digest_body)
         end
 
@@ -233,10 +233,10 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "that matches a tag" do
         before do
-          stub_request(:head, repo_url + "manifests/10.04").
+          stub_request(:get, repo_url + "manifests/10.04").
             and_return(status: 404)
 
-          stub_request(:head, repo_url + "manifests/12.04.5").
+          stub_request(:get, repo_url + "manifests/12.04.5").
             and_return(status: 200, body: digest_body)
         end
 
@@ -292,10 +292,10 @@ RSpec.describe Dependabot::Docker::FileParser do
             end
 
             before do
-              stub_request(:head, repo_url + "manifests/10.04").
+              stub_request(:get, repo_url + "manifests/10.04").
                 and_return(status: 404)
 
-              stub_request(:head, repo_url + "manifests/12.04.5").
+              stub_request(:get, repo_url + "manifests/12.04.5").
                 and_return(status: 200, body: digest_body)
             end
 
@@ -730,7 +730,7 @@ RSpec.describe Dependabot::Docker::FileParser do
 
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
-          stub_request(:head, /#{Regexp.quote(ubuntu_url)}manifests/).
+          stub_request(:get, /#{Regexp.quote(ubuntu_url)}manifests/).
             and_return(status: 200, body: digest_body)
         end
 
@@ -739,10 +739,10 @@ RSpec.describe Dependabot::Docker::FileParser do
 
       context "that matches a tag" do
         before do
-          stub_request(:head, repo_url + "manifests/10.04").
+          stub_request(:get, repo_url + "manifests/10.04").
             and_return(status: 404)
 
-          stub_request(:head, repo_url + "manifests/12.04.5").
+          stub_request(:get, repo_url + "manifests/12.04.5").
             and_return(status: 200, body: digest_body)
         end
 
