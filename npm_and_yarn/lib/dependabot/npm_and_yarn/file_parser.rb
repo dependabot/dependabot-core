@@ -9,6 +9,7 @@ require "dependabot/file_parsers/base"
 require "dependabot/shared_helpers"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/native_helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/version"
 require "dependabot/npm_and_yarn/requirement"
 require "dependabot/git_metadata_fetcher"
@@ -78,7 +79,28 @@ module Dependabot
           end
         end
 
+        pnpm_version = package_manager.locked_version("pnpm")
+
+        if pnpm_version
+          dependency_set << Dependency.new(
+            name: "pnpm",
+            version: pnpm_version,
+            package_manager: "npm_and_yarn",
+            requirements: [{
+              requirement: pnpm_version,
+              file: "package.json",
+              groups: ["dependencies"],
+              source: nil
+            }],
+            on_package_manager: true
+          )
+        end
+
         dependency_set
+      end
+
+      def package_manager
+        @package_manager ||= PackageManager.new(parsed_root_package_file)
       end
 
       def lockfile_parser
@@ -334,6 +356,10 @@ module Dependabot
         resolved_url.gsub(/#{Regexp.quote(reg)}.*/, "") + reg
       end
 
+      def parsed_root_package_file
+        JSON.parse(root_package_file.content)
+      end
+
       def package_files
         @package_files ||=
           begin
@@ -345,10 +371,14 @@ module Dependabot
               .reject(&:support_file?)
 
             [
-              dependency_files.find { |f| f.name == "package.json" },
+              root_package_file,
               *sub_packages
             ].compact
           end
+      end
+
+      def root_package_file
+        @root_package_file ||= dependency_files.find { |f| f.name == "package.json" }
       end
 
       def version_class

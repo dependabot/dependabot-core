@@ -93,7 +93,7 @@ module Dependabot
         end
 
         def latest_resolvable_version
-          return latest_allowable_version if git_dependency?(dependency)
+          return latest_allowable_version if git_dependency?(dependency) || dependency.on_package_manager?
           return if part_of_tightly_locked_monorepo?
           return if types_update_available?
           return if original_package_update_available?

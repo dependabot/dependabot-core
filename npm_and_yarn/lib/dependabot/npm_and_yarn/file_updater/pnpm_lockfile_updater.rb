@@ -42,11 +42,11 @@ module Dependabot
             File.write(".npmrc", npmrc_content(pnpm_lock))
 
             SharedHelpers.with_git_configured(credentials: credentials) do
-              run_pnpm_updater
+              run_pnpm_updater unless dependencies.first.on_package_manager?
 
               write_final_package_json_files
 
-              run_pnpm_install
+              sync_lockfile
 
               File.read(pnpm_lock.name)
             end
@@ -64,7 +64,7 @@ module Dependabot
           )
         end
 
-        def run_pnpm_install
+        def sync_lockfile
           SharedHelpers.run_shell_command(
             "pnpm install --lockfile-only"
           )

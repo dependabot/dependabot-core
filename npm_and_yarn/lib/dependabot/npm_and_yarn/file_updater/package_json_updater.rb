@@ -29,7 +29,7 @@ module Dependabot
 
               new_content = update_package_json_declaration(
                 package_json_content: content,
-                dependency_name: dep.name,
+                dependency: dep,
                 old_req: old_req,
                 new_req: new_req
               )
@@ -80,7 +80,23 @@ module Dependabot
         end
 
         def update_package_json_declaration(package_json_content:, new_req:,
-                                            dependency_name:, old_req:)
+                                            dependency:, old_req:)
+          args = {
+            package_json_content: package_json_content,
+            new_req: new_req,
+            dependency_name: dependency.name,
+            old_req: old_req
+          }
+
+          if dependency.on_package_manager?
+            update_package_manager_declaration(**args)
+          else
+            update_dependency_declaration(**args)
+          end
+        end
+
+        def update_dependency_declaration(package_json_content:, new_req:,
+                                          dependency_name:, old_req:)
           original_line = declaration_line(
             dependency_name: dependency_name,
             dependency_req: old_req,
@@ -138,6 +154,16 @@ module Dependabot
             )
           end
           content
+        end
+
+        def update_package_manager_declaration(package_json_content:, new_req:,
+                                               dependency_name:, old_req:)
+          parsed_json_content = JSON.parse(package_json_content)
+          package_manager = parsed_json_content["packageManager"]
+
+          return package_json_content unless package_manager == "#{dependency_name}@#{old_req[:requirement]}"
+
+          package_json_content.sub("\"#{package_manager}\"", "\"#{dependency_name}@#{new_req[:requirement]}\"")
         end
 
         def declaration_line(dependency_name:, dependency_req:, content:)

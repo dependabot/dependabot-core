@@ -42,7 +42,7 @@ module Dependabot
 
     def initialize(name:, requirements:, package_manager:, version: nil,
                    previous_version: nil, previous_requirements: nil,
-                   subdependency_metadata: [], removed: false, metadata: {})
+                   subdependency_metadata: [], removed: false, on_package_manager: false, metadata: {})
       @name = name
       @version = version
       @requirements = requirements.map { |req| symbolize_keys(req) }
@@ -55,6 +55,7 @@ module Dependabot
                                   &.map { |h| symbolize_keys(h) }
       end
       @removed = removed
+      @on_package_manager = on_package_manager
       @metadata = symbolize_keys(metadata || {})
 
       check_values
@@ -66,6 +67,10 @@ module Dependabot
 
     def removed?
       @removed
+    end
+
+    def on_package_manager?
+      @on_package_manager
     end
 
     def numeric_version
@@ -81,7 +86,8 @@ module Dependabot
         "previous_requirements" => previous_requirements,
         "package_manager" => package_manager,
         "subdependency_metadata" => subdependency_metadata,
-        "removed" => removed? ? true : nil
+        "removed" => removed? ? true : nil,
+        "on_package_manager" => on_package_manager? ? true : nil
       }.compact
     end
 
