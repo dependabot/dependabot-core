@@ -1,8 +1,7 @@
 name: Gems - Release to RubyGems
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+
+  release:
+    types: [published]
 permissions:
   contents: read
 jobs:
