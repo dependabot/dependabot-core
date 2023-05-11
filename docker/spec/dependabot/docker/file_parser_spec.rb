@@ -116,7 +116,7 @@ RSpec.describe Dependabot::Docker::FileParser do
           and_return(status: 404)
 
         stub_request(:get, repo_url + "manifests/12.04.5").
-          and_return(status: 200, body: digest_body)
+          and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
       end
 
       before do
@@ -227,7 +227,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:get, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: digest_body)
+            and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -239,7 +239,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             and_return(status: 404)
 
           stub_request(:get, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: digest_body)
+            and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -299,7 +299,7 @@ RSpec.describe Dependabot::Docker::FileParser do
                 and_return(status: 404)
 
               stub_request(:get, repo_url + "manifests/12.04.5").
-                and_return(status: 200, body: digest_body)
+                and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
             end
 
             its(:length) { is_expected.to eq(1) }
@@ -736,7 +736,7 @@ RSpec.describe Dependabot::Docker::FileParser do
         before do
           ubuntu_url = "https://registry.hub.docker.com/v2/library/ubuntu/"
           stub_request(:get, /#{Regexp.quote(ubuntu_url)}manifests/).
-            and_return(status: 200, body: digest_body)
+            and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
         end
 
         its(:length) { is_expected.to eq(1) }
@@ -748,7 +748,7 @@ RSpec.describe Dependabot::Docker::FileParser do
             and_return(status: 404)
 
           stub_request(:get, repo_url + "manifests/12.04.5").
-            and_return(status: 200, body: digest_body)
+            and_return(status: 200, body: digest_body, headers: { "Content-Type" => "application/json" })
         end
 
         its(:length) { is_expected.to eq(1) }
