@@ -58,7 +58,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
   end
 
   def stub_tag_with_no_digest(tag)
-    stub_request(:head, repo_url + "manifests/#{tag}").
+    stub_request(:get, repo_url + "manifests/#{tag}").
       and_return(status: 200, body: JSON.parse(manifest_response_body).except("docker_content_digest"))
   end
 
@@ -72,7 +72,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         new_manifest =
           fixture("docker", "registry_manifest", "generic.json")
-        stub_request(:head, repo_url + "manifests/17.10").
+        stub_request(:get, repo_url + "manifests/17.10").
           and_return(status: 200, body: JSON.parse(new_manifest))
       end
 
@@ -109,7 +109,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         before do
-          stub_request(:head, repo_url + "manifests/artful").
+          stub_request(:get, repo_url + "manifests/artful").
             and_return(status: 200, body: JSON.parse(manifest_response_body))
         end
 
@@ -154,7 +154,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       end
 
       before do
-        stub_request(:head, repo_url + "manifests/latest").
+        stub_request(:get, repo_url + "manifests/latest").
           and_return(status: 200, body: JSON.parse(manifest_response_body))
       end
 
@@ -184,9 +184,9 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
-        stub_request(:head, repo_url + "manifests/3.6").
+        stub_request(:get, repo_url + "manifests/3.6").
           and_return(status: 200, body: JSON.parse(manifest_response_body))
-        stub_request(:head, repo_url + "manifests/3.6.3").
+        stub_request(:get, repo_url + "manifests/3.6.3").
           and_return(status: 200, body: JSON.parse(manifest_response_body))
       end
 
@@ -308,7 +308,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         before do
           new_headers =
             fixture("docker", "registry_manifest", "generic.json")
-          stub_request(:head, repo_url + "manifests/17.04").
+          stub_request(:get, repo_url + "manifests/17.04").
             and_return(status: 200, body: JSON.parse(new_headers))
         end
 
@@ -364,7 +364,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:version) { "12.10" }
 
       before do
-        stub_request(:head, repo_url + "manifests/17.10").
+        stub_request(:get, repo_url + "manifests/17.10").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body)
@@ -372,7 +372,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         # Stub the latest version to return a different digest
         ["17.04", "latest"].each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
+          stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
               body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
@@ -493,7 +493,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
 
-        stub_request(:head, repo_url + "manifests/#{version}").
+        stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body)
@@ -501,7 +501,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         # Stub the latest version to return a different digest
         ["jdk-11.0.2.9", "latest"].each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
+          stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
               body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
@@ -509,7 +509,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         end
 
         # Stub an oddly-formatted version to come back as a pre-release
-        stub_request(:head, repo_url + "manifests/jdk-11.28").
+        stub_request(:get, repo_url + "manifests/jdk-11.28").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "11171a2"))
@@ -532,7 +532,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
 
-        stub_request(:head, repo_url + "manifests/#{version}").
+        stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body)
@@ -540,7 +540,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         # Stub the latest version to return a different digest
         ["17.0.2_8-jre-alpine", "latest"].each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
+          stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
               body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
@@ -555,7 +555,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "followed by numbers and with less components than other version but higher underscore part" do
         before do
-          stub_request(:head, repo_url + "manifests/#{latest_version}").
+          stub_request(:get, repo_url + "manifests/#{latest_version}").
             and_return(
               status: 200,
               body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
@@ -581,7 +581,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
         stub_request(:get, repo_url + "tags/list").
           and_return(status: 200, body: registry_tags)
 
-        stub_request(:head, repo_url + "manifests/#{version}").
+        stub_request(:get, repo_url + "manifests/#{version}").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body)
@@ -702,7 +702,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       let(:latest_versions) { %w(2-sdk 2.1-sdk 2.1.401-sdk) }
 
       before do
-        stub_request(:head, repo_url + "manifests/2.2-sdk").
+        stub_request(:get, repo_url + "manifests/2.2-sdk").
           and_return(
             status: 200,
             body: JSON.parse(manifest_response_body)
@@ -710,7 +710,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         # Stub the latest version to return a different digest
         [*latest_versions, "latest"].each do |version|
-          stub_request(:head, repo_url + "manifests/#{version}").
+          stub_request(:get, repo_url + "manifests/#{version}").
             and_return(
               status: 200,
               body: JSON.parse(manifest_response_body.gsub("3ea1ca1", "4da71a2"))
@@ -764,7 +764,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
       context "when the latest tag 404s" do
         before do
-          stub_request(:head, repo_url + "manifests/latest").
+          stub_request(:get, repo_url + "manifests/latest").
             to_return(status: 404).then.
             to_return(
               status: 200,
@@ -776,7 +776,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
         context "every time" do
           before do
-            stub_request(:head, repo_url + "manifests/latest").
+            stub_request(:get, repo_url + "manifests/latest").
               to_return(status: 404)
           end
 
@@ -1042,7 +1042,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         new_headers =
           fixture("docker", "registry_manifest", "generic.json")
-        stub_request(:head, repo_url + "manifests/latest").
+        stub_request(:get, repo_url + "manifests/latest").
           and_return(status: 200, body: JSON.parse(new_headers))
       end
 
@@ -1068,7 +1068,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
       before do
         new_headers =
           fixture("docker", "registry_manifest", "generic.json")
-        stub_request(:head, repo_url + "manifests/17.10").
+        stub_request(:get, repo_url + "manifests/17.10").
           and_return(status: 200, body: JSON.parse(new_headers))
       end
 
@@ -1126,7 +1126,7 @@ RSpec.describe Dependabot::Docker::UpdateChecker do
 
   def stub_same_sha_for(*tags)
     tags.each do |tag|
-      stub_request(:head, repo_url + "manifests/#{tag}").
+      stub_request(:get, repo_url + "manifests/#{tag}").
         and_return(
           status: 200,
           body: JSON.parse(manifest_response_body.gsub(/"sha256:(.*)"/, "\"sha256:#{'a' * 40}\""))
