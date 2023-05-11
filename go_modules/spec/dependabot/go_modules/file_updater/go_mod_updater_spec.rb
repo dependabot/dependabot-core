@@ -41,6 +41,38 @@ RSpec.describe Dependabot::GoModules::FileUpdater::GoModUpdater do
   describe "#updated_go_mod_content" do
     subject(:updated_go_mod_content) { updater.updated_go_mod_content }
 
+    context "for a grouped update" do
+      let(:dependency_name) { "rsc.io/quote" }
+      let(:dependency_version) { "v1.5.2" }
+      let(:dependency_previous_version) { "v1.4.0" }
+      let(:requirements) { previous_requirements }
+      let(:previous_requirements) do
+        [{
+           file: "go.mod",
+           requirement: "v1.4.0",
+           groups: [],
+           source: {
+             type: "default",
+             source: "rsc.io/quote"
+           }
+         }]
+      end
+      let(:dependency_files) { [
+        Dependabot::DependencyFile.new(
+          name: "go.mod",
+          # simulate a previous update from a grouped update
+          content: go_mod_content.gsub("rsc.io/qr v0.1.0", "rsc.io/qr v0.1.1")
+        )
+      ] }
+
+      it "updated the dependency" do
+        is_expected.to include(%(rsc.io/quote v1.5.2\n))
+      end
+      it "retained the previous change" do
+        is_expected.to include(%(rsc.io/qr v0.1.1\n))
+      end
+    end
+
     context "for a top level dependency" do
       let(:dependency_name) { "rsc.io/quote" }
       let(:dependency_version) { "v1.4.0" }
