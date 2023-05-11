@@ -18,10 +18,10 @@ module Dependabot
 
       def self.run_infer_sdk_versions(dir, url: nil)
         stdout, _, status = Dir.chdir dir do
-           Open3.capture3(
+          Open3.capture3(
             {},
             File.join(pub_helpers_path, "infer_sdk_versions"),
-            *("--flutter-releases-url=#{url}" if url),
+            *("--flutter-releases-url=#{url}" if url)
           )
         end
         return nil unless status.success?
