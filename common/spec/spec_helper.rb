@@ -13,7 +13,6 @@ require "dependabot/dependency_file"
 require "dependabot/experiments"
 require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
-require_relative "warning_monkey_patch"
 
 if ENV["COVERAGE"]
   SimpleCov::Formatter::Console.output_style = "block"
