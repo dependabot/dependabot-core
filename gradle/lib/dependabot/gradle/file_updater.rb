@@ -139,15 +139,27 @@ module Dependabot
           line = evaluate_properties(line, buildfile)
           line = line.gsub(%r{(?<=^|\s)//.*$}, "")
 
-          if dependency.name.include?(":")
-            next false unless line.include?(dependency.name.split(":").first)
-            next false unless line.include?(dependency.name.split(":").last)
-          elsif requirement.fetch(:file).end_with?(".toml")
-            next false unless line.include?(dependency.name)
+          line_matches_dependency?(line, dependency, requirement)
+        end
+      end
+
+      def line_matches_dependency?(line, dependency, requirement)
+        if dependency.name.include?(":")
+          group, name = dependency.name.split(":")
+          version = requirement.fetch(:requirement)
+
+          line.include?("#{group}:#{name}:#{version}") || (
+            /group\s*[=:]\s*['"]#{group}['"]/.match?(line) &&
+              /name\s*[=:]\s*['"]#{name}['"]/.match?(line) &&
+              /version\s*[=:]\s*['"]#{version}['"]/.match?(line)
+          )
+        else
+          if requirement.fetch(:file).end_with?(".toml")
+            return false unless line.include?(dependency.name)
           else
             name_regex_value = /['"]#{Regexp.quote(dependency.name)}['"]/
             name_regex = /(id|kotlin)(\s+#{name_regex_value}|\(#{name_regex_value}\))/
-            next false unless line.match?(name_regex)
+            return false unless line.match?(name_regex)
           end
 
           line.include?(requirement.fetch(:requirement))
