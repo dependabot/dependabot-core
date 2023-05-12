@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/operations/refresh_group_update_pull_request"
 require "dependabot/updater/operations/update_all_versions"
 require "dependabot/updater/group_update_creation"
 
@@ -68,44 +69,60 @@ module Dependabot
                     :dependency_snapshot,
                     :error_handler
 
-        def run_grouped_dependency_updates # rubocop:disable Metrics/AbcSize
+        def run_grouped_dependency_updates
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
           dependency_snapshot.groups.each do |_group_hash, group|
-            if pr_exists_for_dependency_group?(group)
+            if (existing_pr = existing_pr_for(group))
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
-              Dependabot.logger.info(
-                "Deferring creation of a new pull request. The existing pull request will update in a separate job."
-              )
-              next
-            end
-
-            Dependabot.logger.info("Starting update group for '#{group.name}'")
-
-            dependency_change = compile_all_dependency_changes_for(group)
-
-            if dependency_change.updated_dependencies.any?
-              Dependabot.logger.info("Creating a pull request for '#{group.name}'")
-              begin
-                service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
-              rescue StandardError => e
-                raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-                # FIXME: This will result in us reporting a the group name as a dependency name
-                #
-                # In future we should modify this method to accept both dependency and group
-                # so the downstream error handling can tag things appropriately.
-                error_handler.handle_dependabot_error(error: e, dependency: group)
-              end
+              run_refresh_for(group, existing_pr)
             else
-              Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+              run_update_for(group)
             end
           end
         end
 
-        def pr_exists_for_dependency_group?(group)
-          job.existing_group_pull_requests&.any? { |pr| pr["dependency-group-name"] == group.name }
+        def existing_pr_for(group)
+          job.existing_group_pull_requests.find { |pr| pr["dependency-group-name"] == group.name }
+        end
+
+        def run_update_for(group)
+          Dependabot.logger.info("Starting update group for '#{group.name}'")
+
+          dependency_change = compile_all_dependency_changes_for(group)
+
+          if dependency_change.updated_dependencies.any?
+            Dependabot.logger.info("Creating a pull request for '#{group.name}'")
+            begin
+              service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+            rescue StandardError => e
+              raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
+
+              # FIXME: This will result in us reporting a the group name as a dependency name
+              #
+              # In future we should modify this method to accept both dependency and group
+              # so the downstream error handling can tag things appropriately.
+              error_handler.handle_dependabot_error(error: e, dependency: group)
+            end
+          else
+            Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")
+          end
+        end
+
+        def run_refresh_for(group, pull_request)
+          Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest.new(
+            service: service,
+            job: job,
+            dependency_snapshot: dependency_snapshot,
+            error_handler: error_handler
+          ).tap do |operation|
+            operation.job_group = group
+            operation.job_group_name = group.name
+            operation.previous_dependency_names = pull_request["dependencies"].map do |dependency|
+              dependency["dependency-name"]
+            end
+          end.perform
         end
 
         def run_ungrouped_dependency_updates
