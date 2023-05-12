@@ -405,6 +405,21 @@ RSpec.describe Dependabot::SharedHelpers do
         expect(configured_git_config).to include(alternatives("github.com"))
       end
 
+      %w(
+       ssh://git@github.com:dependabot/dummy-packages
+       ssh://git@github.com/dependabot/dummy-packages
+       git@github.com:dependabot/dummy-packages
+       git://github.com/dependabot/dummy-packages
+      ).each do |url|
+        it "properly replaces #{url}" do
+          with_git_configured do
+            output, status = Open3.capture2e("git clone #{url} && rm -rf dummy-packages")
+
+            expect(status).to be_success, output
+          end
+        end
+      end
+
       it "creates a git credentials store that is empty" do
         expect(configured_git_credentials).to eq("")
       end
