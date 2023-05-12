@@ -176,14 +176,63 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       stub_rubygems_calls
     end
 
-    it "does not create a new pull request for a group if one already exists" do
+    it "delegates the group to RefreshGroupUpdatePullRequest which updates the pull request" do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).not_to receive(:create_pull_request)
 
       allow(Dependabot.logger).to receive(:info)
       expect(Dependabot.logger).to receive(:info).with(
         "Detected existing pull request for 'group-b'."
       )
+
+      expect(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest).to receive(:new).and_call_original
+
+      expect(mock_service).to receive(:update_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("group-b")
+
+        # We updated the right depednencies
+        expect(dependency_change.updated_dependencies.length).to eql(1)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
+
+      expect(mock_service).not_to receive(:create_pull_request)
+
+      group_update_all.perform
+    end
+  end
+
+  context "when a stale pull request already exists for a group" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_with_existing_stale_pr")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "delegates the group to RefreshGroupUpdatePullRequest which closes the pull request and creates a new one" do
+      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
+
+      allow(Dependabot.logger).to receive(:info)
+      expect(Dependabot.logger).to receive(:info).with(
+        "Detected existing pull request for 'everything-everywhere-all-at-once'."
+      )
+
+      expect(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest).to receive(:new).and_call_original
+
+      expect(mock_service).to receive(:close_pull_request).with(%w(dummy-pkg-b dummy-pkg-c), :dependencies_changed)
+
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+      end
 
       group_update_all.perform
     end
