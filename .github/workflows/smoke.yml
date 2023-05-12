@@ -31,6 +31,7 @@ jobs:
           - { path: go_modules, name: go-security, ecosystem: gomod }
           - { path: go_modules, name: go-update-pr, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: gradle, name: gradle-version-catalog, ecosystem: gradle }
           - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
@@ -120,6 +121,12 @@ jobs:
             - 'updater/**'
             - 'go_modules/**'
           gradle:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'gradle/**'
+          'gradle-version-catalog':
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
             - 'common/**'
