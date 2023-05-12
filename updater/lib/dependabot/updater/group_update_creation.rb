@@ -93,6 +93,7 @@ module Dependabot
       def create_change_for(lead_dependency, updated_dependencies, dependency_files, dependency_group)
         Dependabot::DependencyChangeBuilder.create_from(
           job: job,
+          lead_dependency: lead_dependency,
           dependency_files: dependency_files,
           updated_dependencies: updated_dependencies,
           change_source: dependency_group

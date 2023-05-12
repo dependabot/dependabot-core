@@ -25,20 +25,24 @@ module Dependabot
       new(**kwargs).run
     end
 
-    def initialize(job:, dependency_files:, updated_dependencies:, change_source:)
+    def initialize(job:, lead_dependency:, dependency_files:, updated_dependencies:, change_source:)
       @job = job
+      @lead_dependency = lead_dependency
       @dependency_files = dependency_files
       @updated_dependencies = updated_dependencies
       @change_source = change_source
     end
 
     def run
+      updated_dependencies.reject!(&:removed?)
       updated_files = generate_dependency_files
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
-        # Avoid rejecting the source dependency
+        # Avoid rejecting the source dependency for non-grouped updates
         next false if source_dependency_name && d.name == source_dependency_name
-        next true if d.top_level? && d.requirements == d.previous_requirements && source_dependency_name
+        # Avoid rejecting the source dependency for grouped-updates
+        next false if source_dependency_group && d.name == lead_dependency.name
+        next true if d.top_level? && d.requirements == d.previous_requirements
 
         d.version == d.previous_version
       end
@@ -53,7 +57,7 @@ module Dependabot
 
     private
 
-    attr_reader :job, :dependency_files, :updated_dependencies, :change_source
+    attr_reader :job, :dependency_files, :updated_dependencies, :change_source, :lead_dependency
 
     def source_dependency_name
       return nil unless change_source.is_a? Dependabot::Dependency
