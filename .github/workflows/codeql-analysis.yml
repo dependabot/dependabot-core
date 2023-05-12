@@ -29,8 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'schedule' || github.repository == 'dependabot/dependabot-core' }}
     permissions:
-      actions: read
-      contents: read
       security-events: write
 
     strategy:

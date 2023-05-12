@@ -2,8 +2,6 @@ name: Gems - Release to RubyGems
 on:
   release:
     types: [published]
-permissions:
-  contents: read
 jobs:
   release-gems:
     name: Release gems to rubygems.org
