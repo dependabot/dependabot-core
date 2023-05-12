@@ -176,7 +176,7 @@
         "email": "greysteil@gmail.com",
         "date": "2014-12-24T16:16:55Z"
       },
-      "message": "Allow custom calendars",
+      "message": "Allow custom calendars [skip ci]",
       "tree": {
         "sha": "23d7441279d87e155f45347e7c484c56ed4c6afa",
         "url": "https://api.github.com/repos/gocardless/business/git/trees/23d7441279d87e155f45347e7c484c56ed4c6afa"

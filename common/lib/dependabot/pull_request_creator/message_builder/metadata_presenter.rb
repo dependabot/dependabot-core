@@ -132,7 +132,6 @@ module Dependabot
             end
           msg = link_issues(text: msg)
           msg = sanitize_links_and_mentions(msg)
-          msg = sanitize_skipping_workflow_tags(msg)
 
           build_details_tag(summary: "Commits", body: msg)
         end
@@ -253,7 +252,7 @@ module Dependabot
         end
 
         def sanitize_skipping_workflow_tags(text)
-          text.gsub(/\[skip ci|ci skip|skip actions|actions skip|no ci\]/, "[REMOVED SKIPPING WORKFLOW FLAG]")
+          text.gsub(/\[(skip ci|ci skip|skip actions|actions skip|no ci)\]/, "[REMOVED SKIPPING WORKFLOW FLAG]")
         end
 
         def sanitize_template_tags(text)
