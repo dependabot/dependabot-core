@@ -34,7 +34,6 @@ module Dependabot
     end
 
     def run
-      updated_dependencies.reject!(&:removed?)
       updated_files = generate_dependency_files
       # Remove any unchanged dependencies from the updated list
       updated_deps = updated_dependencies.reject do |d|
