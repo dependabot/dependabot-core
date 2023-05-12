@@ -50,10 +50,6 @@ WORKDIR $DEPENDABOT_HOME
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
 
-# Place a git shim ahead of git on the path to rewrite git arguments to use HTTPS.
-ARG SHIM="https://github.com/dependabot/git-shim/releases/download/v1.4.0/git-v1.4.0-linux-amd64.tar.gz"
-RUN curl -sL $SHIM -o git-shim.tar.gz && mkdir -p ~/bin && tar -xvf git-shim.tar.gz -C ~/bin && rm git-shim.tar.gz
-
 COPY --chown=dependabot:dependabot .rubocop.yml .rubocop.yml
 COPY --chown=dependabot:dependabot .ruby-version .ruby-version
 COPY --chown=dependabot:dependabot omnibus omnibus
