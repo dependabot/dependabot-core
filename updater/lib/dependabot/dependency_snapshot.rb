@@ -53,14 +53,10 @@ module Dependabot
       end
     end
 
-    def job_group_name
-      job.dependency_group_to_refresh
-    end
-
     # Returns just the group that is specifically requested to be updated by
     # the job definition
     def job_group
-      return nil unless job_group_name
+      return nil unless job.dependency_group_to_refresh
       return @job_group if defined?(@job_group)
 
       @job_group = groups.fetch(job.dependency_group_to_refresh.to_sym, nil)
