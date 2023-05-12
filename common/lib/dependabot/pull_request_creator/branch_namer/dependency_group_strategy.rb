@@ -21,7 +21,7 @@ module Dependabot
         # fixed-length name, so we can punt on handling truncation until
         # we determine the strict validation rules for names
         def new_branch_name
-          File.join(prefixes, dependency_group.name, prototype_suffix).gsub("/", separator)
+          File.join(prefixes, timestamped_group_name).gsub("/", separator)
         end
 
         private
@@ -37,9 +37,11 @@ module Dependabot
           ].compact
         end
 
-        # FIXME: Remove once grouped PRs can supersede each other
-        def prototype_suffix
-          "prototype-#{Time.now.utc.to_i}"
+        # When superseding a grouped update pull request, we will have a period
+        # of time when there are two branches for the group so we use a timestamp
+        # to avoid collisions.
+        def timestamped_group_name
+          "#{dependency_group.name}-#{Time.now.utc.to_i}"
         end
 
         def package_manager
