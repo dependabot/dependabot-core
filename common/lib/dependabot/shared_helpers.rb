@@ -268,10 +268,6 @@ module Dependabot
       )
       run_shell_command(
         "git config --global --add url.https://#{host}/." \
-        "insteadOf git@#{host}/"
-      )
-      run_shell_command(
-        "git config --global --add url.https://#{host}/." \
         "insteadOf git://#{host}/"
       )
     end
