@@ -25,7 +25,7 @@ module Dependabot
       new(**kwargs).run
     end
 
-    def initialize(job:, lead_dependency:, dependency_files:, updated_dependencies:, change_source:)
+    def initialize(job:, lead_dependency: nil, dependency_files:, updated_dependencies:, change_source:)
       @job = job
       @lead_dependency = lead_dependency
       @dependency_files = dependency_files
