@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "dependabot/npm_and_yarn/update_checker/requirements_updater"
 require "dependabot/npm_and_yarn/helpers"
 require "dependabot/npm_and_yarn/update_checker/registry_finder"
 require "dependabot/shared_helpers"
@@ -127,28 +126,6 @@ module Dependabot
               package_json: file,
               dependencies: dependencies
             ).updated_package_json.content
-        end
-
-        def updated_dependencies
-          dependencies.map do |dep|
-            new_requirements = UpdateChecker::RequirementsUpdater.new(
-              requirements: dep.requirements,
-              updated_source: nil,
-              latest_resolvable_version: dep.version,
-              update_strategy: :bump_versions
-            ).updated_requirements
-
-            Dependency.new(
-              name: dep.name,
-              version: dep.version,
-              previous_version: dep.previous_version,
-              requirements: new_requirements,
-              previous_requirements: dep.requirements,
-              package_manager: dep.package_manager,
-              removed: dep.removed?,
-              metadata: dep.metadata
-            )
-          end
         end
 
         def package_files
