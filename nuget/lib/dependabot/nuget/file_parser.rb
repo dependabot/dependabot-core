@@ -15,6 +15,7 @@ module Dependabot
       require_relative "file_parser/project_file_parser"
       require_relative "file_parser/packages_config_parser"
       require_relative "file_parser/global_json_parser"
+      require_relative "file_parser/dotnet_tools_json_parser"
 
       PACKAGE_CONF_DEPENDENCY_SELECTOR = "packages > packages"
 
@@ -23,6 +24,7 @@ module Dependabot
         dependency_set += project_file_dependencies
         dependency_set += packages_config_dependencies
         dependency_set += global_json_dependencies if global_json
+        dependency_set += dotnet_tools_json_dependencies if dotnet_tools_json
         dependency_set.dependencies
       end
 
@@ -56,6 +58,12 @@ module Dependabot
         GlobalJsonParser.new(global_json: global_json).dependency_set
       end
 
+      def dotnet_tools_json_dependencies
+        return DependencySet.new unless dotnet_tools_json
+
+        DotNetToolsJsonParser.new(dotnet_tools_json: dotnet_tools_json).dependency_set
+      end
+
       def project_file_parser
         @project_file_parser ||=
           ProjectFileParser.new(dependency_files: dependency_files)
@@ -76,7 +84,8 @@ module Dependabot
           project_files -
           packages_config_files -
           nuget_configs -
-          [global_json]
+          [global_json] -
+          [dotnet_tools_json]
       end
 
       def nuget_configs
@@ -85,6 +94,10 @@ module Dependabot
 
       def global_json
         dependency_files.find { |f| f.name.casecmp("global.json").zero? }
+      end
+
+      def dotnet_tools_json
+        dependency_files.find { |f| f.name.casecmp(".config/dotnet-tools.json").zero? }
       end
 
       def check_required_files

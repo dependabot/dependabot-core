@@ -20,6 +20,26 @@ module Dependabot
         "Repo must contain a Cargo.toml."
       end
 
+      def package_manager_version
+        channel = if rust_toolchain
+                    TomlRB.parse(rust_toolchain.content).fetch("toolchain", nil)&.fetch("channel", nil)
+                  else
+                    "default"
+                  end
+
+        {
+          ecosystem: "cargo",
+          package_managers: {
+            "channel" => channel
+          }
+        }
+      rescue TomlRB::ParseError
+        raise Dependabot::DependencyFileNotParseable.new(
+          rust_toolchain.path,
+          "only rust-toolchain files formatted as TOML are supported, the non-TOML format was deprecated by Rust"
+        )
+      end
+
       private
 
       def fetch_files
@@ -285,8 +305,17 @@ module Dependabot
       end
 
       def rust_toolchain
-        @rust_toolchain ||= fetch_file_if_present("rust-toolchain")&.
+        return @rust_toolchain if defined?(@rust_toolchain)
+
+        @rust_toolchain = fetch_file_if_present("rust-toolchain")&.
                             tap { |f| f.support_file = true }
+
+        # Per https://rust-lang.github.io/rustup/overrides.html the file can
+        # have a `.toml` extension, but the non-extension version is preferred.
+        # Renaming here to simplify finding it later in the code.
+        @rust_toolchain ||= fetch_file_if_present("rust-toolchain.toml")&.
+                            tap { |f| f.support_file = true }&.
+                            tap { |f| f.name = "rust-toolchain" }
       end
     end
   end

@@ -2,10 +2,10 @@ FROM ghcr.io/dependabot/dependabot-updater-core
 ARG TARGETARCH
 
 # Install regctl
-ARG REGCTL_VERSION=0.4.7
+ARG REGCTL_VERSION=0.4.8
 # These are manually calculated as they are not provided by the maintainer
-ARG REGCTL_AMD64_CHECKSUM=8cabc58130279c3c93636d48633ec2763bf3f9c389dc1f693aabfe30a204d834
-ARG REGCTL_ARM64_CHECKSUM=5dc1c8430441e92dcbff75dc98a880b04027b284e541aeda5e7fc35a33255ba7
+ARG REGCTL_AMD64_CHECKSUM=89031da0802724505a73571c7bfa55bc57872147245d0d18bbc6123d7d4245b5
+ARG REGCTL_ARM64_CHECKSUM=3973aeff35a7cd28a0a094e3d453fbc7aa230df9cdcffad9d1c44c85ec3192c9
 
 ENV PATH=/opt/bin:$PATH
 RUN cd /tmp \
@@ -17,4 +17,6 @@ RUN cd /tmp \
 
 USER dependabot
 
-COPY --chown=dependabot:dependabot docker /home/dependabot/docker
+COPY --chown=dependabot:dependabot docker $DEPENDABOT_HOME/docker
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

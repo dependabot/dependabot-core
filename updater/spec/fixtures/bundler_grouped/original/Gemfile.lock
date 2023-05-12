@@ -1,0 +1,18 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    dummy-pkg-a (2.0.0)
+    dummy-pkg-b (1.1.0)
+      dummy-pkg-a (~> 2.0)
+    ungrouped-dummy-pkg-c (1.0.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  dummy-pkg-a (~> 2.0.0)
+  dummy-pkg-b (~> 1.1.0)
+  ungrouped-dummy-pkg-c (~> 1.0.0)
+
+BUNDLED WITH
+   1.14.6

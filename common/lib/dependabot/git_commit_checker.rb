@@ -162,6 +162,24 @@ module Dependabot
       false
     end
 
+    def dependency_source_details
+      sources =
+        dependency.requirements.
+        map { |requirement| requirement.fetch(:source) }.uniq.compact.
+        select { |source| source[:type] == "git" }
+
+      return sources.first if sources.count <= 1
+
+      # If there are multiple source URLs, then it's unclear how we should
+      # proceed
+      raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| s[:url] }.uniq.count > 1
+
+      # Otherwise it's reasonable to take the first source and use that. This
+      # will happen if we have multiple git sources with difference references
+      # specified. In that case it's fine to update them all.
+      sources.first
+    end
+
     private
 
     attr_reader :dependency, :credentials, :ignored_versions
@@ -322,26 +340,6 @@ module Dependabot
       end
     end
 
-    def dependency_source_details
-      sources =
-        dependency.requirements.
-        map { |requirement| requirement.fetch(:source) }.uniq.compact.
-        select { |source| source[:type] == "git" }
-
-      return sources.first if sources.count <= 1
-
-      # If there are multiple source types, or multiple source URLs, then it's
-      # unclear how we should proceed
-      if sources.map { |s| [s.fetch(:type), s.fetch(:url, nil)] }.uniq.count > 1
-        raise "Multiple sources! #{sources.join(', ')}"
-      end
-
-      # Otherwise it's reasonable to take the first source and use that. This
-      # will happen if we have multiple git sources with difference references
-      # specified. In that case it's fine to update them all.
-      sources.first
-    end
-
     def ref_or_branch
       dependency_source_details.fetch(:ref) ||
         dependency_source_details.fetch(:branch)
@@ -459,11 +457,11 @@ module Dependabot
     end
 
     def version_class
-      @version_class ||= Utils.version_class_for_package_manager(dependency.package_manager)
+      @version_class ||= dependency.version_class
     end
 
     def requirement_class
-      @requirement_class ||= Utils.requirement_class_for_package_manager(dependency.package_manager)
+      @requirement_class ||= dependency.requirement_class
     end
 
     def local_repo_git_metadata_fetcher

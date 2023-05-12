@@ -77,6 +77,9 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
   let(:upload_pack_fixture) { "setup-node" }
 
   shared_context "with multiple git sources" do
+    let(:upload_pack_fixture) { "checkout" }
+    let(:dependency_name) { "actions/checkout" }
+
     let(:dependency) do
       Dependabot::Dependency.new(
         name: "actions/checkout",
@@ -128,7 +131,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
       context "that is different but up-to-date" do
         let(:upload_pack_fixture) { "checkout" }
-        let(:reference) { "v2" }
+        let(:reference) { "v3" }
         it { is_expected.to be_falsey }
       end
 
@@ -184,10 +187,13 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
         end
       end
 
-      context "with a dependency that has a latest requirement and a valid version", vcr: true do
+      context "with a dependency that has a latest requirement and a valid version" do
+        let(:dependency_name) { "actions/create-release" }
+        let(:upload_pack_fixture) { "create-release" }
+
         let(:dependency) do
           Dependabot::Dependency.new(
-            name: "actions/create-release",
+            name: dependency_name,
             version: "1",
             requirements: [{
               requirement: nil,
@@ -381,15 +387,15 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "given a dependency with multiple git refs", :vcr do
+    context "given a dependency with multiple git refs" do
       include_context "with multiple git sources"
 
       it "returns the expected value" do
-        expect(subject).to eq(Gem::Version.new("2.2.0"))
+        expect(subject).to eq(Gem::Version.new("3.5.2"))
       end
     end
 
-    context "given a realworld repository", :vcr do
+    context "given a realworld repository" do
       let(:upload_pack_fixture) { "github-action-push-to-another-repository" }
       let(:dependency_name) { "dependabot-fixtures/github-action-push-to-another-repository" }
       let(:dependency_version) { nil }
@@ -875,7 +881,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
       end
     end
 
-    context "with multiple requirement sources", :vcr do
+    context "with multiple requirement sources" do
       include_context "with multiple git sources"
 
       let(:expected_requirements) do
@@ -887,7 +893,7 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.2.0",
+            ref: "v3.5.2",
             branch: nil
           }
         }, {
@@ -898,13 +904,79 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
           source: {
             type: "git",
             url: "https://github.com/actions/checkout",
-            ref: "v2.2.0",
+            ref: "v3.5.2",
             branch: nil
           }
         }]
       end
 
       it "returns the expected value" do
+        expect(subject).to eq(expected_requirements)
+      end
+    end
+
+    context "with multiple requirement sources pinned to different SHAs" do
+      let(:dependency_name) { "actions/checkout" }
+      let(:upload_pack_fixture) { "checkout" }
+
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "actions/checkout",
+          version: nil,
+          package_manager: "github_actions",
+          requirements: [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+              branch: nil
+            }
+          }, {
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "8f4b7f84864484a7bf31766abe9204da3cbe65b3",
+              branch: nil
+            }
+          }]
+        )
+      end
+
+      let(:expected_requirements) do
+        [{
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }, {
+          requirement: nil,
+          groups: [],
+          file: ".github/workflows/workflow.yml",
+          metadata: { declaration_string: "actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3" },
+          source: {
+            type: "git",
+            url: "https://github.com/actions/checkout",
+            ref: "8e5e7e5ab8b370d6c329ec480221332ada57f0ab",
+            branch: nil
+          }
+        }]
+      end
+
+      it "updates all source refs to the target ref" do
         expect(subject).to eq(expected_requirements)
       end
     end

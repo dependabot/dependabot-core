@@ -1,7 +1,8 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ENV DEPENDABOT_HOME /home/dependabot
 ### JAVASCRIPT
-ARG YARN_VERSION=3.4.1
+ARG PNPM_VERSION=8.3.1
+ARG YARN_VERSION=3.5.0
 
 # Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
@@ -12,11 +13,16 @@ RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
   && npm install -g npm@8.19.4 \
   && rm -rf ~/.npm
 
-# Install yarn berry and set it to a stable version
-RUN corepack enable \
-  && corepack prepare yarn@$YARN_VERSION --activate
+RUN corepack enable
 
 USER dependabot
+
+# Install pnpm and set it to a stable version
+RUN corepack prepare pnpm@$PNPM_VERSION --activate
+
+# Install yarn berry and set it to a stable version
+RUN corepack prepare yarn@$YARN_VERSION --activate
+
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"
 COPY --chown=dependabot:dependabot npm_and_yarn/helpers /opt/npm_and_yarn/helpers
 RUN bash /opt/npm_and_yarn/helpers/build
@@ -35,7 +41,6 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # END: HACKY WORKAROUND FOR NPM GIT INSTALLS SPAWNING CHILD PROCESS
 
-# Our native helpers pull in yarn 1, so we need to reset the version globally
-RUN corepack prepare yarn@$YARN_VERSION --activate
-
-COPY --chown=dependabot:dependabot npm_and_yarn ${DEPENDABOT_HOME}/npm_and_yarn
+COPY --chown=dependabot:dependabot npm_and_yarn $DEPENDABOT_HOME/npm_and_yarn
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

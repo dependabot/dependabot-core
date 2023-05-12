@@ -163,7 +163,7 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::YarnLockfileUpdater do
       let(:files) { project_dependency_files("yarn/simple_with_registry_that_times_out") }
 
       it "raises a helpful error" do
-        pending("This test is extremely slow (1m45s) so only run locally. TODO: stub a custom timeout value.")
+        skip("This test is extremely slow (1m45s) so only run locally. TODO: stub a custom timeout value.")
         # TODO: stub a custom short timeout via the .yarnrc file:
         # https://azureossd.github.io/2022/09/10/fix-yarn-ESOCKETTIMEDOUT-with-.yarnrc-configuration-file/
         expect { updated_yarn_lock_content }.

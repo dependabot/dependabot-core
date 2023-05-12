@@ -182,6 +182,7 @@ RSpec.describe Dependabot::GoModules::FileUpdater do
           to receive(:new).
           with(
             dependencies: anything,
+            dependency_files: anything,
             credentials: anything,
             repo_contents_path: anything,
             directory: anything,

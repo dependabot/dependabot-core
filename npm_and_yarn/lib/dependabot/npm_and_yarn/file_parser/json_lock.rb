@@ -40,9 +40,7 @@ module Dependabot
           dependency_set = Dependabot::NpmAndYarn::FileParser::DependencySet.new
 
           dependencies = object_with_dependencies["dependencies"]
-          dependencies ||= object_with_dependencies.fetch("packages", {}).transform_keys do |name|
-            name.delete_prefix("node_modules/")
-          end
+          dependencies ||= object_with_dependencies.fetch("packages", {})
 
           dependencies.each do |name, details|
             next if name.empty? # v3 lockfiles include an empty key holding info of the current package
@@ -51,7 +49,7 @@ module Dependabot
             next unless version
 
             dependency_args = {
-              name: name,
+              name: name.split("node_modules/").last,
               version: version,
               package_manager: "npm_and_yarn",
               requirements: []

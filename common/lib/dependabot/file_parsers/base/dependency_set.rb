@@ -153,7 +153,7 @@ module Dependabot
           end
 
           def version_class
-            @version_class ||= Utils.version_class_for_package_manager(@combined.package_manager)
+            @version_class ||= @combined.version_class
           end
         end
         private_constant :DependencySlot

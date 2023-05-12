@@ -26,4 +26,7 @@ RUN DART_ARCH=${TARGETARCH} \
 USER dependabot
 COPY --chown=dependabot:dependabot pub/helpers /opt/pub/helpers
 RUN bash /opt/pub/helpers/build
-COPY --chown=dependabot:dependabot pub /home/dependabot/pub
+
+COPY --chown=dependabot:dependabot pub $DEPENDABOT_HOME/pub
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater

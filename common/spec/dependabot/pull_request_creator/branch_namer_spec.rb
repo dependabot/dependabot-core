@@ -5,8 +5,6 @@ require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/pull_request_creator/branch_namer"
-require "dependabot/pull_request_creator/branch_namer/solo_strategy"
-require "dependabot/pull_request_creator/branch_namer/group_rule_strategy"
 
 RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
   subject(:namer) do
@@ -657,7 +655,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "when no group rule is present" do
+    context "when no dependency group is present" do
       it "delegates to a solo strategy" do
         strategy = instance_double(described_class::SoloStrategy)
         allow(described_class::SoloStrategy).to receive(:new).and_return(strategy)
@@ -667,7 +665,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
-            group_rule: nil
+            dependency_group: nil
           )
 
         expect(strategy).to receive(:new_branch_name)
@@ -676,18 +674,18 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer do
       end
     end
 
-    context "when a group rule is present" do
-      it "delegates to a group rule strategy" do
-        strategy = instance_double(described_class::GroupRuleStrategy)
-        allow(described_class::GroupRuleStrategy).to receive(:new).and_return(strategy)
+    context "when a dependency group is present" do
+      it "delegates to a dependency group strategy" do
+        strategy = instance_double(described_class::DependencyGroupStrategy)
+        allow(described_class::DependencyGroupStrategy).to receive(:new).and_return(strategy)
 
-        group_rule = double("GroupRule", name: "my_group_rule")
+        dependency_group = double("DependencyGroup", name: "my_dependency_group")
         branch_namer =
           described_class.new(
             dependencies: dependencies,
             files: files,
             target_branch: target_branch,
-            group_rule: group_rule
+            dependency_group: dependency_group
           )
 
         expect(strategy).to receive(:new_branch_name)

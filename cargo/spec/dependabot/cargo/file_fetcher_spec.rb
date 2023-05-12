@@ -82,6 +82,13 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name)).
         to eq(["Cargo.toml"])
     end
+
+    it "provides the Rust channel" do
+      expect(file_fetcher_instance.package_manager_version).to eq({
+        ecosystem: "cargo",
+        package_managers: { "channel" => "default" }
+      })
+    end
   end
 
   context "with a rust-toolchain file" do
@@ -98,7 +105,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
         with(headers: { "Authorization" => "token token" }).
         to_return(
           status: 200,
-          body: fixture("github", "contents_cargo_lockfile.json"),
+          body: JSON.dump({ content: Base64.encode64("nightly-2019-01-01") }),
           headers: json_header
         )
     end
@@ -106,6 +113,42 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     it "fetches the Cargo.toml and rust-toolchain" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(%w(Cargo.toml rust-toolchain))
+    end
+
+    it "raises a DependencyFileNotParseable error" do
+      expect { file_fetcher_instance.package_manager_version }.to raise_error(Dependabot::DependencyFileNotParseable)
+    end
+  end
+
+  context "with a rust-toolchain.toml file" do
+    before do
+      stub_request(:get, url + "?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture("github", "contents_cargo_with_toolchain.json").gsub(/rust-toolchain/, "rust-toolchain.toml"),
+          headers: json_header
+        )
+
+      stub_request(:get, url + "rust-toolchain.toml?ref=sha").
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: JSON.dump({ content: Base64.encode64("[toolchain]\nchannel = \"1.2.3\"") }),
+          headers: json_header
+        )
+    end
+
+    it "fetches the Cargo.toml and rust-toolchain" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to match_array(%w(Cargo.toml rust-toolchain))
+    end
+
+    it "provides the Rust channel" do
+      expect(file_fetcher_instance.package_manager_version).to eq({
+        ecosystem: "cargo",
+        package_managers: { "channel" => "1.2.3" }
+      })
     end
   end
 

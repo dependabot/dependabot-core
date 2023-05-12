@@ -1,0 +1,18 @@
+{
+  "name": ".config/dotnet-tools.json",
+  "path": ".config/dotnet-tools.json",
+  "sha": "b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "size": 1367,
+  "url": "https://api.github.com/repos/fsharp/fsharp/contents/.config/dotnet-tools.json?ref=master",
+  "html_url": "https://github.com/fsharp/fsharp/blob/master/.config/dotnet-tools.json",
+  "git_url": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+  "download_url": "https://raw.githubusercontent.com/fsharp/fsharp/master/.config/dotnet-tools.json",
+  "type": "file",
+  "content": "ewogICJ2ZXJzaW9uIjogMSwKICAiaXNSb290IjogdHJ1ZSwKICAidG9vbHMiOiB7CiAgICAiYm90c2F5IjogewogICAgICAidmVyc2lvbiI6ICIxLjAuMCIsCiAgICAgICJjb21tYW5kcyI6IFsKICAgICAgICAiYm90c2F5IgogICAgICBdCiAgICB9LAogICAgImRvdG5ldHNheSI6IHsKICAgICAgInZlcnNpb24iOiAiMi4xLjMiLAogICAgICAiY29tbWFuZHMiOiBbCiAgICAgICAgImRvdG5ldHNheSIKICAgICAgXQogICAgfQogIH0KfQo=",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/fsharp/fsharp/contents/.config/dotnet-tools.json?ref=master",
+    "git": "https://api.github.com/repos/fsharp/fsharp/git/blobs/b353132ecf9b4ee712f5527319f3c6c59a581578",
+    "html": "https://github.com/fsharp/fsharp/blob/master/.config/dotnet-tools.json"
+  }
+}

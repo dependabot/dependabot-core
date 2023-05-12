@@ -16,6 +16,14 @@ module Dependabot
         6
       end
 
+      def self.yarn_version_numeric(yarn_lock)
+        if yarn_berry?(yarn_lock)
+          3
+        else
+          1
+        end
+      end
+
       def self.fetch_yarnrc_yml_value(key, default_value)
         if File.exist?(".yarnrc.yml") && (yarnrc = YAML.load_file(".yarnrc.yml"))
           yarnrc.fetch(key, default_value)
@@ -32,7 +40,20 @@ module Dependabot
       end
 
       def self.yarn_major_version
+        @yarn_major_version ||= fetch_yarn_major_version
+      end
+
+      def self.pnpm_major_version
+        @pnpm_major_version ||= fetch_pnpm_major_version
+      end
+
+      def self.fetch_yarn_major_version
         output = SharedHelpers.run_shell_command("yarn --version")
+        Version.new(output).major
+      end
+
+      def self.fetch_pnpm_major_version
+        output = SharedHelpers.run_shell_command("pnpm --version")
         Version.new(output).major
       end
 

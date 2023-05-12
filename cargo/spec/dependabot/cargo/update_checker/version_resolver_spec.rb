@@ -163,6 +163,21 @@ RSpec.describe Dependabot::Cargo::UpdateChecker::VersionResolver do
       end
     end
 
+    context "when using a toolchain that is too old" do
+      let(:toolchain_file) do
+        Dependabot::DependencyFile.new(
+          name: "rust-toolchain",
+          content: "[toolchain]\nchannel = \"1.67\"\n"
+        )
+      end
+      let(:unprepared_dependency_files) { [manifest, lockfile, toolchain_file] }
+
+      it "raises a helpful error" do
+        expect { subject }.
+          to raise_error(Dependabot::DependencyFileNotEvaluatable)
+      end
+    end
+
     context "using a feature that is not enabled" do
       let(:manifest_fixture_name) { "disabled_feature" }
       let(:lockfile_fixture_name) { "bare_version_specified" }

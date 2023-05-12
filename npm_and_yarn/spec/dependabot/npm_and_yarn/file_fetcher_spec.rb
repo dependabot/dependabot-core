@@ -1787,7 +1787,36 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
       expect(file_fetcher_instance.files.map(&:name)).
         to eq(%w(package.json package-lock.json .npmrc))
       expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content).
-        to eq("registry=https://npm.fury.io")
+        to eq("registry=https://npm.fury.io/dependabot")
+    end
+  end
+
+  context "with no .npmrc but package-lock.json contains a artifactory repository" do
+    before do
+      allow(file_fetcher_instance).to receive(:commit).and_return("sha")
+
+      stub_request(:get, File.join(url, "package.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm6/private_artifactory_repository", "package.json"),
+          headers: json_header
+        )
+
+      stub_request(:get, File.join(url, "package-lock.json?ref=sha")).
+        with(headers: { "Authorization" => "token token" }).
+        to_return(
+          status: 200,
+          body: fixture_to_response("projects/npm6/private_artifactory_repository", "package-lock.json"),
+          headers: json_header
+        )
+    end
+
+    it "infers an npmrc file" do
+      expect(file_fetcher_instance.files.map(&:name)).
+        to eq(%w(package.json package-lock.json .npmrc))
+      expect(file_fetcher_instance.files.find { |f| f.name == ".npmrc" }.content).
+        to eq("registry=https://myRegistry/api/npm/npm")
     end
   end
 end

@@ -91,7 +91,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           let(:requirements) { [] }
 
           it "is updated" do
-            pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
+            skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
             expect(subject.version).to eq(Gem::Version.new("1.10.9"))
           end
         end
@@ -124,7 +124,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
             end
 
             it "is nil" do
-              pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
+              skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
               is_expected.to be_nil
             end
           end
@@ -439,7 +439,7 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::VersionResolver do
           }]
         end
         it "is nil" do
-          pending("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
+          skip("skipped due to https://github.com/dependabot/dependabot-core/issues/2364")
           is_expected.to be_nil
         end
       end

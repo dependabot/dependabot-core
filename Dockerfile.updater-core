@@ -93,20 +93,28 @@ COPY --from=ruby:3.1.4 --chown=dependabot:dependabot /usr/local /usr/local
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.11
+ARG BUNDLER_V2_VERSION=2.4.13
+
+# We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 20.04 has a bug.
+# Once Ubuntu base image pulls in a new enough yaml version, we may not need to
+# explicitly manage this. However, if we do opt to pull it back out, see all changes
+# required in https://github.com/dependabot/dependabot-core/pull/7112
+ARG LIBYAML_VERSION=0.2.5
+RUN curl -sL https://pyyaml.org/download/libyaml/yaml-$LIBYAML_VERSION.tar.gz -o libyaml.tar.gz && \
+  mkdir -p $DEPENDABOT_HOME/src/libyaml && \
+  tar -xvf libyaml.tar.gz -C $DEPENDABOT_HOME/src/libyaml && \
+  rm libyaml.tar.gz
 
 RUN gem install bundler -v $BUNDLER_V2_VERSION --no-document && \
  rm -rf /var/lib/gems/*/cache/* && \
+ bundle config set --global build.psych --with-libyaml-source-dir=$DEPENDABOT_HOME/src/libyaml/yaml-$LIBYAML_VERSION && \
  bundle config set --local path 'vendor' && \
  bundle config set --local frozen 'true' && \
  bundle config set --local without 'development' && \
  bundle install && \
- rm -rf ~/.bundle
+ rm -rf ~/.bundle/cache
 
-# Add project after bundle install to avoid re-installing gems when only the project code changes
 COPY --chown=dependabot:dependabot LICENSE $DEPENDABOT_HOME
-COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
-COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
 
 ENV PATH="$DEPENDABOT_HOME/bin:$PATH"
 ENV DEPENDABOT_NATIVE_HELPERS_PATH="/opt"

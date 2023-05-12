@@ -79,21 +79,20 @@ module Dependabot
               )
             end
           post_process_lockfile(lockfile_body)
+        rescue SharedHelpers::HelperSubprocessFailed => e
+          raise Dependabot::DependencyFileNotResolvable, e.message if e.error_class == "Bundler::SolveFailure"
+
+          raise
         end
 
         def write_temporary_dependency_files
           File.write(gemfile.name, prepared_gemfile_content(gemfile))
           File.write(lockfile.name, sanitized_lockfile_body)
 
-          top_level_gemspecs.each do |gemspec|
-            path = gemspec.name
-            FileUtils.mkdir_p(Pathname.new(path).dirname)
-            updated_content = updated_gemspec_content(gemspec)
-            File.write(path, sanitized_gemspec_content(path, updated_content))
-          end
-
+          write_gemspecs(top_level_gemspecs)
           write_ruby_version_file
-          write_path_gemspecs
+          write_gemspecs(path_gemspecs)
+          write_specification_files
           write_imported_ruby_files
 
           evaled_gemfiles.each do |file|
@@ -111,13 +110,16 @@ module Dependabot
           File.write(path, ruby_version_file.content)
         end
 
-        def write_path_gemspecs
-          path_gemspecs.each do |file|
+        def write_gemspecs(files)
+          files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
-            File.write(path, sanitized_gemspec_content(path, file.content))
+            updated_content = updated_gemspec_content(file)
+            File.write(path, sanitized_gemspec_content(path, updated_content))
           end
+        end
 
+        def write_specification_files
           specification_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
@@ -146,8 +148,7 @@ module Dependabot
 
         def top_level_gemspecs
           dependency_files.
-            select { |file| file.name.end_with?(".gemspec") }.
-            reject(&:support_file?)
+            select { |file| file.name.end_with?(".gemspec") && Pathname.new(file.name).dirname.to_s == "." }
         end
 
         def ruby_version_file

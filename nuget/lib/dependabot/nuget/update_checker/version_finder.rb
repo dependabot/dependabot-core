@@ -307,11 +307,11 @@ module Dependabot
         end
 
         def version_class
-          Nuget::Version
+          dependency.version_class
         end
 
         def requirement_class
-          Nuget::Requirement
+          dependency.requirement_class
         end
 
         def remove_wrapping_zero_width_chars(string)

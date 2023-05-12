@@ -724,7 +724,7 @@ RSpec.describe Dependabot::Bundler::FileUpdater do
           it "generates the correct lockfile" do
             expect(file.content).to include("statesman (2.0.1)")
             expect(file.content).
-              to include "remote: http://github.com/dependabot-fixtures/uk_phone_numbers"
+              to include "remote: https://github.com/dependabot-fixtures/uk_phone_numbers"
           end
         end
       end

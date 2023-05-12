@@ -157,6 +157,18 @@ RSpec.describe Dependabot::Gradle::FileParser do
       end
     end
 
+    context "when dependencies use a `latest.release` or `latest.integration` version" do
+      let(:buildfile_fixture_name) { "gradle_latest_range_build.gradle" }
+
+      it "excludes dependencies with `latest.integration` version" do
+        expect(dependencies.map(&:name)).not_to include("com.github.salomonbrys.kotson:kotson")
+      end
+
+      it "excludes dependencies with `latest.release`" do
+        expect(dependencies.map(&:name)).not_to include("mysql:mysql-connector-java")
+      end
+    end
+
     context "with a version using two properties" do
       let(:buildfile_fixture_name) { "concatenated_properties.gradle" }
 

@@ -14,6 +14,10 @@ module Dependabot
         @updated_dependencies = updated_dependencies
       end
 
+      def paths_requiring_update_check
+        @paths_requiring_update_check ||= fetch_paths_requiring_update_check
+      end
+
       def files_requiring_update
         @files_requiring_update ||=
           dependency_files.select do |file|
@@ -34,6 +38,15 @@ module Dependabot
 
       attr_reader :dependency_files, :updated_dependencies
 
+      def fetch_paths_requiring_update_check
+        # if only a root lockfile exists, it tracks all dependencies
+        return [File.dirname(root_lockfile.name)] if lockfiles == [root_lockfile]
+
+        package_files_requiring_update.map do |file|
+          File.dirname(file.name)
+        end
+      end
+
       def dependency_manifest_requirements
         @dependency_manifest_requirements ||=
           updated_dependencies.flat_map do |dep|
@@ -50,10 +63,27 @@ module Dependabot
       end
 
       def workspaces_lockfile?(lockfile)
-        return false unless ["yarn.lock", "package-lock.json"].include?(lockfile.name)
-        return false unless parsed_root_package_json["workspaces"]
+        return false unless ["yarn.lock", "package-lock.json", "pnpm-lock.yaml"].include?(lockfile.name)
+
+        return false unless parsed_root_package_json["workspaces"] || dependency_files.any? do |file|
+          file.name.end_with?("pnpm-workspace.yaml") && File.dirname(file.name) == File.dirname(lockfile.name)
+        end
 
         updated_dependencies_in_lockfile?(lockfile)
+      end
+
+      def root_lockfile
+        @root_lockfile ||=
+          lockfiles.find do |file|
+            File.dirname(file.name) == "."
+          end
+      end
+
+      def lockfiles
+        @lockfiles ||=
+          dependency_files.select do |file|
+            lockfile?(file)
+          end
       end
 
       def parsed_root_package_json
@@ -88,6 +118,7 @@ module Dependabot
         file.name.end_with?(
           "package-lock.json",
           "yarn.lock",
+          "pnpm-lock.yaml",
           "npm-shrinkwrap.json"
         )
       end

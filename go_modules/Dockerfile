@@ -4,11 +4,11 @@ ARG TARGETARCH
 USER root
 
 # Install Go
-ARG GOLANG_VERSION=1.20.2
+ARG GOLANG_VERSION=1.20.4
 
 # You can find the SHA's here: https://go.dev/dl/
-ARG GOLANG_AMD64_CHECKSUM=4eaea32f59cde4dc635fbc42161031d13e1c780b87097f4b4234cfce671f1768
-ARG GOLANG_ARM64_CHECKSUM=78d632915bb75e9a6356a47a42625fd1a785c83a64a643fedd8f61e31b1b3bef
+ARG GOLANG_AMD64_CHECKSUM=698ef3243972a51ddb4028e4a1ac63dc6d60821bf18e59a807e051fee0a385bd
+ARG GOLANG_ARM64_CHECKSUM=105889992ee4b1d40c7c108555222ca70ae43fccb42e20fbf1eebb822f5e72c6
 
 ENV PATH=/opt/go/bin:$PATH
 RUN cd /tmp \
@@ -23,4 +23,6 @@ COPY go_modules/helpers /opt/go_modules/helpers
 RUN bash /opt/go_modules/helpers/build
 
 USER dependabot
-COPY --chown=dependabot:dependabot go_modules /home/dependabot/go_modules
+COPY --chown=dependabot:dependabot go_modules $DEPENDABOT_HOME/go_modules
+COPY --chown=dependabot:dependabot common $DEPENDABOT_HOME/common
+COPY --chown=dependabot:dependabot updater $DEPENDABOT_HOME/dependabot-updater
