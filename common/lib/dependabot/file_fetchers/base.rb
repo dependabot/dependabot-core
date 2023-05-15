@@ -103,7 +103,7 @@ module Dependabot
       end
 
       def package_manager_version
-        nil
+        raise NotImplementedError
       end
 
       private
