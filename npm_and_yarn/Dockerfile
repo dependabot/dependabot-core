@@ -1,16 +1,25 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
 ENV DEPENDABOT_HOME /home/dependabot
-### JAVASCRIPT
+
+# Check for updates at https://github.com/pnpm/pnpm/releases
 ARG PNPM_VERSION=8.3.1
+
+# Check for updates at https://github.com/yarnpkg/berry/releases
 ARG YARN_VERSION=3.5.0
 
+# See https://github.com/nodesource/distributions#installation-instructions
+ARG NODEJS_VERSION=16.x
+
+# Check for updates at https://github.com/npm/cli/releases
+ARG NPM_VERSION=8.19.4
+
 # Install Node and npm
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
+RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
   nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g npm@8.19.4 \
+  && npm install -g npm@$NPM_VERSION \
   && rm -rf ~/.npm
 
 RUN corepack enable
