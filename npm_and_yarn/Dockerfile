@@ -11,6 +11,7 @@ ARG YARN_VERSION=3.5.0
 ARG NODEJS_VERSION=16.x
 
 # Check for updates at https://github.com/npm/cli/releases
+# This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
 ARG NPM_VERSION=8.19.4
 
 # Install Node and npm
