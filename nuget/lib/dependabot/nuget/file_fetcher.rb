@@ -2,7 +2,7 @@
 
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
-require 'set'
+require "set"
 
 module Dependabot
   module Nuget
@@ -206,6 +206,7 @@ module Dependabot
 
       def nuget_config_files
         return @nuget_config_files if @nuget_config_files
+
         @nuget_config_files = []
         candidate_paths = [*project_files.map { |f| File.dirname(f.name) }, "."].uniq
         visited_directories = Set.new
@@ -218,6 +219,7 @@ module Dependabot
       def search_in_directory_and_parents(dir, visited_directories)
         loop do
           break if visited_directories.include?(dir)
+
           visited_directories << dir
           file = repo_contents(dir: dir).
                  find { |f| f.name.casecmp("nuget.config").zero? }
