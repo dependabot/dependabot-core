@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          # Ensure we start from main in case the workflow is run from a branch
+          ref: "main"
+
       - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
         with:
           # Use the version of bundler specified in `updater/Gemfile.lock`.
