@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          fetch-depth: 0 # DEBUG
+          # fetch-depth: 0 # DEBUG
 
       - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
         with:
@@ -67,6 +67,7 @@ jobs:
 
       - name: Create a PR from the branch with the commit
         run: |
+          git fetch origin
           PR_URL=$(gh pr create --fill) # `fill` re-uses the title / body from the commit
           echo "PR created at URL: $PR_URL"
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
