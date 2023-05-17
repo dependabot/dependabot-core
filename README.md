@@ -535,7 +535,7 @@ recurring payments from Europe, check them out.
 <details><summary>:book: Release guide</summary>
 <p>
 
-Publish a new release to RubyGems by running the ["Gems - Bump Version" workflow](https://github.com/dependabot/dependabot-core/actions/workflows/gems-bump-version.yml) and following the instructions on the job summary.
+Publish a new release to RubyGems by running the [`Gems - Bump Version`](https://github.com/dependabot/dependabot-core/actions/workflows/gems-bump-version.yml) workflow and following the instructions on the job summary.
 
 In a nutshell the process will be:
 
