@@ -148,7 +148,8 @@ module Dependabot
 
         def top_level_gemspecs
           dependency_files.
-            select { |file| file.name.end_with?(".gemspec") && Pathname.new(file.name).dirname.to_s == "." }
+            select { |file| file.name.end_with?(".gemspec") && Pathname.new(file.name).dirname.to_s == "." }.
+            reject(&:support_file?)
         end
 
         def ruby_version_file

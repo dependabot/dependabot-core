@@ -142,7 +142,7 @@ module Dependabot
 
         raise Dependabot::PathDependenciesNotReachable, unfetchable_gems if unfetchable_gems.any?
 
-        gemspec_files
+        gemspec_files.tap { |ar| ar.each { |f| f.support_file = true } }
       end
 
       def path_gemspec_paths
