@@ -214,7 +214,7 @@ GEM
       sawyer (~> 0.9)
     parallel (1.22.1)
     parseconfig (1.0.8)
-    parser (3.2.2.0)
+    parser (3.2.2.1)
       ast (~> 2.4.1)
     pathname-common_prefix (0.0.1)
     psych (5.1.0)
