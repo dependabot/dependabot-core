@@ -85,7 +85,7 @@ module Dependabot
           change_source: dependency_group
         )
       rescue Dependabot::InconsistentRegistryResponse => e
-        error_handler.log_error(
+        error_handler.log_dependency_error(
           dependency: lead_dependency,
           error: e,
           error_type: "inconsistent_registry_response",
@@ -94,9 +94,7 @@ module Dependabot
 
         false
       rescue StandardError => e
-        raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-        error_handler.handle_dependabot_error(error: e, dependency: lead_dependency)
+        error_handler.handle_dependency_error(error: e, dependency: lead_dependency)
 
         false
       end
@@ -144,7 +142,7 @@ module Dependabot
 
         updated_deps
       rescue Dependabot::InconsistentRegistryResponse => e
-        error_handler.log_error(
+        error_handler.log_dependency_error(
           dependency: dependency,
           error: e,
           error_type: "inconsistent_registry_response",
@@ -152,7 +150,7 @@ module Dependabot
         )
         [] # return an empty set
       rescue StandardError => e
-        error_handler.handle_dependabot_error(error: e, dependency: dependency)
+        error_handler.handle_dependency_error(error: e, dependency: dependency)
         [] # return an empty set
       end
 
