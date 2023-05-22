@@ -4,6 +4,7 @@ require "spec_helper"
 require "dependabot/api_client"
 require "dependabot/dependency_change"
 require "dependabot/dependency_snapshot"
+require "dependabot/errors"
 require "dependabot/service"
 
 RSpec.describe Dependabot::Service do
@@ -178,6 +179,7 @@ RSpec.describe Dependabot::Service do
       expect(mock_client).to have_received(:increment_metric).with("apples", tags: { green: 1, red: 2 })
     end
   end
+
   describe "#create_pull_request" do
     include_context :a_pr_was_created
 
@@ -232,6 +234,60 @@ RSpec.describe Dependabot::Service do
 
     it "memoizes a shorthand summary of the error" do
       expect(service.errors).to eql([["epoch_error", nil]])
+    end
+  end
+
+  describe "#capture_exception" do
+    before do
+      allow(Raven).to receive(:capture_exception)
+    end
+
+    let(:error) do
+      Dependabot::DependabotError.new("Something went wrong")
+    end
+
+    it "delegates error capture to Sentry (Raven)" do
+      service.capture_exception(error: error, tags: { foo: "bar" }, extra: { baz: "qux" })
+
+      expect(Raven).to have_received(:capture_exception).with(error, tags: { foo: "bar" }, extra: { baz: "qux" })
+    end
+
+    it "extracts information from a job if provided" do
+      job = OpenStruct.new(id: 1234, package_manager: "bundler", repo_private?: false)
+      service.capture_exception(error: error, job: job)
+
+      expect(Raven).to have_received(:capture_exception).
+        with(error,
+             tags: {
+               update_job_id: 1234,
+               package_manager: "bundler",
+               repo_private: false
+             },
+             extra: {})
+    end
+
+    it "extracts information from a dependency if provided" do
+      dependency = OpenStruct.new(name: "lodash")
+      service.capture_exception(error: error, dependency: dependency)
+
+      expect(Raven).to have_received(:capture_exception).
+        with(error,
+             tags: {},
+             extra: {
+               dependency_name: "lodash"
+             })
+    end
+
+    it "extracts information from a dependency_group if provided" do
+      dependency_group = OpenStruct.new(name: "all-the-things")
+      service.capture_exception(error: error, dependency_group: dependency_group)
+
+      expect(Raven).to have_received(:capture_exception).
+        with(error,
+             tags: {},
+             extra: {
+               dependency_group: "all-the-things"
+             })
     end
   end
 
