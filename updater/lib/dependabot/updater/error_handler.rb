@@ -37,12 +37,12 @@ module Dependabot
 
       # This method handles errors where there is a dependency in the current
       # context. This should be used by preference where possible.
-      def handle_dependency_error(error:, dependency:)
+      def handle_dependency_error(error:, dependency:, dependency_group: nil)
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
-        error_details = error_details_for(error, dependency: dependency)
+        error_details = error_details_for(error, dependency: dependency, dependency_group: dependency_group)
         service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
           error_details: error_details[:"error-detail"],
@@ -71,12 +71,12 @@ module Dependabot
 
       # This method handles errors where there is no dependency in the current
       # context.
-      def handle_job_error(error:)
+      def handle_job_error(error:, dependency_group: nil)
         # If the error is fatal for the run, we should re-raise it rather than
         # pass it back to the service.
         raise error if RUN_HALTING_ERRORS.keys.any? { |err| error.is_a?(err) }
 
-        error_details = error_details_for(error)
+        error_details = error_details_for(error, dependency_group: dependency_group)
         service.record_update_job_error(
           error_type: error_details.fetch(:"error-type"),
           error_details: error_details[:"error-detail"]
@@ -106,7 +106,11 @@ module Dependabot
 
       # This method accepts an error class and returns an appropriate `error_details` hash
       # to be reported to the backend service.
-      def error_details_for(error, dependency: nil) # rubocop:disable Metrics/MethodLength
+      #
+      # For some specific errors, it also passes additional information to the
+      # exception service to aid in debugging, the optional arguments provide
+      # context to pass through in these cases.
+      def error_details_for(error, dependency: nil, dependency_group: nil) # rubocop:disable Metrics/MethodLength
         case error
         when Dependabot::DependencyFileNotResolvable
           {
@@ -190,7 +194,8 @@ module Dependabot
           service.capture_exception(
             error: error,
             job: job,
-            dependency: dependency
+            dependency: dependency,
+            dependency_group: dependency_group
           )
           { "error-type": "unknown_error" }
         end

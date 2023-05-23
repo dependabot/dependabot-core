@@ -3,6 +3,7 @@
 require "spec_helper"
 
 require "dependabot/dependency"
+require "dependabot/dependency_group"
 require "dependabot/job"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
@@ -69,7 +70,8 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:capture_exception).with(
           error: error,
           job: mock_job,
-          dependency: dependency
+          dependency: dependency,
+          dependency_group: nil
         )
 
         expect(Dependabot.logger).to receive(:error).with(
@@ -190,7 +192,8 @@ RSpec.describe Dependabot::Updater::ErrorHandler do
         expect(mock_service).to receive(:capture_exception).with(
           error: error,
           job: mock_job,
-          dependency: nil
+          dependency: nil,
+          dependency_group: nil
         )
 
         expect(Dependabot.logger).to receive(:error).with(
