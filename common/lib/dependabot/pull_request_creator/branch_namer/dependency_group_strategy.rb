@@ -21,7 +21,7 @@ module Dependabot
         # fixed-length name, so we can punt on handling truncation until
         # we determine the strict validation rules for names
         def new_branch_name
-          File.join(prefixes, timestamped_group_name).gsub("/", separator)
+          File.join(prefixes, group_name_with_dependency_digest).gsub("/", separator)
         end
 
         private
@@ -37,11 +37,20 @@ module Dependabot
           ].compact
         end
 
-        # When superseding a grouped update pull request, we will have a period
-        # of time when there are two branches for the group so we use a timestamp
-        # to avoid collisions.
-        def timestamped_group_name
-          "#{dependency_group.name}-#{Time.now.utc.to_i}"
+        # Group pull requests will generally include too many dependencies to include
+        # in the branch name, but we rely on branch names being deterministic for a
+        # given set of dependency changes.
+        #
+        # Let's append a short hash digest of the dependency changes so that we can
+        # meet this guarantee.
+        def group_name_with_dependency_digest
+          "#{dependency_group.name}-#{dependency_digest}"
+        end
+
+        def dependency_digest
+          @dependency_digest ||= Digest::MD5.hexdigest(dependencies.map do |dependency|
+            "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
+          end.join(",")).slice(0, 10)
         end
 
         def package_manager
