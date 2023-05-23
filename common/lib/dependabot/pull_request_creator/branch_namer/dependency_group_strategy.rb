@@ -50,7 +50,7 @@ module Dependabot
         def dependency_digest
           @dependency_digest ||= Digest::MD5.hexdigest(dependencies.map do |dependency|
             "#{dependency.name}-#{dependency.removed? ? 'removed' : dependency.version}"
-          end.join(",")).slice(0, 10)
+          end.sort.join(",")).slice(0, 10)
         end
 
         def package_manager

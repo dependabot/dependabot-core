@@ -64,7 +64,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
         expect(new_namer.new_branch_name).to eql(branch_name)
       end
 
-      it "generates a different branch name for a diffset set of dependencies for the same group" do
+      it "generates a different branch name for a different set of dependencies for the same group" do
         removed_dependency = Dependabot::Dependency.new(
           name: "old_business",
           version: "1.4.0",
@@ -83,6 +83,36 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
           dependency_group: dependency_group
         )
         expect(new_namer.new_branch_name).not_to eql(namer.new_branch_name)
+      end
+
+      it "generates the same branch name regardless of the order of dependencies" do
+        removed_dependency = Dependabot::Dependency.new(
+          name: "old_business",
+          version: "1.4.0",
+          previous_version: "1.4.0",
+          package_manager: "bundler",
+          requirements: {},
+          previous_requirements: {},
+          removed: true
+        )
+
+        forward_namer = described_class.new(
+          dependencies: [dependency, removed_dependency],
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+
+        backward_namer = described_class.new(
+          dependencies: [removed_dependency, dependency],
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+
+        expect(forward_namer.new_branch_name).to eql(backward_namer.new_branch_name)
       end
     end
 
