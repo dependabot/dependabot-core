@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "dependabot/updater/errors"
+
 # This class is responsible for determining how to present a Dependabot::Error
 # to the Service and Logger.
 #
