@@ -84,7 +84,7 @@ module Dependabot
             close_pull_request(reason: :up_to_date)
           end
         rescue StandardError => e
-          error_handler.handle_job_error(error: e)
+          error_handler.handle_job_error(error: e, group: job_group)
         end
 
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:

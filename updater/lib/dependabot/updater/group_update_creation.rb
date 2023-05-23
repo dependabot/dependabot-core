@@ -34,7 +34,7 @@ module Dependabot
           # dependency update
           next if dependency.nil?
 
-          updated_dependencies = compile_updates_for(dependency, dependency_files)
+          updated_dependencies = compile_updates_for(dependency, dependency_files, group)
 
           next unless updated_dependencies.any?
 
@@ -94,7 +94,7 @@ module Dependabot
 
         false
       rescue StandardError => e
-        error_handler.handle_dependency_error(error: e, dependency: lead_dependency)
+        error_handler.handle_dependency_error(error: e, dependency: lead_dependency, dependency_group: dependency_group)
 
         false
       end
@@ -107,7 +107,7 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      def compile_updates_for(dependency, dependency_files) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
         checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
 
         log_checking_for_update(dependency)
@@ -150,7 +150,7 @@ module Dependabot
         )
         [] # return an empty set
       rescue StandardError => e
-        error_handler.handle_dependency_error(error: e, dependency: dependency)
+        error_handler.handle_dependency_error(error: e, dependency: dependency, dependency_group: group)
         [] # return an empty set
       end
 
