@@ -78,8 +78,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       expect(dependency_group_engine.instance_variable_get(:@registered_groups)).to eq([])
 
       # We have to call the original here for the DependencyGroupEngine to actually register the groups
-      expect(dependency_group_engine).to receive(:register).with("group-a", ["dummy-pkg-*"]).and_call_original
-      expect(dependency_group_engine).to receive(:register).with("group-b", ["dummy-pkg-b"]).and_call_original
+      expect(dependency_group_engine).to receive(:register).with("group-a", {"patterns" => ["dummy-pkg-*"]}).and_call_original
+      expect(dependency_group_engine).to receive(:register).with("group-b", {"patterns" => ["dummy-pkg-b"]}).and_call_original
 
       # Groups are registered by the job when a DependencySnapshot is created
       create_dependency_snapshot
