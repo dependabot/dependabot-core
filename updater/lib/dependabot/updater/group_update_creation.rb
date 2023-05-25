@@ -70,7 +70,7 @@ module Dependabot
         Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: all_updated_dependencies,
-          updated_dependency_files: dependency_file_batch.updated_files,
+          updated_dependency_files: dependency_file_batch.changed_files,
           dependency_group: group
         )
       end
