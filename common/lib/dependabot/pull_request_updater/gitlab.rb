@@ -99,7 +99,7 @@ module Dependabot
       # @param [DependencyFile] file
       def file_encoding(file)
         if file.content_encoding == Dependabot::DependencyFile::ContentEncoding::BASE64
-          {encoding: "base64"}
+          { encoding: "base64" }
         else
           {}
         end
