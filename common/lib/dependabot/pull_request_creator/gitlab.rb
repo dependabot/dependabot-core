@@ -108,7 +108,8 @@ module Dependabot
           {
             action: file_action(file),
             file_path: file.type == "symlink" ? file.symlink_target : file.path,
-            content: file.content
+            content: file.content,
+            **file_encoding(file)
           }
         end
       end
@@ -121,6 +122,15 @@ module Dependabot
           "create"
         else
           "update"
+        end
+      end
+
+      # @param [DependencyFile] file
+      def file_encoding(file)
+        if file.content_encoding == Dependabot::DependencyFile::ContentEncoding::BASE64
+          {encoding: "base64"}
+        else
+          {}
         end
       end
 
