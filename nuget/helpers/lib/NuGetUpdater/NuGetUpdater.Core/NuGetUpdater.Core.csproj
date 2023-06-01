@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="GuiLabs.Language.Xml" Version="1.2.60" />
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.5.5" />
   </ItemGroup>
 
   <ItemGroup>
