@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+
+using Microsoft.Build.Locator;
 using Microsoft.Language.Xml;
 
 namespace NuGetUpdater.Core;
@@ -16,7 +17,7 @@ public partial class NuGetUpdaterWorker
     private const string PackagesConfigFileName = "packages.config";
 
     public bool Verbose { get; set; }
-    private TextWriter _logOutput;
+    private readonly TextWriter _logOutput;
 
     public NuGetUpdaterWorker(bool verbose)
     {
@@ -100,7 +101,7 @@ public partial class NuGetUpdaterWorker
             };
 
             Log("    Finding MSBuild...");
-            var msbuildDirectory = await GetPathToMSBuildAsync();
+            var msbuildDirectory = GetPathToMSBuild();
             if (msbuildDirectory is not null)
             {
                 args.Add("-MSBuildPath");
@@ -144,6 +145,10 @@ public partial class NuGetUpdaterWorker
 
             var newProjectFileContents = await File.ReadAllTextAsync(projectPath);
             var normalizedProjectFileContents = NormalizeDirectorySeparatorsInProject(newProjectFileContents);
+
+            // Update binding redirects
+            normalizedProjectFileContents = await BindingRedirectManager.UpdateBindingRedirectsAsync(normalizedProjectFileContents, projectPath);
+
             Log("    Writing project file back to disk");
             await File.WriteAllTextAsync(projectPath, normalizedProjectFileContents);
         }
@@ -172,71 +177,8 @@ public partial class NuGetUpdaterWorker
         return Path.Combine(path1, path2);
     }
 
-    private static async Task<string?> GetPathToMSBuildAsync()
-    {
-        if (_msBuildPath is not null)
-        {
-            return _msBuildPath;
-        }
-
-        var psi = new ProcessStartInfo()
-        {
-            FileName = "dotnet",
-            Arguments = "--list-sdks",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        var process = new Process()
-        {
-            StartInfo = psi,
-            EnableRaisingEvents = true,
-        };
-        var outputLines = new List<string>();
-        process.OutputDataReceived += (_sender, e) => outputLines.Add(e.Data ?? string.Empty);
-        process.ErrorDataReceived += (_sender, e) => outputLines.Add(e.Data ?? string.Empty);
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        var exitTask = process.WaitForExitAsync();
-        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(5));
-        var finishedTask = await Task.WhenAny(exitTask, timeoutTask);
-        if (ReferenceEquals(finishedTask, timeoutTask))
-        {
-            try
-            {
-                process.Kill();
-            }
-            catch
-            {
-                // don't let this kill anything
-            }
-
-            return null;
-        }
-
-        // find last matching line of, e.g.,
-        //   7.0.203 [/usr/share/dotnet/sdk]
-        //   7.0.203 [C:\Program Files\dotnet\sdk]
-        var sdkPathPattern = new Regex(@"^(?<sdkVersion>[^ ]+) +\[(?<sdkBasePath>[^]]+)\]$");
-        for (int i = outputLines.Count - 1; i >= 0; i--)
-        {
-            var outputLine = outputLines[i];
-            var match = sdkPathPattern.Match(outputLine);
-            if (match.Success)
-            {
-                var sdkVersion = match.Groups["sdkVersion"].Value;
-                var sdkBasePath = match.Groups["sdkBasePath"].Value;
-                var fullSdkPath = Path.Combine(sdkBasePath, sdkVersion);
-                _msBuildPath = fullSdkPath;
-                break;
-            }
-        }
-
-        return _msBuildPath;
-    }
-
-    private static string? _msBuildPath;
+    private static string? GetPathToMSBuild()
+        => MSBuildLocator.QueryVisualStudioInstances().FirstOrDefault()?.MSBuildPath;
 
     internal static string NormalizeDirectorySeparatorsInProject(string xml)
     {
