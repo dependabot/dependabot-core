@@ -36,6 +36,40 @@ public class SdkEndToEndTests : EndToEndTestBase
             """);
     }
 
+    // N.b., this test is in direct contradiction with the test immediately below, `UpdateSingleDependencyWithVersionInPropertyInSameFile`
+    //       and will need to be removed once property updates are implemented; this is purely a stopgap
+    [Fact]
+    public async Task UpdatingSingleDependencyWithVersionInPropertyDoesNotDoUpdate()
+    {
+        await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
+            // initial
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
+            
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """,
+            // expected (no change)
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
+            
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
+    }
+
     [Fact(Skip = "package version via property NYI")]
     public async Task UpdateSingleDependencyWithVersionInPropertyInSameFile()
     {
