@@ -64,7 +64,7 @@ public partial class NuGetUpdaterWorker
 
     private async Task RunForProjectAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
-        Log($"Running for project[{projectPath}]");
+        Log($"Running for project [{projectPath}]");
         var projectFileContents = await File.ReadAllTextAsync(projectPath);
         var projectDirectory = Path.GetDirectoryName(projectPath);
         var packagesConfigPath = JoinPath(projectDirectory, PackagesConfigFileName);
@@ -156,7 +156,7 @@ public partial class NuGetUpdaterWorker
         {
             // SDK-style project, modify the XML directly
             Log("  Running for SDK-style project");
-            var updatedProjectFileContents = UpdateProjectReference(projectFileContents, dependencyName, newDependencyVersion);
+            var updatedProjectFileContents = UpdateProjectReference(projectFileContents, dependencyName, previousDependencyVersion, newDependencyVersion);
             await File.WriteAllTextAsync(projectPath, updatedProjectFileContents);
         }
     }
@@ -256,10 +256,19 @@ public partial class NuGetUpdaterWorker
         return projectFilePaths.ToArray();
     }
 
-    private static string UpdateProjectReference(string content, string dependencyName, string newDependencyVersion)
+    private static string UpdateProjectReference(string content, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
         var originalXml = Parser.ParseText(content);
-        var packageReferenceNode = originalXml.Descendants().Single(e => e.Name == "PackageReference" && e.GetAttributeValue("Include") == dependencyName);
+        var packageReferenceNode = originalXml.Descendants().SingleOrDefault(e =>
+            e.Name == "PackageReference" &&
+            e.GetAttributeValue("Include") == dependencyName &&
+            e.GetAttributeValue("Version") == previousDependencyVersion);
+        if (packageReferenceNode is null)
+        {
+            // no change
+            return content;
+        }
+
         var packageReferenceVersionAttribute = packageReferenceNode.GetAttribute("Version");
         var updatedPackageReferenceVersionAttribute = packageReferenceVersionAttribute.WithValue(newDependencyVersion);
         var updatedXml = originalXml.ReplaceNode(packageReferenceVersionAttribute, updatedPackageReferenceVersionAttribute);
