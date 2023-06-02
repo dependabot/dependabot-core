@@ -5,6 +5,7 @@ require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
 
 require "dependabot/dependency_change"
+require "dependabot/environment"
 require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
@@ -269,6 +270,48 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
         expect(dependency_change.updated_dependency_files.map(&:name)).
           to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+      end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is updating vendored dependencies", :vcr do
+    let(:job) do
+      Dependabot::Job.new_update_job(
+        job_id: "1558782000",
+        job_definition: job_definition_with_fetched_files,
+        repo_contents_path: create_temporary_content_directory(fixture: "bundler_vendored")
+      )
+    end
+
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_with_vendoring")
+    end
+
+    let(:dependency_files) do
+      # Let's use the already up-to-date files
+      original_bundler_files(fixture: "bundler_vendored")
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "creates a pull request that includes changes to the vendored files" do
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.length).to eql(2)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b dummy-git-dependency))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+
+        puts dependency_change.updated_dependency_files_hash
+
+        #expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
       end
 
       group_update_all.perform
