@@ -50,6 +50,18 @@ module DummyPkgHelpers
     ]
   end
 
+  def create_temporary_content_directory(fixture:, state: "original")
+    tmp_dir = Dir.mktmpdir
+    FileUtils.cp_r(File.join("spec", "fixtures", fixture, state, "/."), tmp_dir)
+
+    # The content directory needs to a repo
+    Dir.chdir(tmp_dir) do
+      system("git init . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
+    end
+
+    tmp_dir
+  end
+
   def updated_bundler_files_hash(fixture: "bundler")
     updated_bundler_files(fixture: fixture).map(&:to_h)
   end
