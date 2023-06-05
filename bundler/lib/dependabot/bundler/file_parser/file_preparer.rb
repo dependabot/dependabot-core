@@ -43,16 +43,15 @@ module Dependabot
             dependency_files.find { |f| f.name == "gems.rb" }
         end
 
-        def evaled_gemfiles
-          dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }
+      def evaled_gemfiles
+        dependency_files.select do |dependency_file|
+          next if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
+          next if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
+          next if dependency_file.name.start_with?("vendor/")
+
+          true
         end
+      end
 
         def specification_files
           dependency_files.select { |f| f.name.end_with?(".specification") }
