@@ -286,9 +286,9 @@ module Dependabot
         table = "|Package|Update|\n"
         table += "|---|---|\n"
 
-        dependency_links.each do |dependency|
-          table += "|#{from_version_msg(dependency.humanized_previous_version)}" \
-                   "|#{dependency.humanized_version}|"
+        dependencies.each do |dependency|
+          table += "|#{dependency.name}"
+          table += "|#{from_version_msg(dependency.humanized_previous_version)} to #{dependency.humanized_version}|"
         end
 
         table += "\n"
@@ -329,7 +329,7 @@ module Dependabot
       def group_intro
         update_count = dependencies.map(&:name).uniq.count
 
-        return dependency_table if dependencies.count > 5 
+        return dependency_table if update_count > 5 
 
         msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} with #{update_count} update"
         msg += if update_count > 1
