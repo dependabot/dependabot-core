@@ -95,7 +95,7 @@ module Dependabot
           write_specification_files
           write_imported_ruby_files
 
-          evaled_gemfiles_and_vendored_files.each do |file|
+          evaled_gemfiles.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, updated_gemfile_content(file))
@@ -258,13 +258,12 @@ module Dependabot
           lockfile.content.gsub(LOCKFILE_ENDING, "")
         end
 
-        # We want to ensure we copy in any evaled gemfiles as well as any vendor
-        # dependency_files we may have been given from previous updates during
-        # a grouped update.
-        def evaled_gemfiles_and_vendored_files
+        def evaled_gemfiles
           @evaled_gemfiles ||= dependency_files.select do |dependency_file|
             next if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
             next if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
+            # This is functionally the same as not passing vendor files to the bundler classes
+            next if dependency_file.name.start_with?("vendor/")
 
             true
           end
