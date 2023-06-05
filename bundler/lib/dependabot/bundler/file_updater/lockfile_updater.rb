@@ -95,7 +95,7 @@ module Dependabot
           write_specification_files
           write_imported_ruby_files
 
-          evaled_gemfiles.each do |file|
+          evaled_gemfiles_and_vendored_files.each do |file|
             path = file.name
             FileUtils.mkdir_p(Pathname.new(path).dirname)
             File.write(path, updated_gemfile_content(file))
@@ -258,17 +258,16 @@ module Dependabot
           lockfile.content.gsub(LOCKFILE_ENDING, "")
         end
 
-        def evaled_gemfiles
-          @evaled_gemfiles ||=
-            dependency_files.
-            reject { |f| f.name.end_with?(".gemspec") }.
-            reject { |f| f.name.end_with?(".specification") }.
-            reject { |f| f.name.end_with?(".lock") }.
-            reject { |f| f.name.end_with?(".ruby-version") }.
-            reject { |f| f.name == "Gemfile" }.
-            reject { |f| f.name == "gems.rb" }.
-            reject { |f| f.name == "gems.locked" }.
-            reject(&:support_file?)
+        # We want to ensure we copy in any evaled gemfiles as well as any vendor
+        # dependency_files we may have been given from previous updates during
+        # a grouped update.
+        def evaled_gemfiles_and_vendored_files
+          @evaled_gemfiles ||= dependency_files.select do |dependency_file|
+            next if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
+            next if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
+
+            true
+          end
         end
 
         def specification_files

@@ -114,4 +114,36 @@ RSpec.describe Dependabot::Bundler::FileUpdater::LockfileUpdater do
       expect(updated_lockfile_content).to include("docker_registry2 (1.15.0)")
     end
   end
+
+  context "when the dependency files includes a vendored gem" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        version: "1.5.0",
+        previous_version: "1.4.0",
+        requirements: [
+          { requirement: "~> 1.5.0", file: "Gemfile", groups: [], source: nil }
+        ],
+        previous_requirements: [
+          { requirement: "~> 1.4.0", file: "Gemfile", groups: [], source: nil }
+        ],
+        package_manager: "bundler"
+      )
+    end
+
+    let(:files) { [gemfile, lockfile, vendored_gem] }
+    let(:gemfile) do
+      bundler_project_dependency_file("vendored_gems", filename: "Gemfile")
+    end
+    let(:lockfile) do
+      bundler_project_dependency_file("vendored_gems", filename: "Gemfile.lock")
+    end
+    let(:vendored_gem) do
+      bundler_project_dependency_file("vendored_gems", filename: "vendor/cache/statesman-1.2.1.gem")
+    end
+
+    it "upgrades dependency" do
+      expect(updated_lockfile_content).to include("business (1.5.0)")
+    end
+  end
 end
