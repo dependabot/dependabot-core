@@ -238,16 +238,13 @@ module Dependabot
       end
 
       def evaled_gemfiles
-        dependency_files.reject(&method(:bundler_internal_file?))
-      end
+        dependency_files.select do |dependency_file|
+          next if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
+          next if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
+          next if dependency_file.name.start_with?("vendor/")
 
-      # Determines if a given file is part of the Bundler ecosystem
-      def bundler_internal_file?(dependency_file)
-        return true if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
-        return true if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
-        return true if dependency_file.name.start_with?("vendor/")
-
-        false
+          true
+        end
       end
 
       def lockfile
