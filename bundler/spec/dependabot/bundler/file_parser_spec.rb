@@ -825,5 +825,13 @@ RSpec.describe Dependabot::Bundler::FileParser do
         end
       end
     end
+
+    context "when dependency_files includes the vendor directory" do
+      let(:dependency_files) do
+        bundler_project_dependency_files("vendored_gems")
+      end
+
+      its(:length) { is_expected.to eq(2) }
+    end
   end
 end

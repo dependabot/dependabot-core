@@ -245,6 +245,7 @@ module Dependabot
       def bundler_internal_file?(dependency_file)
         return true if %w(Gemfile gems.rb gems.locked).include?(dependency_file.name)
         return true if dependency_file.name.end_with?(*%w(.gemspec .specification .lock .ruby-version))
+        return true if dependency_file.name.start_with?("vendor/")
 
         false
       end
