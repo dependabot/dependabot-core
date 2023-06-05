@@ -322,11 +322,37 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b dummy-git-dependency))
 
         # We updated the right files correctly.
-        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(8)
 
-        puts dependency_change.updated_dependency_files_hash
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find { |file| file.path == "/Gemfile" }
+        expect(gemfile.content).to eql(fixture("bundler_vendored/updated/Gemfile"))
+        gemfile_lock = dependency_change.updated_dependency_files.find { |file| file.path == "/Gemfile.lock" }
+        expect(gemfile_lock.content).to eql(fixture("bundler_vendored/updated/Gemfile.lock"))
 
-        #expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
+        # We've deleted the old version of dummy-pkg-b
+        old_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/vendor/cache/dummy-pkg-b-1.1.0.gem"
+        end
+        expect(old_dummy_pkg_b.operation).to eql("delete")
+
+        # We've created the new version of dummy-pkg-b
+        new_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/vendor/cache/dummy-pkg-b-1.2.0.gem"
+        end
+        expect(new_dummy_pkg_b.operation).to eql("create")
+
+        # We've deleted the old version of the vendored git dependency
+        old_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
+          file.path.start_with?("/vendor/cache/ruby-dummy-git-dependency-20151f9b67c8")
+        end
+        expect(old_git_dependency_files.map(&:operation)).to eql(%w(delete delete))
+
+        # We've created the new version of the vendored git dependency
+        new_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
+          file.path.start_with?("/vendor/cache/ruby-dummy-git-dependency-c0e25c2eb332")
+        end
+        expect(new_git_dependency_files.map(&:operation)).to eql(%w(create create))
       end
 
       group_update_all.perform
