@@ -314,5 +314,13 @@ RSpec.describe Dependabot::Bundler::UpdateChecker::FilePreparer do
       its(:content) { is_expected.to include(%("business", ">= 1.4.3")) }
       its(:content) { is_expected.to include(%("statesman", "~> 1.2.0")) }
     end
+
+    context "when the dependency files include the vendor directory" do
+      let(:dependency_files) { bundler_project_dependency_files("vendored_gems") }
+
+      it "prepared_dependency_files does not include any vendored gems" do
+        expect(prepared_dependency_files.select{ |f| f.name.start_with?("vendor/") }).to be_empty
+      end
+    end
   end
 end
