@@ -159,17 +159,32 @@ module Dependabot
 
         path = Pathname.new(File.join(directory, filename)).cleanpath.to_path
         content = _fetch_file_content(path, fetch_submodules: fetch_submodules)
-        type = "symlink" if @linked_paths.key?(path.gsub(%r{^/}, ""))
+        clean_path = path.gsub(%r{^/}, "")
+
+        linked_path = symlinked_subpath(clean_path)
+        type = "symlink" if linked_path
+        symlink_target = clean_path.sub(linked_path, @linked_paths.dig(linked_path, :path)) if type == "symlink"
 
         DependencyFile.new(
           name: Pathname.new(filename).cleanpath.to_path,
           directory: directory,
           type: type,
           content: content,
-          symlink_target: @linked_paths.dig(path.gsub(%r{^/}, ""), :path)
+          symlink_target: symlink_target
         )
       rescue *CLIENT_NOT_FOUND_ERRORS
         raise Dependabot::DependencyFileNotFound, path
+      end
+
+      # Finds the first subpath in path that is a symlink
+      def symlinked_subpath(path)
+        subpaths(path).find { |subpath| @linked_paths.key?(subpath) }
+      end
+
+      # Given a "foo/bar/baz" path, returns ["foo", "foo/bar", "foo/bar/baz"]
+      def subpaths(path)
+        components = path.split("/")
+        components.map { |component| components[0..components.index(component)].join("/") }
       end
 
       def repo_contents(dir: ".", ignore_base_directory: false,
