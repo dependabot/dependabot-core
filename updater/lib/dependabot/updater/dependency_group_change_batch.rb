@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
-# This class is responsible for tracking changes to the original files as we
-# make changes
+# This class is responsible for aggregating individual DependencyChange objects
+# by merging the sequential changes to files and the updated dependency list
+# into a data structure that can then be used to create a single
+# DependencyChange object which represents the aggregated outcome.
 module Dependabot
   class Updater
-    class GroupDependencyFileBatch
+    class DependencyGroupChangeBatch
+      attr_reader :updated_dependencies
+
       def initialize(initial_dependency_files)
+        @updated_dependencies = []
+
         @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hash|
           hash[file.path] = { file: file, changed: false, changes: 0 }
         end
@@ -28,9 +34,20 @@ module Dependabot
         end
       end
 
-      # Replaces the existing files
-      def merge(updated_files)
-        updated_files.each do |updated_file|
+      def merge(dependency_change)
+        # FIXME: @updated_dependencies may need to be de-duped
+        #
+        # To start out with, using a variant on the 'existing_pull_request'
+        # logic might make sense -or- we could employ a one-and-done rule
+        # where the first update to a dependency blocks subsequent changes.
+        #
+        # In a follow-up iteration, a 'shared workspace' could provide the
+        # filtering for us assuming we iteratively make file changes for
+        # each Array of dependencies in the batch and the FileUpdater tells
+        # us which cannot be applied.
+        @updated_dependencies.concat(dependency_change.updated_dependencies)
+
+        dependency_change.updated_dependency_files.each do |updated_file|
           existing_file = @dependency_file_batch[updated_file.path]
 
           change_count = if existing_file
