@@ -41,6 +41,9 @@ public partial class NuGetUpdaterWorker
             case ".sln":
                 await RunForSolutionAsync(filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
                 break;
+            case ".proj":
+                await RunForProjFileAsync(filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
+                break;
             case ".csproj":
             case ".fsproj":
             case ".vbproj":
@@ -59,6 +62,20 @@ public partial class NuGetUpdaterWorker
         {
             var projectFullPath = JoinPath(solutionDirectory, projectSubPath);
             await RunForProjectAsync(projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
+        }
+    }
+
+    private async Task RunForProjFileAsync(string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    {
+        Log($"Running for proj file [{projFilePath}]");
+        var projectFilePaths = MSBuildHelper.GetAllProjectPaths(projFilePath);
+        foreach (var projectFullPath in projectFilePaths)
+        {
+            // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
+            if (File.Exists(projectFullPath))
+            {
+                await RunForProjectAsync(projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
+            }
         }
     }
 
