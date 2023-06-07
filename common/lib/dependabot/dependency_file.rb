@@ -44,7 +44,7 @@ module Dependabot
       @type = type
 
       begin
-        @mode = File.stat((symlink_target || path).sub(%r{^/}, "")).mode.to_s(8)
+        @mode = File.stat(realpath).mode.to_s(8)
       rescue StandardError
         @mode = mode
       end
@@ -74,6 +74,10 @@ module Dependabot
 
     def path
       Pathname.new(File.join(directory, name)).cleanpath.to_path
+    end
+
+    def realpath
+      (symlink_target || path).sub(%r{^/}, "")
     end
 
     def ==(other)
