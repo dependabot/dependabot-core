@@ -15,7 +15,7 @@ module Dependabot
         end
 
         Dependabot.logger.debug("Starting with '#{@dependency_file_batch.count}' dependency files:")
-        debug_current_state
+        debug_current_file_state
       end
 
       # Returns an array of DependencyFile objects for the current state
@@ -58,11 +58,25 @@ module Dependabot
           @dependency_file_batch[updated_file.path] = { file: updated_file, changed: true, changes: change_count + 1 }
         end
 
+        Dependabot.logger.debug("Dependencies updated:")
+        debug_updated_dependencies
+
         Dependabot.logger.debug("Dependency files updated:")
-        debug_current_state
+        debug_current_file_state
       end
 
-      def debug_current_state
+      private
+
+      def debug_updated_dependencies
+        return unless Dependabot.logger.debug?
+
+        @updated_dependencies.each do |dependency|
+          version_change = "#{dependency.humanized_previous_version} to #{dependency.humanized_version}"
+          Dependabot.logger.debug(" - #{dependency.name} ( #{version_change} )")
+        end
+      end
+
+      def debug_current_file_state
         return unless Dependabot.logger.debug?
 
         @dependency_file_batch.each do |path, data|
