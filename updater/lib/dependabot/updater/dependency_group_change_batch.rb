@@ -1,15 +1,13 @@
 # frozen_string_literal: true
 
 # This class is responsible for aggregating individual DependencyChange objects
-# by merging the sequential changes to files and the updated dependency list
-# into a data structure that can then be used to create a single
-# DependencyChange object which represents the aggregated outcome.
+# by tracking changes to individual files and the overall dependency list.
 module Dependabot
   class Updater
     class DependencyGroupChangeBatch
       attr_reader :updated_dependencies
 
-      def initialize(initial_dependency_files)
+      def initialize(initial_dependency_files:)
         @updated_dependencies = []
 
         @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hash|
@@ -21,14 +19,14 @@ module Dependabot
       end
 
       # Returns an array of DependencyFile objects for the current state
-      def dependency_files
+      def current_dependency_files
         @dependency_file_batch.map do |_path, data|
           data[:file]
         end
       end
 
       # Returns an array of DependencyFile objects that have changed at least once
-      def updated_files
+      def updated_dependency_files
         @dependency_file_batch.filter_map do |_path, data|
           data[:file] if data[:changed]
         end

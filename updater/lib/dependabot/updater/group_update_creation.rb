@@ -8,9 +8,8 @@ require "dependabot/updater/dependency_group_change_batch"
 #
 # When included in an Operation it expects the following to be available:
 # - job: the current Dependabot::Job object
-# - dependency_snapshot: the Dependabot::DependencySnapshot of the current
-#   repo state
-# - error_handler: a Dependabot::UpdaterErrorHandler to report
+# - dependency_snapshot: the Dependabot::DependencySnapshot of the current state
+# - error_handler: a Dependabot::UpdaterErrorHandler to report any problems to
 #
 module Dependabot
   class Updater
@@ -19,10 +18,15 @@ module Dependabot
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       def compile_all_dependency_changes_for(group)
-        group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(dependency_snapshot.dependency_files)
+        group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
+          initial_dependency_files: dependency_snapshot.dependency_files
+        )
 
         group.dependencies.each do |dependency|
-          dependency_files = group_changes.dependency_files
+          # Get the current state of the dependency files for use in this iteration
+          dependency_files = group_changes.current_dependency_files
+
+          # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
           dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
 
@@ -53,7 +57,7 @@ module Dependabot
         Dependabot::DependencyChange.new(
           job: job,
           updated_dependencies: group_changes.updated_dependencies,
-          updated_dependency_files: group_changes.updated_files,
+          updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
       end
