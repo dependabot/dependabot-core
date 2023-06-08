@@ -38,7 +38,7 @@ module Dependabot
 
         if lockfile && dependencies.any?(&:appears_in_lockfile?)
           updated_files <<
-            updated_file(file: lockfile, content: updated_lockfile_content)
+            updated_file(file: lockfile, content: updated_lockfile_content(gemfile, lockfile))
         end
 
         top_level_gemspecs.each do |file|
@@ -48,12 +48,8 @@ module Dependabot
             updated_file(file: file, content: updated_gemspec_content(file))
         end
 
-        evaled_gemfiles.each do |file|
-          next unless file_changed?(file)
-
-          updated_files <<
-            updated_file(file: file, content: updated_gemfile_content(file))
-        end
+        updated_files += updated_evaled_gemfiles
+        updated_files += updated_evaled_lockfiles
 
         check_updated_files(updated_files)
 
@@ -132,6 +128,39 @@ module Dependabot
           reject { |f| f.name == "gems.locked" }
       end
 
+      def evaled_lockfiles
+        @evaled_lockfiles ||=
+          dependency_files.
+          select { |f| f.name.end_with?(".lock") }.
+          reject { |f| f.name == "Gemfile.lock" }
+      end
+
+      def updated_evaled_gemfiles
+        updated = []
+        evaled_gemfiles.each do |file|
+          next unless file_changed?(file)
+
+          updated <<
+            updated_file(file: file, content: updated_gemfile_content(file))
+        end
+        updated
+      end
+
+      def updated_evaled_lockfiles
+        return [] unless dependencies.any?(&:appears_in_lockfile?)
+
+        updated = []
+        evaled_lockfiles.each do |file|
+          matching_gemfile_name = file.name.match(/.*(?=\.lock)/)[0]
+          matching_gemfile = evaled_gemfiles.find { |g| g.name == matching_gemfile_name }
+          next if matching_gemfile.nil?
+
+          updated <<
+            updated_file(file: file, content: updated_lockfile_content(matching_gemfile, file))
+        end
+        updated
+      end
+
       def updated_gemfile_content(file)
         GemfileUpdater.new(
           dependencies: dependencies,
@@ -146,11 +175,11 @@ module Dependabot
         ).updated_gemspec_content
       end
 
-      def updated_lockfile_content
+      def updated_lockfile_content(gem, lock)
         @updated_lockfile_content ||=
           LockfileUpdater.new(
-            gemfile: gemfile,
-            lockfile: lockfile,
+            gemfile: gem,
+            lockfile: lock,
             dependencies: dependencies,
             dependency_files: dependency_files,
             repo_contents_path: repo_contents_path,
