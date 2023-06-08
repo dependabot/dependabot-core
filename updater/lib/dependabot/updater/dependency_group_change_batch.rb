@@ -33,19 +33,31 @@ module Dependabot
       end
 
       def merge(dependency_change)
-        # FIXME: @updated_dependencies may need to be de-duped
-        #
-        # To start out with, using a variant on the 'existing_pull_request'
-        # logic might make sense -or- we could employ a one-and-done rule
-        # where the first update to a dependency blocks subsequent changes.
-        #
-        # In a follow-up iteration, a 'shared workspace' could provide the
-        # filtering for us assuming we iteratively make file changes for
-        # each Array of dependencies in the batch and the FileUpdater tells
-        # us which cannot be applied.
-        @updated_dependencies.concat(dependency_change.updated_dependencies)
+        merge_dependency_changes(dependency_change.updated_dependencies)
+        merge_file_changes(dependency_change.updated_dependency_files)
 
-        dependency_change.updated_dependency_files.each do |updated_file|
+        Dependabot.logger.debug("Dependencies updated:")
+        debug_updated_dependencies
+
+        Dependabot.logger.debug("Dependency files updated:")
+        debug_current_file_state
+      end
+
+      private
+
+      # We should retain a list of all dependencies that we change, in future we may need to account for the folder
+      # in which these changes are made to permit-cross folder updates of the same dependency.
+      #
+      # This list may contain duplicates if we make iterative updates to a Dependency within a single group, but
+      # rather than re-write the Dependency objects to account for the changes from the lowest previous version
+      # to the final version, we should defer it to the Dependabot::PullRequestCreator::MessageBuilder as a
+      # presentation concern.
+      def merge_dependency_changes(updated_dependencies)
+        @updated_dependencies.concat(updated_dependencies)
+      end
+
+      def merge_file_changes(updated_dependency_files)
+        updated_dependency_files.each do |updated_file|
           existing_file = @dependency_file_batch[updated_file.path]
 
           change_count = if existing_file
@@ -57,15 +69,7 @@ module Dependabot
 
           @dependency_file_batch[updated_file.path] = { file: updated_file, changed: true, changes: change_count + 1 }
         end
-
-        Dependabot.logger.debug("Dependencies updated:")
-        debug_updated_dependencies
-
-        Dependabot.logger.debug("Dependency files updated:")
-        debug_current_file_state
       end
-
-      private
 
       def debug_updated_dependencies
         return unless Dependabot.logger.debug?
