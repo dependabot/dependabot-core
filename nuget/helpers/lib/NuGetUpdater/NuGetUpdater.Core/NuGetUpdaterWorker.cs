@@ -7,6 +7,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
+using DiffPlex;
+using DiffPlex.DiffBuilder;
+using DiffPlex.DiffBuilder.Model;
+
 using Microsoft.Build.Locator;
 using Microsoft.Language.Xml;
 
@@ -174,8 +178,32 @@ public partial class NuGetUpdaterWorker
             // SDK-style project, modify the XML directly
             Log("  Running for SDK-style project");
             var updatedProjectFileContents = UpdateProjectReference(projectFileContents, dependencyName, previousDependencyVersion, newDependencyVersion);
-            await File.WriteAllTextAsync(projectPath, updatedProjectFileContents);
+            if (HasAnyNonWhitespaceChanges(projectFileContents, updatedProjectFileContents))
+            {
+                await File.WriteAllTextAsync(projectPath, updatedProjectFileContents);
+            }
         }
+    }
+
+    private static bool HasAnyNonWhitespaceChanges(string oldText, string newText)
+    {
+        // Ignore white space
+        oldText = Regex.Replace(oldText, @"\s+", string.Empty);
+        newText = Regex.Replace(newText, @"\s+", string.Empty);
+
+        var diffBuilder = new InlineDiffBuilder(new Differ());
+        var diff = diffBuilder.BuildDiffModel(oldText, newText);
+        foreach (var line in diff.Lines)
+        {
+            if (line.Type is ChangeType.Inserted ||
+                line.Type is ChangeType.Deleted ||
+                line.Type is ChangeType.Modified)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string JoinPath(string? path1, string path2)
