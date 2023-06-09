@@ -149,7 +149,7 @@ module Dependabot
         evaled_lockfiles.each do |file|
           matching_gemfile_name = file.name.match(/.*(?=\.lock)/)[0]
           matching_gemfile = evaled_gemfiles.find { |g| g.name == matching_gemfile_name }
-          next if matching_gemfile.nil?
+          matching_gemfile = gemfile if matching_gemfile.nil?
 
           updated <<
             updated_file(file: file, content: updated_lockfile_content(matching_gemfile, file))
