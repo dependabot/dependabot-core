@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "digest"
+
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/dependency_group"
@@ -47,6 +49,70 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
 
       it "returns the name of the dependency group prefixed correctly" do
         expect(namer.new_branch_name).to start_with("dependabot/bundler/my-dependency-group")
+      end
+
+      it "generates a deterministic branch name for a given set of dependencies" do
+        branch_name = namer.new_branch_name
+        new_namer = described_class.new(
+          dependencies: dependencies,
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+        sleep 1 # ensure the timestamp changes
+        expect(new_namer.new_branch_name).to eql(branch_name)
+      end
+
+      it "generates a different branch name for a different set of dependencies for the same group" do
+        removed_dependency = Dependabot::Dependency.new(
+          name: "old_business",
+          version: "1.4.0",
+          previous_version: "1.4.0",
+          package_manager: "bundler",
+          requirements: {},
+          previous_requirements: {},
+          removed: true
+        )
+
+        new_namer = described_class.new(
+          dependencies: [dependency, removed_dependency],
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+        expect(new_namer.new_branch_name).not_to eql(namer.new_branch_name)
+      end
+
+      it "generates the same branch name regardless of the order of dependencies" do
+        removed_dependency = Dependabot::Dependency.new(
+          name: "old_business",
+          version: "1.4.0",
+          previous_version: "1.4.0",
+          package_manager: "bundler",
+          requirements: {},
+          previous_requirements: {},
+          removed: true
+        )
+
+        forward_namer = described_class.new(
+          dependencies: [dependency, removed_dependency],
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+
+        backward_namer = described_class.new(
+          dependencies: [removed_dependency, dependency],
+          files: [gemfile],
+          target_branch: target_branch,
+          separator: separator,
+          dependency_group: dependency_group
+        )
+
+        expect(forward_namer.new_branch_name).to eql(backward_namer.new_branch_name)
       end
     end
 
