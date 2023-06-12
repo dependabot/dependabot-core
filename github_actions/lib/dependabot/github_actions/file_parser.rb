@@ -38,7 +38,7 @@ module Dependabot
       def workfile_file_dependencies(file)
         dependency_set = DependencySet.new
 
-        json = YAML.safe_load(file.content, aliases: true)
+        json = YAML.safe_load(file.content, aliases: true, permitted_classes: [Date, Time, Symbol])
         return dependency_set if json.nil?
 
         uses_strings = deep_fetch_uses(json.fetch("jobs", json.fetch("runs", nil))).uniq
