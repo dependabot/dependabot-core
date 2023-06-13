@@ -385,6 +385,14 @@ RSpec.describe Dependabot::GithubActions::UpdateChecker do
 
         it { is_expected.to eq(Gem::Version.new("1.1.0")) }
       end
+
+      context "and there's a higher version tag, but one not matching the existing tag format" do
+        let(:upload_pack_fixture) { "codeql" }
+        let(:v2_3_6_tag_sha) { "83f0fe6c4988d98a455712a27f0255212bba9bd4" }
+        let(:reference) { v2_3_6_tag_sha }
+
+        it { is_expected.to eq(Gem::Version.new("2.3.6")) }
+      end
     end
 
     context "given a dependency with multiple git refs" do

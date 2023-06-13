@@ -146,9 +146,9 @@ module Dependabot
     end
 
     def local_tag_for_pinned_sha
-      return unless pinned_ref_looks_like_commit_sha?
+      return @local_tag_for_pinned_sha if defined?(@local_tag_for_pinned_sha)
 
-      most_specific_version_tag_for_sha(ref)
+      @local_tag_for_pinned_sha = most_specific_version_tag_for_sha(ref) if pinned_ref_looks_like_commit_sha?
     end
 
     def git_repo_reachable?
@@ -335,10 +335,18 @@ module Dependabot
     end
 
     def matches_existing_prefix?(tag)
-      return true unless ref_or_branch&.match?(VERSION_REGEX)
+      return true unless ref_or_branch
 
-      ref_or_branch.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
-        tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
+      if version_tag?(ref_or_branch)
+        same_prefix?(ref_or_branch, tag)
+      else
+        local_tag_for_pinned_sha.nil? || same_prefix?(local_tag_for_pinned_sha, tag)
+      end
+    end
+
+    def same_prefix?(tag, other_tag)
+      tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "") ==
+        other_tag.gsub(VERSION_REGEX, "").gsub(/v$/i, "")
     end
 
     def to_local_tag(tag)
