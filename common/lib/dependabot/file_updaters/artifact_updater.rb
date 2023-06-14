@@ -49,14 +49,8 @@ module Dependabot
             operation = Dependabot::DependencyFile::Operation::UPDATE
             operation = Dependabot::DependencyFile::Operation::DELETE if type == "D"
             operation = Dependabot::DependencyFile::Operation::CREATE if type == "??"
-            encoding = ""
-            encoded_content = File.read(path) unless operation == Dependabot::DependencyFile::Operation::DELETE
-            if binary_file?(path)
-              encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-              if operation != Dependabot::DependencyFile::Operation::DELETE
-                encoded_content = Base64.encode64(encoded_content)
-              end
-            end
+
+            encoded_content, encoding = get_encoded_file_contents(path, operation)
 
             create_dependency_file(
               name: file_path.to_s,
@@ -74,6 +68,24 @@ module Dependabot
       TEXT_ENCODINGS = %w(us-ascii utf-8).freeze
 
       attr_reader :repo_contents_path, :target_directory
+
+      def get_encoded_file_contents(path, operation)
+        encoded_content = nil
+        encoding = ""
+
+        return encoded_content, encoding if operation == Dependabot::DependencyFile::Operation::DELETE
+
+        encoded_content = File.read(path)
+
+        if binary_file?(path)
+          encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
+          if operation != Dependabot::DependencyFile::Operation::DELETE
+            encoded_content = Base64.encode64(encoded_content)
+          end
+        end
+
+        [encoded_content, encoding]
+      end
 
       def binary_file?(path)
         return false unless File.exist?(path)
