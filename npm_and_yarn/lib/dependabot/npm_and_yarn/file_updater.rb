@@ -3,7 +3,7 @@
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
-require "dependabot/file_updaters/supplement_updater"
+require "dependabot/file_updaters/artifact_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
@@ -96,14 +96,14 @@ module Dependabot
       end
 
       def install_state_updater
-        Dependabot::FileUpdaters::SupplementUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
           target_directory: install_state_path
         )
       end
 
       def pnp_updater
-        Dependabot::FileUpdaters::SupplementUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
           target_directory: "./"
         )

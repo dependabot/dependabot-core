@@ -7,7 +7,7 @@ require "dependabot/dependency_file"
 # and returned as along with anything managed by the FileUpdater itself.
 module Dependabot
   module FileUpdaters
-    class SupplementUpdater
+    class ArtifactUpdater
       # @param repo_contents_path [String, nil] the path we cloned the repository into
       # @param target_directory [String, nil] the path within a project directory we should inspect for changes
       def initialize(repo_contents_path:, target_directory:)

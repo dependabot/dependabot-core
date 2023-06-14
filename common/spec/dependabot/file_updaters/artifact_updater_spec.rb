@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/file_updaters/supplement_updater"
+require "dependabot/file_updaters/artifact_updater"
 
-RSpec.describe Dependabot::FileUpdaters::SupplementUpdater do
+RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
   let(:updater) do
     described_class.new(
       repo_contents_path: repo_contents_path,

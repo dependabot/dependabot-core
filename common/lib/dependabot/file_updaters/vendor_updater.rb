@@ -1,20 +1,20 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_file"
-require "dependabot/file_updaters/supplement_updater"
+require "dependabot/file_updaters/artifact_updater"
 
-# This class is a specialisation of the SupplementUpdater which should be used
-# for vendored files so any files it creates are properly flagged as relating
-# to vendoring of dependencies.
+# This class is a specialisation of the ArtifactUpdater which should be used
+# for vendored files so any DependencyFile objects it creates are properly
+# flagged.
 #
-# This flagging ensures that the Updater and other components while handle them
-# correctly when compiling grouped updates.
+# This flagging ensures that the Updater will handle them correctly when
+# compiling grouped updates.
 module Dependabot
   module FileUpdaters
-    class VendorUpdater < SupplementUpdater
+    class VendorUpdater < ArtifactUpdater
       # This provides backwards compatability for anyone who used this class
-      # before the base class was introduced and aligns the method's public
-      # signatures with it's special-case domain.
+      # before the base ArtifactUpdater class was introduced and aligns the
+      # method's public signatures with it's special-case domain.
       def initialize(repo_contents_path:, vendor_dir:)
         @repo_contents_path = repo_contents_path
         @vendor_dir = vendor_dir
