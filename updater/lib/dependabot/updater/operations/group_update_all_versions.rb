@@ -110,6 +110,8 @@ module Dependabot
           end
         end
 
+        # If a PR exists for a group, we defer to this logic to determine if the existing changes
+        # still apply or if we need to replace the existing PR.
         def run_refresh_for(group, pull_request)
           Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest.new(
             service: service,
@@ -122,6 +124,9 @@ module Dependabot
             operation.previous_dependency_names = pull_request["dependencies"].map do |dependency|
               dependency["dependency-name"]
             end
+            # Unlike a standalone refresh job, we shouldn't rebase the PR - we only care about
+            # replacing it if the target dependencies or versions have changed.
+            operation.defer_rebasing_existing_prs = true
           end.perform
         end
 

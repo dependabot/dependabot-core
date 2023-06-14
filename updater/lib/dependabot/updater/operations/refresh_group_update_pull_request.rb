@@ -41,7 +41,10 @@ module Dependabot
         # We permit these attributes to be set to override obtaining these values from
         # the job definition, which enables GroupUpdateAllVersions to defer to this
         # class with information from an existing pull request overriding the job.
-        attr_writer :job_group, :job_group_name, :previous_dependency_names
+        attr_writer :defer_rebasing_existing_prs,
+                    :job_group,
+                    :job_group_name,
+                    :previous_dependency_names
 
         def initialize(service:, job:, dependency_snapshot:, error_handler:)
           @service = service
@@ -93,6 +96,10 @@ module Dependabot
           @previous_dependency_names || job.dependencies
         end
 
+        def defer_rebasing_existing_prs
+          @defer_rebasing_existing_prs || false
+        end
+
         def upsert_pull_request_with_error_handling(dependency_change)
           if dependency_change.updated_dependencies.any?
             upsert_pull_request(dependency_change)
@@ -116,25 +123,24 @@ module Dependabot
         # - Supersede the existing PR if the dependencies are the same but the target verisons have changed
         def upsert_pull_request(dependency_change)
           if should_replace_existing_pr?(dependency_change)
-            Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
-            close_pull_request(reason: :dependencies_changed)
-            Dependabot.logger.info("Creating a new pull request for '#{job_group.name}'")
-            service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+            replace_existing_pr(dependency_change)
           elsif matches_existing_pr?(dependency_change)
-            Dependabot.logger.info("Updating pull request for '#{job_group.name}'")
-            service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+            rebase_existing_pr(dependency_change)
           else
-            # If the changes do not match an existing PR, then we should open a new pull request and leave it to
-            # the backend to close the existing pull request with a comment that it has been superseded.
-            Dependabot.logger.info("Target versions have changed, existing Pull Request should be superseded")
-            Dependabot.logger.info("Creating a new pull request for '#{job_group.name}'")
-            service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+            supersede_existing_pr(dependency_change)
           end
         end
 
         def should_replace_existing_pr?(dependency_change)
           dependency_change.updated_dependencies.map(&:name).map(&:downcase) !=
             previous_dependency_names.map(&:downcase)
+        end
+
+        def replace_existing_pr(dependency_change)
+          Dependabot.logger.info("Dependencies have changed, closing existing Pull Request")
+          close_pull_request(reason: :dependencies_changed)
+          Dependabot.logger.info("Creating a new pull request for '#{job_group.name}'")
+          service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         def matches_existing_pr?(dependency_change)
@@ -152,6 +158,24 @@ module Dependabot
             pr["dependency-group-name"] == job_group.name &&
               Set.new(pr["dependencies"]) == updated_dependencies_set
           end
+        end
+
+        def rebase_existing_pr(dependency_change)
+          if defer_rebasing_existing_prs
+            Dependabot.logger.info("No new changes required for '#{job_group.name}'")
+            return
+          end
+
+          Dependabot.logger.info("Updating pull request for '#{job_group.name}'")
+          service.update_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
+        end
+
+        def supersede_existing_pr(dependency_change)
+          # If the changes do not match an existing PR, then we should open a new pull request and leave it to
+          # the backend to close the existing pull request with a comment that it has been superseded.
+          Dependabot.logger.info("Target versions have changed, existing Pull Request should be superseded")
+          Dependabot.logger.info("Creating a new pull request for '#{job_group.name}'")
+          service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
         end
 
         def close_pull_request(reason:)
