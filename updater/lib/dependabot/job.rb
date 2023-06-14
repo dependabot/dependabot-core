@@ -257,7 +257,7 @@ module Dependabot
       return if dependency_groups.nil?
 
       dependency_groups.each do |group|
-        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"]["patterns"])
+        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
       end
     end
 

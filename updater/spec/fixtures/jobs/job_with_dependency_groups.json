@@ -37,7 +37,8 @@
       {
         "name": "group-a",
         "rules": { 
-          "patterns": ["dummy-pkg-*"]
+          "patterns": ["dummy-pkg-*"],
+          "exclude-patterns": ["dummy-pkg-b"]
         }
       },
       {

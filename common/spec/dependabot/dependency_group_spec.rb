@@ -8,7 +8,7 @@ require "dependabot/dependency"
 RSpec.describe Dependabot::DependencyGroup do
   let(:dependency_group) { described_class.new(name: name, rules: rules) }
   let(:name) { "test_group" }
-  let(:rules) { ["test-*"] }
+  let(:rules) { { "patterns" => ["test-*"] } }
 
   let(:test_dependency1) do
     Dependabot::Dependency.new(
