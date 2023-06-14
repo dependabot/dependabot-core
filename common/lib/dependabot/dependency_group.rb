@@ -15,7 +15,7 @@ module Dependabot
     def contains?(dependency)
       @dependencies.include?(dependency) if @dependencies.any?
       positive_match = rules["patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency.name) }
-      negative_match =  rules["exclude-patterns"]&.any? { |rule| WildcardMatcher.match?(rule, dependency.name) } 
+      negative_match =  rules["exclude-patterns"]&.any? { |rule| WildcardMatcher.match?(rule, dependency.name) }
 
       positive_match && !negative_match
     end
