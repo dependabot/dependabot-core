@@ -19,8 +19,10 @@ module Dependabot
       #   :repo_contents_path/:base_directory/:target_directory
       #
       # @param base_directory [String] Update config base directory
+      # @param only_paths [Array<String>, nil] An optional list of specific paths to check, if this is nil we will
+      #                                        return every change we find within the `base_directory`
       # @return [Array<Dependabot::DependencyFile>]
-      def updated_files(base_directory:)
+      def updated_files(base_directory:, only_paths: nil)
         return [] unless repo_contents_path && target_directory
 
         Dir.chdir(repo_contents_path) do
@@ -33,7 +35,13 @@ module Dependabot
             fingerprint: "git status --untracked-files all --porcelain v1 <relative_dir>"
           )
           changed_paths = status.split("\n").map(&:split)
-          changed_paths.map do |type, path|
+          changed_paths.filter_map do |type, path|
+            project_root = Pathname.new(File.expand_path(File.join(Dir.pwd, base_directory)))
+            file_path = Pathname.new(path).expand_path.relative_path_from(project_root)
+
+            # Skip this file if we are looking for specific paths and this isn't on the list
+            next if only_paths && !only_paths.include?(file_path.to_s)
+
             # The following types are possible to be returned:
             # M = Modified = Default for DependencyFile
             # D = Deleted
@@ -49,11 +57,6 @@ module Dependabot
                 encoded_content = Base64.encode64(encoded_content)
               end
             end
-
-            project_root =
-              Pathname.new(File.expand_path(File.join(Dir.pwd, base_directory)))
-            file_path =
-              Pathname.new(path).expand_path.relative_path_from(project_root)
 
             create_dependency_file(
               name: file_path.to_s,

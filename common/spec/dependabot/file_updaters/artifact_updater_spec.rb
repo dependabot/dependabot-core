@@ -17,9 +17,10 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
   let(:project_name) { "vendor_gems" }
   let(:repo_contents_path) { build_tmp_repo(project_name) }
   let(:directory) { "/" }
+  let(:only_paths) { nil }
 
   let(:updated_files) do
-    updater.updated_files(base_directory: directory)
+    updater.updated_files(base_directory: directory, only_paths: only_paths)
   end
 
   after do
@@ -174,6 +175,23 @@ RSpec.describe Dependabot::FileUpdaters::ArtifactUpdater do
             vendor/cache/business-1.4.0.gem
             vendor/cache/test-change.txt
             vendor/cache/business-1.5.0.gem
+          )
+        )
+      end
+    end
+
+    context "when given specific paths to check" do
+      let(:only_paths) do
+        [
+          "vendor/cache/test-change.txt",
+          "vendor/cache/not-present.txt"
+        ]
+      end
+
+      it "only returns any changes to the file paths specified" do
+        expect(updated_files.map(&:name)).to eq(
+          %w(
+            vendor/cache/test-change.txt
           )
         )
       end

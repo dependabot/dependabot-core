@@ -64,8 +64,8 @@ module Dependabot
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
-        pnp_updater.updated_files(base_directory: base_dir).each do |file|
-          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
+          updated_files << file
         end
         vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
         install_state_updater.updated_files(base_directory: base_dir).each do |file|
