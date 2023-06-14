@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "dependabot/file_updaters/vendor_updater"
+require "dependabot/file_updaters/supplement_updater"
 
-RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
+RSpec.describe Dependabot::FileUpdaters::SupplementUpdater do
   let(:updater) do
     described_class.new(
       repo_contents_path: repo_contents_path,
-      vendor_dir: vendor_dir
+      target_directory: target_directory
     )
   end
 
-  let(:vendor_dir) do
+  let(:target_directory) do
     File.join(repo_contents_path, directory, "vendor/cache")
   end
   let(:project_name) { "vendor_gems" }
@@ -19,17 +19,17 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
   let(:directory) { "/" }
 
   let(:updated_files) do
-    updater.updated_vendor_cache_files(base_directory: directory)
+    updater.updated_files(base_directory: directory)
   end
 
   after do
     FileUtils.remove_entry repo_contents_path
   end
 
-  describe "#updated_vendor_cache_files" do
+  describe "#updated_files" do
     before do
       in_cloned_repository(repo_contents_path) do
-        # change a vendor file like an updater would
+        # change a file like an updater would
         next unless File.exist?("vendor/cache/business-1.4.0.gem")
 
         `mv vendor/cache/business-1.4.0.gem vendor/cache/business-1.5.0.gem`
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
 
       before do
         in_cloned_repository(repo_contents_path) do
-          # change a vendor file like an updater would
+          # change a file like an updater would
           `mv nested/vendor/cache/business-1.4.0.gem \
           nested/vendor/cache/business-1.5.0.gem`
         end
@@ -156,6 +156,22 @@ RSpec.describe Dependabot::FileUpdaters::VendorUpdater do
 
       it "sets the right directory" do
         expect(updated_files.first.directory).to eq("/nested")
+      end
+    end
+
+    context "when given a relative target directory" do
+      let(:target_directory) do
+        "vendor/cache"
+      end
+
+      it "returns the updated files" do
+        expect(updated_files.map(&:name)).to eq(
+          %w(
+            vendor/cache/business-1.4.0.gem
+            vendor/cache/test-change.txt
+            vendor/cache/business-1.5.0.gem
+          )
+        )
       end
     end
   end
