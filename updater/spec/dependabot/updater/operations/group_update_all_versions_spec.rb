@@ -176,7 +176,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       stub_rubygems_calls
     end
 
-    it "delegates the group to RefreshGroupUpdatePullRequest which updates the pull request" do
+    it "delegates the group to RefreshGroupUpdatePullRequest which defers rebasing the PR" do
       expect(mock_error_handler).not_to receive(:handle_dependabot_error)
 
       allow(Dependabot.logger).to receive(:info)
@@ -186,19 +186,12 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
       expect(Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest).to receive(:new).and_call_original
 
-      expect(mock_service).to receive(:update_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("group-b")
-
-        # We updated the right depednencies
-        expect(dependency_change.updated_dependencies.length).to eql(1)
-        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b))
-
-        # We updated the right files correctly.
-        expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
-        expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
-      end
-
+      expect(mock_service).not_to receive(:update_pull_request)
       expect(mock_service).not_to receive(:create_pull_request)
+
+      expect(Dependabot.logger).to receive(:info).with(
+        "No new changes required for 'group-b'"
+      )
 
       group_update_all.perform
     end
