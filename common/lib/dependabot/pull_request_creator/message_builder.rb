@@ -321,6 +321,7 @@ module Dependabot
                else
                  ": #{dependency_links.first}."
                end
+        msg += "\n"
 
         msg
       end
