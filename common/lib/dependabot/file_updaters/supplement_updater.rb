@@ -55,7 +55,7 @@ module Dependabot
             file_path =
               Pathname.new(path).expand_path.relative_path_from(project_root)
 
-            Dependabot::DependencyFile.new(
+            create_dependency_file(
               name: file_path.to_s,
               content: encoded_content,
               directory: base_directory,
@@ -79,6 +79,10 @@ module Dependabot
         encoding = `#{command}`.strip
 
         !TEXT_ENCODINGS.include?(encoding)
+      end
+
+      def create_dependency_file(parameters)
+        Dependabot::DependencyFile.new(**parameters)
       end
     end
   end

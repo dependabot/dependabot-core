@@ -22,6 +22,12 @@ module Dependabot
       end
 
       alias updated_vendor_cache_files updated_files
+
+      private
+
+      def create_dependency_file(parameters)
+        Dependabot::DependencyFile.new(**parameters.merge({ vendored_file: true }))
+      end
     end
   end
 end
