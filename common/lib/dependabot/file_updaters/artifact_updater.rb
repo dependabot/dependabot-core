@@ -79,9 +79,7 @@ module Dependabot
 
         if binary_file?(path)
           encoding = Dependabot::DependencyFile::ContentEncoding::BASE64
-          if operation != Dependabot::DependencyFile::Operation::DELETE
-            encoded_content = Base64.encode64(encoded_content)
-          end
+          encoded_content = Base64.encode64(encoded_content)
         end
 
         [encoded_content, encoding]
