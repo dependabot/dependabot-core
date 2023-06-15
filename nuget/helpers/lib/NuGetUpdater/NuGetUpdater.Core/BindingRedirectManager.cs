@@ -107,7 +107,7 @@ public static class BindingRedirectManager
 
         var configFile = document.Descendants()
             .Where(static x => x.Name == "ItemGroup")
-            .SelectMany(static x => x.Elements.Where(static x => x.Name == "None" && IsConfigFile(GetContent(x))))
+            .SelectMany(static x => x.Elements.Where(static x => IsConfigFile(x)))
             .FirstOrDefault();
 
         if (configFile is null)
@@ -136,24 +136,17 @@ public static class BindingRedirectManager
             return string.Empty;
         }
 
-        static bool IsConfigFile(string? content)
+        static bool IsConfigFile(IXmlElementSyntax element)
         {
-            if (content is { } notNullContent)
+            var content = GetContent(element);
+            if (content is null)
             {
-                var path = Path.GetFileName(notNullContent);
-
-                if (string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
-                if (string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
+                return false;
             }
 
-            return false;
+            var path = Path.GetFileName(content);
+            return (element.Name == "None" && string.Equals(path, "app.config", StringComparison.OrdinalIgnoreCase))
+                || (element.Name == "Content" && string.Equals(path, "web.config", StringComparison.OrdinalIgnoreCase));
         }
 
         static string GetConfigFileName(XmlDocumentSyntax document)
