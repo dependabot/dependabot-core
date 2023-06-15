@@ -148,22 +148,26 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
               {
                 action: "update",
                 file_path: gemfile.path,
-                content: gemfile.content
+                content: gemfile.content,
+                encoding: "utf-8"
               },
               {
                 action: "update",
                 file_path: gemfile_lock.path,
-                content: gemfile_lock.content
+                content: gemfile_lock.content,
+                encoding: "utf-8"
               },
               {
                 action: "create",
                 file_path: created_file.path,
-                content: created_file.content
+                content: created_file.content,
+                encoding: "utf-8"
               },
               {
                 action: "delete",
                 file_path: deleted_file.path,
-                content: ""
+                content: "",
+                encoding: "utf-8"
               }
             ]
           }
@@ -304,7 +308,8 @@ RSpec.describe Dependabot::PullRequestCreator::Gitlab do
                 {
                   action: "update",
                   file_path: files[0].symlink_target,
-                  content: files[0].content
+                  content: files[0].content,
+                  encoding: "utf-8"
                 }
               ]
             }
