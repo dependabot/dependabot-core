@@ -259,7 +259,7 @@ module Dependabot
             return
           end
 
-          return unless Dependabot::Experiments.enabled?(:shared_workspace)
+          return unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
           return unless job.clone?
           return if job.repo_contents_path.nil?
 
