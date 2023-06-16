@@ -852,7 +852,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
         )
     end
 
-    it "fetches the files the packages props file" do
+    it "fetches the packages props file" do
       expect(file_fetcher_instance.files.map(&:name)).
         to match_array(
           %w(

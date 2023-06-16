@@ -70,7 +70,13 @@ module Dependabot
       end
 
       def project_files
-        dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$|[Dd]irectory.[Pp]ackages.props/) }
+        projfile = /\.[a-z]{2}proj$/
+        packageprops = /[Dd]irectory.[Pp]ackages.props/
+
+        dependency_files.select { |df|
+          df.name.match?(projfile) ||
+          df.name.match?(packageprops)
+        }
       end
 
       def packages_config_files
