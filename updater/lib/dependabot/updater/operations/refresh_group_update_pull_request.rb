@@ -51,7 +51,7 @@ module Dependabot
           # were out of sync.
           unless dependency_snapshot.job_group
             Dependabot.logger.warn(
-              "The '#{dependency_snapshot.job_group_name || 'unknown'}' group has been removed from the update config."
+              "The '#{job.dependency_group_to_refresh || 'unknown'}' group has been removed from the update config."
             )
 
             service.capture_exception(
