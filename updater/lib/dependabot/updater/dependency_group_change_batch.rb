@@ -10,8 +10,8 @@ module Dependabot
       def initialize(initial_dependency_files:)
         @updated_dependencies = []
 
-        @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hash|
-          hash[file.path] = { file: file, changed: false, changes: 0 }
+        @dependency_file_batch = initial_dependency_files.each_with_object({}) do |file, hsh|
+          hsh[file.path] = { file: file, changed: false, changes: 0 }
         end
 
         Dependabot.logger.debug("Starting with '#{@dependency_file_batch.count}' dependency files:")
