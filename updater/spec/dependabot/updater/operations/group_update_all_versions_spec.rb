@@ -72,8 +72,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "performs a grouped and ungrouped dependency update when both are present" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("group-b")
 
@@ -109,9 +107,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "logs a warning, reports an error but defers everything to individual updates" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).not_to receive(:create_pull_request)
-
+      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
       expect(Dependabot.logger).to receive(:warn).with("No dependency groups defined!")
 
       expect(mock_service).to receive(:capture_exception).with(
@@ -148,7 +144,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         "Found 2 group(s)."
       )
 
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("my-group")
         expect(dependency_change.updated_dependency_files_hash).to eql(updated_bundler_files_hash)
@@ -177,9 +172,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "does not create a new pull request for a group if one already exists" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).not_to receive(:create_pull_request)
-
       allow(Dependabot.logger).to receive(:info)
       expect(Dependabot.logger).to receive(:info).with(
         "Detected existing pull request for 'group-b'."
@@ -204,9 +196,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "raises no errors and creates no pull requests" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
-      expect(mock_service).not_to receive(:create_pull_request)
-
+      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
       group_update_all.perform
     end
   end
@@ -237,7 +227,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "creates a DependencyChange for just the modified files without reporting errors" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
 
@@ -283,7 +272,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
 
     it "creates a DependencyChange for both of the manifests without reporting errors" do
-      expect(mock_error_handler).not_to receive(:handle_dependabot_error)
       expect(mock_service).to receive(:create_pull_request) do |dependency_change|
         expect(dependency_change.dependency_group.name).to eql("dependabot-core-images")
 

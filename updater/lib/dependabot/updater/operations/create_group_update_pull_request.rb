@@ -45,13 +45,7 @@ module Dependabot
             begin
               service.create_pull_request(dependency_change, dependency_snapshot.base_commit_sha)
             rescue StandardError => e
-              raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-              # FIXME: This will result in us reporting a the group name as a dependency name
-              #
-              # In future we should modify this method to accept both dependency and group
-              # so the downstream error handling can tag things appropriately.
-              error_handler.handle_dependabot_error(error: e, dependency: group)
+              error_handler.handle_job_error(error: e, dependency_group: group)
             end
           else
             Dependabot.logger.info("Nothing to update for Dependency Group: '#{group.name}'")

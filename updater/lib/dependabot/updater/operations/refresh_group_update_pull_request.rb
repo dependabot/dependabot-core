@@ -84,13 +84,7 @@ module Dependabot
             close_pull_request(reason: :up_to_date)
           end
         rescue StandardError => e
-          raise if ErrorHandler::RUN_HALTING_ERRORS.keys.any? { |err| e.is_a?(err) }
-
-          # FIXME: This will result in us reporting a the group name as a dependency name
-          #
-          # In future we should modify this method to accept both dependency and group
-          # so the downstream error handling can tag things appropriately.
-          error_handler.handle_dependabot_error(error: e, dependency: dependency_change.dependency_group)
+          error_handler.handle_job_error(error: e, group: job_group)
         end
 
         # Having created the dependency_change, we need to determine the right strategy to apply it to the project:
