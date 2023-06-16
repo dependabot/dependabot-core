@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
 require "dependabot/dependency_change_builder"
-require "dependabot/updater/group_dependency_file_batch"
+require "dependabot/updater/dependency_group_change_batch"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
 #
 # When included in an Operation it expects the following to be available:
 # - job: the current Dependabot::Job object
-# - dependency_snapshot: the Dependabot::DependencySnapshot of the current
-#   repo state
-# - error_handler: a Dependabot::UpdaterErrorHandler to report
+# - dependency_snapshot: the Dependabot::DependencySnapshot of the current state
+# - error_handler: a Dependabot::UpdaterErrorHandler to report any problems to
 #
 module Dependabot
   class Updater
@@ -19,15 +18,15 @@ module Dependabot
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       def compile_all_dependency_changes_for(group)
-        all_updated_dependencies = []
-        # TODO: Iterate to a GroupDependencyBatch?
-        #
-        # It might make sense for this class to take on responsibility for `all_updated_dependencies` as well,
-        # but I'm deferring on that for compatability with other work in progress.
-        dependency_file_batch = Dependabot::Updater::GroupDependencyFileBatch.new(dependency_snapshot.dependency_files)
+        group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
+          initial_dependency_files: dependency_snapshot.dependency_files
+        )
 
         group.dependencies.each do |dependency|
-          dependency_files = dependency_file_batch.dependency_files
+          # Get the current state of the dependency files for use in this iteration
+          dependency_files = group_changes.current_dependency_files
+
+          # Reparse the current files
           reparsed_dependencies = dependency_file_parser(dependency_files).parse
           dependency = reparsed_dependencies.find { |d| d.name == dependency.name }
 
@@ -49,28 +48,16 @@ module Dependabot
           # could not create a change for any reason
           next unless dependency_change
 
-          # FIXME: all_updated_dependencies may need to be de-duped
-          #
-          # To start out with, using a variant on the 'existing_pull_request'
-          # logic might make sense -or- we could employ a one-and-done rule
-          # where the first update to a dependency blocks subsequent changes.
-          #
-          # In a follow-up iteration, a 'shared workspace' could provide the
-          # filtering for us assuming we iteratively make file changes for
-          # each Array of dependencies in the batch and the FileUpdater tells
-          # us which cannot be applied.
-          all_updated_dependencies.concat(dependency_change.updated_dependencies)
-
           # Store the updated files for the next loop
-          dependency_file_batch.merge(dependency_change.updated_dependency_files)
+          group_changes.merge(dependency_change)
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
         # into a single object we can pass to PR creation.
         Dependabot::DependencyChange.new(
           job: job,
-          updated_dependencies: all_updated_dependencies,
-          updated_dependency_files: dependency_file_batch.updated_files,
+          updated_dependencies: group_changes.updated_dependencies,
+          updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
       end
