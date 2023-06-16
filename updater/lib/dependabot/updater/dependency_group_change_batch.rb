@@ -63,7 +63,7 @@ module Dependabot
           change_count = if existing_file
                            existing_file.fetch(:change_count, 0)
                          else
-                           Dependabot.logger.debug("New file added: '#{updated_file.path}'")
+                           Dependabot.logger.debug("File #{updated_file.operation}d: '#{updated_file.path}'")
                            0
                          end
 
