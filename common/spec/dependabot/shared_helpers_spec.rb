@@ -113,11 +113,10 @@ RSpec.describe Dependabot::SharedHelpers do
       end
 
       it "delegates to the workspace" do
-        memo = "test change"
-        expect(workspace).to receive(:change).with(memo).and_call_original
+        expect(workspace).to receive(:change).and_call_original
 
         expect do |b|
-          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, memo: memo, &b)
+          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, &b)
         end.to yield_with_args(Pathname)
       end
     end

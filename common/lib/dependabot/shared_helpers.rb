@@ -26,7 +26,6 @@ module Dependabot
 
     def self.in_a_temporary_repo_directory(directory = "/",
                                            repo_contents_path = nil,
-                                           **options,
                                            &block)
       if repo_contents_path
         path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
@@ -36,7 +35,7 @@ module Dependabot
         FileUtils.mkdir_p(path)
 
         if (workspace = Dependabot::Workspace.active_workspace)
-          return workspace.change(options[:memo], &block)
+          return workspace.change(&block)
         end
 
         Dir.chdir(path) { yield(path) }
