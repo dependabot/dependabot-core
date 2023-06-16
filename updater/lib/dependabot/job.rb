@@ -91,8 +91,9 @@ module Dependabot
       # TODO: Make this hash required
       #
       # We will need to do a pass updating the CLI and smoke tests before this is possible,
-      # so let's consider it optional for now.
-      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, [])
+      # so let's consider it optional for now. If we get a nil value, let's force it to be
+      # an array.
+      @existing_group_pull_requests   = attributes.fetch(:existing_group_pull_requests, []) || []
       @experiments                    = attributes.fetch(:experiments, {})
       @ignore_conditions              = attributes.fetch(:ignore_conditions)
       @package_manager                = attributes.fetch(:package_manager)
