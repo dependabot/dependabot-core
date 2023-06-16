@@ -3,6 +3,7 @@
 require "dependabot/file_updaters"
 require "dependabot/file_updaters/base"
 require "dependabot/file_updaters/vendor_updater"
+require "dependabot/file_updaters/artifact_updater"
 require "dependabot/npm_and_yarn/dependency_files_filterer"
 require "dependabot/npm_and_yarn/sub_dependency_files_filterer"
 
@@ -63,11 +64,11 @@ module Dependabot
 
       def vendor_updated_files(updated_files)
         base_dir = updated_files.first.directory
-        pnp_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
-          updated_files << file if file.name == ".pnp.cjs" || file.name == ".pnp.data.json"
+        pnp_updater.updated_files(base_directory: base_dir, only_paths: [".pnp.cjs", ".pnp.data.json"]).each do |file|
+          updated_files << file
         end
         vendor_updater.updated_vendor_cache_files(base_directory: base_dir).each { |file| updated_files << file }
-        install_state_updater.updated_vendor_cache_files(base_directory: base_dir).each do |file|
+        install_state_updater.updated_files(base_directory: base_dir).each do |file|
           updated_files << file
         end
 
@@ -95,16 +96,16 @@ module Dependabot
       end
 
       def install_state_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: install_state_path
+          target_directory: install_state_path
         )
       end
 
       def pnp_updater
-        Dependabot::FileUpdaters::VendorUpdater.new(
+        Dependabot::FileUpdaters::ArtifactUpdater.new(
           repo_contents_path: repo_contents_path,
-          vendor_dir: "./"
+          target_directory: "./"
         )
       end
 
