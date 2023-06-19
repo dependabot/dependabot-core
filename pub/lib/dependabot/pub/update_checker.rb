@@ -53,7 +53,6 @@ module Dependabot
         upgrade = e.find { |u| u["name"] == dependency.name }
 
         version = upgrade["version"]
-        # TODO: Should we do this upgrade even if the found version is ignored?
         version_unless_ignored(version)
       end
 
