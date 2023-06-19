@@ -35,16 +35,19 @@ module Dependabot
         JSON.parse(run_dependency_services("list"))["dependencies"]
       end
 
-      def fetch_package_listing(dependency)
+      def repository_url(dependency)
         source = dependency.requirements&.first&.dig(:source)
-        repository_url = source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+        source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
+      end
+      
+      def fetch_package_listing(dependency)
         # Because we get the security_advisories as a set of constraints, we
         # fetch the list of all versions and filter them to a list of vulnerable
         # versions.
         #
         # Ideally we would like the helper to be the only one doing requests to
         # the repository. But this should work for now:
-        response = Dependabot::RegistryClient.get(url: "#{repository_url}/api/packages/#{dependency.name}")
+        response = Dependabot::RegistryClient.get(url: "#{repository_url(dependency)}/api/packages/#{dependency.name}")
         JSON.parse(response.body)
       end
 
@@ -77,7 +80,7 @@ module Dependabot
             [
               {
                 name: dependency.name,
-                url: repository_url,
+                url: repository_url(dependency),
                 versions: vulnerable_versions.map { |v| { range: v.to_s } }
               }
             ]
