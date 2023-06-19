@@ -39,7 +39,7 @@ module Dependabot
         source = dependency.requirements&.first&.dig(:source)
         source&.dig("description", "url") || options[:pub_hosted_url] || "https://pub.dev"
       end
-      
+
       def fetch_package_listing(dependency)
         # Because we get the security_advisories as a set of constraints, we
         # fetch the list of all versions and filter them to a list of vulnerable
