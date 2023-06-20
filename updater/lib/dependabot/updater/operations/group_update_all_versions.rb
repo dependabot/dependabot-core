@@ -70,8 +70,6 @@ module Dependabot
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          prepare_workspace
-
           dependency_snapshot.groups.each do |_group_hash, group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
@@ -106,17 +104,6 @@ module Dependabot
             dependency_snapshot: dependency_snapshot,
             error_handler: error_handler
           ).perform
-        end
-
-        def prepare_workspace
-          return unless Dependabot::Experiments.enabled?(:grouped_updates_prototype)
-          return unless job.clone?
-          return if job.repo_contents_path.nil?
-
-          Dependabot::Workspace.active_workspace = Dependabot::Workspace::Git.new(
-            job.repo_contents_path,
-            Pathname.new(job.source.directory || "/").cleanpath
-          )
         end
       end
     end
