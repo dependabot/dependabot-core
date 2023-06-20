@@ -2361,7 +2361,7 @@ RSpec.describe Dependabot::Updater do
   def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
                 existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
                 updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
-                lockfile_only: false)
+                lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
       id: 1,
       token: "token",
@@ -2404,7 +2404,7 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups
     )
   end
