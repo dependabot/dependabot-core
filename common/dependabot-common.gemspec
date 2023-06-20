@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "psych", "~> 5.0"
   spec.add_dependency "toml-rb", ">= 1.1.2", "< 3.0"
 
-  spec.add_development_dependency "debug", "~> 1.7.1"
+  spec.add_development_dependency "debug", "~> 1.8.0"
   spec.add_development_dependency "gpgme", "~> 2.0"
   spec.add_development_dependency "parallel_tests", "~> 4.2.0"
   spec.add_development_dependency "rake", "~> 13"
