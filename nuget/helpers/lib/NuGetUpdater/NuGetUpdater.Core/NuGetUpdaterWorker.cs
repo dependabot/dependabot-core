@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -37,26 +38,26 @@ public partial class NuGetUpdaterWorker
         }
     }
 
-    public async Task RunAsync(string filePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    public async Task RunAsync(string repoRootPath, string filePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         switch (extension)
         {
             case ".sln":
-                await RunForSolutionAsync(filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
+                await RunForSolutionAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
                 break;
             case ".proj":
-                await RunForProjFileAsync(filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
+                await RunForProjFileAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
                 break;
             case ".csproj":
             case ".fsproj":
             case ".vbproj":
-                await RunForProjectAsync(filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
+                await RunForProjectAsync(repoRootPath, filePath, dependencyName, previousDependencyVersion, newDependencyVersion);
                 break;
         }
     }
 
-    private async Task RunForSolutionAsync(string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    private async Task RunForSolutionAsync(string repoRootPath, string solutionPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
         Log($"Running for solution [{solutionPath}]");
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
@@ -65,11 +66,11 @@ public partial class NuGetUpdaterWorker
         foreach (var projectSubPath in projectSubPaths)
         {
             var projectFullPath = JoinPath(solutionDirectory, projectSubPath);
-            await RunForProjectAsync(projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
+            await RunForProjectAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
         }
     }
 
-    private async Task RunForProjFileAsync(string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    private async Task RunForProjFileAsync(string repoRootPath, string projFilePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
         Log($"Running for proj file [{projFilePath}]");
         var projectFilePaths = MSBuildHelper.GetAllProjectPaths(projFilePath);
@@ -78,12 +79,12 @@ public partial class NuGetUpdaterWorker
             // If there is some MSBuild logic that needs to run to fully resolve the path skip the project
             if (File.Exists(projectFullPath))
             {
-                await RunForProjectAsync(projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
+                await RunForProjectAsync(repoRootPath, projectFullPath, dependencyName, previousDependencyVersion, newDependencyVersion);
             }
         }
     }
 
-    private async Task RunForProjectAsync(string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    private async Task RunForProjectAsync(string repoRootPath, string projectPath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
         Log($"Running for project [{projectPath}]");
         var projectFileContents = await File.ReadAllTextAsync(projectPath);
@@ -177,33 +178,15 @@ public partial class NuGetUpdaterWorker
         {
             // SDK-style project, modify the XML directly
             Log("  Running for SDK-style project");
-            var updatedProjectFileContents = UpdateProjectReference(projectFileContents, dependencyName, previousDependencyVersion, newDependencyVersion);
-            if (HasAnyNonWhitespaceChanges(projectFileContents, updatedProjectFileContents))
+            var buildFiles = LoadBuildFiles(repoRootPath, projectPath);
+
+            UpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
+
+            foreach (var buildFile in buildFiles)
             {
-                await File.WriteAllTextAsync(projectPath, updatedProjectFileContents);
+                buildFile.Save();
             }
         }
-    }
-
-    private static bool HasAnyNonWhitespaceChanges(string oldText, string newText)
-    {
-        // Ignore white space
-        oldText = Regex.Replace(oldText, @"\s+", string.Empty);
-        newText = Regex.Replace(newText, @"\s+", string.Empty);
-
-        var diffBuilder = new InlineDiffBuilder(new Differ());
-        var diff = diffBuilder.BuildDiffModel(oldText, newText);
-        foreach (var line in diff.Lines)
-        {
-            if (line.Type is ChangeType.Inserted ||
-                line.Type is ChangeType.Deleted ||
-                line.Type is ChangeType.Modified)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static string JoinPath(string? path1, string path2)
@@ -301,23 +284,152 @@ public partial class NuGetUpdaterWorker
         return projectFilePaths.ToArray();
     }
 
-    private static string UpdateProjectReference(string content, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    private static ImmutableArray<BuildFile> LoadBuildFiles(string repoRootPath, string projectPath)
     {
-        var originalXml = Parser.ParseText(content);
-        var packageReferenceNode = originalXml.Descendants().SingleOrDefault(e =>
-            e.Name == "PackageReference" &&
-            e.GetAttributeValue("Include") == dependencyName &&
-            e.GetAttributeValue("Version") == previousDependencyVersion);
-        if (packageReferenceNode is null)
+        return new string[] { projectPath }
+            .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", SearchOption.AllDirectories))
+            .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", SearchOption.AllDirectories))
+            .Select(path => new BuildFile(path, Parser.ParseText(File.ReadAllText(path))))
+            .ToImmutableArray();
+    }
+
+    private static void UpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    {
+        string? propertyName = null;
+
+        // First we locate the PackageReference or PackageVersion which sets the Version attribute. In the
+        // simplest case we can update the version attribute directly then move on. When property substitution
+        // is used we have to additionally search for the property containing the version.
+
+        foreach (var buildFile in buildFiles)
         {
-            // no change
-            return content;
+            var packageNode = FindPackageNode(buildFile.Xml, dependencyName);
+            if (packageNode is null)
+            {
+                continue;
+            }
+
+            var versionAttribute = packageNode.GetAttribute("Version");
+
+            // Is this the case that the version is specified directly in the PackageReference/PackageVersion node?
+            if (versionAttribute.Value == previousDependencyVersion)
+            {
+                var updatedVersionAttribute = versionAttribute.WithValue(newDependencyVersion);
+                var updatedXml = buildFile.Xml.ReplaceNode(versionAttribute, updatedVersionAttribute);
+                buildFile.Update(updatedXml);
+                return;
+            }
+
+            // Is this the case where version is specified with property substitution?
+            if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
+            {
+                propertyName = versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3);
+                break;
+            }
         }
 
-        var packageReferenceVersionAttribute = packageReferenceNode.GetAttribute("Version");
-        var updatedPackageReferenceVersionAttribute = packageReferenceVersionAttribute.WithValue(newDependencyVersion);
-        var updatedXml = originalXml.ReplaceNode(packageReferenceVersionAttribute, updatedPackageReferenceVersionAttribute);
-        var updatedContent = updatedXml.ToFullString();
-        return updatedContent;
+        // If property substitution was used to set the Version, we must search for the property containing
+        // the version string. Since it could also be populated by property substitution this search repeats
+        // with the each new property name until the version string is located.
+
+        while (propertyName is not null)
+        {
+            string searchName = propertyName;
+            propertyName = null;
+
+            foreach (var buildFile in buildFiles)
+            {
+                var propertyElement = buildFile.Xml.Descendants()
+                    .SingleOrDefault(e => e.Name == searchName);
+                if (propertyElement is null)
+                {
+                    continue;
+                }
+
+                var propertyContents = propertyElement.GetContentValue();
+
+                // Is this the case that the property contains the version?
+                if (propertyContents == previousDependencyVersion)
+                {
+                    var updatedPropertyElement = propertyElement.WithContent(newDependencyVersion);
+                    var updatedXml = buildFile.Xml.ReplaceNode(propertyElement.AsNode, updatedPropertyElement.AsNode);
+                    buildFile.Update(updatedXml);
+                    return;
+                }
+
+                // Is this the case where this property contains another property substitution?
+                if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
+                {
+                    propertyName = propertyContents.Substring(2, propertyContents.Length - 3);
+                    break;
+                }
+            }
+        }
+    }
+
+    private static IXmlElementSyntax? FindPackageNode(XmlDocumentSyntax xml, string packageName)
+    {
+        return xml.Descendants().SingleOrDefault(e =>
+                    (e.Name == "PackageReference" || e.Name == "PackageVersion") &&
+                    (e.GetAttributeValue("Include") == packageName || e.GetAttributeValue("Update") == packageName) &&
+                    e.GetAttribute("Version") is not null);
+    }
+
+    private class BuildFile
+    {
+        public string Path { get; }
+        public XmlDocumentSyntax Xml { get; private set; }
+
+        private XmlDocumentSyntax OriginalXml { get; set; }
+
+        public BuildFile(string path, XmlDocumentSyntax xml)
+        {
+            Path = path;
+            Xml = xml;
+            OriginalXml = xml;
+        }
+
+        public void Update(XmlDocumentSyntax xml)
+        {
+            Xml = xml;
+        }
+
+        public void Save()
+        {
+            if (OriginalXml == Xml)
+            {
+                return;
+            }
+
+            var originalXmlText = OriginalXml.ToFullString();
+            var xmlText = Xml.ToFullString();
+
+            if (HasAnyNonWhitespaceChanges(originalXmlText, xmlText))
+            {
+                File.WriteAllText(Path, xmlText);
+                OriginalXml = Xml;
+            }
+        }
+
+        private static bool HasAnyNonWhitespaceChanges(string oldText, string newText)
+        {
+            // Ignore white space
+            oldText = Regex.Replace(oldText, @"\s+", string.Empty);
+            newText = Regex.Replace(newText, @"\s+", string.Empty);
+
+            var diffBuilder = new InlineDiffBuilder(new Differ());
+            var diff = diffBuilder.BuildDiffModel(oldText, newText);
+            foreach (var line in diff.Lines)
+            {
+                if (line.Type is ChangeType.Inserted ||
+                    line.Type is ChangeType.Deleted ||
+                    line.Type is ChangeType.Modified)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

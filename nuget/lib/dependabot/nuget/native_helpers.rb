@@ -11,10 +11,12 @@ module Dependabot
         File.join(__dir__, "../../../helpers")
       end
 
-      def self.run_nuget_updater_tool(proj_path, dependency)
+      def self.run_nuget_updater_tool(repo_root, proj_path, dependency)
         exePath = File.join(native_helpers_root, "NuGetUpdater", "NuGetUpdater.Cli")
         command = [
           exePath,
+          "--repo-root",
+          repo_root,
           "--solution-or-project",
           proj_path,
           "--dependency",
@@ -28,6 +30,8 @@ module Dependabot
 
         fingerprint = [
           exePath,
+          "--repo-root",
+          "<repo-root>",
           "--solution-or-project",
           "<path-to-solution-or-project>",
           "--dependency",

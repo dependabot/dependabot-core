@@ -31,7 +31,7 @@ module Dependabot
         dependency_files.select { |f| /\.[a-z]{2}proj$/ =~ f.name } .each do |dependency_project_file|
           proj_path = dependency_file_path(dependency_project_file)
           dependencies.each do |dependency|
-            NativeHelpers.run_nuget_updater_tool(proj_path, dependency)
+            NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency)
           end
         end
 
@@ -57,12 +57,7 @@ module Dependabot
       private
 
       def dependency_file_path(dependency_file)
-        file_directory = dependency_file.directory
-        if file_directory.start_with?("/")
-          file_directory = file_directory[1..-1]
-        end
-
-        File.join(repo_contents_path || "", file_directory, dependency_file.name)
+        File.join(dependency_file.directory, dependency_file.name)
       end
 
       def project_files
@@ -178,7 +173,7 @@ module Dependabot
             item_group = "#{newline}#{indentation}<ItemGroup>#{newline}#{indentation}#{indentation}#{new_package_reference}#{newline}#{indentation}</ItemGroup>"
             # replace the </Project> element with our item group ensuring we append the final newline if
             # it exists
-            file_content.sub(project_end_regex, item_group + "#{newline}</Project>#{match[1].to_s}")
+            file_content.sub(project_end_regex, item_group + "#{newline}</Project>#{match[1]}")
           end
         end
       end
