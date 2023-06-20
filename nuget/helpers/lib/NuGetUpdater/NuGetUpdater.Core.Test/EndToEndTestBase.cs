@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test
@@ -58,7 +59,7 @@ namespace NuGetUpdater.Core.Test
             {
                 var slnPath = Path.Combine(temporaryDirectory, slnName);
                 var worker = new NuGetUpdaterWorker(verbose: true);
-                await worker.RunAsync(slnPath, dependencyName, oldVersion, newVersion);
+                await worker.RunAsync(temporaryDirectory, slnPath, dependencyName, oldVersion, newVersion);
             });
 
             var expectedResult = new List<(string Path, string Content)>()

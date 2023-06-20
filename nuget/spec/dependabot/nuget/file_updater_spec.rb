@@ -17,6 +17,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
     described_class.new(
       dependency_files: dependency_files,
       dependencies: dependencies,
+      repo_contents_path: repo_dir,
       credentials: [{
         "type" => "git_source",
         "host" => "github.com",

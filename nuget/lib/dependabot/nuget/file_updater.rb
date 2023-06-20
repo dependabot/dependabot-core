@@ -30,7 +30,7 @@ module Dependabot
         dependency_files.select { |f| /\.[a-z]{2}proj$/ =~ f.name } .each do |dependency_project_file|
           proj_path = dependency_file_path(dependency_project_file)
           dependencies.each do |dependency|
-            NativeHelpers.run_nuget_updater_tool(proj_path, dependency)
+            NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency)
           end
         end
 
@@ -56,10 +56,7 @@ module Dependabot
       private
 
       def dependency_file_path(dependency_file)
-        file_directory = dependency_file.directory
-        file_directory = file_directory[1..-1] if file_directory.start_with?("/")
-
-        File.join(repo_contents_path || "", file_directory, dependency_file.name)
+        File.join(dependency_file.directory, dependency_file.name)
       end
 
       def project_files

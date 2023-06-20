@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 
 using Microsoft.Build.Construction;
-using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 
 namespace NuGetUpdater.Core

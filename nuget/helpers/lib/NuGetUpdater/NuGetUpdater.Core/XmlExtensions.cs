@@ -18,6 +18,12 @@ public static class XmlExtensions
         return parent.AddChild(element);
     }
 
+    public static IXmlElementSyntax WithContent(this IXmlElementSyntax element, string text)
+    {
+        var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, text));
+        return element.WithContent(SyntaxFactory.SingletonList(textSyntax));
+    }
+
     public static IXmlElementSyntax WithAttribute(this IXmlElementSyntax parent, string name, string value)
     {
         return parent.AddAttribute(SyntaxFactory.XmlAttribute(
