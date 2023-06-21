@@ -12,6 +12,7 @@ require "tmpdir"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
+require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot
@@ -27,12 +28,16 @@ module Dependabot
                                            repo_contents_path = nil,
                                            &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).
-               expand_path
+        path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
         reset_git_repo(repo_contents_path)
         # Handle missing directories by creating an empty one and relying on the
         # file fetcher to raise a DependencyFileNotFound error
         FileUtils.mkdir_p(path)
+
+        if (workspace = Dependabot::Workspace.active_workspace)
+          return workspace.change(&block)
+        end
+
         Dir.chdir(path) { yield(path) }
       else
         in_a_temporary_directory(directory, &block)

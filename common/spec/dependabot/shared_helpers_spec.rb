@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require "fileutils"
+require "tmpdir"
+
 require "spec_helper"
 require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
+require "dependabot/workspace"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
@@ -43,6 +47,10 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:on_create) { -> { Dir.pwd } }
     let(:project_name) { "vendor_gems" }
     let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
 
     it "runs inside the temporary repo directory" do
       expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
@@ -92,6 +100,24 @@ RSpec.describe Dependabot::SharedHelpers do
         expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
           to yield_with_args(Pathname)
         expect(described_class).to have_received(:in_a_temporary_directory)
+      end
+    end
+
+    context "when there is an active workspace" do
+      let(:project_name) { "simple" }
+      let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
+      let(:workspace) { Dependabot::Workspace::Git.new(repo_contents_path, directory) }
+
+      before do
+        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
+      end
+
+      it "delegates to the workspace" do
+        expect(workspace).to receive(:change).and_call_original
+
+        expect do |b|
+          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, &b)
+        end.to yield_with_args(Pathname)
       end
     end
   end
