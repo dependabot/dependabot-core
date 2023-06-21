@@ -260,12 +260,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details
       end
 
       def git_dependency?
@@ -279,12 +274,7 @@ module Dependabot
       end
 
       def path_dependency?
-        sources = dependency.requirements.
-                  map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first&.fetch(:type) == "path"
+        dependency.source_details&.fetch(:type) == "path"
       end
 
       def git_commit_checker

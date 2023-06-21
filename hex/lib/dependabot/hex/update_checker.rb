@@ -162,12 +162,7 @@ module Dependabot
       end
 
       def dependency_source_details
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first
+        dependency.source_details
       end
 
       def fetch_latest_resolvable_version(unlock_requirement:)
