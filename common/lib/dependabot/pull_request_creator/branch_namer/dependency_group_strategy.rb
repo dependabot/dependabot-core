@@ -1,32 +1,32 @@
 # frozen_string_literal: true
 
+require "dependabot/pull_request_creator/branch_namer/base"
+
 module Dependabot
   class PullRequestCreator
     class BranchNamer
-      class DependencyGroupStrategy
+      class DependencyGroupStrategy < Base
         def initialize(dependencies:, files:, target_branch:, dependency_group:,
                        separator: "/", prefix: "dependabot", max_length: nil)
-          @dependencies     = dependencies
-          @files            = files
-          @target_branch    = target_branch
+          super(
+            dependencies: dependencies,
+            files: files,
+            target_branch: target_branch,
+            separator: separator,
+            prefix: prefix,
+            max_length: max_length
+          )
+
           @dependency_group = dependency_group
-          @separator        = separator
-          @prefix           = prefix
-          @max_length       = max_length
         end
 
-        # FIXME: Incorporate max_length truncation once we allow user config
-        #
-        # For now, we are using a placeholder DependencyGroup with a
-        # fixed-length name, so we can punt on handling truncation until
-        # we determine the strict validation rules for names
         def new_branch_name
-          File.join(prefixes, group_name_with_dependency_digest).gsub("/", separator)
+          sanitize_branch_name(File.join(prefixes, group_name_with_dependency_digest))
         end
 
         private
 
-        attr_reader :dependencies, :dependency_group, :files, :target_branch, :separator, :prefix, :max_length
+        attr_reader :dependency_group
 
         def prefixes
           [
