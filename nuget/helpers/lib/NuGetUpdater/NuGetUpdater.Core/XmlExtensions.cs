@@ -18,7 +18,7 @@ public static class XmlExtensions
         return parent.AddChild(element);
     }
 
-    public static IXmlElementSyntax WithContent(this IXmlElementSyntax element, string text)
+    public static XmlElementSyntax WithContent(this XmlElementSyntax element, string text)
     {
         var textSyntax = SyntaxFactory.XmlText(SyntaxFactory.Token(null, SyntaxKind.XmlTextLiteralToken, null, text));
         return element.WithContent(SyntaxFactory.SingletonList(textSyntax));
