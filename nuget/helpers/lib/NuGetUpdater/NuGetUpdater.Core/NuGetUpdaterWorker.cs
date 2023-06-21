@@ -295,36 +295,38 @@ public partial class NuGetUpdaterWorker
 
     private static void UpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
-        string? propertyName = null;
+        var propertyNames = new List<string>();
 
-        // First we locate the PackageReference or PackageVersion which sets the Version attribute. In the
-        // simplest case we can update the version attribute directly then move on. When property substitution
-        // is used we have to additionally search for the property containing the version.
+        // First we locate all the PackageReference, GlobalPackageReference, or PackageVersion which set the Version
+        // or VersionOverride attribute. In the simplest case we can update the version attribute directly then move
+        // on. When property substitution is used we have to additionally search for the property containing the version.
 
         foreach (var buildFile in buildFiles)
         {
-            var packageNode = FindPackageNode(buildFile.Xml, dependencyName);
-            if (packageNode is null)
+            var updateAttributes = new List<XmlAttributeSyntax>();
+            var packageNodes = FindPackageNode(buildFile.Xml, dependencyName);
+
+            foreach (var packageNode in packageNodes)
             {
-                continue;
+                var versionAttribute = packageNode.GetAttribute("Version") ?? packageNode.GetAttribute("VersionOverride");
+
+                // Is this the case that the version is specified directly in the package node?
+                if (versionAttribute.Value == previousDependencyVersion)
+                {
+                    updateAttributes.Add(versionAttribute);
+                }
+                // Is this the case where version is specified with property substitution?
+                else if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
+                {
+                    propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
+                }
             }
 
-            var versionAttribute = packageNode.GetAttribute("Version");
-
-            // Is this the case that the version is specified directly in the PackageReference/PackageVersion node?
-            if (versionAttribute.Value == previousDependencyVersion)
+            if (updateAttributes.Count > 0)
             {
-                var updatedVersionAttribute = versionAttribute.WithValue(newDependencyVersion);
-                var updatedXml = buildFile.Xml.ReplaceNode(versionAttribute, updatedVersionAttribute);
+                var updatedXml = buildFile.Xml
+                    .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(newDependencyVersion));
                 buildFile.Update(updatedXml);
-                return;
-            }
-
-            // Is this the case where version is specified with property substitution?
-            if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
-            {
-                propertyName = versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3);
-                break;
             }
         }
 
@@ -332,47 +334,58 @@ public partial class NuGetUpdaterWorker
         // the version string. Since it could also be populated by property substitution this search repeats
         // with the each new property name until the version string is located.
 
-        while (propertyName is not null)
+        var processedPropertyNames = new HashSet<string>();
+
+        for (int propertyNameIndex = 0; propertyNameIndex < propertyNames.Count; propertyNameIndex++)
         {
-            string searchName = propertyName;
-            propertyName = null;
+            var propertyName = propertyNames[propertyNameIndex];
+            if (processedPropertyNames.Contains(propertyName))
+            {
+                continue;
+            }
+
+            processedPropertyNames.Add(propertyName);
 
             foreach (var buildFile in buildFiles)
             {
-                var propertyElement = buildFile.Xml.Descendants()
-                    .SingleOrDefault(e => e.Name == searchName);
-                if (propertyElement is null)
+                var updateProperties = new List<XmlElementSyntax>();
+                var propertyElements = buildFile.Xml
+                    .Descendants()
+                    .Where(e => e.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+
+                foreach (var propertyElement in propertyElements)
                 {
-                    continue;
+                    var propertyContents = propertyElement.GetContentValue();
+
+                    // Is this the case that the property contains the version?
+                    if (propertyContents == previousDependencyVersion)
+                    {
+                        updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
+
+                    }
+                    // Is this the case where this property contains another property substitution?
+                    else if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
+                    {
+                        propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
+                    }
                 }
 
-                var propertyContents = propertyElement.GetContentValue();
-
-                // Is this the case that the property contains the version?
-                if (propertyContents == previousDependencyVersion)
+                if (updateProperties.Count > 0)
                 {
-                    var updatedPropertyElement = propertyElement.WithContent(newDependencyVersion);
-                    var updatedXml = buildFile.Xml.ReplaceNode(propertyElement.AsNode, updatedPropertyElement.AsNode);
+                    var updatedXml = buildFile.Xml
+                        .ReplaceNodes(updateProperties, (o, n) => n.WithContent(newDependencyVersion));
                     buildFile.Update(updatedXml);
-                    return;
-                }
-
-                // Is this the case where this property contains another property substitution?
-                if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
-                {
-                    propertyName = propertyContents.Substring(2, propertyContents.Length - 3);
-                    break;
                 }
             }
         }
     }
 
-    private static IXmlElementSyntax? FindPackageNode(XmlDocumentSyntax xml, string packageName)
+    private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)
     {
-        return xml.Descendants().SingleOrDefault(e =>
-                    (e.Name == "PackageReference" || e.Name == "PackageVersion") &&
-                    (e.GetAttributeValue("Include") == packageName || e.GetAttributeValue("Update") == packageName) &&
-                    e.GetAttribute("Version") is not null);
+        return xml.Descendants().Where(e =>
+                    (e.Name == "PackageReference" || e.Name == "GlobalPackageReference" || e.Name == "PackageVersion") &&
+                    (e.GetAttributeValue("Include")?.Equals(packageName, StringComparison.OrdinalIgnoreCase) ?? e.GetAttributeValue("Update")?.Equals(packageName, StringComparison.OrdinalIgnoreCase) == true) &&
+                    (e.GetAttribute("Version") is not null) || e.GetAttribute("VersionOverride") is not null);
     }
 
     private class BuildFile
