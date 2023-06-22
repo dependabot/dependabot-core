@@ -1,4 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 using Xunit;
 
 namespace NuGetUpdater.Core.Test;
@@ -38,6 +41,44 @@ public class AuxiliaryTests
     {
         var actualPackagesDirectorypath = NuGetUpdaterWorker.GetPathToPackagesDirectory(projectContents, dependencyName, dependencyVersion);
         Assert.Equal(expectedPackagesDirectoryPath, actualPackagesDirectorypath);
+    }
+
+    [Theory]
+    [InlineData("<Project><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework></PropertyGroup></Project>", "netstandard2.0", null)]
+    [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0</TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
+    [InlineData("<Project><PropertyGroup><TargetFrameworks>  ; netstandard2.0 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", null)]
+    [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
+    public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
+    {
+        var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
+        var actualTfms = NuGetUpdaterWorker.GetTargetFrameworkMonikersFromProjectContents(projectContents);
+        Assert.Equal(expectedTfms, actualTfms);
+    }
+
+    [Fact]
+    public async Task AllPackageDependenciesCanBeTraversed()
+    {
+        using var temp = new TemporaryDirectory();
+        var expectedDependencies = new[]
+        {
+            ("Microsoft.Bcl.AsyncInterfaces", "7.0.0"),
+            ("Microsoft.Extensions.DependencyInjection", "7.0.0"),
+            ("Microsoft.Extensions.DependencyInjection.Abstractions", "7.0.0"),
+            ("Microsoft.Extensions.Http", "7.0.0"),
+            ("Microsoft.Extensions.Logging", "7.0.0"),
+            ("Microsoft.Extensions.Logging.Abstractions", "7.0.0"),
+            ("Microsoft.Extensions.Options", "7.0.0"),
+            ("Microsoft.Extensions.Primitives", "7.0.0"),
+            ("System.Buffers", "4.5.1"),
+            ("System.ComponentModel.Annotations", "5.0.0"),
+            ("System.Diagnostics.DiagnosticSource", "7.0.0"),
+            ("System.Memory", "4.5.5"),
+            ("System.Numerics.Vectors", "4.4.0"),
+            ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
+            ("System.Threading.Tasks.Extensions", "4.5.4"),
+        };
+        var actualDependencies = await NuGetUpdaterWorker.GetAllPackageDependencies(temp.DirectoryPath, "netstandard2.0", "Microsoft.Extensions.Http", "7.0.0");
+        Assert.Equal(expectedDependencies, actualDependencies);
     }
 
     public static IEnumerable<object[]> SolutionProjectPathTestData()
