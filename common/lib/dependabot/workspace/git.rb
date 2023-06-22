@@ -9,7 +9,11 @@ module Dependabot
       attr_reader :initial_head_sha
 
       def initialize(repo_contents_path, directory = "/")
-        super(Pathname.new(File.join(repo_contents_path, directory)).expand_path)
+        full_path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+        # Handle missing directories by creating an empty one and relying on the
+        # file fetcher to raise a DependencyFileNotFound error
+        FileUtils.mkdir_p(full_path)
+        super(full_path)
         @initial_head_sha = head_sha
       end
 
