@@ -123,10 +123,7 @@ module Dependabot
             fetch("registry")
           return detailed_registry if detailed_registry
 
-          uri = URI(registry_source_url)
-          return uri.host if uri.host == "npm.pkg.github.com" && uri.path&.start_with?("/download/")
-
-          lockfile_registry
+          URI(registry_source_url).host
         end
 
         def known_registries
