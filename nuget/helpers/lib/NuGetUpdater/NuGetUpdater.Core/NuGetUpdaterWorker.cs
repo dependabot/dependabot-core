@@ -15,6 +15,8 @@ using DiffPlex.DiffBuilder.Model;
 using Microsoft.Build.Locator;
 using Microsoft.Language.Xml;
 
+using NuGet;
+
 namespace NuGetUpdater.Core;
 
 public partial class NuGetUpdaterWorker
@@ -180,7 +182,58 @@ public partial class NuGetUpdaterWorker
             Log("  Running for SDK-style project");
             var buildFiles = LoadBuildFiles(repoRootPath, projectPath);
 
-            UpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
+            // update all dependencies, including transitive
+            var tfms = GetTargetFrameworkMonikersFromProjectContents(projectFileContents);
+            var tfmsAndDependencies = new Dictionary<string, (string PackageName, string Version)[]>();
+            foreach (var tfm in tfms)
+            {
+                var dependencies = await GetAllPackageDependencies(repoRootPath, tfm, dependencyName, newDependencyVersion);
+                tfmsAndDependencies[tfm] = dependencies;
+            }
+
+            // stop update process if we find conflicting package versions
+            var conflictingPackageVersionsFound = false;
+            var packagesAndVersions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (tfm, dependencies) in tfmsAndDependencies)
+            {
+                foreach (var (packageName, packageVersion) in dependencies)
+                {
+                    if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
+                        existingVersion != packageVersion)
+                    {
+                        Log($"Package [{packageName}] tried to update to version [{packageVersion}], but found conflicting package version of [{existingVersion}].");
+                        conflictingPackageVersionsFound = true;
+                    }
+                    else
+                    {
+                        packagesAndVersions[packageName] = packageVersion;
+                    }
+                }
+            }
+
+            if (conflictingPackageVersionsFound)
+            {
+                return;
+            }
+
+            var unupgradableTfms = tfmsAndDependencies.Where(kvp => !kvp.Value.Any()).Select(kvp => kvp.Key);
+            if (unupgradableTfms.Any())
+            {
+                Log($"The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
+                return;
+            }
+
+            var rootWasUpdated = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
+            if (!rootWasUpdated)
+            {
+                Log($"Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependnecies.");
+                return;
+            }
+
+            foreach (var (packageName, packageVersion) in packagesAndVersions.Where(kvp => string.Compare(kvp.Key, dependencyName, StringComparison.OrdinalIgnoreCase) != 0))
+            {
+                TryUpdateDependencyVersion(buildFiles, packageName, previousDependencyVersion: null, newDependencyVersion: packageVersion);
+            }
 
             foreach (var buildFile in buildFiles)
             {
@@ -293,8 +346,9 @@ public partial class NuGetUpdaterWorker
             .ToImmutableArray();
     }
 
-    private static void UpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
+    private static bool TryUpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion)
     {
+        var updateWasPerformed = false;
         var propertyNames = new List<string>();
 
         // First we locate all the PackageReference, GlobalPackageReference, or PackageVersion which set the Version
@@ -310,15 +364,15 @@ public partial class NuGetUpdaterWorker
             {
                 var versionAttribute = packageNode.GetAttribute("Version") ?? packageNode.GetAttribute("VersionOverride");
 
-                // Is this the case that the version is specified directly in the package node?
-                if (versionAttribute.Value == previousDependencyVersion)
-                {
-                    updateAttributes.Add(versionAttribute);
-                }
                 // Is this the case where version is specified with property substitution?
-                else if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
+                if (versionAttribute.Value.StartsWith("$(") && versionAttribute.Value.EndsWith(")"))
                 {
                     propertyNames.Add(versionAttribute.Value.Substring(2, versionAttribute.Value.Length - 3));
+                }
+                // Is this the case that the version is specified directly in the package node?
+                else if (previousDependencyVersion is null || versionAttribute.Value == previousDependencyVersion)
+                {
+                    updateAttributes.Add(versionAttribute);
                 }
             }
 
@@ -327,6 +381,7 @@ public partial class NuGetUpdaterWorker
                 var updatedXml = buildFile.Xml
                     .ReplaceNodes(updateAttributes, (o, n) => n.WithValue(newDependencyVersion));
                 buildFile.Update(updatedXml);
+                updateWasPerformed = true;
             }
         }
 
@@ -357,16 +412,16 @@ public partial class NuGetUpdaterWorker
                 {
                     var propertyContents = propertyElement.GetContentValue();
 
+                    // Is this the case where this property contains another property substitution?
+                    if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
+                    {
+                        propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
+                    }
                     // Is this the case that the property contains the version?
-                    if (propertyContents == previousDependencyVersion)
+                    else if (previousDependencyVersion is null || propertyContents == previousDependencyVersion)
                     {
                         updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
 
-                    }
-                    // Is this the case where this property contains another property substitution?
-                    else if (propertyContents.StartsWith("$(") && propertyContents.EndsWith(")"))
-                    {
-                        propertyNames.Add(propertyContents.Substring(2, propertyContents.Length - 3));
                     }
                 }
 
@@ -375,9 +430,12 @@ public partial class NuGetUpdaterWorker
                     var updatedXml = buildFile.Xml
                         .ReplaceNodes(updateProperties, (o, n) => n.WithContent(newDependencyVersion));
                     buildFile.Update(updatedXml);
+                    updateWasPerformed = true;
                 }
             }
         }
+
+        return updateWasPerformed;
     }
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)
@@ -388,12 +446,99 @@ public partial class NuGetUpdaterWorker
                     (e.GetAttribute("Version") is not null) || e.GetAttribute("VersionOverride") is not null);
     }
 
+    internal static string[] GetTargetFrameworkMonikersFromProjectContents(string projectContents)
+    {
+        var root = XDocument.Parse(projectContents).Root;
+        if (root is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var singularTfm = root.Descendants().FirstOrDefault(element => string.Compare(element.Name.LocalName, "TargetFramework", StringComparison.OrdinalIgnoreCase) == 0);
+        if (singularTfm is not null)
+        {
+            return new[] { singularTfm.Value.Trim() };
+        }
+
+        var multipleTfms = root.Descendants().FirstOrDefault(element => string.Compare(element.Name.LocalName, "TargetFrameworks", StringComparison.OrdinalIgnoreCase) == 0);
+        if (multipleTfms is null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var tfms = multipleTfms.Value.Split(';').Select(tfm => tfm.Trim()).Where(tfm => tfm.Length > 0).ToArray();
+        return tfms;
+    }
+
+    internal static async Task<(string PackageName, string Version)[]> GetAllPackageDependencies(string repoRoot, string targetFramework, string packageName, string version)
+    {
+        var tempDirectory = Directory.CreateTempSubdirectory("package-dependency-resolution_");
+        try
+        {
+            var topLevelFiles = Directory.GetFiles(repoRoot);
+            var nugetConfigPath = topLevelFiles.FirstOrDefault(n => string.Compare(n, "NuGet.Config", StringComparison.OrdinalIgnoreCase) == 0);
+            if (nugetConfigPath is not null)
+            {
+                File.Copy(nugetConfigPath, Path.Combine(repoRoot, "NuGet.Config"));
+            }
+
+            var projectContents = $"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>{targetFramework}</TargetFramework>
+                  </PropertyGroup>
+                  <ItemGroup>
+                    <PackageReference Include="{packageName}" Version="{version}" />
+                  </ItemGroup>
+                  <Target Name="_CollectDependencies" DependsOnTargets="GenerateBuildDependencyFile">
+                    <ItemGroup>
+                      <_NuGetPacakgeData Include="@(NativeCopyLocalItems)" />
+                      <_NuGetPacakgeData Include="@(ResourceCopyLocalItems)" />
+                      <_NuGetPacakgeData Include="@(RuntimeCopyLocalItems)" />
+                    </ItemGroup>
+                  </Target>
+                  <Target Name="_ReportDependencies" DependsOnTargets="_CollectDependencies">
+                    <Message Text="NuGetData::Package=%(_NuGetPacakgeData.NuGetPackageId), Version=%(_NuGetPacakgeData.NuGetPackageVersion)"
+                             Condition="'%(_NuGetPacakgeData.NuGetPackageId)' != '' AND '%(_NuGetPacakgeData.NuGetPackageVersion)' != ''"
+                             Importance="High" />
+                  </Target>
+                </Project>
+                """;
+            var projectPath = Path.Combine(tempDirectory.FullName, "Project.csproj");
+            await File.WriteAllTextAsync(projectPath, projectContents);
+
+            // prevent directory crawling
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.props"), "<Project />");
+            await File.WriteAllTextAsync(Path.Combine(tempDirectory.FullName, "Directory.Build.targets"), "<Project />");
+
+            var (exitCode, stdout, stderr) = await ProcessEx.RunAsync("dotnet", $"build \"{projectPath}\" /t:_ReportDependencies");
+            var lines = stdout.Split('\n').Select(line => line.Trim());
+            var pattern = new Regex(@"^\s*NuGetData::Package=(?<PackageName>[^,]+), Version=(?<PackageVersion>.+)$");
+            var packages = lines
+                .Select(line => pattern.Match(line))
+                .Where(match => match.Success)
+                .Select(match => (match.Groups["PackageName"].Value, match.Groups["PackageVersion"].Value))
+                .ToArray();
+            return packages;
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(tempDirectory.FullName, true);
+            }
+            catch
+            {
+            }
+        }
+    }
+
     private class BuildFile
     {
         public string Path { get; }
         public XmlDocumentSyntax Xml { get; private set; }
 
-        private XmlDocumentSyntax OriginalXml { get; set; }
+        public XmlDocumentSyntax OriginalXml { get; private set; }
 
         public BuildFile(string path, XmlDocumentSyntax xml)
         {
