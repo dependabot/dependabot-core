@@ -2,6 +2,7 @@
 
 require "dependabot/dependency_change_builder"
 require "dependabot/updater/dependency_group_change_batch"
+require "dependabot/workspace"
 
 # This module contains the methods required to build a DependencyChange for
 # a single DependencyGroup.
@@ -18,6 +19,8 @@ module Dependabot
       # outcome of attempting to update every dependency iteratively which
       # can be used for PR creation.
       def compile_all_dependency_changes_for(group)
+        prepare_workspace
+
         group_changes = Dependabot::Updater::DependencyGroupChangeBatch.new(
           initial_dependency_files: dependency_snapshot.dependency_files
         )
@@ -50,6 +53,7 @@ module Dependabot
 
           # Store the updated files for the next loop
           group_changes.merge(dependency_change)
+          store_changes(dependency)
         end
 
         # Create a single Dependabot::DependencyChange that aggregates everything we've updated
@@ -60,6 +64,8 @@ module Dependabot
           updated_dependency_files: group_changes.updated_dependency_files,
           dependency_group: group
         )
+      ensure
+        cleanup_workspace
       end
 
       def dependency_file_parser(dependency_files)
@@ -231,6 +237,32 @@ module Dependabot
             update_checker_for(original_peer_dep, dependency_files, raise_on_ignored: false).
               can_update?(requirements_to_unlock: :own)
           end
+      end
+
+      def prepare_workspace
+        return unless job.clone? && job.repo_contents_path
+
+        # TODO: Remove the directory parameter
+        #
+        # We should defer calculation of the `path` to the call site in the shared_helper
+        # so it is impossible to calculate different values for workspace and non-workspace
+        # calls to the helper.
+        Dependabot::Workspace.setup(
+          repo_contents_path: job.repo_contents_path,
+          directory: Pathname.new(job.source.directory || "/").cleanpath
+        )
+      end
+
+      def store_changes(dependency)
+        return unless job.clone? && job.repo_contents_path
+
+        Dependabot::Workspace.store_change(memo: "Updating #{dependency.name}")
+      end
+
+      def cleanup_workspace
+        return unless job.clone? && job.repo_contents_path
+
+        Dependabot::Workspace.cleanup!
       end
     end
   end

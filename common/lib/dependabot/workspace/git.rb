@@ -26,15 +26,15 @@ module Dependabot
         nil
       end
 
-      protected
-
-      def capture_change(memo = nil)
+      def store_change(memo = nil)
         changed_files = run_shell_command("git status --short .").strip
         return nil if changed_files.empty?
 
         sha, diff = commit(memo)
         ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
       end
+
+      protected
 
       def capture_failed_change_attempt(memo = nil, error = nil)
         changed_files =
