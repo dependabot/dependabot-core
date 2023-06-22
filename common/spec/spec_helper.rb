@@ -34,8 +34,10 @@ if ENV["COVERAGE"]
   end
 end
 
-Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
-Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
+ENV["GIT_AUTHOR_NAME"] = "dependabot-ci"
+ENV["GIT_AUTHOR_EMAIL"] = "no-reply@github.com"
+ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
+ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
 
 RSpec.configure do |config|
   config.color = true
