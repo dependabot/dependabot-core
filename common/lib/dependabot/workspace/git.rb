@@ -6,6 +6,9 @@ require "dependabot/workspace/change_attempt"
 module Dependabot
   module Workspace
     class Git < Base
+      USER = "dependabot[bot]"
+      EMAIL = "#{USER}@users.noreply.github.com"
+
       attr_reader :initial_head_sha
 
       def initialize(repo_contents_path, directory = "/")
@@ -15,6 +18,9 @@ module Dependabot
         FileUtils.mkdir_p(full_path)
         super(full_path)
         @initial_head_sha = head_sha
+
+        run_shell_command(%(git config user.name "#{USER}"), allow_unsafe_shell_command: true)
+        run_shell_command(%(git config user.email "#{EMAIL}"), allow_unsafe_shell_command: true)
       end
 
       def to_patch
