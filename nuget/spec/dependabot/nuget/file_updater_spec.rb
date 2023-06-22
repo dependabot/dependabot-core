@@ -79,7 +79,14 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
       end
 
       its(:content) { is_expected.to include 'Version="13.0.1" />' }
-      #its(:content) { is_expected.to include 'version="1.1.0">' }
+
+      its(:content) do
+        contents_on_disk = File.read(File.join(repo_dir, "my.csproj"))
+
+        is_expected.not_to eq contents_on_disk
+      end
+
+      # its(:content) { is_expected.to include 'version="1.1.0">' }
 
       # it "doesn't update the formatting of the project file" do
       #   expect(updated_csproj_file.content).to include("</PropertyGroup>\n\n")

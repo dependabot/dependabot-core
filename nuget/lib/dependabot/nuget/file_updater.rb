@@ -51,6 +51,9 @@ module Dependabot
           )
         end
 
+        # reset repo files
+        SharedHelpers.reset_git_repo(repo_contents_path)
+
         updated_files
       end
 
