@@ -121,8 +121,12 @@ module Dependabot
             known_registries.
             find { |h| h["registry"].include?(lockfile_registry) }&.
             fetch("registry")
+          return detailed_registry if detailed_registry
 
-          detailed_registry || lockfile_registry
+          uri = URI(registry_source_url)
+          return uri.host if uri.host == "npm.pkg.github.com" && uri.path&.start_with?("/download/")
+
+          lockfile_registry
         end
 
         def known_registries

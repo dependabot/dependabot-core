@@ -327,6 +327,14 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::RegistryFinder do
       it { is_expected.to eq("npm.fury.io/dependabot") }
     end
 
+    context "with a GitHub registry source" do
+      let(:source) do
+        { type: "registry", url: "https://npm.pkg.github.com/download/@dependabot/my-package/1.0.8/morestuff" }
+      end
+
+      it { is_expected.to eq("npm.pkg.github.com") }
+    end
+
     context "with a git source" do
       let(:source) do
         {
