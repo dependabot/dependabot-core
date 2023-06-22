@@ -1,5 +1,4 @@
 FROM ghcr.io/dependabot/dependabot-updater-core
-ENV DEPENDABOT_HOME /home/dependabot
 
 # Check for updates at https://github.com/pnpm/pnpm/releases
 ARG PNPM_VERSION=8.3.1

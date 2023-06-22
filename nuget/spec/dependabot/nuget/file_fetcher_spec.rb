@@ -492,7 +492,7 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
           with(headers: { "Authorization" => "token token" }).
           to_return(
             status: 200,
-            body: fixture("github", "contents_dotnet_repo_with_sln.json"),
+            body: fixture("github", "contents_dotnet_repo_with_sln_src.json"),
             headers: { "content-type" => "application/json" }
           )
         stub_request(:get, url + "src/FSharp.sln?ref=sha").
@@ -548,6 +548,100 @@ RSpec.describe Dependabot::Nuget::FileFetcher do
               src/GraphQL.Common/NuGet.Config
               src/Validator/Validator.csproj
               src/src.props
+            )
+          )
+      end
+    end
+
+    context "that is nested in a src directory with a nuget.config in the partent directory" do
+      before do
+        stub_request(:get, url + "?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_with_sln_nugetconfig_in_different_folders.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "NuGet.config?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_nuget.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_repo_with_sln_nugetconfig_in_different_folders_src.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.sln?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_sln.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.WebApp?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_webapp.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.WebApp/ElectronNET.WebApp.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_webappcsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.API?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_api.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.API/ElectronNET.API.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_apicsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.CLI?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_cli.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.CLI/ElectronNET.CLI.csproj?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_clicsproj.json"),
+            headers: { "content-type" => "application/json" }
+          )
+        stub_request(:get, url + "src/ElectronNET.Host?ref=sha").
+          with(headers: { "Authorization" => "token token" }).
+          to_return(
+            status: 200,
+            body: fixture("github", "contents_dotnet_sln_nugetconfig_in_different_folders_host.json"),
+            headers: { "content-type" => "application/json" }
+          )
+      end
+
+      it "fetches the files the .sln points to" do
+        expect(file_fetcher_instance.files.map(&:name)).
+          to match_array(
+            %w(
+              NuGet.config
+              src/ElectronNET.API/ElectronNET.API.csproj
+              src/ElectronNET.CLI/ElectronNET.CLI.csproj
+              src/ElectronNET.WebApp/ElectronNET.WebApp.csproj
             )
           )
       end

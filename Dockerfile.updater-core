@@ -46,6 +46,9 @@ USER dependabot
 ENV DEPENDABOT_HOME="/home/dependabot"
 WORKDIR $DEPENDABOT_HOME
 
+# For users to determine if dependabot is running
+ENV DEPENDABOT=true
+
 # Disable automatic pulling of files stored with Git LFS
 # This avoids downloading large files not necessary for the dependabot scripts
 ENV GIT_LFS_SKIP_SMUDGE=1
@@ -93,7 +96,7 @@ COPY --from=ruby:3.1.4-bullseye --chown=dependabot:dependabot /usr/local /usr/lo
 # When bumping Bundler, need to also regenerate `updater/Gemfile.lock` via `bundle update --bundler`
 # Generally simplest to match the bundler version to the one that comes by default with whatever Ruby version we install.
 # This way other projects that import this library don't have to futz around with installing new / unexpected bundler versions.
-ARG BUNDLER_V2_VERSION=2.4.13
+ARG BUNDLER_V2_VERSION=2.4.14
 
 # We had to explicitly bump this as the bundled version `0.2.2` in ubuntu 20.04 has a bug.
 # Once Ubuntu base image pulls in a new enough yaml version, we may not need to

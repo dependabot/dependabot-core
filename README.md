@@ -63,6 +63,10 @@ The [Dependabot CLI](https://github.com/dependabot/cli) is a newer tool that may
 While it creates dependency diffs, it's currently missing the logic to turn those diffs into actual PR's. Nevertheless, it
 may be useful for advanced users looking for examples of how to hack on Dependabot.
 
+## Dependabot on CI
+
+In an environment such as GitHub where Dependabot is running in a container, if you want to change your build or installation process depending on whether Dependabot is checking, you can determine it by the existence of `DEPENDABOT` environment variable.
+
 # Contributing to Dependabot
 
 ## Reporting issues and Feature Requests
