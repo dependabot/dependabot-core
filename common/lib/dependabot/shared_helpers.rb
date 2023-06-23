@@ -26,6 +26,9 @@ module Dependabot
 
     def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
+        # If a workspace has been defined to allow orcestration of the git repo
+        # by the runtime we should defer to it, otherwise we prepare the folder
+        # for direct use and yield.
         if Dependabot::Workspace.active_workspace
           Dependabot::Workspace.active_workspace.change(&block)
         else
