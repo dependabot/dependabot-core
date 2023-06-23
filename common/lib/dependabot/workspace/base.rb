@@ -23,14 +23,11 @@ module Dependabot
       end
 
       def change(memo = nil)
-        change_attempt = nil
         Dir.chdir(path) { yield(path) }
       rescue StandardError => e
-        change_attempt = capture_failed_change_attempt(memo, e)
+        capture_failed_change_attempt(memo, e)
         clean # clean up any failed changes
         raise e
-      ensure
-        change_attempts << change_attempt unless change_attempt.nil?
       end
 
       def store_change(memo = nil); end
