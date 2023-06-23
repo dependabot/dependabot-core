@@ -17,6 +17,10 @@ module Dependabot
         configure_git
       end
 
+      def changed?
+        changes.any? || !changed_files.empty?
+      end
+
       def to_patch
         run_shell_command("git diff --patch #{@initial_head_sha}.. .")
       end
@@ -31,22 +35,19 @@ module Dependabot
       end
 
       def store_change(memo = nil)
-        changed_files = run_shell_command("git status --short .").strip
         return nil if changed_files.empty?
 
         sha, diff = commit(memo)
-        ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
       end
 
       protected
 
       def capture_failed_change_attempt(memo = nil, error = nil)
-        changed_files =
-          run_shell_command("git status --untracked-files=all --ignored=matching --short .").strip
-        return nil if changed_files.nil? && error.nil?
+        return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
 
         sha, diff = stash(memo)
-        ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
       end
 
       private
@@ -62,6 +63,10 @@ module Dependabot
 
       def last_stash_sha
         run_shell_command("git rev-parse refs/stash").strip
+      end
+
+      def changed_files(ignored_mode: "traditional")
+        run_shell_command("git status --untracked-files=all --ignored=#{ignored_mode} --short .").strip
       end
 
       def stash(memo = nil)
