@@ -11,16 +11,10 @@ module Dependabot
 
       attr_reader :initial_head_sha
 
-      def initialize(repo_contents_path, directory = "/")
-        full_path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
-        # Handle missing directories by creating an empty one and relying on the
-        # file fetcher to raise a DependencyFileNotFound error
-        FileUtils.mkdir_p(full_path)
-        super(full_path)
+      def initialize(path)
+        super(path)
         @initial_head_sha = head_sha
-
-        run_shell_command(%(git config user.name "#{USER}"), allow_unsafe_shell_command: true)
-        run_shell_command(%(git config user.email "#{EMAIL}"), allow_unsafe_shell_command: true)
+        configure_git
       end
 
       def to_patch
@@ -56,6 +50,11 @@ module Dependabot
       end
 
       private
+
+      def configure_git
+        run_shell_command(%(git config user.name "#{USER}"), allow_unsafe_shell_command: true)
+        run_shell_command(%(git config user.email "#{EMAIL}"), allow_unsafe_shell_command: true)
+      end
 
       def head_sha
         run_shell_command("git rev-parse HEAD").strip
