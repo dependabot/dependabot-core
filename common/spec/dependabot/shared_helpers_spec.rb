@@ -526,6 +526,8 @@ RSpec.describe Dependabot::SharedHelpers do
         allow(File).to receive(:open).
           with(described_class::GIT_CONFIG_GLOBAL_PATH, anything).
           and_raise(Errno::ENOSPC)
+        allow(FileUtils).to receive(:rm).
+          with(described_class::GIT_CONFIG_GLOBAL_PATH)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }
