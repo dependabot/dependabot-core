@@ -37,7 +37,10 @@ module Dependabot
       def store_change(memo = nil)
         return nil if changed_files.empty?
 
+        debug("HEAD: #{current_commit}")
         sha, diff = commit(memo)
+        debug("Comitted: #{current_commit}")
+
         change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
       end
 
@@ -63,6 +66,14 @@ module Dependabot
 
       def last_stash_sha
         run_shell_command("git rev-parse refs/stash").strip
+      end
+
+      def current_commit
+        # Avoid emiting the user's commit message to logs if Dependabot hasn't made any changes
+        return "Initial SHA: #{initial_head_sha}" if changes.empty?
+
+        # Prints out the last commit in the format "<short-ref> <commit-message>"
+        run_shell_command(%(git log -1 --pretty="%h% B"), allow_unsafe_shell_command: true).strip
       end
 
       def changed_files(ignored_mode: "traditional")
@@ -100,6 +111,10 @@ module Dependabot
 
       def run_shell_command(*args, **kwargs)
         Dir.chdir(path) { SharedHelpers.run_shell_command(*args, **kwargs) }
+      end
+
+      def debug(message)
+        Dependabot.logger.debug("[workspace] #{message}")
       end
     end
   end
