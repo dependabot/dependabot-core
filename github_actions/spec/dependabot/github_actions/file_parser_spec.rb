@@ -296,6 +296,53 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with actions using inconsistent case" do
+      let(:workflow_file_fixture_name) { "inconsistent_case.yml" }
+
+      its(:length) { is_expected.to eq(1) }
+
+      describe "the first dependency" do
+        subject(:dependency) { dependencies.first }
+        let(:expected_requirements) do
+          [{
+            requirement: nil,
+            groups: [],
+            file: ".github/workflows/workflow.yml",
+            source: {
+              type: "git",
+              url: "https://github.com/actions/checkout",
+              ref: "v1",
+              branch: nil
+            },
+            metadata: {
+              declaration_string: "actions/checkout@v1"
+            }
+          },
+           {
+             requirement: nil,
+             groups: [],
+             file: ".github/workflows/workflow.yml",
+             source: {
+               type: "git",
+               url: "https://github.com/actions/checkout",
+               ref: "v2",
+               branch: nil
+             },
+             metadata: {
+               declaration_string: "Actions/checkout@v2"
+             }
+           }]
+        end
+
+        it "has the right details" do
+          expect(dependency).to be_a(Dependabot::Dependency)
+          expect(dependency.name).to eq("actions/checkout")
+          expect(dependency.version).to eq("1")
+          expect(dependency.requirements).to eq(expected_requirements)
+        end
+      end
+    end
+
     context "with a semver tag pinned to a reusable workflow commit" do
       let(:workflow_file_fixture_name) { "workflow_semver_reusable.yml" }
 

@@ -4,8 +4,6 @@ require "rspec/its"
 require "webmock/rspec"
 require "vcr"
 require "debug"
-require "simplecov"
-require "simplecov-console"
 require "stackprof"
 require "uri"
 
@@ -15,27 +13,10 @@ require "dependabot/registry_client"
 require_relative "dummy_package_manager/dummy"
 require_relative "warning_monkey_patch"
 
-if ENV["COVERAGE"]
-  SimpleCov::Formatter::Console.output_style = "block"
-  SimpleCov.formatter = if ENV["CI"]
-                          SimpleCov::Formatter::Console
-                        else
-                          SimpleCov::Formatter::HTMLFormatter
-                        end
-
-  SimpleCov.start do
-    add_filter "/spec/"
-
-    enable_coverage :branch
-    minimum_coverage line: 80, branch: 70
-    # TODO: Enable minimum coverage per file once outliers have been increased
-    # minimum_coverage_by_file 80
-    refuse_coverage_drop
-  end
-end
-
-Dependabot::SharedHelpers.run_shell_command("git config --global user.email no-reply@github.com")
-Dependabot::SharedHelpers.run_shell_command("git config --global user.name dependabot-ci")
+ENV["GIT_AUTHOR_NAME"] = "dependabot-ci"
+ENV["GIT_AUTHOR_EMAIL"] = "no-reply@github.com"
+ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
+ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
 
 RSpec.configure do |config|
   config.color = true

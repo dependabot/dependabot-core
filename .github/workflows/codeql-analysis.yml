@@ -49,8 +49,6 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
-        # TODO: Unpin when https://github.com/github/codeql/issues/13103 fixed.
-        tools: https://github.com/github/codeql-action/releases/download/codeql-bundle-20230418/codeql-bundle.tar.gz
         config: |
           paths-ignore:
             - 'bundler/spec/fixtures/projects/bundler1/invalid_ruby/Gemfile'

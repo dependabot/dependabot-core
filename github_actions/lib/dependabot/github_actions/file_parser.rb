@@ -96,7 +96,7 @@ module Dependabot
             groups: [],
             source: {
               type: "git",
-              url: "https://#{hostname}/#{name}",
+              url: "https://#{hostname}/#{name}".downcase,
               ref: ref,
               branch: nil
             },

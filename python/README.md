@@ -17,20 +17,15 @@ Updating the list of known versions might be tricky, here are the steps:
 
 ### Running locally
 
-1. Install native helpers
-   ```
-   $ export DEPENDABOT_NATIVE_HELPERS_PATH=$PWD/helpers/install-dir
-   $ helpers/build
-   ```
+1. Start a development shell
 
-2. Install Ruby dependencies
-   ```
-   $ bundle install
-   ```
+  ```
+  $ bin/docker-dev-shell python
+  ```
 
-3. Run tests
+2. Run tests
    ```
-   $ bundle exec rspec spec
+   [dependabot-core-dev] ~/dependabot-core $ cd python && rspec
    ```
 
 [core-repo]: https://github.com/dependabot/dependabot-core
