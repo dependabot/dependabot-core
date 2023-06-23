@@ -106,7 +106,8 @@ RSpec.describe Dependabot::SharedHelpers do
     context "when there is an active workspace" do
       let(:project_name) { "simple" }
       let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
-      let(:workspace) { Dependabot::Workspace::Git.new(repo_contents_path, directory) }
+      let(:workspace_path) { Pathname.new(File.join(repo_contents_path, directory)).expand_path }
+      let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
 
       before do
         allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
