@@ -303,7 +303,7 @@ module Dependabot
                   else
                     URI("https://#{details['registry']}")
                   end
-            resolved_url_host == uri.host
+            resolved_url_host == uri.host && resolved_url.include?(details["registry"])
           end
 
         return unless credential_matching_url
