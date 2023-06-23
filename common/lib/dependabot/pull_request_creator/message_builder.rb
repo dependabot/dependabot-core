@@ -319,9 +319,9 @@ module Dependabot
           "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
         msg += if update_count >= 5
-                header = ["Package", "Update"]
-                rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
-                "\n\n#{table([header] + rows)}"
+                 header = %w(Package Update)
+                 rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
+                 "\n\n#{table([header] + rows)}"
                elsif update_count > 1
                  " #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
                else
@@ -428,14 +428,14 @@ module Dependabot
       def table(rows)
         [
           table_header(rows[0]),
-          rows[1..].map { |r| table_row(r) },
+          rows[1..].map { |r| table_row(r) }
         ].join("\n")
       end
 
       def table_header(row)
         [
           table_row(row),
-          table_row(["---"] * row.count),
+          table_row(["---"] * row.count)
         ].join("\n")
       end
 

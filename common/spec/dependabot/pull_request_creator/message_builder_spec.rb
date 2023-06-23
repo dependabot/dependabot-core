@@ -2138,7 +2138,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
                           body: fixture("github", "business_releases.json"),
                           headers: json_header)
               stub_request(:get, "https://api.github.com/repos/gocardless/" \
-                                "business#{i}/contents/CHANGELOG.md?ref=master").
+                                 "business#{i}/contents/CHANGELOG.md?ref=master").
                 to_return(status: 200,
                           body: fixture("github", "changelog_contents.json"),
                           headers: json_header)
@@ -2176,7 +2176,6 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
             )
           end
         end
-
 
         context "with a directory specified" do
           let(:gemfile) do
