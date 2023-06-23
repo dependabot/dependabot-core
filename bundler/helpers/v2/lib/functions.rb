@@ -63,7 +63,8 @@ module Functions
       dependency_name: args.fetch(:dependency_name)
     ).latest_git_version(
       dependency_source_url: args.fetch(:dependency_source_url),
-      dependency_source_branch: args.fetch(:dependency_source_branch)
+      dependency_source_branch: args.fetch(:dependency_source_branch),
+      dependency_source_ref: args.fetch(:dependency_source_ref)
     )
   end
 

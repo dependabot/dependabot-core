@@ -69,7 +69,8 @@ module Dependabot
                     dependency_name: dependency.name,
                     credentials: credentials,
                     dependency_source_url: source_details[:url],
-                    dependency_source_branch: source_details[:branch]
+                    dependency_source_branch: source_details[:branch],
+                    dependency_source_ref: source_details[:ref]
                   }
                 )
               end

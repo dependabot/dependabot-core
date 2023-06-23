@@ -19,10 +19,11 @@ module Functions
       type_of(bundler_source)
     end
 
-    def latest_git_version(dependency_source_url:, dependency_source_branch:)
+    def latest_git_version(dependency_source_url:, dependency_source_branch:, dependency_source_ref:)
       source = Bundler::Source::Git.new(
         "uri" => dependency_source_url,
         "branch" => dependency_source_branch,
+        "ref" => dependency_source_ref,
         "name" => dependency_name,
         "submodules" => true
       )
