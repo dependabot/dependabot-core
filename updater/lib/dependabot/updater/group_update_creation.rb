@@ -242,11 +242,6 @@ module Dependabot
       def prepare_workspace
         return unless job.clone? && job.repo_contents_path
 
-        # TODO: Remove the directory parameter
-        #
-        # We should defer calculation of the `path` to the call site in the shared_helper
-        # so it is impossible to calculate different values for workspace and non-workspace
-        # calls to the helper.
         Dependabot::Workspace.setup(
           repo_contents_path: job.repo_contents_path,
           directory: Pathname.new(job.source.directory || "/").cleanpath
