@@ -121,9 +121,8 @@ module Dependabot
             known_registries.
             find { |h| h["registry"].include?(lockfile_registry) }&.
             fetch("registry")
-          return detailed_registry if detailed_registry
 
-          URI(registry_source_url).host
+          detailed_registry || lockfile_registry
         end
 
         def known_registries
