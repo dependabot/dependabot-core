@@ -2,6 +2,8 @@
 
 Go modules support for [`dependabot-core`][core-repo].
 
+MUAHAHAHA
+
 ### Running locally
 
 1. Start a development shell
