@@ -37,11 +37,12 @@ module Dependabot
       def store_change(memo = nil)
         return nil if changed_files.empty?
 
-        debug("HEAD: #{current_commit}")
+        debug("store_change - before: #{current_commit}")
         sha, diff = commit(memo)
-        debug("Comitted: #{current_commit}")
 
         change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+      ensure
+        debug("store_change - after: #{current_commit}")
       end
 
       protected
