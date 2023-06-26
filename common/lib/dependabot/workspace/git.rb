@@ -6,11 +6,19 @@ require "dependabot/workspace/change_attempt"
 module Dependabot
   module Workspace
     class Git < Base
+      USER = "dependabot[bot]"
+      EMAIL = "#{USER}@users.noreply.github.com"
+
       attr_reader :initial_head_sha
 
-      def initialize(repo_contents_path, directory = "/")
-        super(Pathname.new(File.join(repo_contents_path, directory)).expand_path)
+      def initialize(path)
+        super(path)
         @initial_head_sha = head_sha
+        configure_git
+      end
+
+      def changed?
+        changes.any? || !changed_files.empty?
       end
 
       def to_patch
@@ -26,26 +34,32 @@ module Dependabot
         nil
       end
 
-      protected
-
-      def capture_change(memo = nil)
-        changed_files = run_shell_command("git status --short .").strip
+      def store_change(memo = nil)
         return nil if changed_files.empty?
 
+        debug("store_change - before: #{current_commit}")
         sha, diff = commit(memo)
-        ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff)
+      ensure
+        debug("store_change - after: #{current_commit}")
       end
 
+      protected
+
       def capture_failed_change_attempt(memo = nil, error = nil)
-        changed_files =
-          run_shell_command("git status --untracked-files=all --ignored=matching --short .").strip
-        return nil if changed_files.nil? && error.nil?
+        return nil if changed_files(ignored_mode: "matching").empty? && error.nil?
 
         sha, diff = stash(memo)
-        ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
+        change_attempts << ChangeAttempt.new(self, id: sha, memo: memo, diff: diff, error: error)
       end
 
       private
+
+      def configure_git
+        run_shell_command(%(git config user.name "#{USER}"), allow_unsafe_shell_command: true)
+        run_shell_command(%(git config user.email "#{EMAIL}"), allow_unsafe_shell_command: true)
+      end
 
       def head_sha
         run_shell_command("git rev-parse HEAD").strip
@@ -53,6 +67,18 @@ module Dependabot
 
       def last_stash_sha
         run_shell_command("git rev-parse refs/stash").strip
+      end
+
+      def current_commit
+        # Avoid emiting the user's commit message to logs if Dependabot hasn't made any changes
+        return "Initial SHA: #{initial_head_sha}" if changes.empty?
+
+        # Prints out the last commit in the format "<short-ref> <commit-message>"
+        run_shell_command(%(git log -1 --pretty="%h% B"), allow_unsafe_shell_command: true).strip
+      end
+
+      def changed_files(ignored_mode: "traditional")
+        run_shell_command("git status --untracked-files=all --ignored=#{ignored_mode} --short .").strip
       end
 
       def stash(memo = nil)
@@ -86,6 +112,10 @@ module Dependabot
 
       def run_shell_command(*args, **kwargs)
         Dir.chdir(path) { SharedHelpers.run_shell_command(*args, **kwargs) }
+      end
+
+      def debug(message)
+        Dependabot.logger.debug("[workspace] #{message}")
       end
     end
   end
