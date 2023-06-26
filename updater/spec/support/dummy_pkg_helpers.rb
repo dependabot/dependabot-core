@@ -20,34 +20,46 @@ module DummyPkgHelpers
       to_return(status: 200, body: fixture("rubygems-versions-b.json"))
   end
 
-  def original_bundler_files(fixture: "bundler")
+  def original_bundler_files(fixture: "bundler", directory: "/")
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
         content: fixture("#{fixture}/original/Gemfile"),
-        directory: "/"
+        directory: directory
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
         content: fixture("#{fixture}/original/Gemfile.lock"),
-        directory: "/"
+        directory: directory
       )
     ]
   end
 
-  def updated_bundler_files(fixture: "bundler")
+  def updated_bundler_files(fixture: "bundler", directory: "/")
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
         content: fixture("#{fixture}/updated/Gemfile"),
-        directory: "/"
+        directory: directory
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
         content: fixture("#{fixture}/updated/Gemfile.lock"),
-        directory: "/"
+        directory: directory
       )
     ]
+  end
+
+  def create_temporary_content_directory(fixture:, directory: "/", state: "original")
+    tmp_dir = Dir.mktmpdir
+    FileUtils.cp_r(File.join("spec", "fixtures", fixture, state, "/."), File.join(tmp_dir, directory))
+
+    # The content directory needs to a repo
+    Dir.chdir(tmp_dir) do
+      system("git init . && git add . && git commit --allow-empty -m 'Init'", out: File::NULL)
+    end
+
+    tmp_dir
   end
 
   def updated_bundler_files_hash(fixture: "bundler")
