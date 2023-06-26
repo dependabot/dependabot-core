@@ -5,8 +5,8 @@ require "support/dummy_pkg_helpers"
 require "support/dependency_file_helpers"
 
 require "dependabot/dependency_change"
-require "dependabot/dependency_snapshot"
 require "dependabot/environment"
+require "dependabot/dependency_snapshot"
 require "dependabot/service"
 require "dependabot/updater/error_handler"
 require "dependabot/updater/operations/group_update_all_versions"
@@ -284,6 +284,79 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(dependency_change.updated_dependency_files_hash.length).to eql(2)
         expect(dependency_change.updated_dependency_files.map(&:name)).
           to eql(%w(Dockerfile.bundler Dockerfile.cargo))
+      end
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is updating vendored dependencies", :vcr do
+    let(:job) do
+      Dependabot::Job.new_update_job(
+        job_id: "1558782000",
+        job_definition: job_definition_with_fetched_files,
+        repo_contents_path: create_temporary_content_directory(fixture: "bundler_vendored", directory: "bundler/")
+      )
+    end
+
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_with_vendoring")
+    end
+
+    let(:dependency_files) do
+      # Let's use the already up-to-date files
+      original_bundler_files(fixture: "bundler_vendored", directory: "bundler/")
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "creates a pull request that includes changes to the vendored files" do
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("everything-everywhere-all-at-once")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.length).to eql(2)
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(dummy-pkg-b dummy-git-dependency))
+
+        # We updated the right files correctly.
+        expect(dependency_change.updated_dependency_files_hash.length).to eql(8)
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/bundler/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_vendored/updated/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/bundler/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_vendored/updated/Gemfile.lock"))
+
+        # We've deleted the old version of dummy-pkg-b
+        old_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/bundler/vendor/cache/dummy-pkg-b-1.1.0.gem"
+        end
+        expect(old_dummy_pkg_b.operation).to eql("delete")
+
+        # We've created the new version of dummy-pkg-b
+        new_dummy_pkg_b = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/bundler/vendor/cache/dummy-pkg-b-1.2.0.gem"
+        end
+        expect(new_dummy_pkg_b.operation).to eql("create")
+
+        # We've deleted the old version of the vendored git dependency
+        old_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
+          file.path.start_with?("/bundler/vendor/cache/ruby-dummy-git-dependency-20151f9b67c8")
+        end
+        expect(old_git_dependency_files.map(&:operation)).to eql(%w(delete delete))
+
+        # We've created the new version of the vendored git dependency
+        new_git_dependency_files = dependency_change.updated_dependency_files.select do |file|
+          file.path.start_with?("/bundler/vendor/cache/ruby-dummy-git-dependency-c0e25c2eb332")
+        end
+        expect(new_git_dependency_files.map(&:operation)).to eql(%w(create create))
       end
 
       group_update_all.perform

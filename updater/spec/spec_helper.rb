@@ -32,6 +32,12 @@ Dependabot.logger = Logger.new($stdout, level: Logger::ERROR)
 
 WebMock.disable_net_connect!
 
+# Set git envvars so we can commit to repos during test setup if required
+ENV["GIT_AUTHOR_NAME"] = "dependabot-ci"
+ENV["GIT_AUTHOR_EMAIL"] = "no-reply@github.com"
+ENV["GIT_COMMITTER_NAME"] = "dependabot-ci"
+ENV["GIT_COMMITTER_EMAIL"] = "no-reply@github.com"
+
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
