@@ -88,6 +88,7 @@
     "-v", "${localWorkspaceFolder}/terraform/spec:/home/dependabot/dependabot-core/terraform/spec",
     "-v", "${localWorkspaceFolder}/omnibus/Gemfile:/home/dependabot/dependabot-core/omnibus/Gemfile",
     "-v", "${localWorkspaceFolder}/omnibus/dependabot-omnibus.gemspec:/home/dependabot/dependabot-core/omnibus/dependabot-omnibus.gemspec",
+    "-v", "${localWorkspaceFolder}/omnibus/.rubocop.yml:/home/dependabot/dependabot-core/omnibus/.rubocop.yml",
     "-v", "${localWorkspaceFolder}/omnibus/lib:/home/dependabot/dependabot-core/omnibus/lib",
 
     "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined"
@@ -97,7 +98,7 @@
   // You can edit these settings after create using File > Preferences > Settings > Remote.
   "settings": {
     "terminal.integrated.shell.linux": "/bin/bash",
-    "solargraph.useBundler": true,
+    "solargraph.useBundler": false,
     "ruby.useBundler": true,
     "ruby.useLanguageServer": true,
     "ruby.lint": {
@@ -111,7 +112,7 @@
     },
     "ruby.format": "rubocop",
     "[ruby]": {
-      "editor.defaultFormatter": "misogi.ruby-rubocop"
+      "editor.defaultFormatter": "LoranKloeze.ruby-rubocop-revived"
     }
   },
 
