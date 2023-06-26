@@ -130,6 +130,14 @@ RSpec.describe Dependabot::NpmAndYarn::FileParser::LockfileParser do
             end
         end
       end
+
+      context "in v6.1 format" do
+        let(:dependency_files) { project_dependency_files("pnpm/6_1_format") }
+
+        it "parses dependencies properly" do
+          expect(dependencies.map(&:name)).to include("@sentry/react")
+        end
+      end
     end
 
     context "for npm lockfiles" do

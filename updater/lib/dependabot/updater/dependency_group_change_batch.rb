@@ -14,6 +14,8 @@ module Dependabot
           hsh[file.path] = { file: file, changed: false, changes: 0 }
         end
 
+        @vendored_dependency_batch = {}
+
         Dependabot.logger.debug("Starting with '#{@dependency_file_batch.count}' dependency files:")
         debug_current_file_state
       end
@@ -25,11 +27,11 @@ module Dependabot
         end
       end
 
-      # Returns an array of DependencyFile objects that have changed at least once
+      # Returns an array of DependencyFile objects for dependency files that have changed at least once merged with
+      # and changes we've collected to vendored dependencies
       def updated_dependency_files
-        @dependency_file_batch.filter_map do |_path, data|
-          data[:file] if data[:changed]
-        end
+        @dependency_file_batch.filter_map { |_path, data| data[:file] if data[:changed] } +
+          @vendored_dependency_batch.map { |_path, data| data[:file] }
       end
 
       def merge(dependency_change)
@@ -58,17 +60,24 @@ module Dependabot
 
       def merge_file_changes(updated_dependency_files)
         updated_dependency_files.each do |updated_file|
-          existing_file = @dependency_file_batch[updated_file.path]
-
-          change_count = if existing_file
-                           existing_file.fetch(:change_count, 0)
-                         else
-                           Dependabot.logger.debug("New file added: '#{updated_file.path}'")
-                           0
-                         end
-
-          @dependency_file_batch[updated_file.path] = { file: updated_file, changed: true, changes: change_count + 1 }
+          if updated_file.vendored_file?
+            merge_file_to_batch(updated_file, @vendored_dependency_batch)
+          else
+            merge_file_to_batch(updated_file, @dependency_file_batch)
+          end
         end
+      end
+
+      def merge_file_to_batch(file, batch)
+        change_count = if (existing_file = batch[file.path])
+                         existing_file.fetch(:change_count, 0)
+                       else
+                         # The file is newly encountered
+                         Dependabot.logger.debug("File #{file.operation}d: '#{file.path}'")
+                         0
+                       end
+
+        batch[file.path] = { file: file, changed: true, changes: change_count + 1 }
       end
 
       def debug_updated_dependencies
@@ -83,10 +92,17 @@ module Dependabot
       def debug_current_file_state
         return unless Dependabot.logger.debug?
 
-        @dependency_file_batch.each do |path, data|
-          changed_string = data[:changed] ? "( Changed #{data[:changes]} times )" : ""
-          Dependabot.logger.debug("  - #{path} #{changed_string}")
-        end
+        @dependency_file_batch.each { |path, data| debug_file_hash(path, data) }
+
+        return unless @vendored_dependency_batch.any?
+
+        Dependabot.logger.debug("Vendored dependency changes:")
+        @vendored_dependency_batch.each { |path, data| debug_file_hash(path, data) }
+      end
+
+      def debug_file_hash(path, data)
+        changed_string = data[:changed] ? "( Changed #{data[:changes]} times )" : ""
+        Dependabot.logger.debug("  - #{path} #{changed_string}")
       end
     end
   end

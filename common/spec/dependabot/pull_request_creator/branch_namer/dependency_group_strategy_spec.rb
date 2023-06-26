@@ -2,6 +2,7 @@
 
 require "digest"
 
+require "spec_helper"
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/dependency_group"
@@ -14,7 +15,8 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       files: [gemfile],
       target_branch: target_branch,
       separator: separator,
-      dependency_group: dependency_group
+      dependency_group: dependency_group,
+      max_length: max_length
     )
   end
 
@@ -40,8 +42,11 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
   let(:dependency_group) do
     Dependabot::DependencyGroup.new(name: "my-dependency-group", rules: anything)
   end
+  let(:max_length) { nil }
 
   describe "#new_branch_name" do
+    subject(:new_branch_name) { namer.new_branch_name }
+
     context "with defaults for separator, target branch and files in the root directory" do
       let(:directory) { "/" }
       let(:target_branch) { nil }
@@ -126,6 +131,48 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       end
     end
 
+    context "with a maximum length" do
+      let(:directory) { "/" }
+      let(:target_branch) { nil }
+      let(:separator) { "/" }
+
+      context "with a maximum length longer than branch name" do
+        let(:max_length) { 50 }
+
+        it { is_expected.to eq("dependabot/bundler/my-dependency-group-b8d660191d") }
+        its(:length) { is_expected.to eq(49) }
+      end
+
+      context "with a maximum length shorter than branch name" do
+        let(:dependency_group) do
+          Dependabot::DependencyGroup.new(name: "business-and-work-and-desks-and-tables-and-chairs", rules: anything)
+        end
+
+        let(:sha1_digest) { Digest::SHA1.hexdigest("dependabot/bundler/#{dependency_group.name}-b8d660191d") }
+
+        context "with a maximum length longer than sha1 length" do
+          let(:max_length) { 50 }
+
+          it { is_expected.to eq("dependabot#{sha1_digest}") }
+          its(:length) { is_expected.to eq(50) }
+        end
+
+        context "with a maximum length equal than sha1 length" do
+          let(:max_length) { 40 }
+
+          it { is_expected.to eq(sha1_digest) }
+          its(:length) { is_expected.to eq(40) }
+        end
+
+        context "with a maximum length shorter than sha1 length" do
+          let(:max_length) { 20 }
+
+          it { is_expected.to eq(sha1_digest[0...20]) }
+          its(:length) { is_expected.to eq(20) }
+        end
+      end
+    end
+
     context "for files in a non-root directory" do
       let(:directory) { "rails app/" } # let's make sure we deal with spaces too
       let(:target_branch) { nil }
@@ -146,7 +193,7 @@ RSpec.describe Dependabot::PullRequestCreator::BranchNamer::DependencyGroupStrat
       end
     end
 
-    context "for files in a non-root directory targetting a branch" do
+    context "for files in a non-root directory targeting a branch" do
       let(:directory) { "rails-app/" }
       let(:target_branch) { "develop" }
       let(:separator) { "_" }
