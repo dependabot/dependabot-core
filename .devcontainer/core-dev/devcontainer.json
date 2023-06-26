@@ -1,9 +1,16 @@
 {
   "name": "core-dev",
-  "build": {
-    "dockerfile": "../../Dockerfile.development",
-    "cacheFrom": "ghcr.io/dependabot/dependabot-updater-core"
-  },
+  "initializeCommand": [
+    "docker",
+    "build",
+    "-f",
+    "Dockerfile.development",
+    "--build-arg",
+    "FROM_IMAGE=ghcr.io/dependabot/dependabot-updater-<ECOSYSTEM>",
+    "--tag=dependabot-ecosystem-devconatiner-image",
+    "."
+  ],
+  "image": "dependabot-ecosystem-devconatiner-image",
 
   "workspaceFolder": "/home/dependabot/dependabot-core",
 
