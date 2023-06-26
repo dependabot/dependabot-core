@@ -316,7 +316,7 @@ module Dependabot
         update_count = dependencies.map(&:name).uniq.count
 
         msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} " \
-          "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+              "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
 
         msg += if update_count >= 5
                  header = %w(Package Update)
