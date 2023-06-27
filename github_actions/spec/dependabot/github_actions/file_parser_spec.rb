@@ -343,6 +343,27 @@ RSpec.describe Dependabot::GithubActions::FileParser do
       end
     end
 
+    context "with actions currently pinned to a branch, but where tags with the same version format are now used" do
+      let(:workflow_file_fixture_name) { "pinned_branch.yml" }
+
+      let(:service_pack_url) do
+        "https://github.com/swatinem/rust-cache.git/info/refs" \
+          "?service=git-upload-pack"
+      end
+      before do
+        stub_request(:get, service_pack_url).
+          to_return(
+            status: 200,
+            body: fixture("git", "upload_packs", "rust-cache"),
+            headers: {
+              "content-type" => "application/x-git-upload-pack-advertisement"
+            }
+          )
+      end
+
+      its(:length) { is_expected.to eq(1) }
+    end
+
     context "with a semver tag pinned to a reusable workflow commit" do
       let(:workflow_file_fixture_name) { "workflow_semver_reusable.yml" }
 

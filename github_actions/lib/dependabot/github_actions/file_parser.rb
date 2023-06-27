@@ -48,7 +48,11 @@ module Dependabot
           next unless string.match?(GITHUB_REPO_REFERENCE)
 
           dep = build_github_dependency(file, string)
-          git_checker = Dependabot::GitCommitChecker.new(dependency: dep, credentials: credentials)
+          git_checker = Dependabot::GitCommitChecker.new(
+            dependency: dep,
+            credentials: credentials,
+            consider_version_branches_pinned: true
+          )
           next unless git_checker.pinned?
 
           # If dep does not have an assigned (semver) version, look for a commit that references a semver tag
