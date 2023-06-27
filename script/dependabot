@@ -21,5 +21,6 @@ dependabot \
   -v "$(pwd)"/nuget:/home/dependabot/nuget \
   -v "$(pwd)"/pub:/home/dependabot/pub \
   -v "$(pwd)"/python:/home/dependabot/python \
+  -v "$(pwd)"/swift:/home/dependabot/swift \
   -v "$(pwd)"/terraform:/home/dependabot/terraform \
   "$@"

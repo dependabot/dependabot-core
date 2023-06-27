@@ -110,6 +110,12 @@ PATH
       dependabot-common (= 0.221.0)
 
 PATH
+  remote: ../swift
+  specs:
+    dependabot-swift (0.221.0)
+      dependabot-common (= 0.221.0)
+
+PATH
   remote: ../terraform
   specs:
     dependabot-terraform (0.221.0)
@@ -309,6 +315,7 @@ DEPENDENCIES
   dependabot-nuget!
   dependabot-pub!
   dependabot-python!
+  dependabot-swift!
   dependabot-terraform!
   http (~> 5.1)
   licensed (~> 4.3)
