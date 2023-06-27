@@ -1,0 +1,82 @@
+[
+    {
+      "name": ".gitignore",
+      "path": ".gitignore",
+      "sha": "555a15363d44d2ba8006b8e9efd99f8606651ba9",
+      "size": 27,
+      "url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/.gitignore?ref=main",
+      "html_url": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/.gitignore",
+      "git_url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/555a15363d44d2ba8006b8e9efd99f8606651ba9",
+      "download_url": "https://raw.githubusercontent.com/TobiasLaving/nuget-directory-packages-props-example/main/.gitignore",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/.gitignore?ref=main",
+        "git": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/555a15363d44d2ba8006b8e9efd99f8606651ba9",
+        "html": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/.gitignore"
+      }
+    },
+    {
+      "name": "App1",
+      "path": "App1",
+      "sha": "850f4a31e28152fb9a8b8118869e3989bdd2b305",
+      "size": 0,
+      "url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/App1?ref=main",
+      "html_url": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/tree/main/App1",
+      "git_url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/trees/850f4a31e28152fb9a8b8118869e3989bdd2b305",
+      "download_url": null,
+      "type": "dir",
+      "_links": {
+        "self": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/App1?ref=main",
+        "git": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/trees/850f4a31e28152fb9a8b8118869e3989bdd2b305",
+        "html": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/tree/main/App1"
+      }
+    },
+    {
+      "name": "App2",
+      "path": "App2",
+      "sha": "d564d0bc3dd917926892c55e3706cc116d5b165e",
+      "size": 0,
+      "url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/App2?ref=main",
+      "html_url": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/tree/main/App2",
+      "git_url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/trees/d564d0bc3dd917926892c55e3706cc116d5b165e",
+      "download_url": null,
+      "type": "dir",
+      "_links": {
+        "self": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/App2?ref=main",
+        "git": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/trees/d564d0bc3dd917926892c55e3706cc116d5b165e",
+        "html": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/tree/main/App2"
+      }
+    },
+    {
+      "name": "Directory.Packages.props",
+      "path": "Directory.Packages.props",
+      "sha": "0eec9f26f2b09f333a2cc792af3d67caaacd50e6",
+      "size": 278,
+      "url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/Directory.Packages.props?ref=main",
+      "html_url": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/Directory.Packages.props",
+      "git_url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/0eec9f26f2b09f333a2cc792af3d67caaacd50e6",
+      "download_url": "https://raw.githubusercontent.com/TobiasLaving/nuget-directory-packages-props-example/main/Directory.Packages.props",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/Directory.Packages.props?ref=main",
+        "git": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/0eec9f26f2b09f333a2cc792af3d67caaacd50e6",
+        "html": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/Directory.Packages.props"
+      }
+    },
+    {
+      "name": "README.md",
+      "path": "README.md",
+      "sha": "9efa7ad024953c8a97aea4abf6ec6a64d733265c",
+      "size": 172,
+      "url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/README.md?ref=main",
+      "html_url": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/README.md",
+      "git_url": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/9efa7ad024953c8a97aea4abf6ec6a64d733265c",
+      "download_url": "https://raw.githubusercontent.com/TobiasLaving/nuget-directory-packages-props-example/main/README.md",
+      "type": "file",
+      "_links": {
+        "self": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/contents/README.md?ref=main",
+        "git": "https://api.github.com/repos/TobiasLaving/nuget-directory-packages-props-example/git/blobs/9efa7ad024953c8a97aea4abf6ec6a64d733265c",
+        "html": "https://github.com/TobiasLaving/nuget-directory-packages-props-example/blob/main/README.md"
+      }
+    }
+  ]
