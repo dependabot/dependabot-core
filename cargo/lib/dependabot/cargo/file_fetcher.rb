@@ -28,9 +28,8 @@ module Dependabot
                   end
 
         {
-          ecosystem: "cargo",
           package_managers: {
-            "channel" => channel
+            "cargo" => channel
           }
         }
       rescue TomlRB::ParseError

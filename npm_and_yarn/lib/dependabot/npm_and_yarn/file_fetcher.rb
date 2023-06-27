@@ -62,7 +62,6 @@ module Dependabot
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
-          ecosystem: "npm",
           package_managers: package_managers
         }
       end

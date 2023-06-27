@@ -119,11 +119,11 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def record_package_manager_version(ecosystem, package_managers)
+    def record_package_manager_version(package_managers)
       api_url = "#{base_url}/update_jobs/#{job_id}/record_package_manager_version"
       body = {
         data: {
-          ecosystem: ecosystem,
+          ecosystem: "deprecated",
           "package-managers": package_managers
         }
       }

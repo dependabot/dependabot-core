@@ -36,7 +36,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
   it "provides the Go modules version" do
     expect(file_fetcher_instance.package_manager_version).to eq({
-      ecosystem: "gomod",
       package_managers: { "gomod" => "unknown" }
     })
   end
@@ -79,7 +78,6 @@ RSpec.describe Dependabot::GoModules::FileFetcher do
 
     it "provides the Go modules version" do
       expect(file_fetcher_instance.package_manager_version).to eq({
-        ecosystem: "gomod",
         package_managers: { "gomod" => "1.19" }
       })
     end
