@@ -315,12 +315,19 @@ module Dependabot
       def group_intro
         update_count = dependencies.map(&:name).uniq.count
 
-        msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} with #{update_count} update"
-        msg += if update_count > 1
-                 "s: #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
+        msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} " \
+              "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+
+        msg += if update_count >= 5
+                 header = %w(Package Update)
+                 rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
+                 "\n\n#{table([header] + rows)}"
+               elsif update_count > 1
+                 " #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
                else
-                 ": #{dependency_links.first}."
+                 " #{dependency_links.first}."
                end
+
         msg += "\n"
 
         msg
@@ -390,6 +397,10 @@ module Dependabot
         end
       end
 
+      def dependency_version_update(dependency)
+        "#{dependency.humanized_previous_version} to #{dependency.humanized_version}"
+      end
+
       def metadata_links
         return metadata_links_for_dep(dependencies.first) if dependencies.count == 1
 
@@ -412,6 +423,24 @@ module Dependabot
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
+      end
+
+      def table(rows)
+        [
+          table_header(rows[0]),
+          rows[1..].map { |r| table_row(r) }
+        ].join("\n")
+      end
+
+      def table_header(row)
+        [
+          table_row(row),
+          table_row(["---"] * row.count)
+        ].join("\n")
+      end
+
+      def table_row(row)
+        "| #{row.join(' | ')} |"
       end
 
       def metadata_cascades
