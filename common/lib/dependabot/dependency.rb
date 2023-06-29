@@ -212,7 +212,7 @@ module Dependabot
     end
 
     def source_details(allowed_types: nil)
-      sources = requirements.map { |requirement| requirement.fetch(:source) }.uniq.compact
+      sources = all_sources.uniq.compact
       sources.select! { |source| allowed_types.include?(source[:type].to_s) } if allowed_types
 
       git = allowed_types == ["git"]
@@ -229,6 +229,16 @@ module Dependabot
       return "default" if details.nil?
 
       details[:type] || details.fetch("type")
+    end
+
+    def all_sources
+      if top_level?
+        requirements.map { |requirement| requirement.fetch(:source) }
+      elsif subdependency_metadata
+        subdependency_metadata.filter_map { |data| data[:source] }
+      else
+        []
+      end
     end
 
     private
