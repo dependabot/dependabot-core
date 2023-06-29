@@ -7,6 +7,7 @@ require "fileutils"
 require "json"
 require "open3"
 require "shellwords"
+require "timeout"
 require "tmpdir"
 
 require "dependabot/simple_instrumentor"
@@ -23,6 +24,11 @@ module Dependabot
                  "(+https://github.com/dependabot/dependabot-core)"
     SIGKILL = 9
     ERROR_MAP = [
+      {
+        search_str: "JavaScript heap out of memory",
+        msg: "JavaScript heap out of memory",
+        error_class: "Dependabot::SubprocessOutOfMemoryError"
+      },
       {
         search_str: "not found",
         msg: "command not found",
@@ -119,7 +125,7 @@ module Dependabot
       end
 
       env_cmd = [env, cmd].compact
-      stdout, stderr, process = Open3.capture3(*env_cmd, stdin_data: stdin_data)
+      stdout, stderr, exit_status = Open3.capture3(*env_cmd, stdin_data: stdin_data)
       time_taken = Time.now - start
 
       if ENV["DEBUG_HELPERS"] == "true"
@@ -140,23 +146,14 @@ module Dependabot
         args: args,
         time_taken: time_taken,
         stderr_output: stderr ? stderr[0..50_000] : "", # Truncate to ~100kb
-        process_exit_value: process.to_s,
-        process_termsig: process.termsig
+        process_exit_value: exit_status.to_s,
+        process_termsig: exit_status.termsig
       }
 
-      check_out_of_memory_error(stderr, error_context)
-
-      unless stdout&.empty?
+      if exit_status.success?
         begin
           response = JSON.parse(stdout)
-          return response["result"] if process.success?
-
-          raise HelperSubprocessFailed.new(
-            message: response["error"],
-            error_class: response["error_class"],
-            error_context: error_context,
-            trace: response["trace"]
-          )
+          return response["result"]
         rescue JSON::ParserError
           raise HelperSubprocessFailed.new(
             message: stdout || "No output from command",
@@ -165,32 +162,46 @@ module Dependabot
           )
         end
       end
-      raise_command_errors(stderr, error_context)
+      raise_command_errors(stdout, stderr, error_context)
     end
     # rubocop:enable Metrics/MethodLength
 
-    def self.raise_command_errors(stderr, error_context)
+    def self.raise_command_errors(stdout, stderr, error_context)
       base_error = "Error running '#{error_context[:command]}'"
 
       matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
       # If a match is found then set the error msg and class to that value, otherwise use the unknown error
       error_msg = matched_error ? "#{base_error}: #{matched_error[:msg]}" : "#{base_error}: unknown error"
-      error_class = matched_error ? matched_error[:error_class] : "Dependabot::SubprocessCommandUnknownError"
+      error_class = matched_error ? matched_error[:error_class] : "Dependabot::SubprocessUnknownError"
 
+      reponse_error_trace = nil
+      reponse_error_class = nil
+      unless stdout?.empty?
+        begin
+          response = JSON.parse(stdout)
+          reponse_error_result = response.dig("result")
+          reponse_error_msg = response.dig("error")
+          reponse_error_trace = response.dig("trace")
+          reponse_error_class = response.dig("error_class")
+
+          enhanced_error_msg = ""
+          unless reponse_error_result&.empty?
+            enhanced_error_msg = "Result: #{reponse_error_result} \n #{enhanced_error_msg}"
+          end
+          unless reponse_error_msg&.empty?
+            enhanced_error_msg = "Response Error Message: #{reponse_error_msg} \n #{enhanced_error_msg}"
+          end
+          error_class = reponse_error_class unless reponse_error_class&.empty?
+          error_msg = "#{enhanced_error_msg} \n #{error_msg}"
+        rescue JSON::ParserError
+          # Ignore this error, just trying to enhance error reporting with more info
+        end
+      end
       raise HelperSubprocessFailed.new(
         message: error_msg,
         error_class: error_class,
-        error_context: error_context
-      )
-    end
-
-    def self.check_out_of_memory_error(stderr, error_context)
-      return unless stderr&.include?("JavaScript heap out of memory")
-
-      raise HelperSubprocessFailed.new(
-        message: "JavaScript heap out of memory",
-        error_class: "Dependabot::OutOfMemoryError",
-        error_context: error_context
+        error_context: error_context,
+        trace: reponse_error_trace
       )
     end
 
