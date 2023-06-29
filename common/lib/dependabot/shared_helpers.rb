@@ -210,6 +210,7 @@ module Dependabot
         trace: reponse_error_trace
       )
     end
+    # rubocop:enable Metrics/PerceivedComplexity
 
     def self.excon_middleware
       Excon.defaults[:middlewares] +
