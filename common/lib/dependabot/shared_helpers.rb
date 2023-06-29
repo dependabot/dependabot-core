@@ -12,6 +12,7 @@ require "tmpdir"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
+require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot

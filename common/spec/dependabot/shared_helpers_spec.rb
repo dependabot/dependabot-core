@@ -43,13 +43,13 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     let(:directory) { "/" }
-    after do
-      FileUtils.rm_rf(repo_contents_path)
-    end
-
     let(:on_create) { -> { Dir.pwd } }
     let(:project_name) { "vendor_gems" }
     let(:repo_contents_path) { build_tmp_repo(project_name) }
+
+    after do
+      FileUtils.rm_rf(repo_contents_path)
+    end
 
     it "runs inside the temporary repo directory" do
       expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
