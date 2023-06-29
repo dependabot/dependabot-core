@@ -7,7 +7,6 @@ require "fileutils"
 require "json"
 require "open3"
 require "shellwords"
-require "timeout"
 require "tmpdir"
 
 require "dependabot/simple_instrumentor"
@@ -56,17 +55,22 @@ module Dependabot
       }
     ]
 
-    def self.in_a_temporary_repo_directory(directory = "/",
-                                           repo_contents_path = nil,
-                                           &block)
+    def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
       if repo_contents_path
-        path = Pathname.new(File.join(repo_contents_path, directory)).
-               expand_path
-        reset_git_repo(repo_contents_path)
-        # Handle missing directories by creating an empty one and relying on the
-        # file fetcher to raise a DependencyFileNotFound error
-        FileUtils.mkdir_p(path)
-        Dir.chdir(path) { yield(path) }
+        # If a workspace has been defined to allow orcestration of the git repo
+        # by the runtime we should defer to it, otherwise we prepare the folder
+        # for direct use and yield.
+        if Dependabot::Workspace.active_workspace
+          Dependabot::Workspace.active_workspace.change(&block)
+        else
+          path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
+          reset_git_repo(repo_contents_path)
+          # Handle missing directories by creating an empty one and relying on the
+          # file fetcher to raise a DependencyFileNotFound error
+          FileUtils.mkdir_p(path)
+
+          Dir.chdir(path) { yield(path) }
+        end
       else
         in_a_temporary_directory(directory, &block)
       end
