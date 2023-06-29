@@ -29,19 +29,24 @@ module Dependabot
         error_class: "Dependabot::SubprocessCommandNotFoundError"
       },
       {
+        search_str: "no such file or directory",
+        msg: "no such file or directory",
+        error_class: "Dependabot::SubprocessNoSuchFileOrDir"
+      },
+      {
         search_str: "mismatch",
         msg: "required version does not match helper version",
-        error_class: "Dependabot::SubprocessCommandVersionMismatchError"
+        error_class: "Dependabot::SubprocessVersionMismatchError"
       },
       {
         search_str: "permission",
         msg: "permissions error",
-        error_class: "Dependabot::SubprocessCommandPermissionsError"
+        error_class: "Dependabot::SubprocessPermissionsError"
       },
       {
         search_str: "requested URL returned error: 403",
         msg: "url forbidden error: 403",
-        error_class: "Dependabot::SubprocessCommandForbiddenError"
+        error_class: "Dependabot::SubprocessForbiddenError"
       }
     ]
 
@@ -141,7 +146,7 @@ module Dependabot
 
       check_out_of_memory_error(stderr, error_context)
 
-      if !stdout || stdout.empty?
+      unless stdout&.empty?
         begin
           response = JSON.parse(stdout)
           return response["result"] if process.success?
@@ -165,7 +170,7 @@ module Dependabot
     # rubocop:enable Metrics/MethodLength
 
     def self.raise_command_errors(stderr, error_context)
-      base_error = "Error running '#{error_context['command']}'"
+      base_error = "Error running '#{error_context[:command]}'"
 
       matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
       # If a match is found then set the error msg and class to that value, otherwise use the unknown error

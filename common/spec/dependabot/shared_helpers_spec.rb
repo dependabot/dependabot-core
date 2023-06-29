@@ -199,6 +199,18 @@ RSpec.describe Dependabot::SharedHelpers do
       )
     end
 
+    it "raises a no such file or directory" do
+      stderr = "... ruby: No such file or directory -- /opt/bundler/v2/run.rb (LoadError) ..."
+      error_context = { command: "ruby bundler ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': no such file or directory/
+      )
+    end
+
     it "raises a version mismatch error" do
       stderr = "... Your Ruby version is 3.1.3, but your Gemfile specified 2.4.10 (Bundler::RubyVersionMismatch) ... "
       error_context = { command: "ruby bundler ..." }
