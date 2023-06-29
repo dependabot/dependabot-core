@@ -45,8 +45,6 @@ module Dependabot
       }
     ]
 
-    matched_key = error_map.keys.find { |key| stderr.downcase.include?(key) }
-    error_map[matched_key] if matched_key
     def self.in_a_temporary_repo_directory(directory = "/",
                                            repo_contents_path = nil,
                                            &block)
@@ -169,10 +167,10 @@ module Dependabot
     def self.raise_command_errors(stderr, error_context)
       base_error = "Error running '#{error_context['command']}'"
 
-      matched_entry = error_map.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
+      matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
       # If a match is found then set the error msg and class to that value, otherwise use the unknown error
-      error_msg = matched_entry ? "#{base_error}: #{matched_entry[:msg]}" : "#{base_error}: unknown error"
-      error_class = matched_entry ? matched_entry[:error_class] : "Dependabot::SubprocessCommandUnknownError"
+      error_msg = matched_error ? "#{base_error}: #{matched_error[:msg]}" : "#{base_error}: unknown error"
+      error_class = matched_error ? matched_error[:error_class] : "Dependabot::SubprocessCommandUnknownError"
 
       raise HelperSubprocessFailed.new(
         message: error_msg,
