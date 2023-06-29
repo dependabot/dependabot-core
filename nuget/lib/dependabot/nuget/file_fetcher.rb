@@ -19,12 +19,13 @@ module Dependabot
         return true if filenames.any? { |f| f.match?(/^packages\.config$/i) }
         return true if filenames.any? { |f| f.end_with?(".sln") }
         return true if filenames.any? { |f| f.match?("^src$") }
+        return true if filenames.any? { |f| f.end_with?(".proj") }
 
         filenames.any? { |name| name.match?(%r{^[^/]*\.[a-z]{2}proj$}) }
       end
 
       def self.required_files_message
-        "Repo must contain a .(cs|vb|fs)proj file or a packages.config."
+        "Repo must contain a .proj file, .(cs|vb|fs)proj file, or a packages.config."
       end
 
       sig { override.returns(T::Array[DependencyFile]) }
@@ -286,7 +287,8 @@ module Dependabot
       def fetch_imported_property_files(file:, previously_fetched_files:)
         paths =
           ImportPathsFinder.new(project_file: file).import_paths +
-          ImportPathsFinder.new(project_file: file).project_reference_paths
+          ImportPathsFinder.new(project_file: file).project_reference_paths +
+          ImportPathsFinder.new(project_file: file).project_file_paths
 
         paths.flat_map do |path|
           next if previously_fetched_files.map(&:name).include?(path)

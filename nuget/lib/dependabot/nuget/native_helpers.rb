@@ -45,7 +45,9 @@ module Dependabot
 
         puts "running NuGet updater:\n" + command
 
-        SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+        output = SharedHelpers.run_shell_command(command, fingerprint: fingerprint)
+
+        puts output
       end
     end
   end

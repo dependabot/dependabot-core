@@ -13,28 +13,28 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -44,30 +44,30 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.JSON" Version="9.0.1" />
-                    <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.JSON" Version="9.0.1" />
+                <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" />
-                    <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" />
+                <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -77,28 +77,28 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Update="Newtonsoft.Json" Version="9.0.1" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Update="Newtonsoft.Json" Version="13.0.1" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -120,17 +120,17 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="9.0.1" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -146,17 +146,17 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -166,30 +166,30 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -198,32 +198,32 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -232,30 +232,30 @@ public class SdkEndToEndTests : EndToEndTestBase
         await TestUpdateForProject("Newtonsoft.Json", "9.0.1", "13.0.1",
             // initial
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """,
+              <ItemGroup>
+                <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """,
             // expected
             """
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>netstandard2.0</TargetFramework>
-                    <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                  </PropertyGroup>
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+              </PropertyGroup>
 
-                  <ItemGroup>
-                    <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                  </ItemGroup>
-                </Project>
-                """);
+              <ItemGroup>
+                <PackageReference Update="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+              </ItemGroup>
+            </Project>
+            """);
     }
 
     [Fact]
@@ -277,18 +277,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -304,18 +304,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -338,18 +338,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -365,18 +365,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -395,17 +395,17 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -417,17 +417,17 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -446,18 +446,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -469,18 +469,18 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <GlobalPackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -502,14 +502,14 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    // initial props file
-                    ("Directory.Build.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                // initial props file
+                ("Directory.Build.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             },
             // expected project
             expectedProjectContents: """
@@ -525,14 +525,14 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    // expected props file
-                    ("Directory.Build.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                // expected props file
+                ("Directory.Build.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -556,14 +556,14 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    // initial props file
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                // initial props file
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             },
             // expected project
             expectedProjectContents: """
@@ -581,14 +581,14 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    // expected props file
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                // expected props file
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -611,25 +611,25 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    // initial props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                // initial props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -645,25 +645,25 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    // expected props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                          </PropertyGroup>
+                // expected props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -686,26 +686,26 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    // initial props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                // initial props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonVersion>9.0.1</NewtonsoftJsonVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonVersion>9.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -721,26 +721,26 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    // expected props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                // expected props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJsonVersion>13.0.1</NewtonsoftJsonVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             });
     }
 
@@ -763,27 +763,27 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFiles: new[]
             {
-                    // initial props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                // initial props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJSONVersion>9.0.1</NewtonsoftJSONVersion>
-                            <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJSONVersion>9.0.1</NewtonsoftJSONVersion>
+                        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             },
             // expected
             expectedProjectContents: """
@@ -799,27 +799,27 @@ public class SdkEndToEndTests : EndToEndTestBase
                 """,
             additionalFilesExpected: new[]
             {
-                    // expected props files
-                    ("Directory.Packages.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-                            <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
+                // expected props files
+                ("Directory.Packages.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+                        <NewtonsoftJsonPackageVersion>$(NewtonsoftJsonVersion)</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
 
-                          <ItemGroup>
-                            <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
-                          </ItemGroup>
-                        </Project>
-                        """),
-                    ("Version.props", """
-                        <Project>
-                          <PropertyGroup>
-                            <NewtonsoftJSONVersion>13.0.1</NewtonsoftJSONVersion>
-                            <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
-                          </PropertyGroup>
-                        </Project>
-                        """)
+                      <ItemGroup>
+                        <PackageVersion Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
+                      </ItemGroup>
+                    </Project>
+                    """),
+                ("Version.props", """
+                    <Project>
+                      <PropertyGroup>
+                        <NewtonsoftJSONVersion>13.0.1</NewtonsoftJSONVersion>
+                        <NewtonsoftJsonPackageVersion>13.0.1</NewtonsoftJsonPackageVersion>
+                      </PropertyGroup>
+                    </Project>
+                    """)
             });
     }
 
