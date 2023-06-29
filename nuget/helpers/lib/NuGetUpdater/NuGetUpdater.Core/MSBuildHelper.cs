@@ -39,7 +39,7 @@ namespace NuGetUpdater.Core
             while (projectStack.Count > 0)
             {
                 var (folderPath, tmpProject) = projectStack.Pop();
-                foreach (var projectReference in tmpProject.Items.Where(static x => x.ItemType == "ProjectReference"))
+                foreach (var projectReference in tmpProject.Items.Where(static x => x.ItemType == "ProjectReference" || x.ItemType == "ProjectFile"))
                 {
                     if (projectReference.Include is not { } projectPath)
                     {

@@ -15,7 +15,7 @@ module Dependabot
 
       def self.updated_files_regex
         [
-          %r{^[^/]*\.[a-z]{2}proj$},
+          %r{^[^/]*\.([a-z]{2})?proj$},
           /^packages\.config$/i,
           /^global\.json$/i,
           /^dotnet-tools\.json$/i,
@@ -27,7 +27,7 @@ module Dependabot
 
       def updated_dependency_files
         # run update for each project file
-        dependency_files.select { |f| /\.[a-z]{2}proj$/ =~ f.name } .each do |dependency_project_file|
+        dependency_files.select { |f| /\.([a-z]{2})?proj$/ =~ f.name } .each do |dependency_project_file|
           proj_path = dependency_file_path(dependency_project_file)
           dependencies.each do |dependency|
             NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency)
@@ -37,6 +37,7 @@ module Dependabot
         # update all with content from disk
         updated_files = dependency_files.map do |f|
           updated_content = File.read(dependency_file_path(f))
+
           DependencyFile.new(
             name: f.name,
             content: updated_content,
@@ -59,11 +60,15 @@ module Dependabot
       private
 
       def dependency_file_path(dependency_file)
-        File.join(dependency_file.directory, dependency_file.name)
+        if dependency_file.directory.start_with?(repo_contents_path)
+          File.join(dependency_file.directory, dependency_file.name)
+        else
+          File.join(repo_contents_path, dependency_file.directory, dependency_file.name)
+        end
       end
 
       def project_files
-        dependency_files.select { |df| df.name.match?(/\.[a-z]{2}proj$|[Dd]irectory.[Pp]ackages.props/) }
+        dependency_files.select { |df| df.name.match?(/\.([a-z]{2})?proj$/) }
       end
 
       def packages_config_files

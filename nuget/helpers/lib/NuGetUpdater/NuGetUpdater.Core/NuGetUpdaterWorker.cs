@@ -15,8 +15,6 @@ using DiffPlex.DiffBuilder.Model;
 using Microsoft.Build.Locator;
 using Microsoft.Language.Xml;
 
-using NuGet;
-
 namespace NuGetUpdater.Core;
 
 public partial class NuGetUpdaterWorker
@@ -42,6 +40,11 @@ public partial class NuGetUpdaterWorker
 
     public async Task RunAsync(string repoRootPath, string filePath, string dependencyName, string previousDependencyVersion, string newDependencyVersion)
     {
+        if (!Path.IsPathRooted(filePath) || !File.Exists(filePath))
+        {
+            filePath = Path.GetFullPath(Path.Join(repoRootPath, filePath));
+        }
+
         var extension = Path.GetExtension(filePath).ToLowerInvariant();
         switch (extension)
         {
@@ -223,10 +226,10 @@ public partial class NuGetUpdaterWorker
                 return;
             }
 
-            var rootWasUpdated = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
-            if (!rootWasUpdated)
+            var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
+            if (result == UpdateResult.NotFound)
             {
-                Log($"Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependnecies.");
+                Log($"Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
                 return;
             }
 
@@ -240,6 +243,7 @@ public partial class NuGetUpdaterWorker
                 buildFile.Save();
             }
         }
+        Log("Update complete.");
     }
 
     private static string JoinPath(string? path1, string path2)
@@ -346,8 +350,9 @@ public partial class NuGetUpdaterWorker
             .ToImmutableArray();
     }
 
-    private static bool TryUpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion)
+    private UpdateResult TryUpdateDependencyVersion(ImmutableArray<BuildFile> buildFiles, string dependencyName, string? previousDependencyVersion, string newDependencyVersion)
     {
+        var foundCorrect = false;
         var updateWasPerformed = false;
         var propertyNames = new List<string>();
 
@@ -372,7 +377,13 @@ public partial class NuGetUpdaterWorker
                 // Is this the case that the version is specified directly in the package node?
                 else if (previousDependencyVersion is null || versionAttribute.Value == previousDependencyVersion)
                 {
+                    Log($"Found incorrect [{packageNode.Name}] version attribute in [{buildFile.Path}].");
                     updateAttributes.Add(versionAttribute);
+                }
+                else if (versionAttribute.Value == newDependencyVersion)
+                {
+                    Log($"Found correct [{packageNode.Name}] version attribute in [{buildFile.Path}].");
+                    foundCorrect = true;
                 }
             }
 
@@ -420,8 +431,13 @@ public partial class NuGetUpdaterWorker
                     // Is this the case that the property contains the version?
                     else if (previousDependencyVersion is null || propertyContents == previousDependencyVersion)
                     {
+                        Log($"Found incorrect version property [{propertyElement.Name}] in [{buildFile.Path}].");
                         updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
-
+                    }
+                    else if (propertyContents == newDependencyVersion)
+                    {
+                        Log($"Found correct version property [{propertyElement.Name}] in [{buildFile.Path}].");
+                        foundCorrect = true;
                     }
                 }
 
@@ -435,7 +451,11 @@ public partial class NuGetUpdaterWorker
             }
         }
 
-        return updateWasPerformed;
+        return updateWasPerformed
+            ? UpdateResult.Updated
+            : foundCorrect
+                ? UpdateResult.Correct
+                : UpdateResult.NotFound;
     }
 
     private static IEnumerable<IXmlElementSyntax> FindPackageNode(XmlDocumentSyntax xml, string packageName)
@@ -589,5 +609,12 @@ public partial class NuGetUpdaterWorker
 
             return false;
         }
+    }
+
+    public enum UpdateResult
+    {
+        NotFound,
+        Updated,
+        Correct,
     }
 }
