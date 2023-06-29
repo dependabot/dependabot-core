@@ -92,7 +92,9 @@ RSpec.describe Dependabot::Clients::CodeCommit do
       let(:pr_description) { "A" * 11_000 } # Exceeds the maximum length of 10,239
 
       it "truncates the description and appends a truncated message" do
-        expected_truncated_description = "#{pr_description[0..10_238]}...\n\n_Description has been truncated_"
+        truncated_msg = "...\n\n_Description has been truncated_"
+        truncate_length = 10_239 - truncated_msg.length
+        expected_truncated_description = "#{pr_description[0..truncate_length]}#{truncated_msg}"
         expect(subject).to eq(expected_truncated_description)
       end
     end
