@@ -141,7 +141,7 @@ module Dependabot
 
       check_out_of_memory_error(stderr, error_context)
 
-      if stdout
+      if !stdout || stdout.empty?
         begin
           response = JSON.parse(stdout)
           return response["result"] if process.success?
