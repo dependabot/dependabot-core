@@ -214,11 +214,12 @@ RSpec.describe Dependabot::SharedHelpers do
 
   describe ".raise_command_errors" do
     it "raises a command not found error" do
+      stdout = ""
       stderr = "... ruby: command not found ..."
       error_context = { command: "ruby bundler ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': command not found/
@@ -226,11 +227,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "raises a no such file or directory" do
+      stdout = ""
       stderr = "... ruby: No such file or directory -- /opt/bundler/v2/run.rb (LoadError) ..."
       error_context = { command: "ruby bundler ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': no such file or directory/
@@ -238,11 +240,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "raises a version mismatch error" do
+      stdout = ""
       stderr = "... Your Ruby version is 3.1.3, but your Gemfile specified 2.4.10 (Bundler::RubyVersionMismatch) ... "
       error_context = { command: "ruby bundler ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': command not found/
@@ -250,11 +253,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "raises a permissions error" do
+      stdout = ""
       stderr = "... open (13: Permission denied) ..."
       error_context = { command: "ruby bundler ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': permissions error/
@@ -262,11 +266,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "raises a forbidden error" do
+      stdout = ""
       stderr = "... fatal: unable to access ...: The requested URL returned error: 403 ..."
       error_context = { command: "git ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': url forbidden error: 403/
@@ -274,11 +279,12 @@ RSpec.describe Dependabot::SharedHelpers do
     end
 
     it "raises an unknown error" do
+      stdout = ""
       stderr = "... any other error not in list ..."
       error_context = { command: "terraform ..." }
 
       expect do
-        described_class.raise_command_errors(stderr, error_context)
+        described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
         /Error running \'#{error_context['command']}\': unknown error/
