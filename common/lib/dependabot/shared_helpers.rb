@@ -182,7 +182,7 @@ module Dependabot
 
       reponse_error_trace = nil
       reponse_error_class = nil
-      unless stdout?.empty?
+      unless stdout&.empty?
         begin
           response = JSON.parse(stdout)
           reponse_error_result = response["result"]
