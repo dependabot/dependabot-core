@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
-require "fileutils"
-require "tmpdir"
-
 require "spec_helper"
 require "dependabot/shared_helpers"
 require "dependabot/simple_instrumentor"
-require "dependabot/workspace"
 
 RSpec.describe Dependabot::SharedHelpers do
   let(:spec_root) { File.join(File.dirname(__FILE__), "..") }
@@ -47,10 +43,6 @@ RSpec.describe Dependabot::SharedHelpers do
     let(:on_create) { -> { Dir.pwd } }
     let(:project_name) { "vendor_gems" }
     let(:repo_contents_path) { build_tmp_repo(project_name) }
-
-    after do
-      FileUtils.rm_rf(repo_contents_path)
-    end
 
     it "runs inside the temporary repo directory" do
       expect(in_a_temporary_repo_directory).to eq(repo_contents_path)
@@ -100,25 +92,6 @@ RSpec.describe Dependabot::SharedHelpers do
         expect { |b| described_class.in_a_temporary_repo_directory(&b) }.
           to yield_with_args(Pathname)
         expect(described_class).to have_received(:in_a_temporary_directory)
-      end
-    end
-
-    context "when there is an active workspace" do
-      let(:project_name) { "simple" }
-      let(:repo_contents_path) { build_tmp_repo(project_name, tmp_dir_path: Dir.tmpdir) }
-      let(:workspace_path) { Pathname.new(File.join(repo_contents_path, directory)).expand_path }
-      let(:workspace) { Dependabot::Workspace::Git.new(workspace_path) }
-
-      before do
-        allow(Dependabot::Workspace).to receive(:active_workspace).and_return(workspace)
-      end
-
-      it "delegates to the workspace" do
-        expect(workspace).to receive(:change).and_call_original
-
-        expect do |b|
-          described_class.in_a_temporary_repo_directory(directory, repo_contents_path, &b)
-        end.to yield_with_args(Pathname)
       end
     end
   end
@@ -210,6 +183,68 @@ RSpec.describe Dependabot::SharedHelpers do
             expect(error.error_context[:process_termsig]).to eq(9)
           end)
       end
+    end
+  end
+
+  describe ".raise_command_errors" do
+    it "raises a command not found error" do
+      stderr = "... ruby: command not found ..."
+      error_context = { command: "ruby bundler ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': command not found/
+      )
+    end
+
+    it "raises a version mismatch error" do
+      stderr = "... Your Ruby version is 3.1.3, but your Gemfile specified 2.4.10 (Bundler::RubyVersionMismatch) ... "
+      error_context = { command: "ruby bundler ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': command not found/
+      )
+    end
+
+    it "raises a permissions error" do
+      stderr = "... open (13: Permission denied) ..."
+      error_context = { command: "ruby bundler ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': permissions error/
+      )
+    end
+
+    it "raises a forbidden error" do
+      stderr = "... fatal: unable to access ...: The requested URL returned error: 403 ..."
+      error_context = { command: "git ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': url forbidden error: 403/
+      )
+    end
+
+    it "raises an unknown error" do
+      stderr = "... any other error not in list ..."
+      error_context = { command: "terraform ..." }
+
+      expect do
+        described_class.raise_command_errors(stderr, error_context)
+      end.to raise_error(
+        Dependabot::SharedHelpers::HelperSubprocessFailed,
+        /Error running \'#{error_context['command']}\': unknown error/
+      )
     end
   end
 
@@ -527,8 +562,6 @@ RSpec.describe Dependabot::SharedHelpers do
         allow(File).to receive(:open).
           with(described_class::GIT_CONFIG_GLOBAL_PATH, anything).
           and_raise(Errno::ENOSPC)
-        allow(FileUtils).to receive(:rm).
-          with(described_class::GIT_CONFIG_GLOBAL_PATH)
       end
 
       specify { expect { configured_git_config }.to raise_error(Dependabot::OutOfDisk) }

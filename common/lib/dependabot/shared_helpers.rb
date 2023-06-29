@@ -12,7 +12,6 @@ require "tmpdir"
 require "dependabot/simple_instrumentor"
 require "dependabot/utils"
 require "dependabot/errors"
-require "dependabot/workspace"
 require "dependabot"
 
 module Dependabot
@@ -23,23 +22,42 @@ module Dependabot
                  "(#{RUBY_PLATFORM}) " \
                  "(+https://github.com/dependabot/dependabot-core)"
     SIGKILL = 9
+    ERROR_MAP = [
+      {
+        search_str: "not found",
+        msg: "command not found",
+        error_class: "Dependabot::SubprocessCommandNotFoundError"
+      },
+      {
+        search_str: "mismatch",
+        msg: "required version does not match helper version",
+        error_class: "Dependabot::SubprocessCommandVersionMismatchError"
+      },
+      {
+        search_str: "permission",
+        msg: "permissions error",
+        error_class: "Dependabot::SubprocessCommandPermissionsError"
+      },
+      {
+        search_str: "requested URL returned error: 403",
+        msg: "url forbidden error: 403",
+        error_class: "Dependabot::SubprocessCommandForbiddenError"
+      }
+    ]
 
-    def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)
+    matched_key = error_map.keys.find { |key| stderr.downcase.include?(key) }
+    error_map[matched_key] if matched_key
+    def self.in_a_temporary_repo_directory(directory = "/",
+                                           repo_contents_path = nil,
+                                           &block)
       if repo_contents_path
-        # If a workspace has been defined to allow orcestration of the git repo
-        # by the runtime we should defer to it, otherwise we prepare the folder
-        # for direct use and yield.
-        if Dependabot::Workspace.active_workspace
-          Dependabot::Workspace.active_workspace.change(&block)
-        else
-          path = Pathname.new(File.join(repo_contents_path, directory)).expand_path
-          reset_git_repo(repo_contents_path)
-          # Handle missing directories by creating an empty one and relying on the
-          # file fetcher to raise a DependencyFileNotFound error
-          FileUtils.mkdir_p(path)
-
-          Dir.chdir(path) { yield(path) }
-        end
+        path = Pathname.new(File.join(repo_contents_path, directory)).
+               expand_path
+        reset_git_repo(repo_contents_path)
+        # Handle missing directories by creating an empty one and relying on the
+        # file fetcher to raise a DependencyFileNotFound error
+        FileUtils.mkdir_p(path)
+        Dir.chdir(path) { yield(path) }
       else
         in_a_temporary_directory(directory, &block)
       end
@@ -125,23 +143,43 @@ module Dependabot
 
       check_out_of_memory_error(stderr, error_context)
 
-      response = JSON.parse(stdout)
-      return response["result"] if process.success?
+      if stdout
+        begin
+          response = JSON.parse(stdout)
+          return response["result"] if process.success?
+
+          raise HelperSubprocessFailed.new(
+            message: response["error"],
+            error_class: response["error_class"],
+            error_context: error_context,
+            trace: response["trace"]
+          )
+        rescue JSON::ParserError
+          raise HelperSubprocessFailed.new(
+            message: stdout || "No output from command",
+            error_class: "JSON::ParserError",
+            error_context: error_context
+          )
+        end
+      end
+      raise_command_errors(stderr, error_context)
+    end
+    # rubocop:enable Metrics/MethodLength
+
+    def self.raise_command_errors(stderr, error_context)
+      base_error = "Error running '#{error_context['command']}'"
+
+      matched_entry = error_map.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
+      # If a match is found then set the error msg and class to that value, otherwise use the unknown error
+      error_msg = matched_entry ? "#{base_error}: #{matched_entry[:msg]}" : "#{base_error}: unknown error"
+      error_class = matched_entry ? matched_entry[:error_class] : "Dependabot::SubprocessCommandUnknownError"
 
       raise HelperSubprocessFailed.new(
-        message: response["error"],
-        error_class: response["error_class"],
-        error_context: error_context,
-        trace: response["trace"]
-      )
-    rescue JSON::ParserError
-      raise HelperSubprocessFailed.new(
-        message: stdout || "No output from command",
-        error_class: "JSON::ParserError",
+        message: error_msg,
+        error_class: error_class,
         error_context: error_context
       )
     end
-    # rubocop:enable Metrics/MethodLength
 
     def self.check_out_of_memory_error(stderr, error_context)
       return unless stderr&.include?("JavaScript heap out of memory")
