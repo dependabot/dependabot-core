@@ -171,6 +171,7 @@ module Dependabot
     end
     # rubocop:enable Metrics/MethodLength
 
+    # rubocop:disable Metrics/PerceivedComplexity
     def self.raise_command_errors(stdout, stderr, error_context)
       base_error = "Error running '#{error_context[:command]}'"
 
@@ -184,10 +185,10 @@ module Dependabot
       unless stdout?.empty?
         begin
           response = JSON.parse(stdout)
-          reponse_error_result = response.dig("result")
-          reponse_error_msg = response.dig("error")
-          reponse_error_trace = response.dig("trace")
-          reponse_error_class = response.dig("error_class")
+          reponse_error_result = response["result"]
+          reponse_error_msg = response["error"]
+          reponse_error_trace = response["trace"]
+          reponse_error_class = response["error_class"]
 
           enhanced_error_msg = ""
           unless reponse_error_result&.empty?
