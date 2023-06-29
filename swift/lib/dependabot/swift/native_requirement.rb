@@ -2,12 +2,25 @@
 
 require "dependabot/utils"
 require "dependabot/swift/requirement"
-require "dependabot/swift/version"
 
 module Dependabot
   module Swift
     class NativeRequirement
       attr_reader :declaration
+
+      def self.map_requirements(requirements)
+        requirements.map do |requirement|
+          declaration = new(requirement[:metadata][:requirement_string])
+
+          new_declaration = yield(declaration)
+          new_requirement = new(new_declaration)
+
+          requirement.merge(
+            requirement: new_requirement.to_s,
+            metadata: { requirement_string: new_declaration }
+          )
+        end
+      end
 
       def initialize(declaration)
         @declaration = declaration
@@ -29,6 +42,22 @@ module Dependabot
 
       def to_s
         requirement.to_s
+      end
+
+      def update_if_needed(version)
+        return declaration if requirement.satisfied_by?(version)
+
+        update(version)
+      end
+
+      def update(version)
+        if single_version_declaration?
+          declaration.sub(min, version.to_s)
+        elsif closed_range?
+          declaration.sub(max, version.to_s)
+        elsif range?
+          declaration.sub(max, bump_major(version.to_s))
+        end
       end
 
       private
