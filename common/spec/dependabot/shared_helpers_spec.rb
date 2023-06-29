@@ -223,7 +223,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': command not found/
+        /Error running \'#{error_context[:command]}\': command not found/
       )
     end
 
@@ -236,7 +236,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': no such file or directory/
+        /Error running \'#{error_context[:command]}\': no such file or directory/
       )
     end
 
@@ -249,7 +249,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': command not found/
+        /Error running \'#{error_context[:command]}\': required version does not match helper version/
       )
     end
 
@@ -262,7 +262,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': permissions error/
+        /Error running \'#{error_context[:command]}\': permissions error/
       )
     end
 
@@ -275,7 +275,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': url forbidden error: 403/
+        /Error running \'#{error_context[:command]}\': url forbidden error: 403/
       )
     end
 
@@ -288,7 +288,7 @@ RSpec.describe Dependabot::SharedHelpers do
         described_class.raise_command_errors(stdout, stderr, error_context)
       end.to raise_error(
         Dependabot::SharedHelpers::HelperSubprocessFailed,
-        /Error running \'#{error_context['command']}\': unknown error/
+        /Error running \'#{error_context[:command]}\': unknown error/
       )
     end
   end
