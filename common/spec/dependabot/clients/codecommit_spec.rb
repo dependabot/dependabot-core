@@ -78,7 +78,7 @@ RSpec.describe Dependabot::Clients::CodeCommit do
   end
 
   describe "#truncate_pr_description" do
-    subject { stubbed_cc_client.truncate_pr_description(pr_description) }
+    subject { client.truncate_pr_description(pr_description) }
 
     let(:pr_description) { "This is a normal length PR description and it should not be truncated." }
 
