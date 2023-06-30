@@ -1,4 +1,4 @@
-ARG FROM_IMAGE=dependabot/dependabot-core
+ARG FROM_IMAGE=ghcr.io/dependabot/dependabot-core
 FROM $FROM_IMAGE
 
 # Temporarily switch to root user in order to install packages
@@ -15,6 +15,10 @@ RUN apt-get update \
     cmake \
     pkg-config \
   && rm -rf /var/lib/apt/lists/*
+
+RUN git config --system credential.'https://git-codecommit.us-east-1.amazonaws.com'.helper '!aws codecommit credential-helper $@' && \
+git config --system credential.'https://git-codecommit.us-east-1.amazonaws.com'.UseHttpPath true
+
 USER dependabot
 
 RUN curl -L -o ~/.vimrc https://github.com/hmarr/dotfiles/raw/main/vimrc-vanilla.vim && \
