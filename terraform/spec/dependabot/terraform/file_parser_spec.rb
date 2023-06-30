@@ -991,8 +991,8 @@ RSpec.describe Dependabot::Terraform::FileParser do
     context "when the source type is unknown" do
       let(:source_string) { "unknown_source" }
 
-      it "raises an error" do
-        expect { subject }.to raise_error(RuntimeError, "Unknown src: unknown_source")
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
       end
     end
   end
