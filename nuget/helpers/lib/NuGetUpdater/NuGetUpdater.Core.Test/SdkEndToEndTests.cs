@@ -38,6 +38,43 @@ public class SdkEndToEndTests : EndToEndTestBase
     }
 
     [Fact]
+    public async Task UpdateVersionAttribute_InProjectFile_ForAnalyzerPackageReferenceInclude()
+    {
+        // update Microsoft.CodeAnalysis.Analyzers from 3.3.0 to 3.3.4
+        await TestUpdateForProject("Microsoft.CodeAnalysis.Analyzers", "3.3.0", "3.3.4",
+            // initial
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.0">
+                  <PrivateAssets>all</PrivateAssets>
+                  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                </PackageReference>
+              </ItemGroup>
+            </Project>
+            """,
+            // expected
+            """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+              </PropertyGroup>
+
+              <ItemGroup>
+                <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
+                  <PrivateAssets>all</PrivateAssets>
+                  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+                </PackageReference>
+              </ItemGroup>
+            </Project>
+            """);
+    }
+
+    [Fact]
     public async Task UpdateVersionAttribute_InProjectFile_ForMultiplePackageReferences()
     {
         // update Newtonsoft.Json from 9.0.1 to 13.0.1
