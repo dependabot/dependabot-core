@@ -173,7 +173,7 @@ module Dependabot
 
     # rubocop:disable Metrics/PerceivedComplexity
     def self.raise_command_errors(stdout, stderr, error_context)
-      base_error = "Error running '#{error_context[:command]}'"
+      base_error = "Function: #{error_context[:function]}, Error running '#{error_context[:command]}'"
 
       matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str].downcase) }
       # If a match is found then set the error msg and class to that value, otherwise use the unknown error
