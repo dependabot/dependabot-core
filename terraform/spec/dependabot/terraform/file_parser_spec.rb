@@ -911,7 +911,15 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
   end
 
-  let(:file_parser) { described_class.new }
+  let(:file_parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source
+    )
+  end
+
+  let(:files) { [] }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
 
   describe "#source_type" do
     subject { file_parser.send(:source_type, source_string) }
