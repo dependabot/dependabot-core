@@ -25,7 +25,7 @@ module Dependabot
     SIGKILL = 9
     ERROR_MAP = [
       {
-        search_str: "JavaScript heap out of memory",
+        search_str: "JavaScript Heap out of memory",
         msg: "JavaScript heap out of memory",
         error_class: "Dependabot::SubprocessOutOfMemoryError"
       },
@@ -175,7 +175,7 @@ module Dependabot
     def self.raise_command_errors(stdout, stderr, error_context)
       base_error = "Error running '#{error_context[:command]}'"
 
-      matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str]) }
+      matched_error = ERROR_MAP.find { |entry| stderr&.downcase&.include?(entry[:search_str].downcase) }
       # If a match is found then set the error msg and class to that value, otherwise use the unknown error
       error_msg = matched_error ? "#{base_error}: #{matched_error[:msg]}" : "#{base_error}: unknown error"
       error_class = matched_error ? matched_error[:error_class] : "Dependabot::SubprocessUnknownError"
