@@ -515,6 +515,7 @@ public partial class NuGetUpdaterWorker
                       <_NuGetPacakgeData Include="@(NativeCopyLocalItems)" />
                       <_NuGetPacakgeData Include="@(ResourceCopyLocalItems)" />
                       <_NuGetPacakgeData Include="@(RuntimeCopyLocalItems)" />
+                      <_NuGetPacakgeData Include="@(ResolvedAnalyzers)" />
                     </ItemGroup>
                   </Target>
                   <Target Name="_ReportDependencies" DependsOnTargets="_CollectDependencies">
