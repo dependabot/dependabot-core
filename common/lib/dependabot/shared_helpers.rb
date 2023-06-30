@@ -182,7 +182,7 @@ module Dependabot
 
       reponse_error_trace = nil
       reponse_error_class = nil
-      unless stdout&.empty?
+      unless stdout&.strip&.empty?
         begin
           response = JSON.parse(stdout)
           reponse_error_result = response["result"]
@@ -191,14 +191,14 @@ module Dependabot
           reponse_error_class = response["error_class"]
 
           enhanced_error_msg = ""
-          unless reponse_error_result&.empty?
-            enhanced_error_msg = "Result: #{reponse_error_result} \n #{enhanced_error_msg}"
+          unless reponse_error_result&.strip&.empty?
+            enhanced_error_msg = "Result: #{reponse_error_result},#{enhanced_error_msg} "
           end
-          unless reponse_error_msg&.empty?
-            enhanced_error_msg = "Response Error Message: #{reponse_error_msg} \n #{enhanced_error_msg}"
+          unless reponse_error_msg&.strip&.empty?
+            enhanced_error_msg = "Response Error Message: #{reponse_error_msg},#{enhanced_error_msg} "
           end
-          error_class = reponse_error_class unless reponse_error_class&.empty?
-          error_msg = "#{enhanced_error_msg} \n #{error_msg}"
+          error_class = reponse_error_class unless reponse_error_class&.strip&.empty?
+          error_msg = "#{enhanced_error_msg}, #{error_msg}"
         rescue JSON::ParserError
           # Ignore this error, just trying to enhance error reporting with more info
         end

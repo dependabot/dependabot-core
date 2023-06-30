@@ -185,7 +185,7 @@ RSpec.describe Dependabot::SharedHelpers do
       it "raises a HelperSubprocessFailed error" do
         expect { run_subprocess }.
           to raise_error(Dependabot::SharedHelpers::HelperSubprocessFailed) do |error|
-            expect(error.message).to eq("Something went wrong: https://www.example.com")
+            expect(error.message).to eq("Response Error Message: Something went wrong: https://www.example.com, Error running 'ruby /home/dependabot/common/spec/dependabot/../helpers/test/run.rb': unknown error")
           end
       end
     end
