@@ -910,4 +910,50 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
   end
+
+  let(:file_parser) { described_class.new }
+
+  describe "#source_type" do
+    subject { file_parser.send(:source_type, source_string) }
+
+    context "when the source type is known" do
+      let(:source_string) { "github.com/org/repo" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:github)
+      end
+    end
+
+    context "when the source type is a registry" do
+      let(:source_string) { "registry.terraform.io/hashicorp/aws" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
+      end
+    end
+
+    context "when the source type is an HTTP archive" do
+      let(:source_string) { "https://example.com/archive.zip?ref=v1.0.0" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:http_archive)
+      end
+    end
+
+    context "when the source type is an interpolation" do
+      let(:source_string) { "${var.source}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is unknown" do
+      let(:source_string) { "unknown_source" }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(RuntimeError, "Unknown src: unknown_source")
+      end
+    end
+  end
 end
