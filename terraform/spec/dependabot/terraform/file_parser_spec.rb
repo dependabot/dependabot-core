@@ -948,6 +948,30 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when the source type is an interpolation at the end" do
+      let(:source_string) { "git::https://github.com/username/repo.git//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation at the start" do
+      let(:source_string) { "${var.repo_url}/username/repo.git" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation type with multiple" do
+      let(:source_string) { "git::https://github.com/${var.username}/${var.repo}//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
     context "when the source type is unknown" do
       let(:source_string) { "unknown_source" }
 
