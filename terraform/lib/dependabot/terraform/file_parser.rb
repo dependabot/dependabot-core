@@ -260,7 +260,7 @@ module Dependabot
 
       # rubocop:disable Metrics/PerceivedComplexity
       def source_type(source_string)
-        return :interpolation if source_string.match?(%r{\$\{[^{}/]+\}})
+        return :interpolation if source_string.include?("${")
         return :path if source_string.start_with?(".")
         return :github if source_string.start_with?("github.com/")
         return :bitbucket if source_string.start_with?("bitbucket.org/")

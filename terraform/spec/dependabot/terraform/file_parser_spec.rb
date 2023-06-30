@@ -972,6 +972,14 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
 
+    context "when the source type is a compound interpolation" do
+      let(:source_string) { "test/${var.map[${var.key}']" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
     context "when the source type is unknown" do
       let(:source_string) { "unknown_source" }
 
