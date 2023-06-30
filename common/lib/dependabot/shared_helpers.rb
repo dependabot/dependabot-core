@@ -166,6 +166,12 @@ module Dependabot
             error_context: error_context,
             trace: response["trace"]
           )
+        rescue JSON::ParserError
+          raise HelperSubprocessFailed.new(
+            message: stdout || "No output from command",
+            error_class: "JSON::ParserError",
+            error_context: error_context
+          )
         end
       end
       raise_command_errors(stdout, stderr, error_context)
