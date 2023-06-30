@@ -274,7 +274,7 @@ module Dependabot
       end
 
       def path_dependency?
-        dependency.source_details&.fetch(:type) == "path"
+        dependency.source_type == "path"
       end
 
       def git_commit_checker
