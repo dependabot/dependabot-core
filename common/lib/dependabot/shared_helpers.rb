@@ -155,15 +155,16 @@ module Dependabot
         process_termsig: exit_status.termsig
       }
 
-      if exit_status.success?
+      unless stdout&.empty?
         begin
           response = JSON.parse(stdout)
-          return response["result"]
-        rescue JSON::ParserError
+          return response["result"] if process.success?
+
           raise HelperSubprocessFailed.new(
-            message: stdout || "No output from command",
-            error_class: "JSON::ParserError",
-            error_context: error_context
+            message: response["error"],
+            error_class: response["error_class"],
+            error_context: error_context,
+            trace: response["trace"]
           )
         end
       end
