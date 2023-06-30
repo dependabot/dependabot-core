@@ -69,7 +69,7 @@ module Dependabot
             next unless details["source"]
 
             source = source_from(details)
-            # Cannot update local path modules, skip
+            # Cannot update nil (interpolation sources) or local path modules, skip
             next if source.nil? || source[:type] == "path"
 
             dependency_set << build_terragrunt_dependency(file, source)
