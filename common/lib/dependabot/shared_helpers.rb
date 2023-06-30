@@ -158,7 +158,7 @@ module Dependabot
       unless stdout&.empty?
         begin
           response = JSON.parse(stdout)
-          return response["result"] if process.success?
+          return response["result"] if exit_status.success?
 
           raise HelperSubprocessFailed.new(
             message: response["error"],
