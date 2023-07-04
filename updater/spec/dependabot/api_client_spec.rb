@@ -389,9 +389,7 @@ RSpec.describe Dependabot::ApiClient do
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
-      client.record_package_manager_version(
-        "bundler", { "bundler" => "2" }
-      )
+      client.record_package_manager_version({ "bundler" => "2" })
 
       expect(WebMock).
         to have_requested(:post, url).
