@@ -384,12 +384,12 @@ RSpec.describe Dependabot::ApiClient do
     end
   end
 
-  describe "record_package_manager_version" do
-    let(:url) { "http://example.com/update_jobs/1/record_package_manager_version" }
+  describe "ecosystem_versions" do
+    let(:url) { "http://example.com/update_jobs/1/record_ecosystem_versions" }
     before { stub_request(:post, url).to_return(status: 204) }
 
     it "hits the correct endpoint" do
-      client.record_package_manager_version({ "bundler" => "2" })
+      client.record_ecosystem_versions({ "ruby" => { "min" => 3, "max" => 3.2 } })
 
       expect(WebMock).
         to have_requested(:post, url).
