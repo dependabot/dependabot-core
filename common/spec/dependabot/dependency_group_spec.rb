@@ -19,7 +19,7 @@ RSpec.describe Dependabot::DependencyGroup do
         {
           file: "Gemfile",
           requirement: "~> 1.1.0",
-          groups: [],
+          groups: ["test"],
           source: nil
         }
       ]
@@ -35,27 +35,42 @@ RSpec.describe Dependabot::DependencyGroup do
         {
           file: "Gemfile",
           requirement: "~> 1.1.0",
-          groups: [],
+          groups: ["test"],
           source: nil
         }
       ]
     )
   end
 
-  let(:another_test_dependency) do
+  let(:production_dependency) do
     Dependabot::Dependency.new(
-      name: "another-test-dependency",
+      name: "another-dependency",
       package_manager: "bundler",
       version: "1.1.0",
       requirements: [
         {
           file: "Gemfile",
           requirement: "~> 1.1.0",
-          groups: [],
+          groups: ["default"],
           source: nil
         }
       ]
     )
+  end
+
+  # Mock out the dependency-type == production check for Bundler
+  let(:production_checker) do
+    lambda do |gemfile_groups|
+      return true if gemfile_groups.empty?
+      return true if gemfile_groups.include?("runtime")
+      return true if gemfile_groups.include?("default")
+
+      gemfile_groups.any? { |g| g.include?("prod") }
+    end
+  end
+
+  before do
+    allow(Dependabot::Dependency).to receive(:production_check_for_package_manager).and_return(production_checker)
   end
 
   describe "#name" do
@@ -111,7 +126,7 @@ RSpec.describe Dependabot::DependencyGroup do
 
         it "returns false if the dependency does not match any patterns" do
           expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(another_test_dependency)).to be_falsey
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
         end
       end
 
@@ -132,8 +147,47 @@ RSpec.describe Dependabot::DependencyGroup do
 
         it "returns false if the dependency is not in the dependency list and does not match a pattern" do
           expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(another_test_dependency)).to be_falsey
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
         end
+      end
+    end
+
+    context "when the rules specify a dependency-type" do
+      let(:rules) do
+        {
+          "dependency-type" => "production"
+        }
+      end
+
+      it "returns true if the dependency matches the specified type" do
+        expect(dependency_group.contains?(production_dependency)).to be_truthy
+      end
+
+      it "returns false if the dependency does not match the specified type" do
+        expect(dependency_group.contains?(test_dependency1)).to be_falsey
+        expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      end
+    end
+
+    context "when the rules specify a mix of dependency-types" do
+      let(:rules) do
+        {
+          "patterns" => ["*dependency*"],
+          "exclude-patterns" => ["*-2"],
+          "dependency-type" => "development"
+        }
+      end
+
+      it "returns true if the dependency matches the specified type and a pattern" do
+        expect(dependency_group.contains?(test_dependency1)).to be_truthy
+      end
+
+      it "returns false if the dependency only matches the pattern" do
+        expect(dependency_group.contains?(production_dependency)).to be_falsey
+      end
+
+      it "returns false if the dependency matches the specified type and pattern but is excluded" do
+        expect(dependency_group.contains?(test_dependency2)).to be_falsey
       end
     end
   end
