@@ -24,6 +24,14 @@ module Dependabot
 
     private
 
+    # TODO: Decouple pattern and exclude-pattern
+    #
+    # I think we'll probably want to permit someone to group by dependency type but still use exclusions?
+    #
+    # We probably need to think a lot more about validation to ensure we have _at least one_ positive-match rule
+    # out of pattern, dependency-type, etc, as well as `exclude-pattern` or we'll need to support it as an implicit
+    # "everything except exclude-patterns" if it can be configured on its own.
+    #
     def matches_pattern?(dependency_name)
       return true unless pattern_rules? # If no patterns are defined, we pass this check by default
 
