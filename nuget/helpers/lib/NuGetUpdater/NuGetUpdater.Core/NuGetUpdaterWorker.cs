@@ -204,7 +204,7 @@ public partial class NuGetUpdaterWorker
                     if (packagesAndVersions.TryGetValue(packageName, out var existingVersion) &&
                         existingVersion != packageVersion)
                     {
-                        Log($"Package [{packageName}] tried to update to version [{packageVersion}], but found conflicting package version of [{existingVersion}].");
+                        Log($"    Package [{packageName}] tried to update to version [{packageVersion}], but found conflicting package version of [{existingVersion}].");
                         conflictingPackageVersionsFound = true;
                     }
                     else
@@ -222,14 +222,14 @@ public partial class NuGetUpdaterWorker
             var unupgradableTfms = tfmsAndDependencies.Where(kvp => !kvp.Value.Any()).Select(kvp => kvp.Key);
             if (unupgradableTfms.Any())
             {
-                Log($"The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
+                Log($"    The following target frameworks could not find packages to upgrade: {string.Join(", ", unupgradableTfms)}");
                 return;
             }
 
             var result = TryUpdateDependencyVersion(buildFiles, dependencyName, previousDependencyVersion, newDependencyVersion);
             if (result == UpdateResult.NotFound)
             {
-                Log($"Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
+                Log($"    Root package [{dependencyName}/{previousDependencyVersion}] was not updated; skipping dependencies.");
                 return;
             }
 
@@ -240,7 +240,10 @@ public partial class NuGetUpdaterWorker
 
             foreach (var buildFile in buildFiles)
             {
-                buildFile.Save();
+                if (await buildFile.SaveAsync())
+                {
+                    Log($"    Saved [{buildFile.RepoRelativePath}].");
+                }
             }
         }
         Log("Update complete.");
@@ -346,7 +349,7 @@ public partial class NuGetUpdaterWorker
         return new string[] { projectPath }
             .Concat(Directory.EnumerateFiles(repoRootPath, "*.props", SearchOption.AllDirectories))
             .Concat(Directory.EnumerateFiles(repoRootPath, "*.targets", SearchOption.AllDirectories))
-            .Select(path => new BuildFile(path, Parser.ParseText(File.ReadAllText(path))))
+            .Select(path => new BuildFile(repoRootPath, path, Parser.ParseText(File.ReadAllText(path))))
             .ToImmutableArray();
     }
 
@@ -377,12 +380,12 @@ public partial class NuGetUpdaterWorker
                 // Is this the case that the version is specified directly in the package node?
                 else if (previousDependencyVersion is null || versionAttribute.Value == previousDependencyVersion)
                 {
-                    Log($"Found incorrect [{packageNode.Name}] version attribute in [{buildFile.Path}].");
+                    Log($"    Found incorrect [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                     updateAttributes.Add(versionAttribute);
                 }
                 else if (versionAttribute.Value == newDependencyVersion)
                 {
-                    Log($"Found correct [{packageNode.Name}] version attribute in [{buildFile.Path}].");
+                    Log($"    Found correct [{packageNode.Name}] version attribute in [{buildFile.RepoRelativePath}].");
                     foundCorrect = true;
                 }
             }
@@ -431,12 +434,12 @@ public partial class NuGetUpdaterWorker
                     // Is this the case that the property contains the version?
                     else if (previousDependencyVersion is null || propertyContents == previousDependencyVersion)
                     {
-                        Log($"Found incorrect version property [{propertyElement.Name}] in [{buildFile.Path}].");
+                        Log($"    Found incorrect version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
                         updateProperties.Add((XmlElementSyntax)propertyElement.AsNode);
                     }
                     else if (propertyContents == newDependencyVersion)
                     {
-                        Log($"Found correct version property [{propertyElement.Name}] in [{buildFile.Path}].");
+                        Log($"    Found correct version property [{propertyElement.Name}] in [{buildFile.RepoRelativePath}].");
                         foundCorrect = true;
                     }
                 }
@@ -556,13 +559,15 @@ public partial class NuGetUpdaterWorker
 
     private class BuildFile
     {
+        public string RepoRelativePath { get; }
         public string Path { get; }
         public XmlDocumentSyntax Xml { get; private set; }
 
         public XmlDocumentSyntax OriginalXml { get; private set; }
 
-        public BuildFile(string path, XmlDocumentSyntax xml)
+        public BuildFile(string repoRootPath, string path, XmlDocumentSyntax xml)
         {
+            RepoRelativePath = System.IO.Path.GetRelativePath(repoRootPath, path);
             Path = path;
             Xml = xml;
             OriginalXml = xml;
@@ -573,21 +578,24 @@ public partial class NuGetUpdaterWorker
             Xml = xml;
         }
 
-        public void Save()
+        public async Task<bool> SaveAsync()
         {
             if (OriginalXml == Xml)
             {
-                return;
+                return false;
             }
 
             var originalXmlText = OriginalXml.ToFullString();
             var xmlText = Xml.ToFullString();
 
-            if (HasAnyNonWhitespaceChanges(originalXmlText, xmlText))
+            if (!HasAnyNonWhitespaceChanges(originalXmlText, xmlText))
             {
-                File.WriteAllText(Path, xmlText);
-                OriginalXml = Xml;
+                return false;
             }
+
+            await File.WriteAllTextAsync(Path, xmlText);
+            OriginalXml = Xml;
+            return true;
         }
 
         private static bool HasAnyNonWhitespaceChanges(string oldText, string newText)

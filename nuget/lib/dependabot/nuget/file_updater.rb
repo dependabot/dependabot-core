@@ -26,7 +26,6 @@ module Dependabot
       end
 
       def updated_dependency_files
-
         # run update for each project file
         dependency_files.select { |f| /\.([a-z]{2})?proj$/ =~ f.name } .each do |dependency_project_file|
           proj_path = dependency_file_path(dependency_project_file)
@@ -39,17 +38,23 @@ module Dependabot
         updated_files = dependency_files.map do |f|
           updated_content = File.read(dependency_file_path(f))
 
-          DependencyFile.new(
-            name: f.name,
-            content: updated_content,
-            directory: f.directory,
-            type: f.type,
-            support_file: f.support_file,
-            symlink_target: f.symlink_target,
-            content_encoding: f.content_encoding,
-            operation: f.operation,
-            mode: f.mode
-          )
+          if updated_content == f.content
+            f
+          else
+            puts "The contents of file [#{f.name}] were updated."
+
+            DependencyFile.new(
+              name: f.name,
+              content: normalize_content(f, updated_content),
+              directory: f.directory,
+              type: f.type,
+              support_file: f.support_file,
+              symlink_target: f.symlink_target,
+              content_encoding: f.content_encoding,
+              operation: f.operation,
+              mode: f.mode
+            )
+          end
         end
 
         # reset repo files
@@ -59,6 +64,31 @@ module Dependabot
       end
 
       private
+
+      def normalize_content(dependency_file, updated_content)
+        # Fix up line endings
+
+        if dependency_file.content.include?("\r\n") && updated_content.match?("(?!\r)\n")
+          # The original content contain windows style newlines.
+          # Ensure the updated content also uses windows style newlines.
+          updated_content = updated_content.gsub("(?!\r)\n", "\r\n")
+          puts "Fixing mismatched Windows line endings for [#{f.name}]."
+        elsif updated_content.include?("\r\n")
+          # The original content does not contain windows style newlines.
+          # Ensure the updated content uses unix style newlines.
+          updated_content = updated_content.gsub("\r\n", "\n")
+          puts "Fixing mismatched Unix line endings for [#{f.name}]."
+        end
+
+        # Fix up BOM
+
+        if dependency_file.content_encoding == "utf-8" && updated_content.start_with?("\uFEFF")
+          updated_content = updated_content.delete_prefix("\uFEFF")
+          puts "Removing BOM from [#{f.name}]."
+        end
+
+        updated_content
+      end
 
       def dependency_file_path(dependency_file)
         if dependency_file.directory.start_with?(repo_contents_path)
