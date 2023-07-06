@@ -9,7 +9,7 @@ module Dependabot
         class UnfixableRequirement < StandardError; end
 
         ALLOWED_UPDATE_STRATEGIES =
-          %i(bump_versions bump_versions_if_necessary).freeze
+          %i(lockfile_only bump_versions bump_versions_if_necessary).freeze
 
         def initialize(requirements:, update_strategy:, updated_source:,
                        latest_version:, latest_resolvable_version:)
@@ -27,6 +27,8 @@ module Dependabot
         end
 
         def updated_requirements
+          return requirements if update_strategy == :lockfile_only
+
           requirements.map do |req|
             if req[:file].include?(".gemspec")
               update_gemspec_requirement(req)

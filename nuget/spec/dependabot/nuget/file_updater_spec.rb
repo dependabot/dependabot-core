@@ -461,5 +461,43 @@ RSpec.describe Dependabot::Nuget::FileUpdater do
         end
       end
     end
+
+    context "with only a directory.packages.props file" do
+      let(:dependency_files) { [packages_file] }
+      let(:packages_file) do
+        Dependabot::DependencyFile.new(
+          name: "directory.packages.props",
+          content: fixture("csproj", "directory.packages.props")
+        )
+      end
+      let(:dependency) do
+        Dependabot::Dependency.new(
+          name: "System.Lycos",
+          version: "3.23.4",
+          previous_version: "3.23.3",
+          requirements: [{
+            file: "directory.packages.props",
+            requirement: "3.23.4",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          previous_requirements: [{
+            file: "directory.packages.props",
+            requirement: "3.23.3",
+            groups: ["dependencies"],
+            source: nil
+          }],
+          package_manager: "nuget"
+        )
+      end
+
+      describe "the updated file" do
+        subject(:updated_directory_packages_props_file) do
+          updated_files.find { |f| f.name == "directory.packages.props" }
+        end
+
+        its(:content) { is_expected.to include 'Version="3.23.4"' }
+      end
+    end
   end
 end

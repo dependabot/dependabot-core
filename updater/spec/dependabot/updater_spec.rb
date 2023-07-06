@@ -206,6 +206,23 @@ RSpec.describe Dependabot::Updater do
       end
     end
 
+    context "when lockfile_only is set in the job" do
+      it "still tries to unlock requirements of dependencies" do
+        checker = stub_update_checker
+        allow(checker).to receive(:requirements_unlocked_or_can_be?).and_return(true)
+
+        job = build_job(lockfile_only: true)
+        service = build_service
+        updater = build_updater(service: service, job: job)
+
+        expect(Dependabot.logger).
+          to receive(:info).
+          with("Requirements to unlock own")
+
+        updater.run
+      end
+    end
+
     context "when no dependencies are allowed" do
       it "logs the current and latest versions" do
         job = build_job(
@@ -2340,15 +2357,18 @@ RSpec.describe Dependabot::Updater do
     service
   end
 
-  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, # rubocop:disable Metrics/MethodLength
-                existing_pull_requests: [], ignore_conditions: [], security_advisories: [],
-                experiments: {}, updating_a_pull_request: false, security_updates_only: false, dependency_groups: [])
+  # rubocop:disable Metrics/MethodLength
+  def build_job(requested_dependencies: nil, allowed_updates: default_allowed_updates, existing_pull_requests: [],
+                existing_group_pull_requests: [], ignore_conditions: [], security_advisories: [], experiments: {},
+                updating_a_pull_request: false, security_updates_only: false, dependency_groups: [],
+                lockfile_only: false, repo_contents_path: nil)
     Dependabot::Job.new(
       id: 1,
       token: "token",
       dependencies: requested_dependencies,
       allowed_updates: allowed_updates,
       existing_pull_requests: existing_pull_requests,
+      existing_group_pull_requests: existing_group_pull_requests,
       ignore_conditions: ignore_conditions,
       security_advisories: security_advisories,
       package_manager: "bundler",
@@ -2372,7 +2392,7 @@ RSpec.describe Dependabot::Updater do
           "secret" => "codes"
         }
       ],
-      lockfile_only: false,
+      lockfile_only: lockfile_only,
       requirements_update_strategy: nil,
       update_subdependencies: false,
       updating_a_pull_request: updating_a_pull_request,
@@ -2384,10 +2404,11 @@ RSpec.describe Dependabot::Updater do
         "include-scope" => true
       },
       security_updates_only: security_updates_only,
-      repo_contents_path: nil,
+      repo_contents_path: repo_contents_path,
       dependency_groups: dependency_groups
     )
   end
+  # rubocop:enable Metrics/MethodLength
 
   def default_allowed_updates
     [
@@ -2402,7 +2423,8 @@ RSpec.describe Dependabot::Updater do
     ]
   end
 
-  def stub_update_checker(stubs = {}) # rubocop:disable Metrics/MethodLength
+  # rubocop:disable Metrics/MethodLength
+  def stub_update_checker(stubs = {})
     update_checker =
       instance_double(
         Dependabot::Bundler::UpdateChecker,
@@ -2457,4 +2479,5 @@ RSpec.describe Dependabot::Updater do
     allow(update_checker).to receive(:can_update?).with(requirements_to_unlock: :all).and_return(false)
     update_checker
   end
+  # rubocop:enable Metrics/MethodLength
 end

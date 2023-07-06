@@ -222,9 +222,12 @@ module Dependabot
         msg + "to permit the latest version."
       end
 
+      # rubocop:disable Metrics/CyclomaticComplexity
       # rubocop:disable Metrics/PerceivedComplexity
       # rubocop:disable Metrics/AbcSize
       def version_commit_message_intro
+        return group_intro if dependency_group
+
         return multidependency_property_intro if dependencies.count > 1 && updating_a_property?
 
         return dependency_set_intro if dependencies.count > 1 && updating_a_dependency_set?
@@ -251,7 +254,7 @@ module Dependabot
 
         msg
       end
-
+      # rubocop:enable Metrics/CyclomaticComplexity
       # rubocop:enable Metrics/PerceivedComplexity
       # rubocop:enable Metrics/AbcSize
 
@@ -309,6 +312,27 @@ module Dependabot
         msg
       end
 
+      def group_intro
+        update_count = dependencies.map(&:name).uniq.count
+
+        msg = "Bumps the #{dependency_group.name} group#{pr_name_directory} " \
+              "with #{update_count} update#{update_count > 1 ? 's' : ''}:"
+
+        msg += if update_count >= 5
+                 header = %w(Package Update)
+                 rows = dependencies.map { |dep| [dependency_link(dep), dependency_version_update(dep)] }
+                 "\n\n#{table([header] + rows)}"
+               elsif update_count > 1
+                 " #{dependency_links[0..-2].join(', ')} and #{dependency_links[-1]}."
+               else
+                 " #{dependency_links.first}."
+               end
+
+        msg += "\n"
+
+        msg
+      end
+
       def from_version_msg(previous_version)
         return "" unless previous_version
 
@@ -357,15 +381,24 @@ module Dependabot
       end
 
       def dependency_links
-        dependencies.map do |dependency|
-          if source_url(dependency)
-            "[#{dependency.display_name}](#{source_url(dependency)})"
-          elsif homepage_url(dependency)
-            "[#{dependency.display_name}](#{homepage_url(dependency)})"
-          else
-            dependency.display_name
-          end
+        return @dependency_links if defined?(@dependency_links)
+
+        uniq_deps = dependencies.each_with_object({}) { |dep, memo| memo[dep.name] ||= dep }.values
+        @dependency_links = uniq_deps.map { |dep| dependency_link(dep) }
+      end
+
+      def dependency_link(dependency)
+        if source_url(dependency)
+          "[#{dependency.display_name}](#{source_url(dependency)})"
+        elsif homepage_url(dependency)
+          "[#{dependency.display_name}](#{homepage_url(dependency)})"
+        else
+          dependency.display_name
         end
+      end
+
+      def dependency_version_update(dependency)
+        "#{dependency.humanized_previous_version} to #{dependency.humanized_version}"
       end
 
       def metadata_links
@@ -390,6 +423,24 @@ module Dependabot
         msg += "\n- [Upgrade guide](#{upgrade_url(dep)})" if upgrade_url(dep)
         msg += "\n- [Commits](#{commits_url(dep)})" if commits_url(dep)
         msg
+      end
+
+      def table(rows)
+        [
+          table_header(rows[0]),
+          rows[1..].map { |r| table_row(r) }
+        ].join("\n")
+      end
+
+      def table_header(row)
+        [
+          table_row(row),
+          table_row(["---"] * row.count)
+        ].join("\n")
+      end
+
+      def table_row(row)
+        "| #{row.join(' | ')} |"
       end
 
       def metadata_cascades

@@ -1,0 +1,40 @@
+job:
+  package-manager: docker
+  source:
+    provider: github
+    repo: github/dependabot-action
+    directory: "/docker"
+    branch:
+    api-endpoint: https://api.github.com/
+    hostname: github.com
+    commit: 302aaa943c6507c10cbbfd1b7f0fd623c5743807
+  dependencies:
+  dependency-groups:
+  - name: dependabot-core-images
+    rules:
+      patterns:
+        - "dependabot/*"
+  existing-pull-requests: []
+  updating-a-pull-request: false
+  lockfile-only: false
+  update-subdependencies: false
+  ignore-conditions: []
+  requirements-update-strategy:
+  allowed-updates:
+  - dependency-type: direct
+    update-type: all
+  credentials-metadata:
+  - type: git_source
+    host: github.com
+  security-advisories: []
+  max-updater-run-time: 2700
+  vendor-dependencies: false
+  experiments:
+    grouped-updates-prototype: true
+  reject-external-code: false
+  commit-message-options:
+    prefix:
+    prefix-development:
+    include-scope:
+  security-updates-only: false
+

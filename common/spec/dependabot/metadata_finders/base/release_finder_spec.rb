@@ -46,17 +46,43 @@ RSpec.describe Dependabot::MetadataFinders::Base::ReleaseFinder do
     subject { finder.releases_url }
 
     context "with a github repo" do
+      let(:github_url) do
+        "https://api.github.com/repos/gocardless/#{dependency_name}/" \
+          "releases?per_page=100"
+      end
+
+      let(:github_response) { fixture("github", "business_releases.json") }
+
+      before do
+        stub_request(:get, github_url).
+          to_return(status: 200,
+                    body: github_response,
+                    headers: { "Content-Type" => "application/json" })
+      end
+
       it "gets the right URL" do
         expect(subject).to eq("https://github.com/gocardless/business/releases")
       end
     end
 
     context "with a gitlab source" do
+      let(:gitlab_url) do
+        "https://gitlab.com/api/v4/projects/org%2Fbusiness/repository/tags"
+      end
       let(:source) do
         Dependabot::Source.new(
           provider: "gitlab",
           repo: "org/#{dependency_name}"
         )
+      end
+
+      let(:gitlab_response) { fixture("gitlab", "business_tags.json") }
+
+      before do
+        stub_request(:get, gitlab_url).
+          to_return(status: 200,
+                    body: gitlab_response,
+                    headers: { "Content-Type" => "application/json" })
       end
 
       it "gets the right URL" do

@@ -1,5 +1,7 @@
 name: Gems - Bump Version
 on:
+  schedule:
+    - cron: '25 1 * * THU'
   workflow_dispatch:
     inputs:
       version_type:
@@ -15,12 +17,31 @@ jobs:
   Create-PR-To-Bump-Dependabot-Gems-Version:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        with:
+          app_id: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_APP_ID }}
+          private_key: ${{ secrets.DEPENDABOT_CORE_ACTION_AUTOMATION_PRIVATE_KEY }}
+
       - uses: actions/checkout@v3
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          # Ensure we start from main in case the workflow is run from a branch
+          ref: "main"
+
       - uses: ruby/setup-ruby@v1 # bump-version.rb needs bundler
+        with:
+          # Use the version of bundler specified in `updater/Gemfile.lock`.
+          # Otherwise the generated PR will change `BUNDLED WITH` in
+          # `updater/Gemfile.lock`, which in prod will silently change the
+          # version of bundler used by the bundler native helper.
+          working-directory: updater
 
       - name: Bump the version
+        # Cron runs with no inputs, so version_type will default to 'minor'
         run: |
-          NEW_VERSION=$(bin/bump-version.rb ${{ github.event.inputs.version_type }})
+          NEW_VERSION=$(bin/bump-version.rb ${{ github.event.inputs.version_type || 'minor' }})
           echo "New version is: $NEW_VERSION"
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
@@ -54,7 +75,7 @@ jobs:
           echo "PR created at URL: $PR_URL"
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Set summary
         run: |

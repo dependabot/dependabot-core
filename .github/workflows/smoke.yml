@@ -20,6 +20,7 @@ jobs:
         suite:
           - { path: bundler, name: bundler, ecosystem: bundler }
           - { path: bundler, name: bundler-group-rules, ecosystem: bundler }
+          - { path: bundler, name: bundler-group-vendoring, ecosystem: bundler }
           - { path: cargo, name: cargo, ecosystem: cargo }
           - { path: composer, name: composer, ecosystem: composer }
           - { path: docker, name: docker, ecosystem: docker }
@@ -28,13 +29,17 @@ jobs:
           - { path: github_actions, name: actions, ecosystem: github-actions }
           - { path: go_modules, name: go, ecosystem: gomod }
           - { path: go_modules, name: go-close-pr, ecosystem: gomod }
+          - { path: go_modules, name: go-group-rules, ecosystem: gomod }
           - { path: go_modules, name: go-security, ecosystem: gomod }
           - { path: go_modules, name: go-update-pr, ecosystem: gomod }
           - { path: gradle, name: gradle, ecosystem: gradle }
+          - { path: gradle, name: gradle-version-catalog, ecosystem: gradle }
           - { path: hex, name: hex, ecosystem: mix }
           - { path: maven, name: maven, ecosystem: maven }
           - { path: npm_and_yarn, name: npm, ecosystem: npm}
+          - { path: npm_and_yarn, name: npm-group-rules, ecosystem: npm}
           - { path: npm_and_yarn, name: npm-remove-transitive, ecosystem: npm}
+          - { path: npm_and_yarn, name: pnpm, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry, ecosystem: npm}
           - { path: npm_and_yarn, name: yarn-berry-workspaces, ecosystem: npm}
@@ -124,6 +129,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'gradle/**'
+          'gradle-version-catalog':
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'gradle/**'
           hex:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core
@@ -172,6 +183,12 @@ jobs:
             - 'common/**'
             - 'updater/**'
             - 'python/**'
+          pnpm:
+            - .github/workflows/smoke.yml
+            - Dockerfile.updater-core
+            - 'common/**'
+            - 'updater/**'
+            - 'npm_and_yarn/**'
           poetry:
             - .github/workflows/smoke.yml
             - Dockerfile.updater-core

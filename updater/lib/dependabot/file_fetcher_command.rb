@@ -21,8 +21,14 @@ module Dependabot
         @base_commit_sha = file_fetcher.commit
         raise "base commit SHA not found" unless @base_commit_sha
 
-        version = file_fetcher.package_manager_version
-        api_client.record_package_manager_version(version[:ecosystem], version[:package_managers]) unless version.nil?
+        # We don't set this flag in GHES because there's no point in recording versions since we can't access that data.
+        # TODO: The flag is named `record_ecosystem_versions` because `package_manager_version` is getting renamed to
+        # to that shortly... but splitting into separate PR's for lower risk/easiery testability. Once the follow-on PR
+        # with the rename lands, the name confusion will disappear.
+        if Experiments.enabled?(:record_ecosystem_versions)
+          version = file_fetcher.package_manager_version
+          api_client.record_package_manager_version(version[:package_managers]) unless version.nil?
+        end
 
         dependency_files
       rescue StandardError => e

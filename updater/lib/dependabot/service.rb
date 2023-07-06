@@ -66,16 +66,18 @@ module Dependabot
     #
     # This should be called as an alternative/in addition to record_update_job_error
     # for cases where an error could indicate a problem with the service.
-    def capture_exception(error:, job: nil, dependency: nil, tags: {}, extra: {})
+    def capture_exception(error:, job: nil, dependency: nil, dependency_group: nil, tags: {}, extra: {})
       Raven.capture_exception(
         error,
         {
           tags: tags.merge({
             update_job_id: job&.id,
-            package_manager: job&.package_manager
+            package_manager: job&.package_manager,
+            repo_private: job&.repo_private?
           }.compact),
           extra: extra.merge({
-            dependency_name: dependency&.name
+            dependency_name: dependency&.name,
+            dependency_group: dependency_group&.name
           }.compact)
         }
       )
