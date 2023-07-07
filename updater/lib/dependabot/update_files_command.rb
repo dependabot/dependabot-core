@@ -121,7 +121,7 @@ module Dependabot
           # If we get a 500 from GitHub there's very little we can do about it,
           # and responsibility for fixing it is on them, not us. As a result we
           # quietly log these as errors
-          { "error-type": "unknown_error" }
+          { "error-type": "server_error" }
         else
           # Check if the error is a known "run halting" state we should handle
           if (error_type = Updater::ErrorHandler::RUN_HALTING_ERRORS[error.class])
