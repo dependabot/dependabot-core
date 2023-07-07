@@ -130,14 +130,14 @@ module Dependabot
       return response["result"] if process.success?
 
       raise HelperSubprocessFailed.new(
-        message: response["error"],
+        message: "Command \"#{error_context['command']}\" failed with #{response['error']}",
         error_class: response["error_class"],
         error_context: error_context,
         trace: response["trace"]
       )
     rescue JSON::ParserError
       raise HelperSubprocessFailed.new(
-        message: stdout || "No output from command",
+        message: stdout.empty? ? "No output from command \"#{error_context['command']}\"" : stdout,
         error_class: "JSON::ParserError",
         error_context: error_context
       )
