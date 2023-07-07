@@ -205,6 +205,10 @@ module Dependabot
       def log_unknown_error_with_backtrace(error)
         Dependabot.logger.error error.message
         error.backtrace.each { |line| Dependabot.logger.error line }
+        service.increment_metric("updater.unknown_error", tags: {
+          package_manager: job.package_manager,
+          class_name: error.class.name,
+        })
       end
     end
   end

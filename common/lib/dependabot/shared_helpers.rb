@@ -64,7 +64,7 @@ module Dependabot
 
       def initialize(message:, error_context:, error_class: nil, trace: nil)
         super(message)
-        @error_class = error_class || ""
+        @error_class = error_class || "HelperSubprocessFailed"
         @error_context = error_context
         @fingerprint = error_context[:fingerprint] || error_context[:command]
         @trace = trace
