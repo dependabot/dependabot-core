@@ -67,6 +67,10 @@ module Dependabot
 
       service.capture_exception(error: err, job: job)
       service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
+      service.increment_metric("updater.unknown_error", tags: {
+        package_manager: job.package_manager,
+        class_name: err.class.name,
+      })
     end
 
     def job_id
