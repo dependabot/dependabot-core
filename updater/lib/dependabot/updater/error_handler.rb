@@ -62,7 +62,7 @@ module Dependabot
       def log_dependency_error(dependency:, error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing #{dependency.name} (#{error.class.name})"
-          log_unknown_error_with_backtrace(error)
+          log_unknown_error_with_backtrace(error, error_detail, dependency)
         else
           Dependabot.logger.info(
             "Handled error whilst updating #{dependency.name}: #{error_type} #{error_detail}"
@@ -93,7 +93,7 @@ module Dependabot
       def log_job_error(error:, error_type:, error_detail: nil)
         if error_type == "unknown_error"
           Dependabot.logger.error "Error processing job (#{error.class.name})"
-          log_unknown_error_with_backtrace(error)
+          log_unknown_error_with_backtrace(error, error_detail)
         else
           Dependabot.logger.info(
             "Handled error whilst processing job: #{error_type} #{error_detail}"
@@ -202,9 +202,21 @@ module Dependabot
         end
       end
 
-      def log_unknown_error_with_backtrace(error)
+      def log_unknown_error_with_backtrace(error, error_detail, dependency = nil)
         Dependabot.logger.error error.message
         error.backtrace.each { |line| Dependabot.logger.error line }
+
+        details = {
+          "error": error,
+          "error-detail": error_detail,
+          "error-class": error.class.name,
+          "error-backtrace": error.backtrace,
+          "package-manager": job.package_manager,
+          "message": error.message,
+          "dependency": dependency if dependency
+        }
+
+        service.record_unknown_error(error_details: details, dependency: dependency)
         service.increment_metric("updater.unknown_error", tags: {
           package_manager: job.package_manager,
           class_name: error.class.name,

@@ -132,6 +132,13 @@ module Dependabot
             Dependabot.logger.error error.message
             error.backtrace.each { |line| Dependabot.logger.error line }
 
+            service.record_unknown_error(error_details: {
+              "error": error,
+              "error-class": error.class.to_s,
+              "error-backtrace": error.backtrace,
+              "package-manager": job.package_manager,
+              "message": error.message,
+            })
             service.capture_exception(error: error, job: job)
 
             # Set an unknown error type to be added to the job

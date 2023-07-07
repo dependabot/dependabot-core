@@ -66,7 +66,7 @@ module Dependabot
       err.backtrace.each { |line| Dependabot.logger.error(line) }
 
       service.capture_exception(error: err, job: job)
-      service.record_update_job_error(error_type: "unknown_error", error_details: { message: err.message })
+      service.record_unknown_error(error_details: error_details)
       service.increment_metric("updater.unknown_error", tags: {
         package_manager: job.package_manager,
         class_name: err.class.name,

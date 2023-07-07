@@ -49,6 +49,11 @@ module Dependabot
       client.record_update_job_error(error_type: error_type, error_details: error_details)
     end
 
+    def record_unknown_error(error_details:, dependency: nil)
+      @errors << ["unknown_error", dependency]
+      client.record_unknown_error(error_details: error_details)
+    end
+
     def update_dependency_list(dependency_snapshot:)
       dependency_payload = dependency_snapshot.dependencies.map do |dep|
         {
