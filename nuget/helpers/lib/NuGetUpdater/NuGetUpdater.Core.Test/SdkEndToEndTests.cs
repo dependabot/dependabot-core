@@ -6,6 +6,11 @@ namespace NuGetUpdater.Core.Test;
 
 public class SdkEndToEndTests : EndToEndTestBase
 {
+    public SdkEndToEndTests()
+    {
+        MSBuildHelper.RegisterMSBuild();
+    }
+
     [Fact]
     public async Task UpdateVersionAttribute_InProjectFile_ForPackageReferenceInclude()
     {

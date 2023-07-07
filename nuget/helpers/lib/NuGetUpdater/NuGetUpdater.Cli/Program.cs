@@ -31,7 +31,7 @@ public class Program
 
         command.SetHandler(async (repoRoot, solutionOrProjectFile, dependencyName, newVersion, previousVersion, verbose) =>
         {
-            var worker = new NuGetUpdaterWorker(verbose);
+            var worker = new NuGetUpdaterWorker(new Logger(verbose));
             await worker.RunAsync(repoRoot.FullName, solutionOrProjectFile.FullName, dependencyName, previousVersion, newVersion);
         }, repoRootOption, solutionOrProjectFileOption, dependencyNameOption, newVersionOption, previousVersionOption, verboseOption);
 
