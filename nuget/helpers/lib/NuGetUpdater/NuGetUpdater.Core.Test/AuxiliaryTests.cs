@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,6 +9,11 @@ namespace NuGetUpdater.Core.Test;
 
 public class AuxiliaryTests
 {
+    public AuxiliaryTests()
+    {
+        MSBuildHelper.RegisterMSBuild();
+    }
+
     [Theory]
     [InlineData( // no change made
         @"<Project><ItemGroup><Reference><HintPath>path\to\file.dll</HintPath></Reference></ItemGroup></Project>",
@@ -23,7 +29,7 @@ public class AuxiliaryTests
     )]
     public void ReferenceHintPathsCanBeNormalized(string originalXml, string expectedXml)
     {
-        var actualXml = NuGetUpdaterWorker.NormalizeDirectorySeparatorsInProject(originalXml);
+        var actualXml = PackageConfigUpdater.NormalizeDirectorySeparatorsInProject(originalXml);
         Assert.Equal(expectedXml, actualXml);
     }
 
@@ -31,15 +37,25 @@ public class AuxiliaryTests
     [MemberData(nameof(SolutionProjectPathTestData))]
     public void ProjectPathsCanBeParsedFromSolutionFiles(string solutionContent, string[] expectedProjectSubPaths)
     {
-        var actualProjectSubPaths = NuGetUpdaterWorker.GetProjectSubPathsFromSolution(solutionContent);
-        Assert.Equal(expectedProjectSubPaths, actualProjectSubPaths);
+        var solutionPath = Path.GetTempFileName();
+        var solutionDirectory = Path.GetDirectoryName(solutionPath);
+        try
+        {
+            File.WriteAllText(solutionPath, solutionContent);
+            var actualProjectSubPaths = MSBuildHelper.GetProjectPathsFromSolution(solutionPath);
+            Assert.Equal(expectedProjectSubPaths.Select(path => Path.Combine(solutionDirectory, path)), actualProjectSubPaths);
+        }
+        finally
+        {
+            File.Delete(solutionPath);
+        }
     }
 
     [Theory]
     [MemberData(nameof(PackagesDirectoryPathTestData))]
     public void PathToPackagesDirectoryCanBeDetermined(string projectContents, string dependencyName, string dependencyVersion, string expectedPackagesDirectoryPath)
     {
-        var actualPackagesDirectorypath = NuGetUpdaterWorker.GetPathToPackagesDirectory(projectContents, dependencyName, dependencyVersion);
+        var actualPackagesDirectorypath = PackageConfigUpdater.GetPathToPackagesDirectory(projectContents, dependencyName, dependencyVersion);
         Assert.Equal(expectedPackagesDirectoryPath, actualPackagesDirectorypath);
     }
 
@@ -50,9 +66,18 @@ public class AuxiliaryTests
     [InlineData("<Project><PropertyGroup><TargetFrameworks>netstandard2.0 ; netstandard2.1 ; </TargetFrameworks></PropertyGroup></Project>", "netstandard2.0", "netstandard2.1")]
     public void TfmsCanBeDeterminedFromProjectContents(string projectContents, string? expectedTfm1, string? expectedTfm2)
     {
-        var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
-        var actualTfms = NuGetUpdaterWorker.GetTargetFrameworkMonikersFromProjectContents(projectContents);
-        Assert.Equal(expectedTfms, actualTfms);
+        var projectPath = Path.GetTempFileName();
+        try
+        {
+            File.WriteAllText(projectPath, projectContents);
+            var expectedTfms = new[] { expectedTfm1, expectedTfm2 }.Where(tfm => tfm is not null).ToArray();
+            var actualTfms = MSBuildHelper.GetTargetFrameworkMonikersFromProject(projectPath);
+            Assert.Equal(expectedTfms, actualTfms);
+        }
+        finally
+        {
+            File.Delete(projectPath);
+        }
     }
 
     [Fact]
@@ -77,7 +102,7 @@ public class AuxiliaryTests
             ("System.Runtime.CompilerServices.Unsafe", "6.0.0"),
             ("System.Threading.Tasks.Extensions", "4.5.4"),
         };
-        var actualDependencies = await NuGetUpdaterWorker.GetAllPackageDependencies(temp.DirectoryPath, "netstandard2.0", "Microsoft.Extensions.Http", "7.0.0");
+        var actualDependencies = await SdkPackageUpdater.GetAllPackageDependenciesAsync(temp.DirectoryPath, "netstandard2.0", "Microsoft.Extensions.Http", "7.0.0");
         Assert.Equal(expectedDependencies, actualDependencies);
     }
 

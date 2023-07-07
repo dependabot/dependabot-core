@@ -8,6 +8,11 @@ namespace NuGetUpdater.Core.Test;
 
 public class DirsProjEndToEndTests : EndToEndTestBase
 {
+    public DirsProjEndToEndTests()
+    {
+        MSBuildHelper.RegisterMSBuild();
+    }
+
     [Fact]
     public async Task UpdateSingleDependencyInDirsProj()
     {
@@ -168,7 +173,7 @@ public class DirsProjEndToEndTests : EndToEndTestBase
         var actualResult = await RunUpdate(testFiles.ToArray(), async (temporaryDirectory) =>
         {
             var projectPath = Path.Combine(temporaryDirectory, projectFileName);
-            var worker = new NuGetUpdaterWorker(verbose: true);
+            var worker = new NuGetUpdaterWorker(new Logger(verbose: true));
             await worker.RunAsync(temporaryDirectory, projectPath, dependencyName, oldVersion, newVersion);
         });
 
