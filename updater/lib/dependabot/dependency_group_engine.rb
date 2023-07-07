@@ -63,6 +63,11 @@ module Dependabot
     end
 
     def self.calculate_dependency_groups!(dependencies)
+      # If we try to calculate dependency groups when there are no groups registered
+      # then all of the dependencies end up in the ungrouped list which can break
+      # an UpdateAllVersions#dependencies check
+      return false unless @registered_groups.any?
+
       dependencies.each do |dependency|
         groups = groups_for(dependency)
 

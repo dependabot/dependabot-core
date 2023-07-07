@@ -91,13 +91,7 @@ module Dependabot
             @combined = if @combined
                           combined_dependency(@combined, dep)
                         else
-                          Dependency.new(
-                            name: dep.name,
-                            version: dep.version,
-                            requirements: dep.requirements,
-                            package_manager: dep.package_manager,
-                            subdependency_metadata: dep.subdependency_metadata
-                          )
+                          dep
                         end
 
             index_of_same_version =

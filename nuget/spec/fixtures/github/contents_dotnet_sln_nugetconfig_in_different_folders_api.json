@@ -1,0 +1,642 @@
+[
+  {
+    "name": "App.cs",
+    "path": "src/ElectronNET.API/App.cs",
+    "sha": "bd56a83286f62263e7ebee296764a035da1e7e8d",
+    "size": 77652,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/App.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/App.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/bd56a83286f62263e7ebee296764a035da1e7e8d",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/App.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/App.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/bd56a83286f62263e7ebee296764a035da1e7e8d",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/App.cs"
+    }
+  },
+  {
+    "name": "AutoUpdater.cs",
+    "path": "src/ElectronNET.API/AutoUpdater.cs",
+    "sha": "da1001fa5881c9231ec8e1f83f8e6b7c4829d466",
+    "size": 23134,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/AutoUpdater.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/AutoUpdater.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/da1001fa5881c9231ec8e1f83f8e6b7c4829d466",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/AutoUpdater.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/AutoUpdater.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/da1001fa5881c9231ec8e1f83f8e6b7c4829d466",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/AutoUpdater.cs"
+    }
+  },
+  {
+    "name": "BridgeConnector.cs",
+    "path": "src/ElectronNET.API/BridgeConnector.cs",
+    "sha": "23319e5e5d036fe9359d20242423d6efae02ef37",
+    "size": 914,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BridgeConnector.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BridgeConnector.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/23319e5e5d036fe9359d20242423d6efae02ef37",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/BridgeConnector.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BridgeConnector.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/23319e5e5d036fe9359d20242423d6efae02ef37",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BridgeConnector.cs"
+    }
+  },
+  {
+    "name": "BridgeSettings.cs",
+    "path": "src/ElectronNET.API/BridgeSettings.cs",
+    "sha": "96a2653a10ca032ab465f24e6432b868f0ceb726",
+    "size": 546,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BridgeSettings.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BridgeSettings.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/96a2653a10ca032ab465f24e6432b868f0ceb726",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/BridgeSettings.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BridgeSettings.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/96a2653a10ca032ab465f24e6432b868f0ceb726",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BridgeSettings.cs"
+    }
+  },
+  {
+    "name": "BrowserView.cs",
+    "path": "src/ElectronNET.API/BrowserView.cs",
+    "sha": "96bddd7fb52a8152b2d8d58fd8b0974b797432cf",
+    "size": 3214,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BrowserView.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BrowserView.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/96bddd7fb52a8152b2d8d58fd8b0974b797432cf",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/BrowserView.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BrowserView.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/96bddd7fb52a8152b2d8d58fd8b0974b797432cf",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BrowserView.cs"
+    }
+  },
+  {
+    "name": "BrowserWindow.cs",
+    "path": "src/ElectronNET.API/BrowserWindow.cs",
+    "sha": "cb295d2d59fddbbedaf353008cece6d5dbc227a1",
+    "size": 71459,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BrowserWindow.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BrowserWindow.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cb295d2d59fddbbedaf353008cece6d5dbc227a1",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/BrowserWindow.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/BrowserWindow.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cb295d2d59fddbbedaf353008cece6d5dbc227a1",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/BrowserWindow.cs"
+    }
+  },
+  {
+    "name": "Clipboard.cs",
+    "path": "src/ElectronNET.API/Clipboard.cs",
+    "sha": "e7535378be709d9bf4c3d80a76121aebd332928f",
+    "size": 9636,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Clipboard.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Clipboard.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e7535378be709d9bf4c3d80a76121aebd332928f",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Clipboard.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Clipboard.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e7535378be709d9bf4c3d80a76121aebd332928f",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Clipboard.cs"
+    }
+  },
+  {
+    "name": "CommandLine.cs",
+    "path": "src/ElectronNET.API/CommandLine.cs",
+    "sha": "63466b4b4866eb49c5abe956ccd2e22c8ca6f35e",
+    "size": 4711,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/CommandLine.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/CommandLine.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/63466b4b4866eb49c5abe956ccd2e22c8ca6f35e",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/CommandLine.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/CommandLine.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/63466b4b4866eb49c5abe956ccd2e22c8ca6f35e",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/CommandLine.cs"
+    }
+  },
+  {
+    "name": "Converter",
+    "path": "src/ElectronNET.API/Converter",
+    "sha": "e55a811dcb47491705d857deea79b5377b9ca0fc",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Converter?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Converter",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/e55a811dcb47491705d857deea79b5377b9ca0fc",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Converter?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/e55a811dcb47491705d857deea79b5377b9ca0fc",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Converter"
+    }
+  },
+  {
+    "name": "Cookies.cs",
+    "path": "src/ElectronNET.API/Cookies.cs",
+    "sha": "98be3d423a126d12ebc0505cfe749e50a6fcf526",
+    "size": 5712,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Cookies.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Cookies.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/98be3d423a126d12ebc0505cfe749e50a6fcf526",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Cookies.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Cookies.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/98be3d423a126d12ebc0505cfe749e50a6fcf526",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Cookies.cs"
+    }
+  },
+  {
+    "name": "Dialog.cs",
+    "path": "src/ElectronNET.API/Dialog.cs",
+    "sha": "ddc7be5d4f5878c3812338fbea647436c42c3c50",
+    "size": 10718,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Dialog.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Dialog.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/ddc7be5d4f5878c3812338fbea647436c42c3c50",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Dialog.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Dialog.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/ddc7be5d4f5878c3812338fbea647436c42c3c50",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Dialog.cs"
+    }
+  },
+  {
+    "name": "Dock.cs",
+    "path": "src/ElectronNET.API/Dock.cs",
+    "sha": "0327684263ae4e95d45927d79f10babc0a45b1fb",
+    "size": 8427,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Dock.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Dock.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/0327684263ae4e95d45927d79f10babc0a45b1fb",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Dock.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Dock.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/0327684263ae4e95d45927d79f10babc0a45b1fb",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Dock.cs"
+    }
+  },
+  {
+    "name": "Electron.cs",
+    "path": "src/ElectronNET.API/Electron.cs",
+    "sha": "23f9902d4860d4031c35d510d0bd7f439d114c1d",
+    "size": 3434,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Electron.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Electron.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/23f9902d4860d4031c35d510d0bd7f439d114c1d",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Electron.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Electron.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/23f9902d4860d4031c35d510d0bd7f439d114c1d",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Electron.cs"
+    }
+  },
+  {
+    "name": "ElectronNET.API.csproj",
+    "path": "src/ElectronNET.API/ElectronNET.API.csproj",
+    "sha": "e4d2221695df4013cac1593e4f26b5dd400f86b6",
+    "size": 2436,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/ElectronNET.API.csproj?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/ElectronNET.API.csproj",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e4d2221695df4013cac1593e4f26b5dd400f86b6",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/ElectronNET.API.csproj",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/ElectronNET.API.csproj?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e4d2221695df4013cac1593e4f26b5dd400f86b6",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/ElectronNET.API.csproj"
+    }
+  },
+  {
+    "name": "Entities",
+    "path": "src/ElectronNET.API/Entities",
+    "sha": "0cf5313a5dfbc2ef80081ef76c51df59c5ae0ddf",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Entities?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Entities",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/0cf5313a5dfbc2ef80081ef76c51df59c5ae0ddf",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Entities?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/0cf5313a5dfbc2ef80081ef76c51df59c5ae0ddf",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Entities"
+    }
+  },
+  {
+    "name": "Events.cs",
+    "path": "src/ElectronNET.API/Events.cs",
+    "sha": "4c3c366131fbce3b157b6533c6da4d614f8ec9a8",
+    "size": 3215,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Events.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Events.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/4c3c366131fbce3b157b6533c6da4d614f8ec9a8",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Events.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Events.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/4c3c366131fbce3b157b6533c6da4d614f8ec9a8",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Events.cs"
+    }
+  },
+  {
+    "name": "Extensions",
+    "path": "src/ElectronNET.API/Extensions",
+    "sha": "d34f87292691dc320b78e1040be5977c4ffa998a",
+    "size": 0,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Extensions?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Extensions",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/d34f87292691dc320b78e1040be5977c4ffa998a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Extensions?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/trees/d34f87292691dc320b78e1040be5977c4ffa998a",
+      "html": "https://github.com/ElectronNET/Electron.NET/tree/main/src/ElectronNET.API/Extensions"
+    }
+  },
+  {
+    "name": "GlobalShortcut.cs",
+    "path": "src/ElectronNET.API/GlobalShortcut.cs",
+    "sha": "d2867ecd5681665e39cc2045f0a32fcf6fb9f896",
+    "size": 3643,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/GlobalShortcut.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/GlobalShortcut.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/d2867ecd5681665e39cc2045f0a32fcf6fb9f896",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/GlobalShortcut.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/GlobalShortcut.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/d2867ecd5681665e39cc2045f0a32fcf6fb9f896",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/GlobalShortcut.cs"
+    }
+  },
+  {
+    "name": "GlobalUsings.cs",
+    "path": "src/ElectronNET.API/GlobalUsings.cs",
+    "sha": "7b02f48e67c4d62ded17b48694a85125f97b5a93",
+    "size": 52,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/GlobalUsings.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/GlobalUsings.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/7b02f48e67c4d62ded17b48694a85125f97b5a93",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/GlobalUsings.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/GlobalUsings.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/7b02f48e67c4d62ded17b48694a85125f97b5a93",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/GlobalUsings.cs"
+    }
+  },
+  {
+    "name": "HostHook.cs",
+    "path": "src/ElectronNET.API/HostHook.cs",
+    "sha": "37606250419d45bf57e59bc593ac7eebe06cabc9",
+    "size": 4718,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/HostHook.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/HostHook.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/37606250419d45bf57e59bc593ac7eebe06cabc9",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/HostHook.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/HostHook.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/37606250419d45bf57e59bc593ac7eebe06cabc9",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/HostHook.cs"
+    }
+  },
+  {
+    "name": "HybridSupport.cs",
+    "path": "src/ElectronNET.API/HybridSupport.cs",
+    "sha": "935ea512c8452678199cf6652fde7276a64319c0",
+    "size": 561,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/HybridSupport.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/HybridSupport.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/935ea512c8452678199cf6652fde7276a64319c0",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/HybridSupport.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/HybridSupport.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/935ea512c8452678199cf6652fde7276a64319c0",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/HybridSupport.cs"
+    }
+  },
+  {
+    "name": "IpcMain.cs",
+    "path": "src/ElectronNET.API/IpcMain.cs",
+    "sha": "e670dffb4812e9ac6b748cd2b157c8763f02c443",
+    "size": 9003,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/IpcMain.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/IpcMain.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e670dffb4812e9ac6b748cd2b157c8763f02c443",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/IpcMain.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/IpcMain.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e670dffb4812e9ac6b748cd2b157c8763f02c443",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/IpcMain.cs"
+    }
+  },
+  {
+    "name": "LifetimeServiceHost.cs",
+    "path": "src/ElectronNET.API/LifetimeServiceHost.cs",
+    "sha": "cb58eb1b30ceb1b1031175ad9ac2a6da6df784a7",
+    "size": 1333,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/LifetimeServiceHost.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/LifetimeServiceHost.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cb58eb1b30ceb1b1031175ad9ac2a6da6df784a7",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/LifetimeServiceHost.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/LifetimeServiceHost.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cb58eb1b30ceb1b1031175ad9ac2a6da6df784a7",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/LifetimeServiceHost.cs"
+    }
+  },
+  {
+    "name": "Menu.cs",
+    "path": "src/ElectronNET.API/Menu.cs",
+    "sha": "8397a10d9b03b1b8d11786efd7d26d7bb69f7791",
+    "size": 4292,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Menu.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Menu.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/8397a10d9b03b1b8d11786efd7d26d7bb69f7791",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Menu.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Menu.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/8397a10d9b03b1b8d11786efd7d26d7bb69f7791",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Menu.cs"
+    }
+  },
+  {
+    "name": "NativeTheme.cs",
+    "path": "src/ElectronNET.API/NativeTheme.cs",
+    "sha": "037a97a6c64596ba89925c51ae3e02e15829173c",
+    "size": 8806,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/NativeTheme.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/NativeTheme.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/037a97a6c64596ba89925c51ae3e02e15829173c",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/NativeTheme.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/NativeTheme.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/037a97a6c64596ba89925c51ae3e02e15829173c",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/NativeTheme.cs"
+    }
+  },
+  {
+    "name": "Notification.cs",
+    "path": "src/ElectronNET.API/Notification.cs",
+    "sha": "68ac4e1447e03ac12e865be7e5cb83583e383cb6",
+    "size": 5276,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Notification.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Notification.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/68ac4e1447e03ac12e865be7e5cb83583e383cb6",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Notification.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Notification.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/68ac4e1447e03ac12e865be7e5cb83583e383cb6",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Notification.cs"
+    }
+  },
+  {
+    "name": "PackageIcon.png",
+    "path": "src/ElectronNET.API/PackageIcon.png",
+    "sha": "10d55ebe2477afb3d51044c5b642303942e31c1d",
+    "size": 39446,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/PackageIcon.png?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/PackageIcon.png",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/10d55ebe2477afb3d51044c5b642303942e31c1d",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/PackageIcon.png",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/PackageIcon.png?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/10d55ebe2477afb3d51044c5b642303942e31c1d",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/PackageIcon.png"
+    }
+  },
+  {
+    "name": "PowerMonitor.cs",
+    "path": "src/ElectronNET.API/PowerMonitor.cs",
+    "sha": "03e6874873c900196ddfe6f771379fe31c37edc6",
+    "size": 6513,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/PowerMonitor.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/PowerMonitor.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/03e6874873c900196ddfe6f771379fe31c37edc6",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/PowerMonitor.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/PowerMonitor.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/03e6874873c900196ddfe6f771379fe31c37edc6",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/PowerMonitor.cs"
+    }
+  },
+  {
+    "name": "QuitEventArgs.cs",
+    "path": "src/ElectronNET.API/QuitEventArgs.cs",
+    "sha": "513358838175267af13c28d5107710cbc8624e7a",
+    "size": 444,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/QuitEventArgs.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/QuitEventArgs.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/513358838175267af13c28d5107710cbc8624e7a",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/QuitEventArgs.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/QuitEventArgs.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/513358838175267af13c28d5107710cbc8624e7a",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/QuitEventArgs.cs"
+    }
+  },
+  {
+    "name": "Screen.cs",
+    "path": "src/ElectronNET.API/Screen.cs",
+    "sha": "31cecb5ff9ffe9832b481b53ff0d0a59ee76481e",
+    "size": 9003,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Screen.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Screen.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/31cecb5ff9ffe9832b481b53ff0d0a59ee76481e",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Screen.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Screen.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/31cecb5ff9ffe9832b481b53ff0d0a59ee76481e",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Screen.cs"
+    }
+  },
+  {
+    "name": "ServiceCollectionExtensions.cs",
+    "path": "src/ElectronNET.API/ServiceCollectionExtensions.cs",
+    "sha": "f933731bdffe855c6f3cc0127ba61210e06ed18e",
+    "size": 1469,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/ServiceCollectionExtensions.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/ServiceCollectionExtensions.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f933731bdffe855c6f3cc0127ba61210e06ed18e",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/ServiceCollectionExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/ServiceCollectionExtensions.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f933731bdffe855c6f3cc0127ba61210e06ed18e",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/ServiceCollectionExtensions.cs"
+    }
+  },
+  {
+    "name": "Session.cs",
+    "path": "src/ElectronNET.API/Session.cs",
+    "sha": "a4cb6bb6c2d57fb5243f0895cac7d9a2d21d37b4",
+    "size": 18801,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Session.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Session.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/a4cb6bb6c2d57fb5243f0895cac7d9a2d21d37b4",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Session.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Session.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/a4cb6bb6c2d57fb5243f0895cac7d9a2d21d37b4",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Session.cs"
+    }
+  },
+  {
+    "name": "Shell.cs",
+    "path": "src/ElectronNET.API/Shell.cs",
+    "sha": "71f458e419c34f21279a3a7b4bba8e6fce4bfe02",
+    "size": 7716,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Shell.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Shell.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/71f458e419c34f21279a3a7b4bba8e6fce4bfe02",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Shell.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Shell.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/71f458e419c34f21279a3a7b4bba8e6fce4bfe02",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Shell.cs"
+    }
+  },
+  {
+    "name": "SocketIOFacade.cs",
+    "path": "src/ElectronNET.API/SocketIOFacade.cs",
+    "sha": "ec5eb46688c17510f4803d2b9cfba68223f6d693",
+    "size": 2453,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/SocketIOFacade.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/SocketIOFacade.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/ec5eb46688c17510f4803d2b9cfba68223f6d693",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/SocketIOFacade.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/SocketIOFacade.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/ec5eb46688c17510f4803d2b9cfba68223f6d693",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/SocketIOFacade.cs"
+    }
+  },
+  {
+    "name": "Tray.cs",
+    "path": "src/ElectronNET.API/Tray.cs",
+    "sha": "e8947faeec6aee215abc88bbeedc92f5368c4461",
+    "size": 13185,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Tray.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Tray.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e8947faeec6aee215abc88bbeedc92f5368c4461",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/Tray.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/Tray.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/e8947faeec6aee215abc88bbeedc92f5368c4461",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/Tray.cs"
+    }
+  },
+  {
+    "name": "WebContents.cs",
+    "path": "src/ElectronNET.API/WebContents.cs",
+    "sha": "cf3c0eb9bc5d9cbec3e2c315450a3de880f550dc",
+    "size": 10038,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WebContents.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WebContents.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cf3c0eb9bc5d9cbec3e2c315450a3de880f550dc",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/WebContents.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WebContents.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/cf3c0eb9bc5d9cbec3e2c315450a3de880f550dc",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WebContents.cs"
+    }
+  },
+  {
+    "name": "WebHostBuilderExtensions.cs",
+    "path": "src/ElectronNET.API/WebHostBuilderExtensions.cs",
+    "sha": "af7cf9107cbc8cdafc7ec7a07e4244a88e1c2c7f",
+    "size": 2283,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WebHostBuilderExtensions.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WebHostBuilderExtensions.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/af7cf9107cbc8cdafc7ec7a07e4244a88e1c2c7f",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/WebHostBuilderExtensions.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WebHostBuilderExtensions.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/af7cf9107cbc8cdafc7ec7a07e4244a88e1c2c7f",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WebHostBuilderExtensions.cs"
+    }
+  },
+  {
+    "name": "WindowManager.cs",
+    "path": "src/ElectronNET.API/WindowManager.cs",
+    "sha": "0f9b5b5fa50f0c59fa871982d554d37a849b3221",
+    "size": 7747,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WindowManager.cs?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WindowManager.cs",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/0f9b5b5fa50f0c59fa871982d554d37a849b3221",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/WindowManager.cs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/WindowManager.cs?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/0f9b5b5fa50f0c59fa871982d554d37a849b3221",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/WindowManager.cs"
+    }
+  },
+  {
+    "name": "devCleanup.cmd",
+    "path": "src/ElectronNET.API/devCleanup.cmd",
+    "sha": "1ea37548c381954f4c5c186706c7999b119e680d",
+    "size": 61,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/devCleanup.cmd?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/devCleanup.cmd",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/1ea37548c381954f4c5c186706c7999b119e680d",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/devCleanup.cmd",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/devCleanup.cmd?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/1ea37548c381954f4c5c186706c7999b119e680d",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/devCleanup.cmd"
+    }
+  },
+  {
+    "name": "devCleanup.sh",
+    "path": "src/ElectronNET.API/devCleanup.sh",
+    "sha": "f3b1b44efc34508833e02a5ff4740f7a7824f3e9",
+    "size": 40,
+    "url": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/devCleanup.sh?ref=main",
+    "html_url": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/devCleanup.sh",
+    "git_url": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f3b1b44efc34508833e02a5ff4740f7a7824f3e9",
+    "download_url": "https://raw.githubusercontent.com/ElectronNET/Electron.NET/main/src/ElectronNET.API/devCleanup.sh",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/ElectronNET/Electron.NET/contents/src/ElectronNET.API/devCleanup.sh?ref=main",
+      "git": "https://api.github.com/repos/ElectronNET/Electron.NET/git/blobs/f3b1b44efc34508833e02a5ff4740f7a7824f3e9",
+      "html": "https://github.com/ElectronNET/Electron.NET/blob/main/src/ElectronNET.API/devCleanup.sh"
+    }
+  }
+]

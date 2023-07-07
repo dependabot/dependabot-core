@@ -54,7 +54,7 @@ module Dependabot
       end
 
       def project_file?(file)
-        File.basename(file.name).match?(/\.[a-z]{2}proj$/)
+        File.basename(file.name).match?(/\.[a-z]{2}proj$|[Dd]irectory.[Pp]ackages.props/)
       end
 
       def lock_file?(file)

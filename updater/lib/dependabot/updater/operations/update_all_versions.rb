@@ -49,23 +49,23 @@ module Dependabot
           end
 
           if Environment.deterministic_updates?
-            dependency_snapshot.allowed_dependencies
+            dependency_snapshot.ungrouped_dependencies
           else
-            dependency_snapshot.allowed_dependencies.shuffle
+            dependency_snapshot.ungrouped_dependencies.shuffle
           end
         end
 
         def check_and_create_pr_with_error_handling(dependency)
           check_and_create_pull_request(dependency)
         rescue Dependabot::InconsistentRegistryResponse => e
-          error_handler.log_error(
+          error_handler.log_dependency_error(
             dependency: dependency,
             error: e,
             error_type: "inconsistent_registry_response",
             error_detail: e.message
           )
         rescue StandardError => e
-          error_handler.handle_dependabot_error(error: e, dependency: dependency)
+          error_handler.handle_dependency_error(error: e, dependency: dependency)
         end
 
         # rubocop:disable Metrics/AbcSize
@@ -196,7 +196,7 @@ module Dependabot
         end
 
         def requirements_to_unlock(checker)
-          if job.lockfile_only? || !checker.requirements_unlocked_or_can_be?
+          if !checker.requirements_unlocked_or_can_be?
             if checker.can_update?(requirements_to_unlock: :none) then :none
             else
               :update_not_possible

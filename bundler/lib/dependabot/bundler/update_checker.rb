@@ -73,8 +73,10 @@ module Dependabot
       end
 
       def requirements_unlocked_or_can_be?
-        dependency.requirements.
-          select { |r| requirement_class.new(r[:requirement]).specific? }.
+        return true if requirements_unlocked?
+        return false if requirements_update_strategy == :lockfile_only
+
+        dependency.specific_requirements.
           all? do |req|
             file = dependency_files.find { |f| f.name == req.fetch(:file) }
             updated = FileUpdater::RequirementReplacer.new(
@@ -109,8 +111,13 @@ module Dependabot
 
       private
 
+      def requirements_unlocked?
+        dependency.specific_requirements.none?
+      end
+
       def latest_version_resolvable_with_full_unlock?
         return false unless latest_version
+        return false if version_resolver(remove_git_source: false).latest_allowable_version_incompatible_with_ruby?
 
         updated_dependencies = force_updater.updated_dependencies
 

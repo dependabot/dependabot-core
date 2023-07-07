@@ -852,6 +852,30 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater::NpmrcBuilder do
         end
       end
 
+      context "v3 - when no packages resolve to the private registry" do
+        let(:dependency_files) do
+          project_dependency_files("npm9/simple")
+        end
+
+        it "adds only the token auth details" do
+          expect(npmrc_content).to eql("//npm.pkg.github.com/:_authToken=my_token")
+        end
+      end
+
+      context "v3 - when a public package of a different scope appears with an npmrc" do
+        let(:dependency_files) do
+          project_dependency_files("npm9/private-public")
+        end
+
+        it "adds only the token auth details" do
+          expect(npmrc_content).to eql(<<~NPMRC.chomp)
+            @dependabot:registry=https://npm.pkg.github.com
+
+            //npm.pkg.github.com/:_authToken=my_token
+          NPMRC
+        end
+      end
+
       context "when there are only packages that resolve to the private registry" do
         let(:dependency_files) do
           project_dependency_files("npm8/private_registry_ghpr_only")

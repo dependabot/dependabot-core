@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
 require "json"
+require "dependabot/experiments"
 require "dependabot/logger"
 require "dependabot/file_fetchers"
 require "dependabot/file_fetchers/base"
 require "dependabot/npm_and_yarn/helpers"
+require "dependabot/npm_and_yarn/package_manager"
 require "dependabot/npm_and_yarn/file_parser"
 require "dependabot/npm_and_yarn/file_parser/lockfile_parser"
 
@@ -55,11 +57,11 @@ module Dependabot
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
         package_managers["yarn"] = yarn_version if yarn_version
+        package_managers["pnpm"] = pnpm_version if pnpm_version
         package_managers["shrinkwrap"] = 1 if shrinkwrap
         package_managers["unknown"] = 1 if package_managers.empty?
 
         {
-          ecosystem: "npm",
           package_managers: package_managers
         }
       end
@@ -69,20 +71,46 @@ module Dependabot
       def fetch_files
         fetched_files = []
         fetched_files << package_json
-        fetched_files << package_lock if package_lock && !ignore_package_lock?
-        fetched_files << yarn_lock if yarn_lock
-        fetched_files << shrinkwrap if shrinkwrap
-        fetched_files << lerna_json if lerna_json
-        fetched_files << npmrc if npmrc
-        fetched_files << yarnrc if yarnrc
-        fetched_files << yarnrc_yml if yarnrc_yml
+        fetched_files += npm_files
+        fetched_files += yarn_files
+        fetched_files += pnpm_files
+        fetched_files += lerna_files
         fetched_files += workspace_package_jsons
-        fetched_files += lerna_packages
         fetched_files += path_dependencies(fetched_files)
 
-        fetched_files << inferred_npmrc if inferred_npmrc
-
         fetched_files.uniq
+      end
+
+      def npm_files
+        fetched_npm_files = []
+        fetched_npm_files << package_lock if package_lock
+        fetched_npm_files << shrinkwrap if shrinkwrap
+        fetched_npm_files << npmrc if npmrc
+        fetched_npm_files << inferred_npmrc if inferred_npmrc
+        fetched_npm_files
+      end
+
+      def yarn_files
+        fetched_yarn_files = []
+        fetched_yarn_files << yarn_lock if yarn_lock
+        fetched_yarn_files << yarnrc if yarnrc
+        fetched_yarn_files << yarnrc_yml if yarnrc_yml
+        fetched_yarn_files
+      end
+
+      def pnpm_files
+        fetched_pnpm_files = []
+        fetched_pnpm_files << pnpm_lock if pnpm_lock
+        fetched_pnpm_files << pnpm_workspace_yaml if pnpm_workspace_yaml
+        fetched_pnpm_files += pnpm_workspace_package_jsons
+        fetched_pnpm_files
+      end
+
+      def lerna_files
+        fetched_lerna_files = []
+        fetched_lerna_files << lerna_json if lerna_json
+        fetched_lerna_files += lerna_packages
+        fetched_lerna_files
       end
 
       # If every entry in the lockfile uses the same registry, we can infer
@@ -135,17 +163,29 @@ module Dependabot
       def yarn_version
         return @yarn_version if defined?(@yarn_version)
 
-        package = JSON.parse(package_json.content)
-        if (package_manager = package.fetch("packageManager", nil))
-          get_yarn_version_from_package_json(package_manager)
-        elsif yarn_lock
-          Helpers.yarn_version_numeric(yarn_lock)
-        end
+        @yarn_version = package_manager.locked_version("yarn") || guess_yarn_version
       end
 
-      def get_yarn_version_from_package_json(package_manager)
-        version_match = package_manager.match(/yarn@(?<version>\d+.\d+.\d+)/)
-        version_match&.named_captures&.fetch("version", nil)
+      def guess_yarn_version
+        return unless yarn_lock
+
+        Helpers.yarn_version_numeric(yarn_lock)
+      end
+
+      def pnpm_version
+        return @pnpm_version if defined?(@pnpm_version)
+
+        @pnpm_version = package_manager.locked_version("pnpm") || guess_pnpm_version
+      end
+
+      def guess_pnpm_version
+        return unless pnpm_lock
+
+        Helpers.pnpm_major_version
+      end
+
+      def package_manager
+        @package_manager ||= PackageManager.new(parsed_package_json)
       end
 
       def package_json
@@ -153,15 +193,27 @@ module Dependabot
       end
 
       def package_lock
-        @package_lock ||= fetch_file_if_present("package-lock.json")
+        return @package_lock if defined?(@package_lock)
+
+        @package_lock = fetch_file_if_present("package-lock.json") unless skip_package_lock?
       end
 
       def yarn_lock
-        @yarn_lock ||= fetch_file_if_present("yarn.lock")
+        return @yarn_lock if defined?(@yarn_lock)
+
+        @yarn_lock = fetch_file_if_present("yarn.lock")
+      end
+
+      def pnpm_lock
+        return @pnpm_lock if defined?(@pnpm_lock)
+
+        @pnpm_lock = fetch_file_if_present("pnpm-lock.yaml") unless skip_pnpm_lock?
       end
 
       def shrinkwrap
-        @shrinkwrap ||= fetch_file_if_present("npm-shrinkwrap.json")
+        return @shrinkwrap if defined?(@shrinkwrap)
+
+        @shrinkwrap = fetch_file_if_present("npm-shrinkwrap.json")
       end
 
       def npmrc
@@ -207,6 +259,11 @@ module Dependabot
                        tap { |f| f.support_file = true }
       end
 
+      def pnpm_workspace_yaml
+        @pnpm_workspace_yaml ||= fetch_file_if_present("pnpm-workspace.yaml")&.
+                                tap { |f| f.support_file = true }
+      end
+
       def lerna_json
         @lerna_json ||= fetch_file_if_present("lerna.json")&.
                         tap { |f| f.support_file = true }
@@ -218,6 +275,10 @@ module Dependabot
 
       def lerna_packages
         @lerna_packages ||= fetch_lerna_packages
+      end
+
+      def pnpm_workspace_package_jsons
+        @pnpm_workspace_package_jsons ||= fetch_pnpm_workspace_package_jsons
       end
 
       # rubocop:disable Metrics/PerceivedComplexity
@@ -344,50 +405,36 @@ module Dependabot
       def fetch_workspace_package_jsons
         return [] unless parsed_package_json["workspaces"]
 
-        package_json_files = []
-
-        workspace_paths(parsed_package_json["workspaces"]).each do |workspace|
-          file = File.join(workspace, "package.json")
-
-          begin
-            package_json_files << fetch_file_from_host(file)
-          rescue Dependabot::DependencyFileNotFound
-            nil
-          end
+        workspace_paths(parsed_package_json["workspaces"]).filter_map do |workspace|
+          fetch_package_json_if_present(workspace)
         end
-
-        package_json_files
       end
 
       def fetch_lerna_packages
         return [] unless parsed_lerna_json["packages"]
 
-        dependency_files = []
+        workspace_paths(parsed_lerna_json["packages"]).flat_map do |workspace|
+          fetch_lerna_packages_from_path(workspace)
+        end.compact
+      end
 
-        workspace_paths(parsed_lerna_json["packages"]).each do |workspace|
-          dependency_files += fetch_lerna_packages_from_path(workspace)
+      def fetch_pnpm_workspace_package_jsons
+        return [] unless parsed_pnpm_workspace_yaml["packages"]
+
+        workspace_paths(parsed_pnpm_workspace_yaml["packages"]).filter_map do |workspace|
+          fetch_package_json_if_present(workspace)
         end
-
-        dependency_files
       end
 
       def fetch_lerna_packages_from_path(path)
-        dependency_files = []
+        package_json = fetch_package_json_if_present(path)
+        return unless package_json
 
-        package_json_path = File.join(path, "package.json")
-
-        begin
-          dependency_files << fetch_file_from_host(package_json_path)
-          dependency_files += [
-            fetch_file_if_present(File.join(path, "package-lock.json")),
-            fetch_file_if_present(File.join(path, "yarn.lock")),
-            fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
-          ].compact
-        rescue Dependabot::DependencyFileNotFound
-          nil
-        end
-
-        dependency_files
+        [package_json] + [
+          fetch_file_if_present(File.join(path, "package-lock.json")),
+          fetch_file_if_present(File.join(path, "yarn.lock")),
+          fetch_file_if_present(File.join(path, "npm-shrinkwrap.json"))
+        ]
       end
 
       def workspace_paths(workspace_object)
@@ -449,6 +496,18 @@ module Dependabot
         matching_paths(prefix + glob, paths)
       end
 
+      def fetch_package_json_if_present(workspace)
+        file = File.join(workspace, "package.json")
+
+        begin
+          fetch_file_from_host(file)
+        rescue Dependabot::DependencyFileNotFound
+          # Not all paths matched by a workspace glob may contain a package.json
+          # file. Ignore if that's the case
+          nil
+        end
+      end
+
       # The packages/!(not-this-package) syntax is unique to Yarn
       def yarn_ignored_glob(glob)
         glob.match?(/!\(.*?\)/) && glob.gsub(/(!\((.*?)\))/, '\2')
@@ -476,10 +535,24 @@ module Dependabot
         {}
       end
 
-      def ignore_package_lock?
+      def parsed_pnpm_workspace_yaml
+        return {} unless pnpm_workspace_yaml
+
+        YAML.safe_load(pnpm_workspace_yaml.content)
+      rescue Pysch::SyntaxError
+        raise Dependabot::DependencyFileNotParseable, pnpm_workspace_yaml.path
+      end
+
+      def skip_package_lock?
         return false unless npmrc
 
         npmrc.content.match?(/^package-lock\s*=\s*false/)
+      end
+
+      def skip_pnpm_lock?
+        return false unless npmrc
+
+        npmrc.content.match?(/^lockfile\s*=\s*false/)
       end
 
       def build_unfetchable_deps(unfetchable_deps)

@@ -53,6 +53,15 @@ module Dependabot
       end
     end
 
+    # Returns just the group that is specifically requested to be updated by
+    # the job definition
+    def job_group
+      return nil unless job.dependency_group_to_refresh
+      return @job_group if defined?(@job_group)
+
+      @job_group = groups.fetch(job.dependency_group_to_refresh.to_sym, nil)
+    end
+
     # A dependency snapshot will always have the same set of dependencies since it only depends
     # on the Job and dependency groups, which are static for a given commit.
     def groups
@@ -62,6 +71,9 @@ module Dependabot
     end
 
     def ungrouped_dependencies
+      # If no groups are defined, all dependencies are ungrouped by default.
+      return allowed_dependencies unless groups.any?
+
       Dependabot::DependencyGroupEngine.ungrouped_dependencies(allowed_dependencies)
     end
 

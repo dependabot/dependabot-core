@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "support/dependency_file_helpers"
+
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
 
 RSpec.describe Dependabot::DependencySnapshot do
+  include DependencyFileHelpers
+
   let(:source) do
     Dependabot::Source.new(
       provider: "github",
@@ -53,19 +57,11 @@ RSpec.describe Dependabot::DependencySnapshot do
       )
     end
 
-    let(:encoded_dependency_files) do
-      dependency_files.map do |file|
-        base64_file = file.dup
-        base64_file.content = Base64.encode64(file.content)
-        base64_file.to_h
-      end
-    end
-
     context "when the job definition includes valid information prepared by the file fetcher step" do
       let(:job_definition) do
         {
           "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encoded_dependency_files
+          "base64_dependency_files" => encode_dependency_files(dependency_files)
         }
       end
 
@@ -99,7 +95,7 @@ RSpec.describe Dependabot::DependencySnapshot do
       let(:job_definition) do
         {
           "base_commit_sha" => base_commit_sha,
-          "base64_dependency_files" => encoded_dependency_files.tap do |files|
+          "base64_dependency_files" => encode_dependency_files(dependency_files).tap do |files|
             files.first["content"] = Base64.encode64("garbage")
           end
         }
@@ -125,7 +121,7 @@ RSpec.describe Dependabot::DependencySnapshot do
     context "when the job definition does not have the 'base_commit_sha' key" do
       let(:job_definition) do
         {
-          "base64_dependency_files" => encoded_dependency_files
+          "base64_dependency_files" => encode_dependency_files(dependency_files)
         }
       end
 

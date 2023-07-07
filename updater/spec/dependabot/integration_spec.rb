@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "support/dependency_file_helpers"
+
 require "dependabot/dependency"
 require "dependabot/dependency_file"
 require "dependabot/file_fetchers"
@@ -11,6 +13,8 @@ require "dependabot/update_files_command"
 require "dependabot/api_client"
 
 RSpec.describe "Dependabot Updates" do
+  include DependencyFileHelpers
+
   let(:fetch_files) { Dependabot::FileFetcherCommand.new }
   let(:update_files) { Dependabot::UpdateFilesCommand.new }
 
@@ -35,11 +39,7 @@ RSpec.describe "Dependabot Updates" do
     # by the previous step
     fetch_job_definition.merge({
       "base_commit_sha" => "sha",
-      "base64_dependency_files" => dependency_files.map do |file|
-        base64_file = file.dup
-        base64_file.content = Base64.encode64(file.content) unless file.binary?
-        base64_file.to_h
-      end
+      "base64_dependency_files" => encode_dependency_files(dependency_files)
     })
   end
 
@@ -138,7 +138,8 @@ RSpec.describe "Dependabot Updates" do
         "update_subdependencies" => false,
         "updating_a_pull_request" => false,
         "vendor_dependencies" => false,
-        "security_updates_only" => false
+        "security_updates_only" => false,
+        "dependency_groups" => []
       }
     end
 

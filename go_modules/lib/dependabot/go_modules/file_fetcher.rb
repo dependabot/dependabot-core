@@ -18,7 +18,6 @@ module Dependabot
         return nil unless go_mod
 
         {
-          ecosystem: "gomod",
           package_managers: {
             "gomod" => go_mod.content.match(/^go\s(\d+\.\d+)/)&.captures&.first || "unknown"
           }

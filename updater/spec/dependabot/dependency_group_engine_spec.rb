@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "support/dependency_file_helpers"
+
 require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
@@ -8,6 +10,8 @@ require "dependabot/job"
 # The DependencyGroupEngine is not accessed directly, but though a DependencySnapshot.
 # So these tests use DependencySnapshot methods to check the DependencyGroupEngine works as expected
 RSpec.describe Dependabot::DependencyGroupEngine do
+  include DependencyFileHelpers
+
   let(:dependency_group_engine) { described_class }
 
   let(:job_json) { fixture("jobs/job_with_dependency_groups.json") }
@@ -16,12 +20,12 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     [
       Dependabot::DependencyFile.new(
         name: "Gemfile",
-        content: fixture("bundler/grouped/Gemfile"),
+        content: fixture("bundler_grouped/original/Gemfile"),
         directory: "/"
       ),
       Dependabot::DependencyFile.new(
         name: "Gemfile.lock",
-        content: fixture("bundler/grouped/Gemfile.lock"),
+        content: fixture("bundler_grouped/original/Gemfile.lock"),
         directory: "/"
       )
     ]
@@ -31,18 +35,10 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     "mock-sha"
   end
 
-  let(:encoded_dependency_files) do
-    dependency_files.map do |file|
-      base64_file = file.dup
-      base64_file.content = Base64.encode64(file.content)
-      base64_file.to_h
-    end
-  end
-
   let(:job_definition) do
     {
       "base_commit_sha" => base_commit_sha,
-      "base64_dependency_files" => encoded_dependency_files
+      "base64_dependency_files" => encode_dependency_files(dependency_files)
     }
   end
 
@@ -74,16 +70,19 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
   describe "#register" do
     after do
-      dependency_group_engine.reset!
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "registers the dependency groups" do
       expect(dependency_group_engine.instance_variable_get(:@registered_groups)).to eq([])
 
       # We have to call the original here for the DependencyGroupEngine to actually register the groups
-      expect(dependency_group_engine).to receive(:register).with("group-a", ["dummy-pkg-*"]).and_call_original
-      expect(dependency_group_engine).to receive(:register).with("group-b", ["dummy-pkg-b"]).and_call_original
+      expect(dependency_group_engine).to receive(:register).with("group-a",
+                                                                 { "exclude-patterns" => ["dummy-pkg-b"],
+                                                                   "patterns" => ["dummy-pkg-*"] }).and_call_original
+      expect(dependency_group_engine).to receive(:register).with("group-b",
+                                                                 { "patterns" => ["dummy-pkg-b"] }).and_call_original
 
       # Groups are registered by the job when a DependencySnapshot is created
       create_dependency_snapshot
@@ -94,23 +93,23 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
   describe "#groups_for" do
     after do
-      dependency_group_engine.reset!
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the expected groups" do
       snapshot = create_dependency_snapshot
 
       expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[0]).count).to eq(1)
-      expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[1]).count).to eq(2)
+      expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[1]).count).to eq(1)
       expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[2]).count).to eq(0)
     end
   end
 
   describe "#dependency_groups" do
     after do
-      dependency_group_engine.reset!
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the dependency groups" do
@@ -146,8 +145,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
   describe "#ungrouped_dependencies" do
     after do
-      dependency_group_engine.reset!
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "returns the ungrouped dependencies" do
@@ -182,6 +181,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
   describe "#reset!" do
     after do
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "resets the dependency group engine" do
@@ -204,8 +204,8 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
   describe "#calculate_dependency_groups!" do
     after do
-      dependency_group_engine.reset!
       Dependabot::Experiments.reset!
+      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "runs once" do
