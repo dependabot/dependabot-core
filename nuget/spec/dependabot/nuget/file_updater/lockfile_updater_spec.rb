@@ -52,7 +52,7 @@ RSpec.describe Dependabot::Nuget::FileUpdater::LockfileUpdater do
             expect(error).
               to be_a(Dependabot::SharedHelpers::HelperSubprocessFailed)
             expect(error.message).to include(
-              "Failed to restore /home/dependabot/dependabot-core/nuget/dependabot_tmp_dir/myproj.csproj"
+              "Failed to restore /home/dependabot/nuget/dependabot_tmp_dir/myproj.csproj"
             )
             expect(error.message).to include(
               "error NU1102: Unable to find package Azure.Bicep.Core with version (>= 99.99.99)"
