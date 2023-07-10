@@ -119,13 +119,10 @@ module Dependabot
       sleep(rand(3.0..10.0)) && retry
     end
 
-    def record_package_manager_version(package_managers)
-      api_url = "#{base_url}/update_jobs/#{job_id}/record_package_manager_version"
+    def record_ecosystem_versions(ecosystem_versions)
+      api_url = "#{base_url}/update_jobs/#{job_id}/record_ecosystem_versions"
       body = {
-        data: {
-          ecosystem: "deprecated",
-          "package-managers": package_managers
-        }
+        data: { ecosystem_versions: ecosystem_versions }
       }
       response = http_client.post(api_url, json: body)
       raise ApiError, response.body if response.code >= 400

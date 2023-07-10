@@ -20,7 +20,7 @@ module Dependabot
         "Repo must contain a Cargo.toml."
       end
 
-      def package_manager_version
+      def ecosystem_versions
         channel = if rust_toolchain
                     TomlRB.parse(rust_toolchain.content).fetch("toolchain", nil)&.fetch("channel", nil)
                   else

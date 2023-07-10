@@ -14,7 +14,7 @@ module Dependabot
         "Repo must contain a go.mod."
       end
 
-      def package_manager_version
+      def ecosystem_versions
         return nil unless go_mod
 
         {

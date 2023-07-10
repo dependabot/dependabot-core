@@ -160,7 +160,7 @@ RSpec.describe Dependabot::Service do
   describe "Instance methods delegated to @client" do
     {
       mark_job_as_processed: %w(mock_sha),
-      record_package_manager_version: %w(mock_package_managers)
+      record_ecosystem_versions: %w(mock_ecosystem_versions)
     }.each do |method, arguments|
       before { allow(mock_client).to receive(method) }
 

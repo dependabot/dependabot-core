@@ -84,7 +84,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.package_manager_version).to eq({
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
         package_managers: { "cargo" => "default" }
       })
     end
@@ -115,7 +115,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "raises a DependencyFileNotParseable error" do
-      expect { file_fetcher_instance.package_manager_version }.to raise_error(Dependabot::DependencyFileNotParseable)
+      expect { file_fetcher_instance.ecosystem_versions }.to raise_error(Dependabot::DependencyFileNotParseable)
     end
   end
 
@@ -144,7 +144,7 @@ RSpec.describe Dependabot::Cargo::FileFetcher do
     end
 
     it "provides the Rust channel" do
-      expect(file_fetcher_instance.package_manager_version).to eq({
+      expect(file_fetcher_instance.ecosystem_versions).to eq({
         package_managers: { "cargo" => "1.2.3" }
       })
     end

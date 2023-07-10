@@ -52,7 +52,7 @@ module Dependabot
         end
       end
 
-      def package_manager_version
+      def ecosystem_versions
         package_managers = {}
 
         package_managers["npm"] = Helpers.npm_version_numeric(package_lock.content) if package_lock
