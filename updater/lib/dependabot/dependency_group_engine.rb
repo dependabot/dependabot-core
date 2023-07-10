@@ -38,13 +38,15 @@ module Dependabot
 
       if dependency_groups.any?
         dependencies.each do |dependency|
-          groups = groups_for(dependency)
+          matched_groups = @dependency_groups.each_with_object([]) do |group, matches|
+            next unless group.contains?(dependency)
 
-          @ungrouped_dependencies << dependency if groups.empty?
-
-          groups.each do |group|
             group.dependencies.push(dependency)
+            matches << group
           end
+
+          # If we had no matches, collect the dependency as ungrouped
+          @ungrouped_dependencies << dependency if matched_groups.empty?
         end
       else
         @ungrouped_dependencies = dependencies
@@ -59,15 +61,6 @@ module Dependabot
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = []
       @groups_calculated = false
-    end
-
-    def groups_for(dependency)
-      return [] if dependency.nil?
-      return [] unless dependency.instance_of?(Dependabot::Dependency)
-
-      @dependency_groups.select do |group|
-        group.contains?(dependency)
-      end
     end
   end
 end
