@@ -62,8 +62,6 @@ module Dependabot
       @job_group = @dependency_group_engine.find_group(name: job.dependency_group_to_refresh)
     end
 
-    # A dependency snapshot will always have the same set of dependencies since it only depends
-    # on the Job and dependency groups, which are static for a given commit.
     def groups
       @dependency_group_engine.dependency_groups
     end

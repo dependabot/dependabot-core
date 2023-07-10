@@ -145,5 +145,59 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
       end
     end
+
+    context "when a job has no groups configured" do
+      let(:dependency_groups_config) { [] }
+
+      describe "::from_job_config" do
+        it "registers no dependency groups" do
+          expect(dependency_group_engine.dependency_groups).to be_empty
+        end
+      end
+
+      describe "#assign_to_groups!" do
+        let(:dummy_pkg_a) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-a",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["default"],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        let(:dummy_pkg_b) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["default"],
+                source: nil
+              }
+            ]
+          )
+        end
+
+        let(:dependencies) { [dummy_pkg_a, dummy_pkg_b] }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "lists all dependencies as ungrouped" do
+          expect(dependency_group_engine.ungrouped_dependencies).to eql(dependencies)
+        end
+      end
+    end
   end
 end
