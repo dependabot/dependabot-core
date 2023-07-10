@@ -59,22 +59,20 @@ module Dependabot
       return nil unless job.dependency_group_to_refresh
       return @job_group if defined?(@job_group)
 
-      @job_group = groups.fetch(job.dependency_group_to_refresh.to_sym, nil)
+      @job_group = @dependency_group_engine.find_group(name: job.dependency_group_to_refresh)
     end
 
     # A dependency snapshot will always have the same set of dependencies since it only depends
     # on the Job and dependency groups, which are static for a given commit.
     def groups
-      # The DependencyGroupEngine registers dependencies when the Job is created
-      # and it will memoize the dependency groups
-      Dependabot::DependencyGroupEngine.dependency_groups(allowed_dependencies)
+      @dependency_group_engine.dependency_groups
     end
 
     def ungrouped_dependencies
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
 
-      Dependabot::DependencyGroupEngine.ungrouped_dependencies(allowed_dependencies)
+      @dependency_group_engine.ungrouped_dependencies
     end
 
     private
@@ -85,6 +83,8 @@ module Dependabot
       @dependency_files = dependency_files
 
       @dependencies = parse_files!
+      @dependency_group_engine = DependencyGroupEngine.from_job_config(job: job)
+      @dependency_group_engine.assign_to_groups!(dependencies: allowed_dependencies)
     end
 
     attr_reader :job

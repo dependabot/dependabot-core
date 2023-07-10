@@ -15,58 +15,29 @@ require "dependabot/dependency_group"
 #           in the service or as an integration point.
 #
 module Dependabot
-  module DependencyGroupEngine
-    @groups_calculated = false
-    @registered_groups = []
+  class DependencyGroupEngine
+    class ConfigurationError < StandardError; end
 
-    @dependency_groups = {}
-    @ungrouped_dependencies = []
-
-    def self.reset!
-      @groups_calculated = false
-      @registered_groups = []
-
-      @dependency_groups = {}
-      @ungrouped_dependencies = []
-    end
-
-    # Eventually the key for a dependency group should be a hash since names _can_ conflict within jobs
-    def self.register(name, rules)
-      @registered_groups.push Dependabot::DependencyGroup.new(name: name, rules: rules)
-    end
-
-    def self.groups_for(dependency)
-      return [] if dependency.nil?
-      return [] unless dependency.instance_of?(Dependabot::Dependency)
-
-      @registered_groups.select do |group|
-        group.contains?(dependency)
+    def self.from_job_config(job:)
+      groups = job.dependency_groups.map do |group|
+        Dependabot::DependencyGroup.new(name: group["name"], rules: group["rules"])
       end
+
+      new(dependency_groups: groups)
     end
 
-    # { group_name => [DependencyGroup], ... }
-    def self.dependency_groups(dependencies)
-      return @dependency_groups if @groups_calculated
+    attr_reader :dependency_groups, :groups_calculated, :ungrouped_dependencies
 
-      @groups_calculated = calculate_dependency_groups!(dependencies)
-
-      @dependency_groups
+    def find_group(name:)
+      dependency_groups.find { |group| group.name == name }
     end
 
-    # Returns a list of dependencies that do not belong to any of the groups
-    def self.ungrouped_dependencies(dependencies)
-      return @ungrouped_dependencies if @groups_calculated
-
-      @groups_calculated = calculate_dependency_groups!(dependencies)
-
-      @ungrouped_dependencies
-    end
-
-    def self.calculate_dependency_groups!(dependencies)
+    def assign_to_groups!(dependencies:)
+      raise ConfigurationError, "dependency groups have already been configured!" if @groups_calculated
       # If we try to calculate dependency groups when there are no groups registered
       # then all of the dependencies end up in the ungrouped list which can break
       # an UpdateAllVersions#dependencies check
-      return false unless @registered_groups.any?
+      return false unless dependency_groups.any?
 
       dependencies.each do |dependency|
         groups = groups_for(dependency)
@@ -75,11 +46,27 @@ module Dependabot
 
         groups.each do |group|
           group.dependencies.push(dependency)
-          @dependency_groups[group.name.to_sym] = group
         end
       end
 
-      true
+      @groups_calculated = true
+    end
+
+    private
+
+    def initialize(dependency_groups:)
+      @dependency_groups = dependency_groups
+      @ungrouped_dependencies = []
+      @groups_calculated = false
+    end
+
+    def groups_for(dependency)
+      return [] if dependency.nil?
+      return [] unless dependency.instance_of?(Dependabot::Dependency)
+
+      @dependency_groups.select do |group|
+        group.contains?(dependency)
+      end
     end
   end
 end

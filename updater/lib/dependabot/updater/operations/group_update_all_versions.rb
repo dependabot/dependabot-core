@@ -70,7 +70,7 @@ module Dependabot
           Dependabot.logger.info("Starting grouped update job for #{job.source.repo}")
           Dependabot.logger.info("Found #{dependency_snapshot.groups.count} group(s).")
 
-          dependency_snapshot.groups.each do |_group_hash, group|
+          dependency_snapshot.groups.each do |group|
             if pr_exists_for_dependency_group?(group)
               Dependabot.logger.info("Detected existing pull request for '#{group.name}'.")
               Dependabot.logger.info(

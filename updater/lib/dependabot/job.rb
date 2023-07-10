@@ -81,7 +81,7 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    def initialize(attributes) # rubocop:disable Metrics/AbcSize
+    def initialize(attributes)
       @id                             = attributes.fetch(:id)
       @allowed_updates                = attributes.fetch(:allowed_updates)
       @commit_message_options         = attributes.fetch(:commit_message_options, {})
@@ -116,7 +116,6 @@ module Dependabot
       @repo_private                   = attributes.fetch(:repo_private, nil)
 
       register_experiments
-      register_dependency_groups
     end
 
     def clone?
@@ -251,14 +250,6 @@ module Dependabot
           vulnerable_versions: vulnerable_versions,
           safe_versions: safe_versions
         )
-      end
-    end
-
-    def register_dependency_groups
-      return if dependency_groups.nil?
-
-      dependency_groups.each do |group|
-        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
       end
     end
 

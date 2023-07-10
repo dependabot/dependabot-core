@@ -55,7 +55,6 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
   after do
     Dependabot::Experiments.reset!
-    Dependabot::DependencyGroupEngine.reset!
   end
 
   context "when only some dependencies match the defined group" do

@@ -54,7 +54,6 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
 
   after do
     Dependabot::Experiments.reset!
-    Dependabot::DependencyGroupEngine.reset!
   end
 
   context "when the same dependencies need to be updated to the same target versions" do
