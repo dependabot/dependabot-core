@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "raven"
+require "sentry-ruby"
 require "dependabot/api_client"
 require "dependabot/service"
 require "dependabot/logger"

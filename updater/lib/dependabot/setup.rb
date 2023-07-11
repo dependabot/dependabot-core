@@ -10,9 +10,15 @@ Dependabot.logger = Logger.new($stdout).tap do |logger|
 end
 
 require "dependabot/sentry"
-Raven.configure do |config|
-  config.logger = Dependabot.logger
+Sentry.init do |config|
+  debugger
+  # config.logger = Dependabot.logger # TODO
   config.project_root = File.expand_path("../../..", __dir__)
+
+  # Send messages synchronously rather than async. The updater is already a background job; no human is waiting for a
+  # low latency response. So sending synchronously reduces complexity and ensures a job doesn't fire an exception
+  # then exit immediately before the thread pool has a chance to send the exception.
+  config.background_worker_threads = 0
 
   config.app_dirs_pattern = %r{(
     dependabot-updater/bin|
@@ -37,7 +43,29 @@ Raven.configure do |config|
     pub
   )}x
 
-  config.processors += [ExceptionSanitizer]
+  config.before_send = lambda do |event, hint|
+    if hint[:exception]
+      ExceptionSanitizer.sanitize_sentry_exception_event(event, hint)
+
+      # TODO integrate our custom `raven_context` methods too... for example code see:
+      # https://docs.sentry.io/platforms/ruby/migration/#exceptionraven_context
+      # https://github.com/getsentry/sentry-ruby/issues/884
+      # https://github.com/getsentry/sentry-ruby/issues/1239
+      # https://github.com/getsentry/sentry-ruby/issues/803
+      if exception = hint[:exception]
+        exception.raven_context.each do |key, value|
+          event.send("#{key}=", value)
+        end
+      end
+
+    else
+      event
+    end
+  end
+
+  # https://docs.sentry.io/platforms/ruby/migration/#exceptionraven_context
+  # sentry-ruby doesn't capture raven_context from exceptions anymore. However, you can use before_send to replicate the same behavior:
+  # TODO: when renaming raven_context first see if it used to be auto-picked up and we now need to change it
 end
 
 # We configure `Dependabot::Utils.register_always_clone` for some ecosystems. In
