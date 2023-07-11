@@ -159,7 +159,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
               This can happen if:
               - the group's 'pattern' rules are mispelled
               - your configuration's 'allow' rules do not permit any of the dependencies that match the group
-              - your configuration's 'ignore' rules exclude all of the dependencies that match the group
+              - the dependencies that match the group rules have been removed from your project
             WARN
           )
 
@@ -180,7 +180,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
               This can happen if:
               - the group's 'pattern' rules are mispelled
               - your configuration's 'allow' rules do not permit any of the dependencies that match the group
-              - your configuration's 'ignore' rules exclude all of the dependencies that match the group
+              - the dependencies that match the group rules have been removed from your project
             WARN
           )
 

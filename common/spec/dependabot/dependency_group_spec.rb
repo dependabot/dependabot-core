@@ -137,4 +137,25 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
   end
+
+  describe "#to_config_yaml" do
+    let(:rules) do
+      {
+        "patterns" => ["test-*", "nothing-matches-this"],
+        "exclude-patterns" => ["*-2"]
+      }
+    end
+
+    it "renders the group to match our configuration file" do
+      expect(dependency_group.to_config_yaml).to eql(<<~YAML)
+        groups:
+          test_group:
+            patterns:
+            - test-*
+            - nothing-matches-this
+            exclude-patterns:
+            - "*-2"
+      YAML
+    end
+  end
 end

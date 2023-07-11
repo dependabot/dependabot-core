@@ -239,6 +239,20 @@ module Dependabot
           end
       end
 
+      def warn_group_is_empty(group)
+        Dependabot.logger.warn(
+          "Skipping update group for '#{group.name}' as it does not match any allowed dependencies."
+        )
+
+        return unless Dependabot.logger.debug?
+
+        Dependabot.logger.debug(<<~DEBUG.chomp)
+          The configuration for this group is:
+
+          #{group.to_config_yaml}
+        DEBUG
+      end
+
       def prepare_workspace
         return unless job.clone? && job.repo_contents_path
 

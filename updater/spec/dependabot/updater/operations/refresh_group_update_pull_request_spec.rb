@@ -198,4 +198,31 @@ RSpec.describe Dependabot::Updater::Operations::RefreshGroupUpdatePullRequest do
       group_update_all.perform
     end
   end
+
+  context "when the target dependency group no longer matches any dependencies in the project" do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_refresh_empty_group")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files
+    end
+
+    before do
+      stub_rubygems_calls
+    end
+
+    it "logs a warning and tells the service to close the Pull Request" do
+      # Our mocks will fail due to unexpected messages if any errors or PRs are dispatched
+
+      allow(Dependabot.logger).to receive(:warn)
+      expect(Dependabot.logger).to receive(:warn).with(
+        "Skipping update group for 'everything-everywhere-all-at-once' as it does not match any allowed dependencies."
+      )
+
+      expect(mock_service).to receive(:close_pull_request).with(["dummy-pkg-b"], :dependency_group_empty)
+
+      group_update_all.perform
+    end
+  end
 end
