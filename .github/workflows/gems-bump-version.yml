@@ -41,7 +41,7 @@ jobs:
       - name: Bump the version
         # Cron runs with no inputs, so version_type will default to 'minor'
         run: |
-          NEW_VERSION=$(bin/bump-version.rb ${{ github.event.inputs.version_type || 'minor' }})
+          NEW_VERSION=$(bin/bump-version.rb ${{ inputs.version_type || 'minor' }})
           echo "New version is: $NEW_VERSION"
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
