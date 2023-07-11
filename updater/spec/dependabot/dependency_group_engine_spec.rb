@@ -122,27 +122,70 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         )
       end
 
-      let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
+      context "when all groups have at least one dependency that matches" do
+        let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
 
-      before do
-        dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "adds dependencies to every group they match" do
+          group_a = dependency_group_engine.find_group(name: "group-a")
+          expect(group_a.dependencies).to eql([dummy_pkg_a, dummy_pkg_c])
+
+          group_b = dependency_group_engine.find_group(name: "group-b")
+          expect(group_b.dependencies).to eql([dummy_pkg_b, dummy_pkg_c])
+        end
+
+        it "keeps a list of any dependencies that do not match any groups" do
+          expect(dependency_group_engine.ungrouped_dependencies).to eql([ungrouped_pkg])
+        end
+
+        it "raises an exception if it is called a second time" do
+          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }.
+            to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
+        end
       end
 
-      it "adds dependencies to every group they match" do
-        group_a = dependency_group_engine.find_group(name: "group-a")
-        expect(group_a.dependencies).to eql([dummy_pkg_a, dummy_pkg_c])
+      context "when one group has no matching dependencies" do
+        let(:dependencies) { [dummy_pkg_a] }
 
-        group_b = dependency_group_engine.find_group(name: "group-b")
-        expect(group_b.dependencies).to eql([dummy_pkg_b, dummy_pkg_c])
+        it "warns that the group is misconfigured" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            <<~WARN
+              Please check your configuration as there are groups no dependencies match:
+              - group-b
+
+              This can happen if:
+              - the group's 'pattern' rules are mispelled
+              - your configuration's 'allow' rules do not permit any of the dependencies that match the group
+              - your configuration's 'ignore' rules exclude all of the dependencies that match the group
+            WARN
+          )
+
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
       end
 
-      it "keeps a list of any dependencies that do not match any groups" do
-        expect(dependency_group_engine.ungrouped_dependencies).to eql([ungrouped_pkg])
-      end
+      context "when no groups have any matching dependencies" do
+        let(:dependencies) { [ungrouped_pkg] }
 
-      it "raises an exception if it is called a second time" do
-        expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }.
-          to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
+        it "warns that the groups are misconfigured" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            <<~WARN
+              Please check your configuration as there are groups no dependencies match:
+              - group-a
+              - group-b
+
+              This can happen if:
+              - the group's 'pattern' rules are mispelled
+              - your configuration's 'allow' rules do not permit any of the dependencies that match the group
+              - your configuration's 'ignore' rules exclude all of the dependencies that match the group
+            WARN
+          )
+
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
       end
     end
 

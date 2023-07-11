@@ -52,6 +52,7 @@ module Dependabot
         @ungrouped_dependencies = dependencies
       end
 
+      validate_groups
       @groups_calculated = true
     end
 
@@ -61,6 +62,23 @@ module Dependabot
       @dependency_groups = dependency_groups
       @ungrouped_dependencies = []
       @groups_calculated = false
+    end
+
+    def validate_groups
+      empty_groups = dependency_groups.select { |group| group.dependencies.empty? }
+      warn_misconfigured_groups(empty_groups) if empty_groups.any?
+    end
+
+    def warn_misconfigured_groups(groups)
+      Dependabot.logger.warn <<~WARN
+        Please check your configuration as there are groups no dependencies match:
+        #{groups.map { |g| "- #{g.name}" }.join("\n")}
+
+        This can happen if:
+        - the group's 'pattern' rules are mispelled
+        - your configuration's 'allow' rules do not permit any of the dependencies that match the group
+        - your configuration's 'ignore' rules exclude all of the dependencies that match the group
+      WARN
     end
   end
 end
