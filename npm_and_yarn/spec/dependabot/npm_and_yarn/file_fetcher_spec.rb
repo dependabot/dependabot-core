@@ -344,10 +344,9 @@ RSpec.describe Dependabot::NpmAndYarn::FileFetcher do
           .to match_array(%w(package.json pnpm-lock.yaml))
       end
 
-      it "parses the version as 6" do
-        expect(file_fetcher_instance.ecosystem_versions).to eq(
-          { package_managers: { "pnpm" => 6 } }
-        )
+      it "raises tool version not supported error" do
+        expect { file_fetcher_instance.ecosystem_versions }
+          .to raise_error(Dependabot::ToolVersionNotSupported)
       end
     end
 

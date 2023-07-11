@@ -184,7 +184,13 @@ module Dependabot
       def pnpm_version
         return @pnpm_version if defined?(@pnpm_version)
 
-        @pnpm_version = package_manager.requested_version("pnpm") || guess_pnpm_version
+        version = package_manager.requested_version("pnpm") || guess_pnpm_version
+
+        if version && Version.new(version.to_s) < Version.new("7")
+          raise ToolVersionNotSupported.new("PNPM", version.to_s, "7.*, 8.*")
+        end
+
+        @pnpm_version = version
       end
 
       def guess_pnpm_version
