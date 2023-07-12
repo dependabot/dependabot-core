@@ -94,7 +94,11 @@ module Dependabot
         if dependency_file.directory.start_with?(repo_contents_path)
           File.join(dependency_file.directory, dependency_file.name)
         else
-          File.join(repo_contents_path, dependency_file.directory, dependency_file.name)
+          file_directory = dependency_file.directory
+          if file_directory.start_with?("/")
+            file_directory = file_directory[1..-1]
+          end
+          File.join(repo_contents_path || "", file_directory, dependency_file.name)
         end
       end
 
