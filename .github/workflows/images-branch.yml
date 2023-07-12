@@ -55,7 +55,7 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
 
       - name: Set PR (forks)
-        run: echo "PR=${{ github.event.inputs.pr }}" >> $GITHUB_ENV
+        run: echo "PR=${{ inputs.pr }}" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
 
         # sets DECISION to the PR's review decision, handling the push-after-approval case
@@ -76,7 +76,7 @@ jobs:
 
       - name: Prepare tag (forks)
         run: |
-          gh pr checkout ${{ github.event.inputs.pr }}
+          gh pr checkout ${{ inputs.pr }}
           git fetch origin main
           git merge origin/main --ff-only || exit 1
           echo "TAG=$(git rev-parse HEAD)" >> $GITHUB_ENV
