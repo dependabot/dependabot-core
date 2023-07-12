@@ -72,19 +72,19 @@ module Dependabot
           # The original content contain windows style newlines.
           # Ensure the updated content also uses windows style newlines.
           updated_content = updated_content.gsub("(?!\r)\n", "\r\n")
-          puts "Fixing mismatched Windows line endings for [#{f.name}]."
+          puts "Fixing mismatched Windows line endings for [#{dependency_file.name}]."
         elsif updated_content.include?("\r\n")
           # The original content does not contain windows style newlines.
           # Ensure the updated content uses unix style newlines.
           updated_content = updated_content.gsub("\r\n", "\n")
-          puts "Fixing mismatched Unix line endings for [#{f.name}]."
+          puts "Fixing mismatched Unix line endings for [#{dependency_file.name}]."
         end
 
         # Fix up BOM
 
         if dependency_file.content_encoding == "utf-8" && updated_content.start_with?("\uFEFF")
           updated_content = updated_content.delete_prefix("\uFEFF")
-          puts "Removing BOM from [#{f.name}]."
+          puts "Removing BOM from [#{dependency_file.name}]."
         end
 
         updated_content
