@@ -114,7 +114,7 @@ module Dependabot
       # This method **must** must return an Array when it errors
       #
       def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
-        checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
+        checker = update_checker_for(dependency, dependency_files, group, raise_on_ignored: raise_on_ignored?(dependency))
 
         log_checking_for_update(dependency)
 
@@ -170,7 +170,7 @@ module Dependabot
         job.ignore_conditions_for(dependency).any?
       end
 
-      def update_checker_for(dependency, dependency_files, raise_on_ignored:)
+      def update_checker_for(dependency, dependency_files, group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
           dependency_files: dependency_files,
@@ -180,6 +180,7 @@ module Dependabot
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
+          group: group,
           options: job.experiments
         )
       end

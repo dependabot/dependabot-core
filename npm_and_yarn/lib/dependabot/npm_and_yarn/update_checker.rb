@@ -330,7 +330,8 @@ module Dependabot
             dependency_files: dependency_files,
             latest_allowable_version: latest_version,
             latest_version_finder: latest_version_finder,
-            repo_contents_path: repo_contents_path
+            repo_contents_path: repo_contents_path,
+            group: group
           )
       end
 
