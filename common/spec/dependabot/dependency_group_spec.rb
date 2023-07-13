@@ -107,6 +107,22 @@ RSpec.describe Dependabot::DependencyGroup do
       end
     end
 
+    context "the group permits all update-types" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-major",
+            "version-update:semver-minor",
+            "version-update:semver-patch"
+          ]
+        }
+      end
+
+      it "returns an empty array" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
     context "when group only permits patch versions" do
       let(:rules) do
         {
@@ -155,6 +171,56 @@ RSpec.describe Dependabot::DependencyGroup do
           ">= 1.9.a, < 2",
           ">= 2.a"
         ])
+      end
+    end
+
+    context "when the group only permits minor and patch versions" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-minor",
+            "version-update:semver-patch"
+          ]
+        }
+      end
+
+      it "returns ranges which ignore major and minor updates" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          ">= 2.a"
+        ])
+      end
+    end
+
+    context "when the group has duplicate update-types" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-major",
+            "version-update:semver-major"
+          ]
+        }
+      end
+
+      it "ignores the duplication" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          "> 1.8.0, < 1.9",
+          ">= 1.9.a, < 2"
+        ])
+      end
+    end
+
+    context "when the group has garbage update-types" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "Never going to give you up, Never going to let you down"
+          ]
+        }
+      end
+
+      it "raises an exception when created" do
+        expect { dependency_group }.
+          to raise_error(ArgumentError, starting_with("The #{name} group has unexpected update-type(s):"))
       end
     end
   end

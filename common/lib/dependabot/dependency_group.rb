@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "dependabot/config/ignore_condition"
+require "dependabot/logger"
 
 require "wildcard_matcher"
 require "yaml"
@@ -56,9 +57,22 @@ module Dependabot
     def generate_ignore_condition!
       return NullIgnoreCondition.new unless rules["update-types"]&.any?
 
+      invalid_update_types = rules["update-types"] - Dependabot::Config::IgnoreCondition::VERSION_UPDATE_TYPES
+      if invalid_update_types.any?
+        raise ArgumentError,
+              "The #{name} group has unexpected update-type(s): #{invalid_update_types}"
+      end
+
+      ignored_update_types = Dependabot::Config::IgnoreCondition::VERSION_UPDATE_TYPES - rules["update-types"]
+      # If we are allowing all possible types, then we must use the null object,
+      # an IgnoreCondition will interpret an empty array as 'ignore everything'
+      return NullIgnoreCondition.new unless ignored_update_types.any?
+
+      Dependabot.logger.debug("The #{name} group has set ignores for update-type(s): #{ignored_update_types}")
+
       Dependabot::Config::IgnoreCondition.new(
         dependency_name: ANY_DEPENDENCY_NAME,
-        update_types: Dependabot::Config::IgnoreCondition::VERSION_UPDATE_TYPES - rules["update-types"]
+        update_types: ignored_update_types
       )
     end
   end
