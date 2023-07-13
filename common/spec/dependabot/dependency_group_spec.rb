@@ -104,6 +104,76 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
+  describe "#ignored_versions_for" do
+    let(:dependency) do
+      Dependabot::Dependency.new(
+        name: "business",
+        package_manager: "bundler",
+        version: "1.8.0",
+        requirements: [
+          { file: "Gemfile", requirement: "~> 1.8.0", groups: [], source: nil }
+        ]
+      )
+    end
+
+    context "the group has not defined any update-type rules" do
+      it "returns an empty array" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
+    context "when group only permits patch versions" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-major"
+          ]
+        }
+      end
+
+      it "returns ranges which ignore minor and patch updates" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          "> 1.8.0, < 1.9",
+          ">= 1.9.a, < 2"
+        ])
+      end
+    end
+
+    context "when group only permits minor versions" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-minor"
+          ]
+        }
+      end
+
+      it "returns ranges which ignore major and patch updates" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          "> 1.8.0, < 1.9",
+          ">= 2.a"
+        ])
+      end
+    end
+
+    context "when the group only permits patch versions" do
+      let(:rules) do
+        {
+          "update-types" => [
+            "version-update:semver-patch"
+          ]
+        }
+      end
+
+      it "returns ranges which ignore major and minor updates" do
+        expect(dependency_group.ignored_versions_for(dependency)).to eql([
+          ">= 1.9.a, < 2",
+          ">= 2.a"
+        ])
+      end
+    end
+  end
+
   describe "#contains?" do
     context "when the rules include patterns" do
       let(:rules) do

@@ -4,9 +4,11 @@ module Dependabot
   module Config
     # Filters versions that should not be considered for dependency updates
     class IgnoreCondition
-      PATCH_VERSION_TYPE = "version-update:semver-patch"
-      MINOR_VERSION_TYPE = "version-update:semver-minor"
-      MAJOR_VERSION_TYPE = "version-update:semver-major"
+      VERSION_UPDATE_TYPES = [
+        PATCH_VERSION_TYPE = "version-update:semver-patch",
+        MINOR_VERSION_TYPE = "version-update:semver-minor",
+        MAJOR_VERSION_TYPE = "version-update:semver-major"
+      ]
 
       ALL_VERSIONS = ">= 0"
 
