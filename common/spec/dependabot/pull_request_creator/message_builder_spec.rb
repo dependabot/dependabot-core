@@ -822,7 +822,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
     context "for a dependency group" do
       let(:dependency_group) do
-        Dependabot::DependencyGroup.new(name: "all-the-things", rules: anything)
+        Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
       end
 
       before do
@@ -1914,7 +1914,7 @@ RSpec.describe Dependabot::PullRequestCreator::MessageBuilder do
 
       context "for a dependency group", :vcr do
         let(:dependency_group) do
-          Dependabot::DependencyGroup.new(name: "all-the-things", rules: anything)
+          Dependabot::DependencyGroup.new(name: "all-the-things", rules: { patterns: ["*"] })
         end
 
         it "has the correct message" do
