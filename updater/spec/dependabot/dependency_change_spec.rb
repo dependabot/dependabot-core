@@ -108,7 +108,7 @@ RSpec.describe Dependabot::DependencyChange do
 
     context "when a dependency group is assigned" do
       it "delegates to the Dependabot::PullRequestCreator::MessageBuilder with the group included" do
-        group = Dependabot::DependencyGroup.new(name: "foo", rules: anything)
+        group = Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
 
         dependency_change = described_class.new(
           job: job,
@@ -143,7 +143,7 @@ RSpec.describe Dependabot::DependencyChange do
           job: job,
           updated_dependencies: updated_dependencies,
           updated_dependency_files: updated_dependency_files,
-          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: anything)
+          dependency_group: Dependabot::DependencyGroup.new(name: "foo", rules: { patterns: ["*"] })
         )
 
         expect(dependency_change.grouped_update?).to be true
