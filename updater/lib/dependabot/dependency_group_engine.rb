@@ -56,6 +56,11 @@ module Dependabot
       @groups_calculated = true
     end
 
+    def dependencies_with_ungrouped_semvar_levels
+      # TODO: This is a hack, we need to implement this for real
+      dependency_groups.map(&:dependencies).flatten
+    end
+
     private
 
     def initialize(dependency_groups:)

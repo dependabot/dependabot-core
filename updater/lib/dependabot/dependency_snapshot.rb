@@ -70,7 +70,8 @@ module Dependabot
       # If no groups are defined, all dependencies are ungrouped by default.
       return allowed_dependencies unless groups.any?
 
-      @dependency_group_engine.ungrouped_dependencies
+      @dependency_group_engine.ungrouped_dependencies +
+        @dependency_group_engine.dependencies_with_ungrouped_semvar_levels
     end
 
     private

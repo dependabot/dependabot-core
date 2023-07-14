@@ -241,21 +241,21 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_minor_and_patch/Gemfile.lock"))
       end
 
-      # # We should also create isolated PRs for their major versions
-      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-      #   expect(dependency_change.dependency_group).to be_nil
+      # We should also create isolated PRs for their major versions
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group).to be_nil
 
-      #   # We updated the right dependencies
-      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
-      # end
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
+      end
 
-      # # We should also create isolated PRs for their major versions
-      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-      #   expect(dependency_change.dependency_group).to be_nil
+      # We should also create isolated PRs for their major versions
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group).to be_nil
 
-      #   # We updated the right dependencies
-      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
-      # end
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
+      end
 
       group_update_all.perform
     end
