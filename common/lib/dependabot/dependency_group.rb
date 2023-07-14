@@ -29,10 +29,7 @@ module Dependabot
     def contains?(dependency)
       return true if @dependencies.include?(dependency)
 
-      positive_match = rules["patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency.name) }
-      negative_match =  rules["exclude-patterns"]&.any? { |rule| WildcardMatcher.match?(rule, dependency.name) }
-
-      positive_match && !negative_match
+      matches_pattern?(dependency.name)
     end
 
     # This method generates ignored versions for the given Dependency based on
@@ -54,8 +51,29 @@ module Dependabot
 
     private
 
+    # TODO: Decouple pattern and exclude-pattern
+    #
+    # I think we'll probably want to permit someone to group by dependency type but still use exclusions?
+    #
+    # We probably need to think a lot more about validation to ensure we have _at least one_ positive-match rule
+    # out of pattern, dependency-type, etc, as well as `exclude-pattern` or we'll need to support it as an implicit
+    # "everything except exclude-patterns" if it can be configured on its own.
+    #
+    def matches_pattern?(dependency_name)
+      return true unless pattern_rules? # If no patterns are defined, we pass this check by default
+
+      positive_match = rules["patterns"].any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
+      negative_match = rules["exclude-patterns"]&.any? { |rule| WildcardMatcher.match?(rule, dependency_name) }
+
+      positive_match && !negative_match
+    end
+
+    def pattern_rules?
+      rules.key?("patterns") && rules["patterns"]&.any?
+    end
+
     def generate_ignore_condition!
-      return NullIgnoreCondition.new unless rules["update-types"]&.any?
+      return NullIgnoreCondition.new unless update_type_rules?
 
       invalid_update_types = rules["update-types"] - Dependabot::Config::IgnoreCondition::VERSION_UPDATE_TYPES
       if invalid_update_types.any?
@@ -74,6 +92,10 @@ module Dependabot
         dependency_name: ANY_DEPENDENCY_NAME,
         update_types: ignored_update_types
       )
+    end
+
+    def update_type_rules?
+      rules.key?("update-types") && rules["update-types"]&.any?
     end
   end
 end
