@@ -36,7 +36,7 @@ module Dependabot
         end
 
         def perform
-          warn_group_is_empty(group) and return if group.dependencies.empty?
+          return warn_group_is_empty(group) if group.dependencies.empty?
 
           Dependabot.logger.info("Starting update group for '#{group.name}'")
 
