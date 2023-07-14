@@ -81,7 +81,7 @@ module Dependabot
 
     # NOTE: "attributes" are fetched and injected at run time from
     # dependabot-api using the UpdateJobPrivateSerializer
-    def initialize(attributes) # rubocop:disable Metrics/AbcSize
+    def initialize(attributes)
       @id                             = attributes.fetch(:id)
       @allowed_updates                = attributes.fetch(:allowed_updates)
       @commit_message_options         = attributes.fetch(:commit_message_options, {})
@@ -111,12 +111,16 @@ module Dependabot
       @update_subdependencies         = attributes.fetch(:update_subdependencies)
       @updating_a_pull_request        = attributes.fetch(:updating_a_pull_request)
       @vendor_dependencies            = attributes.fetch(:vendor_dependencies, false)
-      @dependency_groups              = attributes.fetch(:dependency_groups, [])
+      # TODO: Make this hash required
+      #
+      # We will need to do a pass updating the CLI and smoke tests before this is possible,
+      # so let's consider it optional for now. If we get a nil value, let's force it to be
+      # an array.
+      @dependency_groups              = attributes.fetch(:dependency_groups, []) || []
       @dependency_group_to_refresh    = attributes.fetch(:dependency_group_to_refresh, nil)
       @repo_private                   = attributes.fetch(:repo_private, nil)
 
       register_experiments
-      register_dependency_groups
     end
 
     def clone?
@@ -251,14 +255,6 @@ module Dependabot
           vulnerable_versions: vulnerable_versions,
           safe_versions: safe_versions
         )
-      end
-    end
-
-    def register_dependency_groups
-      return if dependency_groups.nil?
-
-      dependency_groups.each do |group|
-        Dependabot::DependencyGroupEngine.register(group["name"], group["rules"])
       end
     end
 

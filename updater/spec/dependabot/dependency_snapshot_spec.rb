@@ -27,6 +27,8 @@ RSpec.describe Dependabot::DependencySnapshot do
                     credentials: [],
                     reject_external_code?: false,
                     source: source,
+                    dependency_groups: dependency_groups,
+                    allowed_update?: true,
                     experiments: { large_hadron_collider: true })
   end
 
@@ -42,6 +44,18 @@ RSpec.describe Dependabot::DependencySnapshot do
         content: fixture("bundler/original/Gemfile.lock"),
         directory: "/"
       )
+    ]
+  end
+
+  let(:dependency_groups) do
+    [
+      {
+        "name" => "group-a",
+        "rules" => {
+          "patterns" => ["dummy-pkg-*"],
+          "exclude-patterns" => ["dummy-pkg-b"]
+        }
+      }
     ]
   end
 
@@ -88,6 +102,21 @@ RSpec.describe Dependabot::DependencySnapshot do
         ).and_call_original
 
         create_dependency_snapshot
+      end
+
+      it "correctly instantiates any configured dependency groups" do
+        snapshot = create_dependency_snapshot
+
+        expect(snapshot.groups.length).to eql(1)
+
+        group = snapshot.groups.last
+
+        expect(group.name).to eql("group-a")
+        expect(group.dependencies.length).to eql(1)
+        expect(group.dependencies.first.name).to eql("dummy-pkg-a")
+
+        expect(snapshot.ungrouped_dependencies.length).to eql(1)
+        expect(snapshot.ungrouped_dependencies.first.name).to eql("dummy-pkg-b")
       end
     end
 

@@ -7,223 +7,240 @@ require "dependabot/dependency_group_engine"
 require "dependabot/dependency_snapshot"
 require "dependabot/job"
 
-# The DependencyGroupEngine is not accessed directly, but though a DependencySnapshot.
-# So these tests use DependencySnapshot methods to check the DependencyGroupEngine works as expected
 RSpec.describe Dependabot::DependencyGroupEngine do
   include DependencyFileHelpers
 
-  let(:dependency_group_engine) { described_class }
-
-  let(:job_json) { fixture("jobs/job_with_dependency_groups.json") }
-
-  let(:dependency_files) do
-    [
-      Dependabot::DependencyFile.new(
-        name: "Gemfile",
-        content: fixture("bundler_grouped/original/Gemfile"),
-        directory: "/"
-      ),
-      Dependabot::DependencyFile.new(
-        name: "Gemfile.lock",
-        content: fixture("bundler_grouped/original/Gemfile.lock"),
-        directory: "/"
-      )
-    ]
-  end
-
-  let(:base_commit_sha) do
-    "mock-sha"
-  end
-
-  let(:job_definition) do
-    {
-      "base_commit_sha" => base_commit_sha,
-      "base64_dependency_files" => encode_dependency_files(dependency_files)
-    }
-  end
-
-  let(:source) do
-    Dependabot::Source.new(
-      provider: "github",
-      repo: "dependabot-fixtures/dependabot-test-ruby-package",
-      directory: "/",
-      branch: nil,
-      api_endpoint: "https://api.github.com/",
-      hostname: "github.com"
-    )
-  end
+  let(:dependency_group_engine) { described_class.from_job_config(job: job) }
 
   let(:job) do
-    Dependabot::Job.new_update_job(
-      job_id: anything,
-      job_definition: JSON.parse(job_json),
-      repo_contents_path: anything
-    )
+    instance_double(Dependabot::Job, dependency_groups: dependency_groups_config)
   end
 
-  def create_dependency_snapshot
-    Dependabot::DependencySnapshot.create_from_job_definition(
-      job: job,
-      job_definition: job_definition
-    )
-  end
-
-  describe "#register" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
+  context "when a job has groups configured" do
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "group-a",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+            "exclude-patterns" => ["dummy-pkg-b"]
+          }
+        },
+        {
+          "name" => "group-b",
+          "rules" => {
+            "patterns" => %w(dummy-pkg-b dummy-pkg-c)
+          }
+        }
+      ]
     end
 
-    it "registers the dependency groups" do
-      expect(dependency_group_engine.instance_variable_get(:@registered_groups)).to eq([])
-
-      # We have to call the original here for the DependencyGroupEngine to actually register the groups
-      expect(dependency_group_engine).to receive(:register).with("group-a",
-                                                                 { "exclude-patterns" => ["dummy-pkg-b"],
-                                                                   "patterns" => ["dummy-pkg-*"] }).and_call_original
-      expect(dependency_group_engine).to receive(:register).with("group-b",
-                                                                 { "patterns" => ["dummy-pkg-b"] }).and_call_original
-
-      # Groups are registered by the job when a DependencySnapshot is created
-      create_dependency_snapshot
-
-      expect(dependency_group_engine.instance_variable_get(:@registered_groups)).not_to eq([])
-    end
-  end
-
-  describe "#groups_for" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
+    describe "::from_job_config" do
+      it "registers the dependency groups" do
+        expect(dependency_group_engine.dependency_groups.length).to eql(2)
+        expect(dependency_group_engine.dependency_groups.map(&:name)).to eql(%w(group-a group-b))
+        expect(dependency_group_engine.dependency_groups.map(&:dependencies)).to all(be_empty)
+      end
     end
 
-    it "returns the expected groups" do
-      snapshot = create_dependency_snapshot
+    describe "#find_group" do
+      it "retrieves a defined group by name" do
+        group_a = dependency_group_engine.find_group(name: "group-a")
+        expect(group_a.rules).to eql({
+          "patterns" => ["dummy-pkg-*"],
+          "exclude-patterns" => ["dummy-pkg-b"]
+        })
+      end
 
-      expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[0]).count).to eq(1)
-      expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[1]).count).to eq(1)
-      expect(dependency_group_engine.send(:groups_for, snapshot.dependencies[2]).count).to eq(0)
-    end
-  end
-
-  describe "#dependency_groups" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
-    end
-
-    it "returns the dependency groups" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
-
-      expect(dependency_group_engine).to receive(:dependency_groups).
-        with(allowed_dependencies).at_least(:once).and_call_original
-      expect(dependency_group_engine).to receive(:calculate_dependency_groups!).
-        with(allowed_dependencies).once.and_call_original
-
-      groups = snapshot.groups
-
-      expect(groups.key?(:"group-a")).to be_truthy
-      expect(groups.key?(:"group-b")).to be_truthy
-      expect(groups[:"group-a"]).to be_a(Dependabot::DependencyGroup)
+      it "returns nil if the group does not exist" do
+        expect(dependency_group_engine.find_group(name: "no-such-thing")).to be_nil
+      end
     end
 
-    it "does not call calculate_dependency_groups! again after groups are initially calculated" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
+    describe "#assign_to_groups!" do
+      let(:dummy_pkg_a) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-a",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ]
+        )
+      end
 
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_falsey
-      expect(dependency_group_engine).to receive(:calculate_dependency_groups!).
-        with(allowed_dependencies).once.and_call_original
+      let(:dummy_pkg_b) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-b",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ]
+        )
+      end
 
-      snapshot.groups
-      snapshot.ungrouped_dependencies
+      let(:dummy_pkg_c) do
+        Dependabot::Dependency.new(
+          name: "dummy-pkg-c",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ]
+        )
+      end
 
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_truthy
+      let(:ungrouped_pkg) do
+        Dependabot::Dependency.new(
+          name: "ungrouped_pkg",
+          package_manager: "bundler",
+          version: "1.1.0",
+          requirements: [
+            {
+              file: "Gemfile",
+              requirement: "~> 1.1.0",
+              groups: ["default"],
+              source: nil
+            }
+          ]
+        )
+      end
+
+      context "when all groups have at least one dependency that matches" do
+        let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
+
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+
+        it "adds dependencies to every group they match" do
+          group_a = dependency_group_engine.find_group(name: "group-a")
+          expect(group_a.dependencies).to eql([dummy_pkg_a, dummy_pkg_c])
+
+          group_b = dependency_group_engine.find_group(name: "group-b")
+          expect(group_b.dependencies).to eql([dummy_pkg_b, dummy_pkg_c])
+        end
+
+        it "keeps a list of any dependencies that do not match any groups" do
+          expect(dependency_group_engine.ungrouped_dependencies).to eql([ungrouped_pkg])
+        end
+
+        it "raises an exception if it is called a second time" do
+          expect { dependency_group_engine.assign_to_groups!(dependencies: dependencies) }.
+            to raise_error(described_class::ConfigurationError, "dependency groups have already been configured!")
+        end
+      end
+
+      context "when one group has no matching dependencies" do
+        let(:dependencies) { [dummy_pkg_a] }
+
+        it "warns that the group is misconfigured" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            <<~WARN
+              Please check your configuration as there are groups no dependencies match:
+              - group-b
+
+              This can happen if:
+              - the group's 'pattern' rules are mispelled
+              - your configuration's 'allow' rules do not permit any of the dependencies that match the group
+              - the dependencies that match the group rules have been removed from your project
+            WARN
+          )
+
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+      end
+
+      context "when no groups have any matching dependencies" do
+        let(:dependencies) { [ungrouped_pkg] }
+
+        it "warns that the groups are misconfigured" do
+          expect(Dependabot.logger).to receive(:warn).with(
+            <<~WARN
+              Please check your configuration as there are groups no dependencies match:
+              - group-a
+              - group-b
+
+              This can happen if:
+              - the group's 'pattern' rules are mispelled
+              - your configuration's 'allow' rules do not permit any of the dependencies that match the group
+              - the dependencies that match the group rules have been removed from your project
+            WARN
+          )
+
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
+      end
     end
-  end
 
-  describe "#ungrouped_dependencies" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
-    end
+    context "when a job has no groups configured" do
+      let(:dependency_groups_config) { [] }
 
-    it "returns the ungrouped dependencies" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
+      describe "::from_job_config" do
+        it "registers no dependency groups" do
+          expect(dependency_group_engine.dependency_groups).to be_empty
+        end
+      end
 
-      expect(dependency_group_engine).to receive(:calculate_dependency_groups!).
-        with(allowed_dependencies).once.and_call_original
-      expect(dependency_group_engine).to receive(:ungrouped_dependencies).
-        with(allowed_dependencies).at_least(:once).and_call_original
+      describe "#assign_to_groups!" do
+        let(:dummy_pkg_a) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-a",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["default"],
+                source: nil
+              }
+            ]
+          )
+        end
 
-      ungrouped_dependencies = snapshot.ungrouped_dependencies
+        let(:dummy_pkg_b) do
+          Dependabot::Dependency.new(
+            name: "dummy-pkg-b",
+            package_manager: "bundler",
+            version: "1.1.0",
+            requirements: [
+              {
+                file: "Gemfile",
+                requirement: "~> 1.1.0",
+                groups: ["default"],
+                source: nil
+              }
+            ]
+          )
+        end
 
-      expect(ungrouped_dependencies.first).to be_a(Dependabot::Dependency)
-    end
+        let(:dependencies) { [dummy_pkg_a, dummy_pkg_b] }
 
-    it "does not call calculate_dependency_groups! again after ungrouped_dependencies are initially calculated" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
+        before do
+          dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+        end
 
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_falsey
-      expect(dependency_group_engine).to receive(:calculate_dependency_groups!).
-        with(allowed_dependencies).once.and_call_original
-
-      snapshot.ungrouped_dependencies
-      snapshot.groups
-
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_truthy
-    end
-  end
-
-  describe "#reset!" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
-    end
-
-    it "resets the dependency group engine" do
-      snapshot = create_dependency_snapshot
-      snapshot.groups
-
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_truthy
-      expect(dependency_group_engine.instance_variable_get(:@registered_groups)).not_to eq([])
-      expect(dependency_group_engine.instance_variable_get(:@dependency_groups)).not_to eq({})
-      expect(dependency_group_engine.instance_variable_get(:@ungrouped_dependencies)).not_to eq([])
-
-      dependency_group_engine.reset!
-
-      expect(dependency_group_engine.instance_variable_get(:@groups_calculated)).to be_falsey
-      expect(dependency_group_engine.instance_variable_get(:@registered_groups)).to eq([])
-      expect(dependency_group_engine.instance_variable_get(:@dependency_groups)).to eq({})
-      expect(dependency_group_engine.instance_variable_get(:@ungrouped_dependencies)).to eq([])
-    end
-  end
-
-  describe "#calculate_dependency_groups!" do
-    after do
-      Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
-    end
-
-    it "runs once" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
-
-      expect(dependency_group_engine).to receive(:calculate_dependency_groups!).
-        with(allowed_dependencies).once.and_call_original
-
-      snapshot.groups
-      snapshot.groups
-    end
-
-    it "returns true" do
-      snapshot = create_dependency_snapshot
-      allowed_dependencies = snapshot.allowed_dependencies
-
-      expect(dependency_group_engine.calculate_dependency_groups!(allowed_dependencies)).to be_truthy
+        it "lists all dependencies as ungrouped" do
+          expect(dependency_group_engine.ungrouped_dependencies).to eql(dependencies)
+        end
+      end
     end
   end
 end
