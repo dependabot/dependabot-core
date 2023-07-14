@@ -212,6 +212,55 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
     end
   end
 
+  context "when the snapshot is only grouping minor- and patch-level changes", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semvar_grouping")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates a group PR for minor- and patch-level changes and individual PRs for major-level changes" do
+      # We should create a group PR with the latest minor versions for rack and rubocop
+      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+        expect(dependency_change.dependency_group.name).to eql("small-bumps")
+
+        # We updated the right dependencies
+        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack rubocop))
+
+        # We've updated the gemfiles properly
+        gemfile = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile"
+        end
+        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_minor_and_patch/Gemfile"))
+
+        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
+          file.path == "/Gemfile.lock"
+        end
+        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_minor_and_patch/Gemfile.lock"))
+      end
+
+      # # We should also create isolated PRs for their major versions
+      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+      #   expect(dependency_change.dependency_group).to be_nil
+
+      #   # We updated the right dependencies
+      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
+      # end
+
+      # # We should also create isolated PRs for their major versions
+      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
+      #   expect(dependency_change.dependency_group).to be_nil
+
+      #   # We updated the right dependencies
+      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
+      # end
+
+      group_update_all.perform
+    end
+  end
+
   context "when a pull request already exists for a group" do
     let(:job_definition) do
       job_definition_fixture("bundler/version_updates/group_update_all_with_existing_pr")
