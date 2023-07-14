@@ -190,7 +190,9 @@ module Dependabot
         # It returns verion ranges which implement IgnoreCondition objects' rules
         # not the objects themselves so this is a little misleading.
         versions_ignored_from_configuration = job.ignore_conditions_for(dependency)
-        # group.inject_ignores(configured_ignores)
+        versions_ignored_from_group = group.ignored_versions_for(dependency)
+
+        (versions_ignored_from_configuration + versions_ignored_from_group).uniq
       end
 
       def log_checking_for_update(dependency)
