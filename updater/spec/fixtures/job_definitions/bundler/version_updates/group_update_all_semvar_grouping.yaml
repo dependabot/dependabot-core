@@ -12,9 +12,7 @@ job:
   updating-a-pull-request: false
   lockfile-only: false
   update-subdependencies: false
-  ignore-conditions:
-    - dependency-name: rubocop
-      version-requirement: < 1.54.2
+  ignore-conditions: []
   requirements-update-strategy:
   allowed-updates:
   - dependency-type: direct
@@ -35,12 +33,6 @@ job:
     include-scope:
   security-updates-only: false
   dependency-groups:
-  - name: dev-dependencies
+  - name: small-bumps
     rules:
-      dependency-type: "development"
-      highest-semver-allowed: "major"
-  - name: production-dependencies
-    rules:
-      dependency-type: "production"
-      highest-semver-allowed: "major"
-
+      highest-semver-allowed: "minor"
