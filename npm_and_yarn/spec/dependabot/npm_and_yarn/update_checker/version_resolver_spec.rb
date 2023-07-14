@@ -13,7 +13,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       credentials: credentials,
       latest_allowable_version: latest_allowable_version,
       latest_version_finder: latest_version_finder,
-      repo_contents_path: nil
+      repo_contents_path: nil,
+      group: group
     )
   end
   let(:latest_version_finder) do
@@ -68,6 +69,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       "password" => "token"
     }]
   end
+
+  let(:group) { nil }
 
   describe "#latest_resolvable_version" do
     subject { resolver.latest_resolvable_version }
@@ -289,6 +292,19 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
         end
 
         it { is_expected.to eq(Gem::Version.new("0.14.9")) }
+
+        context "with a dependency group containing the peer" do
+          let(:group) do
+            group = Dependabot::DependencyGroup.new(
+              name: "group",
+              rules: []
+            )
+            group.dependencies.push(dependency)
+            group
+          end
+
+          it { is_expected.to eq(Gem::Version.new("16.3.1")) }
+        end
       end
     end
 
