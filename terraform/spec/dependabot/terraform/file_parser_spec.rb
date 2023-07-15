@@ -910,4 +910,90 @@ RSpec.describe Dependabot::Terraform::FileParser do
       end
     end
   end
+
+  let(:file_parser) do
+    described_class.new(
+      dependency_files: files,
+      source: source
+    )
+  end
+
+  let(:files) { project_dependency_files("registry") }
+  let(:source) { Dependabot::Source.new(provider: "github", repo: "gocardless/bump", directory: "/") }
+
+  describe "#source_type" do
+    subject { file_parser.send(:source_type, source_string) }
+
+    context "when the source type is known" do
+      let(:source_string) { "github.com/org/repo" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:github)
+      end
+    end
+
+    context "when the source type is a registry" do
+      let(:source_string) { "registry.terraform.io/hashicorp/aws" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
+      end
+    end
+
+    context "when the source type is an HTTP archive" do
+      let(:source_string) { "https://example.com/archive.zip?ref=v1.0.0" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:http_archive)
+      end
+    end
+
+    context "when the source type is an interpolation" do
+      let(:source_string) { "${var.source}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation at the end" do
+      let(:source_string) { "git::https://github.com/username/repo.git//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation at the start" do
+      let(:source_string) { "${var.repo_url}/username/repo.git" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is an interpolation type with multiple" do
+      let(:source_string) { "git::https://github.com/${var.username}/${var.repo}//path/to/${var.module_name}" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is a compound interpolation" do
+      let(:source_string) { "test/${var.map[${var.key}']" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:interpolation)
+      end
+    end
+
+    context "when the source type is unknown" do
+      let(:source_string) { "unknown_source" }
+
+      it "returns the correct source type" do
+        expect(subject).to eq(:registry)
+      end
+    end
+  end
 end
