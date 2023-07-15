@@ -901,6 +901,13 @@ RSpec.describe Dependabot::Terraform::FileParser do
     end
 
     context "with a private module proxy that can't be reached", vcr: true do
+      before do
+        artifactory_repo_url = "http://artifactory.dependabot.com/artifactory/tf-modules/azurerm"
+
+        stub_request(:get, "#{artifactory_repo_url}/terraform-azurerm-nsg-rules.v1.1.0.tar.gz?terraform-get=1").
+          and_return(status: 401)
+      end
+
       let(:files) { project_dependency_files("private_module_proxy") }
 
       it "raises an error" do
