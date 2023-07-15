@@ -274,8 +274,10 @@ Here's an example of how to string all these together
 You can add a `debugger` statement anywhere in the ruby code, for example:
 
 ```ruby
+      require 'debug' # at the top of the file
+
       def latest_resolvable_version
-        debugger
+        debugger # within the actual code
         latest_version_finder.latest_version
       end
 ```
