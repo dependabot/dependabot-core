@@ -2,7 +2,7 @@
   "name": "core-dev",
   "build": {
     "dockerfile": "../../Dockerfile.development",
-    "cacheFrom": "ghcr.io/dependabot/dependabot-core-development"
+    "cacheFrom": "ghcr.io/dependabot/dependabot-updater-core"
   },
 
   "workspaceFolder": "/home/dependabot/dependabot-core",
