@@ -181,7 +181,7 @@ module Dependabot
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
-          group: group,
+          dependency_group: group,
           options: job.experiments
         )
       end
