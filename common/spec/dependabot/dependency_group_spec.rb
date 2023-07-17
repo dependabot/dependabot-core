@@ -116,41 +116,35 @@ RSpec.describe Dependabot::DependencyGroup do
       )
     end
 
-    context "the group has not defined any update-type rules" do
-      it "returns an empty array" do
-        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
-      end
-    end
-
-    context "when group only permits patch versions" do
-      let(:rules) do
-        {
-          "update-types" => [
-            "version-update:semver-major"
-          ]
-        }
-      end
-
-      it "returns ranges which ignore minor and patch updates" do
+    context "the group has not defined a highest-semver-allowed rule" do
+      it "ignores major versions by default" do
         expect(dependency_group.ignored_versions_for(dependency)).to eql([
-          "> 1.8.0, < 1.9",
-          ">= 1.9.a, < 2"
+          ">= 2.a"
         ])
       end
     end
 
-    context "when group only permits minor versions" do
+    context "the group permits major or lower" do
       let(:rules) do
         {
-          "update-types" => [
-            "version-update:semver-minor"
-          ]
+          "highest-semver-allowed" => "major"
         }
       end
 
-      it "returns ranges which ignore major and patch updates" do
+      it "returns an empty array as nothing should be ignored" do
+        expect(dependency_group.ignored_versions_for(dependency)).to be_empty
+      end
+    end
+
+    context "the group permits minor or lower" do
+      let(:rules) do
+        {
+          "highest-semver-allowed" => "minor"
+        }
+      end
+
+      it "returns a range which ignores major versions" do
         expect(dependency_group.ignored_versions_for(dependency)).to eql([
-          "> 1.8.0, < 1.9",
           ">= 2.a"
         ])
       end
@@ -159,17 +153,31 @@ RSpec.describe Dependabot::DependencyGroup do
     context "when the group only permits patch versions" do
       let(:rules) do
         {
-          "update-types" => [
-            "version-update:semver-patch"
-          ]
+          "highest-semver-allowed" => "patch"
         }
       end
 
       it "returns ranges which ignore major and minor updates" do
         expect(dependency_group.ignored_versions_for(dependency)).to eql([
-          ">= 1.9.a, < 2",
-          ">= 2.a"
+          ">= 2.a",
+          ">= 1.9.a, < 2"
         ])
+      end
+    end
+
+    context "when the group has garbage update-types" do
+      let(:rules) do
+        {
+          "highest-semver-allowed" => "revision"
+        }
+      end
+
+      it "raises an exception when created" do
+        expect { dependency_group }.
+          to raise_error(
+            ArgumentError,
+            starting_with("The #{name} group has an unexpected value for highest-semver-allowed:")
+          )
       end
     end
   end
