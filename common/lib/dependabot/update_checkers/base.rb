@@ -164,7 +164,8 @@ module Dependabot
           requirements: dependency.requirements,
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          subdependency_metadata: dependency.subdependency_metadata
         )
       end
 
@@ -178,7 +179,8 @@ module Dependabot
           requirements: updated_requirements,
           previous_version: previous_version,
           previous_requirements: dependency.requirements,
-          package_manager: dependency.package_manager
+          package_manager: dependency.package_manager,
+          subdependency_metadata: dependency.subdependency_metadata
         )
       end
 

@@ -21,13 +21,7 @@ module Dependabot
       end
 
       def new_source_type
-        sources =
-          dependency.requirements.map { |r| r.fetch(:source) }.uniq.compact
-
-        return "default" if sources.empty?
-        raise "Multiple sources! #{sources.join(', ')}" if sources.count > 1
-
-        sources.first[:type] || sources.first.fetch("type")
+        dependency.source_type
       end
 
       def find_source_from_crates_listing

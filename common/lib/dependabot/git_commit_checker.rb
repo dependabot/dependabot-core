@@ -163,21 +163,7 @@ module Dependabot
     end
 
     def dependency_source_details
-      sources =
-        dependency.requirements.
-        map { |requirement| requirement.fetch(:source) }.uniq.compact.
-        select { |source| source[:type] == "git" }
-
-      return sources.first if sources.count <= 1
-
-      # If there are multiple source URLs, then it's unclear how we should
-      # proceed
-      raise "Multiple sources! #{sources.join(', ')}" if sources.map { |s| s[:url] }.uniq.count > 1
-
-      # Otherwise it's reasonable to take the first source and use that. This
-      # will happen if we have multiple git sources with difference references
-      # specified. In that case it's fine to update them all.
-      sources.first
+      dependency.source_details(allowed_types: ["git"])
     end
 
     private
