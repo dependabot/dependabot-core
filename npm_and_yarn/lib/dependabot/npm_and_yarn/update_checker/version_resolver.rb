@@ -84,7 +84,7 @@ module Dependabot
           @credentials              = credentials
           @dependency_files         = dependency_files
           @latest_allowable_version = latest_allowable_version
-          @dependency_group          = dependency_group
+          @dependency_group = dependency_group
 
           @latest_version_finder = {}
           @latest_version_finder[dependency] = latest_version_finder
