@@ -14,7 +14,7 @@ module Dependabot
 
       # Override the version pattern to allow local versions
       quoted = OPS.keys.map { |k| Regexp.quote k }.join "|"
-      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Hex::Version::VERSION_PATTERN})\\s*"
+      PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Hex::Version::VERSION_PATTERN})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       # Returns an array of requirements. At least one requirement from the

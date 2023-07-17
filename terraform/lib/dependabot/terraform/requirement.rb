@@ -11,7 +11,7 @@ module Dependabot
       # optional 'v' prefix to release tag names, which Terraform supports.
       # https://www.terraform.io/docs/registry/modules/publish.html#requirements
       OPERATORS = OPS.keys.map { |key| Regexp.quote(key) }.join("|").freeze
-      PATTERN_RAW = "\\s*(#{OPERATORS})?\\s*v?(#{Gem::Version::VERSION_PATTERN})\\s*"
+      PATTERN_RAW = "\\s*(#{OPERATORS})?\\s*v?(#{Gem::Version::VERSION_PATTERN})\\s*".freeze
       PATTERN = /\A#{PATTERN_RAW}\z/
 
       def self.parse(obj)

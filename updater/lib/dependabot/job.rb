@@ -42,7 +42,7 @@ module Dependabot
       dependency_groups
       dependency_group_to_refresh
       repo_private
-    )
+    ).freeze
 
     attr_reader :allowed_updates,
                 :credentials,
