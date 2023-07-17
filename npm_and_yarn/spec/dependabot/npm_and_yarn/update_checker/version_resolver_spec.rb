@@ -14,7 +14,7 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker::VersionResolver do
       latest_allowable_version: latest_allowable_version,
       latest_version_finder: latest_version_finder,
       repo_contents_path: nil,
-      group: group
+      dependency_group: group
     )
   end
   let(:latest_version_finder) do

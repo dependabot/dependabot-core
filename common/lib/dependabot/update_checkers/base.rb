@@ -10,12 +10,12 @@ module Dependabot
       attr_reader :dependency, :dependency_files, :repo_contents_path,
                   :credentials, :ignored_versions, :raise_on_ignored,
                   :security_advisories, :requirements_update_strategy,
-                  :group, :options
+                  :dependency_group, :options
 
       def initialize(dependency:, dependency_files:, repo_contents_path: nil,
                      credentials:, ignored_versions: [],
                      raise_on_ignored: false, security_advisories: [],
-                     requirements_update_strategy: nil, group: nil,
+                     requirements_update_strategy: nil, dependency_group: nil,
                      options: {})
         @dependency = dependency
         @dependency_files = dependency_files
@@ -25,7 +25,7 @@ module Dependabot
         @ignored_versions = ignored_versions
         @raise_on_ignored = raise_on_ignored
         @security_advisories = security_advisories
-        @group = group
+        @dependency_group = dependency_group
         @options = options
       end
 
