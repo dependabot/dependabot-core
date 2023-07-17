@@ -38,6 +38,14 @@ module Dependabot
       @ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
     end
 
+    def targets_highest_versions_possible?
+      return true unless update_type_rules?
+
+      # If we are grouping by update-type but excluding Major versions then we are leaving
+      # some potential updates behind on purpose.
+      !rules["update-types"].include?(Dependabot::Config::IgnoreCondition::MAJOR_VERSION_TYPE)
+    end
+
     def to_h
       { "name" => name }
     end
@@ -72,6 +80,13 @@ module Dependabot
       rules.key?("patterns") && rules["patterns"]&.any?
     end
 
+    # TODO: update-types should probably just be the higest value, not an array
+    #
+    # Having a group which is major and patch versions is non-sensical, it makes
+    # the logic hard to reason about, it should just be a sliding rule where you
+    # pick the higest version you want included.
+    #
+    # We should consider setting it to `minor` by default.
     def generate_ignore_condition!
       return NullIgnoreCondition.new unless update_type_rules?
 

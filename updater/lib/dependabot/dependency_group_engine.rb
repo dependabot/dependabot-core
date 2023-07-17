@@ -57,8 +57,14 @@ module Dependabot
     end
 
     def dependencies_with_ungrouped_semvar_levels
-      # TODO: This is a hack, we need to implement this for real
-      dependency_groups.map(&:dependencies).flatten
+      # TODO: Limit the dependency set to those we know have passed-over updates
+      #
+      # This will make a second update attempt on every dependency in any groups
+      # which do not permit highest version avaliable upgrades.
+      #
+      # We can be smarter about this since the versions available will need
+      # to be checked at least once prior to this set being evaluated.
+      dependency_groups.select(&:targets_highest_versions_possible?).map(&:dependencies).flatten
     end
 
     private
