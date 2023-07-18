@@ -16,6 +16,70 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     instance_double(Dependabot::Job, dependency_groups: dependency_groups_config)
   end
 
+  let(:dummy_pkg_a) do
+    Dependabot::Dependency.new(
+      name: "dummy-pkg-a",
+      package_manager: "bundler",
+      version: "1.1.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ]
+    )
+  end
+
+  let(:dummy_pkg_b) do
+    Dependabot::Dependency.new(
+      name: "dummy-pkg-b",
+      package_manager: "bundler",
+      version: "1.1.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ]
+    )
+  end
+
+  let(:dummy_pkg_c) do
+    Dependabot::Dependency.new(
+      name: "dummy-pkg-c",
+      package_manager: "bundler",
+      version: "1.1.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ]
+    )
+  end
+
+  let(:ungrouped_pkg) do
+    Dependabot::Dependency.new(
+      name: "ungrouped_pkg",
+      package_manager: "bundler",
+      version: "1.1.0",
+      requirements: [
+        {
+          file: "Gemfile",
+          requirement: "~> 1.1.0",
+          groups: ["default"],
+          source: nil
+        }
+      ]
+    )
+  end
+
   context "when a job has groups configured" do
     let(:dependency_groups_config) do
       [
@@ -58,70 +122,6 @@ RSpec.describe Dependabot::DependencyGroupEngine do
     end
 
     describe "#assign_to_groups!" do
-      let(:dummy_pkg_a) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-a",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["default"],
-              source: nil
-            }
-          ]
-        )
-      end
-
-      let(:dummy_pkg_b) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-b",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["default"],
-              source: nil
-            }
-          ]
-        )
-      end
-
-      let(:dummy_pkg_c) do
-        Dependabot::Dependency.new(
-          name: "dummy-pkg-c",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["default"],
-              source: nil
-            }
-          ]
-        )
-      end
-
-      let(:ungrouped_pkg) do
-        Dependabot::Dependency.new(
-          name: "ungrouped_pkg",
-          package_manager: "bundler",
-          version: "1.1.0",
-          requirements: [
-            {
-              file: "Gemfile",
-              requirement: "~> 1.1.0",
-              groups: ["default"],
-              source: nil
-            }
-          ]
-        )
-      end
-
       context "when all groups have at least one dependency that matches" do
         let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
 
@@ -241,6 +241,127 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           expect(dependency_group_engine.ungrouped_dependencies).to eql(dependencies)
         end
       end
+    end
+  end
+
+  context "has experimental rules enabled" do
+    let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
+
+    before do
+      Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+      dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    context "and no semver level is specified" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+            }
+          }
+        ]
+      end
+
+      it "considers all matched dependencies as ungrouped as well" do
+        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(dependencies.map(&:name))
+      end
+    end
+
+    context "and the group allows major semvar" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "highest-semver-allowed" => "major"
+            }
+          }
+        ]
+      end
+
+      it "does not consider any matched dependencies as ungrouped" do
+        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(["ungrouped_pkg"])
+      end
+    end
+
+    context "and the group allows patch semvar" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "group",
+            "rules" => {
+              "patterns" => ["dummy-pkg-*"],
+              "highest-semver-allowed" => "patch"
+            }
+          }
+        ]
+      end
+
+      it "considers all matched dependencies as ungrouped as well" do
+        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(dependencies.map(&:name))
+      end
+    end
+
+    context "with two overlapping groups" do
+      let(:dependency_groups_config) do
+        [
+          {
+            "name" => "major",
+            "rules" => {
+              "patterns" => [
+                "dummy-pkg-a",
+                "dummy-pkg-b"
+              ],
+              "highest-semver-allowed" => "major"
+            }
+          },
+          {
+            "name" => "patch",
+            "rules" => {
+              "patterns" => [
+                "dummy-pkg-b",
+                "dummy-pkg-c"
+              ],
+              "highest-semver-allowed" => "patch"
+            }
+          }
+        ]
+      end
+
+      it "does not attempt individual updates on dependencies upgraded to major in at least one group" do
+        expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).
+          to match_array(["dummy-pkg-c", "ungrouped_pkg"])
+      end
+    end
+  end
+
+  context "hash experimental rules disabled" do
+    let(:dependencies) { [dummy_pkg_a, dummy_pkg_b, dummy_pkg_c, ungrouped_pkg] }
+
+    let(:dependency_groups_config) do
+      [
+        {
+          "name" => "group",
+          "rules" => {
+            "patterns" => ["dummy-pkg-*"],
+          }
+        }
+      ]
+    end
+
+    before do
+      dependency_group_engine.assign_to_groups!(dependencies: dependencies)
+    end
+
+    it "does not attempt any individual upgrades on grouped dependencies" do
+      expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).to match_array(["ungrouped_pkg"])
     end
   end
 end

@@ -101,7 +101,20 @@ module Dependabot
     # works as expected in terms of creating both group and single PRs which do
     # not interfere with each other.
     def dependencies_with_ungrouped_semvar_levels
-      dependency_groups.reject(&:targets_highest_versions_possible?).map(&:dependencies).flatten
+      return @dependencies_with_ungrouped_semvar_levels if defined?(@dependencies_with_ungrouped_semvar_levels)
+
+      # TODO: targets_highest_versions_possible? should accept the highest globally allowed version
+      #
+      # We can work out the highest globally allowed version from the job.ignore_conditions and use
+      # it to avoid attempting upgrades the user does not want.
+      fully_upgraded_groups, partially_upgraded_groups =
+        dependency_groups.partition(&:targets_highest_versions_possible?)
+
+      partially_upgraded_deps = partially_upgraded_groups.map(&:dependencies).flatten.uniq
+      fully_upgraded_deps = fully_upgraded_groups.map(&:dependencies).flatten.uniq
+
+      # If a dependency is in both a partial- and fully-upgraded group, it counts as fully upgraded
+      @dependencies_with_ungrouped_semvar_levels = partially_upgraded_deps - fully_upgraded_deps
     end
   end
 end
