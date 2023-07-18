@@ -271,41 +271,52 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
       original_bundler_files(fixture: "bundler_grouped_by_types")
     end
 
+    let(:updated_group_dependency_files) do
+      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_minor_and_patch")
+    end
+
+    let(:updated_rack_major_files) do
+      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_rack_major")
+    end
+
+    let(:updated_rubocop_major_files) do
+      bundler_files_for(fixture: "bundler_grouped_by_types", state: "updated_rubocop_major")
+    end
+
     it "creates a group PR for minor- and patch-level changes and individual PRs for major-level changes" do
-      # We should create a group PR with the latest minor versions for rack and rubocop
-      expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-        expect(dependency_change.dependency_group.name).to eql("small-bumps")
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: an_object_having_attributes(name: "small-bumps"),
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.4.3"),
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.76.0")
+          ],
+          updated_dependency_files: updated_group_dependency_files
+        ),
+        "mock-sha"
+      )
 
-        # We updated the right dependencies
-        expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack rubocop))
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.4.3")
+          ],
+          updated_dependency_files: updated_rack_major_files
+        ),
+        "mock-sha"
+      )
 
-        # We've updated the gemfiles properly
-        gemfile = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile"
-        end
-        expect(gemfile.content).to eql(fixture("bundler_grouped_by_types/updated_minor_and_patch/Gemfile"))
-
-        gemfile_lock = dependency_change.updated_dependency_files.find do |file|
-          file.path == "/Gemfile.lock"
-        end
-        expect(gemfile_lock.content).to eql(fixture("bundler_grouped_by_types/updated_minor_and_patch/Gemfile.lock"))
-      end
-
-      # We should also create isolated PRs for their major versions
-      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-      #   expect(dependency_change.dependency_group).to be_nil
-
-      #   # We updated the right dependencies
-      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rack))
-      # end
-
-      # We should also create isolated PRs for their major versions
-      # expect(mock_service).to receive(:create_pull_request) do |dependency_change|
-      #   expect(dependency_change.dependency_group).to be_nil
-
-      #   # We updated the right dependencies
-      #   expect(dependency_change.updated_dependencies.map(&:name)).to eql(%w(rubocop))
-      # end
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.76.0")
+          ],
+          updated_dependency_files: updated_rubocop_major_files
+        ),
+        "mock-sha"
+      )
 
       group_update_all.perform
     end

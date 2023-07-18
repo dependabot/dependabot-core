@@ -56,6 +56,25 @@ module Dependabot
       @groups_calculated = true
     end
 
+    # TODO: Limit the dependency set to those we know have passed-over updates
+    #
+    # This will make a second update attempt on every dependency in any groups
+    # which do not permit highest version avaliable upgrades.
+    #
+    # We can be smarter about this since the versions available will need
+    # to be checked at least once prior to this set being evaluated.
+    #
+    # It will require us to start evaluating the DependencyGroup inside the
+    # UpdaterChecker and expose methods for the highest resolvable version
+    # both with and without the group's ignore rules.
+    #
+    # I'd rather ship this change separately once we've proved this run schema
+    # works as expected in terms of creating both group and single PRs which do
+    # not interfere with each other.
+    def dependencies_with_ungrouped_semvar_levels
+      dependency_groups.reject(&:targets_highest_versions_possible?).map(&:dependencies).flatten
+    end
+
     private
 
     def initialize(dependency_groups:)

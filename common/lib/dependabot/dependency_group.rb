@@ -45,6 +45,12 @@ module Dependabot
       @ignore_condition.ignored_versions(dependency, SECURITY_UPDATES_ONLY)
     end
 
+    def targets_highest_versions_possible?
+      return true unless experimental_rules_enabled?
+
+      highest_semver_allowed == SEMVER_MAJOR
+    end
+
     def to_h
       { "name" => name }
     end
@@ -84,10 +90,13 @@ module Dependabot
       rules.key?("patterns") && rules["patterns"]&.any?
     end
 
+    def highest_semver_allowed
+      rules.fetch("highest-semver-allowed", DEFAULT_SEMVER_LEVEL)
+    end
+
     def generate_ignore_condition!
       return NullIgnoreCondition.new unless experimental_rules_enabled?
 
-      highest_semver_allowed = rules.fetch("highest-semver-allowed", DEFAULT_SEMVER_LEVEL)
       ignored_update_types = case highest_semver_allowed
       when SEMVER_MAJOR
         []
