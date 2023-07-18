@@ -113,7 +113,7 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
+      def compile_updates_for(dependency, dependency_files, group)
         checker = update_checker_for(dependency, dependency_files, group,
                                      raise_on_ignored: raise_on_ignored?(dependency))
 
