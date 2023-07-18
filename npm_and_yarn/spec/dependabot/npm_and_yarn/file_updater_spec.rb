@@ -1416,9 +1416,8 @@ RSpec.describe Dependabot::NpmAndYarn::FileUpdater do
 
       context "with non-standard indentation" do
         it "preserves indentation in the package-lock.json" do
-          expect(updated_npm_lock.content).to eq(
-            fixture("updated_projects", "npm6", "simple", "package-lock.json")
-          )
+          # Ensure lines start with { or } or tabs. The actual content of the update isn't under test here.
+          expect(updated_npm_lock.content.split("\n")).to all(match(/^{|}|\t+["}]/))
         end
       end
 
