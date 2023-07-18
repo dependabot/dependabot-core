@@ -8,7 +8,7 @@ module Dependabot
         PATCH_VERSION_TYPE = "version-update:semver-patch",
         MINOR_VERSION_TYPE = "version-update:semver-minor",
         MAJOR_VERSION_TYPE = "version-update:semver-major"
-      ]
+      ].freeze
 
       ALL_VERSIONS = ">= 0"
 
