@@ -97,7 +97,20 @@ module Dependabot
     def generate_ignore_condition!
       return NullIgnoreCondition.new unless experimental_rules_enabled?
 
-      ignored_update_types = case highest_semver_allowed
+      ignored_update_types = ignored_update_types_for_rules
+
+      return NullIgnoreCondition.new unless ignored_update_types.any?
+
+      Dependabot.logger.debug("The #{name} group has set ignores for update-type(s): #{ignored_update_types}")
+
+      Dependabot::Config::IgnoreCondition.new(
+        dependency_name: ANY_DEPENDENCY_NAME,
+        update_types: ignored_update_types
+      )
+    end
+
+    def ignored_update_types_for_rules
+      case highest_semver_allowed
       when SEMVER_MAJOR
         []
       when SEMVER_MINOR
@@ -111,17 +124,8 @@ module Dependabot
         ]
       else
         raise ArgumentError,
-              "The #{name} group has an unexpected value for highest-semver-allowed: #{rules["highest-semver-allowed"]}"
+              "The #{name} group has an unexpected value for highest-semver-allowed: #{rules['highest-semver-allowed']}"
       end
-
-      return NullIgnoreCondition.new unless ignored_update_types.any?
-
-      Dependabot.logger.debug("The #{name} group has set ignores for update-type(s): #{ignored_update_types}")
-
-      Dependabot::Config::IgnoreCondition.new(
-        dependency_name: ANY_DEPENDENCY_NAME,
-        update_types: ignored_update_types
-      )
     end
 
     def experimental_rules_enabled?

@@ -262,7 +262,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           {
             "name" => "group",
             "rules" => {
-              "patterns" => ["dummy-pkg-*"],
+              "patterns" => ["dummy-pkg-*"]
             }
           }
         ]
@@ -315,20 +315,20 @@ RSpec.describe Dependabot::DependencyGroupEngine do
           {
             "name" => "major",
             "rules" => {
-              "patterns" => [
-                "dummy-pkg-a",
-                "dummy-pkg-b"
-              ],
+              "patterns" => %w(
+                dummy-pkg-a
+                dummy-pkg-b
+              ),
               "highest-semver-allowed" => "major"
             }
           },
           {
             "name" => "patch",
             "rules" => {
-              "patterns" => [
-                "dummy-pkg-b",
-                "dummy-pkg-c"
-              ],
+              "patterns" => %w(
+                dummy-pkg-b
+                dummy-pkg-c
+              ),
               "highest-semver-allowed" => "patch"
             }
           }
@@ -337,7 +337,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
 
       it "does not attempt individual updates on dependencies upgraded to major in at least one group" do
         expect(dependency_group_engine.ungrouped_dependencies.map(&:name)).
-          to match_array(["dummy-pkg-c", "ungrouped_pkg"])
+          to match_array(%w(dummy-pkg-c ungrouped_pkg))
       end
     end
   end
@@ -350,7 +350,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
         {
           "name" => "group",
           "rules" => {
-            "patterns" => ["dummy-pkg-*"],
+            "patterns" => ["dummy-pkg-*"]
           }
         }
       ]
