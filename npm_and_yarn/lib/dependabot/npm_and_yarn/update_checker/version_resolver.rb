@@ -79,11 +79,12 @@ module Dependabot
           /x
 
         def initialize(dependency:, credentials:, dependency_files:,
-                       latest_allowable_version:, latest_version_finder:, repo_contents_path:)
+                       latest_allowable_version:, latest_version_finder:, repo_contents_path:, dependency_group: nil)
           @dependency               = dependency
           @credentials              = credentials
           @dependency_files         = dependency_files
           @latest_allowable_version = latest_allowable_version
+          @dependency_group = dependency_group
 
           @latest_version_finder = {}
           @latest_version_finder[dependency] = latest_version_finder
@@ -153,7 +154,7 @@ module Dependabot
         private
 
         attr_reader :dependency, :credentials, :dependency_files,
-                    :latest_allowable_version, :repo_contents_path
+                    :latest_allowable_version, :repo_contents_path, :dependency_group
 
         def latest_version_finder(dep)
           @latest_version_finder[dep] ||=
@@ -398,6 +399,17 @@ module Dependabot
               dep[:requirement_name] == dependency.name ||
                 dep[:requiring_dep_name] == dependency.name
             end
+
+          unless dependency_group.nil?
+            # Ignore unmet peer dependencies that are in the dependency group because
+            # the update is also updating those dependencies.
+            relevant_unmet_peer_dependencies.reject! do |dep|
+              dependency_group.dependencies.any? do |group_dep|
+                dep[:requirement_name] == group_dep.name ||
+                  dep[:requiring_dep_name] == group_dep.name
+              end
+            end
+          end
 
           return [] if relevant_unmet_peer_dependencies.empty?
 

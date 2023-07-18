@@ -113,8 +113,9 @@ module Dependabot
       #
       # This method **must** must return an Array when it errors
       #
-      def compile_updates_for(dependency, dependency_files, group) # rubocop:disable Metrics/MethodLength
-        checker = update_checker_for(dependency, dependency_files, raise_on_ignored: raise_on_ignored?(dependency))
+      def compile_updates_for(dependency, dependency_files, group)
+        checker = update_checker_for(dependency, dependency_files, group,
+                                     raise_on_ignored: raise_on_ignored?(dependency))
 
         log_checking_for_update(dependency)
 
@@ -135,18 +136,9 @@ module Dependabot
           return []
         end
 
-        updated_deps = checker.updated_dependencies(
+        checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
-
-        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps)
-          Dependabot.logger.info(
-            "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
-          )
-          return []
-        end
-
-        updated_deps
       rescue Dependabot::InconsistentRegistryResponse => e
         error_handler.log_dependency_error(
           dependency: dependency,
@@ -170,7 +162,7 @@ module Dependabot
         job.ignore_conditions_for(dependency).any?
       end
 
-      def update_checker_for(dependency, dependency_files, raise_on_ignored:)
+      def update_checker_for(dependency, dependency_files, group, raise_on_ignored:)
         Dependabot::UpdateCheckers.for_package_manager(job.package_manager).new(
           dependency: dependency,
           dependency_files: dependency_files,
@@ -180,6 +172,7 @@ module Dependabot
           security_advisories: [], # FIXME: Version updates do not use advisory data for now
           raise_on_ignored: raise_on_ignored,
           requirements_update_strategy: job.requirements_update_strategy,
+          dependency_group: group,
           options: job.experiments
         )
       end
@@ -220,23 +213,6 @@ module Dependabot
         Dependabot.logger.info(
           "Requirements update strategy #{checker.requirements_update_strategy}"
         )
-      end
-
-      # If a version update for a peer dependency is possible we should
-      # defer to the PR that will be created for it to avoid duplicate PRs.
-      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps)
-        updated_deps.
-          reject { |dep| dep.name == dependency_name }.
-          any? do |dep|
-            original_peer_dep = ::Dependabot::Dependency.new(
-              name: dep.name,
-              version: dep.previous_version,
-              requirements: dep.previous_requirements,
-              package_manager: dep.package_manager
-            )
-            update_checker_for(original_peer_dep, dependency_files, raise_on_ignored: false).
-              can_update?(requirements_to_unlock: :own)
-          end
       end
 
       def warn_group_is_empty(group)

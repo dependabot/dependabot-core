@@ -848,7 +848,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency_files: dependency_files,
           latest_version_finder: described_class::LatestVersionFinder,
           latest_allowable_version: updated_version,
-          repo_contents_path: nil
+          repo_contents_path: nil,
+          dependency_group: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver).
         to receive(:latest_resolvable_previous_version).
@@ -1259,7 +1260,8 @@ RSpec.describe Dependabot::NpmAndYarn::UpdateChecker do
           dependency_files: dependency_files,
           latest_version_finder: described_class::LatestVersionFinder,
           latest_allowable_version: Gem::Version.new("1.7.0"),
-          repo_contents_path: nil
+          repo_contents_path: nil,
+          dependency_group: nil
         ).and_return(dummy_version_resolver)
       expect(dummy_version_resolver).
         to receive(:dependency_updates_from_full_unlock).
