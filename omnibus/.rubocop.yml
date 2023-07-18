@@ -335,5 +335,3 @@ Style/SelectByRegexp:
 # a follow-on PR.
 Naming/BlockForwarding:
   Enabled: false
-Style/MutableConstant:
-  Enabled: false

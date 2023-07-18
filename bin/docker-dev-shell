@@ -235,6 +235,7 @@ docker run --rm -ti \
   -v "$(pwd)/terraform/spec:$CODE_DIR/terraform/spec" \
   -v "$(pwd)/tmp:/$CODE_DIR/tmp" \
   -v "$(pwd)/updater/.rubocop.yml:$CODE_DIR/updater/.rubocop.yml" \
+  -v "$(pwd)/updater/bin:$CODE_DIR/updater/bin" \
   -v "$(pwd)/updater/Gemfile.lock:$CODE_DIR/updater/Gemfile.lock" \
   -v "$(pwd)/updater/Gemfile:$CODE_DIR/updater/Gemfile" \
   -v "$(pwd)/updater/lib:$CODE_DIR/updater/lib" \

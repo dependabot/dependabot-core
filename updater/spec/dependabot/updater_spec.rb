@@ -2237,7 +2237,6 @@ RSpec.describe Dependabot::Updater do
   describe "#run with the grouped experiment enabled" do
     after do
       Dependabot::Experiments.reset!
-      Dependabot::DependencyGroupEngine.reset!
     end
 
     it "updates multiple dependencies in a single PR correctly" do

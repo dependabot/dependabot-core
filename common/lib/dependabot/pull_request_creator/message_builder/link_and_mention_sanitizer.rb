@@ -134,6 +134,8 @@ module Dependabot
         end
 
         def replace_github_host(text)
+          return text if !github_redirection_service.nil? && text.include?(github_redirection_service)
+
           text.gsub(
             /(www\.)?github.com/, github_redirection_service || "github.com"
           )

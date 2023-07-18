@@ -21,7 +21,7 @@ module Dependabot
     USER_AGENT = "dependabot-core/#{Dependabot::VERSION} " \
                  "#{Excon::USER_AGENT} ruby/#{RUBY_VERSION} " \
                  "(#{RUBY_PLATFORM}) " \
-                 "(+https://github.com/dependabot/dependabot-core)"
+                 "(+https://github.com/dependabot/dependabot-core)".freeze
     SIGKILL = 9
 
     def self.in_a_temporary_repo_directory(directory = "/", repo_contents_path = nil, &block)

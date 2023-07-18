@@ -245,9 +245,7 @@ jobs:
     - name: Download cache
       if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: |
-        mkdir cache
-        cd cache
-        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }}
+        gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
 
     - name: Build ecosystem image
       if: steps.changes.outputs[matrix.suite.name] == 'true'

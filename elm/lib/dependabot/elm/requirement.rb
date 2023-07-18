@@ -8,7 +8,7 @@ module Dependabot
     class Requirement < Gem::Requirement
       ELM_PATTERN_RAW =
         "(#{Elm::Version::VERSION_PATTERN}) (<=?) v (<=?) " \
-        "(#{Elm::Version::VERSION_PATTERN})"
+        "(#{Elm::Version::VERSION_PATTERN})".freeze
       ELM_PATTERN = /\A#{ELM_PATTERN_RAW}\z/
       ELM_EXACT_PATTERN = /\A#{Elm::Version::VERSION_PATTERN}\z/
 
