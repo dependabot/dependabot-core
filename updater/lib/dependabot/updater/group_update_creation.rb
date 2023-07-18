@@ -140,7 +140,7 @@ module Dependabot
           requirements_to_unlock: requirements_to_unlock
         )
 
-        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps)
+        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps, group)
           Dependabot.logger.info(
             "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
           )
@@ -226,7 +226,7 @@ module Dependabot
 
       # If a version update for a peer dependency is possible we should
       # defer to the PR that will be created for it to avoid duplicate PRs.
-      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps)
+      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps, group)
         updated_deps.
           reject { |dep| dep.name == dependency_name }.
           any? do |dep|
@@ -236,7 +236,7 @@ module Dependabot
               requirements: dep.previous_requirements,
               package_manager: dep.package_manager
             )
-            update_checker_for(original_peer_dep, dependency_files, raise_on_ignored: false).
+            update_checker_for(original_peer_dep, dependency_files, group, raise_on_ignored: false).
               can_update?(requirements_to_unlock: :own)
           end
       end
