@@ -104,6 +104,107 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
+  describe "#contains?" do
+    context "when the rules include patterns" do
+      let(:rules) do
+        {
+          "patterns" => ["test-*", "nothing-matches-this"],
+          "exclude-patterns" => ["*-2"]
+        }
+      end
+
+      context "before dependencies are assigned to the group" do
+        it "returns true if the dependency matches a pattern" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(test_dependency1)).to be_truthy
+        end
+
+        it "returns false if the dependency is specifically excluded" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(test_dependency2)).to be_falsey
+        end
+
+        it "returns false if the dependency does not match any patterns" do
+          expect(dependency_group.dependencies).to eq([])
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
+        end
+      end
+
+      context "after dependencies are assigned to the group" do
+        before do
+          dependency_group.dependencies << test_dependency1
+        end
+
+        it "returns true if the dependency is in the dependency list" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(test_dependency1)).to be_truthy
+        end
+
+        it "returns false if the dependency is specifically excluded" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(test_dependency2)).to be_falsey
+        end
+
+        it "returns false if the dependency is not in the dependency list and does not match a pattern" do
+          expect(dependency_group.dependencies).to include(test_dependency1)
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
+        end
+      end
+    end
+
+    context "when the rules specify a dependency-type" do
+      let(:rules) do
+        {
+          "dependency-type" => "production"
+        }
+      end
+
+      it "returns true if the dependency matches the specified type" do
+        expect(dependency_group.contains?(production_dependency)).to be_truthy
+      end
+
+      it "returns false if the dependency does not match the specified type" do
+        expect(dependency_group.contains?(test_dependency1)).to be_falsey
+        expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      end
+
+      context "when a dependency is specifically excluded" do
+        let(:rules) do
+          {
+            "dependency-type" => "production",
+            "exclude-patterns" => [production_dependency.name]
+          }
+        end
+
+        it "returns false even if the dependency matches the specified type" do
+          expect(dependency_group.contains?(production_dependency)).to be_falsey
+        end
+      end
+    end
+
+    context "when the rules specify a mix of patterns and dependency-types" do
+      let(:rules) do
+        {
+          "patterns" => ["*dependency*"],
+          "exclude-patterns" => ["*-2"],
+          "dependency-type" => "development"
+        }
+      end
+
+      it "returns true if the dependency matches the specified type and a pattern" do
+        expect(dependency_group.contains?(test_dependency1)).to be_truthy
+      end
+
+      it "returns false if the dependency only matches the pattern" do
+        expect(dependency_group.contains?(production_dependency)).to be_falsey
+      end
+
+      it "returns false if the dependency matches the specified type and pattern but is excluded" do
+        expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      end
+    end
+  end
+
   describe "#ignored_versions_for with experimental rules enabled" do
     let(:dependency) do
       Dependabot::Dependency.new(
@@ -221,111 +322,94 @@ RSpec.describe Dependabot::DependencyGroup do
     end
   end
 
-  describe "#contains?" do
-    context "when the rules include patterns" do
+  describe "#targets_highest_versions_possible with experimental rules enabled" do
+    before do
+      Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+    end
+
+    after do
+      Dependabot::Experiments.reset!
+    end
+
+    it "is false by default" do
+      expect(dependency_group).not_to be_targets_highest_versions_possible
+    end
+
+    context "when the highest level is major" do
       let(:rules) do
         {
-          "patterns" => ["test-*", "nothing-matches-this"],
-          "exclude-patterns" => ["*-2"]
+          "highest-semver-allowed" => "major"
         }
       end
 
-      context "before dependencies are assigned to the group" do
-        it "returns true if the dependency matches a pattern" do
-          expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(test_dependency1)).to be_truthy
-        end
-
-        it "returns false if the dependency is specifically excluded" do
-          expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(test_dependency2)).to be_falsey
-        end
-
-        it "returns false if the dependency does not match any patterns" do
-          expect(dependency_group.dependencies).to eq([])
-          expect(dependency_group.contains?(production_dependency)).to be_falsey
-        end
-      end
-
-      context "after dependencies are assigned to the group" do
-        before do
-          dependency_group.dependencies << test_dependency1
-        end
-
-        it "returns true if the dependency is in the dependency list" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(test_dependency1)).to be_truthy
-        end
-
-        it "returns false if the dependency is specifically excluded" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(test_dependency2)).to be_falsey
-        end
-
-        it "returns false if the dependency is not in the dependency list and does not match a pattern" do
-          expect(dependency_group.dependencies).to include(test_dependency1)
-          expect(dependency_group.contains?(production_dependency)).to be_falsey
-        end
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
       end
     end
 
-    context "when the rules specify a dependency-type" do
+    context "when the highest level is minor" do
       let(:rules) do
         {
-          "dependency-type" => "production"
+          "highest-semver-allowed" => "minor"
         }
       end
 
-      it "returns true if the dependency matches the specified type" do
-        expect(dependency_group.contains?(production_dependency)).to be_truthy
-      end
-
-      it "returns false if the dependency does not match the specified type" do
-        expect(dependency_group.contains?(test_dependency1)).to be_falsey
-        expect(dependency_group.contains?(test_dependency2)).to be_falsey
-      end
-
-      context "when a dependency is specifically excluded" do
-        let(:rules) do
-          {
-            "dependency-type" => "production",
-            "exclude-patterns" => [production_dependency.name]
-          }
-        end
-
-        it "returns false even if the dependency matches the specified type" do
-          expect(dependency_group.contains?(production_dependency)).to be_falsey
-        end
+      it "is false" do
+        expect(dependency_group).not_to be_targets_highest_versions_possible
       end
     end
 
-    context "when the rules specify a mix of patterns and dependency-types" do
+    context "when the highest level is patch" do
       let(:rules) do
         {
-          "patterns" => ["*dependency*"],
-          "exclude-patterns" => ["*-2"],
-          "dependency-type" => "development"
+          "highest-semver-allowed" => "patch"
         }
       end
 
-      before do
-        Dependabot::Experiments.register(:grouped_updates_experimental_rules, true)
+      it "is false" do
+        expect(dependency_group).not_to be_targets_highest_versions_possible
+      end
+    end
+  end
+
+  describe "#targets_highest_versions_possible with experimental rules enabled" do
+    it "is true by default" do
+      expect(dependency_group).to be_targets_highest_versions_possible
+    end
+
+    context "when the highest level is major" do
+      let(:rules) do
+        {
+          "highest-semver-allowed" => "major"
+        }
       end
 
-      after do
-        Dependabot::Experiments.reset!
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is minor" do
+      let(:rules) do
+        {
+          "highest-semver-allowed" => "minor"
+        }
       end
 
-      it "returns true if the dependency matches the specified type and a pattern" do
-        expect(dependency_group.contains?(test_dependency1)).to be_truthy
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
+      end
+    end
+
+    context "when the highest level is patch" do
+      let(:rules) do
+        {
+          "highest-semver-allowed" => "patch"
+        }
       end
 
-      it "returns false if the dependency only matches the pattern" do
-        expect(dependency_group.contains?(production_dependency)).to be_falsey
-      end
-
-      it "returns false if the dependency matches the specified type and pattern but is excluded" do
-        expect(dependency_group.contains?(test_dependency2)).to be_falsey
+      it "is true" do
+        expect(dependency_group).to be_targets_highest_versions_possible
       end
     end
   end
