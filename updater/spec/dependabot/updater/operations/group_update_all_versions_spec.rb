@@ -264,7 +264,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
 
   context "when the snapshot is only grouping minor- and patch-level changes", :vcr do
     let(:job_definition) do
-      job_definition_fixture("bundler/version_updates/group_update_all_semvar_grouping")
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping")
     end
 
     let(:dependency_files) do
@@ -288,8 +288,8 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         an_object_having_attributes(
           dependency_group: an_object_having_attributes(name: "small-bumps"),
           updated_dependencies: [
-            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.4.3"),
-            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.76.0")
+            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3"),
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
           ],
           updated_dependency_files: updated_group_dependency_files
         ),
@@ -300,7 +300,7 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         an_object_having_attributes(
           dependency_group: nil,
           updated_dependencies: [
-            an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.4.3")
+            an_object_having_attributes(name: "rack", version: "3.0.8", previous_version: "2.1.3")
           ],
           updated_dependency_files: updated_rack_major_files
         ),
@@ -311,9 +311,57 @@ RSpec.describe Dependabot::Updater::Operations::GroupUpdateAllVersions do
         an_object_having_attributes(
           dependency_group: nil,
           updated_dependencies: [
-            an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.76.0")
+            an_object_having_attributes(name: "rubocop", version: "1.54.2", previous_version: "0.75.0")
           ],
           updated_dependency_files: updated_rubocop_major_files
+        ),
+        "mock-sha"
+      )
+
+      group_update_all.perform
+    end
+  end
+
+  context "when the snapshot is only grouping patch-level changes and major changes are ignored", :vcr do
+    let(:job_definition) do
+      job_definition_fixture("bundler/version_updates/group_update_all_semver_grouping_with_global_ignores")
+    end
+
+    let(:dependency_files) do
+      original_bundler_files(fixture: "bundler_grouped_by_types")
+    end
+
+    it "creates a pull request for patches and individual PRs for minor-level changes" do
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: an_object_having_attributes(name: "patches"),
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.1.4.3", previous_version: "2.1.3"),
+            an_object_having_attributes(name: "rubocop", version: "0.75.1", previous_version: "0.75.0")
+          ],
+          updated_dependency_files: anything
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rack", version: "2.2.7", previous_version: "2.1.3")
+          ],
+          updated_dependency_files: anything
+        ),
+        "mock-sha"
+      )
+
+      expect(mock_service).to receive(:create_pull_request).with(
+        an_object_having_attributes(
+          dependency_group: nil,
+          updated_dependencies: [
+            an_object_having_attributes(name: "rubocop", version: "0.93.1", previous_version: "0.75.0")
+          ],
+          updated_dependency_files: anything
         ),
         "mock-sha"
       )
