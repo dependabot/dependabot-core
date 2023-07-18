@@ -136,18 +136,9 @@ module Dependabot
           return []
         end
 
-        updated_deps = checker.updated_dependencies(
+        checker.updated_dependencies(
           requirements_to_unlock: requirements_to_unlock
         )
-
-        if peer_dependency_should_update_instead?(checker.dependency.name, dependency_files, updated_deps, group)
-          Dependabot.logger.info(
-            "No update possible for #{dependency.name} #{dependency.version} (peer dependency can be updated)"
-          )
-          return []
-        end
-
-        updated_deps
       rescue Dependabot::InconsistentRegistryResponse => e
         error_handler.log_dependency_error(
           dependency: dependency,
@@ -222,23 +213,6 @@ module Dependabot
         Dependabot.logger.info(
           "Requirements update strategy #{checker.requirements_update_strategy}"
         )
-      end
-
-      # If a version update for a peer dependency is possible we should
-      # defer to the PR that will be created for it to avoid duplicate PRs.
-      def peer_dependency_should_update_instead?(dependency_name, dependency_files, updated_deps, group)
-        updated_deps.
-          reject { |dep| dep.name == dependency_name }.
-          any? do |dep|
-            original_peer_dep = ::Dependabot::Dependency.new(
-              name: dep.name,
-              version: dep.previous_version,
-              requirements: dep.previous_requirements,
-              package_manager: dep.package_manager
-            )
-            update_checker_for(original_peer_dep, dependency_files, group, raise_on_ignored: false).
-              can_update?(requirements_to_unlock: :own)
-          end
       end
 
       def warn_group_is_empty(group)
