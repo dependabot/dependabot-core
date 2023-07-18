@@ -27,7 +27,7 @@ module Dependabot
       new(dependency_groups: groups)
     end
 
-    attr_reader :dependency_groups, :groups_calculated, :ungrouped_dependencies
+    attr_reader :dependency_groups, :groups_calculated
 
     def find_group(name:)
       dependency_groups.find { |group| group.name == name }
@@ -56,23 +56,8 @@ module Dependabot
       @groups_calculated = true
     end
 
-    # TODO: Limit the dependency set to those we know have passed-over updates
-    #
-    # This will make a second update attempt on every dependency in any groups
-    # which do not permit highest version avaliable upgrades.
-    #
-    # We can be smarter about this since the versions available will need
-    # to be checked at least once prior to this set being evaluated.
-    #
-    # It will require us to start evaluating the DependencyGroup inside the
-    # UpdaterChecker and expose methods for the highest resolvable version
-    # both with and without the group's ignore rules.
-    #
-    # I'd rather ship this change separately once we've proved this run schema
-    # works as expected in terms of creating both group and single PRs which do
-    # not interfere with each other.
-    def dependencies_with_ungrouped_semvar_levels
-      dependency_groups.reject(&:targets_highest_versions_possible?).map(&:dependencies).flatten
+    def ungrouped_dependencies
+      @ungrouped_dependencies + dependencies_with_ungrouped_semvar_levels
     end
 
     private
@@ -98,6 +83,25 @@ module Dependabot
         - your configuration's 'allow' rules do not permit any of the dependencies that match the group
         - the dependencies that match the group rules have been removed from your project
       WARN
+    end
+
+    # TODO: Limit the dependency set to those we know have passed-over updates
+    #
+    # This will make a second update attempt on every dependency in any groups
+    # which do not permit highest version avaliable upgrades.
+    #
+    # We can be smarter about this since the versions available will need
+    # to be checked at least once prior to this set being evaluated.
+    #
+    # It will require us to start evaluating the DependencyGroup inside the
+    # UpdaterChecker and expose methods for the highest resolvable version
+    # both with and without the group's ignore rules.
+    #
+    # I'd rather ship this change separately once we've proved this run schema
+    # works as expected in terms of creating both group and single PRs which do
+    # not interfere with each other.
+    def dependencies_with_ungrouped_semvar_levels
+      dependency_groups.reject(&:targets_highest_versions_possible?).map(&:dependencies).flatten
     end
   end
 end
