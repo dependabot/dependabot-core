@@ -7,11 +7,11 @@ ARG PNPM_VERSION=8.6.4
 ARG YARN_VERSION=3.6.0
 
 # See https://github.com/nodesource/distributions#installation-instructions
-ARG NODEJS_VERSION=16.x
+ARG NODEJS_VERSION=18.x
 
 # Check for updates at https://github.com/npm/cli/releases
 # This version should be compatible with the Node.js version declared above. See https://nodejs.org/en/download/releases as well
-ARG NPM_VERSION=8.19.4
+ARG NPM_VERSION=9.5.1
 
 # Install Node and npm
 RUN curl -sL https://deb.nodesource.com/setup_$NODEJS_VERSION | bash - \
