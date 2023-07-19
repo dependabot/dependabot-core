@@ -50,6 +50,22 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      dependencies:
+        patterns:
+          - "@dependabot/yarn-lib"
+          - "@npmcli/arborist"
+          - "detect-indent"
+          - "nock"
+          - "npm"
+          - "@pnpm/lockfile-file"
+          - "@pnpm/dependency-path"
+          - "semver"
+      dev-dependencies:
+        patterns:
+          - "*eslint*"
+          - "*jest*"
+          - "*prettier"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
