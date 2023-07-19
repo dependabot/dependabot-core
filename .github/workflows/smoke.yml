@@ -258,6 +258,7 @@ jobs:
 
     - name: ${{ matrix.suite.name }}
       if: steps.changes.outputs[matrix.suite.name] == 'true'
+      id: test
       env:
         LOCAL_GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -271,7 +272,7 @@ jobs:
           2>&1 | tee -a log.txt
 
     - name: Diff
-      if: always()
+      if: steps.test.outcome != 'skipped'
       continue-on-error: true
       run: diff --ignore-space-change smoke.yaml result.yaml && echo "Contents are identical"
 
