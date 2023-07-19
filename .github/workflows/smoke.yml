@@ -247,10 +247,12 @@ jobs:
         curl $(gh api $URL --jq .download_url) -o smoke.yaml
 
     # Download the Proxy cache. The job is ideally 100% cached so no real calls are made.
+    # Allowed to fail to get out of checking and egg situations, for example, when adding a new ecosystem.
     - name: Download cache
       if: steps.changes.outputs[matrix.suite.name] == 'true'
       run: |
         gh run download --repo dependabot/smoke-tests --name cache-${{ matrix.suite.name }} --dir cache
+      continue-on-error: true
 
     - name: Build ecosystem image
       if: steps.changes.outputs[matrix.suite.name] == 'true'
