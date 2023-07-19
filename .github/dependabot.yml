@@ -50,6 +50,20 @@ updates:
       interval: "weekly"
       day: "sunday"
       time: "16:00"
+    groups:
+      dependencies:
+        patterns:
+          - "*yarn*"
+          - "*arborist*"
+          - "*nock*"
+          - "*npm*"
+          - "*semver*"
+          - "detect-indent"
+      dev-dependencies:
+        patterns:
+          - "*eslint*"
+          - "*jest*"
+          - "*prettier"
     ignore:
       - dependency-name: "npm"
         update-types: ["version-update:semver-major"]
