@@ -245,7 +245,8 @@ module Dependabot
       end
 
       def fetch_digest_of(tag)
-        docker_registry_client.digest(docker_repo_name, tag)&.delete_prefix("sha256:")
+        manifest = docker_registry_client.manifest(docker_repo_name, tag)
+        manifest.headers[:docker_content_digest]&.delete_prefix("sha256:")
       rescue *transient_docker_errors => e
         attempt ||= 1
         attempt += 1
