@@ -140,68 +140,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
 
   describe "#latest_resolvable_version" do
     subject(:latest_resolvable_version) { checker.latest_resolvable_version }
-
-    it "delegates to latest_version" do
-      expect(checker).to receive(:latest_version).and_return("latest_version")
-      expect(latest_resolvable_version).to eq("latest_version")
-    end
-
-    context "with a property dependency" do
-      let(:dependency_requirements) do
-        [{
-          requirement: "0.1.434",
-          file: "my.csproj",
-          groups: ["dependencies"],
-          source: nil,
-          metadata: { property_name: "NukeVersion" }
-        }]
-      end
-      let(:dependency_name) { "Nuke.Common" }
-      let(:dependency_version) { "0.1.434" }
-
-      context "that is used for multiple dependencies" do
-        let(:csproj_body) do
-          fixture("csproj", "property_version.csproj")
-        end
-
-        it "does not delegate to latest_version" do
-          expect(checker).to_not receive(:latest_version)
-          expect(latest_resolvable_version).to be_nil
-        end
-      end
-
-      context "that is used for a single dependencies" do
-        let(:csproj_body) do
-          fixture("csproj", "single_dep_property_version.csproj")
-        end
-
-        it "delegates to latest_version" do
-          expect(checker).to receive(:latest_version)
-            .and_return("latest_version")
-          expect(latest_resolvable_version).to eq("latest_version")
-        end
-      end
-    end
-  end
-
-  describe "#preferred_resolvable_version" do
-    subject { checker.preferred_resolvable_version }
-    it { is_expected.to eq(version_class.new("2.1.0")) }
-
-    context "with a security vulnerability" do
-      let(:dependency_version) { "1.1.1" }
-      let(:security_advisories) do
-        [
-          Dependabot::SecurityAdvisory.new(
-            dependency_name: "rails",
-            package_manager: "nuget",
-            vulnerable_versions: ["< 2.0.0"]
-          )
-        ]
-      end
-
-      it { is_expected.to eq(version_class.new("2.0.0")) }
-    end
+    it { is_expected.to be_nil }
   end
 
   describe "#latest_resolvable_version_with_no_unlock" do
@@ -477,7 +416,7 @@ RSpec.describe Dependabot::Nuget::UpdateChecker do
     end
   end
 
-  describe "#updated_dependencies(requirements_to_unlock: :all)" do
+  describe "#updated_dependencies(requirements_to_unlock: :all)", :vcr do
     subject(:updated_dependencies) do
       checker.updated_dependencies(requirements_to_unlock: :all)
     end
