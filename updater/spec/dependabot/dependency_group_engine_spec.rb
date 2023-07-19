@@ -273,7 +273,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
-    context "and the group allows major semvar" do
+    context "and the group allows major semver" do
       let(:dependency_groups_config) do
         [
           {
@@ -291,7 +291,7 @@ RSpec.describe Dependabot::DependencyGroupEngine do
       end
     end
 
-    context "and the group allows patch semvar" do
+    context "and the group allows patch semver" do
       let(:dependency_groups_config) do
         [
           {

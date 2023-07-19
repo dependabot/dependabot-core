@@ -57,7 +57,7 @@ module Dependabot
     end
 
     def ungrouped_dependencies
-      @ungrouped_dependencies + dependencies_with_ungrouped_semvar_levels
+      @ungrouped_dependencies + dependencies_with_ungrouped_semver_levels
     end
 
     private
@@ -100,8 +100,8 @@ module Dependabot
     # I'd rather ship this change separately once we've proved this run schema
     # works as expected in terms of creating both group and single PRs which do
     # not interfere with each other.
-    def dependencies_with_ungrouped_semvar_levels
-      return @dependencies_with_ungrouped_semvar_levels if defined?(@dependencies_with_ungrouped_semvar_levels)
+    def dependencies_with_ungrouped_semver_levels
+      return @dependencies_with_ungrouped_semver_levels if defined?(@dependencies_with_ungrouped_semver_levels)
 
       # TODO: targets_highest_versions_possible? should accept the highest globally allowed version
       #
@@ -114,7 +114,7 @@ module Dependabot
       fully_upgraded_deps = fully_upgraded_groups.map(&:dependencies).flatten.uniq
 
       # If a dependency is in both a partial- and fully-upgraded group, it counts as fully upgraded
-      @dependencies_with_ungrouped_semvar_levels = partially_upgraded_deps - fully_upgraded_deps
+      @dependencies_with_ungrouped_semver_levels = partially_upgraded_deps - fully_upgraded_deps
     end
   end
 end
