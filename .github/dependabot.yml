@@ -53,12 +53,14 @@ updates:
     groups:
       dependencies:
         patterns:
-          - "*yarn*"
-          - "*arborist*"
-          - "*nock*"
-          - "*npm*"
-          - "*semver*"
+          - "@dependabot/yarn-lib"
+          - "@npmcli/arborist"
           - "detect-indent"
+          - "nock"
+          - "npm"
+          - "@pnpm/lockfile-file"
+          - "@pnpm/dependency-path"
+          - "semver"
       dev-dependencies:
         patterns:
           - "*eslint*"
