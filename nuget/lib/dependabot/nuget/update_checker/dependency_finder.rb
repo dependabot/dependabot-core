@@ -4,21 +4,77 @@
 require "nokogiri"
 require "zip"
 require "stringio"
-require "dependabot/nuget/file_updater"
 require "dependabot/nuget/update_checker"
+require "dependabot/nuget/version"
 
 module Dependabot
   module Nuget
-    class FileUpdater
+    class UpdateChecker
       class DependencyFinder
-        def initialize(dependency:, dependency_files:, credentials:)
-          @dependency          = dependency
-          @dependency_files    = dependency_files
-          @credentials         = credentials
+        require_relative "requirements_updater"
+
+        def initialize(dependency:, dependency_files:, credentials:, repo_contents_path:)
+          @dependency             = dependency
+          @dependency_files       = dependency_files
+          @credentials            = credentials
+          @repo_contents_path     = repo_contents_path
+        end
+
+        def updated_peer_dependencies
+          @updated_peer_dependencies ||= fetch_peer_dependencies(
+            @dependency.name,
+            @dependency.version
+          ).filter_map do |peer_dependency_info|
+            package_name = peer_dependency_info["packageName"]
+            target_version = peer_dependency_info["version"]
+
+            # Find the Dependency object for the peer dependency. We will not return
+            # depdencies that are not referenced from dependency files.
+            peer_dependency = dependencies.find { |d| d.name == package_name }
+            next unless peer_dependency
+            next unless target_version > peer_dependency.numeric_version
+
+            # Use version finder to determine the source details for the peer dependency.
+            target_version_details = version_finder(peer_dependency).versions.find do |v|
+              v.fetch(:version) == target_version
+            end
+            next unless target_version_details
+
+            Dependency.new(
+              name: peer_dependency.name,
+              version: target_version_details.fetch(:version).to_s,
+              requirements: updated_requirements(peer_dependency, target_version_details),
+              previous_version: peer_dependency.version,
+              previous_requirements: peer_dependency.requirements,
+              package_manager: peer_dependency.package_manager,
+              metadata: { information_only: true } # Instruct updater to not directly update this dependency
+            )
+          end
+        end
+
+        private
+
+        attr_reader :dependency, :dependency_files, :credentials,
+                    :repo_contents_path
+
+        def updated_requirements(dep, target_version_details)
+          @updated_requirements ||= {}
+          @updated_requirements[dep.name] ||=
+            RequirementsUpdater.new(
+              requirements: dep.requirements,
+              latest_version: target_version_details.fetch(:version).to_s,
+              source_details: target_version_details
+                          &.slice(:nuspec_url, :repo_url, :source_url)
+            ).updated_requirements
         end
 
         def dependencies
-          @dependencies ||= fetch_all_dependencies(@dependency.name, @dependency.version)
+          @dependencies ||=
+            Nuget::FileParser.new(
+              dependency_files: dependency_files,
+              source: nil,
+              repo_contents_path: repo_contents_path
+            ).parse
         end
 
         def nuget_configs
@@ -36,19 +92,18 @@ module Dependabot
                                            .select { |url| url.fetch(:repository_type) == "v3" }
         end
 
-        def fetch_all_dependencies(package_id, package_version)
-          all_dependencies = Set.new
-          fetch_all_dependencies_impl(package_id, package_version, all_dependencies)
-          all_dependencies
+        def fetch_peer_dependencies(package_id, package_version)
+          all_dependencies = {}
+          fetch_peer_dependencies_impl(package_id, package_version, all_dependencies)
+          all_dependencies.map { |_, dependency_info| dependency_info }
         end
 
-        def fetch_all_dependencies_impl(package_id, package_version, all_dependencies)
+        def fetch_peer_dependencies_impl(package_id, package_version, all_dependencies)
           current_dependencies = fetch_dependencies(package_id, package_version)
           return unless current_dependencies.any?
 
           current_dependencies.each do |dependency|
             next if dependency.nil?
-            next if all_dependencies.include?(dependency)
 
             dependency_id = dependency["packageName"]
             dependency_version_range = dependency["versionRange"]
@@ -62,8 +117,13 @@ module Dependabot
                                    nuget_version_range_match_data[1]
                                  end
 
-            all_dependencies.add(dependency)
-            fetch_all_dependencies_impl(dependency_id, dependency_version, all_dependencies)
+            dependency["version"] = Version.new(dependency_version)
+
+            visited_dependency = all_dependencies[dependency_id.downcase]
+            next unless visited_dependency.nil? || visited_dependency["version"] < dependency["version"]
+
+            all_dependencies[dependency_id.downcase] = dependency
+            fetch_peer_dependencies_impl(dependency_id, dependency_version, all_dependencies)
           end
         end
 
@@ -162,7 +222,7 @@ module Dependabot
           nuspec_xml
         end
 
-        def fetch_dependencies_from_repository(repository_details, package_id, package_version)
+        def fetch_dependencies_from_repository(repository_details, package_id, package_version) # rubocop:disable Metrics/PerceivedComplexity
           feed_url = repository_details[:repository_url]
           nuspec_xml = fetch_nuspec(feed_url, package_id, package_version, repository_details[:auth_header])
 
@@ -195,6 +255,17 @@ module Dependabot
           end
 
           dependency_list
+        end
+
+        def version_finder(dep)
+          VersionFinder.new(
+            dependency: dep,
+            dependency_files: dependency_files,
+            credentials: credentials,
+            ignored_versions: [],
+            raise_on_ignored: false,
+            security_advisories: []
+          )
         end
       end
     end

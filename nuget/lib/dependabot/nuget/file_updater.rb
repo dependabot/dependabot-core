@@ -9,8 +9,6 @@ require "dependabot/nuget/native_helpers"
 module Dependabot
   module Nuget
     class FileUpdater < Dependabot::FileUpdaters::Base
-      require_relative "file_updater/packages_config_declaration_finder"
-      require_relative "file_updater/project_file_declaration_finder"
       require_relative "file_updater/property_value_updater"
 
       def self.updated_files_regex
@@ -27,10 +25,11 @@ module Dependabot
 
       def updated_dependency_files
         # run update for each project file
-        dependency_files.select { |f| /\.([a-z]{2})?proj$/ =~ f.name } .each do |dependency_project_file|
+        project_files.each do |dependency_project_file|
+          directory_path = repository_directory_path(dependency_project_file)
           proj_path = dependency_file_path(dependency_project_file)
           dependencies.each do |dependency|
-            NativeHelpers.run_nuget_updater_tool(repo_contents_path, proj_path, dependency)
+            NativeHelpers.run_nuget_updater_tool(directory_path, proj_path, dependency)
           end
         end
 
@@ -43,17 +42,7 @@ module Dependabot
           else
             puts "The contents of file [#{f.name}] were updated."
 
-            DependencyFile.new(
-              name: f.name,
-              content: normalize_content(f, updated_content),
-              directory: f.directory,
-              type: f.type,
-              support_file: f.support_file,
-              symlink_target: f.symlink_target,
-              content_encoding: f.content_encoding,
-              operation: f.operation,
-              mode: f.mode
-            )
+            updated_file(file: f, content: normalize_content(f, updated_content))
           end
         end
 
@@ -90,6 +79,20 @@ module Dependabot
         updated_content
       end
 
+      def repository_directory_path(dependency_file)
+        # Since we may be running against a folder within a repo, we need to
+        # determine that directory path. Dependency files are relative to the
+        # folder we are running against, so we can use that to determine the
+        # proper path.
+        if dependency_file.directory.start_with?(repo_contents_path)
+          dependency_file.directory
+        else
+          file_directory = dependency_file.directory
+          file_directory = file_directory[1..-1] if file_directory.start_with?("/")
+          File.join(repo_contents_path || "", file_directory)
+        end
+      end
+
       def dependency_file_path(dependency_file)
         if dependency_file.directory.start_with?(repo_contents_path)
           File.join(dependency_file.directory, dependency_file.name)
@@ -122,181 +125,6 @@ module Dependabot
         return if project_files.any? || packages_config_files.any?
 
         raise "No project file or packages.config!"
-      end
-
-      def update_files_for_dependency(files:, dependency:)
-        # The UpdateChecker ensures the order of requirements is preserved
-        # when updating, so we can zip them together in new/old pairs.
-        reqs = dependency.requirements.zip(dependency.previous_requirements)
-                         .reject { |new_req, old_req| new_req == old_req }
-
-        # Loop through each changed requirement and update the files
-        reqs.each do |new_req, old_req|
-          raise "Bad req match" unless new_req[:file] == old_req[:file]
-          next if new_req[:requirement] == old_req[:requirement]
-
-          file = files.find { |f| f.name == new_req.fetch(:file) }
-
-          files =
-            if new_req.dig(:metadata, :property_name)
-              update_property_value(files, file, new_req)
-            else
-              update_declaration(files, dependency, file, old_req, new_req)
-            end
-        end
-
-        files
-      end
-
-      def update_property_value(files, file, req)
-        files = files.dup
-        property_name = req.fetch(:metadata).fetch(:property_name)
-
-        PropertyValueUpdater
-          .new(dependency_files: files)
-          .update_files_for_property_change(
-            property_name: property_name,
-            updated_value: req.fetch(:requirement),
-            callsite_file: file
-          )
-      end
-
-      def insert_new_declaration(file_content, declaration_name, declaration_version)
-        new_package_reference = "<PackageReference Include=\"#{declaration_name}\" Version=\"#{declaration_version}\" />"
-
-        # guess at kind of newlines we should use when modifying the file
-        # if there are mixed newlines we will use \r\n
-        newline = file_content.include?("\r\n") ? "\r\n" : "\n"
-        # Determine if the file uses tabs or spaces for indentation
-        indent_regex = /^(\s+)/
-        indent_match = file_content.match(indent_regex)
-        use_tabs = indent_match[1].include?("\t")
-
-        # attempt to find any existing item group in the file
-        item_group_regex = /<ItemGroup>((\r\n|\n)(\s*).*\S)*(\r\n|\n)/m
-        match = file_content.match(item_group_regex)
-
-        if match
-          # found an ItemGroup
-          indent_regex = /^([ \t]+)/
-          item_group_indent_match = match[0].match(indent_regex)
-          item_group_indentation = item_group_indent_match[1]
-
-          # Look for the last element inside the ItemGroup
-          last_element_regex = %r{(\r\n|\n)(\s*).*\S(?=(\r\n|\n)\s*</ItemGroup>)}
-          last_element_match = match[0].match(last_element_regex)
-
-          # use whatever indentation elements in the ItemGroup are using
-          # else, fall back to the indentation level of the item group itself
-          # and use the know tab or space character, defaulting to two spaces
-          if last_element_match
-            element_indent_match = last_element_match[0].match(indent_regex)
-            element_indentation = element_indent_match[1]
-          else
-            element_indentation = item_group_indentation + (use_tabs ? "\t" : "  ")
-          end
-
-          new_line_with_indentation = "#{element_indentation}#{new_package_reference}#{newline}"
-          file_content.sub(match[0],
-                           match[0].sub("</ItemGroup>",
-                                        "#{new_line_with_indentation}#{item_group_indentation}</ItemGroup>"))
-        else
-          # need to create a new item group
-          # first find the project element
-          project_end_regex = %r{</Project>((\r\n|\n))?}m
-          match = file_content.match(project_end_regex)
-          if match
-            indent_regex = /^([ \t]+)/
-            # then find the property group element and use that to try and determine the indentation
-            indent_match = file_content.match(%r{.*</PropertyGroup>}m)[0].match(indent_regex)
-            indentation = if indent_match
-                            indent_match[1]
-                          else
-                            (use_tabs ? "\t" : "  ")
-                          end
-
-            # insert our new item group between the last property group and then end of the project
-            item_group = "#{newline}#{indentation}<ItemGroup>#{newline}#{indentation}#{indentation}#{new_package_reference}#{newline}#{indentation}</ItemGroup>"
-            # replace the </Project> element with our item group ensuring we append the final newline if
-            # it exists
-            file_content.sub(project_end_regex, item_group + "#{newline}</Project>#{match[1]}")
-          end
-        end
-      end
-
-      def update_declaration(files, dependency, file, old_req, new_req)
-        files = files.dup
-
-        updated_content = file.content
-
-        original_declarations(dependency, old_req).each do |old_dec|
-          updated_content = updated_content.gsub(
-            old_dec,
-            updated_declaration(old_dec, old_req, new_req)
-          )
-        end
-
-        if updated_content == file.content
-          # append new package reference to project file
-          updated_content = insert_new_declaration(updated_content, dependency.name, new_req[:requirement])
-        end
-
-        raise "Expected content to change!" if updated_content == file.content
-
-        files[files.index(file)] =
-          updated_file(file: file, content: updated_content)
-        files
-      end
-
-      def original_declarations(dependency, requirement)
-        if requirement.fetch(:file).casecmp("global.json").zero?
-          [
-            global_json.content.match(
-              /"#{Regexp.escape(dependency.name)}"\s*:\s*
-               "#{Regexp.escape(dependency.previous_version)}"/x
-            ).to_s
-          ]
-        elsif requirement.fetch(:file).casecmp(".config/dotnet-tools.json").zero?
-          [
-            dotnet_tools_json.content.match(
-              /"#{Regexp.escape(dependency.name)}"\s*:\s*{\s*"version"\s*:\s*
-               "#{Regexp.escape(dependency.previous_version)}"/xm
-            ).to_s
-          ]
-        else
-          declaration_finder(dependency, requirement).declaration_strings
-        end
-      end
-
-      def declaration_finder(dependency, requirement)
-        @declaration_finders ||= {}
-
-        requirement_fn = requirement.fetch(:file)
-        @declaration_finders[dependency.hash + requirement.hash] ||=
-          if requirement_fn.split("/").last.casecmp("packages.config").zero?
-            PackagesConfigDeclarationFinder.new(
-              dependency_name: dependency.name,
-              declaring_requirement: requirement,
-              packages_config:
-                packages_config_files.find { |f| f.name == requirement_fn }
-            )
-          else
-            ProjectFileDeclarationFinder.new(
-              dependency_name: dependency.name,
-              declaring_requirement: requirement,
-              dependency_files: dependency_files,
-              credentials: credentials
-            )
-          end
-      end
-
-      def updated_declaration(old_declaration, previous_req, requirement)
-        original_req_string = previous_req.fetch(:requirement)
-
-        old_declaration.gsub(
-          original_req_string,
-          requirement.fetch(:requirement)
-        )
       end
     end
   end
