@@ -2107,7 +2107,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:05 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-bundler/manifests/latest
     body:
       encoding: US-ASCII
@@ -2138,7 +2138,7 @@ http_interactions:
       - E7BD:C959:1C2CACD:1D1096F:645A5A1A
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:06 GMT
 - request:
     method: get
@@ -2175,7 +2175,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:06 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-bundler/manifests/latest
     body:
       encoding: US-ASCII
@@ -2212,10 +2212,10 @@ http_interactions:
       - E7BF:DF8A:28F0043:2A2BE93:645A5A1A
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:06 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-bundler/manifests/v2.0.20230509134123
     body:
       encoding: US-ASCII
@@ -2246,7 +2246,7 @@ http_interactions:
       - E7C1:C959:1C2CC71:1D10B19:645A5A1C
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:09 GMT
 - request:
     method: get
@@ -2283,7 +2283,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:09 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-bundler/manifests/v2.0.20230509134123
     body:
       encoding: US-ASCII
@@ -2320,7 +2320,7 @@ http_interactions:
       - E7C4:9628:6D93B6:70C661:645A5A1D
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:09 GMT
 - request:
     method: get
@@ -4429,7 +4429,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:21 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-cargo/manifests/latest
     body:
       encoding: US-ASCII
@@ -4460,7 +4460,7 @@ http_interactions:
       - E800:27B0:150A564:15A9289:645A5A29
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:21 GMT
 - request:
     method: get
@@ -4497,7 +4497,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:21 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-cargo/manifests/latest
     body:
       encoding: US-ASCII
@@ -4534,10 +4534,10 @@ http_interactions:
       - E802:B22B:37342E2:38BD620:645A5A29
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:21 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-cargo/manifests/v2.0.20230509134123
     body:
       encoding: US-ASCII
@@ -4568,14 +4568,14 @@ http_interactions:
       - E803:0EA6:26B0DE5:27E7762:645A5A2B
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:24 GMT
 - request:
     method: get
     uri: https://ghcr.io/token?account&scope=repository:dependabot/dependabot-updater-cargo:pull&service=ghcr.io
     body:
       encoding: US-ASCII
-      string: '{}'
+      string: ''
     headers:
       Accept:
       - "*/*"
@@ -4605,7 +4605,7 @@ http_interactions:
         '
   recorded_at: Tue, 09 May 2023 14:35:24 GMT
 - request:
-    method: get
+    method: head
     uri: https://ghcr.io/v2/dependabot/dependabot-updater-cargo/manifests/v2.0.20230509134123
     body:
       encoding: US-ASCII
@@ -4642,6 +4642,6 @@ http_interactions:
       - E805:27B0:150A722:15A9455:645A5A2C
     body:
       encoding: UTF-8
-      string: '{}'
+      string: ''
   recorded_at: Tue, 09 May 2023 14:35:24 GMT
 recorded_with: VCR 6.1.0
