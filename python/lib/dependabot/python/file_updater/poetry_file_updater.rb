@@ -156,17 +156,25 @@ module Dependabot
         end
 
         def create_declaration_at_new_version!(poetry_object, dep)
-          poetry_object[subdep_type] ||= {}
-          poetry_object[subdep_type][dependency.name] = dep.version
+          type = subdep_type(poetry_object, dep)
+          poetry_object[type] ||= {}
+          poetry_object[type][dependency.name] = dep.version
         end
 
-        def subdep_type
-          category =
-            TomlRB.parse(lockfile.content).fetch("package", []).
-            find { |dets| normalise(dets.fetch("name")) == dependency.name }.
-            fetch("category")
-
-          category == "dev" ? "dev-dependencies" : "dependencies"
+        def subdep_type(poetry_object, dep)
+          in_main_dependencies = poetry_object.fetch("dependencies", []).find(dep.name)
+          in_main_dependencies ? "dependencies" : "dev-dependencies"
+          parsed_lockfile = TomlRB.parse(lockfile.content)
+          # TODO: if the dependency we are checking does not exist in pyproject.toml, it must be transitive
+          # if it's transitive, go in reverse order looking at all the packages that declare this dependency as a
+          # dependency of it, checking each time for existence in pyproject.toml to determine the category
+          parsed_lockfile.fetch("package", []).find { |dets| dets.fetch("dependencies", {}).key?(dependency.name) }
+          # category =
+          #   TomlRB.parse(lockfile.content).fetch("package", []).
+          #   find { |dets| normalise(dets.fetch("name")) == dependency.name }.
+          #   fetch("category")
+          #
+          # category == "dev" ? "dev-dependencies" : "dependencies"
         end
 
         def sanitize(pyproject_content)
